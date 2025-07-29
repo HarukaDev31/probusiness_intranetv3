@@ -4,13 +4,7 @@
     <div class="mb-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center">
-          <UButton 
-            label="Volver" 
-            icon="i-heroicons-arrow-left"
-            variant="outline"
-            @click="goBack"
-            class="mr-4"
-          />
+          <UButton label="Volver" icon="i-heroicons-arrow-left" variant="outline" @click="goBack" class="mr-4" />
           <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
               <UIcon name="i-heroicons-plus-circle" class="text-blue-600 mr-3 text-2xl" />
@@ -21,12 +15,7 @@
             </p>
           </div>
         </div>
-        <UButton 
-          label="Guardar" 
-          icon="i-heroicons-document-arrow-down"
-          color="primary"
-          @click="saveForm"
-        />
+        <UButton label="Guardar" icon="i-heroicons-document-arrow-down" color="primary" @click="saveForm" />
       </div>
     </div>
 
@@ -35,16 +24,61 @@
       <div class="space-y-6">
         <!-- Product Selector -->
         <div class="max-w-md">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <UIcon name="i-heroicons-magnifying-glass" class="mr-1" />
-            Producto Seleccionado
-          </label>
-          <USelect 
-            v-model="formData.producto"
-            :items="productOptions"
-            placeholder="Seleccionar producto"
-            class="w-full"
-          />
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <UIcon name="i-heroicons-magnifying-glass" class="mr-1" />
+              Producto Seleccionado
+            </label>
+            <UModal v-model="showCreateProductModal" title="Crear Nuevo Producto" :triger="true">
+              <UButton label="Crear Producto" icon="i-heroicons-plus" size="xs" variant="outline"
+                @click="showCreateProductModal = true" />
+              <template #body>
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Nombre del Producto
+                    </label>
+                    <UInput v-model="newProduct.nombre" placeholder="Ej: Zapatillas deportivas" class="w-full" />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Descripción
+                    </label>
+                    <UTextarea v-model="newProduct.descripcion" placeholder="Descripción del producto..." :rows="3"
+                      class="w-full" />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Categoría
+                    </label>
+                    <USelect v-model="newProduct.categoria" :items="categoryOptions" placeholder="Seleccionar categoría"
+                      class="w-full" />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Código de Producto
+                    </label>
+                    <UInput v-model="newProduct.codigo" placeholder="Ej: PROD-001" class="w-full" />
+                  </div>
+                </div>
+              </template>
+
+              <template #footer="{ close }">
+                <div class="flex justify-end gap-3">
+                  <UButton label="Cancelar" variant="outline" @click="close" />
+                  <UButton label="Crear Producto" color="primary" @click="() => {
+                    createProduct();
+                    close();
+                  }" />
+                </div>
+              </template>
+            </UModal>
+          </div>
+          <UInputMenu v-model="formData.producto" :items="productOptions" :loading="loadingProducts"
+            placeholder="Buscar producto..." class="w-full" @update:search="searchProducts" />
         </div>
 
         <!-- Description -->
@@ -52,12 +86,8 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Descripción del Producto
           </label>
-          <UTextarea 
-            v-model="formData.descripcion"
-            placeholder="Ingrese la descripción del producto..."
-            :rows="3"
-            class="w-full"
-          />
+          <UTextarea v-model="formData.descripcion" placeholder="Ingrese la descripción del producto..." :rows="3"
+            class="w-full" />
         </div>
 
         <!-- Partida -->
@@ -65,11 +95,7 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Partida
           </label>
-          <UInput 
-            v-model="formData.partida"
-            placeholder="Ej: 6402999000"
-            class="w-full"
-          />
+          <UInput v-model="formData.partida" placeholder="Ej: 6402999000" class="w-full" />
         </div>
 
         <!-- Price and Antidumping -->
@@ -78,27 +104,15 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               P. declarado
             </label>
-            <UInput 
-              v-model="formData.precioDeclarado"
-              type="number"
-              step="0.01"
-              placeholder="Ej: 7.5"
-              icon="i-heroicons-currency-dollar"
-              class="w-full"
-            />
+            <UInput v-model="formData.precioDeclarado" type="number" step="0.01" placeholder="Ej: 7.5"
+              icon="i-heroicons-currency-dollar" class="w-full" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Antidumping
             </label>
-            <UInput 
-              v-model="formData.antidumping"
-              type="number"
-              step="0.01"
-              placeholder="Ej: 0.63"
-              icon="i-heroicons-currency-dollar"
-              class="w-full"
-            />
+            <UInput v-model="formData.antidumping" type="number" step="0.01" placeholder="Ej: 0.63"
+              icon="i-heroicons-currency-dollar" class="w-full" />
           </div>
         </div>
 
@@ -108,30 +122,18 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Imágenes del producto
             </label>
-            <UButton 
-              label="Agregar imagen" 
-              icon="i-heroicons-plus"
-              size="xs"
-              @click="addImageSlot"
-            />
+            <UButton label="Agregar imagen" icon="i-heroicons-plus" size="xs" @click="addImageSlot" />
           </div>
           <div class="flex gap-3 overflow-x-auto pb-2">
-            <div 
-              v-for="(slot, index) in imageSlots" 
-              :key="index"
+            <div v-for="(slot, index) in imageSlots" :key="index"
               class="flex-shrink-0 w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-              @click="selectImage(index)"
-            >
+              @click="selectImage(index)">
               <div v-if="!slot.file" class="text-center">
                 <UIcon name="i-heroicons-photo" class="w-8 h-8 text-gray-400 mx-auto mb-1" />
                 <span class="text-xs text-gray-500">Agregar imagen</span>
               </div>
-              <img 
-                v-else 
-                :src="slot.preview || ''" 
-                :alt="`Imagen ${index + 1}`"
-                class="w-full h-full object-cover rounded-lg"
-              />
+              <img v-else :src="slot.preview || ''" :alt="`Imagen ${index + 1}`"
+                class="w-full h-full object-cover rounded-lg" />
             </div>
           </div>
         </div>
@@ -141,23 +143,26 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Observaciones
           </label>
-          <UTextarea 
-            v-model="formData.observaciones"
-            placeholder="Agregar observaciones sobre el antidumping..."
-            :rows="3"
-            class="w-full"
-          />
+          <UTextarea v-model="formData.observaciones" placeholder="Agregar observaciones sobre el antidumping..."
+            :rows="3" class="w-full" />
         </div>
       </div>
     </UCard>
+
+    <!-- Modal para crear producto -->
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import ProductService from '~/services/productService'
 
 // Router
 const router = useRouter()
+
+// Product service instance
+const productService = ProductService.getInstance()
 
 // Form data
 const formData = ref({
@@ -169,13 +174,39 @@ const formData = ref({
   observaciones: ''
 })
 
-// Product options
-const productOptions = [
+// Product options (reactive)
+const productOptions = ref([
   { label: 'Calzados', value: 'calzados' },
   { label: 'Motos Eléctricas', value: 'motos-electricas' },
   { label: 'Textiles', value: 'textiles' },
   { label: 'Electrónicos', value: 'electronicos' },
   { label: 'Juguetes', value: 'juguetes' }
+])
+
+// Modal state
+const showCreateProductModal = ref(false)
+
+// Loading state
+const loadingProducts = ref(false)
+
+// New product form
+const newProduct = ref({
+  nombre: '',
+  descripcion: '',
+  categoria: '',
+  codigo: ''
+})
+
+// Category options
+const categoryOptions = [
+  { label: 'Calzados', value: 'calzados' },
+  { label: 'Motos Eléctricas', value: 'motos-electricas' },
+  { label: 'Textiles', value: 'textiles' },
+  { label: 'Electrónicos', value: 'electronicos' },
+  { label: 'Juguetes', value: 'juguetes' },
+  { label: 'Alimentos', value: 'alimentos' },
+  { label: 'Bebidas', value: 'bebidas' },
+  { label: 'Cosméticos', value: 'cosmeticos' }
 ]
 
 // Image slots
@@ -202,43 +233,120 @@ const selectImage = (index: number) => {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*'
-  
+
   input.onchange = (event) => {
     const target = event.target as HTMLInputElement
     if (target.files && target.files[0]) {
       const file = target.files[0]
       const reader = new FileReader()
-      
+
       reader.onload = (e) => {
         imageSlots.value[index] = {
           file: file,
           preview: e.target?.result as string
         }
       }
-      
+
       reader.readAsDataURL(file)
     }
   }
-  
+
   input.click()
+}
+
+const searchProducts = async (searchTerm: string) => {
+  if (searchTerm.length < 2) return
+
+  try {
+    loadingProducts.value = true
+    const response = await productService.getProducts({
+      search: searchTerm,
+      page: 1,
+      limit: 20
+    })
+
+    if (response.success && response.data) {
+      // Convertir productos a formato de opciones para autocomplete
+      productOptions.value = response.data.map((product: any) => ({
+        label: product.nombre_comercial || product.caracteristicas || 'Producto sin nombre',
+        value: product.id.toString()
+      }))
+    }
+  } catch (error) {
+    console.error('Error searching products:', error)
+  } finally {
+    loadingProducts.value = false
+  }
+}
+
+const createProduct = async () => {
+  try {
+    console.log('Creando nuevo producto:', newProduct.value)
+
+    // Validar campos requeridos
+    if (!newProduct.value.nombre || !newProduct.value.categoria) {
+      console.error('Nombre y categoría son requeridos')
+      return
+    }
+
+    // Aquí iría la lógica para crear el producto en la API
+    // Por ahora simulamos la creación
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    // Simular respuesta de la API
+    const newProductData = {
+      id: Date.now(),
+      nombre: newProduct.value.nombre,
+      descripcion: newProduct.value.descripcion,
+      categoria: newProduct.value.categoria,
+      codigo: newProduct.value.codigo || `PROD-${Date.now()}`
+    }
+
+    // Agregar el nuevo producto a las opciones
+    productOptions.value.push({
+      label: newProductData.nombre,
+      value: newProductData.id.toString()
+    })
+
+    // Seleccionar automáticamente el nuevo producto
+    formData.value.producto = newProductData.id.toString()
+
+    // Limpiar el formulario
+    newProduct.value = {
+      nombre: '',
+      descripcion: '',
+      categoria: '',
+      codigo: ''
+    }
+
+    console.log('Producto creado exitosamente:', newProductData)
+
+  } catch (error) {
+    console.error('Error al crear producto:', error)
+  }
 }
 
 const saveForm = async () => {
   try {
     console.log('Guardando regulación antidumping:', formData.value)
     console.log('Imágenes:', imageSlots.value)
-    
+
     // Aquí iría la lógica para guardar en la API
     await new Promise(resolve => setTimeout(resolve, 1000))
-    
+
     // Mostrar notificación de éxito
     console.log('Regulación antidumping guardada exitosamente')
-    
+
     // Redirigir de vuelta a la lista
     router.push('/basedatos/regulaciones')
-    
+
   } catch (error) {
     console.error('Error al guardar:', error)
   }
 }
-</script> 
+
+// Cargar productos iniciales
+onMounted(() => {
+  searchProducts('producto')
+})
+</script>
