@@ -1,146 +1,41 @@
 <template>
   <div class="p-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center">
-        <UIcon name="i-heroicons-document-text" class="text-2xl mr-3 text-gray-700 dark:text-gray-300" />
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Productos</h1>
-      </div>
-    </div>
-
-    <!-- Controls -->
-    <UCard class="mb-6">
-                   <template #header>
-               <div class="flex flex-wrap items-center justify-between gap-4">
-                 <!-- Items per page -->
-                 <div class="flex items-center gap-2">
-                   <label class="text-sm text-gray-600 dark:text-gray-400">Mostrar:</label>
-                   <USelect
-                     v-model="itemsPerPage"
-                     :options="[5, 10, 25, 50, 100]"
-                     placeholder="10"
-                     class="w-20"
-                     @update:model-value="onItemsPerPageChange"
-                   />
-                   <span class="text-sm text-gray-600 dark:text-gray-400">registros</span>
-                 </div>
-
-                 <!-- Search and Actions -->
-                 <div class="flex items-center gap-3">
-                   <!-- Main Search -->
-                   <UInput
-                     v-model="searchQuery"
-                     placeholder="Buscar por..."
-                     class="w-64"
-                     icon="i-heroicons-magnifying-glass"
-                   />
-
-                   <!-- Export Button -->
-                   <UButton
-                     label="Exportar"
-                     icon="i-heroicons-arrow-up-tray"
-                     variant="outline"
-                     @click="exportData"
-                   />
-
-                   <!-- Filters Button -->
-                   <UButton
-                     label="Filtros"
-                     icon="i-heroicons-funnel"
-                     variant="outline"
-                     @click="showFilters = !showFilters"
-                   />
-
-                   <!-- Secondary Search -->
-                   <div class="flex items-center gap-2">
-                     <label class="text-sm text-gray-600 dark:text-gray-400">Buscar por:</label>
-                     <UInput
-                       v-model="secondarySearch"
-                       placeholder="Filtro específico..."
-                       class="w-48"
-                       @input="onSecondarySearch"
-                     />
-                   </div>
-                 </div>
-               </div>
-             </template>
-
-             <!-- Filters Panel -->
-             <div v-if="showFilters" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <div class="field">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rubro</label>
-                   <USelect
-                     v-model="filters.rubro"
-                     :options="rubroOptions"
-                     placeholder="Seleccionar rubro"
-                     class="w-full"
-                   />
-                 </div>
-                 <div class="field">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo Producto</label>
-                   <USelect
-                     v-model="filters.tipoProducto"
-                     :options="tipoProductoOptions"
-                     placeholder="Seleccionar tipo"
-                     class="w-full"
-                   />
-                 </div>
-                 <div class="field">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Campaña</label>
-                   <USelect
-                     v-model="filters.campana"
-                     :options="campanaOptions"
-                     placeholder="Seleccionar campaña"
-                     class="w-full"
-                   />
-                 </div>
-               </div>
-             </div>
-    </UCard>
-
-               <!-- Data Table -->
-           <UTable
-             :rows="filteredProducts"
-             :loading="loading"
-             :columns="columns"
-             :ui="{ wrapper: 'min-h-full' }"
-             @update:rows="(rows: any) => console.log('UTable rows updated:', rows)"
-           >
-      <template #loading-state>
-        <div class="flex items-center justify-center py-8">
-          <UIcon name="i-heroicons-arrow-path" class="animate-spin w-6 h-6 mr-2" />
-          <span>Cargando...</span>
-        </div>
-      </template>
-
-      <template #empty-state>
-        <div class="text-center py-8">
-          <UIcon name="i-heroicons-inbox" class="mx-auto h-12 w-12 text-gray-400" />
-          <h3 class="mt-2 text-sm font-semibold text-gray-900">No hay registros</h3>
-          <p class="mt-1 text-sm text-gray-500">No se encontraron productos que coincidan con los criterios de búsqueda.</p>
-        </div>
-      </template>
-    </UTable>
-
-               <!-- Pagination -->
-           <div class="mt-6 flex items-center justify-between">
-             <div class="text-sm text-gray-700 dark:text-gray-300">
-               Mostrando {{ (currentPage - 1) * itemsPerPage + 1 }} a {{ Math.min(currentPage * itemsPerPage, totalRecords) }} de {{ totalRecords }} resultados
-             </div>
-             <UPagination
-               v-model="currentPage"
-               :page-count="totalPages"
-               :total="totalRecords"
-               @update:model-value="onPageChange"
-             />
-           </div>
+    <DataTable
+      title="Productos"
+      icon="i-heroicons-document-text"
+      :data="filteredProducts"
+      :columns="columns"
+      :loading="loading"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total-records="totalRecords"
+      :items-per-page="itemsPerPage"
+      :show-secondary-search="true"
+      secondary-search-label="Buscar por"
+      secondary-search-placeholder="Filtro específico..."
+      :show-filters="true"
+      :filter-config="filterConfig"
+      :show-export="true"
+      empty-state-message="No se encontraron productos que coincidan con los criterios de búsqueda."
+      :search-query-value="searchQuery"
+      :secondary-search-value="secondarySearch"
+      :filters-value="filters"
+      @update:search-query="searchQuery = $event"
+      @update:secondary-search="secondarySearch = $event"
+      @filter-change="handleFilterChange"
+      @update:current-page="onPageChange"
+      @update:items-per-page="onItemsPerPageChange"
+      @export="exportData"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, h, resolveComponent } from 'vue'
 import type { ProductMapped } from '~/types/product'
+import type { TableColumn } from '@nuxt/ui'
+
+const UButton = resolveComponent('UButton')
 
 // Composable para productos
 const {
@@ -166,93 +61,154 @@ const {
 } = useProducts()
 
 // State local
-const showFilters = ref(false)
 const secondarySearch = ref('')
 
+// Paginación local (para manejar el v-model de UPagination)
+const localCurrentPage = ref(1)
+
 // Configuración de columnas para UTable
-const columns = [
+const columns: TableColumn<ProductMapped>[] = [
   {
-    id: 'id',
-    key: 'id',
-    label: 'N°',
-    sortable: true
+    accessorKey: 'id',
+    header: 'N°',
+    cell: ({ row }) => `#${row.getValue('id')}`
   },
   {
-    id: 'nombreComercial',
-    key: 'nombreComercial',
-    label: 'Nombre comercial',
-    sortable: true
+    accessorKey: 'nombreComercial',
+    header: 'Nombre comercial',
+    cell: ({ row }) => row.getValue('nombreComercial')
   },
   {
-    id: 'foto',
-    key: 'foto',
-    label: 'Foto'
+    accessorKey: 'foto',
+    header: 'Foto',
+    cell: ({ row }) => {
+      const foto = row.getValue('foto')
+      if (foto) {
+        return h('img', {
+          src: foto,
+          alt: row.getValue('nombreComercial'),
+          class: 'w-10 h-10 rounded object-cover'
+        })
+      }
+      return h('span', { class: 'text-gray-400' }, 'Sin foto')
+    }
   },
   {
-    id: 'caracteristicas',
-    key: 'caracteristicas',
-    label: 'Características'
+    accessorKey: 'caracteristicas',
+    header: 'Características',
+    cell: ({ row }) => {
+      const caracteristicas = row.getValue('caracteristicas') as string
+      return h('div', { 
+        class: 'max-w-xs truncate',
+        title: caracteristicas // Tooltip con texto completo
+      }, caracteristicas)
+    }
   },
   {
-    id: 'rubro',
-    key: 'rubro',
-    label: 'Rubro',
-    sortable: true
+    accessorKey: 'rubro',
+    header: 'Rubro',
+    cell: ({ row }) => row.getValue('rubro')
   },
   {
-    id: 'tipoProducto',
-    key: 'tipoProducto',
-    label: 'T. Producto',
-    sortable: true
+    accessorKey: 'tipoProducto',
+    header: 'T. Producto',
+    cell: ({ row }) => row.getValue('tipoProducto')
   },
   {
-    id: 'unidadComercial',
-    key: 'unidadComercial',
-    label: 'Unidad Com.'
+    accessorKey: 'unidadComercial',
+    header: 'Unidad Com.',
+    cell: ({ row }) => row.getValue('unidadComercial')
   },
   {
-    id: 'precioExw',
-    key: 'precioExw',
-    label: 'Precio Exw',
-    sortable: true
+    accessorKey: 'precioExw',
+    header: 'Precio Exw',
+    cell: ({ row }) => {
+      const precio = Number(row.getValue('precioExw'))
+      return formatPrice(precio)
+    }
   },
   {
-    id: 'subpartida',
-    key: 'subpartida',
-    label: 'Subpartida'
+    accessorKey: 'subpartida',
+    header: 'Subpartida',
+    cell: ({ row }) => row.getValue('subpartida')
   },
   {
-    id: 'cargaContenedor',
-    key: 'cargaContenedor',
-    label: 'Campaña',
-    sortable: true
+    accessorKey: 'campana',
+    header: 'Campaña',
+    cell: ({ row }) => row.getValue('campana')
   },
   {
     id: 'actions',
-    key: 'actions',
-    label: 'Acciones'
+    header: 'Acciones',
+    cell: ({ row }) => {
+      const product = row.original
+      return h('div', { class: 'flex space-x-2' }, [
+        h(UButton, {
+          size: 'xs',
+          icon: 'i-heroicons-eye',
+          onClick: () => viewProduct(product)
+        }),
+        h(UButton, {
+          size: 'xs',
+          icon: 'i-heroicons-pencil',
+          onClick: () => editProduct(product)
+        }),
+        h(UButton, {
+          size: 'xs',
+          icon: 'i-heroicons-trash',
+          color: 'error',
+          onClick: () => deleteProduct(product)
+        })
+      ])
+    }
   }
 ]
 
-// Computed para opciones de filtros (convertir readonly a mutable)
-const rubroOptions = computed(() => [...filterOptions.value.rubros])
-const tipoProductoOptions = computed(() => [...filterOptions.value.tiposProducto])
-const campanaOptions = computed(() => [...filterOptions.value.campanas])
+// Configuración de filtros para el componente DataTable
+const filterConfig = computed(() => [
+  {
+    key: 'rubro',
+    label: 'Rubro',
+    placeholder: 'Seleccionar rubro',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      ...filterOptions.value.rubros.map(rubro => ({ label: rubro, value: rubro }))
+    ]
+  },
+  {
+    key: 'tipoProducto',
+    label: 'Tipo Producto',
+    placeholder: 'Seleccionar tipo',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      ...filterOptions.value.tiposProducto.map(tipo => ({ label: tipo, value: tipo }))
+    ]
+  },
+  {
+    key: 'campana',
+    label: 'Campaña',
+    placeholder: 'Seleccionar campaña',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      ...filterOptions.value.campanas.map(campana => ({ label: campana, value: campana }))
+    ]
+  }
+])
 
 // Computed para productos filtrados (incluyendo búsqueda secundaria)
 const filteredProducts = computed(() => {
-  let filtered = products.value
-  console.log('Computing filtered products. Total products:', products.value.length)
+  let filtered = [...products.value]
 
   // Búsqueda secundaria
   if (secondarySearch.value) {
-    filtered = filtered.filter(product => 
+    filtered = filtered.filter(product =>
       product.caracteristicas.toLowerCase().includes(secondarySearch.value.toLowerCase()) ||
       product.descripcion.toLowerCase().includes(secondarySearch.value.toLowerCase())
     )
   }
 
-  console.log('Filtered products result:', filtered.length)
+  console.log('Products value:', products.value)
+  console.log('Filtered products result:', filtered)
   return filtered
 })
 
@@ -265,6 +221,25 @@ watch(filters, () => {
   applyFilters()
 }, { deep: true })
 
+// Sincronizar página local con la del composable
+watch(currentPage, (newPage) => {
+  console.log('currentPage changed to:', newPage)
+  localCurrentPage.value = newPage
+})
+
+// Función para manejar cambios en filtros
+const handleFilterChange = (filterType: string, value: string) => {
+  if (value === 'todos') {
+    // Si se selecciona "Todos", eliminar el filtro
+    delete (filters.value as any)[filterType]
+  } else {
+    // Si se selecciona un valor específico, aplicar el filtro
+    (filters.value as any)[filterType] = value
+  }
+  // Aplicar filtros inmediatamente
+  applyFilters()
+}
+
 // Methods
 const onSecondarySearch = () => {
   // La búsqueda secundaria se aplica en el computed
@@ -275,6 +250,11 @@ const onItemsPerPageChange = (newLimit: number) => {
 }
 
 const onPageChange = (page: number) => {
+  console.log('onPageChange called with page:', page)
+  console.log('localCurrentPage before:', localCurrentPage.value)
+  localCurrentPage.value = page
+  console.log('localCurrentPage after:', localCurrentPage.value)
+  console.log('Calling loadProducts with page:', page)
   loadProducts({ page })
 }
 
@@ -286,7 +266,7 @@ const formatPrice = (price: number): string => {
 }
 
 const exportData = async () => {
-  const success = await exportProducts('excel')
+  const success = await exportProducts('xlsx')
   if (success) {
     // Mostrar notificación de éxito
     console.log('Exportación exitosa')
@@ -300,7 +280,7 @@ const viewProduct = (product: ProductMapped) => {
 
 const editProduct = (product: ProductMapped) => {
   // Navegar a la página de edición del producto
-  navigateTo(`/basedatos/productos/${product.id}/edit`)
+  navigateTo(`/basedatos/productos/${product.id}`)
 }
 
 const deleteProduct = async (product: ProductMapped) => {
@@ -322,6 +302,11 @@ onMounted(async () => {
     loadFilterOptions()
   ])
   console.log('Data loading completed')
+  console.log('Initial currentPage:', currentPage.value)
+  console.log('Initial totalPages:', totalPages.value)
+  // Inicializar página local
+  localCurrentPage.value = currentPage.value
+  console.log('Initial localCurrentPage:', localCurrentPage.value)
 })
 </script>
 

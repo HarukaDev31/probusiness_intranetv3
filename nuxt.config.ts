@@ -13,7 +13,15 @@ export default defineNuxtConfig({
     '~/assets/css/tailwind.css'
   ],
 
-
+  ui:{
+    colors: {
+      primary: 'blue',
+      secondary: 'green',
+      accent: 'purple',
+      neutral: 'gray',
+      info: 'blue',
+    }
+  },
 
   // Configuración de variables de entorno
   runtimeConfig: {

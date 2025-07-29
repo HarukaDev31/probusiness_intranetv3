@@ -73,6 +73,7 @@ class ProductService {
   async getProductById(id: number): Promise<ProductResponse> {
     try {
       const response = await apiCall<ProductResponse>(`/api/base-datos/productos/${id}`)
+      console.log('Product response:', response)
       return response
     } catch (error) {
       console.error('Error fetching product:', error)
@@ -140,7 +141,7 @@ class ProductService {
   async getFilterOptions(): Promise<FilterOptions> {
     try {
       console.log('Calling filter options API...')
-      const response = await apiCall<FilterOptionsResponse>('/api/base-datos/productos/filter-options')
+      const response = await apiCall<FilterOptionsResponse>('/api/base-datos/productos/filters/options')
       console.log('Filter options API response:', response)
       
       if (response.status === 'success') {

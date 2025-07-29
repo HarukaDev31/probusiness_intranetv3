@@ -73,11 +73,14 @@ export const useProducts = () => {
       })
 
       console.log('Products response:', response)
+      console.log('Response success:', response.success)
+      console.log('Response data length:', response.data?.length)
 
       if (response.success) {
         // Mapear productos de la API al formato del frontend
         products.value = response.data.map(mapProduct)
         console.log('Mapped products:', products.value)
+        console.log('Products value after mapping:', products.value.length)
         
         // Usar datos de paginación real
         if (response.pagination) {
@@ -95,6 +98,7 @@ export const useProducts = () => {
       } else {
         error.value = response.error || 'Error al cargar productos'
         products.value = []
+        console.log('Error loading products:', response.error)
       }
     } catch (err) {
       error.value = 'Error de conexión'
@@ -102,6 +106,7 @@ export const useProducts = () => {
       products.value = []
     } finally {
       loading.value = false
+      console.log('Loading finished. Products count:', products.value.length)
     }
   }
 
@@ -231,7 +236,7 @@ export const useProducts = () => {
     }
   }
 
-  const exportProducts = async (format: 'excel' | 'csv' | 'pdf' = 'excel'): Promise<boolean> => {
+  const exportProducts = async (format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<boolean> => {
     try {
       const productService = ProductService.getInstance()
       const response = await productService.exportProducts({
