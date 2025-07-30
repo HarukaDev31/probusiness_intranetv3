@@ -6,7 +6,59 @@ export interface Documento {
   id_rubro: number
   observaciones?: string
   documentos?: string[]
+  media?: DocumentoMedia[]
+  rubro?: {
+    id: number
+    nombre: string
+    created_at: string
+    updated_at: string
+  }
   status: 'active' | 'inactive'
+  created_at: string
+  updated_at: string
+}
+
+// Interface para la respuesta jerárquica de documentos especiales
+export interface DocumentoHierarchicalResponse {
+  success: boolean
+  data: DocumentoEntidad[]
+  pagination: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+  }
+  error?: string
+}
+
+// Interface para entidades de documentos especiales
+export interface DocumentoEntidad {
+  id: number
+  nombre: string
+  descripcion: string
+  regulaciones: DocumentoRegulation[]
+}
+
+// Interface para regulaciones de documentos especiales
+export interface DocumentoRegulation {
+  id: number
+  tipo: string
+  observaciones: string
+  documentos: string[]
+  media?: DocumentoMedia[]
+  estado: string
+  created_at: string
+  updated_at: string
+}
+
+// Interface para media de documentos especiales
+export interface DocumentoMedia {
+  id: number
+  id_regulacion: number
+  extension: string
+  peso: number
+  nombre_original: string
+  ruta: string
   created_at: string
   updated_at: string
 }
@@ -130,26 +182,33 @@ class DocumentoService {
   /**
    * Actualizar un documento especial
    */
-  async updateDocumento(id: number, documentoData: Partial<CreateDocumentoRequest>): Promise<DocumentoResponse> {
+  async updateDocumento(id: number, documentoData: Partial<CreateDocumentoRequest> | FormData): Promise<DocumentoResponse> {
     try {
-      const formData = new FormData()
+      let body: any
       
-      // Agregar solo los campos que se van a actualizar
-      Object.entries(documentoData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (key === 'documentos' && Array.isArray(value)) {
-            value.forEach((documento, index) => {
-              formData.append(`documentos[${index}]`, documento)
-            })
-          } else {
-            formData.append(key, value.toString())
+      if (documentoData instanceof FormData) {
+        body = documentoData
+      } else {
+        const formData = new FormData()
+        
+        // Agregar solo los campos que se van a actualizar
+        Object.entries(documentoData).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            if (key === 'documentos' && Array.isArray(value)) {
+              value.forEach((documento, index) => {
+                formData.append(`documentos[${index}]`, documento)
+              })
+            } else {
+              formData.append(key, value.toString())
+            }
           }
-        }
-      })
+        })
+        body = formData
+      }
 
-      const response = await apiCall<DocumentoResponse>(`/api/base-datos/regulaciones/documentos/${id}`, {
-        method: 'PUT',
-        body: formData
+      const response = await apiCall<DocumentoResponse>(`/api/base-datos/regulaciones/documentos`, {
+        method: 'POST',
+        body: body
       })
       return response
     } catch (error) {
@@ -216,6 +275,29 @@ class DocumentoService {
         success: false,
         data: [],
         error: 'Error al obtener los documentos especiales activos'
+      }
+    }
+  }
+
+  /**
+   * Obtener documentos especiales en estructura jerárquica
+   */
+  async getDocumentosHierarchical(): Promise<DocumentoHierarchicalResponse> {
+    try {
+      const response = await apiCall<DocumentoHierarchicalResponse>('/api/base-datos/regulaciones/documentos')
+      return response
+    } catch (error) {
+      console.error('Error fetching documentos hierarchical:', error)
+      return {
+        success: false,
+        data: [],
+        pagination: {
+          current_page: 1,
+          last_page: 1,
+          per_page: 10,
+          total: 0
+        },
+        error: 'Error al obtener los documentos especiales'
       }
     }
   }

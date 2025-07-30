@@ -193,10 +193,82 @@
                     <UButton label="Crear Etiquetado" icon="i-heroicons-plus" color="primary"
                         @click="navigateToCreate('etiquetado')" />
                 </div>
-                <DataTable title="Regulaciones de Etiquetado" icon="i-heroicons-tag" :data="etiquetadoData"
-                    :columns="etiquetadoColumns" :loading="loadingEtiquetado" search-placeholder="Buscar etiquetados..."
-                    :show-export="true" empty-state-message="No se encontraron regulaciones de etiquetado."
-                    @export="exportEtiquetado" />
+                <UCard>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <UIcon name="i-heroicons-tag" class="text-xl mr-2 text-gray-600" />
+                            <h3 class="text-lg font-semibold">Regulaciones de Etiquetado</h3>
+                        </div>
+                        <UButton icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportEtiquetado"
+                            :loading="loadingEtiquetado">
+                            Exportar
+                        </UButton>
+                    </div>
+
+                    <UTable v-model:expanded="expandedEtiquetado" :data="etiquetadoData" :columns="etiquetadoColumns"
+                        :ui="{ tr: 'data-[expanded=true]:bg-elevated/50' }" :loading="loadingEtiquetado"
+                        class="flex-1">
+                        <template #expanded="{ row }">
+                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg m-2">
+                                <h4 class="font-semibold mb-3 text-gray-700 dark:text-gray-300">
+                                    Regulaciones de {{ row.original.nombre }}
+                                </h4>
+                                <div class="space-y-3">
+                                    <div v-for="regulacion in row.original.regulaciones" :key="regulacion.id"
+                                        class="bg-white dark:bg-gray-700 p-3 rounded border hover:shadow-md transition-shadow">
+                                        <div class="flex justify-between items-start mb-3">
+                                            <div class="flex-1">
+                                                <!-- Observaciones -->
+                                                <div v-if="regulacion.observaciones">
+                                                    <span class="text-gray-500 dark:text-gray-400 text-sm">Observaciones:</span>
+                                                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                                                        {{ regulacion.observaciones }}
+                                                    </p>
+                                                </div>
+                                                
+                                                <!-- Imágenes -->
+                                                <div v-if="regulacion.imagenes && regulacion.imagenes.length > 0" class="mt-3">
+                                                    <span class="text-gray-500 dark:text-gray-400 text-sm">Imágenes:</span>
+                                                    <div class="flex gap-2 mt-2 overflow-x-auto">
+                                                        <div 
+                                                            v-for="(imagen, imgIndex) in regulacion.imagenes" 
+                                                            :key="imgIndex"
+                                                            class="relative group cursor-pointer flex-shrink-0"
+                                                            @click="openImageModal(imagen)"
+                                                        >
+                                                            <img 
+                                                                :src="getImageUrl(imagen)" 
+                                                                :alt="`Imagen ${imgIndex + 1}`"
+                                                                class="w-16 h-16 object-cover rounded border border-gray-200 dark:border-gray-700 hover:border-green-500 transition-colors"
+                                                            />
+                                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
+                                                                <UIcon 
+                                                                    name="i-heroicons-magnifying-glass-plus" 
+                                                                    class="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="flex items-center gap-2 ml-4">
+                                                <UButton
+                                                    icon="i-heroicons-pencil-square"
+                                                    variant="ghost"
+                                                    size="xs"
+                                                    color="green"
+                                                    @click="editEtiquetado(regulacion.id)"
+                                                    title="Editar"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </UTable>
+                </UCard>
             </div>
 
             <!-- Tab Documentos Especiales -->
@@ -205,10 +277,174 @@
                     <UButton label="Crear Documento Especial" icon="i-heroicons-plus" color="primary"
                         @click="navigateToCreate('documentos')" />
                 </div>
-                <DataTable title="Documentos Especiales" icon="i-heroicons-document" :data="documentosData"
-                    :columns="documentosColumns" :loading="loadingDocumentos"
-                    search-placeholder="Buscar documentos especiales..." :show-export="true"
-                    empty-state-message="No se encontraron documentos especiales." @export="exportDocumentos" />
+                <UCard>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <UIcon name="i-heroicons-document" class="text-xl mr-2 text-gray-600" />
+                            <h3 class="text-lg font-semibold">Regulaciones de Documentos Especiales</h3>
+                        </div>
+                        <UButton icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportDocumentos"
+                            :loading="loadingDocumentos">
+                            Exportar
+                        </UButton>
+                    </div>
+
+                    <UTable v-model:expanded="expandedDocumentos" :data="documentosData" :columns="documentosColumns"
+                        :ui="{ tr: 'data-[expanded=true]:bg-elevated/50' }" :loading="loadingDocumentos"
+                        class="flex-1">
+                        <template #expanded="{ row }">
+                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg m-2">
+                                <h4 class="font-semibold mb-3 text-gray-700 dark:text-gray-300">
+                                    Regulaciones de {{ row.original.nombre }}
+                                </h4>
+                                <div class="space-y-3">
+                                    <div v-for="regulacion in row.original.regulaciones" :key="regulacion.id"
+                                        class="bg-white dark:bg-gray-700 p-3 rounded border hover:shadow-md transition-shadow">
+                                        <div class="flex justify-between items-start mb-3">
+                                            <div class="flex-1">
+                                                <!-- Observaciones -->
+                                                <div v-if="regulacion.observaciones">
+                                                    <span class="text-gray-500 dark:text-gray-400 text-sm">Observaciones:</span>
+                                                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                                                        {{ regulacion.observaciones }}
+                                                    </p>
+                                                </div>
+                                                
+                                                <!-- Documentos -->
+                                                <div v-if="(regulacion.documentos && regulacion.documentos.length > 0) || (regulacion.media && regulacion.media.length > 0)" class="mt-3">
+                                                    <span class="text-gray-500 dark:text-gray-400 text-sm">Documentos:</span>
+                                                    <div class="flex gap-2 mt-2 overflow-x-auto">
+                                                        <!-- Documentos como strings (rutas) -->
+                                                        <div 
+                                                            v-for="(documento, docIndex) in regulacion.documentos" 
+                                                            :key="`doc-${docIndex}`"
+                                                            class="relative group cursor-pointer flex-shrink-0"
+                                                            @click="openDocumentModal(documento)"
+                                                        >
+                                                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors flex items-center justify-center">
+                                                                <UIcon 
+                                                                    name="i-heroicons-document" 
+                                                                    class="w-8 h-8 text-gray-500 dark:text-gray-400"
+                                                                />
+                                                            </div>
+                                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
+                                                                <UIcon 
+                                                                    name="i-heroicons-arrow-down-tray" 
+                                                                    class="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                />
+                                                            </div>
+                                                            <div class="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
+                                                                {{ getFileExtension(documento) }}
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Documentos como objetos media -->
+                                                        <div 
+                                                            v-for="(documento, docIndex) in regulacion.media" 
+                                                            :key="`media-${docIndex}`"
+                                                            class="relative group cursor-pointer flex-shrink-0"
+                                                            @click="openDocumentModal(documento.ruta)"
+                                                        >
+                                                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors flex items-center justify-center">
+                                                                <UIcon 
+                                                                    name="i-heroicons-document" 
+                                                                    class="w-8 h-8 text-gray-500 dark:text-gray-400"
+                                                                />
+                                                            </div>
+                                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
+                                                                <UIcon 
+                                                                    name="i-heroicons-arrow-down-tray" 
+                                                                    class="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                />
+                                                            </div>
+                                                            <div class="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
+                                                                {{ documento.extension.toUpperCase() }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="flex items-center gap-2 ml-4">
+                                                <UButton
+                                                    icon="i-heroicons-pencil-square"
+                                                    variant="ghost"
+                                                    size="xs"
+                                                    color="green"
+                                                    @click="editDocumento(regulacion.id)"
+                                                    title="Editar"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </UTable>
+                </UCard>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div v-if="showImageModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" @click="closeImageModal">
+        <div class="relative max-w-4xl max-h-[90vh] overflow-hidden" @click.stop>
+            <!-- Close button -->
+            <UButton
+                icon="i-heroicons-x-mark"
+                variant="ghost"
+                size="sm"
+                class="absolute top-4 right-4 z-10 bg-white dark:bg-gray-800 rounded-full shadow-lg"
+                @click="closeImageModal"
+            />
+            
+            <!-- Image container -->
+            <div class="relative overflow-hidden rounded-lg">
+                <img 
+                    :src="selectedImage" 
+                    :alt="'Vista previa de imagen'"
+                    class="max-w-full max-h-[80vh] object-contain select-none"
+                    @mousedown="handleMouseDown"
+                    @mousemove="handleMouseMove"
+                    @mouseup="handleMouseUp"
+                    @mouseleave="handleMouseLeave"
+                    @wheel="handleWheel"
+                    @dragstart.prevent
+                    @selectstart.prevent
+                    draggable="false"
+                    :style="{
+                        transform: `scale(${imageScale}) translate(${imagePosition.x}px, ${imagePosition.y}px)`,
+                        transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                        cursor: isDragging ? 'grabbing' : 'grab'
+                    }"
+                />
+            </div>
+            
+            <!-- Zoom controls -->
+            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2">
+                <UButton
+                    icon="i-heroicons-minus"
+                    variant="ghost"
+                    size="sm"
+                    @click="zoomOut"
+                    :disabled="imageScale <= 0.5"
+                />
+                <span class="text-sm font-medium min-w-[60px] text-center">
+                    {{ Math.round(imageScale * 100) }}%
+                </span>
+                <UButton
+                    icon="i-heroicons-plus"
+                    variant="ghost"
+                    size="sm"
+                    @click="zoomIn"
+                    :disabled="imageScale >= 3"
+                />
+                <UButton
+                    icon="i-heroicons-arrow-path"
+                    variant="ghost"
+                    size="sm"
+                    @click="resetImage"
+                />
             </div>
         </div>
     </div>
@@ -218,6 +454,8 @@
 import { ref, onMounted, watch, h } from 'vue'
 import AntidumpingService from '~/services/antidumpingService'
 import PermisoService from '~/services/permisoService'
+import EtiquetadoService from '~/services/etiquetadoService'
+import DocumentoService from '~/services/documentoService'
 
 // Types
 interface RegulationItem {
@@ -350,6 +588,83 @@ interface PermisoRegulation {
   updated_at: string
 }
 
+// Interface para la respuesta jerárquica de etiquetado
+interface EtiquetadoHierarchicalResponse {
+  success: boolean
+  data: EtiquetadoEntidad[]
+  pagination: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+  }
+  error?: string
+}
+
+// Interface para entidades de etiquetado
+interface EtiquetadoEntidad {
+  id: number
+  nombre: string
+  descripcion: string
+  regulaciones: EtiquetadoRegulation[]
+}
+
+// Interface para regulaciones de etiquetado
+interface EtiquetadoRegulation {
+  id: number
+  tipo: string
+  observaciones: string
+  imagenes: string[]
+  estado: string
+  created_at: string
+  updated_at: string
+}
+
+// Interface para la respuesta jerárquica de documentos especiales
+interface DocumentoHierarchicalResponse {
+  success: boolean
+  data: DocumentoEntidad[]
+  pagination: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+  }
+  error?: string
+}
+
+// Interface para entidades de documentos especiales
+interface DocumentoEntidad {
+  id: number
+  nombre: string
+  descripcion: string
+  regulaciones: DocumentoRegulation[]
+}
+
+// Interface para regulaciones de documentos especiales
+interface DocumentoRegulation {
+  id: number
+  tipo: string
+  observaciones: string
+  documentos: string[]
+  media?: DocumentoMedia[]
+  estado: string
+  created_at: string
+  updated_at: string
+}
+
+// Interface para media de documentos especiales
+interface DocumentoMedia {
+  id: number
+  id_regulacion: number
+  extension: string
+  peso: number
+  nombre_original: string
+  ruta: string
+  created_at: string
+  updated_at: string
+}
+
 // Tabs configuration
 const tabs = [
     {
@@ -380,10 +695,14 @@ const activeTab = ref('antidumping')
 // Service instances
 const antidumpingService = AntidumpingService.getInstance()
 const permisoService = PermisoService.getInstance()
+const etiquetadoService = EtiquetadoService.getInstance()
+const documentoService = DocumentoService.getInstance()
 
 // Expanded state for tables
 const expandedAntidumping = ref({})
 const expandedPermisos = ref({})
+const expandedEtiquetado = ref({})
+const expandedDocumentos = ref({})
 
 // Loading states
 const loadingAntidumping = ref(false)
@@ -394,8 +713,17 @@ const loadingDocumentos = ref(false)
 // Data
 const antidumpingData = ref<ProductRubro[]>([])
 const permisosData = ref<PermisoEntidad[]>([])
-const etiquetadoData = ref<RegulationItem[]>([])
-const documentosData = ref<RegulationItem[]>([])
+const etiquetadoData = ref<EtiquetadoEntidad[]>([])
+const documentosData = ref<DocumentoEntidad[]>([])
+
+// Image modal state
+const showImageModal = ref(false)
+const selectedImage = ref('')
+const imageScale = ref(1)
+const imagePosition = ref({ x: 0, y: 0 })
+const isDragging = ref(false)
+const dragStart = ref({ x: 0, y: 0 })
+const dragOffset = ref({ x: 0, y: 0 })
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
 
@@ -517,59 +845,121 @@ const permisosColumns = [
     }
 ]
 
-// Columns for Etiquetado
+// Columns for Etiquetado (hierarchical structure)
 const etiquetadoColumns = [
     {
+        id: 'expand',
+        cell: ({ row }: { row: any }) =>
+            h(UButton, {
+                color: 'neutral',
+                variant: 'ghost',
+                icon: 'i-lucide-chevron-down',
+                square: true,
+                'aria-label': 'Expand',
+                ui: {
+                    leadingIcon: [
+                        'transition-transform',
+                        row.getIsExpanded() ? 'duration-200 rotate-180' : ''
+                    ]
+                },
+                onClick: () => row.toggleExpanded()
+            })
+    },
+    {
         accessorKey: 'id',
-        header: 'ID'
+        header: 'ID',
+        cell: ({ row }: { row: any }) => `#${row.getValue('id')}`
     },
     {
-        accessorKey: 'producto',
-        header: 'Producto'
+        accessorKey: 'nombre',
+        header: 'Rubro'
     },
     {
-        accessorKey: 'tipoEtiquetado',
-        header: 'Tipo Etiquetado'
+        accessorKey: 'descripcion',
+        header: 'Descripción'
     },
     {
-        accessorKey: 'requisitos',
-        header: 'Requisitos'
+        accessorKey: 'regulaciones',
+        header: 'Regulaciones',
+        cell: ({ row }: { row: any }) => {
+            const regulaciones = row.getValue('regulaciones') as EtiquetadoRegulation[]
+            return h(UBadge, {
+                variant: 'subtle',
+                color: 'primary'
+            }, `${regulaciones.length} regulaciones`)
+        }
     },
     {
         accessorKey: 'estado',
-        header: 'Estado'
-    },
-    {
-        accessorKey: 'fecha',
-        header: 'Fecha'
+        header: 'Estado',
+        cell: ({ row }: { row: any }) => {
+            const regulaciones = row.getValue('regulaciones') as EtiquetadoRegulation[]
+            const activas = regulaciones.filter(r => r.estado === 'active').length
+            const total = regulaciones.length
+            return h(UBadge, {
+                variant: 'subtle',
+                color: activas === total ? 'success' : activas > 0 ? 'warning' : 'error'
+            }, `${activas}/${total} activas`)
+        }
     }
 ]
 
-// Columns for Documentos Especiales
+// Columns for Documentos Especiales (hierarchical structure)
 const documentosColumns = [
     {
+        id: 'expand',
+        cell: ({ row }: { row: any }) =>
+            h(UButton, {
+                color: 'neutral',
+                variant: 'ghost',
+                icon: 'i-lucide-chevron-down',
+                square: true,
+                'aria-label': 'Expand',
+                ui: {
+                    leadingIcon: [
+                        'transition-transform',
+                        row.getIsExpanded() ? 'duration-200 rotate-180' : ''
+                    ]
+                },
+                onClick: () => row.toggleExpanded()
+            })
+    },
+    {
         accessorKey: 'id',
-        header: 'ID'
+        header: 'ID',
+        cell: ({ row }: { row: any }) => `#${row.getValue('id')}`
     },
     {
-        accessorKey: 'producto',
-        header: 'Producto'
+        accessorKey: 'nombre',
+        header: 'Rubro'
     },
     {
-        accessorKey: 'tipoDocumento',
-        header: 'Tipo Documento'
+        accessorKey: 'descripcion',
+        header: 'Descripción'
     },
     {
-        accessorKey: 'requisitos',
-        header: 'Requisitos'
+        accessorKey: 'regulaciones',
+        header: 'Regulaciones',
+        cell: ({ row }: { row: any }) => {
+            const regulaciones = row.getValue('regulaciones') as DocumentoRegulation[]
+            return h(UBadge, {
+                variant: 'subtle',
+                color: 'primary'
+            }, `${regulaciones.length} regulaciones`)
+        }
     },
     {
         accessorKey: 'estado',
-        header: 'Estado'
-    },
-    {
-        accessorKey: 'fecha',
-        header: 'Fecha'
+        header: 'Estado',
+        cell: ({ row }: { row: any }) => {
+            const regulaciones = row.getValue('regulaciones') as DocumentoRegulation[]
+            const activas = regulaciones.filter(r => r.estado === 'active').length
+            const total = regulaciones.length
+            return h(UBadge, {
+                variant: 'subtle',
+                color: activas === total ? 'success' : activas > 0 ? 'warning' : 'error'
+            }, `${activas}/${total} activas`)
+        }
     }
 ]
 
@@ -663,28 +1053,34 @@ const loadPermisosData = async () => {
 const loadEtiquetadoData = async () => {
     loadingEtiquetado.value = true
     try {
-        // Simular carga de datos
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        etiquetadoData.value = [
-            {
-                id: 1,
-                producto: 'Producto E',
-                tipoEtiquetado: 'Etiquetado Nutricional',
-                requisitos: 'Información nutricional detallada, ingredientes, alérgenos',
-                estado: 'Aprobado',
-                fecha: '2024-01-22'
-            },
-            {
-                id: 2,
-                producto: 'Producto F',
-                tipoEtiquetado: 'Etiquetado de Seguridad',
-                requisitos: 'Advertencias de seguridad, instrucciones de uso',
-                estado: 'Pendiente',
-                fecha: '2024-01-19'
-            }
-        ]
+        // Llamar al servicio para obtener los datos de etiquetado
+        const response = await etiquetadoService.getEtiquetadosHierarchical()
+        
+        if (response.success && response.data) {
+            // El backend ya devuelve la estructura jerárquica correcta
+            etiquetadoData.value = response.data.map(rubro => ({
+                id: rubro.id,
+                nombre: rubro.nombre,
+                descripcion: rubro.descripcion,
+                regulaciones: rubro.regulaciones.map(regulacion => ({
+                    id: regulacion.id,
+                    tipo: regulacion.tipo,
+                    observaciones: regulacion.observaciones,
+                    imagenes: regulacion.imagenes || [],
+                    estado: regulacion.estado,
+                    created_at: regulacion.created_at,
+                    updated_at: regulacion.updated_at
+                }))
+            }))
+            
+            console.log('Datos de etiquetado cargados:', etiquetadoData.value)
+        } else {
+            console.error('Error al cargar datos de etiquetado:', response.error)
+            etiquetadoData.value = []
+        }
     } catch (error) {
         console.error('Error loading etiquetado data:', error)
+        etiquetadoData.value = []
     } finally {
         loadingEtiquetado.value = false
     }
@@ -693,28 +1089,35 @@ const loadEtiquetadoData = async () => {
 const loadDocumentosData = async () => {
     loadingDocumentos.value = true
     try {
-        // Simular carga de datos
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        documentosData.value = [
-            {
-                id: 1,
-                producto: 'Producto G',
-                tipoDocumento: 'Certificado Sanitario',
-                requisitos: 'Certificado de salud animal, análisis de laboratorio',
-                estado: 'Aprobado',
-                fecha: '2024-01-25'
-            },
-            {
-                id: 2,
-                producto: 'Producto H',
-                tipoDocumento: 'Permiso Ambiental',
-                requisitos: 'Estudio de impacto ambiental, certificado de cumplimiento',
-                estado: 'Pendiente',
-                fecha: '2024-01-23'
-            }
-        ]
+        // Llamar al servicio para obtener los datos de documentos especiales
+        const response = await documentoService.getDocumentosHierarchical()
+        
+        if (response.success && response.data) {
+            // El backend ya devuelve la estructura jerárquica correcta
+            documentosData.value = response.data.map(rubro => ({
+                id: rubro.id,
+                nombre: rubro.nombre,
+                descripcion: rubro.descripcion,
+                regulaciones: rubro.regulaciones.map(regulacion => ({
+                    id: regulacion.id,
+                    tipo: regulacion.tipo,
+                    observaciones: regulacion.observaciones,
+                    documentos: regulacion.documentos || [],
+                    media: regulacion.media || [],
+                    estado: regulacion.estado,
+                    created_at: regulacion.created_at,
+                    updated_at: regulacion.updated_at
+                }))
+            }))
+            
+            console.log('Datos de documentos especiales cargados:', documentosData.value)
+        } else {
+            console.error('Error al cargar datos de documentos especiales:', response.error)
+            documentosData.value = []
+        }
     } catch (error) {
         console.error('Error loading documentos data:', error)
+        documentosData.value = []
     } finally {
         loadingDocumentos.value = false
     }
@@ -774,6 +1177,112 @@ const viewPermisoDetail = (regulationId: number) => {
 const editPermiso = (regulationId: number) => {
   console.log('Navigating to edit permiso:', regulationId)
   navigateTo(`/basedatos/regulaciones/permisos/editar/${regulationId}`)
+}
+
+// View etiquetado detail
+const viewEtiquetadoDetail = (regulationId: number) => {
+  navigateTo(`/basedatos/regulaciones/etiquetado/${regulationId}`)
+}
+
+// Edit etiquetado
+const editEtiquetado = (regulationId: number) => {
+  console.log('Navigating to edit etiquetado:', regulationId)
+  navigateTo(`/basedatos/regulaciones/etiquetado/editar/${regulationId}`)
+}
+
+// Edit documento especial
+const editDocumento = (regulationId: number) => {
+  console.log('Navigating to edit documento:', regulationId)
+  navigateTo(`/basedatos/regulaciones/documentos/editar/${regulationId}`)
+}
+
+// Open document modal
+const openDocumentModal = (documentUrl: string) => {
+  const fullUrl = `http://localhost:8000${documentUrl}`
+  window.open(fullUrl, '_blank')
+}
+
+// Get file extension from path
+const getFileExtension = (filePath: string): string => {
+  const extension = filePath.split('.').pop()?.toUpperCase() || 'FILE'
+  return extension
+}
+
+// Image modal functions
+const getImageUrl = (ruta: string) => {
+  return `http://localhost:8000${ruta}`
+}
+
+const openImageModal = (imageUrl: string) => {
+  selectedImage.value = getImageUrl(imageUrl)
+  showImageModal.value = true
+  resetImage()
+}
+
+const closeImageModal = () => {
+  showImageModal.value = false
+  selectedImage.value = ''
+  resetImage()
+}
+
+const resetImage = () => {
+  imageScale.value = 1
+  imagePosition.value = { x: 0, y: 0 }
+  isDragging.value = false
+}
+
+const zoomIn = () => {
+  if (imageScale.value < 3) {
+    imageScale.value = Math.min(3, imageScale.value + 0.25)
+  }
+}
+
+const zoomOut = () => {
+  if (imageScale.value > 0.5) {
+    imageScale.value = Math.max(0.5, imageScale.value - 0.25)
+  }
+}
+
+const handleMouseDown = (event: MouseEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  isDragging.value = true
+  dragStart.value = { x: event.clientX, y: event.clientY }
+  dragOffset.value = { ...imagePosition.value }
+}
+
+const handleMouseMove = (event: MouseEvent) => {
+  if (!isDragging.value) return
+  
+  event.preventDefault()
+  event.stopPropagation()
+  
+  const deltaX = event.clientX - dragStart.value.x
+  const deltaY = event.clientY - dragStart.value.y
+  
+  imagePosition.value = {
+    x: dragOffset.value.x + deltaX,
+    y: dragOffset.value.y + deltaY
+  }
+}
+
+const handleMouseUp = () => {
+  isDragging.value = false
+}
+
+const handleMouseLeave = () => {
+  isDragging.value = false
+}
+
+const handleWheel = (event: WheelEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  
+  if (event.deltaY < 0) {
+    zoomIn()
+  } else {
+    zoomOut()
+  }
 }
 
 // Watch for tab changes to load data

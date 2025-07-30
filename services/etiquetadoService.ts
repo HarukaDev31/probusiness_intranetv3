@@ -29,6 +29,36 @@ export interface EtiquetadoListResponse {
   error?: string
 }
 
+// Interfaces para respuesta jerárquica
+export interface EtiquetadoHierarchicalResponse {
+  success: boolean
+  data: EtiquetadoEntidad[]
+  pagination: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+  }
+  error?: string
+}
+
+export interface EtiquetadoEntidad {
+  id: number
+  nombre: string
+  descripcion: string
+  regulaciones: EtiquetadoRegulation[]
+}
+
+export interface EtiquetadoRegulation {
+  id: number
+  tipo: string
+  observaciones: string
+  imagenes: string[]
+  estado: string
+  created_at: string
+  updated_at: string
+}
+
 // Service class
 class EtiquetadoService {
   private static instance: EtiquetadoService
@@ -105,6 +135,41 @@ class EtiquetadoService {
       return {
         success: false,
         data: [],
+        error: 'Error al obtener las regulaciones de etiquetado'
+      }
+    }
+  }
+
+  /**
+   * Obtener lista jerárquica de regulaciones de etiquetado
+   */
+  async getEtiquetadosHierarchical(params: {
+    page?: number
+    limit?: number
+    search?: string
+  } = {}): Promise<EtiquetadoHierarchicalResponse> {
+    try {
+      const queryParams = new URLSearchParams()
+      
+      if (params.page) queryParams.append('page', params.page.toString())
+      if (params.limit) queryParams.append('limit', params.limit.toString())
+      if (params.search) queryParams.append('search', params.search)
+
+      const response = await apiCall<EtiquetadoHierarchicalResponse>(
+        `/api/base-datos/regulaciones/etiquetado${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+      )
+      return response
+    } catch (error) {
+      console.error('Error fetching etiquetados hierarchical list:', error)
+      return {
+        success: false,
+        data: [],
+        pagination: {
+          current_page: 1,
+          last_page: 1,
+          per_page: 10,
+          total: 0
+        },
         error: 'Error al obtener las regulaciones de etiquetado'
       }
     }

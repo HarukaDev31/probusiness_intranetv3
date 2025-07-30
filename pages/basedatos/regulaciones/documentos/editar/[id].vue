@@ -4,379 +4,492 @@
     <div class="mb-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center">
-          <UButton label="Volver" icon="i-heroicons-arrow-left" variant="outline" @click="goBack" class="mr-4" />
+          <UButton 
+            label="Volver" 
+            icon="i-heroicons-arrow-left"
+            variant="outline"
+            @click="goBack"
+            class="mr-4"
+          />
           <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-              <UIcon name="i-heroicons-pencil-square" class="text-blue-600 mr-3 text-2xl" />
-              Editar Regulación de Documentos Especiales
+              <UIcon name="i-heroicons-pencil-square" class="text-green-600 mr-3 text-2xl" />
+              Editar Documento Especial
             </h1>
             <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">
-              Modificar información de la regulación de documentos especiales
-              <span class="text-red-500 ml-1">* Campos requeridos</span>
+              Modifica la información del documento especial
             </p>
           </div>
         </div>
         <UButton 
           label="Guardar" 
-          icon="i-heroicons-document-arrow-down" 
-          color="primary" 
+          icon="i-heroicons-document-arrow-down"
+          color="primary"
           :loading="isSubmitting"
           :disabled="isSubmitting"
-          @click="saveForm" 
+          @click="saveForm"
         />
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading">
-      <!-- Header Skeleton -->
-      <div class="mb-6">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center">
-            <div class="w-20 h-10 bg-gray-200 rounded-lg animate-pulse mr-4"></div>
-            <div>
-              <div class="w-64 h-8 bg-gray-200 rounded-lg animate-pulse mb-2"></div>
-              <div class="w-80 h-4 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-          <div class="w-24 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-        </div>
-      </div>
-
-      <!-- Form Skeleton -->
+    <div v-if="loading" class="space-y-6">
       <UCard>
-        <div class="space-y-6">
-          <!-- Product Selector Skeleton -->
-          <div class="max-w-md">
-            <div class="flex items-center justify-between mb-2">
-              <div class="w-40 h-4 bg-gray-200 rounded animate-pulse"></div>
-              <div class="w-24 h-6 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-            <div class="w-full h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+        <div class="space-y-4">
+          <div class="animate-pulse">
+            <div class="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+            <div class="h-10 bg-gray-200 rounded"></div>
           </div>
-
-          <!-- Observations Skeleton -->
-          <div>
-            <div class="w-28 h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
-            <div class="w-full h-24 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div class="animate-pulse">
+            <div class="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+            <div class="h-32 bg-gray-200 rounded"></div>
+          </div>
+          <div class="animate-pulse">
+            <div class="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+            <div class="h-20 bg-gray-200 rounded"></div>
           </div>
         </div>
       </UCard>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="text-center py-12">
-      <UIcon name="i-heroicons-exclamation-triangle" class="w-12 h-12 text-red-500 mx-auto mb-4" />
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error al cargar la regulación</h3>
-      <p class="text-gray-600 dark:text-gray-400 mb-4">{{ error }}</p>
-      <UButton label="Intentar de nuevo" @click="loadRegulation" />
     </div>
 
     <!-- Form -->
-    <div v-else-if="regulation">
-      <UCard>
-        <div class="space-y-6">
-          <!-- Product Selector -->
-          <div class="max-w-md">
-            <div class="flex items-center justify-between mb-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                <UIcon name="i-heroicons-magnifying-glass" class="mr-1" />
-                Producto Seleccionado
-                <span class="text-red-500 ml-1">*</span>
-              </label>
-              <UModal v-model="showCreateProductModal" title="Crear Nuevo Producto" :triger="true">
-                <UButton label="Crear Producto" icon="i-heroicons-plus" size="xs" variant="outline"
-                  @click="showCreateProductModal = true" />
-                <template #body>
-                  <div class="space-y-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Nombre del Producto
-                      </label>
-                      <UInput v-model="newProduct.nombre" placeholder="Ej: Zapatillas deportivas" class="w-full" />
-                    </div>
-                  </div>
-                </template>
-
-                <template #footer="{ close }">
-                  <div class="flex justify-end gap-3">
-                    <UButton label="Cancelar" variant="outline" @click="close" />
-                    <UButton label="Crear Producto" color="primary" @click="() => {
-                      createProduct();
-                      close();
-                    }" />
-                  </div>
-                </template>
-              </UModal>
-            </div>
-            <UInputMenu 
-              v-model="formData.producto" 
-              :items="productOptions" 
-              :loading="loadingProducts"
-              placeholder="Buscar producto..." 
-              class="w-full" 
-              :color="validationErrors.producto ? 'error' : undefined"
-              @update:searchTerm="searchProducts"
-              @update:model-value="clearFieldError('producto')"
-            />
-            <p v-if="validationErrors.producto" class="mt-1 text-sm text-red-600 dark:text-red-400">
-              {{ validationErrors.producto }}
-            </p>
-          </div>
-
-          <!-- Observations -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Observaciones
+    <UCard v-else>
+      <div class="space-y-6">
+        <!-- Product Selector -->
+        <div class="max-w-md">
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <UIcon name="i-heroicons-magnifying-glass" class="mr-1" />
+              Producto Seleccionado
+              <span class="text-red-500 ml-1">*</span>
             </label>
-            <UTextarea v-model="formData.observaciones" placeholder="Agregar observaciones sobre los documentos especiales..."
-              :rows="3" class="w-full" />
+            <UModal v-model="showCreateProductModal" title="Crear Nuevo Producto" :triger="true">
+              <UButton label="Crear Producto" icon="i-heroicons-plus" size="xs" variant="outline"
+                @click="showCreateProductModal = true" />
+              <template #body>
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Nombre del Producto
+                    </label>
+                    <UInput v-model="newProduct.nombre" placeholder="Ej: Zapatillas deportivas" class="w-full" />
+                  </div>
+                </div>
+              </template>
+
+              <template #footer="{ close }">
+                <div class="flex justify-end gap-3">
+                  <UButton label="Cancelar" variant="outline" @click="close" />
+                  <UButton label="Crear Producto" color="primary" @click="() => {
+                    createProduct();
+                    close();
+                  }" />
+                </div>
+              </template>
+            </UModal>
+          </div>
+          <UInputMenu 
+            v-model="formData.producto" 
+            :items="productOptions" 
+            :loading="loadingProducts"
+            placeholder="Buscar producto..." 
+            class="w-full" 
+            :color="validationErrors.producto ? 'error' : undefined"
+            @update:searchTerm="searchProducts"
+            @update:model-value="clearFieldError('producto')"
+          />
+          <p v-if="validationErrors.producto" class="mt-1 text-sm text-red-600 dark:text-red-400">
+            {{ validationErrors.producto }}
+          </p>
+        </div>
+
+        <!-- Existing Documents -->
+        <div v-if="existingDocuments.length > 0">
+          <div class="flex justify-between items-center mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Documentos Existentes
+            </label>
+            <div class="flex gap-2">
+              <UButton 
+                label="Eliminar seleccionados" 
+                icon="i-heroicons-trash"
+                size="xs"
+                color="error"
+                variant="outline"
+                @click="deleteSelectedDocuments"
+                :disabled="documentsToDelete.length === 0"
+              />
+              <UButton 
+                label="Deseleccionar todas" 
+                icon="i-heroicons-x-mark"
+                size="xs"
+                variant="outline"
+                @click="deselectAllDocuments"
+                :disabled="documentsToDelete.length === 0"
+              />
+            </div>
+          </div>
+          <div class="flex gap-3 overflow-x-auto pb-2">
+            <div 
+              v-for="(documento, index) in existingDocuments" 
+              :key="index"
+              class="relative flex-shrink-0 w-32 h-32 border-2 rounded-lg flex items-center justify-center transition-all cursor-pointer"
+              :class="documentsToDelete.includes(index) 
+                ? 'border-red-500 bg-red-50 dark:bg-red-900/20' 
+                : 'border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700'"
+              @click="toggleDocumentDelete(index)"
+            >
+              <div class="text-center">
+                <UIcon name="i-heroicons-document" class="w-8 h-8 text-gray-400 mx-auto mb-1" />
+                <span class="text-xs text-gray-500">{{ getFileName(documento) }}</span>
+              </div>
+              <div v-if="documentsToDelete.includes(index)" class="absolute top-1 right-1">
+                <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-red-500" />
+              </div>
+            </div>
           </div>
         </div>
-      </UCard>
-    </div>
+
+        <!-- New Documents Upload -->
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Nuevos Documentos
+            </label>
+            <UButton 
+              label="Agregar documento" 
+              icon="i-heroicons-plus"
+              size="xs"
+              @click="addDocumentSlot"
+            />
+          </div>
+          <div class="flex gap-3 overflow-x-auto pb-2">
+            <div 
+              v-for="(slot, index) in documentSlots" 
+              :key="index"
+              class="relative flex-shrink-0 w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+              @click="selectDocument(index)"
+            >
+              <div v-if="!slot.file" class="text-center">
+                <UIcon name="i-heroicons-document" class="w-8 h-8 text-gray-400 mx-auto mb-1" />
+                <span class="text-xs text-gray-500">Agregar documento</span>
+              </div>
+              <div v-else class="text-center">
+                <UIcon name="i-heroicons-document-check" class="w-8 h-8 text-green-500 mx-auto mb-1" />
+                <span class="text-xs text-gray-600">{{ slot.file.name }}</span>
+              </div>
+                             <UButton
+                 v-if="slot.file"
+                 icon="i-heroicons-x-mark"
+                 size="xs"
+                 color="error"
+                 variant="ghost"
+                 class="absolute top-1 right-1"
+                 @click.stop="removeDocumentSlot(index)"
+               />
+            </div>
+          </div>
+        </div>
+
+        <!-- Observations -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Observaciones
+          </label>
+          <UTextarea 
+            v-model="formData.observaciones"
+            placeholder="Agregar observaciones sobre los documentos especiales..."
+            :rows="3"
+            class="w-full"
+          />
+        </div>
+      </div>
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import DocumentoService from '~/services/documentoService'
 import ProductRubroService from '~/services/productRubroService'
+import DocumentoService, { type CreateDocumentoRequest } from '~/services/documentoService'
+import type { ProductRubro } from '~/types/product-rubro'
 
-// Types
-interface DocumentoRegulation {
-  id: number
-  id_rubro: number
-  observaciones?: string
-  documentos?: string[]
-  status: 'active' | 'inactive'
-  created_at: string
-  updated_at: string
-}
-
-interface ProductOption {
-  label: string
-  value: string
-}
-
-// Route and router
-const route = useRoute()
+// Router and route
 const router = useRouter()
+const route = useRoute()
+const regulationId = route.params.id as string
 
 // Service instances
-const documentoService = DocumentoService.getInstance()
 const productRubroService = ProductRubroService.getInstance()
-
-// Reactive data
-const regulation = ref<DocumentoRegulation | null>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
-const isSubmitting = ref(false)
-const validationErrors = ref<Record<string, string>>({})
+const documentoService = DocumentoService.getInstance()
 
 // Form data
 const formData = ref({
-  observaciones: '',
-  producto: null as any
+  producto: null as any,
+  observaciones: ''
 })
 
-// Product selection
-const productOptions = ref<ProductOption[]>([])
+// Validation errors
+const validationErrors = ref({
+  producto: ''
+})
+
+// Loading states
+const loading = ref(true)
+const isSubmitting = ref(false)
 const loadingProducts = ref(false)
+
+// Product options (reactive)
+const productOptions = ref<{ label: string; value: string; }[]>([])
+
+// Modal state
 const showCreateProductModal = ref(false)
-const creatingProduct = ref(false)
+
+// New product form
 const newProduct = ref({
   nombre: ''
 })
 
-// Get regulation ID from route
-const regulationId = parseInt(route.params.id as string)
+// Existing documents
+const existingDocuments = ref<string[]>([])
+const documentsToDelete = ref<number[]>([])
+
+// Document slots for new uploads
+interface DocumentSlot {
+  file: File | null
+}
+
+const documentSlots = ref<DocumentSlot[]>([
+  { file: null }
+])
+
+// Validation methods
+const validateField = (field: string, value: any): string => {
+  switch (field) {
+    case 'producto':
+      return !value || !value.value ? 'Producto es requerido' : ''
+    default:
+      return ''
+  }
+}
+
+const validateForm = (): boolean => {
+  const errors = {
+    producto: validateField('producto', formData.value.producto)
+  }
+  
+  validationErrors.value = errors
+  
+  return !Object.values(errors).some(error => error !== '')
+}
+
+const clearFieldError = (field: string) => {
+  validationErrors.value[field as keyof typeof validationErrors.value] = ''
+}
 
 // Methods
 const goBack = () => {
   router.back()
 }
 
-const loadRegulation = async () => {
-  loading.value = true
-  error.value = null
-  
+const searchProducts = async (searchTerm: string) => {
   try {
-    const response = await documentoService.getDocumentoById(regulationId)
-    
-          if (response.success && response.data) {
-        regulation.value = {
-          id: response.data.id,
-          id_rubro: response.data.id_rubro,
-          observaciones: response.data.observaciones,
-          documentos: response.data.documentos,
-          status: response.data.status,
-          created_at: response.data.created_at,
-          updated_at: response.data.updated_at
-        }
-      
-      // Populate form data
-      formData.value = {
-        observaciones: regulation.value.observaciones || '',
-        producto: null
-      }
-      
-      // Load product options and set selected product
-      await searchProducts('')
-      
-      // Find and set the selected product
-      const selectedProduct = productOptions.value.find(p => p.value === regulation.value?.id_rubro.toString())
-      if (selectedProduct) {
-        formData.value.producto = selectedProduct
-        console.log('Producto seleccionado:', selectedProduct)
-      } else {
-        console.warn('No se encontró el producto con ID:', regulation.value?.id_rubro)
-      }
-    } else {
-      error.value = response.error || 'No se pudo cargar la regulación'
-    }
-  } catch (err) {
-    console.error('Error loading regulation:', err)
-    error.value = 'Error al cargar la regulación'
-  } finally {
-    loading.value = false
-  }
-}
+    loadingProducts.value = true
+    const response = await productRubroService.getProductRubros(searchTerm)
 
-const validateField = (field: string) => {
-  const value = formData.value[field as keyof typeof formData.value]
-  
-  if (!value || value.toString().trim() === '') {
-    validationErrors.value[field] = 'Este campo es requerido'
-    return false
-  }
-  
-  delete validationErrors.value[field]
-  return true
-}
-
-const validateForm = () => {
-  const fields = ['producto']
-  let isValid = true
-  
-  fields.forEach(field => {
-    if (!validateField(field)) {
-      isValid = false
-    }
-  })
-  
-  return isValid
-}
-
-const clearFieldError = (field: string) => {
-  delete validationErrors.value[field]
-}
-
-const searchProducts = async (query: string) => {
-  loadingProducts.value = true
-  
-  try {
-    const response = await productRubroService.getProductRubros(query)
-    
     if (response.success && response.data) {
-      productOptions.value = response.data.map(product => ({
-        label: product.nombre,
-        value: product.id.toString()
+      // Convertir productos a formato de opciones para autocomplete
+      productOptions.value = response.data.map((productRubro: ProductRubro) => ({
+        label: productRubro.nombre,
+        value: productRubro.id.toString()
       }))
-      console.log('Productos cargados:', productOptions.value.length)
     }
-  } catch (err) {
-    console.error('Error searching products:', err)
+  } catch (error) {
+    console.error('Error searching products:', error)
   } finally {
     loadingProducts.value = false
   }
 }
 
 const createProduct = async () => {
-  if (!newProduct.value.nombre.trim()) {
-    alert('El nombre del producto es requerido')
-    return
-  }
-  
-  creatingProduct.value = true
-  
   try {
+    // Validar campo requerido
+    if (!newProduct.value.nombre) {
+      console.error('Nombre es requerido')
+      return
+    }
     const response = await productRubroService.createProductRubro({
       nombre: newProduct.value.nombre
     })
-    
-    if (response.success && response.data) {
-      // Add new product to options
-      productOptions.value.unshift({
-        label: response.data.nombre,
-        value: response.data.id.toString()
-      })
-      
-      // Select the new product
+    if (response.success) {
       formData.value.producto = {
         label: response.data.nombre,
         value: response.data.id.toString()
       }
-      
-      // Reset form and close modal
-      newProduct.value = { nombre: '' }
+      newProduct.value = {
+        nombre: ''
+      }
       showCreateProductModal.value = false
+      searchProducts('')
+      console.log('Rubro creado exitosamente:', response.data)
     } else {
-      alert('Error al crear el producto: ' + response.error)
+      console.error('Error al crear rubro:', response.error)
     }
-  } catch (err) {
-    console.error('Error creating product:', err)
-    alert('Error al crear el producto')
+  } catch (error) {
+    console.error('Error al crear producto:', error)
+  }
+}
+
+// Document management methods
+const toggleDocumentDelete = (index: number) => {
+  const deleteIndex = documentsToDelete.value.indexOf(index)
+  if (deleteIndex > -1) {
+    documentsToDelete.value.splice(deleteIndex, 1)
+  } else {
+    documentsToDelete.value.push(index)
+  }
+}
+
+const deleteSelectedDocuments = () => {
+  // Eliminar documentos seleccionados visualmente
+  documentsToDelete.value.forEach(index => {
+    existingDocuments.value.splice(index, 1)
+  })
+  documentsToDelete.value = []
+}
+
+const deselectAllDocuments = () => {
+  documentsToDelete.value = []
+}
+
+const getFileName = (filePath: string): string => {
+  const parts = filePath.split('/')
+  return parts[parts.length - 1] || 'Documento'
+}
+
+const addDocumentSlot = () => {
+  documentSlots.value.push({ file: null })
+}
+
+const selectDocument = (index: number) => {
+  // Crear un input file oculto
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png'
+  
+  input.onchange = (event) => {
+    const target = event.target as HTMLInputElement
+    if (target.files && target.files[0]) {
+      const file = target.files[0]
+      documentSlots.value[index] = { file: file }
+    }
+  }
+  
+  input.click()
+}
+
+const removeDocumentSlot = (index: number) => {
+  documentSlots.value.splice(index, 1)
+  // Asegurar que siempre haya al menos un slot vacío
+  if (documentSlots.value.length === 0) {
+    documentSlots.value.push({ file: null })
+  }
+}
+
+// Load regulation data
+const loadRegulation = async () => {
+  try {
+    loading.value = true
+    const response = await documentoService.getDocumentoById(parseInt(regulationId))
+    
+    if (response.success && response.data) {
+      // Buscar productos primero para poder establecer el producto seleccionado
+      await searchProducts('')
+      
+      // Establecer datos del formulario
+      formData.value = {
+        producto: {
+          label: response.data.rubro?.nombre || '',
+          value: response.data.id_rubro.toString()
+        },
+        observaciones: response.data.observaciones || ''
+      }
+      
+      // Cargar documentos existentes
+      if (response.data.media && response.data.media.length > 0) {
+        existingDocuments.value = response.data.media.map((media: any) => media.ruta)
+      } else if (response.data.documentos && response.data.documentos.length > 0) {
+        existingDocuments.value = response.data.documentos
+      }
+      
+      console.log('Regulación cargada:', response.data)
+    } else {
+      console.error('Error al cargar la regulación:', response.error)
+    }
+  } catch (error) {
+    console.error('Error loading regulation:', error)
   } finally {
-    creatingProduct.value = false
+    loading.value = false
   }
 }
 
 const saveForm = async () => {
-  if (!validateForm()) {
-    return
-  }
-  
-  isSubmitting.value = true
-  
   try {
-    // Prepare the data object for the service
-    const updateData: any = {
-      id_rubro: parseInt(formData.value.producto?.value || '0')
+    // Validar formulario completo
+    if (!validateForm()) {
+      console.error('Formulario tiene errores de validación')
+      return
     }
+    
+    isSubmitting.value = true
+    console.log('Guardando documento especial:', formData.value)
+
+    // Preparar FormData para la API
+    const formDataToSend = new FormData()
+    
+    // Agregar id_regulacion para indicar que es una actualización
+    formDataToSend.append('id_regulacion', regulationId)
+    
+    // Agregar datos del formulario
+    formDataToSend.append('id_rubro', formData.value.producto.value)
     
     if (formData.value.observaciones) {
-      updateData.observaciones = formData.value.observaciones
+      formDataToSend.append('observaciones', formData.value.observaciones)
     }
     
-    console.log('Enviando datos de actualización:', updateData)
+    // Agregar documentos a eliminar
+    documentsToDelete.value.forEach(index => {
+      formDataToSend.append('documentos_eliminar[]', index.toString())
+    })
     
-    const response = await documentoService.updateDocumento(regulationId, updateData)
-    
-    if (response.success) {
-      // Redirect to regulations index
-      router.push(`/basedatos/regulaciones`)
+    // Agregar nuevos documentos
+    documentSlots.value
+      .filter(slot => slot.file)
+      .forEach(slot => {
+        formDataToSend.append('documentos[]', slot.file!)
+      })
+
+    // Llamar al servicio para actualizar el documento especial
+    const response = await documentoService.updateDocumento(parseInt(regulationId), formDataToSend)
+
+    if (response.success && response.data) {
+      console.log('Documento especial actualizado exitosamente:', response.data)
+      
+      // Redirigir de vuelta a la lista
+      router.push('/basedatos/regulaciones')
     } else {
-      alert('Error al actualizar la regulación: ' + response.error)
+      console.error('Error al actualizar documento especial:', response.error)
     }
-  } catch (err) {
-    console.error('Error updating regulation:', err)
-    alert('Error al actualizar la regulación')
+
+  } catch (error) {
+    console.error('Error al guardar:', error)
   } finally {
     isSubmitting.value = false
   }
 }
 
-// Load regulation on mount
-onMounted(async () => {
-  if (isNaN(regulationId)) {
-    error.value = 'ID de regulación inválido'
-    loading.value = false
-    return
-  }
-  
-  // First load products, then load regulation
-  await searchProducts('')
-  await loadRegulation()
+// Cargar datos al inicializar
+onMounted(() => {
+  loadRegulation()
 })
 </script> 

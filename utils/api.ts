@@ -50,8 +50,8 @@ export const apiCall = async <T>(
 
     return await $fetch<T>(endpoint, config)
   } catch (error: any) {
-    // Interceptar error 401 (Unauthorized)
-    if (error.status === 401 || error.statusCode === 401) {
+    // Interceptar error 401 (Unauthorized) pero excluir el endpoint de login
+    if ((error.status === 401 || error.statusCode === 401) && !endpoint.includes('/api/auth/login')) {
       handleSessionExpired()
     }
     
@@ -69,4 +69,10 @@ export const authApiCall = async <T>(
     method: 'POST',
     body: credentials
   })
+}
+
+// Función de prueba para simular error 401
+export const test401Error = () => {
+  console.log('Testing 401 error simulation')
+  handleSessionExpired()
 } 
