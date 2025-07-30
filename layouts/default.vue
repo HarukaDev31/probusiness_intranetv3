@@ -29,6 +29,9 @@
         <slot />
       </main>
     </div>
+    
+    <!-- Session Expired Modal -->
+    <SessionExpiredModal />
   </div>
 </template>
 
@@ -36,6 +39,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import SidebarMenu from '../components/SidebarMenu.vue'
+import SessionExpiredModal from '../components/SessionExpiredModal.vue'
 import type { AuthMenu } from '../services/authService'
 import type { SidebarCategory } from '../types/module'
 

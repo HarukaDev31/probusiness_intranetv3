@@ -12,10 +12,18 @@
             </h1>
             <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">
               Completa la información de la nueva regulación antidumping
+              <span class="text-red-500 ml-1">* Campos requeridos</span>
             </p>
           </div>
         </div>
-        <UButton label="Guardar" icon="i-heroicons-document-arrow-down" color="primary" @click="saveForm" />
+        <UButton 
+          label="Guardar" 
+          icon="i-heroicons-document-arrow-down" 
+          color="primary" 
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
+          @click="saveForm" 
+        />
       </div>
     </div>
 
@@ -28,6 +36,7 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               <UIcon name="i-heroicons-magnifying-glass" class="mr-1" />
               Producto Seleccionado
+              <span class="text-red-500 ml-1">*</span>
             </label>
             <UModal v-model="showCreateProductModal" title="Crear Nuevo Producto" :triger="true">
               <UButton label="Crear Producto" icon="i-heroicons-plus" size="xs" variant="outline"
@@ -39,29 +48,6 @@
                       Nombre del Producto
                     </label>
                     <UInput v-model="newProduct.nombre" placeholder="Ej: Zapatillas deportivas" class="w-full" />
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Descripción
-                    </label>
-                    <UTextarea v-model="newProduct.descripcion" placeholder="Descripción del producto..." :rows="3"
-                      class="w-full" />
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Categoría
-                    </label>
-                    <USelect v-model="newProduct.categoria" :items="categoryOptions" placeholder="Seleccionar categoría"
-                      class="w-full" />
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Código de Producto
-                    </label>
-                    <UInput v-model="newProduct.codigo" placeholder="Ej: PROD-001" class="w-full" />
                   </div>
                 </div>
               </template>
@@ -77,25 +63,56 @@
               </template>
             </UModal>
           </div>
-          <UInputMenu v-model="formData.producto" :items="productOptions" :loading="loadingProducts"
-            placeholder="Buscar producto..." class="w-full" @update:search="searchProducts" />
+          <UInputMenu 
+            v-model="formData.producto" 
+            :items="productOptions" 
+            :loading="loadingProducts"
+            placeholder="Buscar producto..." 
+            class="w-full" 
+            :color="validationErrors.producto ? 'error' : undefined"
+            @update:searchTerm="searchProducts"
+            @update:model-value="clearFieldError('producto')"
+          />
+          <p v-if="validationErrors.producto" class="mt-1 text-sm text-red-600 dark:text-red-400">
+            {{ validationErrors.producto }}
+          </p>
         </div>
 
         <!-- Description -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Descripción del Producto
+            <span class="text-red-500 ml-1">*</span>
           </label>
-          <UTextarea v-model="formData.descripcion" placeholder="Ingrese la descripción del producto..." :rows="3"
-            class="w-full" />
+          <UTextarea 
+            v-model="formData.descripcion" 
+            placeholder="Ingrese la descripción del producto..." 
+            :rows="3"
+            class="w-full" 
+            :color="validationErrors.descripcion ? 'error' : undefined"
+            @update:model-value="clearFieldError('descripcion')"
+          />
+          <p v-if="validationErrors.descripcion" class="mt-1 text-sm text-red-600 dark:text-red-400">
+            {{ validationErrors.descripcion }}
+          </p>
         </div>
 
         <!-- Partida -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Partida
+            <span class="text-red-500 ml-1">*</span>
           </label>
-          <UInput v-model="formData.partida" placeholder="Ej: 6402999000" class="w-full" />
+          <UInput 
+            v-model="formData.partida" 
+            placeholder="Ej: 6402999000" 
+            class="w-full" 
+            :color="validationErrors.partida ? 'error' : undefined"
+            @update:model-value="clearFieldError('partida')"
+          />
+          <p v-if="validationErrors.partida" class="mt-1 text-sm text-red-600 dark:text-red-400">
+            {{ validationErrors.partida }}
+          </p>
         </div>
 
         <!-- Price and Antidumping -->
@@ -103,16 +120,40 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               P. declarado
+              <span class="text-red-500 ml-1">*</span>
             </label>
-            <UInput v-model="formData.precioDeclarado" type="number" step="0.01" placeholder="Ej: 7.5"
-              icon="i-heroicons-currency-dollar" class="w-full" />
+            <UInput 
+              v-model="formData.precioDeclarado" 
+              type="number" 
+              step="0.01" 
+              placeholder="Ej: 7.5"
+              icon="i-heroicons-currency-dollar" 
+              class="w-full" 
+              :color="validationErrors.precioDeclarado ? 'error' : undefined"
+              @update:model-value="clearFieldError('precioDeclarado')"
+            />
+            <p v-if="validationErrors.precioDeclarado" class="mt-1 text-sm text-red-600 dark:text-red-400">
+              {{ validationErrors.precioDeclarado }}
+            </p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Antidumping
+              <span class="text-red-500 ml-1">*</span>
             </label>
-            <UInput v-model="formData.antidumping" type="number" step="0.01" placeholder="Ej: 0.63"
-              icon="i-heroicons-currency-dollar" class="w-full" />
+            <UInput 
+              v-model="formData.antidumping" 
+              type="number" 
+              step="0.01" 
+              placeholder="Ej: 0.63"
+              icon="i-heroicons-currency-dollar" 
+              class="w-full" 
+              :color="validationErrors.antidumping ? 'error' : undefined"
+              @update:model-value="clearFieldError('antidumping')"
+            />
+            <p v-if="validationErrors.antidumping" class="mt-1 text-sm text-red-600 dark:text-red-400">
+              {{ validationErrors.antidumping }}
+            </p>
           </div>
         </div>
 
@@ -155,18 +196,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import ProductService from '~/services/productService'
-
+import ProductRubroService from '~/services/productRubroService'
+import AntidumpingService, { type CreateAntidumpingRequest } from '~/services/antidumpingService'
+import type { ProductRubro } from '~/types/product-rubro'
 // Router
 const router = useRouter()
 
-// Product service instance
+// Service instances
 const productService = ProductService.getInstance()
-
+const productRubroService = ProductRubroService.getInstance()
+const antidumpingService = AntidumpingService.getInstance()
 // Form data
 const formData = ref({
-  producto: '',
+  producto: null as any,
   descripcion: '',
   partida: '',
   precioDeclarado: '',
@@ -174,14 +218,20 @@ const formData = ref({
   observaciones: ''
 })
 
+// Validation errors
+const validationErrors = ref({
+  producto: '',
+  descripcion: '',
+  partida: '',
+  precioDeclarado: '',
+  antidumping: ''
+})
+
+// Loading state for form submission
+const isSubmitting = ref(false)
+
 // Product options (reactive)
-const productOptions = ref([
-  { label: 'Calzados', value: 'calzados' },
-  { label: 'Motos Eléctricas', value: 'motos-electricas' },
-  { label: 'Textiles', value: 'textiles' },
-  { label: 'Electrónicos', value: 'electronicos' },
-  { label: 'Juguetes', value: 'juguetes' }
-])
+const productOptions = ref<{ label: string; value: string; }[]>([])
 
 // Modal state
 const showCreateProductModal = ref(false)
@@ -191,23 +241,8 @@ const loadingProducts = ref(false)
 
 // New product form
 const newProduct = ref({
-  nombre: '',
-  descripcion: '',
-  categoria: '',
-  codigo: ''
+  nombre: ''
 })
-
-// Category options
-const categoryOptions = [
-  { label: 'Calzados', value: 'calzados' },
-  { label: 'Motos Eléctricas', value: 'motos-electricas' },
-  { label: 'Textiles', value: 'textiles' },
-  { label: 'Electrónicos', value: 'electronicos' },
-  { label: 'Juguetes', value: 'juguetes' },
-  { label: 'Alimentos', value: 'alimentos' },
-  { label: 'Bebidas', value: 'bebidas' },
-  { label: 'Cosméticos', value: 'cosmeticos' }
-]
 
 // Image slots
 interface ImageSlot {
@@ -218,6 +253,50 @@ interface ImageSlot {
 const imageSlots = ref<ImageSlot[]>([
   { file: null, preview: null }
 ])
+
+// Validation methods
+const validateField = (field: string, value: any): string => {
+  switch (field) {
+    case 'producto':
+      return !value || !value.value ? 'Producto es requerido' : ''
+    case 'descripcion':
+      return !value || (typeof value === 'string' && value.trim() === '') ? 'Descripción es requerida' : ''
+    case 'partida':
+      return !value || (typeof value === 'string' && value.trim() === '') ? 'Partida es requerida' : ''
+    case 'precioDeclarado':
+      if (!value || (typeof value === 'string' && value.trim() === '')) return 'Precio declarado es requerido'
+      const precioNum = parseFloat(value)
+      if (isNaN(precioNum)) return 'Precio debe ser un número válido'
+      if (precioNum <= 0) return 'Precio debe ser mayor a 0'
+      return ''
+    case 'antidumping':
+      if (!value || (typeof value === 'string' && value.trim() === '')) return 'Antidumping es requerido'
+      const antidumpingNum = parseFloat(value)
+      if (isNaN(antidumpingNum)) return 'Antidumping debe ser un número válido'
+      if (antidumpingNum < 0) return 'Antidumping debe ser mayor o igual a 0'
+      return ''
+    default:
+      return ''
+  }
+}
+
+const validateForm = (): boolean => {
+  const errors = {
+    producto: validateField('producto', formData.value.producto),
+    descripcion: validateField('descripcion', formData.value.descripcion),
+    partida: validateField('partida', formData.value.partida),
+    precioDeclarado: validateField('precioDeclarado', formData.value.precioDeclarado),
+    antidumping: validateField('antidumping', formData.value.antidumping)
+  }
+  
+  validationErrors.value = errors
+  
+  return !Object.values(errors).some(error => error !== '')
+}
+
+const clearFieldError = (field: string) => {
+  validationErrors.value[field as keyof typeof validationErrors.value] = ''
+}
 
 // Methods
 const goBack = () => {
@@ -255,21 +334,16 @@ const selectImage = (index: number) => {
 }
 
 const searchProducts = async (searchTerm: string) => {
-  if (searchTerm.length < 2) return
-
+  console.log('searchTerm', searchTerm)
   try {
     loadingProducts.value = true
-    const response = await productService.getProducts({
-      search: searchTerm,
-      page: 1,
-      limit: 20
-    })
+    const response = await productRubroService.getProductRubros(searchTerm)
 
     if (response.success && response.data) {
       // Convertir productos a formato de opciones para autocomplete
-      productOptions.value = response.data.map((product: any) => ({
-        label: product.nombre_comercial || product.caracteristicas || 'Producto sin nombre',
-        value: product.id.toString()
+      productOptions.value = response.data.map((productRubro: ProductRubro) => ({
+        label: productRubro.nombre,
+        value: productRubro.id.toString()
       }))
     }
   } catch (error) {
@@ -281,46 +355,30 @@ const searchProducts = async (searchTerm: string) => {
 
 const createProduct = async () => {
   try {
-    console.log('Creando nuevo producto:', newProduct.value)
 
-    // Validar campos requeridos
-    if (!newProduct.value.nombre || !newProduct.value.categoria) {
-      console.error('Nombre y categoría son requeridos')
+    // Validar campo requerido
+    if (!newProduct.value.nombre) {
+      console.error('Nombre es requerido')
       return
     }
-
-    // Aquí iría la lógica para crear el producto en la API
-    // Por ahora simulamos la creación
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // Simular respuesta de la API
-    const newProductData = {
-      id: Date.now(),
-      nombre: newProduct.value.nombre,
-      descripcion: newProduct.value.descripcion,
-      categoria: newProduct.value.categoria,
-      codigo: newProduct.value.codigo || `PROD-${Date.now()}`
-    }
-
-    // Agregar el nuevo producto a las opciones
-    productOptions.value.push({
-      label: newProductData.nombre,
-      value: newProductData.id.toString()
+    const response = await productRubroService.createProductRubro({
+      nombre: newProduct.value.nombre
     })
+    if (response.success) {
 
-    // Seleccionar automáticamente el nuevo producto
-    formData.value.producto = newProductData.id.toString()
-
-    // Limpiar el formulario
-    newProduct.value = {
-      nombre: '',
-      descripcion: '',
-      categoria: '',
-      codigo: ''
+      formData.value.producto = {
+        label: response.data.nombre,
+        value: response.data.id.toString()
+      }
+      newProduct.value = {
+        nombre: ''
+      }
+      showCreateProductModal.value = false
+      searchProducts('')
+      console.log('Rubro creado exitosamente:', response.data)
+    } else {
+      console.error('Error al crear rubro:', response.error)
     }
-
-    console.log('Producto creado exitosamente:', newProductData)
-
   } catch (error) {
     console.error('Error al crear producto:', error)
   }
@@ -328,25 +386,83 @@ const createProduct = async () => {
 
 const saveForm = async () => {
   try {
+    // Validar formulario completo
+    if (!validateForm()) {
+      console.error('Formulario tiene errores de validación')
+      return
+    }
+    
+    isSubmitting.value = true
     console.log('Guardando regulación antidumping:', formData.value)
     console.log('Imágenes:', imageSlots.value)
-
-    // Aquí iría la lógica para guardar en la API
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // Mostrar notificación de éxito
-    console.log('Regulación antidumping guardada exitosamente')
-
-    // Redirigir de vuelta a la lista
-    router.push('/basedatos/regulaciones')
-
+    
+    // Crear payload para la API
+    const payload: CreateAntidumpingRequest = {
+      producto_id: parseInt(formData.value.producto.value),
+      descripcion: formData.value.descripcion,
+      partida: formData.value.partida,
+      precio_declarado: parseFloat(formData.value.precioDeclarado),
+      antidumping: parseFloat(formData.value.antidumping),
+      observaciones: formData.value.observaciones || undefined,
+      imagenes: imageSlots.value
+        .filter(slot => slot.file)
+        .map(slot => slot.file!)
+    }
+    
+    console.log('Payload para API:', payload)
+    
+    // Llamar al servicio para crear la regulación
+    const response = await antidumpingService.createAntidumping(payload)
+    
+    if (response.success) {
+      console.log('Regulación antidumping guardada exitosamente:', response.data)
+      
+      // Redirigir de vuelta a la lista
+      router.push('/basedatos/regulaciones')
+    } else {
+      console.error('Error al guardar:', response.error)
+    }
+    
   } catch (error) {
     console.error('Error al guardar:', error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
+// Watchers para validación en tiempo real
+watch(() => formData.value.producto, (newValue) => {
+  if (newValue) {
+    clearFieldError('producto')
+  }
+})
+
+watch(() => formData.value.descripcion, (newValue) => {
+  if (newValue && typeof newValue === 'string' && newValue.trim() !== '') {
+    clearFieldError('descripcion')
+  }
+})
+
+watch(() => formData.value.partida, (newValue) => {
+  if (newValue && typeof newValue === 'string' && newValue.trim() !== '') {
+    clearFieldError('partida')
+  }
+})
+
+watch(() => formData.value.precioDeclarado, (newValue) => {
+  if (newValue && !isNaN(parseFloat(newValue)) && parseFloat(newValue) > 0) {
+    clearFieldError('precioDeclarado')
+  }
+})
+
+watch(() => formData.value.antidumping, (newValue) => {
+  if (newValue && !isNaN(parseFloat(newValue)) && parseFloat(newValue) >= 0) {
+    clearFieldError('antidumping')
+  }
+})
+
 // Cargar productos iniciales
 onMounted(() => {
-  searchProducts('producto')
+  searchProducts('')
 })
 </script>

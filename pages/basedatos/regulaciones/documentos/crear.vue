@@ -25,6 +25,8 @@
           label="Guardar" 
           icon="i-heroicons-document-arrow-down"
           color="primary"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
           @click="saveForm"
         />
       </div>
@@ -35,45 +37,53 @@
       <div class="space-y-6">
         <!-- Product Selector -->
         <div class="max-w-md">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <UIcon name="i-heroicons-magnifying-glass" class="mr-1" />
-            Producto Seleccionado
-          </label>
-          <USelect 
-            v-model="formData.producto"
-            :items="productOptions"
-            placeholder="Seleccionar producto"
-            class="w-full"
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <UIcon name="i-heroicons-magnifying-glass" class="mr-1" />
+              Producto Seleccionado
+              <span class="text-red-500 ml-1">*</span>
+            </label>
+            <UModal v-model="showCreateProductModal" title="Crear Nuevo Producto" :triger="true">
+              <UButton label="Crear Producto" icon="i-heroicons-plus" size="xs" variant="outline"
+                @click="showCreateProductModal = true" />
+              <template #body>
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Nombre del Producto
+                    </label>
+                    <UInput v-model="newProduct.nombre" placeholder="Ej: Zapatillas deportivas" class="w-full" />
+                  </div>
+                </div>
+              </template>
+
+              <template #footer="{ close }">
+                <div class="flex justify-end gap-3">
+                  <UButton label="Cancelar" variant="outline" @click="close" />
+                  <UButton label="Crear Producto" color="primary" @click="() => {
+                    createProduct();
+                    close();
+                  }" />
+                </div>
+              </template>
+            </UModal>
+          </div>
+          <UInputMenu 
+            v-model="formData.producto" 
+            :items="productOptions" 
+            :loading="loadingProducts"
+            placeholder="Buscar producto..." 
+            class="w-full" 
+            :color="validationErrors.producto ? 'error' : undefined"
+            @update:searchTerm="searchProducts"
+            @update:model-value="clearFieldError('producto')"
           />
+          <p v-if="validationErrors.producto" class="mt-1 text-sm text-red-600 dark:text-red-400">
+            {{ validationErrors.producto }}
+          </p>
         </div>
 
-        <!-- Document Type -->
-        <div class="max-w-md">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <UIcon name="i-heroicons-document" class="mr-1" />
-            Tipo de Documento
-          </label>
-          <USelect 
-            v-model="formData.tipoDocumento"
-            :items="documentTypeOptions"
-            placeholder="Seleccionar tipo"
-            class="w-full"
-          />
-        </div>
 
-        <!-- Requirements -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <UIcon name="i-heroicons-clipboard-document-list" class="mr-1" />
-            Requisitos
-          </label>
-          <UTextarea 
-            v-model="formData.requisitos"
-            placeholder="Ingrese los requisitos del documento..."
-            :rows="4"
-            class="w-full"
-          />
-        </div>
 
         <!-- Documents Upload -->
         <div>
@@ -125,37 +135,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import ProductRubroService from '~/services/productRubroService'
+import DocumentoService, { type CreateDocumentoRequest } from '~/services/documentoService'
+import type { ProductRubro } from '~/types/product-rubro'
 
 // Router
 const router = useRouter()
 
+// Service instances
+const productRubroService = ProductRubroService.getInstance()
+const documentoService = DocumentoService.getInstance()
+
 // Form data
 const formData = ref({
-  producto: '',
-  tipoDocumento: '',
-  requisitos: '',
+  producto: null as any,
   observaciones: ''
 })
 
-// Product options
-const productOptions = [
-  { label: 'Calzados', value: 'calzados' },
-  { label: 'Motos Eléctricas', value: 'motos-electricas' },
-  { label: 'Textiles', value: 'textiles' },
-  { label: 'Electrónicos', value: 'electronicos' },
-  { label: 'Juguetes', value: 'juguetes' }
-]
+// Validation errors
+const validationErrors = ref({
+  producto: ''
+})
 
-// Document type options
-const documentTypeOptions = [
-  { label: 'Certificado Sanitario', value: 'sanitario' },
-  { label: 'Permiso Ambiental', value: 'ambiental' },
-  { label: 'Certificado de Calidad', value: 'calidad' },
-  { label: 'Certificado de Origen', value: 'origen' },
-  { label: 'Certificado de Seguridad', value: 'seguridad' },
-  { label: 'Certificado de Conformidad', value: 'conformidad' }
-]
+// Loading state for form submission
+const isSubmitting = ref(false)
+
+// Product options (reactive)
+const productOptions = ref<{ label: string; value: string; }[]>([])
+
+// Modal state
+const showCreateProductModal = ref(false)
+
+// Loading state
+const loadingProducts = ref(false)
+
+// New product form
+const newProduct = ref({
+  nombre: ''
+})
+
+
 
 // Document slots
 interface DocumentSlot {
@@ -166,9 +186,81 @@ const documentSlots = ref<DocumentSlot[]>([
   { file: null }
 ])
 
+// Validation methods
+const validateField = (field: string, value: any): string => {
+  switch (field) {
+    case 'producto':
+      return !value || !value.value ? 'Producto es requerido' : ''
+    default:
+      return ''
+  }
+}
+
+const validateForm = (): boolean => {
+  const errors = {
+    producto: validateField('producto', formData.value.producto)
+  }
+  
+  validationErrors.value = errors
+  
+  return !Object.values(errors).some(error => error !== '')
+}
+
+const clearFieldError = (field: string) => {
+  validationErrors.value[field as keyof typeof validationErrors.value] = ''
+}
+
 // Methods
 const goBack = () => {
   router.back()
+}
+
+const searchProducts = async (searchTerm: string) => {
+  try {
+    loadingProducts.value = true
+    const response = await productRubroService.getProductRubros(searchTerm)
+
+    if (response.success && response.data) {
+      // Convertir productos a formato de opciones para autocomplete
+      productOptions.value = response.data.map((productRubro: ProductRubro) => ({
+        label: productRubro.nombre,
+        value: productRubro.id.toString()
+      }))
+    }
+  } catch (error) {
+    console.error('Error searching products:', error)
+  } finally {
+    loadingProducts.value = false
+  }
+}
+
+const createProduct = async () => {
+  try {
+    // Validar campo requerido
+    if (!newProduct.value.nombre) {
+      console.error('Nombre es requerido')
+      return
+    }
+    const response = await productRubroService.createProductRubro({
+      nombre: newProduct.value.nombre
+    })
+    if (response.success) {
+      formData.value.producto = {
+        label: response.data.nombre,
+        value: response.data.id.toString()
+      }
+      newProduct.value = {
+        nombre: ''
+      }
+      showCreateProductModal.value = false
+      searchProducts('')
+      console.log('Rubro creado exitosamente:', response.data)
+    } else {
+      console.error('Error al crear rubro:', response.error)
+    }
+  } catch (error) {
+    console.error('Error al crear producto:', error)
+  }
 }
 
 const addDocumentSlot = () => {
@@ -194,20 +286,50 @@ const selectDocument = (index: number) => {
 
 const saveForm = async () => {
   try {
+    // Validar formulario completo
+    if (!validateForm()) {
+      console.error('Formulario tiene errores de validación')
+      return
+    }
+    
+    isSubmitting.value = true
     console.log('Guardando documento especial:', formData.value)
     console.log('Documentos:', documentSlots.value)
-    
-    // Aquí iría la lógica para guardar en la API
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Mostrar notificación de éxito
-    console.log('Documento especial guardado exitosamente')
-    
-    // Redirigir de vuelta a la lista
-    router.push('/basedatos/regulaciones')
-    
+
+    // Preparar datos para la API
+    const documentoData: CreateDocumentoRequest = {
+      id_rubro: parseInt(formData.value.producto.value),
+      observaciones: formData.value.observaciones || undefined,
+      documentos: documentSlots.value
+        .filter(slot => slot.file)
+        .map(slot => slot.file!)
+    }
+
+    // Llamar al servicio para crear el documento especial
+    const response = await documentoService.createDocumento(documentoData)
+
+    if (response.success && response.data) {
+      console.log('Documento especial guardado exitosamente:', response.data)
+      
+      // Mostrar notificación de éxito (aquí podrías usar un toast o notificación)
+      
+      // Redirigir de vuelta a la lista
+      router.push('/basedatos/regulaciones')
+    } else {
+      console.error('Error al guardar documento especial:', response.error)
+      // Aquí podrías mostrar un mensaje de error al usuario
+    }
+
   } catch (error) {
     console.error('Error al guardar:', error)
+    // Aquí podrías mostrar un mensaje de error al usuario
+  } finally {
+    isSubmitting.value = false
   }
 }
+
+// Cargar productos al inicializar
+onMounted(() => {
+  searchProducts('')
+})
 </script> 

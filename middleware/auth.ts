@@ -5,7 +5,11 @@ export default defineNuxtRouteMiddleware((to, from) => {
   if (to.path === '/login') return
 
   const authService = AuthService.getInstance()
-  if (!authService.isAuthenticated()) {
+  const { hasValidToken } = useSession()
+  
+  // Verificar si hay token válido
+  if (!hasValidToken() || !authService.isAuthenticated()) {
+    // Si no hay token, redirigir al login
     return navigateTo('/login')
   }
 }) 

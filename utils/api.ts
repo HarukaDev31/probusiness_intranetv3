@@ -15,27 +15,49 @@ const getAuthToken = (): string | null => {
   return null
 }
 
+// Función para manejar sesión expirada
+const handleSessionExpired = () => {
+  // Emitir evento global para mostrar modal
+  if (process.client) {
+    window.dispatchEvent(new CustomEvent('session-expired'))
+  }
+}
+
 // Función para hacer llamadas a la API con configuración consistente
 export const apiCall = async <T>(
   endpoint: string, 
   options: any = {}
 ): Promise<T> => {
-  // Obtener el token de autenticación
-  const token = getAuthToken()
-  
-  const config = {
-    baseURL: API_CONFIG.baseURL,
-    timeout: API_CONFIG.timeout,
-    headers: {
-      ...API_CONFIG.headers,
-      // Agregar Bearer token si existe
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers
-    },
-    ...options
-  }
+  try {
+    // Obtener el token de autenticación
+    const token = getAuthToken()
+    
+    // Determinar si es FormData para no establecer Content-Type manualmente
+    const isFormData = options.body instanceof FormData
+    
+    const config = {
+      baseURL: API_CONFIG.baseURL,
+      timeout: API_CONFIG.timeout,
+      headers: {
+        // Solo establecer Content-Type si no es FormData
+        ...(isFormData ? {} : API_CONFIG.headers),
+        // Agregar Bearer token si existe
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers
+      },
+      ...options
+    }
 
-  return await $fetch<T>(endpoint, config)
+    return await $fetch<T>(endpoint, config)
+  } catch (error: any) {
+    // Interceptar error 401 (Unauthorized)
+    if (error.status === 401 || error.statusCode === 401) {
+      handleSessionExpired()
+    }
+    
+    // Re-lanzar el error para que sea manejado por el código que llamó a apiCall
+    throw error
+  }
 }
 
 // Función específica para autenticación

@@ -22,16 +22,6 @@
     <!-- Form -->
     <UCard>
       <div class="space-y-6">
-        <!-- Product Selector -->
-        <div class="max-w-md">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <UIcon name="i-heroicons-magnifying-glass" class="mr-1" />
-            Producto Seleccionado
-          </label>
-          <USelect v-model="formData.producto" :items="productOptions" placeholder="Seleccionar producto"
-            class="w-full" />
-        </div>
-
         <!-- Entity -->
         <div class="max-w-md">
           <div class="flex items-center justify-between mb-2">
@@ -157,16 +147,17 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import EntityService, { type CreateEntityRequest } from '~/services/entityService'
+import PermisoService, { type CreatePermisoRequest } from '~/services/permisoService'
 
 // Router
 const router = useRouter()
 
-// Entity service instance
+// Service instances
 const entityService = EntityService.getInstance()
+const permisoService = PermisoService.getInstance()
 
 // Form data
 const formData = ref({
-  producto: '',
   entidad: '',
   nombrePermiso: '',
   codigoPermiso: 'PRM-2024-001',
@@ -175,14 +166,7 @@ const formData = ref({
   observaciones: ''
 })
 
-// Product options
-const productOptions = [
-  { label: 'Calzados', value: 'calzados' },
-  { label: 'Motos Eléctricas', value: 'motos-electricas' },
-  { label: 'Textiles', value: 'textiles' },
-  { label: 'Electrónicos', value: 'electronicos' },
-  { label: 'Juguetes', value: 'juguetes' }
-]
+
 
 // Entity options
 const entityOptions = ref([
@@ -244,17 +228,43 @@ const saveForm = async () => {
     console.log('Guardando regulación de permiso:', formData.value)
     console.log('Documentos:', documentSlots.value)
 
-    // Aquí iría la lógica para guardar en la API
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Validar campos requeridos
+    if (!formData.value.entidad || !formData.value.nombrePermiso || !formData.value.codigoPermiso) {
+      console.error('Los campos entidad, nombre del permiso y código del permiso son requeridos')
+      return
+    }
 
-    // Mostrar notificación de éxito
-    console.log('Regulación de permiso guardada exitosamente')
+    // Preparar datos para la API
+    const permisoData: CreatePermisoRequest = {
+      entidad_id: parseInt(formData.value.entidad),
+      nombre_permiso: formData.value.nombrePermiso,
+      codigo_permiso: formData.value.codigoPermiso,
+      costo_base: parseFloat(formData.value.costoBase),
+      costo_tramitador: parseFloat(formData.value.costoTramitador),
+      observaciones: formData.value.observaciones || undefined,
+      documentos: documentSlots.value
+        .filter(slot => slot.file)
+        .map(slot => slot.file!)
+    }
 
-    // Redirigir de vuelta a la lista
-    router.push('/basedatos/regulaciones')
+    // Llamar al servicio para crear el permiso
+    const response = await permisoService.createPermiso(permisoData)
+
+    if (response.success && response.data) {
+      console.log('Regulación de permiso guardada exitosamente:', response.data)
+      
+      // Mostrar notificación de éxito (aquí podrías usar un toast o notificación)
+      
+      // Redirigir de vuelta a la lista
+      router.push('/basedatos/regulaciones')
+    } else {
+      console.error('Error al guardar permiso:', response.error)
+      // Aquí podrías mostrar un mensaje de error al usuario
+    }
 
   } catch (error) {
     console.error('Error al guardar:', error)
+    // Aquí podrías mostrar un mensaje de error al usuario
   }
 }
 
