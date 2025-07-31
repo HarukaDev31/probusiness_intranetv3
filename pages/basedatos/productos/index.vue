@@ -27,6 +27,15 @@
       @update:items-per-page="onItemsPerPageChange"
       @export="exportData"
     />
+
+    <!-- Modal de vista previa de imagen -->
+    <ImageModal
+      v-if="showImageModal"
+      :is-open="showImageModal"
+      :image-url="selectedImage"
+      :title="selectedImageTitle"
+      @close="closeImageModal"
+    />
   </div>
 </template>
 
@@ -34,6 +43,7 @@
 import { ref, onMounted, watch, computed, h, resolveComponent } from 'vue'
 import type { ProductMapped } from '~/types/product'
 import type { TableColumn } from '@nuxt/ui'
+import ImageModal from '~/components/ImageModal.vue'
 
 const UButton = resolveComponent('UButton')
 
@@ -66,6 +76,11 @@ const secondarySearch = ref('')
 // Paginación local (para manejar el v-model de UPagination)
 const localCurrentPage = ref(1)
 
+// Estado para el modal de imagen
+const showImageModal = ref(false)
+const selectedImage = ref('')
+const selectedImageTitle = ref('')
+
 // Configuración de columnas para UTable
 const columns: TableColumn<ProductMapped>[] = [
   {
@@ -83,12 +98,25 @@ const columns: TableColumn<ProductMapped>[] = [
     header: 'Foto',
     cell: ({ row }) => {
       const foto = row.getValue('foto')
+      const nombreComercial = row.getValue('nombreComercial')
+      
       if (foto) {
-        return h('img', {
-          src: foto,
-          alt: row.getValue('nombreComercial'),
-          class: 'w-10 h-10 rounded object-cover'
-        })
+        return h('div', { class: 'flex items-center gap-2' }, [
+          h('img', {
+            src: foto,
+            alt: nombreComercial,
+            class: 'w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity',
+            onClick: () => openImageModal(String(foto), String(nombreComercial))
+          }),
+          h(UButton, {
+            size: 'xs',
+            icon: 'i-heroicons-eye',
+            variant: 'ghost',
+            color: 'blue',
+            onClick: () => openImageModal(String(foto), String(nombreComercial)),
+            title: 'Ver imagen'
+          })
+        ])
       }
       return h('span', { class: 'text-gray-400' }, 'Sin foto')
     }
@@ -288,6 +316,18 @@ const deleteProduct = async (product: ProductMapped) => {
       console.log('Producto eliminado exitosamente')
     }
   }
+}
+
+const openImageModal = (imageUrl: string, title: string) => {
+  selectedImage.value = imageUrl
+  selectedImageTitle.value = title
+  showImageModal.value = true
+}
+
+const closeImageModal = () => {
+  showImageModal.value = false
+  selectedImage.value = ''
+  selectedImageTitle.value = ''
 }
 
 // Lifecycle
