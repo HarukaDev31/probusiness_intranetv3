@@ -10,9 +10,7 @@
               <UIcon name="i-heroicons-shield-check" class="text-blue-600 mr-3 text-2xl" />
               Detalle de Regulación Antidumping
             </h1>
-            <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">
-              Observaciones e imágenes de la regulación
-            </p>
+           
           </div>
         </div>
       </div>
@@ -39,7 +37,7 @@
         <template #header>
           <div class="flex items-center">
             <UIcon name="i-heroicons-chat-bubble-left-right" class="text-blue-600 mr-2" />
-            <h3 class="text-lg font-semibold">Observaciones</h3>
+            <h3 class="text-lg font-semibold">Comentarios</h3>
           </div>
         </template>
 
@@ -360,7 +358,8 @@ const handleMouseLeave = () => {
 }
 
 const getImageUrl = (ruta: string) => {
-  return `http://localhost:8000/storage/${ruta}`
+    const config = useRuntimeConfig()
+    return `${config.public.apiBaseUrl}/storage/${ruta}`
 }
 
 // Load regulation on mount

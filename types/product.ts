@@ -38,6 +38,9 @@ export interface ProductMapped {
   precioExw: number
   subpartida: string
   campana: string
+  entidad_id: number
+  tipo_etiquetado_id: number
+  antidumping_value: string
   cargaContenedor?: string
   createdAt?: string
   updatedAt?: string

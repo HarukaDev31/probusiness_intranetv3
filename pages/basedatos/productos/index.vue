@@ -133,9 +133,9 @@ const columns: TableColumn<ProductMapped>[] = [
     cell: ({ row }) => row.getValue('subpartida')
   },
   {
-    accessorKey: 'campana',
+    accessorKey: 'cargaContenedor',
     header: 'Campaña',
-    cell: ({ row }) => row.getValue('campana')
+    cell: ({ row }) => `# ${row.getValue('cargaContenedor')}`
   },
   {
     id: 'actions',
@@ -148,11 +148,7 @@ const columns: TableColumn<ProductMapped>[] = [
           icon: 'i-heroicons-eye',
           onClick: () => viewProduct(product)
         }),
-        h(UButton, {
-          size: 'xs',
-          icon: 'i-heroicons-pencil',
-          onClick: () => editProduct(product)
-        }),
+    
         h(UButton, {
           size: 'xs',
           icon: 'i-heroicons-trash',

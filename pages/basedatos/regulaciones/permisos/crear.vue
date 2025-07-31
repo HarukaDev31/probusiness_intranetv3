@@ -8,11 +8,9 @@
           <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
               <UIcon name="i-heroicons-plus-circle" class="text-blue-600 mr-3 text-2xl" />
-              Nueva Regulación de Permiso
+              Nuevo Regulación de Permiso
             </h1>
-            <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">
-              Completa la información del nuevo permiso
-            </p>
+          
           </div>
         </div>
         <UButton label="Guardar" icon="i-heroicons-document-arrow-down" color="primary" @click="saveForm" />
@@ -86,21 +84,21 @@
               <UIcon name="i-heroicons-qr-code" class="mr-1" />
               C. Permiso
             </label>
-            <UInput v-model="formData.codigoPermiso" placeholder="PRM-2024-001" class="w-full" />
+            <UInput v-model="formData.codigoPermiso" class="w-full" type="number" step="0.01" placeholder="0.00" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <UIcon name="i-heroicons-currency-dollar" class="mr-1" />
               Costo Base
             </label>
-            <UInput v-model="formData.costoBase" type="number" step="0.01" placeholder="90.00" class="w-full" />
+            <UInput v-model="formData.costoBase" type="number" step="0.01" placeholder="0.0" class="w-full" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <UIcon name="i-heroicons-user" class="mr-1" />
               C. Tramitador
             </label>
-            <UInput v-model="formData.costoTramitador" type="number" step="0.01" placeholder="50.00" class="w-full" />
+            <UInput v-model="formData.costoTramitador" type="number" step="0.01" placeholder="0.00" class="w-full" />
           </div>
         </div>
 
@@ -131,7 +129,7 @@
         <!-- Observations -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Observaciones
+            Comentarios
           </label>
           <UTextarea v-model="formData.observaciones" placeholder="Agregar observaciones sobre el permiso..." :rows="3"
             class="w-full" />
@@ -160,9 +158,9 @@ const permisoService = PermisoService.getInstance()
 const formData = ref({
   entidad: '',
   nombrePermiso: '',
-  codigoPermiso: 'PRM-2024-001',
-  costoBase: '90',
-  costoTramitador: '50',
+  codigoPermiso: '',
+  costoBase: '',
+  costoTramitador: '',
   observaciones: ''
 })
 
@@ -252,9 +250,9 @@ const saveForm = async () => {
 
     if (response.success && response.data) {
       console.log('Regulación de permiso guardada exitosamente:', response.data)
-      
+
       // Mostrar notificación de éxito (aquí podrías usar un toast o notificación)
-      
+
       // Redirigir de vuelta a la lista
       router.push('/basedatos/regulaciones')
     } else {

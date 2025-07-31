@@ -366,7 +366,8 @@ const goBack = () => {
 }
 
 const getImageUrl = (ruta: string) => {
-  return `http://localhost:8000/storage/${ruta}`
+    const config = useRuntimeConfig()
+    return `${config.public.apiBaseUrl}/storage/${ruta}`
 }
 
 const loadRegulation = async () => {

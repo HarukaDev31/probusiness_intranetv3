@@ -30,7 +30,7 @@ class ProductRubroService {
     }
 
     /**
-     * Obtener lista de entidades
+     * Obtener lista de rubros
      */
     async getProductRubros(search?: string): Promise<ProductRubroListResponse> {
         try {
@@ -44,11 +44,28 @@ class ProductRubroService {
             )
             return response
         } catch (error) {
-            console.error('Error fetching entities:', error)
+            console.error('Error fetching rubros:', error)
             return {
                 success: false,
                 data: [],
-                error: 'Error al obtener las entidades'
+                error: 'Error al obtener los rubros'
+            }
+        }
+    }
+
+    /**
+     * Obtener un rubro por ID
+     */
+    async getProductRubroById(id: number): Promise<ProductRubroResponse> {
+        try {
+            const response = await apiCall<ProductRubroResponse>(`/api/base-datos/regulaciones/rubros/${id}`)
+            return response
+        } catch (error) {
+            console.error('Error fetching rubro:', error)
+            return {
+                success: false,
+                data: {} as ProductRubro,
+                error: 'Error al obtener el rubro'
             }
         }
     }

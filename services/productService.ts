@@ -103,12 +103,31 @@ class ProductService {
     }
   }
 
-  // Actualizar un producto
-  async updateProduct(id: number, product: Partial<Product>): Promise<ProductResponse> {
+  // Actualizar un producto con campos opcionales
+  async updateProduct(id: number, productData: {
+    link?: string
+    arancel_sunat?: string
+    arancel_tlc?: string
+    correlativo?: string
+    antidumping?: string
+    antidumping_value?: string
+    tipo_producto?: string
+    entidad_id?: number
+    etiquetado?: string
+    tipo_etiquetado_id?: number
+    doc_especial?: string
+    tiene_observaciones?: boolean
+    observaciones?: string
+  }): Promise<ProductResponse> {
     try {
+      // Filtrar campos que no sean undefined o null
+      const filteredData = Object.fromEntries(
+        Object.entries(productData).filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      )
+
       const response = await apiCall<ProductResponse>(`/api/base-datos/productos/${id}`, {
         method: 'PUT',
-        body: product
+        body: JSON.stringify(filteredData)
       })
       return response
     } catch (error) {

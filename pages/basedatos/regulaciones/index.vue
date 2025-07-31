@@ -27,83 +27,98 @@
             <!-- Tab Antidumping -->
             <div v-if="activeTab === 'antidumping'">
                 <div class="mb-4">
-                    <UButton label="Crear Antidumping" icon="i-heroicons-plus" color="primary"
-                        @click="navigateToCreate('antidumping')" />
+                    <UButton 
+                        v-if="hasRole('Documentacion')"
+                        label="Crear Antidumping" 
+                        icon="i-heroicons-plus" 
+                        color="primary"
+                        @click="navigateToCreate('antidumping')" 
+                    />
                 </div>
                 <UCard>
                     <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <UIcon name="i-heroicons-shield-check" class="text-xl mr-2 text-gray-600" />
-                            <h3 class="text-lg font-semibold">Regulaciones Antidumping</h3>
-                        </div>
+
                         <UButton icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportAntidumping"
                             :loading="loadingAntidumping">
                             Exportar
                         </UButton>
                     </div>
 
-                    <UTable v-model:expanded="expandedAntidumping" :data="antidumpingData" :columns="antidumpingColumns"
-                        :ui="{ tr: 'data-[expanded=true]:bg-elevated/50' }" :loading="loadingAntidumping"
-                        class="flex-1">
+                    <UTable :data="antidumpingData" :columns="antidumpingColumns" :grouping="['nombre']"
+                        :grouping-options="grouping_options" :loading="loadingAntidumping" :ui="{
+                            root: 'min-w-full',
+                            td: 'empty:p-0'
+                        }" class="flex-1">
+                        <template #title-cell="{ row }">
+                            <div v-if="row.getIsGrouped()" class="flex items-center">
+                                <span class="inline-block" :style="{ width: `calc(${row.depth} * 1rem)` }" />
+                                <div class="flex items-center justify-between w-full">
+                                    <strong>{{ row.original.nombre }}</strong>
+
+                                    <UButton variant="outline" color="neutral" class="mr-2" size="xs"
+                                        :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
+                                        @click="row.toggleExpanded()" />
+                                </div>
+                            </div>
+                        </template>
+
                         <template #expanded="{ row }">
                             <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg m-2">
-                                <h4 class="font-semibold mb-3 text-gray-700 dark:text-gray-300">
-                                    Regulaciones de {{ row.original.nombre }}
-                                </h4>
-                                <div class="space-y-3">
-                                    <div v-for="regulacion in row.original.regulaciones" :key="regulacion.id"
-                                        class="bg-white dark:bg-gray-700 p-3 rounded border hover:shadow-md transition-shadow">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <h5 class="font-medium text-gray-900 dark:text-white">
-                                                {{ regulacion.descripcion }}
-                                            </h5>
-                                            <div class="flex items-center gap-2">
-                                                <UBadge :variant="regulacion.estado === 'active' ? 'solid' : 'subtle'"
-                                                    :color="regulacion.estado === 'active' ? 'success' : 'neutral'"
-                                                    class="text-xs">
-                                                    {{ regulacion.estado === 'active' ? 'Activo' : 'Inactivo' }}
-                                                </UBadge>
-                                                <UButton
-                                                    icon="i-heroicons-eye"
-                                                    variant="ghost"
-                                                    size="xs"
-                                                    color="blue"
-                                                    @click="viewRegulationDetail(regulacion.id)"
-                                                    title="Ver detalle"
-                                                />
-                                                <UButton
-                                                    icon="i-heroicons-pencil-square"
-                                                    variant="ghost"
-                                                    size="xs"
-                                                    color="green"
-                                                    @click="editRegulation(regulacion.id)"
-                                                    title="Editar"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                                            <div>
-                                                <span class="text-gray-500 dark:text-gray-400">Partida:</span>
-                                                <span class="ml-1 font-medium">{{ regulacion.partida }}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-gray-500 dark:text-gray-400">Precio Declarado:</span>
-                                                <span class="ml-1 font-medium">${{ regulacion.precio_declarado }}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-gray-500 dark:text-gray-400">Antidumping:</span>
-                                                <span class="ml-1 font-medium text-red-600">{{ regulacion.antidumping
-                                                    }}%</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-gray-500 dark:text-gray-400">Fecha:</span>
-                                                <span class="ml-1 font-medium">{{ new
-                                                    Date(regulacion.created_at).toLocaleDateString() }}</span>
-                                            </div>
-                                        </div>
-                                       
-                                    </div>
-                                </div>
+
+
+                                <UTable :data="row.original.regulaciones" :columns="[
+                                    {
+                                        accessorKey: 'id',
+                                        header: 'ID',
+                                        cell: ({ row }: { row: any }) => `#${row.index + 1}`
+                                    },
+                                    {
+                                        accessorKey: 'descripcion',
+                                        header: 'Descripción'
+                                    },
+                                    {
+                                        accessorKey: 'partida',
+                                        header: 'Partida'
+                                    },
+                                    {
+                                        accessorKey: 'precio_declarado',
+                                        header: 'Precio Declarado',
+                                        cell: ({ row }: { row: any }) => `$${row.getValue('precio_declarado')}`
+                                    },
+                                    {
+                                        accessorKey: 'antidumping',
+                                        header: 'Antidumping',
+                                        cell: ({ row }: { row: any }) => `${row.getValue('antidumping')}%`
+                                    },
+
+                                    {
+                                        id: 'actions',
+                                        header: 'Acciones',
+                                        cell: ({ row }: { row: any }) => h('div', { class: 'flex items-center gap-2' }, [
+                                            h(UButton, {
+                                                icon: 'i-heroicons-eye',
+                                                variant: 'ghost',
+                                                size: 'xs',
+                                                color: 'blue',
+                                                onClick: () => viewRegulationDetail(row.original.id),
+                                                title: 'Ver detalle'
+                                            }),
+                                            ...(hasRole('Documentacion') ? [
+                                                h(UButton, {
+                                                    icon: 'i-heroicons-pencil-square',
+                                                    variant: 'ghost',
+                                                    size: 'xs',
+                                                    color: 'green',
+                                                    onClick: () => editRegulation(row.original.id),
+                                                    title: 'Editar'
+                                                })
+                                            ] : [])
+                                        ])
+                                    }
+                                ]" :ui="{
+                                    root: 'min-w-full',
+                                    td: 'py-2 px-3'
+                                }" />
                             </div>
                         </template>
                     </UTable>
@@ -113,74 +128,97 @@
             <!-- Tab Permisos -->
             <div v-if="activeTab === 'permisos'">
                 <div class="mb-4">
-                    <UButton label="Crear Permiso" icon="i-heroicons-plus" color="primary"
-                        @click="navigateToCreate('permisos')" />
+                    <UButton 
+                        v-if="hasRole('Documentacion')"
+                        label="Crear Permiso" 
+                        icon="i-heroicons-plus" 
+                        color="primary"
+                        @click="navigateToCreate('permisos')" 
+                    />
                 </div>
                 <UCard>
                     <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <UIcon name="i-heroicons-document-text" class="text-xl mr-2 text-gray-600" />
-                            <h3 class="text-lg font-semibold">Regulaciones de Permisos</h3>
-                        </div>
+
                         <UButton icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportPermisos"
                             :loading="loadingPermisos">
                             Exportar
                         </UButton>
                     </div>
 
-                    <UTable v-model:expanded="expandedPermisos" :data="permisosData" :columns="permisosColumns"
-                        :ui="{ tr: 'data-[expanded=true]:bg-elevated/50' }" :loading="loadingPermisos"
-                        class="flex-1">
+                    <UTable :data="permisosData" :columns="permisosColumns" :grouping="['nombre']"
+                        :grouping-options="grouping_options" :loading="loadingPermisos" :ui="{
+                            root: 'min-w-full',
+                            td: 'empty:p-0'
+                        }" class="flex-1">
+                        <template #title-cell="{ row }">
+                            <div v-if="row.getIsGrouped()" class="flex items-center">
+                                <span class="inline-block" :style="{ width: `calc(${row.depth} * 1rem)` }" />
+
+                                <div class="flex items-center justify-between w-full">
+                                    <strong>{{ row.original.nombre }}</strong>
+                                    <UButton variant="outline" color="neutral" class="mr-2" size="xs"
+                                        :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
+                                        @click="row.toggleExpanded()" />
+                                </div>
+
+                            </div>
+                        </template>
+
                         <template #expanded="{ row }">
                             <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg m-2">
-                                <h4 class="font-semibold mb-3 text-gray-700 dark:text-gray-300">
-                                    Regulaciones de {{ row.original.nombre }}
-                                </h4>
-                                <div class="space-y-3">
-                                    <div v-for="regulacion in row.original.regulaciones" :key="regulacion.id"
-                                        class="bg-white dark:bg-gray-700 p-3 rounded border hover:shadow-md transition-shadow">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <h5 class="font-medium text-gray-900 dark:text-white">
-                                                {{ regulacion.nombre }}
-                                            </h5>
-                                            <div class="flex items-center gap-2">
-                                                <UBadge :variant="regulacion.estado === 'active' ? 'solid' : 'subtle'"
-                                                    :color="regulacion.estado === 'active' ? 'success' : 'neutral'"
-                                                    class="text-xs">
-                                                    {{ regulacion.estado === 'active' ? 'Activo' : 'Inactivo' }}
-                                                </UBadge>
-                                                <UButton
-                                                    icon="i-heroicons-eye"
-                                                    variant="ghost"
-                                                    size="xs"
-                                                    color="blue"
-                                                    @click="viewPermisoDetail(regulacion.id)"
-                                                    title="Ver detalle"
-                                                />
-                                                <UButton
-                                                    icon="i-heroicons-pencil-square"
-                                                    variant="ghost"
-                                                    size="xs"
-                                                    color="green"
-                                                    @click="editPermiso(regulacion.id)"
-                                                    title="Editar"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                                            
-                                            <div>
-                                                <span class="text-gray-500 dark:text-gray-400">C. Permiso:</span>
-                                                <span class="ml-1 font-medium">S/.{{ regulacion.c_permiso }}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-gray-500 dark:text-gray-400">C. Tramitador:</span>
-                                                <span class="ml-1 font-medium">S/.{{ regulacion.c_tramitador }}</span>
-                                            </div>
-                                        </div>
-                                        
-                                    </div>
-                                </div>
+
+
+                                <!-- Tabla de subitems para Permisos -->
+                                <UTable :data="row.original.regulaciones" :columns="[
+                                    {
+                                        accessorKey: 'id',
+                                        header: 'ID',
+                                        cell: ({ row }: { row: any }) => `#${row.index + 1}`
+                                    },
+                                    {
+                                        accessorKey: 'nombre',
+                                        header: 'Nombre'
+                                    },
+
+                                    {
+                                        accessorKey: 'c_permiso',
+                                        header: 'C. Permiso',
+                                        cell: ({ row }: { row: any }) => `S/.${row.getValue('c_permiso')}`
+                                    },
+                                    {
+                                        accessorKey: 'c_tramitador',
+                                        header: 'C. Tramitador',
+                                        cell: ({ row }: { row: any }) => `S/.${row.getValue('c_tramitador')}`
+                                    },
+
+                                    {
+                                        id: 'actions',
+                                        header: 'Acciones',
+                                        cell: ({ row }: { row: any }) => h('div', { class: 'flex items-center gap-2' }, [
+                                            h(UButton, {
+                                                icon: 'i-heroicons-eye',
+                                                variant: 'ghost',
+                                                size: 'xs',
+                                                color: 'blue',
+                                                onClick: () => viewPermisoDetail(row.original.id),
+                                                title: 'Ver detalle'
+                                            }),
+                                            ...(hasRole('Documentacion') ? [
+                                                h(UButton, {
+                                                    icon: 'i-heroicons-pencil-square',
+                                                    variant: 'ghost',
+                                                    size: 'xs',
+                                                    color: 'green',
+                                                    onClick: () => editPermiso(row.original.id),
+                                                    title: 'Editar'
+                                                })
+                                            ] : [])
+                                        ])
+                                    }
+                                ]" :ui="{
+                                    root: 'min-w-full',
+                                    td: 'py-2 px-3'
+                                }" />
                             </div>
                         </template>
                     </UTable>
@@ -190,82 +228,83 @@
             <!-- Tab Etiquetado -->
             <div v-if="activeTab === 'etiquetado'">
                 <div class="mb-4">
-                    <UButton label="Crear Etiquetado" icon="i-heroicons-plus" color="primary"
-                        @click="navigateToCreate('etiquetado')" />
+                    <UButton 
+                        v-if="hasRole('Documentacion')"
+                        label="Crear Etiquetado" 
+                        icon="i-heroicons-plus" 
+                        color="primary"
+                        @click="navigateToCreate('etiquetado')" 
+                    />
                 </div>
                 <UCard>
                     <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <UIcon name="i-heroicons-tag" class="text-xl mr-2 text-gray-600" />
-                            <h3 class="text-lg font-semibold">Regulaciones de Etiquetado</h3>
-                        </div>
+
                         <UButton icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportEtiquetado"
                             :loading="loadingEtiquetado">
                             Exportar
                         </UButton>
                     </div>
 
-                    <UTable v-model:expanded="expandedEtiquetado" :data="etiquetadoData" :columns="etiquetadoColumns"
-                        :ui="{ tr: 'data-[expanded=true]:bg-elevated/50' }" :loading="loadingEtiquetado"
-                        class="flex-1">
-                        <template #expanded="{ row }">
-                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg m-2">
-                                <h4 class="font-semibold mb-3 text-gray-700 dark:text-gray-300">
-                                    Regulaciones de {{ row.original.nombre }}
-                                </h4>
-                                <div class="space-y-3">
-                                    <div v-for="regulacion in row.original.regulaciones" :key="regulacion.id"
-                                        class="bg-white dark:bg-gray-700 p-3 rounded border hover:shadow-md transition-shadow">
-                                        <div class="flex justify-between items-start mb-3">
-                                            <div class="flex-1">
-                                                <!-- Observaciones -->
-                                                <div v-if="regulacion.observaciones">
-                                                    <span class="text-gray-500 dark:text-gray-400 text-sm">Observaciones:</span>
-                                                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1 bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                                                        {{ regulacion.observaciones }}
-                                                    </p>
-                                                </div>
-                                                
-                                                <!-- Imágenes -->
-                                                <div v-if="regulacion.imagenes && regulacion.imagenes.length > 0" class="mt-3">
-                                                    <span class="text-gray-500 dark:text-gray-400 text-sm">Imágenes:</span>
-                                                    <div class="flex gap-2 mt-2 overflow-x-auto">
-                                                        <div 
-                                                            v-for="(imagen, imgIndex) in regulacion.imagenes" 
-                                                            :key="imgIndex"
-                                                            class="relative group cursor-pointer flex-shrink-0"
-                                                            @click="openImageModal(imagen)"
-                                                        >
-                                                            <img 
-                                                                :src="getImageUrl(imagen)" 
-                                                                :alt="`Imagen ${imgIndex + 1}`"
-                                                                class="w-16 h-16 object-cover rounded border border-gray-200 dark:border-gray-700 hover:border-green-500 transition-colors"
-                                                            />
-                                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
-                                                                <UIcon 
-                                                                    name="i-heroicons-magnifying-glass-plus" 
-                                                                    class="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="flex items-center gap-2 ml-4">
-                                                <UButton
-                                                    icon="i-heroicons-pencil-square"
-                                                    variant="ghost"
-                                                    size="xs"
-                                                    color="green"
-                                                    @click="editEtiquetado(regulacion.id)"
-                                                    title="Editar"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                    <UTable :data="etiquetadoData" :columns="etiquetadoColumns" :grouping="['nombre']"
+                        :grouping-options="grouping_options" :loading="loadingEtiquetado" :ui="{
+                            root: 'min-w-full',
+                            td: 'empty:p-0'
+                        }" class="flex-1">
+                        <template #title-cell="{ row }">
+                            <div v-if="row.getIsGrouped()" class="flex items-center">
+                                <span class="inline-block" :style="{ width: `calc(${row.depth} * 1rem)` }" />
+                                <div class="flex items-center justify-between w-full">
+                                    <strong>{{ row.original.nombre }}</strong>
+
+                                    <UButton variant="outline" color="neutral" class="mr-2" size="xs"
+                                        :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
+                                        @click="row.toggleExpanded()" />
                                 </div>
                             </div>
+                        </template>
+                        <template #expanded="{ row }">
+                            <UTable :data="row.original.regulaciones" :columns="[
+                                {
+                                    accessorKey: 'id',
+                                    header: 'ID',
+                                    cell: ({ row }: { row: any }) => `#${row.index + 1}`
+                                },
+                                {
+                                    accessorKey: 'imagenes',
+                                    header: 'Fotos',
+                                    cell: ({ row }: { row: any }) => {
+                                        const imagenes = row.getValue('imagenes')
+                                        return h(ImagePreview, {
+                                            images: imagenes || [],
+                                            altText: 'Vista previa de imagen'
+                                        })
+                                    }
+                                },
+                                {
+                                    accessorKey: 'observaciones',
+                                    header: 'Descripciones minimas'
+                                },
+
+                                {
+                                    id: 'actions',
+                                    header: 'Acciones',
+                                    cell: ({ row }: { row: any }) => h('div', { class: 'flex items-center gap-2' }, [
+                                        ...(hasRole('Documentacion') ? [
+                                            h(UButton, {
+                                                icon: 'i-heroicons-pencil-square',
+                                                variant: 'ghost',
+                                                size: 'xs',
+                                                color: 'green',
+                                                onClick: () => editEtiquetado(row.original.id),
+                                                title: 'Editar'
+                                            })
+                                        ] : [])
+                                    ])
+                                }
+                            ]" :ui="{
+                                root: 'min-w-full',
+                                td: 'py-2 px-3'
+                            }" />
                         </template>
                     </UTable>
                 </UCard>
@@ -274,110 +313,88 @@
             <!-- Tab Documentos Especiales -->
             <div v-if="activeTab === 'documentos'">
                 <div class="mb-4">
-                    <UButton label="Crear Documento Especial" icon="i-heroicons-plus" color="primary"
-                        @click="navigateToCreate('documentos')" />
+                    <UButton 
+                        v-if="hasRole('Documentacion')"
+                        label="Crear Documento Especial" 
+                        icon="i-heroicons-plus" 
+                        color="primary"
+                        @click="navigateToCreate('documentos')" 
+                    />
                 </div>
                 <UCard>
                     <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <UIcon name="i-heroicons-document" class="text-xl mr-2 text-gray-600" />
-                            <h3 class="text-lg font-semibold">Regulaciones de Documentos Especiales</h3>
-                        </div>
+                      
                         <UButton icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportDocumentos"
                             :loading="loadingDocumentos">
                             Exportar
                         </UButton>
                     </div>
 
-                    <UTable v-model:expanded="expandedDocumentos" :data="documentosData" :columns="documentosColumns"
-                        :ui="{ tr: 'data-[expanded=true]:bg-elevated/50' }" :loading="loadingDocumentos"
-                        class="flex-1">
+                    <UTable :data="documentosData" :columns="documentosColumns" :grouping="['nombre']"
+                        :grouping-options="grouping_options" :loading="loadingDocumentos" :ui="{
+                            root: 'min-w-full',
+                            td: 'empty:p-0'
+                        }" class="flex-1">
+                        <template #title-cell="{ row }">
+                            <div v-if="row.getIsGrouped()" class="flex items-center">
+                                <span class="inline-block" :style="{ width: `calc(${row.depth} * 1rem)` }" />
+
+                                <div class="flex items-center justify-between w-full">
+                                    <strong>{{ row.original.nombre }}</strong>
+                                    <UButton variant="outline" color="neutral" class="mr-2" size="xs"
+                                        :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
+                                        @click="row.toggleExpanded()" />
+                                </div>
+                            </div>
+                        </template>
                         <template #expanded="{ row }">
                             <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg m-2">
-                                <h4 class="font-semibold mb-3 text-gray-700 dark:text-gray-300">
-                                    Regulaciones de {{ row.original.nombre }}
-                                </h4>
-                                <div class="space-y-3">
-                                    <div v-for="regulacion in row.original.regulaciones" :key="regulacion.id"
-                                        class="bg-white dark:bg-gray-700 p-3 rounded border hover:shadow-md transition-shadow">
-                                        <div class="flex justify-between items-start mb-3">
-                                            <div class="flex-1">
-                                                <!-- Observaciones -->
-                                                <div v-if="regulacion.observaciones">
-                                                    <span class="text-gray-500 dark:text-gray-400 text-sm">Observaciones:</span>
-                                                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1 bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                                                        {{ regulacion.observaciones }}
-                                                    </p>
-                                                </div>
-                                                
-                                                <!-- Documentos -->
-                                                <div v-if="(regulacion.documentos && regulacion.documentos.length > 0) || (regulacion.media && regulacion.media.length > 0)" class="mt-3">
-                                                    <span class="text-gray-500 dark:text-gray-400 text-sm">Documentos:</span>
-                                                    <div class="flex gap-2 mt-2 overflow-x-auto">
-                                                        <!-- Documentos como strings (rutas) -->
-                                                        <div 
-                                                            v-for="(documento, docIndex) in regulacion.documentos" 
-                                                            :key="`doc-${docIndex}`"
-                                                            class="relative group cursor-pointer flex-shrink-0"
-                                                            @click="openDocumentModal(documento)"
-                                                        >
-                                                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors flex items-center justify-center">
-                                                                <UIcon 
-                                                                    name="i-heroicons-document" 
-                                                                    class="w-8 h-8 text-gray-500 dark:text-gray-400"
-                                                                />
-                                                            </div>
-                                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
-                                                                <UIcon 
-                                                                    name="i-heroicons-arrow-down-tray" 
-                                                                    class="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                />
-                                                            </div>
-                                                            <div class="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
-                                                                {{ getFileExtension(documento) }}
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <!-- Documentos como objetos media -->
-                                                        <div 
-                                                            v-for="(documento, docIndex) in regulacion.media" 
-                                                            :key="`media-${docIndex}`"
-                                                            class="relative group cursor-pointer flex-shrink-0"
-                                                            @click="openDocumentModal(documento.ruta)"
-                                                        >
-                                                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors flex items-center justify-center">
-                                                                <UIcon 
-                                                                    name="i-heroicons-document" 
-                                                                    class="w-8 h-8 text-gray-500 dark:text-gray-400"
-                                                                />
-                                                            </div>
-                                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
-                                                                <UIcon 
-                                                                    name="i-heroicons-arrow-down-tray" 
-                                                                    class="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                />
-                                                            </div>
-                                                            <div class="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
-                                                                {{ documento.extension.toUpperCase() }}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="flex items-center gap-2 ml-4">
-                                                <UButton
-                                                    icon="i-heroicons-pencil-square"
-                                                    variant="ghost"
-                                                    size="xs"
-                                                    color="green"
-                                                    @click="editDocumento(regulacion.id)"
-                                                    title="Editar"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                               
+
+                                <!-- Tabla de subitems para Documentos Especiales -->
+                                <UTable :data="row.original.regulaciones" :columns="[
+                                  
+                                    {
+                                        accessorKey: 'observaciones',
+                                        header: 'Comentarios',
+                                        cell: ({ row }: { row: any }) => {
+                                            const obs = row.getValue('observaciones')
+                                            return obs ? obs : 'Sin observaciones'
+                                        }
+                                    },
+                                    {
+                                        accessorKey: 'documentos',
+                                        header: 'Documentos a presentar',
+                                        cell: ({ row }: { row: any }) => {
+                                            const docs = row.getValue('documentos')
+                                            const media = row.original.media
+                                            return h(DocumentPreview, {
+                                                documents: docs || [],
+                                                media: media || []
+                                            })
+                                        }
+                                    },
+                                
+                                    {
+                                        id: 'actions',
+                                        header: 'Acciones',
+                                        cell: ({ row }: { row: any }) => h('div', { class: 'flex items-center gap-2' }, [
+                                            ...(hasRole('Documentacion') ? [
+                                                h(UButton, {
+                                                    icon: 'i-heroicons-pencil-square',
+                                                    variant: 'ghost',
+                                                    size: 'xs',
+                                                    color: 'green',
+                                                    onClick: () => editDocumento(row.original.id),
+                                                    title: 'Editar'
+                                                })
+                                            ] : [])
+                                        ])
+                                    }
+                                ]" :ui="{
+                                    root: 'min-w-full',
+                                    td: 'py-2 px-3'
+                                }" />
                             </div>
                         </template>
                     </UTable>
@@ -387,75 +404,30 @@
     </div>
 
     <!-- Image Modal -->
-    <div v-if="showImageModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" @click="closeImageModal">
-        <div class="relative max-w-4xl max-h-[90vh] overflow-hidden" @click.stop>
-            <!-- Close button -->
-            <UButton
-                icon="i-heroicons-x-mark"
-                variant="ghost"
-                size="sm"
-                class="absolute top-4 right-4 z-10 bg-white dark:bg-gray-800 rounded-full shadow-lg"
-                @click="closeImageModal"
-            />
-            
-            <!-- Image container -->
-            <div class="relative overflow-hidden rounded-lg">
-                <img 
-                    :src="selectedImage" 
-                    :alt="'Vista previa de imagen'"
-                    class="max-w-full max-h-[80vh] object-contain select-none"
-                    @mousedown="handleMouseDown"
-                    @mousemove="handleMouseMove"
-                    @mouseup="handleMouseUp"
-                    @mouseleave="handleMouseLeave"
-                    @wheel="handleWheel"
-                    @dragstart.prevent
-                    @selectstart.prevent
-                    draggable="false"
-                    :style="{
-                        transform: `scale(${imageScale}) translate(${imagePosition.x}px, ${imagePosition.y}px)`,
-                        transition: isDragging ? 'none' : 'transform 0.2s ease-out',
-                        cursor: isDragging ? 'grabbing' : 'grab'
-                    }"
-                />
-            </div>
-            
-            <!-- Zoom controls -->
-            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2">
-                <UButton
-                    icon="i-heroicons-minus"
-                    variant="ghost"
-                    size="sm"
-                    @click="zoomOut"
-                    :disabled="imageScale <= 0.5"
-                />
-                <span class="text-sm font-medium min-w-[60px] text-center">
-                    {{ Math.round(imageScale * 100) }}%
-                </span>
-                <UButton
-                    icon="i-heroicons-plus"
-                    variant="ghost"
-                    size="sm"
-                    @click="zoomIn"
-                    :disabled="imageScale >= 3"
-                />
-                <UButton
-                    icon="i-heroicons-arrow-path"
-                    variant="ghost"
-                    size="sm"
-                    @click="resetImage"
-                />
-            </div>
-        </div>
-    </div>
+    <ImageModal :is-open="showImageModal" :image-url="selectedImage" alt-text="Vista previa de imagen"
+        @close="closeImageModal" />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, h } from 'vue'
+import { ref, onMounted, watch, h, resolveComponent } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
+import { getGroupedRowModel } from '@tanstack/vue-table'
+import type { GroupingOptions } from '@tanstack/vue-table'
 import AntidumpingService from '~/services/antidumpingService'
 import PermisoService from '~/services/permisoService'
 import EtiquetadoService from '~/services/etiquetadoService'
 import DocumentoService from '~/services/documentoService'
+import ImagePreview from '~/components/ImagePreview.vue'
+import DocumentPreview from '~/components/DocumentPreview.vue'
+
+// User role composable
+const { hasRole } = useUserRole()
+
+// Notifications and loading
+const { showCreateSuccess, showUpdateSuccess, showDeleteSuccess, showServerError } = useNotifications()
+const { withLoading } = useLoading()
+
+const UBadge = resolveComponent('UBadge')
 
 // Types
 interface RegulationItem {
@@ -494,175 +466,175 @@ interface ProductRubro {
 }
 
 interface AntidumpingResponse {
-  success: boolean
-  data: ProductRubro[]
-  error?: string
+    success: boolean
+    data: ProductRubro[]
+    error?: string
 }
 
 // Interface para la respuesta jerárquica del backend
 interface AntidumpingHierarchicalResponse {
-  status: string
-  data: {
-    id: number
-    nombre: string
-    created_at: string
-    updated_at: string
-    regulaciones: {
-      id: number
-      descripcion: string
-      partida: string
-      precio_declarado: string
-      antidumping: string
-      observaciones: string
-      imagenes: string[]
-      estado: string
-      created_at: string
-      updated_at: string
+    status: string
+    data: {
+        id: number
+        nombre: string
+        created_at: string
+        updated_at: string
+        regulaciones: {
+            id: number
+            descripcion: string
+            partida: string
+            precio_declarado: string
+            antidumping: string
+            observaciones: string
+            imagenes: string[]
+            estado: string
+            created_at: string
+            updated_at: string
+        }[]
     }[]
-  }[]
-  pagination: {
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-    from: number
-    to: number
-  }
+    pagination: {
+        current_page: number
+        last_page: number
+        per_page: number
+        total: number
+        from: number
+        to: number
+    }
 }
 
 // Interface para la respuesta jerárquica de permisos
 interface PermisoHierarchicalResponse {
-  success: boolean
-  data: {
-    id: number
-    nombre: string
-    descripcion: string
-    created_at: string
-    updated_at: string
-    regulaciones: {
-      id: number
-      tipo: string
-      id_rubro: number
-      rubro_nombre: string
-      nombre: string
-      c_permiso: number
-      c_tramitador: number
-      observaciones?: string
-      documentos?: string[]
-      estado: string
-      created_at: string
-      updated_at: string
+    success: boolean
+    data: {
+        id: number
+        nombre: string
+        descripcion: string
+        created_at: string
+        updated_at: string
+        regulaciones: {
+            id: number
+            tipo: string
+            id_rubro: number
+            rubro_nombre: string
+            nombre: string
+            c_permiso: number
+            c_tramitador: number
+            observaciones?: string
+            documentos?: string[]
+            estado: string
+            created_at: string
+            updated_at: string
+        }[]
     }[]
-  }[]
-  pagination: {
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-    from: number
-    to: number
-  }
+    pagination: {
+        current_page: number
+        last_page: number
+        per_page: number
+        total: number
+        from: number
+        to: number
+    }
 }
 
 // Interface para entidades de permisos
 interface PermisoEntidad {
-  id: number
-  nombre: string
-  descripcion: string
-  regulaciones: PermisoRegulation[]
+    id: number
+    nombre: string
+    descripcion: string
+    regulaciones: PermisoRegulation[]
 }
 
 // Interface para regulaciones de permisos
 interface PermisoRegulation {
-  id: number
-  tipo: string
-  id_rubro: number
-  rubro_nombre: string
-  nombre: string
-  c_permiso: number
-  c_tramitador: number
-  observaciones?: string
-  documentos?: string[]
-  estado: string
-  created_at: string
-  updated_at: string
+    id: number
+    tipo: string
+    id_rubro: number
+    rubro_nombre: string
+    nombre: string
+    c_permiso: number
+    c_tramitador: number
+    observaciones?: string
+    documentos?: string[]
+    estado: string
+    created_at: string
+    updated_at: string
 }
 
 // Interface para la respuesta jerárquica de etiquetado
 interface EtiquetadoHierarchicalResponse {
-  success: boolean
-  data: EtiquetadoEntidad[]
-  pagination: {
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-  }
-  error?: string
+    success: boolean
+    data: EtiquetadoEntidad[]
+    pagination: {
+        current_page: number
+        last_page: number
+        per_page: number
+        total: number
+    }
+    error?: string
 }
 
 // Interface para entidades de etiquetado
 interface EtiquetadoEntidad {
-  id: number
-  nombre: string
-  descripcion: string
-  regulaciones: EtiquetadoRegulation[]
+    id: number
+    nombre: string
+    descripcion: string
+    regulaciones: EtiquetadoRegulation[]
 }
 
 // Interface para regulaciones de etiquetado
 interface EtiquetadoRegulation {
-  id: number
-  tipo: string
-  observaciones: string
-  imagenes: string[]
-  estado: string
-  created_at: string
-  updated_at: string
+    id: number
+    tipo: string
+    observaciones: string
+    imagenes: string[]
+    estado: string
+    created_at: string
+    updated_at: string
 }
 
 // Interface para la respuesta jerárquica de documentos especiales
 interface DocumentoHierarchicalResponse {
-  success: boolean
-  data: DocumentoEntidad[]
-  pagination: {
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-  }
-  error?: string
+    success: boolean
+    data: DocumentoEntidad[]
+    pagination: {
+        current_page: number
+        last_page: number
+        per_page: number
+        total: number
+    }
+    error?: string
 }
 
 // Interface para entidades de documentos especiales
 interface DocumentoEntidad {
-  id: number
-  nombre: string
-  descripcion: string
-  regulaciones: DocumentoRegulation[]
+    id: number
+    nombre: string
+    descripcion: string
+    regulaciones: DocumentoRegulation[]
 }
 
 // Interface para regulaciones de documentos especiales
 interface DocumentoRegulation {
-  id: number
-  tipo: string
-  observaciones: string
-  documentos: string[]
-  media?: DocumentoMedia[]
-  estado: string
-  created_at: string
-  updated_at: string
+    id: number
+    tipo: string
+    observaciones: string
+    documentos: string[]
+    media?: DocumentoMedia[]
+    estado: string
+    created_at: string
+    updated_at: string
 }
 
 // Interface para media de documentos especiales
 interface DocumentoMedia {
-  id: number
-  id_regulacion: number
-  extension: string
-  peso: number
-  nombre_original: string
-  ruta: string
-  created_at: string
-  updated_at: string
+    id: number
+    id_regulacion: number
+    extension: string
+    peso: number
+    nombre_original: string
+    ruta: string
+    created_at: string
+    updated_at: string
 }
 
 // Tabs configuration
@@ -698,11 +670,6 @@ const permisoService = PermisoService.getInstance()
 const etiquetadoService = EtiquetadoService.getInstance()
 const documentoService = DocumentoService.getInstance()
 
-// Expanded state for tables
-const expandedAntidumping = ref({})
-const expandedPermisos = ref({})
-const expandedEtiquetado = ref({})
-const expandedDocumentos = ref({})
 
 // Loading states
 const loadingAntidumping = ref(false)
@@ -719,291 +686,152 @@ const documentosData = ref<DocumentoEntidad[]>([])
 // Image modal state
 const showImageModal = ref(false)
 const selectedImage = ref('')
-const imageScale = ref(1)
-const imagePosition = ref({ x: 0, y: 0 })
-const isDragging = ref(false)
-const dragStart = ref({ x: 0, y: 0 })
-const dragOffset = ref({ x: 0, y: 0 })
 const UButton = resolveComponent('UButton')
-const UBadge = resolveComponent('UBadge')
+
+// Grouping options
+const grouping_options = ref<GroupingOptions>({
+    groupedColumnMode: 'remove',
+    getGroupedRowModel: getGroupedRowModel()
+})
+
+// Helper function to get color by status
+const getColorByStatus = (status: string) => {
+    return {
+        active: 'success',
+        inactive: 'error'
+    }[status] || 'neutral'
+}
 
 // Columns for Antidumping (hierarchical structure)
-const antidumpingColumns = [
-    {
-        id: 'expand',
-        cell: ({ row }: { row: any }) =>
-            h(UButton, {
-                color: 'neutral',
-                variant: 'ghost',
-                icon: 'i-lucide-chevron-down',
-                square: true,
-                'aria-label': 'Expand',
-                ui: {
-                    leadingIcon: [
-                        'transition-transform',
-                        row.getIsExpanded() ? 'duration-200 rotate-180' : ''
-                    ]
-                },
-                onClick: () => row.toggleExpanded()
-            })
-    },
+const antidumpingColumns: TableColumn<any>[] = [
     {
         accessorKey: 'id',
         header: 'ID',
-        cell: ({ row }: { row: any }) => `#${row.getValue('id')}`
+        cell: ({ row }: { row: any }) => `#${row.index + 1}`
     },
     {
         accessorKey: 'nombre',
         header: 'Rubro'
     },
     {
-        accessorKey: 'descripcion',
-        header: 'Descripción'
+        id: 'title',
+        header: 'Producto'
     },
-    {
-        accessorKey: 'regulaciones',
-        header: 'Regulaciones',
-        cell: ({ row }: { row: any }) => {
-            const regulaciones = row.getValue('regulaciones') as AntidumpingRegulation[]
-            return h(UBadge, {
-                variant: 'subtle',
-                color: 'primary'
-            }, `${regulaciones.length} regulaciones`)
-        }
-    },
-    {
-        accessorKey: 'estado',
-        header: 'Estado',
-        cell: ({ row }: { row: any }) => {
-            const regulaciones = row.getValue('regulaciones') as AntidumpingRegulation[]
-            const activas = regulaciones.filter(r => r.estado === 'active').length
-            const total = regulaciones.length
-            return h(UBadge, {
-                variant: 'subtle',
-                color: activas === total ? 'success' : activas > 0 ? 'warning' : 'error'
-            }, `${activas}/${total} activas`)
-        }
-    }
+
+
+
+
 ]
 
 // Columns for Permisos (hierarchical structure)
-const permisosColumns = [
-    {
-        id: 'expand',
-        cell: ({ row }: { row: any }) =>
-            h(UButton, {
-                color: 'neutral',
-                variant: 'ghost',
-                icon: 'i-lucide-chevron-down',
-                square: true,
-                'aria-label': 'Expand',
-                ui: {
-                    leadingIcon: [
-                        'transition-transform',
-                        row.getIsExpanded() ? 'duration-200 rotate-180' : ''
-                    ]
-                },
-                onClick: () => row.toggleExpanded()
-            })
-    },
+const permisosColumns: TableColumn<any>[] = [
     {
         accessorKey: 'id',
         header: 'ID',
-        cell: ({ row }: { row: any }) => `#${row.getValue('id')}`
+        cell: ({ row }: { row: any }) => `#${row.index + 1}`
     },
     {
         accessorKey: 'nombre',
+        header: 'Rubro'
+    },
+    {
+        id: 'title',
         header: 'Entidad'
     },
-    {
-        accessorKey: 'descripcion',
-        header: 'Descripción'
-    },
-    {
-        accessorKey: 'regulaciones',
-        header: 'Regulaciones',
-        cell: ({ row }: { row: any }) => {
-            const regulaciones = row.getValue('regulaciones') as PermisoRegulation[]
-            return h(UBadge, {
-                variant: 'subtle',
-                color: 'primary'
-            }, `${regulaciones.length} regulaciones`)
-        }
-    },
-    {
-        accessorKey: 'estado',
-        header: 'Estado',
-        cell: ({ row }: { row: any }) => {
-            const regulaciones = row.getValue('regulaciones') as PermisoRegulation[]
-            const activas = regulaciones.filter(r => r.estado === 'active').length
-            const total = regulaciones.length
-            return h(UBadge, {
-                variant: 'subtle',
-                color: activas === total ? 'success' : activas > 0 ? 'warning' : 'error'
-            }, `${activas}/${total} activas`)
-        }
-    }
+
 ]
 
 // Columns for Etiquetado (hierarchical structure)
-const etiquetadoColumns = [
-    {
-        id: 'expand',
-        cell: ({ row }: { row: any }) =>
-            h(UButton, {
-                color: 'neutral',
-                variant: 'ghost',
-                icon: 'i-lucide-chevron-down',
-                square: true,
-                'aria-label': 'Expand',
-                ui: {
-                    leadingIcon: [
-                        'transition-transform',
-                        row.getIsExpanded() ? 'duration-200 rotate-180' : ''
-                    ]
-                },
-                onClick: () => row.toggleExpanded()
-            })
-    },
+const etiquetadoColumns: TableColumn<any>[] = [
     {
         accessorKey: 'id',
         header: 'ID',
-        cell: ({ row }: { row: any }) => `#${row.getValue('id')}`
+        cell: ({ row }: { row: any }) => `#${row.index + 1}`
     },
     {
         accessorKey: 'nombre',
         header: 'Rubro'
     },
     {
-        accessorKey: 'descripcion',
-        header: 'Descripción'
+        id: 'title',
+        header: 'Producto'
     },
-    {
-        accessorKey: 'regulaciones',
-        header: 'Regulaciones',
-        cell: ({ row }: { row: any }) => {
-            const regulaciones = row.getValue('regulaciones') as EtiquetadoRegulation[]
-            return h(UBadge, {
-                variant: 'subtle',
-                color: 'primary'
-            }, `${regulaciones.length} regulaciones`)
-        }
-    },
-    {
-        accessorKey: 'estado',
-        header: 'Estado',
-        cell: ({ row }: { row: any }) => {
-            const regulaciones = row.getValue('regulaciones') as EtiquetadoRegulation[]
-            const activas = regulaciones.filter(r => r.estado === 'active').length
-            const total = regulaciones.length
-            return h(UBadge, {
-                variant: 'subtle',
-                color: activas === total ? 'success' : activas > 0 ? 'warning' : 'error'
-            }, `${activas}/${total} activas`)
-        }
-    }
+
 ]
 
 // Columns for Documentos Especiales (hierarchical structure)
-const documentosColumns = [
-    {
-        id: 'expand',
-        cell: ({ row }: { row: any }) =>
-            h(UButton, {
-                color: 'neutral',
-                variant: 'ghost',
-                icon: 'i-lucide-chevron-down',
-                square: true,
-                'aria-label': 'Expand',
-                ui: {
-                    leadingIcon: [
-                        'transition-transform',
-                        row.getIsExpanded() ? 'duration-200 rotate-180' : ''
-                    ]
-                },
-                onClick: () => row.toggleExpanded()
-            })
-    },
+const documentosColumns: TableColumn<any>[] = [
     {
         accessorKey: 'id',
         header: 'ID',
-        cell: ({ row }: { row: any }) => `#${row.getValue('id')}`
+        cell: ({ row }: { row: any }) => `#${row.index + 1}`
     },
     {
         accessorKey: 'nombre',
         header: 'Rubro'
     },
     {
-        accessorKey: 'descripcion',
-        header: 'Descripción'
+        id: 'title',
+        header: 'Producto'
     },
-    {
-        accessorKey: 'regulaciones',
-        header: 'Regulaciones',
-        cell: ({ row }: { row: any }) => {
-            const regulaciones = row.getValue('regulaciones') as DocumentoRegulation[]
-            return h(UBadge, {
-                variant: 'subtle',
-                color: 'primary'
-            }, `${regulaciones.length} regulaciones`)
-        }
-    },
-    {
-        accessorKey: 'estado',
-        header: 'Estado',
-        cell: ({ row }: { row: any }) => {
-            const regulaciones = row.getValue('regulaciones') as DocumentoRegulation[]
-            const activas = regulaciones.filter(r => r.estado === 'active').length
-            const total = regulaciones.length
-            return h(UBadge, {
-                variant: 'subtle',
-                color: activas === total ? 'success' : activas > 0 ? 'warning' : 'error'
-            }, `${activas}/${total} activas`)
-        }
-    }
 ]
+
+// Helper function to transform data for grouping
+const transformDataForGrouping = (data: any[], groupBy: string) => {
+    return data.map(item => ({
+        ...item,
+        [groupBy]: item[groupBy] || 'Sin categoría'
+    }))
+}
 
 // Methods
 const loadAntidumpingData = async () => {
-  loadingAntidumping.value = true
-  try {
-    // Llamar al servicio para obtener los datos de antidumping
-    const response = await antidumpingService.getAntidumpingList()
-    
-    if (response.success && response.data) {
-      // Hacer cast a la respuesta jerárquica del backend
-      const hierarchicalResponse = response as unknown as AntidumpingHierarchicalResponse
-      
-      // El backend ya devuelve la estructura jerárquica correcta
-      antidumpingData.value = hierarchicalResponse.data.map(rubro => ({
-        id: rubro.id,
-        nombre: rubro.nombre,
-        descripcion: `Descripción de ${rubro.nombre}`, // Puedes ajustar esto según necesites
-        regulaciones: rubro.regulaciones.map(regulacion => ({
-          id: regulacion.id,
-          descripcion: regulacion.descripcion,
-          partida: regulacion.partida,
-          precio_declarado: parseFloat(regulacion.precio_declarado),
-          antidumping: parseFloat(regulacion.antidumping),
-          observaciones: regulacion.observaciones,
-          imagenes: regulacion.imagenes || [],
-          estado: regulacion.estado as 'active' | 'inactive',
-          created_at: regulacion.created_at,
-          updated_at: regulacion.updated_at
-        }))
-      }))
-      
-      console.log('Datos de antidumping cargados:', antidumpingData.value)
-    } else {
-      console.error('Error al cargar datos de antidumping:', response.error)
-      antidumpingData.value = []
+    loadingAntidumping.value = true
+    try {
+        // Llamar al servicio para obtener los datos de antidumping
+        const response = await withLoading(
+            () => antidumpingService.getAntidumpingList(),
+            'loadAntidumping',
+            'Cargando datos de antidumping...'
+        )
+
+        if (response.success && response.data) {
+            // Hacer cast a la respuesta jerárquica del backend
+            const hierarchicalResponse = response as unknown as AntidumpingHierarchicalResponse
+
+            // El backend ya devuelve la estructura jerárquica correcta
+            const transformedData = hierarchicalResponse.data.map(rubro => ({
+                id: rubro.id,
+                nombre: rubro.nombre,
+                descripcion: `Descripción de ${rubro.nombre}`, // Puedes ajustar esto según necesites
+                regulaciones: rubro.regulaciones.map(regulacion => ({
+                    id: regulacion.id,
+                    descripcion: regulacion.descripcion,
+                    partida: regulacion.partida,
+                    precio_declarado: parseFloat(regulacion.precio_declarado),
+                    antidumping: parseFloat(regulacion.antidumping),
+                    observaciones: regulacion.observaciones,
+                    imagenes: regulacion.imagenes || [],
+                    estado: regulacion.estado as 'active' | 'inactive',
+                    created_at: regulacion.created_at,
+                    updated_at: regulacion.updated_at
+                }))
+            }))
+
+            antidumpingData.value = transformDataForGrouping(transformedData, 'nombre')
+            console.log('Datos de antidumping cargados:', antidumpingData.value)
+        } else {
+            console.error('Error al cargar datos de antidumping:', response.error)
+            antidumpingData.value = []
+            showServerError('cargar datos de antidumping', response.error)
+        }
+    } catch (error: any) {
+        console.error('Error loading antidumping data:', error)
+        antidumpingData.value = []
+        showServerError('cargar datos de antidumping', error.message)
+    } finally {
+        loadingAntidumping.value = false
     }
-  } catch (error) {
-    console.error('Error loading antidumping data:', error)
-    antidumpingData.value = []
-  } finally {
-    loadingAntidumping.value = false
-  }
 }
 
 const loadPermisosData = async () => {
@@ -1011,13 +839,13 @@ const loadPermisosData = async () => {
     try {
         // Llamar al servicio para obtener los datos de permisos
         const response = await permisoService.getPermisos()
-        
+
         if (response.success && response.data) {
             // Hacer cast a la respuesta jerárquica del backend
             const hierarchicalResponse = response as unknown as PermisoHierarchicalResponse
-            
+
             // El backend ya devuelve la estructura jerárquica correcta
-            permisosData.value = hierarchicalResponse.data.map(entidad => ({
+            const transformedData = hierarchicalResponse.data.map(entidad => ({
                 id: entidad.id,
                 nombre: entidad.nombre,
                 descripcion: entidad.descripcion,
@@ -1036,7 +864,8 @@ const loadPermisosData = async () => {
                     updated_at: regulacion.updated_at
                 }))
             }))
-            
+
+            permisosData.value = transformDataForGrouping(transformedData, 'nombre')
             console.log('Datos de permisos cargados:', permisosData.value)
         } else {
             console.error('Error al cargar datos de permisos:', response.error)
@@ -1055,10 +884,10 @@ const loadEtiquetadoData = async () => {
     try {
         // Llamar al servicio para obtener los datos de etiquetado
         const response = await etiquetadoService.getEtiquetadosHierarchical()
-        
+
         if (response.success && response.data) {
             // El backend ya devuelve la estructura jerárquica correcta
-            etiquetadoData.value = response.data.map(rubro => ({
+            const transformedData = response.data.map(rubro => ({
                 id: rubro.id,
                 nombre: rubro.nombre,
                 descripcion: rubro.descripcion,
@@ -1072,7 +901,8 @@ const loadEtiquetadoData = async () => {
                     updated_at: regulacion.updated_at
                 }))
             }))
-            
+
+            etiquetadoData.value = transformDataForGrouping(transformedData, 'nombre')
             console.log('Datos de etiquetado cargados:', etiquetadoData.value)
         } else {
             console.error('Error al cargar datos de etiquetado:', response.error)
@@ -1091,10 +921,10 @@ const loadDocumentosData = async () => {
     try {
         // Llamar al servicio para obtener los datos de documentos especiales
         const response = await documentoService.getDocumentosHierarchical()
-        
+
         if (response.success && response.data) {
             // El backend ya devuelve la estructura jerárquica correcta
-            documentosData.value = response.data.map(rubro => ({
+            const transformedData = response.data.map(rubro => ({
                 id: rubro.id,
                 nombre: rubro.nombre,
                 descripcion: rubro.descripcion,
@@ -1109,7 +939,8 @@ const loadDocumentosData = async () => {
                     updated_at: regulacion.updated_at
                 }))
             }))
-            
+
+            documentosData.value = transformDataForGrouping(transformedData, 'nombre')
             console.log('Datos de documentos especiales cargados:', documentosData.value)
         } else {
             console.error('Error al cargar datos de documentos especiales:', response.error)
@@ -1141,148 +972,88 @@ const exportDocumentos = () => {
 
 // Navigation function
 const navigateToCreate = (type: string) => {
-  switch (type) {
-    case 'antidumping':
-      navigateTo('/basedatos/regulaciones/antidumping/crear')
-      break
-    case 'permisos':
-      navigateTo('/basedatos/regulaciones/permisos/crear')
-      break
-    case 'etiquetado':
-      navigateTo('/basedatos/regulaciones/etiquetado/crear')
-      break
-    case 'documentos':
-      navigateTo('/basedatos/regulaciones/documentos/crear')
-      break
-  }
+    switch (type) {
+        case 'antidumping':
+            navigateTo('/basedatos/regulaciones/antidumping/crear')
+            break
+        case 'permisos':
+            navigateTo('/basedatos/regulaciones/permisos/crear')
+            break
+        case 'etiquetado':
+            navigateTo('/basedatos/regulaciones/etiquetado/crear')
+            break
+        case 'documentos':
+            navigateTo('/basedatos/regulaciones/documentos/crear')
+            break
+    }
 }
 
 // View regulation detail
 const viewRegulationDetail = (regulationId: number) => {
-  navigateTo(`/basedatos/regulaciones/antidumping/${regulationId}`)
+    navigateTo(`/basedatos/regulaciones/antidumping/${regulationId}`)
 }
 
 // Edit regulation
 const editRegulation = (regulationId: number) => {
-  console.log('Navigating to edit:', regulationId)
-  navigateTo(`/basedatos/regulaciones/antidumping/editar/${regulationId}`)
+    console.log('Navigating to edit:', regulationId)
+    navigateTo(`/basedatos/regulaciones/antidumping/editar/${regulationId}`)
 }
 
 // View permiso detail
 const viewPermisoDetail = (regulationId: number) => {
-  navigateTo(`/basedatos/regulaciones/permisos/${regulationId}`)
+    navigateTo(`/basedatos/regulaciones/permisos/${regulationId}`)
 }
 
 // Edit permiso
 const editPermiso = (regulationId: number) => {
-  console.log('Navigating to edit permiso:', regulationId)
-  navigateTo(`/basedatos/regulaciones/permisos/editar/${regulationId}`)
+    console.log('Navigating to edit permiso:', regulationId)
+    navigateTo(`/basedatos/regulaciones/permisos/editar/${regulationId}`)
 }
 
 // View etiquetado detail
 const viewEtiquetadoDetail = (regulationId: number) => {
-  navigateTo(`/basedatos/regulaciones/etiquetado/${regulationId}`)
+    navigateTo(`/basedatos/regulaciones/etiquetado/${regulationId}`)
 }
 
 // Edit etiquetado
 const editEtiquetado = (regulationId: number) => {
-  console.log('Navigating to edit etiquetado:', regulationId)
-  navigateTo(`/basedatos/regulaciones/etiquetado/editar/${regulationId}`)
+    console.log('Navigating to edit etiquetado:', regulationId)
+    navigateTo(`/basedatos/regulaciones/etiquetado/editar/${regulationId}`)
 }
 
 // Edit documento especial
 const editDocumento = (regulationId: number) => {
-  console.log('Navigating to edit documento:', regulationId)
-  navigateTo(`/basedatos/regulaciones/documentos/editar/${regulationId}`)
+    console.log('Navigating to edit documento:', regulationId)
+    navigateTo(`/basedatos/regulaciones/documentos/editar/${regulationId}`)
 }
 
 // Open document modal
 const openDocumentModal = (documentUrl: string) => {
-  const fullUrl = `http://localhost:8000${documentUrl}`
-  window.open(fullUrl, '_blank')
+    const config = useRuntimeConfig()
+    const fullUrl = `${config.public.apiBaseUrl}${documentUrl}`
+    window.open(fullUrl, '_blank')
 }
 
 // Get file extension from path
 const getFileExtension = (filePath: string): string => {
-  const extension = filePath.split('.').pop()?.toUpperCase() || 'FILE'
-  return extension
+    const extension = filePath.split('.').pop()?.toUpperCase() || 'FILE'
+    return extension
 }
 
 // Image modal functions
 const getImageUrl = (ruta: string) => {
-  return `http://localhost:8000${ruta}`
+    const config = useRuntimeConfig()
+    return `${config.public.apiBaseUrl}${ruta}`
 }
 
 const openImageModal = (imageUrl: string) => {
-  selectedImage.value = getImageUrl(imageUrl)
-  showImageModal.value = true
-  resetImage()
+    selectedImage.value = getImageUrl(imageUrl)
+    showImageModal.value = true
 }
 
 const closeImageModal = () => {
-  showImageModal.value = false
-  selectedImage.value = ''
-  resetImage()
-}
-
-const resetImage = () => {
-  imageScale.value = 1
-  imagePosition.value = { x: 0, y: 0 }
-  isDragging.value = false
-}
-
-const zoomIn = () => {
-  if (imageScale.value < 3) {
-    imageScale.value = Math.min(3, imageScale.value + 0.25)
-  }
-}
-
-const zoomOut = () => {
-  if (imageScale.value > 0.5) {
-    imageScale.value = Math.max(0.5, imageScale.value - 0.25)
-  }
-}
-
-const handleMouseDown = (event: MouseEvent) => {
-  event.preventDefault()
-  event.stopPropagation()
-  isDragging.value = true
-  dragStart.value = { x: event.clientX, y: event.clientY }
-  dragOffset.value = { ...imagePosition.value }
-}
-
-const handleMouseMove = (event: MouseEvent) => {
-  if (!isDragging.value) return
-  
-  event.preventDefault()
-  event.stopPropagation()
-  
-  const deltaX = event.clientX - dragStart.value.x
-  const deltaY = event.clientY - dragStart.value.y
-  
-  imagePosition.value = {
-    x: dragOffset.value.x + deltaX,
-    y: dragOffset.value.y + deltaY
-  }
-}
-
-const handleMouseUp = () => {
-  isDragging.value = false
-}
-
-const handleMouseLeave = () => {
-  isDragging.value = false
-}
-
-const handleWheel = (event: WheelEvent) => {
-  event.preventDefault()
-  event.stopPropagation()
-  
-  if (event.deltaY < 0) {
-    zoomIn()
-  } else {
-    zoomOut()
-  }
+    showImageModal.value = false
+    selectedImage.value = ''
 }
 
 // Watch for tab changes to load data

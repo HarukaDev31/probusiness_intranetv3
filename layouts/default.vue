@@ -32,6 +32,9 @@
     
     <!-- Session Expired Modal -->
     <SessionExpiredModal />
+    
+    <!-- Global Notifications -->
+    <GlobalNotifications />
   </div>
 </template>
 
@@ -40,6 +43,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import SidebarMenu from '../components/SidebarMenu.vue'
 import SessionExpiredModal from '../components/SessionExpiredModal.vue'
+import GlobalNotifications from '../components/GlobalNotifications.vue'
 import type { AuthMenu } from '../services/authService'
 import type { SidebarCategory } from '../types/module'
 

@@ -182,7 +182,7 @@
         <!-- Observations -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Observaciones
+            Comentarios
           </label>
           <UTextarea v-model="formData.observaciones" placeholder="Agregar observaciones sobre el antidumping..."
             :rows="3" class="w-full" />
@@ -201,6 +201,8 @@ import ProductService from '~/services/productService'
 import ProductRubroService from '~/services/productRubroService'
 import AntidumpingService, { type CreateAntidumpingRequest } from '~/services/antidumpingService'
 import type { ProductRubro } from '~/types/product-rubro'
+import { useNotifications } from '~/composables/useNotifications'
+import { useLoading } from '~/composables/useLoading'
 // Router
 const router = useRouter()
 
@@ -208,6 +210,10 @@ const router = useRouter()
 const productService = ProductService.getInstance()
 const productRubroService = ProductRubroService.getInstance()
 const antidumpingService = AntidumpingService.getInstance()
+
+// Notifications and loading
+const { showCreateSuccess, showServerError, showValidationError } = useNotifications()
+const { withLoading } = useLoading()
 // Form data
 const formData = ref({
   producto: null as any,
@@ -389,10 +395,10 @@ const saveForm = async () => {
     // Validar formulario completo
     if (!validateForm()) {
       console.error('Formulario tiene errores de validación')
+      showValidationError('Por favor, corrige los errores en el formulario antes de continuar.')
       return
     }
     
-    isSubmitting.value = true
     console.log('Guardando regulación antidumping:', formData.value)
     console.log('Imágenes:', imageSlots.value)
     
@@ -411,22 +417,33 @@ const saveForm = async () => {
     
     console.log('Payload para API:', payload)
     
-    // Llamar al servicio para crear la regulación
-    const response = await antidumpingService.createAntidumping(payload)
+    // Llamar al servicio para crear la regulación con loading
+    const response = await withLoading(
+      () => antidumpingService.createAntidumping(payload),
+      'saveAntidumping',
+      'Guardando regulación antidumping...'
+    )
     
     if (response.success) {
       console.log('Regulación antidumping guardada exitosamente:', response.data)
+      showCreateSuccess('Regulación Antidumping')
       
-      // Redirigir de vuelta a la lista
-      router.push('/basedatos/regulaciones')
+      // Redirigir de vuelta a la lista después de un breve delay
+      setTimeout(() => {
+        router.push('/basedatos/regulaciones')
+      }, 1500)
     } else {
       console.error('Error al guardar:', response.error)
+      showServerError('crear la regulación antidumping', response.error)
     }
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al guardar:', error)
-  } finally {
-    isSubmitting.value = false
+    if (error.name === 'ValidationError') {
+      showValidationError(error.message)
+    } else {
+      showServerError('crear la regulación antidumping', error.message)
+    }
   }
 }
 

@@ -10,9 +10,7 @@
               <UIcon name="i-heroicons-document-text" class="text-green-600 mr-3 text-2xl" />
               Detalle de Permiso
             </h1>
-            <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">
-              Documentos y observaciones del permiso
-            </p>
+            
           </div>
         </div>
       </div>
@@ -39,7 +37,7 @@
         <template #header>
           <div class="flex items-center">
             <UIcon name="i-heroicons-chat-bubble-left-right" class="text-green-600 mr-2" />
-            <h3 class="text-lg font-semibold">Observaciones</h3>
+            <h3 class="text-lg font-semibold">Comentarios</h3>
           </div>
         </template>
 
@@ -286,7 +284,8 @@ const formatFileSize = (bytes: number | undefined) => {
 }
 
 const getDocumentUrl = (ruta: string) => {
-  return `http://localhost:8000/storage/${ruta}`
+  const config = useRuntimeConfig()
+  return `${config.public.apiBaseUrl}/storage/${ruta}`
 }
 
 const openDocumentModal = (document: PermisoResponse['media'][0]) => {

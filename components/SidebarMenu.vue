@@ -29,14 +29,14 @@
       <div class="p-4 border-b border-gray-200 dark:border-gray-700">
         <div class="flex items-center">
           <UAvatar
-            :src="user?.avatar"
-            :alt="user?.name || 'Usuario'"
+            :src="userData?.avatar || undefined"
+            :alt="userName || 'Usuario'"
             size="lg"
             class="mr-3"
           />
-          <div>
-            <div class="font-medium text-gray-900 dark:text-white">{{ user?.name || 'Usuario' }}</div>
-            <div class="text-sm text-gray-500 dark:text-gray-400">{{ user?.email || 'usuario@probusiness.com' }}</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-gray-900 dark:text-white truncate">{{ userName || 'Usuario' }}</div>
+            <div class="text-xs text-primary-600 dark:text-primary-400 font-medium">{{ currentRole || 'Sin rol' }}</div>
           </div>
         </div>
       </div>
@@ -82,7 +82,7 @@
           label="Cerrar Sesión"
           icon="i-heroicons-arrow-right-on-rectangle"
           variant="ghost"
-          color="red"
+          color="error"
           class="w-full"
           @click="logout"
         />
@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import type { SidebarCategory } from '~/types/module'
 
 interface AuthUser {
@@ -124,6 +124,15 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+// User role composable
+const { 
+  userData, 
+  currentRole, 
+  userName, 
+  userEmail, 
+  fetchCurrentUser 
+} = useUserRole()
 
 // Dark mode
 const colorMode = useColorMode()
@@ -155,4 +164,9 @@ const logout = async () => {
   const { logout } = useAuth()
   await logout()
 }
+
+// Cargar datos del usuario al montar el componente
+onMounted(() => {
+  fetchCurrentUser()
+})
 </script> 

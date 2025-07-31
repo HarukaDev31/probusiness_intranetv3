@@ -30,8 +30,9 @@ export function useImageManagement() {
   ])
 
   const getImageUrl = (ruta: string) => {
-    return `http://localhost:8000/storage/${ruta}`
-  }
+    const config = useRuntimeConfig()
+    return `${config.public.apiBaseUrl}/storage/${ruta}`
+}
 
   const toggleImageDelete = (imageId: number) => {
     const index = imagesToDelete.value.indexOf(imageId)

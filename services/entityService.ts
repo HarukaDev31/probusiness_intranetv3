@@ -31,7 +31,7 @@ export interface EntityListResponse {
 class EntityService {
   private static instance: EntityService
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): EntityService {
     if (!EntityService.instance) {
