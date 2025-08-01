@@ -49,6 +49,10 @@
       </div>
       <div class="overflow-x-auto">
         <UTable :data="filteredData" :columns="columns" :loading="loading" class="h-100 w-full">
+          <template #body-top>
+            <slot name="actions" />
+          </template>
+
           <template #loading-state>
             <div class="flex items-center justify-center py-8">
               <UIcon name="i-heroicons-arrow-path" class="animate-spin w-6 h-6 mr-2" />
