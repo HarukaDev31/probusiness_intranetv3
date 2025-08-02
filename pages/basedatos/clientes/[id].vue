@@ -5,125 +5,199 @@
       :loading="loading" @back="navigateBack" />
 
     <!-- Loading state -->
-    <LoadingState v-if="loading" />
+    <div v-if="loading" class="space-y-6">
+      <!-- Skeleton para la información básica -->
+      <UCard>
+        <div class="flex items-start space-x-6">
+          <!-- Skeleton foto de perfil -->
+          <div class="flex-shrink-0">
+            <div class="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+          </div>
+
+          <!-- Skeleton información -->
+          <div class="flex-1">
+            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse w-1/3"></div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Columna izquierda -->
+              <div class="space-y-4">
+                <div v-for="i in 5" :key="`left-${i}`" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse w-1/4"></div>
+                  <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+                </div>
+              </div>
+
+              <!-- Columna derecha -->
+              <div class="space-y-4">
+                <div v-for="i in 5" :key="`right-${i}`" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse w-1/4"></div>
+                  <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </UCard>
+
+      <!-- Skeleton para el historial -->
+      <UCard>
+        <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse w-1/4"></div>
+        <div class="space-y-3">
+          <div v-for="i in 3" :key="`row-${i}`" class="flex space-x-4">
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-8"></div>
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-20"></div>
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32"></div>
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-24"></div>
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-8"></div>
+          </div>
+        </div>
+      </UCard>
+    </div>
 
     <!-- Error state -->
     <ErrorState v-else-if="error" :message="error || 'Error desconocido'" />
 
     <!-- Cliente details -->
     <div v-else-if="cliente" class="space-y-6">
-      <!-- Información básica -->
+      <!-- Información básica con foto de perfil -->
       <UCard>
-        <template #header>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Información Personal
-          </h3>
-        </template>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nombre completo
-            </label>
-            <p class="text-gray-900 dark:text-white">{{ cliente.nombre }}</p>
+        <div class="flex items-start space-x-6">
+          <!-- Foto de perfil -->
+          <div class="flex-shrink-0">
+            <div class="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+              <UIcon name="i-heroicons-user" class="w-16 h-16 text-gray-400" />
+            </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              DNI / RUC
-            </label>
-            <p class="text-gray-900 dark:text-white">{{ cliente.dniRuc }}</p>
-          </div>
+          <!-- Información del cliente -->
+          <div class="flex-1">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              {{ cliente.nombre }}
+            </h2>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Correo electrónico
-            </label>
-            <p class="text-gray-900 dark:text-white">{{ cliente.correo }}</p>
-          </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Columna izquierda - Información personal -->
+              <div class="space-y-4">
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    País
+                  </label>
+                  <p class="text-gray-900 dark:text-white">Perú</p>
+                </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              WhatsApp
-            </label>
-            <p class="text-gray-900 dark:text-white">{{ cliente.whatsapp }}</p>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Ciudad
+                  </label>
+                  <p class="text-gray-900 dark:text-white">Lima</p>
+                </div>
+
+                                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     DNI
+                   </label>
+                   <p class="text-gray-900 dark:text-white">{{ cliente.documento || 'No especificado' }}</p>
+                 </div>
+
+                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     WhatsApp
+                   </label>
+                   <p class="text-gray-900 dark:text-white">{{ cliente.telefono }}</p>
+                 </div>
+
+                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     Correo
+                   </label>
+                   <p class="text-gray-900 dark:text-white">{{ cliente.correo }}</p>
+                 </div>
+
+                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     Fecha de registro
+                   </label>
+                   <p class="text-gray-900 dark:text-white">{{ cliente.fecha }}</p>
+                 </div>
+
+                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     Total servicios
+                   </label>
+                   <p class="text-gray-900 dark:text-white">{{ cliente.total_servicios }}</p>
+                 </div>
+              </div>
+
+                             <!-- Columna derecha - Información del primer servicio -->
+               <div class="space-y-4">
+                 <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     Primer servicio
+                   </label>
+                   <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.servicio }}</p>
+                 </div>
+
+                 <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     Fecha primer servicio
+                   </label>
+                   <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.fecha }}</p>
+                 </div>
+
+                 <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     Categoría
+                   </label>
+                   <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.categoria }}</p>
+                 </div>
+
+                 <!-- Campos adicionales para futuras implementaciones -->
+                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     Empresa
+                   </label>
+                   <p class="text-gray-900 dark:text-white">Grupo Pro Business Sac.</p>
+                 </div>
+
+                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     RUC
+                   </label>
+                   <p class="text-gray-900 dark:text-white">20603287721</p>
+                 </div>
+               </div>
+            </div>
           </div>
         </div>
       </UCard>
 
-      <!-- Información de servicios -->
+      <!-- Historial de compras -->
       <UCard>
         <template #header>
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Información de Servicios
+            Historial de compras
           </h3>
-        </template>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Fecha de registro
-            </label>
-            <p class="text-gray-900 dark:text-white">{{ cliente.fecha }}</p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Servicio
-            </label>
-            <UBadge :color="cliente.servicio === 'Consolidado' ? 'primary' : 'success'" variant="subtle"
-              :label="cliente.servicio" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Categoría
-            </label>
-            <UBadge :color="getCategoriaColor(cliente.categoria)" variant="subtle" :label="cliente.categoria" />
-          </div>
-        </div>
-      </UCard>
-
-      <!-- Historial de servicios -->
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              Historial de Servicios
-            </h3>
-            <UButton 
-              label="Agregar servicio" 
-              icon="i-heroicons-plus" 
-              size="sm" 
-              @click="showAddServiceModal = true" 
-            />
-          </div>
         </template>
 
         <div class="overflow-x-auto">
           <UTable 
-            :data="historialServicios" 
+            :data="historialCompras" 
             :columns="historialColumns" 
             class="w-full"
           >
             <template #empty-state>
               <div class="text-center py-8">
-                <UIcon name="i-heroicons-clock" class="mx-auto h-12 w-12 text-gray-400" />
+                <UIcon name="i-heroicons-shopping-cart" class="mx-auto h-12 w-12 text-gray-400" />
                 <h3 class="mt-2 text-sm font-semibold text-gray-900">Sin historial</h3>
                 <p class="mt-1 text-sm text-gray-500">
-                  No hay servicios registrados para este cliente.
+                  No hay compras registradas para este cliente.
                 </p>
               </div>
             </template>
           </UTable>
         </div>
       </UCard>
-
-      <!-- Acciones -->
-     
     </div>
-
-
   </div>
 </template>
 
@@ -140,63 +214,38 @@ const clienteId = parseInt(route.params.id as string)
 const cliente = ref<Cliente | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
-const showAddServiceModal = ref(false)
-const showEditModal = ref(false)
 
-// Historial de servicios (datos de ejemplo)
-const historialServicios = ref([
-  {
-    id: 1,
-    numero: 1,
-    fecha: '23/01/24',
-    servicio: 'Consolidado #1',
-    monto: '$375.00',
-    tieneDocumento: true
-  },
-  {
-    id: 2,
-    numero: 2,
-    fecha: '23/01/24',
-    servicio: 'Curso Mayo',
-    monto: 'S/350.00',
-    tieneDocumento: false
-  },
-  {
-    id: 3,
-    numero: 1,
-    fecha: '23/01/24',
-    servicio: 'Consolidado #4',
-    monto: '$375.00',
-    tieneDocumento: true
-  }
+// Historial de compras (datos de ejemplo basados en la imagen)
+const historialCompras = ref([
+
 ])
 
 // Configuración de columnas para el historial
-const historialColumns = [
+const historialColumns: TableColumn<any>[] = [
   {
     accessorKey: 'numero',
     header: 'N.',
-    cell: ({ row }) => row.getValue('numero')
+    cell: ({ row }: { row: any }) => row.getValue('numero')
   },
   {
     accessorKey: 'fecha',
     header: 'Fecha',
-    cell: ({ row }) => row.getValue('fecha')
+    cell: ({ row }: { row: any }) => row.getValue('fecha')
   },
   {
     accessorKey: 'servicio',
     header: 'Servicio',
-    cell: ({ row }) => row.getValue('servicio')
+    cell: ({ row }: { row: any }) => row.getValue('servicio')
   },
   {
     accessorKey: 'monto',
     header: 'Monto',
-    cell: ({ row }) => row.getValue('monto')
+    cell: ({ row }: { row: any }) => row.getValue('monto')
   },
   {
     accessorKey: 'revisar',
     header: 'Revisar',
-    cell: ({ row }) => {
+    cell: ({ row }: { row: any }) => {
       const tieneDocumento = row.original.tieneDocumento
       if (tieneDocumento) {
         return h('div', { class: 'flex justify-center' }, [
@@ -216,47 +265,30 @@ const historialColumns = [
   }
 ]
 
-// Nuevo servicio
-const newService = ref({
-  tipo: '',
-  fecha: '',
-  estado: ''
-})
-
-// Opciones para los selects
-const serviceTypes = [
-  { label: 'Consolidado', value: 'Consolidado' },
-  { label: 'Curso', value: 'Curso' }
-]
-
-const serviceStatuses = [
-  { label: 'En proceso', value: 'En proceso' },
-  { label: 'Completado', value: 'Completado' },
-  { label: 'Cancelado', value: 'Cancelado' }
-]
-
 // Methods
 const loadCliente = async () => {
   loading.value = true
   error.value = null
 
   try {
-    // Simular carga de datos
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const { clienteService } = await import('~/services/clienteService')
+    const clienteData = await clienteService.getClienteById(clienteId)
+    cliente.value = clienteData
 
-    // Datos de ejemplo
-    cliente.value = {
-      id: clienteId,
-      fecha: '23/01/24',
-      nombre: 'Miguel Villegas Perez',
-      dniRuc: '4858593901',
-      correo: 'mvillegas@probusiness',
-      whatsapp: '934934343',
-      servicio: 'Consolidado',
-      categoria: 'Recurrente'
+    // Actualizar historial de compras basado en los servicios del cliente
+    if (clienteData.servicios ) {
+      historialCompras.value = clienteData.servicios.map((servicio: any, index: number) => ({
+        id: index + 1,
+        numero: index + 1,
+        fecha: servicio.fecha,
+        servicio: servicio.servicio,
+        monto: servicio.servicio === 'Curso' ? 'S/350.00' : '$375.00', // Montos de ejemplo
+        tieneDocumento: servicio.servicio === 'Consolidado' // Solo consolidados tienen documentos
+      }))
     }
-  } catch (err) {
-    error.value = 'Error al cargar los datos del cliente'
+  } catch (err: any) {
+    error.value = err.message || 'Error al cargar los datos del cliente'
+    console.error('Error loading cliente:', err)
   } finally {
     loading.value = false
   }
@@ -266,51 +298,9 @@ const navigateBack = () => {
   navigateTo('/basedatos/clientes')
 }
 
-const getCategoriaColor = (categoria: string) => {
-  const colorMap = {
-    'Cliente': 'primary',
-    'Recurrente': 'success',
-    'Premiun': 'secondary',
-    'Inactivo': 'neutral'
-  }
-  return colorMap[categoria as keyof typeof colorMap] || 'neutral'
-}
-
 const handleRevisarDocumento = (id: number) => {
   // Implementar lógica para revisar documento
   console.log('Revisar documento del servicio:', id)
-}
-
-const handleAddService = () => {
-  if (newService.value.tipo && newService.value.fecha && newService.value.estado) {
-    historialServicios.value.unshift({
-      id: Date.now(),
-      numero: historialServicios.value.length + 1,
-      fecha: newService.value.fecha,
-      servicio: newService.value.tipo,
-      monto: 'S/0.00',
-      tieneDocumento: false
-    })
-
-    // Reset form
-    newService.value = { tipo: '', fecha: '', estado: '' }
-    showAddServiceModal.value = false
-
-    // Show success notification
-    const { showCreateSuccess } = useNotifications()
-    showCreateSuccess('Servicio')
-  }
-}
-
-const confirmDelete = () => {
-  // Implementar confirmación de eliminación
-  const { showError } = useNotifications()
-  showError({
-    title: 'Confirmar eliminación',
-    subtitle: 'Acción irreversible',
-    message: '¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.',
-    showRetryButton: true
-  })
 }
 
 // Initialize

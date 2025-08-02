@@ -41,9 +41,24 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {{ filter.label }}
             </label>
-            <USelect :model-value="(filtersValue && filtersValue[filter.key]) || 'todos'" :items="filter.options"
-              :placeholder="filter.placeholder" class="w-full"
-              @update:model-value="(value) => handleFilterChange(filter.key, value)" />
+            <!-- Filtro de tipo date -->
+            <UInput 
+              v-if="filter.type === 'date'"
+              :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" 
+              type="date"
+              :placeholder="filter.placeholder" 
+              class="w-full"
+              @update:model-value="(value) => handleFilterChange(filter.key, value)" 
+            />
+            <!-- Filtro de tipo select -->
+            <USelect 
+              v-else
+              :model-value="(filtersValue && filtersValue[filter.key]) || 'todos'" 
+              :items="filter.options"
+              :placeholder="filter.placeholder" 
+              class="w-full"
+              @update:model-value="(value) => handleFilterChange(filter.key, value)" 
+            />
           </div>
         </div>
       </div>
@@ -115,6 +130,7 @@ interface FilterOption {
 interface FilterConfig {
   key: string
   label: string
+  type?: string
   placeholder: string
   options: FilterOption[]
 }
@@ -228,6 +244,17 @@ interface Props {
 
 // Filtered data (can be overridden by parent)
 const filteredData = computed(() => props.data)
+
+// Función para convertir fecha de DD/MM/YYYY a YYYY-MM-DD
+const formatDateForInput = (dateString: string): string => {
+  if (!dateString) return ''
+  const parts = dateString.split('/')
+  if (parts.length === 3) {
+    const [day, month, year] = parts
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  }
+  return dateString
+}
 
 // Methods
 const handleFilterChange = (filterType: string, value: string) => {

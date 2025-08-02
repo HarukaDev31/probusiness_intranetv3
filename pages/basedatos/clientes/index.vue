@@ -1,17 +1,28 @@
 <template>
     <div class="p-6">
-        <UButton label="Subir archivo de clientes" icon="i-heroicons-arrow-up-tray" color="neutral"
-        variant="outline" @click="goToArchivos" />
-
+        <!--div with content align right-->
+        <div class="flex justify-end">
+            <UButton label="Ver Excel de clientes" icon="i-heroicons-eye" color="neutral"
+                variant="outline" @click="goToArchivos" />
+        </div>
 
         <DataTable title="Base de datos de clientes" icon="i-heroicons-users" :data="clientes" :columns="columns"
-            :loading="loading" :pagination="pagination" :search="search" :secondary-search="secondarySearch"
-            :filter-config="filterConfig" :filters-value="filters" @search="handleSearch"
-            @page-change="handlePageChange" @export="exportClientes" @filter-change="handleFilterChange">
-        </DataTable>
+            :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalItems"
+            :items-per-page="itemsPerPage" :search-query-value="search" :secondary-search-value="secondarySearch"
+            :show-secondary-search="true" :secondary-search-label="'Buscar por'"
+            :secondary-search-placeholder="'Buscar por nombre, DNI/RUC, correo...'" :show-filters="true"
+            :filter-config="filterConfig" :filters-value="filters" :show-export="true"
+            empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
+            @update:search-query="handleSearch" @update:secondary-search="handleSecondarySearch"
+            @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
+            @filter-change="handleFilterChange">
 
-        <!-- Modal de subir archivo -->
-      
+
+            <!-- Estado de error -->
+            <template #error-state>
+                <ErrorState :message="error || 'Error desconocido'" />
+            </template>
+        </DataTable>
     </div>
 </template>
 
@@ -32,50 +43,47 @@ const {
     secondarySearch,
     filters,
     filterOptions,
+    currentPage,
+    totalPages,
+    totalItems,
+    itemsPerPage,
     loadClientes,
     loadFilterOptions,
     handleSearch,
     handleFilterChange,
     handlePageChange,
-    exportClientes,
-    uploadClientesFile
+    exportClientes
 } = useClientes()
-
-// State para el modal de subida
-const showUploadModal = ref(false)
-const selectedFile = ref<File | null>(null)
-const fileError = ref('')
-const uploadLoading = ref(false)
 
 // Configuración de filtros para DataTable
 const filterConfig = computed(() => [
-    {
-        key: 'categoria',
-        label: 'Categoría',
-        type: 'select',
-        placeholder: 'Seleccionar categoría',
-        options: [
-            { label: 'Todos', value: '' },
-            ...(filterOptions.value.categorias || []).map(cat => ({
-                label: cat,
-                value: cat
-            }))
-        ]
-    },
-    {
-        key: 'fecha_inicio',
-        label: 'Fecha Inicio',
-        type: 'date',
-        placeholder: 'DD/MM/YYYY',
-        options: []
-    },
-    {
-        key: 'fecha_fin',
-        label: 'Fecha Fin',
-        type: 'date',
-        placeholder: 'DD/MM/YYYY',
-        options: []
-    }
+  {
+    key: 'categoria',
+    label: 'Categoría',
+    type: 'select',
+    placeholder: 'Seleccionar categoría',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      { label: 'Cliente', value: 'Cliente' },
+      { label: 'Recurrente', value: 'Recurrente' },
+      { label: 'Premiun', value: 'Premiun' },
+      { label: 'Inactivo', value: 'Inactivo' }
+    ]
+  },
+  {
+    key: 'fecha_inicio',
+    label: 'Fecha Inicio',
+    type: 'date',
+    placeholder: 'DD/MM/YYYY',
+    options: []
+  },
+  {
+    key: 'fecha_fin',
+    label: 'Fecha Fin',
+    type: 'date',
+    placeholder: 'DD/MM/YYYY',
+    options: []
+  }
 ])
 
 // Configuración de columnas para la tabla
@@ -93,7 +101,7 @@ const columns: TableColumn<any>[] = [
     {
         accessorKey: 'documento',
         header: 'DNI/RUC',
-        cell: ({ row }) => row.getValue('documento')
+        cell: ({ row }) => row.getValue('documento') || '-'
     },
     {
         accessorKey: 'correo',
@@ -112,31 +120,32 @@ const columns: TableColumn<any>[] = [
     },
     {
         accessorKey: 'primer_servicio',
-        header: 'Primer Servicio',
+        header: 'Servicio',
         cell: ({ row }) => {
             const primerServicio = row.getValue('primer_servicio') as any
             if (primerServicio) {
                 return h('div', { class: 'space-y-1' }, [
                     h('div', { class: 'font-medium' }, primerServicio.servicio),
-                    h('div', { class: 'text-sm text-gray-500' }, primerServicio.fecha),
-                    h('div', { class: 'text-xs' }, [
-                        h('span', {
-                            class: `px-2 py-1 rounded-full text-xs font-medium ${getCategoriaColor(primerServicio.categoria)}`
-                        }, primerServicio.categoria)
-                    ])
+                    
                 ])
             }
             return '-'
         }
     },
     {
-        accessorKey: 'total_servicios',
-        header: 'Total Servicios',
-        cell: ({ row }) => {
-            const total = row.getValue('total_servicios')
-            return h('span', {
-                class: 'px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium'
-            }, total)
+        accessorKey: 'categoria',
+        header: 'Categoría',
+        cell: ({ row }) =>{
+            const primerServicio = row.getValue('primer_servicio') as any
+            if (primerServicio) {
+                return h('div', { class: 'space-y-1' }, [
+             
+                    h('div', { class: 'text-xs' }, [
+                        h('span', { class: `px-2 py-1 rounded-full text-xs font-medium ${getCategoriaColor(primerServicio.categoria)}` }, primerServicio.categoria)
+                    ])
+                ])
+            }
+            return '-'
         }
     },
     {
@@ -151,20 +160,7 @@ const columns: TableColumn<any>[] = [
                     variant: 'ghost',
                     onClick: () => navigateTo(`/basedatos/clientes/${row.original.id}`)
                 }),
-                h(UButton as any, {
-                    size: 'xs',
-                    icon: 'i-heroicons-pencil-square',
-                    color: 'secondary',
-                    variant: 'ghost',
-                    onClick: () => handleEditCliente(row.original.id)
-                }),
-                h(UButton as any, {
-                    size: 'xs',
-                    icon: 'i-heroicons-trash',
-                    color: 'error',
-                    variant: 'ghost',
-                    onClick: () => handleDeleteCliente(row.original.id)
-                })
+           
             ])
         }
     }
@@ -173,27 +169,21 @@ const columns: TableColumn<any>[] = [
 // Methods
 const getCategoriaColor = (categoria: string) => {
     const colors = {
-        'Comercial': 'bg-green-100 text-green-800',
-        'Industrial': 'bg-blue-100 text-blue-800',
-        'Personal': 'bg-purple-100 text-purple-800'
+        'Cliente': 'bg-blue-100 text-blue-800',
+        'Recurrente': 'bg-green-100 text-green-800',
+        'Premiun': 'bg-purple-100 text-purple-800',
+        'Inactivo': 'bg-gray-100 text-gray-800'
     }
     return colors[categoria as keyof typeof colors] || 'bg-gray-100 text-gray-800'
 }
 
-const handleFileSelect = (event: Event) => {
-    const target = event.target as HTMLInputElement
-    const file = target.files?.[0]
+const handleSecondarySearch = (value: string) => {
+    secondarySearch.value = value
+    loadClientes({ page: 1 })
+}
 
-    if (file) {
-        fileError.value = ''
-        const isValid = validateFile(file)
-
-        if (isValid) {
-            selectedFile.value = file
-        } else {
-            selectedFile.value = null
-        }
-    }
+const handleItemsPerPageChange = (limit: number) => {
+    loadClientes({ page: 1, limit })
 }
 
 const goToArchivos = () => {
@@ -212,7 +202,7 @@ const handleDeleteCliente = (id: number) => {
 
 // Initialize data
 onMounted(async () => {
-    await loadFilterOptions()
+  
     await loadClientes()
 })
 </script>

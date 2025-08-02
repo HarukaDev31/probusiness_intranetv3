@@ -4,7 +4,7 @@ import { apiCall } from '~/utils/api'
 export interface Cliente {
   id: number
   nombre: string
-  documento: string
+  documento: string | null
   correo: string
   telefono: string
   fecha: string
@@ -24,7 +24,7 @@ export interface Cliente {
 export interface PaginationInfo {
   current_page: number
   last_page: number
-  per_page: number
+  per_page: string | number // Puede venir como string desde el backend
   total: number
   from: number
   to: number
@@ -71,16 +71,20 @@ export class ClienteService {
       if (params.page) queryParams.append('page', params.page.toString())
       if (params.search) queryParams.append('search', params.search)
       if (params.categoria) queryParams.append('categoria', params.categoria)
-      if (params.fecha_inicio) queryParams.append('fecha_inicio', params.fecha_inicio)
-      if (params.fecha_fin) queryParams.append('fecha_fin', params.fecha_fin)
 
-      const url = `${this.baseUrl}?${queryParams.toString()}`
+      // Construir la URL base con los parámetros normales
+      let url = `${this.baseUrl}?${queryParams.toString()}`
       
-      const response = await $fetch<ClientesResponse>(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      // Agregar las fechas manualmente para evitar la codificación
+      if (params.fecha_inicio) {
+        url += `&fecha_inicio=${params.fecha_inicio}`
+      }
+      if (params.fecha_fin) {
+        url += `&fecha_fin=${params.fecha_fin}`
+      }
+      
+      const response = await apiCall<ClientesResponse>(url, {
+        method: 'GET'
       })
 
       return response
@@ -95,11 +99,8 @@ export class ClienteService {
    */
   async getClienteById(id: number): Promise<Cliente> {
     try {
-      const response = await $fetch<{ success: boolean; data: Cliente }>(`${this.baseUrl}/${id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      const response = await apiCall<{ success: boolean; data: Cliente; message: string }>(`${this.baseUrl}/${id}`, {
+        method: 'GET'
       })
 
       return response.data
@@ -114,12 +115,9 @@ export class ClienteService {
    */
   async createCliente(clienteData: Partial<Cliente>): Promise<Cliente> {
     try {
-      const response = await $fetch<{ success: boolean; data: Cliente }>(this.baseUrl, {
+      const response = await apiCall<{ success: boolean; data: Cliente }>(this.baseUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: clienteData
+        body: JSON.stringify(clienteData)
       })
 
       return response.data
@@ -134,12 +132,9 @@ export class ClienteService {
    */
   async updateCliente(id: number, clienteData: Partial<Cliente>): Promise<Cliente> {
     try {
-      const response = await $fetch<{ success: boolean; data: Cliente }>(`${this.baseUrl}/${id}`, {
+      const response = await apiCall<{ success: boolean; data: Cliente }>(`${this.baseUrl}/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: clienteData
+        body: JSON.stringify(clienteData)
       })
 
       return response.data
@@ -154,11 +149,8 @@ export class ClienteService {
    */
   async deleteCliente(id: number): Promise<void> {
     try {
-      await $fetch(`${this.baseUrl}/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      await apiCall(`${this.baseUrl}/${id}`, {
+        method: 'DELETE'
       })
     } catch (error: any) {
       console.error('Error en deleteCliente:', error)
@@ -174,7 +166,7 @@ export class ClienteService {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await $fetch<{ success: boolean; message: string }>(`${this.baseUrl}/upload`, {
+      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/upload`, {
         method: 'POST',
         body: formData
       })
@@ -195,12 +187,19 @@ export class ClienteService {
       
       if (params.search) queryParams.append('search', params.search)
       if (params.categoria) queryParams.append('categoria', params.categoria)
-      if (params.fecha_inicio) queryParams.append('fecha_inicio', params.fecha_inicio)
-      if (params.fecha_fin) queryParams.append('fecha_fin', params.fecha_fin)
 
-      const url = `${this.baseUrl}/export?${queryParams.toString()}`
+      // Construir la URL base con los parámetros normales
+      let url = `${this.baseUrl}/export?${queryParams.toString()}`
       
-      const response = await $fetch<Blob>(url, {
+      // Agregar las fechas manualmente para evitar la codificación
+      if (params.fecha_inicio) {
+        url += `&fecha_inicio=${params.fecha_inicio}`
+      }
+      if (params.fecha_fin) {
+        url += `&fecha_fin=${params.fecha_fin}`
+      }
+      
+      const response = await apiCall<Blob>(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -222,17 +221,14 @@ export class ClienteService {
     fechas: string[]
   }> {
     try {
-      const response = await $fetch<{
+      const response = await apiCall<{
         success: boolean
         data: {
           categorias: string[]
           fechas: string[]
         }
       }>(`${this.baseUrl}/filters`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        method: 'GET'
       })
 
       return response.data
@@ -240,7 +236,7 @@ export class ClienteService {
       console.error('Error en getFilterOptions:', error)
       // Retornar opciones por defecto en caso de error
       return {
-        categorias: ['Comercial', 'Industrial', 'Personal'],
+        categorias: ['Cliente', 'Recurrente', 'Premiun', 'Inactivo'],
         fechas: []
       }
     }

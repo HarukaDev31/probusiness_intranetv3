@@ -19,14 +19,14 @@ export const useClientes = () => {
   const search = ref('')
   const secondarySearch = ref('')
   const filters = ref({
-    categoria: '',
+    categoria: 'todos',
     fecha_inicio: '',
     fecha_fin: ''
   })
 
   // Opciones de filtros
   const filterOptions = ref({
-    categorias: ['Comercial', 'Industrial', 'Personal'],
+    categorias: ['Cliente', 'Recurrente', 'Premiun', 'Inactivo'],
     fechas: []
   })
 
@@ -35,6 +35,10 @@ export const useClientes = () => {
   const totalPages = computed(() => pagination.value.last_page)
   const currentPage = computed(() => pagination.value.current_page)
   const totalItems = computed(() => pagination.value.total)
+  const itemsPerPage = computed(() => {
+    const perPage = pagination.value.per_page
+    return typeof perPage === 'string' ? parseInt(perPage) : perPage
+  })
 
   // Methods
   const loadClientes = async (params: ClientesQueryParams = {}) => {
@@ -45,12 +49,19 @@ export const useClientes = () => {
       // Combinar parámetros locales con los pasados
       const queryParams: ClientesQueryParams = {
         page: params.page || currentPage.value,
-        limit: params.limit || pagination.value.per_page,
+        limit: params.limit || itemsPerPage.value,
         search: params.search || search.value,
         categoria: params.categoria || filters.value.categoria,
         fecha_inicio: params.fecha_inicio || filters.value.fecha_inicio,
         fecha_fin: params.fecha_fin || filters.value.fecha_fin
       }
+
+      // Solo incluir parámetros que tengan valor
+      Object.keys(queryParams).forEach(key => {
+        if (queryParams[key as keyof ClientesQueryParams] === '' || queryParams[key as keyof ClientesQueryParams] === undefined) {
+          delete queryParams[key as keyof ClientesQueryParams]
+        }
+      })
 
       const response = await clienteService.getClientes(queryParams)
       
@@ -79,8 +90,42 @@ export const useClientes = () => {
     await loadClientes({ page: 1, search: searchTerm })
   }
 
-  const handleFilterChange = async (newFilters: any) => {
-    filters.value = { ...filters.value, ...newFilters }
+  // Función para convertir fecha de DD/MM/YYYY a YYYY-MM-DD
+  const formatDateForInput = (dateString: string): string => {
+    if (!dateString) return ''
+    const parts = dateString.split('/')
+    if (parts.length === 3) {
+      const [day, month, year] = parts
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+    }
+    return dateString
+  }
+
+  // Función para convertir fecha de YYYY-MM-DD a DD/MM/YYYY
+  const formatDateForBackend = (dateString: string): string => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    if (!isNaN(date.getTime())) {
+      const day = String(date.getDate()).padStart(2, '0')
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const year = date.getFullYear()
+      return `${day}/${month}/${year}`
+    }
+    return dateString
+  }
+
+  const handleFilterChange = async (filterType: string, value: string) => {
+    // Convertir fechas de YYYY-MM-DD a DD/MM/YYYY para el backend
+    let formattedValue = value
+    
+    // Manejar el valor 'todos' como vacío para el backend
+    if (value === 'todos') {
+      formattedValue = ''
+    } else if ((filterType === 'fecha_inicio' || filterType === 'fecha_fin') && value) {
+      formattedValue = formatDateForBackend(value)
+    }
+    
+    filters.value = { ...filters.value, [filterType]: formattedValue }
     await loadClientes({ page: 1 })
   }
 
@@ -210,7 +255,7 @@ export const useClientes = () => {
     search.value = ''
     secondarySearch.value = ''
     filters.value = {
-      categoria: '',
+      categoria: 'todos',
       fecha_inicio: '',
       fecha_fin: ''
     }
@@ -232,6 +277,7 @@ export const useClientes = () => {
     totalPages,
     currentPage,
     totalItems,
+    itemsPerPage,
 
     // Methods
     loadClientes,
