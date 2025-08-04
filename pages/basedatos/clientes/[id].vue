@@ -120,12 +120,6 @@
                    <p class="text-gray-900 dark:text-white">{{ cliente.fecha }}</p>
                  </div>
 
-                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Total servicios
-                   </label>
-                   <p class="text-gray-900 dark:text-white">{{ cliente.total_servicios }}</p>
-                 </div>
               </div>
 
                              <!-- Columna derecha - Información del primer servicio -->

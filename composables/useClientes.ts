@@ -21,11 +21,15 @@ export const useClientes = () => {
   const filters = ref({
     categoria: 'todos',
     fecha_inicio: '',
-    fecha_fin: ''
+    fecha_fin: '',
+    servicio: 'todos'
   })
 
   // Opciones de filtros
-  const filterOptions = ref({
+  const filterOptions = ref<{
+    categorias: string[]
+    fechas: string[]
+  }>({
     categorias: ['Cliente', 'Recurrente', 'Premiun', 'Inactivo'],
     fechas: []
   })
@@ -53,7 +57,8 @@ export const useClientes = () => {
         search: params.search || search.value,
         categoria: params.categoria || filters.value.categoria,
         fecha_inicio: params.fecha_inicio || filters.value.fecha_inicio,
-        fecha_fin: params.fecha_fin || filters.value.fecha_fin
+        fecha_fin: params.fecha_fin || filters.value.fecha_fin,
+        servicio: params.servicio || filters.value.servicio
       }
 
       // Solo incluir parámetros que tengan valor
@@ -210,7 +215,8 @@ export const useClientes = () => {
         search: search.value,
         categoria: filters.value.categoria,
         fecha_inicio: filters.value.fecha_inicio,
-        fecha_fin: filters.value.fecha_fin
+        fecha_fin: filters.value.fecha_fin,
+        servicio: filters.value.servicio
       })
 
       // Crear y descargar el archivo
@@ -257,7 +263,8 @@ export const useClientes = () => {
     filters.value = {
       categoria: 'todos',
       fecha_inicio: '',
-      fecha_fin: ''
+      fecha_fin: '',
+      servicio: 'todos'
     }
   }
 

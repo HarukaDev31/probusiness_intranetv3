@@ -35,6 +35,12 @@
     
     <!-- Global Notifications -->
     <GlobalNotifications />
+    
+    <!-- Modal Container -->
+    <ModalContainer />
+    
+    <!-- Global Spinner -->
+    <GlobalSpinner />
   </div>
 </template>
 
@@ -44,6 +50,8 @@ import { useAuth } from '../composables/useAuth'
 import SidebarMenu from '../components/SidebarMenu.vue'
 import SessionExpiredModal from '../components/SessionExpiredModal.vue'
 import GlobalNotifications from '../components/GlobalNotifications.vue'
+import ModalContainer from '../components/ModalContainer.vue'
+import GlobalSpinner from '../components/GlobalSpinner.vue'
 import type { AuthMenu } from '../services/authService'
 import type { SidebarCategory } from '../types/module'
 

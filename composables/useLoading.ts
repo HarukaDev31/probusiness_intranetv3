@@ -6,6 +6,19 @@ const loadingStates = ref<Record<string, boolean>>({})
 const loadingMessages = ref<Record<string, string>>({})
 
 export const useLoading = () => {
+  const isLoading = ref(false)
+  const loadingMessage = ref('Cargando...')
+
+  const showLoading = (message?: string) => {
+    loadingMessage.value = message || 'Cargando...'
+    isLoading.value = true
+  }
+
+  const hideLoading = () => {
+    isLoading.value = false
+    loadingMessage.value = 'Cargando...'
+  }
+
   const setGlobalLoading = (loading: boolean, message?: string) => {
     globalLoading.value = loading
     if (message) {
@@ -20,13 +33,6 @@ export const useLoading = () => {
     } else if (!loading) {
       delete loadingMessages.value[key]
     }
-  }
-
-  const isLoading = (key?: string): boolean => {
-    if (key) {
-      return loadingStates.value[key] || false
-    }
-    return globalLoading.value
   }
 
   const getLoadingMessage = (key?: string): string => {
@@ -52,7 +58,6 @@ export const useLoading = () => {
     loadingMessages.value = {}
   }
 
-  // Wrapper para operaciones asíncronas con loading automático
   const withLoading = async <T>(
     operation: () => Promise<T>,
     key: string,
@@ -85,6 +90,8 @@ export const useLoading = () => {
     globalLoading: readonly(globalLoading),
     loadingStates: readonly(loadingStates),
     loadingMessages: readonly(loadingMessages),
+    isLoading: readonly(isLoading),
+    loadingMessage: readonly(loadingMessage),
 
     // Métodos
     setGlobalLoading,
@@ -94,6 +101,8 @@ export const useLoading = () => {
     clearLoading,
     clearAllLoading,
     withLoading,
-    withGlobalLoading
+    withGlobalLoading,
+    showLoading,
+    hideLoading
   }
 } 

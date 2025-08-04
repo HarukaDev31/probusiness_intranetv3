@@ -1,4 +1,10 @@
   export interface Product {
+  observaciones: string
+  tiene_observaciones: boolean
+  tipo_etiquetado_id: string
+  entidad_id: string
+  tipo_etiquetado_id: string
+  antidumping_value: string
   id: number
   idContenedor: number
   item: string

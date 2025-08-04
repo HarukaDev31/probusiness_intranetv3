@@ -49,6 +49,7 @@ export interface ClientesQueryParams {
   categoria?: string
   fecha_inicio?: string
   fecha_fin?: string
+  servicio?: string
 }
 
 export class ClienteService {
@@ -66,15 +67,16 @@ export class ClienteService {
   async getClientes(params: ClientesQueryParams = {}): Promise<ClientesResponse> {
     try {
       const queryParams = new URLSearchParams()
-      
+
       if (params.limit) queryParams.append('limit', params.limit.toString())
       if (params.page) queryParams.append('page', params.page.toString())
       if (params.search) queryParams.append('search', params.search)
       if (params.categoria) queryParams.append('categoria', params.categoria)
+      if (params.servicio) queryParams.append('servicio', params.servicio)
 
       // Construir la URL base con los parámetros normales
       let url = `${this.baseUrl}?${queryParams.toString()}`
-      
+
       // Agregar las fechas manualmente para evitar la codificación
       if (params.fecha_inicio) {
         url += `&fecha_inicio=${params.fecha_inicio}`
@@ -82,7 +84,7 @@ export class ClienteService {
       if (params.fecha_fin) {
         url += `&fecha_fin=${params.fecha_fin}`
       }
-      
+
       const response = await apiCall<ClientesResponse>(url, {
         method: 'GET'
       })
@@ -179,18 +181,39 @@ export class ClienteService {
   }
 
   /**
+   * Importa clientes desde un archivo Excel
+   */
+  async importExcel(file: File): Promise<{ success: boolean; message: string }> {
+    try {
+      const formData = new FormData()
+      formData.append('excel_file', file)
+
+      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/import-excel`, {
+        method: 'POST',
+        body: formData
+      })
+
+      return response
+    } catch (error: any) {
+      console.error('Error en importExcel:', error)
+      throw new Error(error?.data?.message || 'Error al importar el archivo Excel')
+    }
+  }
+
+  /**
    * Exporta clientes a Excel
    */
   async exportClientes(params: ClientesQueryParams = {}): Promise<Blob> {
     try {
       const queryParams = new URLSearchParams()
-      
+
       if (params.search) queryParams.append('search', params.search)
       if (params.categoria) queryParams.append('categoria', params.categoria)
+      if (params.servicio) queryParams.append('servicio', params.servicio)
 
       // Construir la URL base con los parámetros normales
       let url = `${this.baseUrl}/export?${queryParams.toString()}`
-      
+
       // Agregar las fechas manualmente para evitar la codificación
       if (params.fecha_inicio) {
         url += `&fecha_inicio=${params.fecha_inicio}`
@@ -198,7 +221,7 @@ export class ClienteService {
       if (params.fecha_fin) {
         url += `&fecha_fin=${params.fecha_fin}`
       }
-      
+
       const response = await apiCall<Blob>(url, {
         method: 'GET',
         headers: {
@@ -239,6 +262,47 @@ export class ClienteService {
         categorias: ['Cliente', 'Recurrente', 'Premiun', 'Inactivo'],
         fechas: []
       }
+    }
+  }
+  async getExcelsList(): Promise<{ 
+    success: boolean; 
+    data: { 
+      id: number; 
+      nombre_archivo: string; 
+      cantidad_rows: number; 
+      created_at: string; 
+      ruta_archivo: string; 
+    }[] 
+  }> {
+    try {
+      const response = await apiCall<{ 
+        success: boolean; 
+        data: { 
+          id: number; 
+          nombre_archivo: string; 
+          cantidad_rows: number; 
+          created_at: string; 
+          ruta_archivo: string; 
+        }[] 
+      }>(`${this.baseUrl}/list-excels`, {
+        method: 'GET'
+      })
+      //foreac 
+      return response
+    } catch (error: any) {
+      console.error('Error en getExcelsList:', error)
+      throw new Error(error?.data?.message || 'Error al obtener la lista de archivos')
+    }
+  }
+  async deleteExcel(id: number): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/delete-excel/${id}`, {
+        method: 'DELETE'
+      })
+      return response
+    } catch (error: any) {
+      console.error('Error en deleteExcel:', error)
+      throw new Error(error?.data?.message || 'Error al eliminar el archivo')
     }
   }
 }

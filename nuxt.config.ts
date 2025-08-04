@@ -14,7 +14,16 @@ export default defineNuxtConfig({
   ],
 
   ui: {
-    // Configuración básica de UI
+    theme: {
+      colors: [
+        'primary',
+        'secondary',
+        'success',
+        'info',
+        'warning',
+        'error'
+      ]
+    }
   },
 
   // Configuración de variables de entorno

@@ -83,7 +83,18 @@ const filterConfig = computed(() => [
     type: 'date',
     placeholder: 'DD/MM/YYYY',
     options: []
-  }
+  },
+  {
+    key: 'servicio',
+    label: 'Servicio',
+    type: 'select',
+    placeholder: 'Seleccionar servicio',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      { label: 'Curso', value: 'Curso' },
+      { label: 'Consolidado', value: 'Consolidado' },
+    ]
+  },
 ])
 
 // Configuración de columnas para la tabla

@@ -1,6 +1,6 @@
 <template>
     <div class="p-6">
-        <!-- Header -->
+        
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center">
                 <UButton label="Regresar" color="neutral" variant="outline" icon="i-heroicons-arrow-left"
@@ -13,7 +13,7 @@
                     <template #header>
                         <div class="flex items-center justify-between">
                             <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                                Subir Base de Datos de Clientes
+                                Importar Base de Datos de Clientes
                             </h3>
                             <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
                                 @click="showCreateModal = false" />
@@ -25,11 +25,11 @@
                             <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-400">
                                 <p class="text-sm text-blue-800 dark:text-blue-200">
                                     <strong>Nota:</strong> Seleccione un archivo Excel (.xlsx) o CSV (.csv) con la base
-                                    de
-                                    datos de clientes de
-                                    años pasados.
+                                    de datos de clientes que desea importar.
                                 </p>
                             </div>
+
+
 
                             <!-- Selector de archivo -->
                             <div>
@@ -104,13 +104,13 @@
                             </UButton>
                             <UButton color="primary" @click="handleFileUpload" :loading="uploadLoading"
                                 :disabled="uploadLoading || !selectedFile">
-                                Subir Archivo
+                                Importar Excel
                             </UButton>
                         </div>
                     </template>
 
 
-                    <UButton label="Subir archivo de clientes" icon="i-heroicons-arrow-up-tray" color="neutral"
+                    <UButton label="Importar Excel de Clientes" icon="i-heroicons-arrow-up-tray" color="neutral"
                         variant="outline" @click="showCreateModal = true" />
                 </UModal>
 
@@ -120,7 +120,7 @@
         <!-- Data Table -->
         <UCard>
             <div class="overflow-x-auto">
-                <UTable :data="archivos" :columns="columns" :loading="loading" class="w-full">
+                <UTable :data="archivos" :columns="columns" class="w-full">
                     <template #loading-state>
                         <div class="flex items-center justify-center py-8">
                             <UIcon name="i-heroicons-arrow-path" class="animate-spin w-6 h-6 mr-2" />
@@ -154,78 +154,79 @@ import type { TableColumn } from '@nuxt/ui'
 const UButton = resolveComponent('UButton')
 
 // State
-const loading = ref(false)
-const showUploadModal = ref(false)
 const showCreateModal = ref(false)
 const selectedFile = ref<File | null>(null)
 const fileError = ref('')
 const uploadLoading = ref(false)
 const createLoading = ref(false)
+const { clienteService } = await import('~/services/clienteService')
+const { showSuccess, showError } = useModal()
+const { withSpinner } = useSpinner()
 
-// Nuevo archivo
 const newArchivo = ref({
     nombre: '',
     descripcion: ''
 })
 
-// Datos de ejemplo para archivos
-const archivos = ref([
-    {
-        id: 1,
-        numero: 1,
-        fechaCreacion: '23/01/24',
-        cantidadClientes: 190,
-        tieneExcel: true
-    },
-    {
-        id: 2,
-        numero: 2,
-        fechaCreacion: '23/01/24',
-        cantidadClientes: 90,
-        tieneExcel: true
-    }
-])
+// Datos de archivos importados
+const archivos = ref<{
+    id: number
+    nombre_archivo: string
+    cantidad_rows: number
+    created_at: string
+    ruta_archivo: string
+}[]>([])
 
 // Configuración de columnas para la tabla
 const columns: TableColumn<any>[] = [
     {
-        accessorKey: 'numero',
+        accessorKey: 'id',
         header: 'N.',
-        cell: ({ row }) => row.getValue('numero') as number
+        cell: ({ row }) => row.getValue('id') as number
     },
     {
-        accessorKey: 'fechaCreacion',
-        header: 'Fecha de creacion',
-        cell: ({ row }) => row.getValue('fechaCreacion')
+        accessorKey: 'nombre_archivo',
+        header: 'Nombre del archivo',
+        cell: ({ row }) => row.getValue('nombre_archivo')
     },
     {
-        accessorKey: 'cantidadClientes',
-        header: 'Cantidad de cliente',
-        cell: ({ row }) => row.getValue('cantidadClientes')
+        accessorKey: 'created_at',
+        header: 'Fecha de importación',
+        cell: ({ row }) => {
+            const fecha = new Date(row.getValue('created_at'))
+            return fecha.toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+        }
+    },
+    {
+        accessorKey: 'cantidad_rows',
+        header: 'Registros importados',
+        cell: ({ row }) => row.getValue('cantidad_rows')
     },
     {
         accessorKey: 'excel',
-        header: 'Excel',
+        header: 'Descargar',
         cell: ({ row }) => {
-            const tieneExcel = row.original.tieneExcel
-            if (tieneExcel) {
-                return h('div', { class: 'flex justify-center' }, [
-                    h('div', {
-                        class: 'w-8 h-8 bg-green-500 rounded flex items-center justify-center cursor-pointer hover:bg-green-600 transition-colors',
-                        onClick: () => handleDownloadExcel(row.original.id)
-                    }, [
-                        h('span', {
-                            class: 'text-white font-bold text-sm'
-                        }, 'X')
-                    ])
+            return h('div', { class: 'flex justify-center' }, [
+                h('div', {
+                    class: 'w-8 h-8 bg-green-500 rounded flex items-center justify-center cursor-pointer hover:bg-green-600 transition-colors',
+                    onClick: () => handleDownloadExcel(row.original.id, row.original.ruta_archivo)
+                }, [
+                    h('span', {
+                        class: 'text-white font-bold text-sm'
+                    }, '↓')
                 ])
-            }
-            return ''
+            ])
         }
     },
     {
         accessorKey: 'accion',
-        header: 'Accion',
+        header: 'Acción',
         cell: ({ row }) => {
             return h('div', { class: 'flex justify-center' }, [
                 h(UButton, {
@@ -300,34 +301,35 @@ const formatFileSize = (bytes: number): string => {
 const handleFileUpload = async () => {
     if (!selectedFile.value) return
 
-    uploadLoading.value = true
-
     try {
-        // Simular subida de archivo
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await withSpinner(async () => {
+            // Importar el archivo Excel usando el servicio
+            const response = await clienteService.importExcel(selectedFile.value!)
+            console.log(response)
+            
+            if (response.success) {
+                // Recargar la lista de archivos desde el backend
+                await loadArchivos()
 
-        // Agregar nuevo archivo a la lista
-        const nuevoArchivo = {
-            id: Date.now(),
-            numero: archivos.value.length + 1,
-            fechaCreacion: new Date().toLocaleDateString('es-ES'),
-            cantidadClientes: Math.floor(Math.random() * 200) + 50,
-            tieneExcel: true
-        }
+                // Reset form
+                selectedFile.value = null
+                showCreateModal.value = false
 
-        archivos.value.unshift(nuevoArchivo)
-
-        // Reset form
-        selectedFile.value = null
-        showUploadModal.value = false
-
-        // Show success notification
-        const { showCreateSuccess } = useNotifications()
-        showCreateSuccess('Archivo')
-    } catch (error) {
+                showSuccess('Importación Exitosa', 'El archivo Excel se ha importado correctamente.')
+            } else {
+                // Si la respuesta no es exitosa, mostrar error
+                showError('Error de Importación', response.message || 'Error al importar el archivo Excel')
+                showCreateModal.value = false
+            }
+        }, 'Importando archivo Excel...')
+    } catch (error: any) {
         console.error('Error al subir archivo:', error)
-    } finally {
-        uploadLoading.value = false
+        
+        // Cerrar modal en caso de error
+        showCreateModal.value = false
+        
+        // Mostrar modal de error
+        showError('Error de Importación', error.message || 'Error al importar el archivo Excel')
     }
 }
 
@@ -337,53 +339,71 @@ const handleCreateArchivo = async () => {
     createLoading.value = true
 
     try {
-        // Simular creación
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        const nuevoArchivo = {
-            id: Date.now(),
-            numero: archivos.value.length + 1,
-            fechaCreacion: new Date().toLocaleDateString('es-ES'),
-            cantidadClientes: 0,
-            tieneExcel: false
-        }
-
-        archivos.value.unshift(nuevoArchivo)
+        // Recargar la lista de archivos
+        await loadArchivos()
 
         // Reset form
         newArchivo.value = { nombre: '', descripcion: '' }
         showCreateModal.value = false
 
-        // Show success notification
-        const { showCreateSuccess } = useNotifications()
-        showCreateSuccess('Archivo')
+        // Show success modal
+        const { showSuccess } = useModal()
+        showSuccess('Archivo Creado', 'El archivo se ha creado correctamente.')
     } catch (error) {
         console.error('Error al crear archivo:', error)
+        const { showError } = useModal()
+        showError('Error de Creación', 'Error al crear el archivo')
     } finally {
         createLoading.value = false
     }
 }
 
-const handleDownloadExcel = (id: number) => {
-    // Implementar descarga de Excel
-    console.log('Descargar Excel del archivo:', id)
+const handleDownloadExcel = async (id: number, rutaArchivo: string) => {
+
+    const a = document.createElement('a')
+    a.href = rutaArchivo
+    a.target = '_blank'
+    a.download = rutaArchivo
+    a.click()
+    a.remove()
+    //download
+
+
 }
 
-const handleDeleteArchivo = (id: number) => {
-    // Implementar confirmación de eliminación
-    console.log('Eliminar archivo:', id)
+const loadArchivos = async () => {
+    try {
+        await withSpinner(async () => {
+            const { clienteService } = await import('~/services/clienteService')
+            const response = await clienteService.getExcelsList()
+
+            if (response.success) {
+                archivos.value = response.data
+            }
+        }, 'Cargando archivos...')
+    } catch (error) {
+        console.error('Error al cargar archivos:', error)
+        showError('Error de Carga', 'Error al cargar la lista de archivos')
+    }
+}
+
+const handleDeleteArchivo = async (id: number) => {
+    try {
+        await withSpinner(async () => {
+            const response = await clienteService.deleteExcel(id)
+            if (response.success) {
+                await loadArchivos()
+                showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+            }
+        }, 'Eliminando archivo...')
+    } catch (error) {
+        console.error('Error al eliminar archivo:', error)
+        showError('Error de Eliminación', 'Error al eliminar el archivo')
+    }
 }
 
 // Initialize data
 onMounted(async () => {
-    loading.value = true
-    try {
-        // Simular carga de datos
-        await new Promise(resolve => setTimeout(resolve, 500))
-    } catch (error) {
-        console.error('Error al cargar datos:', error)
-    } finally {
-        loading.value = false
-    }
+    await loadArchivos()
 })
 </script>

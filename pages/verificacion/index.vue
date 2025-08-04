@@ -1,181 +1,138 @@
 <template>
   <div class="p-6">
     <!-- Header -->
-    <PageHeader 
-      title="Verificación" 
-      subtitle="Gestión de verificación de pagos" 
-      icon="i-heroicons-clipboard-document-check"
-    />
-
-    <!-- Tabs -->
-    <div class="mb-6">
-      <div class="border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex space-x-8">
-          <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            @click="activeTab = tab.id"
-            :class="[
-              'py-2 px-1 border-b-2 font-medium text-sm transition-colors',
-              activeTab === tab.id
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-            ]"
-          >
-            {{ tab.name }}
-          </button>
-        </nav>
-      </div>
-    </div>
+    <PageHeader title="Verificación" subtitle="Gestión de verificación de pagos"
+      icon="i-heroicons-clipboard-document-check" :hide-back-button="true" />
 
     <!-- Tab Content -->
-    <div v-if="activeTab === 'consolidado'">
-      <!-- Consolidado Tab -->
-      <div class="mb-4 flex justify-between items-center">
-        <div class="text-lg font-semibold text-gray-900 dark:text-white">
-          Importe total: <span class="text-blue-600 dark:text-blue-400">${{ totalAmount.toFixed(2) }}</span>
-        </div>
-      </div>
-
-      <DataTable 
-        title="" 
-        icon="" 
-        :data="consolidadoData" 
-        :columns="consolidadoColumns"
-        :loading="loading" 
-        :current-page="currentPage"
-        :total-pages="totalPages"
-        :total-records="totalRecords"
-        :items-per-page="itemsPerPage"
-        :search-query-value="search"
-        :show-secondary-search="false"
-        :show-filters="true"
-        :filter-config="filterConfig" 
-        :filters-value="filters"
-        :show-export="true"
-        empty-state-message="No se encontraron registros de consolidado."
-        @update:search-query="handleSearch"
-        @page-change="handlePageChange"
-        @items-per-page-change="handleItemsPerPageChange"
-        @export="exportData" 
-        @filter-change="handleFilterChange"
-      >
+               <div v-if="activeTab === 'consolidado'">
+             <!-- Consolidado Tab -->
+             <DataTable title="" icon="" :data="consolidadoData" :columns="consolidadoColumns" :loading="loadingConsolidado"
+               :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
+               :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false" :show-filters="true"
+               :filter-config="filterConfig" :filters-value="filtersConsolidado" :show-export="true"
+               empty-state-message="No se encontraron registros de consolidado." @update:search-query="handleSearch"
+               @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
+               @filter-change="handleFilterChange">
         <!-- Botón de filtros personalizado -->
-        <template #actions>
-          <UButton
-            label="Filtros"
-            icon="i-heroicons-funnel"
-            color="neutral"
-            variant="outline"
-            @click="showFiltersPanel = !showFiltersPanel"
-          />
+        <template #body-top>
+          <UTabs size="md" variant="pill" :content="false" :items="tabs" v-model="activeTab" class="w-50   mb-6" />
+          <div class="mb-4 flex justify-end">
+            <div class="text-lg font-semibold text-gray-900 dark:text-white">
+              Importe total: <span
+                class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
+                  </span>
+            </div>
+          </div>
         </template>
 
-        <!-- Estado de error -->
-        <template #error-state>
-          <ErrorState :message="error || 'Error desconocido'" />
-        </template>
-      </DataTable>
-    </div>
+                       <!-- Estado de error -->
+               <template #error-state>
+                 <ErrorState :message="errorConsolidado || 'Error desconocido'" />
+               </template>
+             </DataTable>
+           </div>
 
-    <div v-else-if="activeTab === 'cursos'">
-      <!-- Cursos Tab -->
-      <DataTable 
-        title="" 
-        icon="" 
-        :data="cursosData" 
-        :columns="cursosColumns"
-        :loading="loading" 
-        :current-page="currentPage"
-        :total-pages="totalPages"
-        :total-records="totalRecords"
-        :items-per-page="itemsPerPage"
-        :search-query-value="search"
-        :show-secondary-search="false"
-        :show-filters="true"
-        :filter-config="filterConfig" 
-        :filters-value="filters"
-        :show-export="true"
-        empty-state-message="No se encontraron registros de cursos."
-        @update:search-query="handleSearch"
-        @page-change="handlePageChange"
-        @items-per-page-change="handleItemsPerPageChange"
-        @export="exportData" 
-        @filter-change="handleFilterChange"
-      >
-        <!-- Botón de filtros personalizado -->
-        <template #actions>
-          <UButton
-            label="Filtros"
-            icon="i-heroicons-funnel"
-            color="neutral"
-            variant="outline"
-            @click="showFiltersPanel = !showFiltersPanel"
-          />
-        </template>
+           <div v-else-if="activeTab === 'cursos'">
+             <!-- Cursos Tab -->
+             <DataTable title="" icon="" :data="cursosData" :columns="cursosColumns" :loading="loadingCursos"
+               :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
+               :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false" :show-filters="true"
+               :filter-config="filterConfig" :filters-value="filtersCursos" :show-export="true"
+               empty-state-message="No se encontraron registros de cursos." @update:search-query="handleSearch"
+               @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
+               @filter-change="handleFilterChange">
 
-        <!-- Estado de error -->
-        <template #error-state>
-          <ErrorState :message="error || 'Error desconocido'" />
+        <template #body-top>
+          <UTabs size="md" variant="pill" :content="false" :items="tabs" v-model="activeTab" class="w-50   mb-6" />
         </template>
+                       <!-- Estado de error -->
+               <template #error-state>
+                 <ErrorState :message="errorCursos || 'Error desconocido'" />
+               </template>
       </DataTable>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, h } from 'vue'
+import { ref, computed, onMounted, h, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
+import { useConsolidado } from '~/composables/useConsolidado'
+import { useCursos } from '~/composables/useCursos'
+import { ESTADOS_PAGO, CARGAS_DISPONIBLES } from '~/constants/consolidado'
+import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS, CAMPANAS } from '~/constants/cursos'
+import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '~/utils/consolidado'
+import { getEstadoColor as getEstadoColorCursos, formatCurrency as formatCurrencyCursos, formatPhoneNumber as formatPhoneNumberCursos } from '~/utils/cursos'
+import { UButton } from '#components'
 
 // Tabs
 const tabs = [
-  { id: 'consolidado', name: 'Consolidado' },
-  { id: 'cursos', name: 'Cursos' }
+  { value: 'consolidado', label: 'Consolidado' },
+  { value: 'cursos', label: 'Cursos' }
 ]
 
 const activeTab = ref('consolidado')
 
-// State
-const loading = ref(false)
-const error = ref<string | null>(null)
+// Composable de consolidado
+const {
+  consolidadoData,
+  loading: loadingConsolidado,
+  error: errorConsolidado,
+  pagination: paginationConsolidado,
+  filters: filtersConsolidado,
+  totalAmount: totalAmountConsolidado,
+  totalPaid: totalPaidConsolidado,
+  filteredData: filteredDataConsolidado,
+  fetchConsolidadoData,
+  updateEstadoPago: updateEstadoPagoConsolidado,
+  getPagoDetalle,
+  exportData: exportConsolidadoData,
+  updateFilters: updateFiltersConsolidado,
+  clearFilters: clearFiltersConsolidado
+} = useConsolidado()
+
+// Composable de cursos
+const {
+  cursosData,
+  loading: loadingCursos,
+  error: errorCursos,
+  pagination: paginationCursos,
+  filters: filtersCursos,
+  totalAmount: totalAmountCursos,
+  totalPaid: totalPaidCursos,
+  filteredData: filteredDataCursos,
+  fetchCursosData,
+  updateEstadoPago: updateEstadoPagoCursos,
+  getCursoDetalle,
+  exportData: exportCursosData,
+  updateFilters: updateFiltersCursos,
+  clearFilters: clearFiltersCursos
+} = useCursos()
+
+// State para paginación
 const search = ref('')
-const currentPage = ref(1)
-const totalPages = ref(1)
-const totalRecords = ref(0)
-const itemsPerPage = ref(15)
-const showFiltersPanel = ref(false)
+const currentPage = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.current_page : paginationCursos.value.current_page)
+const totalPages = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.last_page : paginationCursos.value.last_page)
+const totalRecords = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.total : paginationCursos.value.total)
+const itemsPerPage = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.per_page : paginationCursos.value.per_page)
 
-// Filters
-const filters = ref({
-  fecha_inicio: '',
-  fecha_fin: '',
-  estado: 'todos',
-  campana: 'todos'
-})
 
+// Configuración de filtros para consolidado
 const filterConfig = computed(() => [
   {
     key: 'estado',
     label: 'Estado',
     type: 'select',
     placeholder: 'Seleccionar estado',
-    options: [
-      { label: 'Todos', value: 'todos' },
-      { label: 'Pagado', value: 'Pagado' },
-      { label: 'Sobrepago', value: 'Sobrepago' },
-      { label: 'Pendiente', value: 'Pendiente' }
-    ]
+    options: ESTADOS_PAGO
   },
   {
-    key: 'campana',
-    label: 'Campaña',
+    key: 'carga',
+    label: 'Carga',
     type: 'select',
-    placeholder: 'Seleccionar campaña',
-    options: [
-      { label: 'Todas', value: 'todos' },
-      { label: '#6', value: '#6' },
-      { label: 'Junio 2025', value: 'Junio 2025' }
-    ]
+    placeholder: 'Seleccionar carga',
+    options: CARGAS_DISPONIBLES
   },
   {
     key: 'fecha_inicio',
@@ -192,130 +149,24 @@ const filterConfig = computed(() => [
     options: []
   }
 ])
-
-// Mock data para Consolidado
-const consolidadoData = ref([
-  {
-    id: 1,
-    numero: 1,
-    fecha: '11-06-2025',
-    nombre: 'SARITA VICTORIA CRUZADO SANTAMARIA',
-    documento: '44361377',
-    whatsapp: '51982097245',
-    servicio: 'Consolidado',
-    campana: '#6',
-    estado: 'Pagado',
-    importe: 755.48,
-    pagado: 755.48,
-    adelantos: [510.00, 245.48]
-  },
-  {
-    id: 2,
-    numero: 2,
-    fecha: '11-06-2025',
-    nombre: 'Jendy Roky Gonzales Matias',
-    documento: '47456666',
-    whatsapp: '51902843298',
-    servicio: 'Consolidado',
-    campana: '#6',
-    estado: 'Pagado',
-    importe: 1115.15,
-    pagado: 1115.15,
-    adelantos: [536.25, 578.90]
-  },
-  {
-    id: 3,
-    numero: 3,
-    fecha: '11-06-2025',
-    nombre: 'Sebastian Valencia Meza',
-    documento: '74393334',
-    whatsapp: '51942399815',
-    servicio: 'Consolidado',
-    campana: '#6',
-    estado: 'Sobrepago',
-    importe: 370.84,
-    pagado: 375.00,
-    adelantos: [375.00]
-  },
-  {
-    id: 4,
-    numero: 4,
-    fecha: '11-06-2025',
-    nombre: 'Pool Moreno Valencia',
-    documento: '76190839',
-    whatsapp: '51976852089',
-    servicio: 'Consolidado',
-    campana: '#6',
-    estado: 'Pagado',
-    importe: 850.80,
-    pagado: 850.80,
-    adelantos: [375.00, 475.80]
-  },
-  {
-    id: 5,
-    numero: 5,
-    fecha: '11-06-2025',
-    nombre: 'Jhonatan Espinoza Parraga',
-    documento: '',
-    whatsapp: '51997480474',
-    servicio: 'Consolidado',
-    campana: '#6',
-    estado: 'Sobrepago',
-    importe: 1195.18,
-    pagado: 1195.18,
-    adelantos: [487.50, 707.68]
+const getEstadoBg = (estado: string) => {
+  switch (estado) {
+    case 'PENDIENTE':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+    case 'CONFIRMADO':
+      return 'bg-green-100 text-green-800 border-green-200'
+    case 'OBSERVADO':
+      return 'bg-red-100 text-red-800 border-red-200'
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200'
   }
-])
-
-// Mock data para Cursos
-const cursosData = ref([
-  {
-    id: 1,
-    pedido: 1006,
-    fecha: '02-06-2025',
-    nombre: 'ALISSON CALLAÑAUPA QUISPE',
-    whatsapp: '958349979',
-    servicio: 'Curso',
-    campana: 'Junio 2025',
-    estado: 'Pagado',
-    importe: 350,
-    pagado: 350,
-    adelantos: 350
-  },
-  {
-    id: 2,
-    pedido: 1008,
-    fecha: '02-06-2025',
-    nombre: 'Wendie Gavidia',
-    whatsapp: '924464096',
-    servicio: 'Curso',
-    campana: 'Junio 2025',
-    estado: 'Pagado',
-    importe: 350,
-    pagado: 350,
-    adelantos: 350
-  },
-  {
-    id: 3,
-    pedido: 1009,
-    fecha: '02-06-2025',
-    nombre: 'Juan Carlos Pecho Romero',
-    whatsapp: '993461037',
-    servicio: 'Curso',
-    campana: 'Junio 2025',
-    estado: 'Pagado',
-    importe: 350,
-    pagado: 350,
-    adelantos: 350
-  }
-])
-
-// Columnas para Consolidado
+}
+// Columnas para Consolidado usando el nuevo servicio
 const consolidadoColumns: TableColumn<any>[] = [
   {
-    accessorKey: 'numero',
+    accessorKey: 'index',
     header: 'N.',
-    cell: ({ row }: { row: any }) => row.getValue('numero')
+    cell: ({ row }: { row: any }) => row.getValue('index')
   },
   {
     accessorKey: 'fecha',
@@ -330,36 +181,35 @@ const consolidadoColumns: TableColumn<any>[] = [
   {
     accessorKey: 'documento',
     header: 'DNI/RUC',
-    cell: ({ row }: { row: any }) => row.getValue('documento') || '-'
+    cell: ({ row }: { row: any }) => formatDocument(row.getValue('documento'))
   },
   {
-    accessorKey: 'whatsapp',
+    accessorKey: 'telefono',
     header: 'WhatsApp',
-    cell: ({ row }: { row: any }) => row.getValue('whatsapp')
+    cell: ({ row }: { row: any }) => formatPhoneNumber(row.getValue('telefono'))
   },
   {
-    accessorKey: 'servicio',
+    accessorKey: 'tipo',
     header: 'Servicio',
-    cell: ({ row }: { row: any }) => row.getValue('servicio')
+    cell: ({ row }: { row: any }) => row.getValue('tipo')
   },
   {
-    accessorKey: 'campana',
-    header: 'Campaña',
-    cell: ({ row }: { row: any }) => row.getValue('campana')
+    accessorKey: 'carga',
+    header: 'Carga',
+    cell: ({ row }: { row: any }) => `#${row.getValue('carga')} `
   },
   {
-    accessorKey: 'estado',
-    header: 'Estados',
+    accessorKey: 'estado_pago',
+    header: 'Estado',
     cell: ({ row }: { row: any }) => {
-      const estado = row.getValue('estado')
-      const color = estado === 'Pagado' ? 'success' : 'error'
+      const estado = row.getValue('estado_pago')
+      const color = getEstadoColor(estado)
+      console.log('Estado:', estado, 'Color:', color)
       return h('div', { class: 'flex items-center space-x-2' }, [
-        h('UBadge', { 
-          color,
-          variant: 'subtle',
-          class: 'text-xs'
+        h('span', {
+          class: `px-2 py-1 rounded-full text-xs font-medium border ${getEstadoColor(estado)}`
         }, estado),
-        h('UIcon', { 
+        h('UIcon', {
           name: 'i-heroicons-chevron-down',
           class: 'w-4 h-4 text-gray-400 cursor-pointer'
         })
@@ -367,27 +217,43 @@ const consolidadoColumns: TableColumn<any>[] = [
     }
   },
   {
-    accessorKey: 'importe',
+    accessorKey: 'monto_a_pagar',
     header: 'Importe',
-    cell: ({ row }: { row: any }) => `$${row.getValue('importe').toFixed(2)}`
-  },
-  {
-    accessorKey: 'pagado',
-    header: 'Pagado',
-    cell: ({ row }: { row: any }) => `$${row.getValue('pagado').toFixed(2)}`
-  },
-  {
-    accessorKey: 'adelantos',
-    header: 'Adelanto',
     cell: ({ row }: { row: any }) => {
-      const adelantos = row.getValue('adelantos')
-      return h('div', { class: 'flex flex-wrap gap-1' }, 
-        adelantos.map((adelanto: number) => 
-          h('UBadge', { 
-            color: 'success',
-            variant: 'subtle',
-            class: 'text-xs'
-          }, `$${adelanto.toFixed(2)}`)
+      const monto = row.getValue('monto_a_pagar')
+      return h('div', { class: 'flex items-center space-x-1' }, [
+        h('span', {}, formatCurrency(monto)),
+        h('UIcon', {
+          name: 'i-heroicons-chevron-down',
+          class: 'w-4 h-4 text-gray-400'
+        })
+      ])
+    }
+  },
+  {
+    accessorKey: 'total_pagado',
+    header: 'Pagado',
+    cell: ({ row }: { row: any }) => {
+      const total = row.getValue('total_pagado')
+      return h('div', { class: 'flex items-center space-x-1' }, [
+        h('span', {}, formatCurrency(total)),
+        h('UIcon', {
+          name: 'i-heroicons-chevron-up',
+          class: 'w-4 h-4 text-gray-400'
+        })
+      ])
+    }
+  },
+  {
+    accessorKey: 'pagos_detalle',
+    header: 'Adelantos',
+    cell: ({ row }: { row: any }) => {
+      const pagos = row.getValue('pagos_detalle')
+      return h('div', { class: 'flex flex-wrap gap-1' },
+        pagos.map((pago: any) =>
+          h('span', {
+            class: `px-2 py-1 rounded-full text-xs font-medium border ${getEstadoBg(pago.status)}`
+          }, formatCurrency(pago.monto))
         )
       )
     }
@@ -396,38 +262,37 @@ const consolidadoColumns: TableColumn<any>[] = [
     accessorKey: 'acciones',
     header: 'Acciones',
     cell: ({ row }: { row: any }) => {
-      return h('div', { class: 'flex justify-center' }, [
-        h('div', { 
-          class: 'w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors',
-          onClick: () => handleViewDetails(row.original.id)
-        }, [
-          h('UIcon', { 
-            name: 'i-heroicons-eye',
-            class: 'w-4 h-4 text-white'
-          })
-        ])
+      return h('div', { class: 'flex items-center gap-2' }, [
+        h(UButton as any, {
+          size: 'xs',
+          icon: 'i-heroicons-eye',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => navigateTo(`/verificacion/consolidado/${row.original.id}`)
+        }),
+
       ])
     }
   }
 ]
 
-// Columnas para Cursos
+// Columnas para Cursos (mantener las existentes)
 const cursosColumns: TableColumn<any>[] = [
   {
-    accessorKey: 'pedido',
+    accessorKey: 'id',
     header: 'Pedido',
     cell: ({ row }: { row: any }) => h('div', { class: 'flex items-center space-x-1' }, [
-      h('span', {}, row.getValue('pedido')),
-      h('UIcon', { 
+      h('span', {}, row.getValue('id')),
+      h('UIcon', {
         name: 'i-heroicons-chevron-up-down',
         class: 'w-4 h-4 text-gray-400'
       })
     ])
   },
   {
-    accessorKey: 'fecha',
+    accessorKey: 'fecha_registro',
     header: 'Fecha',
-    cell: ({ row }: { row: any }) => row.getValue('fecha')
+    cell: ({ row }: { row: any }) => row.getValue('fecha_registro')
   },
   {
     accessorKey: 'nombre',
@@ -435,14 +300,14 @@ const cursosColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => row.getValue('nombre')
   },
   {
-    accessorKey: 'whatsapp',
+    accessorKey: 'telefono',
     header: 'Whatsapp',
-    cell: ({ row }: { row: any }) => row.getValue('whatsapp')
+    cell: ({ row }: { row: any }) => row.getValue('telefono')
   },
   {
-    accessorKey: 'servicio',
+    accessorKey: 'tipo',
     header: 'Servicio',
-    cell: ({ row }: { row: any }) => row.getValue('servicio')
+    cell: ({ row }: { row: any }) => row.getValue('tipo')
   },
   {
     accessorKey: 'campana',
@@ -450,130 +315,147 @@ const cursosColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => row.getValue('campana')
   },
   {
-    accessorKey: 'estado',
+    accessorKey: 'estado_pago',
     header: 'Estado',
     cell: ({ row }: { row: any }) => {
-      const estado = row.getValue('estado')
+      const estado = row.getValue('estado_pago')
+      //get the color of the state
+      const color = getEstadoColor(estado)
       return h('div', { class: 'flex items-center space-x-2' }, [
-        h('UBadge', { 
-          color: 'success',
-          variant: 'subtle',
-          class: 'text-xs'
+        h('span', {
+          class: `px-2 py-1 rounded-full text-xs font-medium border ${color}`
         }, estado),
-        h('UIcon', { 
-          name: 'i-heroicons-chevron-down',
-          class: 'w-4 h-4 text-gray-400 cursor-pointer'
-        })
       ])
     }
   },
   {
-    accessorKey: 'importe',
+    accessorKey: 'monto_a_pagar_formateado',
     header: 'Importe',
-    cell: ({ row }: { row: any }) => `S/${row.getValue('importe')}`
+    cell: ({ row }: { row: any }) => `S/${row.getValue('monto_a_pagar_formateado')}`
   },
   {
-    accessorKey: 'pagado',
+    accessorKey: 'total_pagado_formateado',
     header: 'Pagado',
-    cell: ({ row }: { row: any }) => `S/${row.getValue('pagado')}`
+    cell: ({ row }: { row: any }) => `S/${row.getValue('total_pagado_formateado')}`
   },
   {
-    accessorKey: 'adelantos',
+    accessorKey: 'pagos_detalle',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
-      const adelantos = row.getValue('adelantos')
-      return h('UBadge', { 
-        color: 'success',
-        variant: 'subtle',
-        class: 'text-xs'
-      }, `S/${adelantos}`)
+      const adelantos = row.getValue('pagos_detalle')
+      //for each adelanto, create a span with the status and the amount
+      return h('div', { class: 'flex flex-wrap gap-1' },
+        adelantos.map((adelanto: any) =>
+          h('span', {
+            class: `px-2 py-1 rounded-full text-xs font-medium border ${getEstadoBg(adelanto.status)}`
+          }, formatCurrency(adelanto.monto))
+        )
+      )
     }
   },
   {
     accessorKey: 'acciones',
     header: 'Acciones',
     cell: ({ row }: { row: any }) => {
-      const actions = []
-      
-      // Botón de ver detalles
-      actions.push(
-        h('div', { 
-          class: 'w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors mr-2',
-          onClick: () => handleViewDetails(row.original.id)
-        }, [
-          h('UIcon', { 
-            name: 'i-heroicons-eye',
-            class: 'w-4 h-4 text-white'
-          })
-        ])
-      )
-      
-      // Botón de documento (solo para algunos registros)
-      if (row.original.pedido === 1009) {
-        actions.push(
-          h('div', { 
-            class: 'w-8 h-8 bg-green-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-green-600 transition-colors',
-            onClick: () => handleViewDocument(row.original.id)
-          }, [
-            h('UIcon', { 
-              name: 'i-heroicons-document',
-              class: 'w-4 h-4 text-white'
-            })
-          ])
-        )
-      }
-      
-      return h('div', { class: 'flex items-center' }, actions)
+      return h('div', { class: 'flex items-center gap-2' }, [
+        h(UButton as any, {
+          size: 'xs',
+          icon: 'i-heroicons-eye',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => navigateTo(`/verificacion/curso/${row.original.id}`)
+        }),
+
+      ])
     }
   }
 ]
 
-// Computed
-const totalAmount = computed(() => {
-  if (activeTab.value === 'consolidado') {
-    return consolidadoData.value.reduce((sum, item) => sum + item.importe, 0)
-  } else {
-    return cursosData.value.reduce((sum, item) => sum + item.importe, 0)
-  }
+// Computed para el total del consolidado (asegurar que sea un número)
+const totalAmountConsolidadoComputed = computed(() => {
+  const amount = totalAmountConsolidado.value
+  console.log('totalAmountConsolidado.value:', amount, 'type:', typeof amount)
+  return typeof amount === 'number' ? amount : 0
+})
+
+// Computed para el total de cursos
+const totalAmountCursosComputed = computed(() => {
+  const amount = totalAmountCursos.value
+  return typeof amount === 'number' ? amount : 0
 })
 
 // Methods
 const handleSearch = (query: string) => {
   search.value = query
-  // Implementar búsqueda
+  if (activeTab.value === 'consolidado') {
+    updateFiltersConsolidado({ search: query })
+    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
+  } else {
+    updateFiltersCursos({ search: query })
+    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value)
+  }
 }
 
 const handlePageChange = (page: number) => {
-  currentPage.value = page
-  // Implementar cambio de página
+  if (activeTab.value === 'consolidado') {
+    fetchConsolidadoData(filtersConsolidado.value, page, itemsPerPage.value)
+  } else {
+    fetchCursosData(filtersCursos.value, page, itemsPerPage.value)
+  }
 }
 
 const handleItemsPerPageChange = (items: number) => {
-  itemsPerPage.value = items
-  // Implementar cambio de items por página
+  if (activeTab.value === 'consolidado') {
+    fetchConsolidadoData(filtersConsolidado.value, 1, items)
+  } else {
+    fetchCursosData(filtersCursos.value, 1, items)
+  }
 }
 
 const handleFilterChange = (filterType: string, value: string) => {
-  filters.value = { ...filters.value, [filterType]: value }
-  // Implementar filtros
+  if (activeTab.value === 'consolidado') {
+    updateFiltersConsolidado({ [filterType]: value })
+    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
+  } else {
+    updateFiltersCursos({ [filterType]: value })
+    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value)
+  }
 }
 
-const exportData = () => {
-  // Implementar exportación
-  console.log('Exportando datos...')
+const exportData = async () => {
+  if (activeTab.value === 'consolidado') {
+    await exportConsolidadoData()
+  } else {
+    await exportCursosData()
+  }
 }
 
-const handleViewDetails = (id: number) => {
-  console.log('Ver detalles del registro:', id)
+const handleViewDetails = async (id: number) => {
+  try {
+    const detalle = await getPagoDetalle(id)
+    console.log('Detalle del pago:', detalle)
+    // Aquí puedes abrir un modal o navegar a una página de detalles
+  } catch (err) {
+    console.error('Error al obtener detalles:', err)
+  }
 }
 
 const handleViewDocument = (id: number) => {
   console.log('Ver documento del registro:', id)
 }
 
+// Watchers
+watch(activeTab, (newTab) => {
+  if (newTab === 'consolidado') {
+    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
+  } else if (newTab === 'cursos') {
+    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value)
+  }
+})
+
 // Initialize
 onMounted(() => {
-  // Cargar datos iniciales
-  totalRecords.value = activeTab.value === 'consolidado' ? consolidadoData.value.length : cursosData.value.length
+  // Cargar datos iniciales de consolidado
+  fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
 })
 </script>
