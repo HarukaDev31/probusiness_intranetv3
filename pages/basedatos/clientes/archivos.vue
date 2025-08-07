@@ -31,56 +31,60 @@
 
 
 
-                            <!-- Selector de archivo -->
+                            <!-- UFileUpload Component -->
                             <div>
-                                <label for="file"
-                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Archivo de clientes *
                                 </label>
-                                <div class="flex items-center justify-center w-full">
-                                    <label for="file-upload"
-                                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500"
-                                        :class="{ 'border-red-300 bg-red-50': fileError }">
-                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                            <UIcon name="i-heroicons-cloud-arrow-up"
-                                                class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" />
-                                            <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                                <span class="font-semibold">Haga clic para subir</span> o arrastre y
-                                                suelte
-                                            </p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                Excel (.xlsx) o CSV (.csv) - Máximo 10MB
-                                            </p>
+                                <UFileUpload
+                                    v-model="selectedFile"
+                                    accept=".xlsx,.xls,.csv"
+                                    :multiple="false"
+                                    label="Arrastra tu archivo aquí o haz clic para seleccionar"
+                                    description="Excel (.xlsx, .xls) o CSV (.csv) - Máximo 10MB"
+                                    icon="i-heroicons-document-arrow-up"
+                                    color="primary"
+                                    variant="area"
+                                    size="lg"
+                                    :highlight="!!fileError"
+                                    class="w-full min-h-48"
+                                    @update:model-value="handleFileSelect"
+                                >
+                                    <!-- Slot personalizado para mostrar información del archivo -->
+                                    <template #actions>
+                                        <div v-if="selectedFile && !fileError" class="w-full">
+                                            <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                                <div class="flex items-center">
+                                                    <UIcon name="i-heroicons-document-check"
+                                                        class="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
+                                                    <div>
+                                                        <span class="text-sm font-medium text-green-800 dark:text-green-200">
+                                                            {{ selectedFile.name }}
+                                                        </span>
+                                                        <p class="text-xs text-green-600 dark:text-green-400">
+                                                            Tamaño: {{ formatFileSize(selectedFile.size) }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <UButton 
+                                                    size="xs" 
+                                                    color="error" 
+                                                    variant="ghost" 
+                                                    icon="i-heroicons-x-mark"
+                                                    @click="removeFile" 
+                                                />
+                                            </div>
                                         </div>
-                                        <input id="file-upload" type="file" class="hidden" accept=".xlsx,.xls,.csv"
-                                            @change="handleFileSelect" />
-                                    </label>
-                                </div>
+                                    </template>
+                                </UFileUpload>
+                                
+                                                                 <!-- Error de archivo -->
+                                 <div v-if="fileError" class="mt-2 text-sm text-red-600 dark:text-red-400">
+                                     {{ fileError }}
+                                 </div>
 
-                                <!-- Archivo seleccionado -->
-                                <div v-if="selectedFile"
-                                    class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center">
-                                            <UIcon name="i-heroicons-document-check"
-                                                class="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
-                                            <span class="text-sm font-medium text-green-800 dark:text-green-200">
-                                                {{ selectedFile.name }}
-                                            </span>
-                                        </div>
-                                        <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-x-mark"
-                                            @click="removeFile" />
-                                    </div>
-                                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">
-                                        Tamaño: {{ formatFileSize(selectedFile.size) }}
-                                    </p>
-                                </div>
-
-                                <!-- Error de archivo -->
-                                <div v-if="fileError" class="mt-2 text-sm text-red-600 dark:text-red-400">
-                                    {{ fileError }}
-                                </div>
-                            </div>
+                                 
+                             </div>
 
                             <!-- Información adicional -->
                             <div class="text-sm text-gray-600 dark:text-gray-400">
@@ -96,13 +100,16 @@
                             </div>
                         </div>
                     </template>
-                    <template #footer>
+                    <template #footer="{ close }">
                         <div class="flex justify-end gap-3">
                             <UButton color="neutral" variant="outline" @click="showCreateModal = false"
                                 :disabled="uploadLoading">
                                 Cancelar
                             </UButton>
-                            <UButton color="primary" @click="handleFileUpload" :loading="uploadLoading"
+                            <UButton color="primary" @click="()=>{
+                                close()
+                                handleFileUpload()
+                            }" :loading="uploadLoading"
                                 :disabled="uploadLoading || !selectedFile">
                                 Importar Excel
                             </UButton>
@@ -110,9 +117,9 @@
                     </template>
 
 
-                    <UButton label="Importar Excel de Clientes" icon="i-heroicons-arrow-up-tray" color="neutral"
-                        variant="outline" @click="showCreateModal = true" />
-                </UModal>
+                                         <UButton label="Importar Excel de Clientes" icon="i-heroicons-arrow-up-tray" color="neutral"
+                         variant="outline" @click="showCreateModal = true" />
+                 </UModal>
 
             </div>
         </div>
@@ -159,6 +166,7 @@ const selectedFile = ref<File | null>(null)
 const fileError = ref('')
 const uploadLoading = ref(false)
 const createLoading = ref(false)
+
 const { clienteService } = await import('~/services/clienteService')
 const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
@@ -246,10 +254,9 @@ const goBack = () => {
     navigateTo('/basedatos/clientes')
 }
 
-const handleFileSelect = (event: Event) => {
-    const target = event.target as HTMLInputElement
-    const file = target.files?.[0]
-
+const handleFileSelect = (...args: any[]) => {
+    const file = args[0] as File | null
+    
     if (file) {
         fileError.value = ''
         const isValid = validateFile(file)
@@ -259,6 +266,9 @@ const handleFileSelect = (event: Event) => {
         } else {
             selectedFile.value = null
         }
+    } else {
+        selectedFile.value = null
+        fileError.value = ''
     }
 }
 
@@ -287,7 +297,10 @@ const validateFile = (file: File): boolean => {
 const removeFile = () => {
     selectedFile.value = null
     fileError.value = ''
+    // El UFileUpload maneja automáticamente la eliminación visual del archivo
 }
+
+
 
 const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes'
@@ -315,17 +328,18 @@ const handleFileUpload = async () => {
                 selectedFile.value = null
                 showCreateModal.value = false
 
-                showSuccess('Importación Exitosa', 'El archivo Excel se ha importado correctamente.')
+                // Mostrar modal de éxito
+                showSuccess('Importación Exitosa', response.message || 'El archivo se ha importado correctamente.')
             } else {
                 // Si la respuesta no es exitosa, mostrar error
-                showError('Error de Importación', response.message || 'Error al importar el archivo Excel')
                 showCreateModal.value = false
+                showError('Error de Importación', response.message || 'Error al importar el archivo Excel')
             }
         }, 'Importando archivo Excel...')
     } catch (error: any) {
         console.error('Error al subir archivo:', error)
         
-        // Cerrar modal en caso de error
+        // Cerrar modal de upload
         showCreateModal.value = false
         
         // Mostrar modal de error

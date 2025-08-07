@@ -17,11 +17,12 @@
           <!-- Skeleton información -->
           <div class="flex-1">
             <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse w-1/3"></div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Columna izquierda -->
               <div class="space-y-4">
-                <div v-for="i in 5" :key="`left-${i}`" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                <div v-for="i in 5" :key="`left-${i}`"
+                  class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                   <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse w-1/4"></div>
                   <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
                 </div>
@@ -29,7 +30,8 @@
 
               <!-- Columna derecha -->
               <div class="space-y-4">
-                <div v-for="i in 5" :key="`right-${i}`" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                <div v-for="i in 5" :key="`right-${i}`"
+                  class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                   <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse w-1/4"></div>
                   <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
                 </div>
@@ -92,74 +94,74 @@
                   <p class="text-gray-900 dark:text-white">Lima</p>
                 </div>
 
-                                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     DNI
-                   </label>
-                   <p class="text-gray-900 dark:text-white">{{ cliente.documento || 'No especificado' }}</p>
-                 </div>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    DNI
+                  </label>
+                  <p class="text-gray-900 dark:text-white">{{ cliente.documento || 'No especificado' }}</p>
+                </div>
 
-                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     WhatsApp
-                   </label>
-                   <p class="text-gray-900 dark:text-white">{{ cliente.telefono }}</p>
-                 </div>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    WhatsApp
+                  </label>
+                  <p class="text-gray-900 dark:text-white">{{ cliente.telefono }}</p>
+                </div>
 
-                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Correo
-                   </label>
-                   <p class="text-gray-900 dark:text-white">{{ cliente.correo }}</p>
-                 </div>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Correo
+                  </label>
+                  <p class="text-gray-900 dark:text-white">{{ cliente.correo }}</p>
+                </div>
 
-                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Fecha de registro
-                   </label>
-                   <p class="text-gray-900 dark:text-white">{{ cliente.fecha }}</p>
-                 </div>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Fecha de registro
+                  </label>
+                  <p class="text-gray-900 dark:text-white">{{ cliente.fecha }}</p>
+                </div>
 
               </div>
 
-                             <!-- Columna derecha - Información del primer servicio -->
-               <div class="space-y-4">
-                 <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Primer servicio
-                   </label>
-                   <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.servicio }}</p>
-                 </div>
+              <!-- Columna derecha - Información del primer servicio -->
+              <div class="space-y-4">
+                <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Primer servicio
+                  </label>
+                  <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.servicio }}</p>
+                </div>
 
-                 <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Fecha primer servicio
-                   </label>
-                   <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.fecha }}</p>
-                 </div>
+                <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Fecha primer servicio
+                  </label>
+                  <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.fecha }}</p>
+                </div>
 
-                 <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Categoría
-                   </label>
-                   <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.categoria }}</p>
-                 </div>
+                <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Categoría
+                  </label>
+                  <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.categoria }}</p>
+                </div>
 
-                 <!-- Campos adicionales para futuras implementaciones -->
-                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Empresa
-                   </label>
-                   <p class="text-gray-900 dark:text-white">Grupo Pro Business Sac.</p>
-                 </div>
+                <!-- Campos adicionales para futuras implementaciones -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Empresa
+                  </label>
+                  <p class="text-gray-900 dark:text-white">{{ cliente.empresa }}</p>
+                </div>
 
-                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     RUC
-                   </label>
-                   <p class="text-gray-900 dark:text-white">20603287721</p>
-                 </div>
-               </div>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    RUC
+                  </label>
+                  <p class="text-gray-900 dark:text-white">{{ cliente.ruc }}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -174,11 +176,7 @@
         </template>
 
         <div class="overflow-x-auto">
-          <UTable 
-            :data="historialCompras" 
-            :columns="historialColumns" 
-            class="w-full"
-          >
+          <UTable :data="historialCompras" :columns="historialColumns" class="w-full">
             <template #empty-state>
               <div class="text-center py-8">
                 <UIcon name="i-heroicons-shopping-cart" class="mx-auto h-12 w-12 text-gray-400" />
@@ -199,6 +197,7 @@
 import { ref, onMounted, h } from 'vue'
 import type { Cliente } from '~/services/clienteService'
 import type { TableColumn } from '@nuxt/ui'
+import { UButton } from '#components'
 
 // Props
 const route = useRoute()
@@ -210,9 +209,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 // Historial de compras (datos de ejemplo basados en la imagen)
-const historialCompras = ref([
-
-])
+const historialCompras = ref<any[]>([])
 
 // Configuración de columnas para el historial
 const historialColumns: TableColumn<any>[] = [
@@ -237,24 +234,23 @@ const historialColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => row.getValue('monto')
   },
   {
-    accessorKey: 'revisar',
-    header: 'Revisar',
+    //if is_imported is trus show button with eye UIcon
+    accessorKey: 'is_imported',
+    header: 'Ver',
     cell: ({ row }: { row: any }) => {
-      const tieneDocumento = row.original.tieneDocumento
-      if (tieneDocumento) {
-        return h('div', { class: 'flex justify-center' }, [
-          h('div', { 
-            class: 'w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors',
-            onClick: () => handleRevisarDocumento(row.original.id)
-          }, [
-            h('UIcon', { 
-              name: 'i-heroicons-link',
-              class: 'w-4 h-4 text-white'
-            })
-          ])
-        ])
-      }
-      return ''
+      const isImported = row.getValue('is_imported')
+      console.log(isImported)
+      return  !isImported ?  h('div', { class: 'flex items-center gap-2' }, [
+        h(UButton as any, {
+          size: 'xs',
+          icon: 'i-heroicons-eye',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => navigateTo(`/basedatos/clientes/documentacion/${row.original.id}`)
+        }),
+
+      ])
+      : ''
     }
   }
 ]
@@ -270,13 +266,14 @@ const loadCliente = async () => {
     cliente.value = clienteData
 
     // Actualizar historial de compras basado en los servicios del cliente
-    if (clienteData.servicios ) {
+    if (clienteData.servicios) {
       historialCompras.value = clienteData.servicios.map((servicio: any, index: number) => ({
         id: index + 1,
         numero: index + 1,
         fecha: servicio.fecha,
+        is_imported: servicio.is_imported,
         servicio: servicio.servicio,
-        monto: servicio.servicio === 'Curso' ? 'S/350.00' : '$375.00', // Montos de ejemplo
+        monto: servicio.servicio === 'Curso' ? `S/${servicio.monto??0.0}` : `$${servicio.monto??0.0}`, // Montos de ejemplo
         tieneDocumento: servicio.servicio === 'Consolidado' // Solo consolidados tienen documentos
       }))
     }

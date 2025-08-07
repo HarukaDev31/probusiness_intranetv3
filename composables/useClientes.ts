@@ -1,5 +1,7 @@
 import { ref, computed } from 'vue'
 import { clienteService, type Cliente, type ClientesQueryParams, type PaginationInfo } from '~/services/clienteService'
+import type { Header } from '~/types/data-table'
+const { withSpinner } = useSpinner()
 
 export const useClientes = () => {
   // State
@@ -9,7 +11,7 @@ export const useClientes = () => {
   const pagination = ref<PaginationInfo>({
     current_page: 1,
     last_page: 1,
-    per_page: 15,
+    per_page: 100,
     total: 0,
     from: 0,
     to: 0
@@ -17,14 +19,14 @@ export const useClientes = () => {
 
   // Filtros y búsqueda
   const search = ref('')
-  const secondarySearch = ref('')
+  const primarySearch = ref('')
   const filters = ref({
     categoria: 'todos',
     fecha_inicio: '',
     fecha_fin: '',
     servicio: 'todos'
   })
-
+  const headers = ref<Header[]>([])
   // Opciones de filtros
   const filterOptions = ref<{
     categorias: string[]
@@ -40,8 +42,7 @@ export const useClientes = () => {
   const currentPage = computed(() => pagination.value.current_page)
   const totalItems = computed(() => pagination.value.total)
   const itemsPerPage = computed(() => {
-    const perPage = pagination.value.per_page
-    return typeof perPage === 'string' ? parseInt(perPage) : perPage
+    return typeof pagination.value.per_page === 'string' ? parseInt(pagination.value.per_page) : pagination.value.per_page
   })
 
   // Methods
@@ -69,9 +70,24 @@ export const useClientes = () => {
       })
 
       const response = await clienteService.getClientes(queryParams)
-      
+
       clientes.value = response.data
-      pagination.value = response.pagination
+      headers.value = response.headers
+      // Actualizar pagination de forma más explícita para asegurar reactividad
+      pagination.value.current_page = response.pagination.current_page
+      pagination.value.last_page = response.pagination.last_page
+      pagination.value.per_page = response.pagination.per_page
+      pagination.value.total = response.pagination.total
+      pagination.value.from = response.pagination.from
+      pagination.value.to = response.pagination.to
+
+
+
+      // Si la página actual es mayor que el total de páginas disponibles, 
+      // cargar la primera página automáticamente
+      if (pagination.value.current_page > pagination.value.last_page && pagination.value.last_page > 0) {
+        await loadClientes({ page: 1 })
+      }
     } catch (err: any) {
       error.value = err.message || 'Error al cargar clientes'
       console.error('Error loading clientes:', err)
@@ -91,6 +107,7 @@ export const useClientes = () => {
   }
 
   const handleSearch = async (searchTerm: string) => {
+    console.log('searchTerm', searchTerm)
     search.value = searchTerm
     await loadClientes({ page: 1, search: searchTerm })
   }
@@ -122,20 +139,26 @@ export const useClientes = () => {
   const handleFilterChange = async (filterType: string, value: string) => {
     // Convertir fechas de YYYY-MM-DD a DD/MM/YYYY para el backend
     let formattedValue = value
-    
+
     // Manejar el valor 'todos' como vacío para el backend
     if (value === 'todos') {
       formattedValue = ''
     } else if ((filterType === 'fecha_inicio' || filterType === 'fecha_fin') && value) {
       formattedValue = formatDateForBackend(value)
     }
-    
+
     filters.value = { ...filters.value, [filterType]: formattedValue }
+    // Resetear a la primera página cuando se cambian los filtros
     await loadClientes({ page: 1 })
   }
 
   const handlePageChange = async (page: number) => {
     await loadClientes({ page })
+  }
+
+  const handleItemsPerPageChange = async (limit: number) => {
+    // Cargar los datos con el nuevo límite
+    await loadClientes({ page: 1, limit })
   }
 
   const createCliente = async (clienteData: Partial<Cliente>) => {
@@ -211,24 +234,25 @@ export const useClientes = () => {
     error.value = null
 
     try {
-      const blob = await clienteService.exportClientes({
-        search: search.value,
-        categoria: filters.value.categoria,
-        fecha_inicio: filters.value.fecha_inicio,
-        fecha_fin: filters.value.fecha_fin,
-        servicio: filters.value.servicio
-      })
+      await withSpinner(async () => {
+        const blob = await clienteService.exportClientes({
+          search: search.value,
+          categoria: filters.value.categoria,
+          fecha_inicio: filters.value.fecha_inicio,
+          fecha_fin: filters.value.fecha_fin,
+          servicio: filters.value.servicio
+        })
 
-      // Crear y descargar el archivo
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `clientes_${new Date().toISOString().split('T')[0]}.xlsx`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-
+        // Crear y descargar el archivo
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `clientes_${new Date().toISOString().split('T')[0]}.xlsx`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      }, 'Exportando clientes...')
       return { success: true }
     } catch (err: any) {
       error.value = err.message || 'Error al exportar clientes'
@@ -259,7 +283,7 @@ export const useClientes = () => {
 
   const resetFilters = () => {
     search.value = ''
-    secondarySearch.value = ''
+    primarySearch.value = ''
     filters.value = {
       categoria: 'todos',
       fecha_inicio: '',
@@ -275,9 +299,10 @@ export const useClientes = () => {
     error,
     pagination,
     search,
-    secondarySearch,
+    primarySearch,
     filters,
     filterOptions,
+    headers,
 
     // Computed
     hasData,
@@ -292,6 +317,7 @@ export const useClientes = () => {
     handleSearch,
     handleFilterChange,
     handlePageChange,
+    handleItemsPerPageChange,
     createCliente,
     updateCliente,
     deleteCliente,

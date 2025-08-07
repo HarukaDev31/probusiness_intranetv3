@@ -1,5 +1,5 @@
 import { apiCall } from '~/utils/api'
-
+import type { Header } from '~/types/data-table'
 // Interfaces para la API
 export interface Cliente {
   id: number
@@ -8,6 +8,8 @@ export interface Cliente {
   correo: string
   telefono: string
   fecha: string
+  empresa: string
+  ruc: string
   primer_servicio: {
     servicio: string
     fecha: string
@@ -34,6 +36,7 @@ export interface ClientesResponse {
   success: boolean
   data: Cliente[]
   pagination: PaginationInfo
+  headers: Header[]
 }
 
 export interface ErrorResponse {
@@ -224,8 +227,9 @@ export class ClienteService {
 
       const response = await apiCall<Blob>(url, {
         method: 'GET',
+        responseType: 'blob',
         headers: {
-          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         }
       })
 

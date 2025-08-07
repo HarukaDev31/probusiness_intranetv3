@@ -32,21 +32,33 @@ export const apiCall = async <T>(
     // Obtener el token de autenticación
     const token = getAuthToken()
     
+    console.log('🔑 Token found:', token ? 'YES' : 'NO')
+    console.log('🌐 Endpoint:', endpoint)
+    console.log('🔧 Full URL would be:', API_CONFIG.baseURL + endpoint)
+    
     // Determinar si es FormData para no establecer Content-Type manualmente
     const isFormData = options.body instanceof FormData
+    
+    const finalHeaders = {
+      // Solo establecer Content-Type si no es FormData
+      ...(isFormData ? {} : API_CONFIG.headers),
+      // Agregar headers personalizados primero
+      ...options.headers,
+      // Agregar Bearer token al final para que siempre se incluya
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    }
     
     const config = {
       baseURL: API_CONFIG.baseURL,
       timeout: API_CONFIG.timeout,
-      headers: {
-        // Solo establecer Content-Type si no es FormData
-        ...(isFormData ? {} : API_CONFIG.headers),
-        // Agregar Bearer token si existe
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers
-      },
+      headers: finalHeaders,
       ...options
     }
+    
+    // Asegurar que los headers no se sobrescriban después
+    config.headers = finalHeaders
+
+    console.log('📋 Final headers:', config.headers)
 
     return await $fetch<T>(endpoint, config)
   } catch (error: any) {

@@ -12,7 +12,10 @@ export interface FilterConfig {
   placeholder: string
   options: FilterOption[]
 }
-
+export interface Header {
+  label: string
+  value: string
+}
 export interface DataTableProps {
   // Basic props
   title: string
@@ -25,9 +28,9 @@ export interface DataTableProps {
 
   // Search props
   searchPlaceholder?: string
-  showSecondarySearch?: boolean
-  secondarySearchLabel?: string
-  secondarySearchPlaceholder?: string
+  showPrimarySearch?: boolean
+  primarySearchLabel?: string
+  primarySearchPlaceholder?: string
 
   // Filter props
   showFilters?: boolean
@@ -47,13 +50,15 @@ export interface DataTableProps {
 
   // Values from parent
   searchQueryValue?: string
-  secondarySearchValue?: string
+  primarySearchValue?: string
   filtersValue?: Record<string, any>
+  showHeaders?: boolean
+  headers?: Header[]
 }
 
 export interface DataTableEmits {
   'update:searchQuery': [value: string]
-  'update:secondarySearch': [value: string]
+  'update:primarySearch': [value: string]
   'update:filters': [value: Record<string, any>]
   'update:currentPage': [value: number]
   'update:itemsPerPage': [value: number]

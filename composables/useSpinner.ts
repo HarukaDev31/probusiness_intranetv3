@@ -6,7 +6,6 @@ function createSpinnerInstance() {
   const spinnerMessage = ref('Cargando...')
 
   const showSpinner = (message?: string) => {
-    console.log('🔄 Showing spinner:', message)
     spinnerMessage.value = message || 'Cargando...'
     isSpinning.value = true
   }

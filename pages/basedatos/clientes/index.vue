@@ -8,15 +8,16 @@
 
         <DataTable title="Base de datos de clientes" icon="i-heroicons-users" :data="clientes" :columns="columns"
             :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalItems"
-            :items-per-page="itemsPerPage" :search-query-value="search" :secondary-search-value="secondarySearch"
-            :show-secondary-search="true" :secondary-search-label="'Buscar por'"
-            :secondary-search-placeholder="'Buscar por nombre, DNI/RUC, correo...'" :show-filters="true"
+            :items-per-page="itemsPerPage" :search-query-value="search" :primary-search-value="primarySearch"
+            :show-primary-search="true" :primary-search-label="'Buscar por'"
+            :primary-search-placeholder="'Buscar por nombre, DNI/RUC, correo...'" :show-filters="true"
             :filter-config="filterConfig" :filters-value="filters" :show-export="true"
+            :show-headers="true" :headers="headers"
             empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
-            @update:search-query="handleSearch" @update:secondary-search="handleSecondarySearch"
+            @update:search-query="handleSearch" @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
             @filter-change="handleFilterChange">
-
+            
 
             <!-- Estado de error -->
             <template #error-state>
@@ -37,10 +38,11 @@ const UButton = resolveComponent('UButton')
 const {
     clientes,
     loading,
+    headers,
     error,
     pagination,
     search,
-    secondarySearch,
+    primarySearch,
     filters,
     filterOptions,
     currentPage,
@@ -52,6 +54,7 @@ const {
     handleSearch,
     handleFilterChange,
     handlePageChange,
+    handleItemsPerPageChange,
     exportClientes
 } = useClientes()
 
@@ -111,7 +114,7 @@ const columns: TableColumn<any>[] = [
     },
     {
         accessorKey: 'documento',
-        header: 'DNI/RUC',
+        header: 'DNI',
         cell: ({ row }) => row.getValue('documento') || '-'
     },
     {
@@ -121,7 +124,7 @@ const columns: TableColumn<any>[] = [
     },
     {
         accessorKey: 'telefono',
-        header: 'Teléfono',
+        header: 'Whatsapp',
         cell: ({ row }) => row.getValue('telefono')
     },
     {
@@ -191,10 +194,6 @@ const getCategoriaColor = (categoria: string) => {
 const handleSecondarySearch = (value: string) => {
     secondarySearch.value = value
     loadClientes({ page: 1 })
-}
-
-const handleItemsPerPageChange = (limit: number) => {
-    loadClientes({ page: 1, limit })
 }
 
 const goToArchivos = () => {

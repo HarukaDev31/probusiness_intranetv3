@@ -39,6 +39,10 @@ const hasChildren = computed(() => {
   return (props.item.Hijos && props.item.Hijos.length > 0) || (props.item.SubHijos && props.item.SubHijos.length > 0)
 })
 
+const hasAccessibleRoute = computed(() => {
+  return (props.item.No_Menu_Url && props.item.No_Menu_Url !== '#') || props.item.url_intranet_v2
+})
+
 const children = computed(() => {
   return [
     ...(props.item.Hijos || []),
@@ -47,19 +51,67 @@ const children = computed(() => {
 })
 
 const isActive = computed(() => {
-  // Considera activo si la ruta actual incluye el nombre del controlador
-  if (!props.item.No_Menu_Url || props.item.No_Menu_Url === '#') return false
-  return route.fullPath.includes(props.item.No_Menu_Url.replace(/\\/g, '/'))
+  // Considera activo si la ruta actual incluye el nombre del controlador o la URL intranet
+  const menuUrl = props.item.No_Menu_Url
+  const intranetUrl = props.item.url_intranet_v2
+  
+  if ((!menuUrl || menuUrl === '#') && !intranetUrl) return false
+  
+  if (menuUrl && menuUrl !== '#' && props.item.url_intranet_v2 === "/") {
+    const cleanMenuUrl = menuUrl.replace(/\\/g, '/')
+    // Manejar caso especial donde la URL es solo "/"
+    if (cleanMenuUrl === '/') {
+      return route.fullPath === '/'
+    } else {
+      const normalizedUrl = cleanMenuUrl.replace(/^\/+/, '')
+      return route.fullPath.includes('/' + normalizedUrl)
+    }
+  }
+  
+  if (intranetUrl) {
+    // Manejar caso especial donde la URL es solo "/"
+    if (intranetUrl === '/') {
+      return route.fullPath === '/'
+    } else {
+      const cleanIntranetUrl = intranetUrl.replace(/^\/+/, '')
+      return route.fullPath.includes('/' + cleanIntranetUrl)
+    }
+  }
+  
+  return false
 })
 
 function navigateToItem(item: any) {
-  if (hasChildren.value) {
-    expanded.value = !expanded.value
+  // Si tiene ruta accesible, navegar (independientemente de si tiene hijos o no)
+  if (hasAccessibleRoute.value) {
+    let targetUrl = ''
+    
+    // Priorizar url_intranet_v2 si existe
+    if (item.url_intranet_v2) {
+      console.log('Navegando a url_intranet_v2:', item.url_intranet_v2)
+      targetUrl = item.url_intranet_v2
+    } else if (item.No_Menu_Url && item.No_Menu_Url !== '#' && item.url_intranet_v2 !== "/") {
+      console.log('Navegando a No_Menu_Url:', item.No_Menu_Url)
+      targetUrl = item.No_Menu_Url.replace(/\\/g, '/')
+    }
+    
+    // Asegurar que la URL empiece con / pero no tenga doble //
+    if (targetUrl) {
+      // Manejar caso especial donde la URL es solo "/"
+      if (targetUrl === '/' || targetUrl === '') {
+        router.push('/')
+      } else {
+        // Remover / inicial si existe y luego agregar uno
+        targetUrl = targetUrl.replace(/^\/+/, '')
+        router.push('/' + targetUrl)
+      }
+    }
     return
   }
-  if (item.No_Menu_Url && item.No_Menu_Url !== '#') {
-    console.log(item.url_intranet_v2)
-    router.push('/' + item.url_intranet_v2)
+  
+  // Solo si NO tiene ruta accesible pero SÍ tiene hijos, expandir/colapsar
+  if (hasChildren.value) {
+    expanded.value = !expanded.value
   }
 }
 </script>

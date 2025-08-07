@@ -5,8 +5,6 @@ import { formatDateForInput } from '~/utils/data-table'
 export const useDataTable = (props: DataTableProps, emit: any) => {
   // Local state
   const showFiltersPanel = ref(false)
-  const localCurrentPage = ref(props.currentPage)
-  const localItemsPerPage = ref(props.itemsPerPage)
   const filtersPanelRef = ref<HTMLElement>()
   const filtersButtonRef = ref<HTMLElement>()
   const isSelectOpen = ref(false)
@@ -17,9 +15,7 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
   // Methods
   const handleFilterChange = (filterType: string, value: string) => {
     emit('filter-change', filterType, value)
-    // El panel permanece abierto para permitir múltiples filtros
-    // Si quieres que se cierre automáticamente, descomenta la siguiente línea:
-    // showFiltersPanel.value = false
+
   }
 
   const handleSelectOpen = () => {
@@ -35,13 +31,11 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
   }
 
   const onPageChange = (page: number) => {
-    localCurrentPage.value = page
     emit('update:currentPage', page)
     emit('page-change', page)
   }
 
   const onItemsPerPageChange = (limit: number) => {
-    localItemsPerPage.value = limit
     emit('update:itemsPerPage', limit)
     emit('items-per-page-change', limit)
   }
@@ -92,15 +86,6 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
     }
   }
 
-  // Watchers
-  watch(() => props.currentPage, (newPage) => {
-    localCurrentPage.value = newPage
-  })
-
-  watch(() => props.itemsPerPage, (newLimit) => {
-    localItemsPerPage.value = newLimit
-  })
-
   // Lifecycle
   onMounted(() => {
     document.addEventListener('click', handleClickOutside)
@@ -113,8 +98,6 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
   return {
     // State
     showFiltersPanel,
-    localCurrentPage,
-    localItemsPerPage,
     filtersPanelRef,
     filtersButtonRef,
     isSelectOpen,
