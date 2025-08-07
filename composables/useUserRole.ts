@@ -61,7 +61,6 @@ export const useUserRole = () => {
     return userData.value?.raw?.grupo?.nombre || ''
   })
 
-  // Computed para obtener el nombre completo del usuario
   const userName = computed(() => {
     return userData.value?.raw?.nombres_apellidos || userData.value?.raw?.nombre || ''
   })

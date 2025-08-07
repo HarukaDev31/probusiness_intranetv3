@@ -107,7 +107,6 @@ export const useClientes = () => {
   }
 
   const handleSearch = async (searchTerm: string) => {
-    console.log('searchTerm', searchTerm)
     search.value = searchTerm
     await loadClientes({ page: 1, search: searchTerm })
   }

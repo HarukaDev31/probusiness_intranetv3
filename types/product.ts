@@ -1,9 +1,10 @@
-  export interface Product {
+import type { Header } from './data-table'
+
+export interface Product {
   observaciones: string
   tiene_observaciones: boolean
   tipo_etiquetado_id: string
   entidad_id: string
-  tipo_etiquetado_id: string
   antidumping_value: string
   id: number
   idContenedor: number
@@ -86,6 +87,7 @@ export interface Pagination {
 export interface ProductsResponse {
   data: Product[]
   pagination: Pagination
+  headers: Header[]
 }
 
 // Respuesta del servicio con información de éxito/error
@@ -94,6 +96,7 @@ export interface ProductsServiceResponse {
   data: Product[]
   pagination: Pagination | null
   error?: string
+  headers: Header[]
 }
 
 // Respuesta para opciones de filtros

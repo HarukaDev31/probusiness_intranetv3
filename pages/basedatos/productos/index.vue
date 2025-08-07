@@ -1,41 +1,21 @@
 <template>
   <div class="p-6">
-    <DataTable
-      title="Productos"
-      icon="i-heroicons-document-text"
-      :data="filteredProducts"
-      :columns="columns"
-      :loading="loading"
-      :current-page="currentPage"
-      :total-pages="totalPages"
-      :total-records="totalRecords"
-      :items-per-page="itemsPerPage"
-      :show-secondary-search="true"
-      secondary-search-label="Buscar por"
-      secondary-search-placeholder="Filtro específico..."
-      :show-filters="true"
-      :filter-config="filterConfig"
-      :show-export="true"
+    <div class="flex justify-end">
+      <UButton label="Ver Excel de productos" icon="i-heroicons-eye" color="neutral" variant="outline"
+        @click="goToArchivos" />
+    </div>
+    <DataTable title="Productos" icon="i-heroicons-document-text" :data="filteredProducts" :columns="columns"
+      :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
+      :items-per-page="itemsPerPage" :show-secondary-search="true" secondary-search-label="Buscar por"
+      secondary-search-placeholder="Filtro específico..." :show-filters="true" :filter-config="filterConfig"
       empty-state-message="No se encontraron productos que coincidan con los criterios de búsqueda."
-      :search-query-value="searchQuery"
-      :secondary-search-value="secondarySearch"
-      :filters-value="filters"
-      @update:search-query="searchQuery = $event"
-      @update:secondary-search="secondarySearch = $event"
-      @filter-change="handleFilterChange"
-      @update:current-page="onPageChange"
-      @update:items-per-page="onItemsPerPageChange"
-      @export="exportData"
-    />
+      :search-query-value="searchQuery" :secondary-search-value="secondarySearch" :filters-value="filters"
+      :show-headers="true" :headers="headers" @update:search-query="searchQuery = $event"
+      @update:primary-search="handleSearch" @filter-change="handleFilterChange" @update:current-page="onPageChange"
+      @update:items-per-page="onItemsPerPageChange" />
 
-    <!-- Modal de vista previa de imagen -->
-    <ImageModal
-      v-if="showImageModal"
-      :is-open="showImageModal"
-      :image-url="selectedImage"
-      :title="selectedImageTitle"
-      @close="closeImageModal"
-    />
+    <ImageModal v-if="showImageModal" :is-open="showImageModal" :image-url="selectedImage" :title="selectedImageTitle"
+      @close="closeImageModal" />
   </div>
 </template>
 
@@ -44,7 +24,7 @@ import { ref, onMounted, watch, computed, h, resolveComponent } from 'vue'
 import type { ProductMapped } from '~/types/product'
 import type { TableColumn } from '@nuxt/ui'
 import ImageModal from '~/components/ImageModal.vue'
-
+import { formatCurrency } from '~/utils/formatters'
 const UButton = resolveComponent('UButton')
 
 // Composable para productos
@@ -66,8 +46,10 @@ const {
   searchProducts,
   applyFilters,
   clearFilters,
+  handleSearch,
   exportProducts,
-  deleteProduct: deleteProductFromAPI
+  deleteProduct: deleteProductFromAPI,
+  headers
 } = useProducts()
 
 // State local
@@ -81,7 +63,6 @@ const showImageModal = ref(false)
 const selectedImage = ref('')
 const selectedImageTitle = ref('')
 
-// Configuración de columnas para UTable
 const columns: TableColumn<ProductMapped>[] = [
   {
     accessorKey: 'id',
@@ -99,7 +80,7 @@ const columns: TableColumn<ProductMapped>[] = [
     cell: ({ row }) => {
       const foto = row.getValue('foto')
       const nombreComercial = row.getValue('nombreComercial')
-      
+
       if (foto) {
         return h('div', { class: 'flex items-center gap-2' }, [
           h('img', {
@@ -126,9 +107,9 @@ const columns: TableColumn<ProductMapped>[] = [
     header: 'Características',
     cell: ({ row }) => {
       const caracteristicas = row.getValue('caracteristicas') as string
-      return h('div', { 
-        class: 'max-w-xs truncate',
-        title: caracteristicas // Tooltip con texto completo
+      return h('div', {
+        class: 'w-80 text-wrap',
+        title: caracteristicas // oltip con texto completo
       }, caracteristicas)
     }
   },
@@ -152,7 +133,7 @@ const columns: TableColumn<ProductMapped>[] = [
     header: 'Precio Exw',
     cell: ({ row }) => {
       const precio = Number(row.getValue('precioExw'))
-      return formatPrice(precio)
+      return formatCurrency(precio)
     }
   },
   {
@@ -176,7 +157,7 @@ const columns: TableColumn<ProductMapped>[] = [
           icon: 'i-heroicons-eye',
           onClick: () => viewProduct(product)
         }),
-    
+
         h(UButton, {
           size: 'xs',
           icon: 'i-heroicons-trash',
@@ -231,8 +212,6 @@ const filteredProducts = computed(() => {
     )
   }
 
-  console.log('Products value:', products.value)
-  console.log('Filtered products result:', filtered)
   return filtered
 })
 
@@ -247,7 +226,6 @@ watch(filters, () => {
 
 // Sincronizar página local con la del composable
 watch(currentPage, (newPage) => {
-  console.log('currentPage changed to:', newPage)
   localCurrentPage.value = newPage
 })
 
@@ -274,11 +252,9 @@ const onItemsPerPageChange = (newLimit: number) => {
 }
 
 const onPageChange = (page: number) => {
-  console.log('onPageChange called with page:', page)
-  console.log('localCurrentPage before:', localCurrentPage.value)
+
   localCurrentPage.value = page
-  console.log('localCurrentPage after:', localCurrentPage.value)
-  console.log('Calling loadProducts with page:', page)
+
   loadProducts({ page })
 }
 
@@ -289,13 +265,7 @@ const formatPrice = (price: number): string => {
   })
 }
 
-const exportData = async () => {
-  const success = await exportProducts('xlsx')
-  if (success) {
-    // Mostrar notificación de éxito
-    console.log('Exportación exitosa')
-  }
-}
+
 
 const viewProduct = (product: ProductMapped) => {
   // Navegar a la página de detalles del producto
@@ -313,7 +283,6 @@ const deleteProduct = async (product: ProductMapped) => {
     const success = await deleteProductFromAPI(product.id)
     if (success) {
       // Mostrar notificación de éxito
-      console.log('Producto eliminado exitosamente')
     }
   }
 }
@@ -332,18 +301,17 @@ const closeImageModal = () => {
 
 // Lifecycle
 onMounted(async () => {
-  console.log('Productos page mounted, loading data...')
   await Promise.all([
     loadProducts(),
     loadFilterOptions()
   ])
-  console.log('Data loading completed')
-  console.log('Initial currentPage:', currentPage.value)
-  console.log('Initial totalPages:', totalPages.value)
+
   // Inicializar página local
   localCurrentPage.value = currentPage.value
-  console.log('Initial localCurrentPage:', localCurrentPage.value)
 })
+const goToArchivos = () => {
+  navigateTo('/basedatos/productos/archivos')
+}
 </script>
 
 <style scoped>

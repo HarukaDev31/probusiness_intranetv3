@@ -1,4 +1,5 @@
 import type { Product, ProductMapped, ProductFilters, ProductResponse, ProductsServiceResponse, FilterOptions, Pagination } from '~/types/product'
+import type { Header } from '~/types/data-table'
 import ProductService from '~/services/productService'
 
 export const useProducts = () => {
@@ -7,12 +8,13 @@ export const useProducts = () => {
   const error = ref<string | null>(null)
   const totalRecords = ref(0)
   const currentPage = ref(1)
-  const itemsPerPage = ref(10)
+  const itemsPerPage = ref(100)
   const totalPages = ref(0)
+  const search = ref('')
+  const headers = ref<Header[]>([])
 
   // Función para mapear productos de la API al formato del frontend
   const mapProduct = (product: Product): ProductMapped => {
-    console.log('Mapping product:', product)
     const mapped = {
       id: product.id,
       nombreComercial: product.nombre_comercial,
@@ -26,11 +28,13 @@ export const useProducts = () => {
       precioExw: parseFloat(product.precio_exw),
       subpartida: product.subpartida,
       campana: product.tipo || 'Sin campaña', // Usar tipo como campaña
+      entidad_id: parseInt(product.entidad_id) || 0,
+      tipo_etiquetado_id: parseInt(product.tipo_etiquetado_id) || 0,
+      antidumping_value: product.antidumping_value || '',
       cargaContenedor: product.carga_contenedor,
       createdAt: product.created_at,
       updatedAt: product.updated_at
     }
-    console.log('Mapped product:', mapped)
     return mapped
   }
   
@@ -61,7 +65,7 @@ export const useProducts = () => {
     error.value = null
 
     try {
-      console.log('Loading products with params:', params)
+
       const productService = ProductService.getInstance()
       const response: ProductsServiceResponse = await productService.getProducts({
         page: params.page || currentPage.value,
@@ -71,23 +75,19 @@ export const useProducts = () => {
         sortBy: params.sortBy,
         sortOrder: params.sortOrder
       })
+      console.log('Response:', response)
 
-      console.log('Products response:', response)
-      console.log('Response success:', response.success)
-      console.log('Response data length:', response.data?.length)
 
       if (response.success) {
         // Mapear productos de la API al formato del frontend
         products.value = response.data.map(mapProduct)
-        console.log('Mapped products:', products.value)
-        console.log('Products value after mapping:', products.value.length)
         
         // Usar datos de paginación real
         if (response.pagination) {
-          totalRecords.value = response.pagination.total
-          currentPage.value = response.pagination.current_page
-          totalPages.value = response.pagination.last_page
-          itemsPerPage.value = response.pagination.per_page
+          totalRecords.value = parseInt(response.pagination.total.toString())
+          currentPage.value = parseInt(response.pagination.current_page.toString())
+          totalPages.value = parseInt(response.pagination.last_page.toString())
+          itemsPerPage.value = parseInt(response.pagination.per_page.toString())
         } else {
           // Fallback si no hay paginación
           totalRecords.value = response.data.length
@@ -95,6 +95,8 @@ export const useProducts = () => {
           totalPages.value = 1
           itemsPerPage.value = response.data.length
         }
+        console.log('Headers:', response.headers)
+        headers.value = response.headers
       } else {
         error.value = response.error || 'Error al cargar productos'
         products.value = []
@@ -126,7 +128,11 @@ export const useProducts = () => {
     currentPage.value = 1
     await loadProducts()
   }
-
+  const handleSearch = async (searchTerm: string) => {
+    search.value = searchTerm
+    console.log('Search term:', searchTerm)
+    await loadProducts({ page: 1, search: searchTerm })
+  }
   const applyFilters = async () => {
     currentPage.value = 1
     await loadProducts()
@@ -194,7 +200,23 @@ export const useProducts = () => {
 
     try {
       const productService = ProductService.getInstance()
-      const response: ProductResponse = await productService.updateProduct(id, product)
+      // Mapear solo los campos que acepta el servicio de actualización
+      const updateData = {
+        link: product.link,
+        arancel_sunat: product.arancel_sunat,
+        arancel_tlc: product.arancel_tlc || undefined,
+        correlativo: product.correlativo || undefined,
+        antidumping: product.antidumping || undefined,
+        antidumping_value: product.antidumping_value,
+        tipo_producto: product.tipo_producto,
+        entidad_id: product.entidad_id ? parseInt(product.entidad_id) : undefined,
+        etiquetado: product.etiquetado || undefined,
+        tipo_etiquetado_id: product.tipo_etiquetado_id ? parseInt(product.tipo_etiquetado_id) : undefined,
+        doc_especial: product.doc_especial || undefined,
+        tiene_observaciones: product.tiene_observaciones,
+        observaciones: product.observaciones
+      }
+      const response: ProductResponse = await productService.updateProduct(id, updateData)
       
       if (response.success) {
         await loadProducts() // Recargar la lista
@@ -236,7 +258,7 @@ export const useProducts = () => {
     }
   }
 
-  const exportProducts = async (format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<boolean> => {
+  const exportProducts = async (format: 'excel' | 'csv' | 'pdf' = 'excel'): Promise<boolean> => {
     try {
       const productService = ProductService.getInstance()
       const response = await productService.exportProducts({
@@ -250,7 +272,8 @@ export const useProducts = () => {
         const url = window.URL.createObjectURL(response.data)
         const link = document.createElement('a')
         link.href = url
-        link.download = `productos_${new Date().toISOString().split('T')[0]}.${format}`
+        const extension = format === 'excel' ? 'xlsx' : format
+        link.download = `productos_${new Date().toISOString().split('T')[0]}.${extension}`
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
@@ -266,7 +289,51 @@ export const useProducts = () => {
       return false
     }
   }
-
+  const importExcel = async (file: File): Promise<{
+    success: boolean
+    message: string
+  }> => {
+    try {                                                                                                 
+      const productService = ProductService.getInstance()
+      const response = await productService.importExcel(file)
+      return response
+    } catch (err) {
+      error.value = 'Error de conexión'
+      console.error('Error importing Excel:', err)
+      return { success: false, message: 'Error al importar el archivo' }
+    }
+  }
+  const deleteExcel = async (id: number): Promise<{ success: boolean; message: string }> => {
+    try {
+      const productService = ProductService.getInstance()
+      const response = await productService.deleteExcel(id)
+      return response
+    } catch (err) {
+      error.value = 'Error de conexión'
+      console.error('Error deleting Excel:', err)
+      return { success: false, message: 'Error al eliminar el archivo' }
+    }
+  }
+  const getExcelsList = async (): Promise<{
+    success: boolean;
+    data: {
+      id: number;
+      nombre_archivo: string;
+      cantidad_rows: number;
+      created_at: string;
+      ruta_archivo: string;
+    }[]
+  }> => { 
+    try {
+      const productService = ProductService.getInstance()
+      const response = await productService.getExcelsList()
+      return response
+    } catch (err) {
+      error.value = 'Error de conexión'
+      console.error('Error getting Excel list:', err)
+      return { success: false, data: [] }
+    }
+  }
   const resetState = () => {
     products.value = []
     loading.value = false
@@ -308,6 +375,11 @@ export const useProducts = () => {
     updateProduct,
     deleteProduct,
     exportProducts,
-    resetState
+    resetState,
+    handleSearch,
+    importExcel,
+    deleteExcel,
+    headers,
+    getExcelsList
   }
 } 

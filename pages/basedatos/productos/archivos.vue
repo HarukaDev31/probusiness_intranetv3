@@ -1,6 +1,6 @@
 <template>
     <div class="p-6">
-        
+
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center">
                 <UButton label="Regresar" color="neutral" variant="outline" icon="i-heroicons-arrow-left"
@@ -13,7 +13,7 @@
                     <template #header>
                         <div class="flex items-center justify-between">
                             <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                                Importar Base de Datos de Clientes
+                                Importar Base de Datos de Productos
                             </h3>
                             <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
                                 @click="showCreateModal = false" />
@@ -34,31 +34,25 @@
                             <!-- UFileUpload Component -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Archivo de clientes *
+                                    Archivo de productos *
                                 </label>
-                                <UFileUpload
-                                    v-model="selectedFile"
-                                    accept=".xlsx,.xls,.csv"
-                                    :multiple="false"
+                                <UFileUpload v-model="selectedFile" accept=".xlsx,.xls,.xlsm" :multiple="false"
                                     label="Arrastra tu archivo aquí o haz clic para seleccionar"
                                     description="Excel (.xlsx, .xls) o CSV (.csv) - Máximo 10MB"
-                                    icon="i-heroicons-document-arrow-up"
-                                    color="primary"
-                                    variant="area"
-                                    size="lg"
-                                    :highlight="!!fileError"
-                                    class="w-full min-h-48"
-                                    @update:model-value="handleFileSelect"
-                                >
+                                    icon="i-heroicons-document-arrow-up" color="primary" variant="area" size="lg"
+                                    :highlight="!!fileError" class="w-full min-h-48"
+                                    @update:model-value="handleFileSelect">
                                     <!-- Slot personalizado para mostrar información del archivo -->
                                     <template #actions>
                                         <div v-if="selectedFile && !fileError" class="w-full">
-                                            <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                            <div
+                                                class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                                                 <div class="flex items-center">
                                                     <UIcon name="i-heroicons-document-check"
                                                         class="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
                                                     <div>
-                                                        <span class="text-sm font-medium text-green-800 dark:text-green-200">
+                                                        <span
+                                                            class="text-sm font-medium text-green-800 dark:text-green-200">
                                                             {{ selectedFile.name }}
                                                         </span>
                                                         <p class="text-xs text-green-600 dark:text-green-400">
@@ -66,36 +60,42 @@
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <UButton 
-                                                    size="xs" 
-                                                    color="error" 
-                                                    variant="ghost" 
-                                                    icon="i-heroicons-x-mark"
-                                                    @click="removeFile" 
-                                                />
+                                                <UButton size="xs" color="error" variant="ghost"
+                                                    icon="i-heroicons-x-mark" @click="removeFile" />
                                             </div>
                                         </div>
                                     </template>
                                 </UFileUpload>
-                                
-                                                                 <!-- Error de archivo -->
-                                 <div v-if="fileError" class="mt-2 text-sm text-red-600 dark:text-red-400">
-                                     {{ fileError }}
-                                 </div>
 
-                                 
-                             </div>
+                                <!-- Error de archivo -->
+                                <div v-if="fileError" class="mt-2 text-sm text-red-600 dark:text-red-400">
+                                    {{ fileError }}
+                                </div>
+
+
+                            </div>
 
                             <!-- Información adicional -->
                             <div class="text-sm text-gray-600 dark:text-gray-400">
                                 <p class="mb-2"><strong>Formato esperado del archivo:</strong></p>
                                 <ul class="list-disc list-inside space-y-1 ml-2">
-                                    <li>Columna A: Nombre completo</li>
-                                    <li>Columna B: DNI/RUC</li>
-                                    <li>Columna C: Correo electrónico</li>
-                                    <li>Columna D: WhatsApp</li>
-                                    <li>Columna E: Servicio (Consolidado/Curso)</li>
-                                    <li>Columna F: Fecha (opcional)</li>
+                                    <li>Columna A: ITEM</li>
+                                    <li>Columna B: NOMBRE COMERCIAL</li>
+                                    <li>Columna C: FOTO</li>
+                                    <li>Columna D: CARACTERISTICAS</li>
+                                    <li>Columna E: RUBRO</li>
+                                    <li>Columna F: TIPO DE PRODUCTO</li>
+                                    <li>Columna G: PRECIO EXW</li>
+                                    <li>Columna H: SUB PARTIDA</li>
+                                    <li>Columna I: LINK</li>
+                                    <li>Columna J: UNIDAD COMERCIAL</li>
+                                    <li>Columna K: ARANCEL SUNAT</li>
+                                    <li>Columna L: ARANCEL TLC</li>
+                                    <li>Columna M: ANTIDUMPING</li>
+                                    <li>Columna N: CORRELATIVO</li>
+                                    <li>Columna O: ETIQUETADO</li>
+                                    <li>Columna P: DOC. ESPECIAL</li>
+                                    <li>Columna Q: CAMPAÑA</li>
                                 </ul>
                             </div>
                         </div>
@@ -106,20 +106,19 @@
                                 :disabled="uploadLoading">
                                 Cancelar
                             </UButton>
-                            <UButton color="primary" @click="()=>{
+                            <UButton color="primary" @click="() => {
                                 close()
                                 handleFileUpload()
-                            }" :loading="uploadLoading"
-                                :disabled="uploadLoading || !selectedFile">
+                            }" :loading="uploadLoading" :disabled="uploadLoading || !selectedFile">
                                 Importar Excel
                             </UButton>
                         </div>
                     </template>
 
 
-                                         <UButton label="Importar Excel de Clientes" icon="i-heroicons-arrow-up-tray" color="neutral"
-                         variant="outline" @click="showCreateModal = true" />
-                 </UModal>
+                    <UButton label="Importar Excel de Productos" icon="i-heroicons-arrow-up-tray" color="neutral"
+                        variant="outline" @click="showCreateModal = true" />
+                </UModal>
 
             </div>
         </div>
@@ -167,7 +166,11 @@ const fileError = ref('')
 const uploadLoading = ref(false)
 const createLoading = ref(false)
 
-const { clienteService } = await import('~/services/clienteService')
+const {
+importExcel,
+deleteExcel,
+getExcelsList
+} = useProducts()
 const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
 
@@ -251,12 +254,12 @@ const columns: TableColumn<any>[] = [
 
 // Methods
 const goBack = () => {
-    navigateTo('/basedatos/clientes')
+    navigateTo('/basedatos/productos')
 }
 
 const handleFileSelect = (...args: any[]) => {
     const file = args[0] as File | null
-    
+
     if (file) {
         fileError.value = ''
         const isValid = validateFile(file)
@@ -280,7 +283,7 @@ const validateFile = (file: File): boolean => {
         'application/vnd.ms-excel.sheet.macroEnabled.12'
     ]
 
-    const maxSize = 100 * 1024 * 1024 // 100MB
+    const maxSize = 100 * 1024 * 1024 // 10MB
 
     if (!allowedTypes.includes(file.type)) {
         fileError.value = 'Solo se permiten archivos Excel (.xlsx, .xls) o CSV (.csv)'
@@ -318,9 +321,8 @@ const handleFileUpload = async () => {
     try {
         await withSpinner(async () => {
             // Importar el archivo Excel usando el servicio
-            const response = await clienteService.importExcel(selectedFile.value!)
-            console.log(response)
-            
+            const response = await importExcel(selectedFile.value!)
+
             if (response.success) {
                 // Recargar la lista de archivos desde el backend
                 await loadArchivos()
@@ -339,10 +341,10 @@ const handleFileUpload = async () => {
         }, 'Importando archivo Excel...')
     } catch (error: any) {
         console.error('Error al subir archivo:', error)
-        
+
         // Cerrar modal de upload
         showCreateModal.value = false
-        
+
         // Mostrar modal de error
         showError('Error de Importación', error.message || 'Error al importar el archivo Excel')
     }
@@ -389,8 +391,7 @@ const handleDownloadExcel = async (id: number, rutaArchivo: string) => {
 const loadArchivos = async () => {
     try {
         await withSpinner(async () => {
-            const { clienteService } = await import('~/services/clienteService')
-            const response = await clienteService.getExcelsList()
+            const response = await getExcelsList()
 
             if (response.success) {
                 archivos.value = response.data
@@ -405,7 +406,7 @@ const loadArchivos = async () => {
 const handleDeleteArchivo = async (id: number) => {
     try {
         await withSpinner(async () => {
-            const response = await clienteService.deleteExcel(id)
+            const response = await deleteExcel(id)
             if (response.success) {
                 await loadArchivos()
                 showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')

@@ -467,11 +467,9 @@ const cargarDatos = async () => {
 
 const cambiarServicio = (id: number) => {
   servicioActivo.value = id
-  console.log('Proveedor seleccionado:', proveedorActivo.value)
 }
 
 const crearNuevoDocumento = () => {
-  console.log('Crear nuevo documento para proveedor:', proveedorActivo.value)
 }
 
 const guardarDocumentacion = async () => {
@@ -482,7 +480,6 @@ const guardarDocumentacion = async () => {
     await actualizarDocumentacionProveedor(props.clienteId, servicioActivo.value, datos)
     
     // Mostrar notificación de éxito
-    console.log('Documentación guardada exitosamente')
   } catch (err) {
     console.error('Error al guardar documentación:', err)
   }

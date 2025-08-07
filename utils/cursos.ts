@@ -1,13 +1,4 @@
-export const formatCurrency = (amount: number, type: string = 'USD'): string => {
-  if (amount === null || amount === undefined) return '$0.00'
-  
-  return new Intl.NumberFormat('es-PE', {
-    style: 'currency',
-    currency: type,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount)
-}
+export { formatCurrency } from './formatters'
 
 export const getEstadoColor = (estado: string): string => {
   switch (estado) {

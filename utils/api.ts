@@ -1,7 +1,7 @@
 // Configuración de la API
 export const API_CONFIG = {
   baseURL: useRuntimeConfig().public.apiBaseUrl,
-  timeout: 10000,
+  timeout: 60*1000,
   headers: {
     'Content-Type': 'application/json',
   }
