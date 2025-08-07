@@ -246,7 +246,7 @@ const historialColumns: TableColumn<any>[] = [
           icon: 'i-heroicons-eye',
           color: 'primary',
           variant: 'ghost',
-          onClick: () => navigateTo(`/basedatos/clientes/documentacion/${row.original.id}`)
+          onClick: () => navigateTo(`/basedatos/clientes/documentacion/${row.original.id_servicio}`)
         }),
 
       ])
@@ -269,6 +269,7 @@ const loadCliente = async () => {
     if (clienteData.servicios) {
       historialCompras.value = clienteData.servicios.map((servicio: any, index: number) => ({
         id: index + 1,
+        id_servicio: servicio.id,
         numero: index + 1,
         fecha: servicio.fecha,
         is_imported: servicio.is_imported,
