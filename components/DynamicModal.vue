@@ -55,13 +55,33 @@
 
           <!-- Actions -->
           <div class="flex justify-end gap-3 px-6 pb-6">
+            <!-- Modal de confirmación con botones Cancelar/Confirmar -->
+            <template v-if="modal.type === 'confirmation'">
+              <button
+                @click="$emit('cancel')"
+                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="$emit('confirm')"
+                class="rounded-lg px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2"
+                :class="buttonClasses"
+              >
+                Confirmar
+              </button>
+            </template>
+            
+            <!-- Modal persistente con botón Cerrar -->
             <button
-              v-if="modal.persistent"
+              v-else-if="modal.persistent"
               @click="$emit('close')"
               class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               Cerrar
             </button>
+            
+            <!-- Modal normal con botón Entendido -->
             <button
               v-else
               @click="$emit('close')"
@@ -88,6 +108,8 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
+  confirm: []
+  cancel: []
 }>()
 
 
@@ -96,7 +118,8 @@ const iconComponents = {
   success: 'i-heroicons-check-circle',
   error: 'i-heroicons-x-circle',
   warning: 'i-heroicons-exclamation-triangle',
-  info: 'i-heroicons-information-circle'
+  info: 'i-heroicons-information-circle',
+  confirmation: 'i-heroicons-question-mark-circle'
 }
 
 const iconComponent = computed(() => iconComponents[props.modal.type])
@@ -106,7 +129,8 @@ const iconContainerClasses = computed(() => {
     success: 'bg-green-100',
     error: 'bg-red-100',
     warning: 'bg-yellow-100',
-    info: 'bg-blue-100'
+    info: 'bg-blue-100',
+    confirmation: 'bg-gray-100'
   }
   return classes[props.modal.type]
 })
@@ -116,7 +140,8 @@ const iconClasses = computed(() => {
     success: 'text-green-600',
     error: 'text-red-600',
     warning: 'text-yellow-600',
-    info: 'text-blue-600'
+    info: 'text-blue-600',
+    confirmation: 'text-gray-600'
   }
   return classes[props.modal.type]
 })
@@ -126,7 +151,8 @@ const buttonClasses = computed(() => {
     success: 'bg-green-600 hover:bg-green-700 focus:ring-green-500',
     error: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
     warning: 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500',
-    info: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+    info: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
+    confirmation: 'bg-gray-600 hover:bg-gray-700 focus:ring-gray-500'
   }
   return classes[props.modal.type]
 })
@@ -136,7 +162,8 @@ const modalClasses = computed(() => {
     success: 'ring-green-200',
     error: 'ring-red-200',
     warning: 'ring-yellow-200',
-    info: 'ring-blue-200'
+    info: 'ring-blue-200',
+    confirmation: 'ring-gray-200'
   }
   return classes[props.modal.type]
 })

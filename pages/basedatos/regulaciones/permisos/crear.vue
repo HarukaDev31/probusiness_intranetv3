@@ -10,7 +10,7 @@
               <UIcon name="i-heroicons-plus-circle" class="text-blue-600 mr-3 text-2xl" />
               Nuevo Regulación de Permiso
             </h1>
-          
+
           </div>
         </div>
         <UButton label="Guardar" icon="i-heroicons-document-arrow-down" color="primary" @click="saveForm" />
@@ -27,40 +27,7 @@
               <UIcon name="i-heroicons-building-office" class="mr-1" />
               Entidad
             </label>
-            <UModal v-model="showCreateEntityModal" title="Crear Nueva Entidad" :triger="true">
-              <UButton label="Crear Entidad" icon="i-heroicons-plus" size="xs" variant="outline"
-                @click="showCreateEntityModal = true" />
-
-              <template #body>
-                <div class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Nombre de la Entidad
-                    </label>
-                    <UInput v-model="newEntity.nombre" placeholder="Ej: MTC, MINSA, PRODUCE" class="w-full" />
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Descripción
-                    </label>
-                    <UTextarea v-model="newEntity.descripcion" placeholder="Descripción de la entidad..." :rows="3"
-                      class="w-full" />
-                  </div>
-
-
-                </div>
-              </template>
-              <template #footer="{ close }">
-                <div class="flex justify-end gap-3">
-                  <UButton label="Cancelar" variant="outline" @click="close" />
-                  <UButton label="Crear Entidad" color="primary" @click="() => {
-                    createEntity();
-                    close();
-                  }" />
-                </div>
-              </template>
-            </UModal>
+            <CreateEntityButton @entity-created="handleCreateEntity" />
 
           </div>
           <USelect v-model="formData.entidad" :items="entityOptions" :loading="loadingEntities"
@@ -86,13 +53,7 @@
             </label>
             <UInput v-model="formData.codigoPermiso" class="w-full" type="number" step="0.01" placeholder="0.00" />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <UIcon name="i-heroicons-currency-dollar" class="mr-1" />
-              Costo Base
-            </label>
-            <UInput v-model="formData.costoBase" type="number" step="0.01" placeholder="0.0" class="w-full" />
-          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <UIcon name="i-heroicons-user" class="mr-1" />
@@ -137,19 +98,18 @@
       </div>
     </UCard>
 
-    <!-- Modal para crear entidad -->
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import EntityService, { type CreateEntityRequest } from '~/services/entityService'
 import PermisoService, { type CreatePermisoRequest } from '~/services/permisoService'
 
 // Router
 const router = useRouter()
-
+const { showSuccess, showError } = useModal()
+const { withSpinner } = useSpinner()
 // Service instances
 const entityService = EntityService.getInstance()
 const permisoService = PermisoService.getInstance()
@@ -186,18 +146,10 @@ const documentSlots = ref<DocumentSlot[]>([
   { file: null }
 ])
 
-// Modal state
-const showCreateEntityModal = ref(false)
-
-// New entity form
-const newEntity = ref({
-  nombre: '',
-  descripcion: '',
-})
-
 // Methods
 const goBack = () => {
-  router.back()
+  // Redirigir a la página de regulaciones con el tab de permisos seleccionado
+  router.push('/basedatos/regulaciones?tab=permisos')
 }
 
 const addDocumentSlot = () => {
@@ -223,12 +175,9 @@ const selectDocument = (index: number) => {
 
 const saveForm = async () => {
   try {
-    console.log('Guardando regulación de permiso:', formData.value)
-    console.log('Documentos:', documentSlots.value)
 
     // Validar campos requeridos
     if (!formData.value.entidad || !formData.value.nombrePermiso || !formData.value.codigoPermiso) {
-      console.error('Los campos entidad, nombre del permiso y código del permiso son requeridos')
       return
     }
 
@@ -244,21 +193,20 @@ const saveForm = async () => {
         .filter(slot => slot.file)
         .map(slot => slot.file!)
     }
+    await withSpinner(async () => {
+      // Llamar al servicio para crear el permiso
+      const response = await permisoService.createPermiso(permisoData)
 
-    // Llamar al servicio para crear el permiso
-    const response = await permisoService.createPermiso(permisoData)
+      if (response.success && response.data) {
 
-    if (response.success && response.data) {
-      console.log('Regulación de permiso guardada exitosamente:', response.data)
 
-      // Mostrar notificación de éxito (aquí podrías usar un toast o notificación)
-
-      // Redirigir de vuelta a la lista
-      router.push('/basedatos/regulaciones')
-    } else {
-      console.error('Error al guardar permiso:', response.error)
-      // Aquí podrías mostrar un mensaje de error al usuario
-    }
+        // Redirigir de vuelta a la lista
+        router.push('/basedatos/regulaciones')
+        showSuccess('Permiso guardado exitosamente', 'El permiso se ha guardado correctamente')
+      } else {
+        showError('Error al guardar permiso', 'Error al guardar el permiso')
+      }
+    }, 'Guardando regulación de permiso...')
 
   } catch (error) {
     console.error('Error al guardar:', error)
@@ -288,47 +236,34 @@ const loadEntities = async () => {
   }
 }
 
-const createEntity = async () => {
+
+
+const handleCreateEntity = async (entity: { nombre: string; descripcion: string }) => {
   try {
-    console.log('Creando nueva entidad:', newEntity.value)
-
-    // Validar campos requeridos
-    if (!newEntity.value.nombre || !newEntity.value.descripcion) {
-      console.error('Todos los campos son requeridos')
-      return
-    }
-
-    // Crear objeto para la API
-    const entityData: CreateEntityRequest = {
-      nombre: newEntity.value.nombre,
-      descripcion: newEntity.value.descripcion,
-    }
-
-    // Llamar al servicio para crear la entidad
-    const response = await entityService.createEntity(entityData)
-
-    if (response.success && response.data) {
-      // Agregar la nueva entidad a las opciones
-      entityOptions.value.push({
-        label: response.data.nombre,
-        value: response.data.id.toString()
-      })
-
-
-
-      // Limpiar el formulario
-      newEntity.value = {
-        nombre: '',
-        descripcion: '',
+    await withSpinner(async () => {
+      const entityData: CreateEntityRequest = {
+        nombre: entity.nombre,
+        descripcion: entity.descripcion,
       }
 
-      console.log('Entidad creada exitosamente:', response.data)
-    } else {
-      console.error('Error al crear entidad:', response.error)
-    }
+      const response = await entityService.createEntity(entityData)
+
+      if (response.success && response.data) {
+        // Agregar la nueva entidad a las opciones
+        entityOptions.value.push({
+          label: response.data.nombre,
+          value: response.data.id.toString()
+        })
+        showSuccess('Entidad creada exitosamente', 'La entidad se ha creado correctamente')
+
+      } else {
+        showError('Error al crear entidad', 'Error al crear la entidad')
+      }
+
+    }, 'Creando entidad...')
 
   } catch (error) {
-    console.error('Error al crear entidad:', error)
+    showError('Error al crear entidad', 'Error al crear la entidad')
   }
 }
 

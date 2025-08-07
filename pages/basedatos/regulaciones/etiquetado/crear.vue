@@ -217,7 +217,8 @@ const clearFieldError = (field: string) => {
 
 // Methods
 const goBack = () => {
-  router.back()
+  // Redirigir a la página de regulaciones con el tab de etiquetado seleccionado
+  router.push('/basedatos/regulaciones?tab=etiquetado')
 }
 
 const searchProducts = async (searchTerm: string) => {

@@ -236,7 +236,7 @@ const regulationId = parseInt(route.params.id as string)
 
 // Methods
 const goBack = () => {
-  router.back()
+  router.push('/basedatos/regulaciones?tab=antidumping')
 }
 
 const loadRegulation = async () => {

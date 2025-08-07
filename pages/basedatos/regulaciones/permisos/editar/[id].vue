@@ -41,38 +41,7 @@
               <UIcon name="i-heroicons-building-office" class="mr-1" />
               Entidad
             </label>
-            <UModal v-model="showCreateEntityModal" title="Crear Nueva Entidad" :triger="true">
-              <UButton label="Crear Entidad" icon="i-heroicons-plus" size="xs" variant="outline"
-                @click="showCreateEntityModal = true" />
-
-              <template #body>
-                <div class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Nombre de la Entidad
-                    </label>
-                    <UInput v-model="newEntity.nombre" placeholder="Ej: MTC, MINSA, PRODUCE" class="w-full" />
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Descripción
-                    </label>
-                    <UTextarea v-model="newEntity.descripcion" placeholder="Descripción de la entidad..." :rows="3"
-                      class="w-full" />
-                  </div>
-                </div>
-              </template>
-              <template #footer="{ close }">
-                <div class="flex justify-end gap-3">
-                  <UButton label="Cancelar" variant="outline" @click="close" />
-                  <UButton label="Crear Entidad" color="primary" @click="() => {
-                    createEntity();
-                    close();
-                  }" />
-                </div>
-              </template>
-            </UModal>
+            <CreateEntityButton @entity-created="createEntity" />
           </div>
           <USelect v-model="formData.entidad" :items="entityOptions" :loading="loadingEntities"
             placeholder="Seleccionar entidad" class="w-full" />
@@ -269,18 +238,12 @@ const existingDocuments = ref<Array<{
 // Documents to delete
 const documentsToDelete = ref<number[]>([])
 
-// Modal state
-const showCreateEntityModal = ref(false)
 
-// New entity form
-const newEntity = ref({
-  nombre: '',
-  descripcion: '',
-})
 
 // Methods
 const goBack = () => {
-  router.back()
+  // Redirigir a la página de regulaciones con el tab de permisos seleccionado
+  router.push('/basedatos/regulaciones?tab=permisos')
 }
 
 const addDocumentSlot = () => {
@@ -457,20 +420,20 @@ const loadEntities = async () => {
   }
 }
 
-const createEntity = async () => {
+const createEntity = async (entity: { nombre: string; descripcion: string }) => {
   try {
-    console.log('Creando nueva entidad:', newEntity.value)
+    console.log('Creando nueva entidad:', entity)
 
     // Validar campos requeridos
-    if (!newEntity.value.nombre || !newEntity.value.descripcion) {
+    if (!entity.nombre || !entity.descripcion) {
       console.error('Todos los campos son requeridos')
       return
     }
 
     // Crear objeto para la API
     const entityData: CreateEntityRequest = {
-      nombre: newEntity.value.nombre,
-      descripcion: newEntity.value.descripcion,
+      nombre: entity.nombre,
+      descripcion: entity.descripcion,
     }
 
     // Llamar al servicio para crear la entidad
@@ -482,12 +445,6 @@ const createEntity = async () => {
         label: response.data.nombre,
         value: response.data.id.toString()
       })
-
-      // Limpiar el formulario
-      newEntity.value = {
-        nombre: '',
-        descripcion: '',
-      }
 
       console.log('Entidad creada exitosamente:', response.data)
     } else {

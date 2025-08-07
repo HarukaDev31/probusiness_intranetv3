@@ -3,8 +3,12 @@ import { useRouter } from 'vue-router'
 export function useNavigation() {
   const router = useRouter()
 
-  const goBack = () => {
-    router.back()
+  const goBack = (targetPath?: string) => {
+    if (targetPath) {
+      router.push(targetPath)
+    } else {
+      router.back()
+    }
   }
 
   const navigateTo = (path: string) => {

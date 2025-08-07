@@ -6,7 +6,7 @@
       subtitle="Modifica la información del etiquetado"
       icon="i-heroicons-pencil-square"
       :loading="isSubmitting"
-      @back="goBack"
+      @back="goBackToEtiquetado"
       @save="enhancedSaveForm"
     />
 
@@ -117,6 +117,11 @@ const {
 const { validateForm, clearFieldError } = useFormValidation(formData, validationErrors)
 
 const { goBack } = useNavigation()
+
+// Override goBack to redirect to etiquetado tab
+const goBackToEtiquetado = () => {
+  goBack('/basedatos/regulaciones?tab=etiquetado')
+}
 
 // Enhanced loadRegulation to set existing images
 const enhancedLoadRegulation = async () => {

@@ -212,7 +212,8 @@ const clearFieldError = (field: string) => {
 
 // Methods
 const goBack = () => {
-  router.back()
+  // Redirigir a la página de regulaciones con el tab de documentos seleccionado
+  router.push('/basedatos/regulaciones?tab=documentos')
 }
 
 const searchProducts = async (searchTerm: string) => {

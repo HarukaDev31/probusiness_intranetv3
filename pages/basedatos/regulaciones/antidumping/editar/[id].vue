@@ -361,9 +361,7 @@ const imagesToDelete = ref<number[]>([])
 const regulationId = parseInt(route.params.id as string)
 
 // Methods
-const goBack = () => {
-  router.back()
-}
+
 
 const getImageUrl = (ruta: string) => {
     const config = useRuntimeConfig()
@@ -569,6 +567,11 @@ const selectImage = (index: number) => {
     }
   }
   input.click()
+}
+
+const goBack = () => {
+  // Redirigir a la página de regulaciones con el tab de antidumping seleccionado
+  router.push('/basedatos/regulaciones?tab=antidumping')
 }
 
 const saveForm = async () => {

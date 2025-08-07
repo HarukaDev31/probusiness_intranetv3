@@ -230,7 +230,7 @@ const selectedDocument = ref<PermisoResponse['media'][0] | null>(null)
 
 // Methods
 const goBack = () => {
-  router.back()
+  router.push('/basedatos/regulaciones?tab=permisos')
 }
 
 const loadPermiso = async () => {

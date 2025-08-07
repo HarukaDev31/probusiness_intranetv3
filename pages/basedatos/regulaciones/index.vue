@@ -88,7 +88,7 @@
                                     {
                                         accessorKey: 'antidumping',
                                         header: 'Antidumping',
-                                        cell: ({ row }: { row: any }) => `${row.getValue('antidumping')}%`
+                                        cell: ({ row }: { row: any }) => `$${row.getValue('antidumping')}`
                                     },
 
                                     {
@@ -111,6 +111,16 @@
                                                     color: 'green',
                                                     onClick: () => editRegulation(row.original.id),
                                                     title: 'Editar'
+                                                })
+                                            ] : []),
+                                            ...(hasRole('Documentacion') ? [
+                                                h(UButton, {
+                                                    icon: 'i-heroicons-trash',
+                                                    variant: 'ghost',
+                                                    size: 'xs',
+                                                    color: 'red',
+                                                    onClick: () => deleteRegulation(row.original.id),
+                                                    title: 'Eliminar'
                                                 })
                                             ] : [])
                                         ])
@@ -661,8 +671,14 @@ const tabs = [
     }
 ]
 
-// Active tab
-const activeTab = ref('antidumping')
+// Active tab - initialize from URL query parameter
+const route = useRoute()
+const activeTab = ref(route.query.tab as string || 'antidumping')
+
+// Validate that the tab is valid
+if (!['antidumping', 'permisos', 'etiquetado', 'documentos'].includes(activeTab.value)) {
+  activeTab.value = 'antidumping'
+}
 
 // Service instances
 const antidumpingService = AntidumpingService.getInstance()
@@ -693,6 +709,8 @@ const grouping_options = ref<GroupingOptions>({
     groupedColumnMode: 'remove',
     getGroupedRowModel: getGroupedRowModel()
 })
+const { showConfirmation,showSuccess,showError } = useModal()
+const { withSpinner } = useSpinner()
 
 // Helper function to get color by status
 const getColorByStatus = (status: string) => {
@@ -808,8 +826,8 @@ const loadAntidumpingData = async () => {
                     id: regulacion.id,
                     descripcion: regulacion.descripcion,
                     partida: regulacion.partida,
-                    precio_declarado: parseFloat(regulacion.precio_declarado),
-                    antidumping: parseFloat(regulacion.antidumping),
+                    precio_declarado: regulacion.precio_declarado,
+                    antidumping: regulacion.antidumping,
                     observaciones: regulacion.observaciones,
                     imagenes: regulacion.imagenes || [],
                     estado: regulacion.estado as 'active' | 'inactive',
@@ -998,6 +1016,27 @@ const editRegulation = (regulationId: number) => {
     console.log('Navigating to edit:', regulationId)
     navigateTo(`/basedatos/regulaciones/antidumping/editar/${regulationId}`)
 }
+const deleteRegulation = (regulationId: number) => {
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const response = await AntidumpingService.getInstance().deleteAntidumping(regulationId)
+                    if (response.success) {
+                        await loadAntidumpingData()
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                    }
+                }, 'Eliminando archivo...')
+                await loadAntidumpingData()
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
+}
 
 // View permiso detail
 const viewPermisoDetail = (regulationId: number) => {
@@ -1076,6 +1115,18 @@ watch(activeTab, (newTab) => {
 
 // Load initial data
 onMounted(() => {
-    loadAntidumpingData()
+    const currentTab = route.query.tab as string
+    if (currentTab) {
+        activeTab.value = currentTab
+    }
+    if (activeTab.value === 'antidumping') {
+        loadAntidumpingData()
+    } else if (activeTab.value === 'permisos') {
+        loadPermisosData()
+    } else if (activeTab.value === 'etiquetado') {
+        loadEtiquetadoData()
+    } else if (activeTab.value === 'documentos') {
+        loadDocumentosData()
+    }
 })
 </script>

@@ -404,18 +404,26 @@ const loadArchivos = async () => {
 }
 
 const handleDeleteArchivo = async (id: number) => {
-    try {
-        await withSpinner(async () => {
-            const response = await deleteExcel(id)
-            if (response.success) {
-                await loadArchivos()
-                showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+    const { showConfirmation } = useModal()
+    
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const response = await deleteExcel(id)
+                    if (response.success) {
+                        await loadArchivos()
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
             }
-        }, 'Eliminando archivo...')
-    } catch (error) {
-        console.error('Error al eliminar archivo:', error)
-        showError('Error de Eliminación', 'Error al eliminar el archivo')
-    }
+        }
+    )
 }
 
 // Initialize data

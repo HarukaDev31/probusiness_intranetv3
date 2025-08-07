@@ -1,10 +1,12 @@
 export interface ModalData {
   id: string
-  type: 'success' | 'error' | 'warning' | 'info'
+  type: 'success' | 'error' | 'warning' | 'info' | 'confirmation'
   title: string
   message: string
   duration?: number
   persistent?: boolean
+  onConfirm?: () => void
+  onCancel?: () => void
 }
 
 // Singleton instance
@@ -62,6 +64,23 @@ function createModalInstance() {
     return showModal({ type: 'info', title, message, ...options })
   }
 
+  const showConfirmation = (
+    title: string, 
+    message: string, 
+    onConfirm?: () => void,
+    onCancel?: () => void,
+    options?: Partial<ModalData>
+  ) => {
+    return showModal({ 
+      type: 'confirmation', 
+      title, 
+      message, 
+      onConfirm,
+      onCancel,
+      ...options 
+    })
+  }
+
   return {
     modals: readonly(modals),
     showModal,
@@ -70,7 +89,8 @@ function createModalInstance() {
     showSuccess,
     showError,
     showWarning,
-    showInfo
+    showInfo,
+    showConfirmation
   }
 }
 

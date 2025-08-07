@@ -287,10 +287,6 @@ const clearFieldError = (field: string) => {
   validationErrors.value[field as keyof typeof validationErrors.value] = ''
 }
 
-// Methods
-const goBack = () => {
-  router.back()
-}
 
 const searchProducts = async (searchTerm: string) => {
   try {
@@ -431,6 +427,11 @@ const loadRegulation = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const goBack = () => {
+  // Redirigir a la página de regulaciones con el tab de documentos seleccionado
+  router.push('/basedatos/regulaciones?tab=documentos')
 }
 
 const saveForm = async () => {

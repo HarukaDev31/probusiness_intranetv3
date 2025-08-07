@@ -7,13 +7,9 @@
           <UButton label="Volver" icon="i-heroicons-arrow-left" variant="outline" @click="goBack" class="mr-4" />
           <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-              <UIcon name="i-heroicons-plus-circle" class="text-blue-600 mr-3 text-2xl" />
               Nueva Regulación Antidumping
             </h1>
-            <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">
-              Completa la información de la nueva regulación antidumping
-              <span class="text-red-500 ml-1">* Campos requeridos</span>
-            </p>
+          
           </div>
         </div>
         <UButton 
@@ -276,7 +272,8 @@ const validateField = (field: string, value: any): string => {
       if (precioNum <= 0) return 'Precio debe ser mayor a 0'
       return ''
     case 'antidumping':
-      if (!value || (typeof value === 'string' && value.trim() === '')) return 'Antidumping es requerido'
+      console.log('value', value)
+      if ( (typeof value === 'string' && value.trim() === '')) return 'Antidumping es requerido'
       const antidumpingNum = parseFloat(value)
       if (isNaN(antidumpingNum)) return 'Antidumping debe ser un número válido'
       if (antidumpingNum < 0) return 'Antidumping debe ser mayor o igual a 0'
@@ -306,7 +303,8 @@ const clearFieldError = (field: string) => {
 
 // Methods
 const goBack = () => {
-  router.back()
+  // Redirigir a la página de regulaciones con el tab de antidumping seleccionado
+  router.push('/basedatos/regulaciones?tab=antidumping')
 }
 
 const addImageSlot = () => {
