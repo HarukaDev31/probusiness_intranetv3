@@ -25,19 +25,6 @@
             El nombre de la entidad es obligatorio
           </p>
         </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Descripción
-          </label>
-          <UTextarea 
-            v-model="entity.descripcion" 
-            placeholder="Descripción de la entidad..." 
-            :rows="3"
-            class="w-full"
-            @update:model-value="updateEntityDescription"
-          />
-        </div>
       </div>
     </template>
     

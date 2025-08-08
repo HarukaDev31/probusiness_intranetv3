@@ -7,6 +7,7 @@
                 :key="index"
                 class="relative group cursor-pointer flex-shrink-0"
                 @click="openImageModal(image)"
+                @keydown.esc="closeModal"
             >
                 <img 
                     :src="getImageUrl(image)" 
