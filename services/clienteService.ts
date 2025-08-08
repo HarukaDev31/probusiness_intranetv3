@@ -20,6 +20,7 @@ export interface Cliente {
     servicio: string
     fecha: string
     categoria: string
+    detalle: string
   }>
 }
 
@@ -274,6 +275,7 @@ export class ClienteService {
       id: number; 
       nombre_archivo: string; 
       cantidad_rows: number; 
+      estadisticas: any;
       created_at: string; 
       ruta_archivo: string; 
     }[] 
@@ -285,6 +287,7 @@ export class ClienteService {
           id: number; 
           nombre_archivo: string; 
           cantidad_rows: number; 
+          estadisticas: any;
           created_at: string; 
           ruta_archivo: string; 
         }[] 

@@ -42,7 +42,7 @@
         </template>
 
         <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-          <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ regulation.observaciones }}</p>
+          <p class="text-gray-700 dark:text-gray-300 text-wrap" style="word-break: break-word;" title="{{ regulation.observaciones }}">{{ regulation.observaciones }}</p>
         </div>
       </UCard>
 
@@ -63,7 +63,7 @@
             @click="openImageModal(getImageUrl(mediaItem.ruta))"
           >
             <img 
-              :src="getImageUrl(mediaItem.ruta)" 
+              :src="mediaItem.ruta" 
               :alt="mediaItem.nombre_original"
               class="w-full h-48 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 group-hover:border-blue-500 transition-colors"
             />

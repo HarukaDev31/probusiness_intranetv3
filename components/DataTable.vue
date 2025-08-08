@@ -1,76 +1,82 @@
 <template>
   <div class="space-y-6">
-    <div v-if="showHeaders" class="bg-gray-50 dark:bg-gray-800 ">
-      <div class="px-6 pt-4">
-        <div class="flex flex-wrap gap-3">
-          <div v-for="header in headers" :key="header.value" class="flex items-center gap-2">
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              {{ header.label }}:
-            </span>
-            <UBadge :label="header.value || 'N/A'" color="warning" variant="soft" size="sm" class="font-medium" />
-          </div>
-        </div>
-      </div>
-    </div>
-    <slot name="filters">
-      <div class="flex flex-wrap items-center justify-end gap-4">
-        <!-- Search and Actions -->
-        <div class="flex items-center gap-3">
-          <div v-if="showPrimarySearch" class="flex items-center gap-2">
-            <label class="text-sm text-gray-600 dark:text-gray-400">{{ primarySearchLabel }}:</label>
-            <UInput :model-value="primarySearchValue || ''" :placeholder="primarySearchPlaceholder" class="w-48"
-              @update:model-value="(value) => emit('update:primarySearch', value)" />
-          </div>
-          <!-- Export Button -->
-          <UButton v-if="showExport" label="Exportar" icon="i-heroicons-arrow-up-tray" variant="outline"
-            @click="handleExport" />
-
-          <div class="flex items-center gap-2 relative">
-            <div ref="filtersButtonRef">
-              <UButton v-if="showFilters" label="Filtros" icon="i-heroicons-funnel" variant="outline"
-                @click="showFiltersPanel = !showFiltersPanel" />
+    
+    <!-- Sticky Top Section -->
+    <div class="sticky top-0 z-40 bg-white dark:bg-gray-900 shadow-sm">
+      <slot name="filters ">
+        <div class="flex flex-wrap items-center justify-end gap-4 p-4">
+          <!-- Search and Actions -->
+          <div class="flex items-center gap-3">
+            <div v-if="showPrimarySearch" class="flex items-center gap-2">
+              <label class="text-sm text-gray-600 dark:text-gray-400">{{ primarySearchLabel }}:</label>
+              <UInput :model-value="primarySearchValue || ''" :placeholder="primarySearchPlaceholder" class="w-48"
+                @update:model-value="(value) => emit('update:primarySearch', value)" />
             </div>
-            <div ref="filtersPanelRef" v-if="showFiltersPanel && showFilters"
-              class="absolute top-full right-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4"
-              @click.stop>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div v-for="filter in filterConfig" :key="filter.key" class="field">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {{ filter.label }}
-                  </label>
-                  <!-- Filtro de tipo date -->
-                  <UInput v-if="filter.type === 'date'"
-                    :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
-                    :placeholder="filter.placeholder" class="w-full"
-                    @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
-                  <!-- Filtro de tipo select -->
-                  <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) || 'todos'"
-                    :items="filter.options" :placeholder="filter.placeholder" class="w-full"
-                    @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop
-                    @focus="handleSelectOpen" @blur="handleSelectClose" />
+            <!-- Export Button -->
+            <UButton v-if="showExport" label="Exportar" icon="i-heroicons-arrow-up-tray" variant="outline"
+              @click="handleExport" />
+
+            <div class="flex items-center gap-2 relative">
+              <div ref="filtersButtonRef">
+                <UButton v-if="showFilters" label="Filtros" icon="i-heroicons-funnel" variant="outline"
+                  @click="showFiltersPanel = !showFiltersPanel" />
+              </div>
+              <div ref="filtersPanelRef" v-if="showFiltersPanel && showFilters"
+                class="absolute top-full right-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4"
+                @click.stop>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div v-for="filter in filterConfig" :key="filter.key" class="field">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {{ filter.label }}
+                    </label>
+                    <!-- Filtro de tipo date -->
+                    <UInput v-if="filter.type === 'date'"
+                      :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
+                      :placeholder="filter.placeholder" class="w-full"
+                      @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
+                    <!-- Filtro de tipo select -->
+                    <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) || 'todos'"
+                      :items="filter.options" :placeholder="filter.placeholder" class="w-full"
+                      @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop
+                      @focus="handleSelectOpen" @blur="handleSelectClose" />
+                  </div>
+                </div>
+                <!-- Botón para cerrar filtros -->
+                <div class="flex justify-end mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <UButton label="Cerrar" color="gray" variant="outline" size="sm" @click="showFiltersPanel = false"
+                    @click.stop />
                 </div>
               </div>
-              <!-- Botón para cerrar filtros -->
-              <div class="flex justify-end mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                <UButton label="Cerrar" color="gray" variant="outline" size="sm" @click="showFiltersPanel = false"
-                  @click.stop />
-              </div>
+            </div>
+          </div>
+        </div>
+      </slot>
+      
+      <!-- Headers Section -->
+      <div v-if="showHeaders" class="bg-gray-50 dark:bg-gray-900 ">
+        <div class="px-6 py-3">
+          <div class="flex flex-wrap gap-3">
+            <div v-for="header in headers" :key="header.value" class="flex items-center gap-2">
+              <span class="text-sm text-gray-600 dark:text-gray-400">
+                {{ header.label }}:
+              </span>
+              <UBadge :label="header.value || 'N/A'" color="warning" variant="soft" size="sm" class="font-medium" />
             </div>
           </div>
         </div>
       </div>
-    </slot>
-    <!-- Headers Section -->
-
-
-    <div class="flex flex-row justify-between">
-      <slot name="body-top" />
+      
+      <!-- Body Top Slot -->
+      <div class="flex flex-row justify-between px-4 py-2 ">
+        <slot name="body-top" />
+      </div>
     </div>
+
+    <!-- Table Section -->
     <UCard class="mb-6">
       <div class="overflow-x-auto">
         <UTable :data="filteredData" :sticky="true" :columns="columns" :loading="loading" class=""
-          style="width: calc(100vw - 450px);min-height: 200px!important; max-height: 700px!important; height: calc(100vh - 420px);  ">
-
+          style="width: calc(100vw - 450px);min-height: 200px!important; height: 100% ">
 
           <template #loading>
             <div class="flex items-center justify-center py-8">
@@ -96,24 +102,24 @@
       </div>
     </UCard>
 
-    <!-- Data Table -->
-
-    <!-- Pagination -->
-    <div class="mt-6 flex items-center justify-between">
-      <div class="text-sm text-gray-700 dark:text-gray-300">
-        Mostrando {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} a {{ Math.min((currentPage || 1) *
-          (itemsPerPage || 100), totalRecords) }}
-        de {{ totalRecords }} resultados
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-600 dark:text-gray-400">Mostrar:</label>
-          <USelect :model-value="itemsPerPage" :items="PAGINATION_OPTIONS" placeholder="10" class="w-20"
-            @update:model-value="(value: any) => onItemsPerPageChange(Number(value))" />
-          <span class="text-sm text-gray-600 dark:text-gray-400">registros</span>
+    <!-- Sticky Bottom Section - Pagination -->
+    <div class="sticky bottom-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-sm">
+      <div class="flex items-center justify-between p-4">
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+          Mostrando {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} a {{ Math.min((currentPage || 1) *
+            (itemsPerPage || 100), totalRecords) }}
+          de {{ totalRecords }} resultados
         </div>
-        <UPagination v-if="totalRecords > 0" v-model:page="currentPageModel" :total="totalRecords"
-          :items-per-page="itemsPerPage" />
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600 dark:text-gray-400">Mostrar:</label>
+            <USelect :model-value="itemsPerPage" :items="PAGINATION_OPTIONS" placeholder="10" class="w-20"
+              @update:model-value="(value: any) => onItemsPerPageChange(Number(value))" />
+            <span class="text-sm text-gray-600 dark:text-gray-400">registros</span>
+          </div>
+          <UPagination v-if="totalRecords > 0" v-model:page="currentPageModel" :total="totalRecords"
+            :items-per-page="itemsPerPage" />
+        </div>
       </div>
     </div>
   </div>

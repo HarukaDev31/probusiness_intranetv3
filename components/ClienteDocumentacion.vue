@@ -34,7 +34,7 @@
       <div class="name_cliente col-12 p-6" style="border-bottom: #DFDFDF solid 2px;">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <h2 class="text-xl font-bold text-gray-800">{{ documentacion.nombre }}</h2>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white">{{ documentacion.nombre }}</h2>
            
           </div>
         
@@ -53,11 +53,11 @@
       <div class="container documentos-clientes-content mx-auto px-4 py-8 w-full flex justify-content-center">
         <div class="flex gap-8">
           <!-- Sección de Documentación -->
-          <UCard class="bg-white p-6 rounded-lg shadow-md" style="width:60%">
+          <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md" style="width:60%">
             <template #header>
               <div class="flex items-center gap-2 mb-6 justify-between">
                 <div>
-                  <h2 class="text-lg">Documentación</h2>
+                  <h2 class="text-lg dark:text-white">Documentación</h2>
                   <UIcon name="i-heroicons-folder-open" />
                 </div>
                 <UButton v-if="edit" @click="crearNuevoDocumento" size="sm"
@@ -71,16 +71,16 @@
               <!-- Campos de volumen y valor -->
               <div class="flex justify-between align-items-center gap-4">
                 <div class="flex align-items-center justify-flex-start gap-2">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Volumen documento</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Volumen documento</label>
                   <UInput v-model="documentoProveedor.volumen" type="number" :min="0" step="any" class="w-25"
                       :disabled="!edit"
                       @update:model-value="(valor) => servicioActivo && validarVolumen(servicioActivo, valor)" />
                 </div>
                 <div class="flex align-items-center justify-flex-start gap-2">
-                  <label class="block text-sm font-medium text-gray-700 mb-1 w-full">Valor
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 w-full">Valor
                       documento</label>
                   <div class="relative">
-                    <span class="absolute left-3 top-2">$</span>
+                    <span class="absolute left-3 top-2 dark:text-gray-300">$</span>
                     <UInput v-model="documentoProveedor.valor" type="number" :min="0" step="any"
                         class="w-75 pl-7 pr-3" :disabled="!edit"
                         @update:model-value="(valor) => servicioActivo && validarValor(servicioActivo, valor)" />
@@ -92,7 +92,7 @@
               <div class="space-y-4" id="documentos-clientes-documentacion">
                 <!-- Factura Comercial -->
                 <div class="documento-item">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Factura Comercial</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Factura Comercial</label>
                   
                   <!-- Archivos existentes del proveedor -->
                   <div v-if="proveedorActivo?.factura_comercial" class="mb-4">
@@ -103,7 +103,7 @@
                         </div>
                         <div class="flex-1">
                           <span class="file-name">Factura Comercial del Proveedor</span>
-                          <div class="flex gap-2 text-xs text-gray-500">
+                          <div class="flex gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <span>Documento cargado</span>
                           </div>
                         </div>
@@ -128,7 +128,7 @@
                         </div>
                         <div class="flex-1">
                           <span class="file-name">{{ archivo.nombre }}</span>
-                          <div class="flex gap-2 text-xs text-gray-500">
+                          <div class="flex gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <span>{{ formatFileSize(archivo.tamaño) }}</span>
                             <span>{{ formatDate(archivo.fecha_subida) }}</span>
                           </div>
@@ -180,7 +180,7 @@
 
                 <!-- Packing List -->
                 <div class="documento-item">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Packing List</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Packing List</label>
                   
                   <!-- Archivos existentes del proveedor -->
                   <div v-if="proveedorActivo?.packing_list" class="mb-4">
@@ -191,7 +191,7 @@
                         </div>
                         <div class="flex-1">
                           <span class="file-name">Packing List del Proveedor</span>
-                          <div class="flex gap-2 text-xs text-gray-500">
+                          <div class="flex gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <span>Documento cargado</span>
                           </div>
                         </div>
@@ -216,7 +216,7 @@
                         </div>
                         <div class="flex-1">
                           <span class="file-name">{{ archivo.nombre }}</span>
-                          <div class="flex gap-2 text-xs text-gray-500">
+                          <div class="flex gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <span>{{ formatFileSize(archivo.tamaño) }}</span>
                             <span>{{ formatDate(archivo.fecha_subida) }}</span>
                           </div>
@@ -268,7 +268,7 @@
 
                 <!-- Excel Confirmación -->
                 <div class="documento-item">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Excel Confirmación</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Excel Confirmación</label>
                   
                   <!-- Archivos existentes del proveedor -->
                   <div v-if="proveedorActivo?.excel_confirmacion" class="mb-4">
@@ -279,7 +279,7 @@
                         </div>
                         <div class="flex-1">
                           <span class="file-name">Excel Confirmación del Proveedor</span>
-                          <div class="flex gap-2 text-xs text-gray-500">
+                          <div class="flex gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <span>Documento cargado</span>
                           </div>
                         </div>
@@ -304,7 +304,7 @@
                         </div>
                         <div class="flex-1">
                           <span class="file-name">{{ archivo.nombre }}</span>
-                          <div class="flex gap-2 text-xs text-gray-500">
+                          <div class="flex gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <span>{{ formatFileSize(archivo.tamaño) }}</span>
                             <span>{{ formatDate(archivo.fecha_subida) }}</span>
                           </div>
@@ -358,17 +358,17 @@
           </UCard>
 
           <!-- Sección de Cotizaciones -->
-          <UCard class="bg-white p-6 rounded-lg shadow-md" style="height: 40%;min-height: 300px;">
+          <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md" style="height: 40%;min-height: 300px;">
             <template #header>
               <div class="flex items-center gap-2 mb-6">
-                <h2 class="text-lg">Cotizaciones</h2>
+                <h2 class="text-lg dark:text-white">Cotizaciones</h2>
                 <UIcon name="i-heroicons-document-text" class="w-5 h-5" />
               </div>
             </template>
 
             <div class="space-y-4">
               <UButton
-                  class="w-full flex items-center justify-between px-4 py-3 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                  class="w-full flex items-center justify-between px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
                   variant="ghost" @click="descargarCotizacion('inicial')" :disabled="!documentacion?.cotizacion_file_url">
                 <span class="flex items-center gap-2">
                   <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
@@ -377,7 +377,7 @@
               </UButton>
 
               <UButton
-                  class="w-full flex items-center justify-between px-4 py-3 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                  class="w-full flex items-center justify-between px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
                   variant="ghost" @click="descargarCotizacion('final')" :disabled="!documentacion?.cotizacion_final_url">
                 <span class="flex items-center gap-2">
                   <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
@@ -663,6 +663,11 @@ onMounted(() => {
   color: #272A30;
 }
 
+/* Dark mode styles for name_cliente */
+.dark .name_cliente {
+  color: #f9fafb;
+}
+
 .documentos-clientes-tabs {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
@@ -683,14 +688,32 @@ onMounted(() => {
   transition: background-color 0.5s ease;
 }
 
+/* Dark mode styles for tabs */
+.dark .tab-cliente-documentacion {
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
 .tab-cliente-documentacion.active {
   background-color: #FFFFFF;
   color: black;
 }
 
+/* Dark mode styles for active tab */
+.dark .tab-cliente-documentacion.active {
+  background-color: #374151;
+  color: white;
+}
+
 .tab-cliente-documentacion:hover {
   background-color: #FFFFFF;
   color: black;
+}
+
+/* Dark mode styles for tab hover */
+.dark .tab-cliente-documentacion:hover {
+  background-color: #374151;
+  color: white;
 }
 
 .file-upload-box {
@@ -701,8 +724,18 @@ onMounted(() => {
   transition: border-color 0.3s ease;
 }
 
+/* Dark mode styles for file upload box */
+.dark .file-upload-box {
+  border-color: #6b7280;
+}
+
 .file-upload-box:hover {
   border-color: #cccccc;
+}
+
+/* Dark mode styles for file upload box hover */
+.dark .file-upload-box:hover {
+  border-color: #9ca3af;
 }
 
 .file-input {
@@ -721,10 +754,20 @@ onMounted(() => {
   color: #333333;
 }
 
+/* Dark mode styles for file text */
+.dark .file-text {
+  color: #f3f4f6;
+}
+
 .file-format {
   font-size: 0.9rem;
   color: #666666;
   margin-bottom: 1rem;
+}
+
+/* Dark mode styles for file format */
+.dark .file-format {
+  color: #9ca3af;
 }
 
 .upload-button {
@@ -739,8 +782,19 @@ onMounted(() => {
   transition: background-color 0.3s ease;
 }
 
+/* Dark mode styles for upload button */
+.dark .upload-button {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
 .upload-button:hover {
   background-color: #F0F4F9;
+}
+
+/* Dark mode styles for upload button hover */
+.dark .upload-button:hover {
+  background-color: #4b5563;
 }
 
 .file-info-box {
@@ -750,6 +804,12 @@ onMounted(() => {
   background-color: #f9f9f9;
   margin-top: 1rem;
   text-align: left;
+}
+
+/* Dark mode styles for file info box */
+.dark .file-info-box {
+  border-color: #4b5563;
+  background-color: #1f2937;
 }
 
 .file-info {
@@ -764,9 +824,19 @@ onMounted(() => {
   color: #333333;
 }
 
+/* Dark mode styles for file name */
+.dark .file-name {
+  color: #f3f4f6;
+}
+
 .file-size {
   font-size: 0.9rem;
   color: #666666;
+}
+
+/* Dark mode styles for file size */
+.dark .file-size {
+  color: #9ca3af;
 }
 
 .documento-item {

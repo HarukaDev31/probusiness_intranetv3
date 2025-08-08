@@ -27,13 +27,8 @@
             <!-- Tab Antidumping -->
             <div v-if="activeTab === 'antidumping'">
                 <div class="mb-4">
-                    <UButton 
-                        v-if="hasRole('Documentacion')"
-                        label="Crear Antidumping" 
-                        icon="i-heroicons-plus" 
-                        color="primary"
-                        @click="navigateToCreate('antidumping')" 
-                    />
+                    <UButton v-if="hasRole('Documentacion')" label="Crear Antidumping" icon="i-heroicons-plus"
+                        color="primary" @click="navigateToCreate('antidumping')" />
                 </div>
                 <UCard>
                     <div class="flex items-center justify-between mb-4">
@@ -74,7 +69,29 @@
                                     },
                                     {
                                         accessorKey: 'descripcion',
-                                        header: 'Descripción'
+                                        header: 'Descripción',
+                                        cell: ({ row }: { row: any }) => {
+                                            const descripcion = row.getValue('descripcion')
+                                            if (!descripcion) return h('span', { class: 'text-gray-400 dark:text-gray-500' }, 'Sin descripción')
+                                            
+                                            // Dividir por saltos de línea HTML y normales
+                                            const lines = descripcion.split(/<br\s*\/?>/i).flatMap((line: string) => 
+                                                line.split('\n').filter((l: string) => l.trim())
+                                            )
+                                            
+                                            return h('div', {
+                                                class: 'max-w-xs text-wrap leading-relaxed',
+                                                style: {
+                                                    'white-space': 'pre-wrap',
+                                                    'word-wrap': 'break-word'
+                                                },
+                                                title: descripcion.replace(/<br\s*\/?>/gi, '\n') // Tooltip con texto completo
+                                            }, lines.map((line: string) => 
+                                                h('div', { 
+                                                    class: 'text-sm text-gray-700 dark:text-gray-300 mb-1 last:mb-0' 
+                                                }, line.trim())
+                                            ))
+                                        }
                                     },
                                     {
                                         accessorKey: 'partida',
@@ -138,13 +155,8 @@
             <!-- Tab Permisos -->
             <div v-if="activeTab === 'permisos'">
                 <div class="mb-4">
-                    <UButton 
-                        v-if="hasRole('Documentacion')"
-                        label="Crear Permiso" 
-                        icon="i-heroicons-plus" 
-                        color="primary"
-                        @click="navigateToCreate('permisos')" 
-                    />
+                    <UButton v-if="hasRole('Documentacion')" label="Crear Permiso" icon="i-heroicons-plus"
+                        color="primary" @click="navigateToCreate('permisos')" />
                 </div>
                 <UCard>
                     <div class="flex items-center justify-between mb-4">
@@ -238,13 +250,8 @@
             <!-- Tab Etiquetado -->
             <div v-if="activeTab === 'etiquetado'">
                 <div class="mb-4">
-                    <UButton 
-                        v-if="hasRole('Documentacion')"
-                        label="Crear Etiquetado" 
-                        icon="i-heroicons-plus" 
-                        color="primary"
-                        @click="navigateToCreate('etiquetado')" 
-                    />
+                    <UButton v-if="hasRole('Documentacion')" label="Crear Etiquetado" icon="i-heroicons-plus"
+                        color="primary" @click="navigateToCreate('etiquetado')" />
                 </div>
                 <UCard>
                     <div class="flex items-center justify-between mb-4">
@@ -292,7 +299,19 @@
                                 },
                                 {
                                     accessorKey: 'observaciones',
-                                    header: 'Descripciones minimas'
+                                    header: 'Descripciones minimas',
+                                    cell: ({ row }: { row: any }) => {
+                                        //foreach 30 word in a line
+                                        const observaciones = row.getValue('observaciones')
+                                        return h('div', {
+                                            class: 'w-50 text-wrap',
+                                            style: {
+                                                    'white-space': 'pre-wrap',
+                                                    'word-wrap': 'break-word'
+                                                },
+                                            title: observaciones // oltip con texto completo
+                                        }, observaciones)
+                                    }
                                 },
 
                                 {
@@ -323,17 +342,12 @@
             <!-- Tab Documentos Especiales -->
             <div v-if="activeTab === 'documentos'">
                 <div class="mb-4">
-                    <UButton 
-                        v-if="hasRole('Documentacion')"
-                        label="Crear Documento Especial" 
-                        icon="i-heroicons-plus" 
-                        color="primary"
-                        @click="navigateToCreate('documentos')" 
-                    />
+                    <UButton v-if="hasRole('Documentacion')" label="Crear Documento Especial" icon="i-heroicons-plus"
+                        color="primary" @click="navigateToCreate('documentos')" />
                 </div>
                 <UCard>
                     <div class="flex items-center justify-between mb-4">
-                      
+
                         <UButton icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportDocumentos"
                             :loading="loadingDocumentos">
                             Exportar
@@ -359,11 +373,11 @@
                         </template>
                         <template #expanded="{ row }">
                             <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg m-2">
-                               
+
 
                                 <!-- Tabla de subitems para Documentos Especiales -->
                                 <UTable :data="row.original.regulaciones" :columns="[
-                                  
+
                                     {
                                         accessorKey: 'observaciones',
                                         header: 'Comentarios',
@@ -384,7 +398,7 @@
                                             })
                                         }
                                     },
-                                
+
                                     {
                                         id: 'actions',
                                         header: 'Acciones',
@@ -677,7 +691,7 @@ const activeTab = ref(route.query.tab as string || 'antidumping')
 
 // Validate that the tab is valid
 if (!['antidumping', 'permisos', 'etiquetado', 'documentos'].includes(activeTab.value)) {
-  activeTab.value = 'antidumping'
+    activeTab.value = 'antidumping'
 }
 
 // Service instances
@@ -709,7 +723,7 @@ const grouping_options = ref<GroupingOptions>({
     groupedColumnMode: 'remove',
     getGroupedRowModel: getGroupedRowModel()
 })
-const { showConfirmation,showSuccess,showError } = useModal()
+const { showConfirmation, showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
 
 // Helper function to get color by status

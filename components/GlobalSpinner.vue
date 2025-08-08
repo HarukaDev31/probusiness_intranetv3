@@ -60,6 +60,11 @@ watch(spinnerMessage, (newValue) => {
   backdrop-filter: blur(8px);
 }
 
+/* Dark mode overlay */
+.dark .loader-overlay {
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.98) 0%, rgba(31, 41, 55, 0.95) 100%);
+}
+
 .loader-container {
   display: flex;
   flex-direction: column;
@@ -110,6 +115,12 @@ watch(spinnerMessage, (newValue) => {
   animation: pulse 2s ease-in-out infinite;
 }
 
+/* Dark mode logo container */
+.dark .logo-container {
+  background: #1f2937;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -130,6 +141,22 @@ watch(spinnerMessage, (newValue) => {
   }
 }
 
+/* Dark mode pulse animation adjustments */
+.dark .logo-container {
+  animation: pulseDark 2s ease-in-out infinite;
+}
+
+@keyframes pulseDark {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 12px 40px rgba(255, 80, 11, 0.3);
+  }
+}
+
 .loading-text {
   display: flex;
   align-items: center;
@@ -137,6 +164,11 @@ watch(spinnerMessage, (newValue) => {
   font-weight: 600;
   color: #374151;
   letter-spacing: 0.025em;
+}
+
+/* Dark mode loading text */
+.dark .loading-text {
+  color: #d1d5db;
 }
 
 .text-primary {

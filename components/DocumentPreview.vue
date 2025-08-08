@@ -114,7 +114,7 @@ const formatFileSize = (bytes: number): string => {
 
 const openDocumentModal = (documentUrl: string, extension: string, name?: string, size?: number) => {
     const config = useRuntimeConfig()
-    selectedDocumentUrl.value = `${config.public.apiBaseUrl}${documentUrl}`
+    selectedDocumentUrl.value = `${documentUrl}`
     selectedDocumentName.value = name || `Documento.${extension.toLowerCase()}`
     selectedFileExtension.value = extension
     selectedFileSize.value = size ? formatFileSize(size) : '0 KB'

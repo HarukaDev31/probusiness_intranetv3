@@ -395,7 +395,7 @@ const searchEtiquetados = async (search: string) => {
   try {
     loadingEtiquetados.value = true
     const productRubroService = ProductRubroService.getInstance()
-    const response = await productRubroService.getProductRubros(search)
+    const response = await productRubroService.getProductRubros(search,'ETIQUETADO')
     
     if (response.success) {
       etiquetadosOptions.value = response.data.map(rubro => ({

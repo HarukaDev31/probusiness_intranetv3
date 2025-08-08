@@ -216,7 +216,10 @@ const historialColumns: TableColumn<any>[] = [
   {
     accessorKey: 'numero',
     header: 'N.',
-    cell: ({ row }: { row: any }) => row.getValue('numero')
+    cell: ({ row }: { row: any }) => {
+      const index = historialCompras.value.indexOf(row.original)
+      return index + 1
+    }
   },
   {
     accessorKey: 'fecha',
@@ -226,7 +229,11 @@ const historialColumns: TableColumn<any>[] = [
   {
     accessorKey: 'servicio',
     header: 'Servicio',
-    cell: ({ row }: { row: any }) => row.getValue('servicio')
+    cell: ({ row }: { row: any }) => {
+      const servicio = row.original.servicio
+      const detalle = row.original.detalle
+      return servicio + (row.original.servicio=="Consolidado"?' #':' ') + detalle
+    }
   },
   {
     accessorKey: 'monto',
@@ -239,8 +246,8 @@ const historialColumns: TableColumn<any>[] = [
     header: 'Ver',
     cell: ({ row }: { row: any }) => {
       const isImported = row.getValue('is_imported')
-      console.log(isImported)
-      return  !isImported ?  h('div', { class: 'flex items-center gap-2' }, [
+      const servicio = row.original.servicio
+      return  servicio=="Consolidado" && isImported==0 ?  h('div', { class: 'flex items-center gap-2' }, [
         h(UButton as any, {
           size: 'xs',
           icon: 'i-heroicons-eye',
@@ -267,12 +274,14 @@ const loadCliente = async () => {
 
     // Actualizar historial de compras basado en los servicios del cliente
     if (clienteData.servicios) {
+      console.log(clienteData.servicios)
       historialCompras.value = clienteData.servicios.map((servicio: any, index: number) => ({
         id: index + 1,
         id_servicio: servicio.id,
         numero: index + 1,
         fecha: servicio.fecha,
         is_imported: servicio.is_imported,
+        detalle: servicio.detalle,
         servicio: servicio.servicio,
         monto: servicio.servicio === 'Curso' ? `S/${servicio.monto??0.0}` : `$${servicio.monto??0.0}`, // Montos de ejemplo
         tieneDocumento: servicio.servicio === 'Consolidado' // Solo consolidados tienen documentos

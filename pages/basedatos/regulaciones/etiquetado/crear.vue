@@ -127,7 +127,7 @@
           <UTextarea 
             v-model="formData.observaciones"
             placeholder="Agregar observaciones sobre el etiquetado..."
-            :rows="3"
+            :rows="10"
             class="w-full"
           />
         </div>
@@ -224,7 +224,7 @@ const goBack = () => {
 const searchProducts = async (searchTerm: string) => {
   try {
     loadingProducts.value = true
-    const response = await productRubroService.getProductRubros(searchTerm)
+    const response = await productRubroService.getProductRubros(searchTerm,'ETIQUETADO')
 
     if (response.success && response.data) {
       // Convertir productos a formato de opciones para autocomplete
@@ -248,7 +248,8 @@ const createProduct = async () => {
       return
     }
     const response = await productRubroService.createProductRubro({
-      nombre: newProduct.value.nombre
+      nombre: newProduct.value.nombre,
+      tipo: 'ETIQUETADO'
     })
     if (response.success) {
       formData.value.producto = {

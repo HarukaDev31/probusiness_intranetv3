@@ -8,17 +8,17 @@
       leave-from-class="opacity-100 scale-100"
       leave-to-class="opacity-0 scale-95"
     >
-                           <div
-          v-if="visible"
-          class="fixed inset-0 z-[99999] flex items-center justify-center p-4"
-          @click.self="handleBackdropClick"
-        >
+      <div
+        v-if="visible"
+        class="fixed inset-0 z-[99999] flex items-center justify-center p-4"
+        @click.self="handleBackdropClick"
+      >
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
         
         <!-- Modal -->
         <div
-          class="relative w-full max-w-md transform rounded-xl bg-white shadow-2xl ring-1 ring-black/5"
+          class="relative w-full max-w-md transform rounded-xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-gray-800 dark:ring-gray-700"
           :class="modalClasses"
         >
           <!-- Icon and Close Button -->
@@ -31,7 +31,7 @@
                 <UIcon :name="iconComponent" class="h-6 w-6" :class="iconClasses" />
               </div>
               <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                   {{ modal.title }}
                 </h3>
               </div>
@@ -40,7 +40,7 @@
             <button
               v-if="!modal.persistent"
               @click="$emit('close')"
-              class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400"
             >
               <UIcon name="i-heroicons-x-mark" class="h-5 w-5" />
             </button>
@@ -48,7 +48,7 @@
 
           <!-- Content -->
           <div class="px-6 pb-6">
-            <p class="text-sm text-gray-600 leading-relaxed">
+            <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
               {{ modal.message }}
             </p>
           </div>
@@ -59,13 +59,13 @@
             <template v-if="modal.type === 'confirmation'">
               <button
                 @click="$emit('cancel')"
-                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               >
                 Cancelar
               </button>
               <button
                 @click="$emit('confirm')"
-                class="rounded-lg px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2"
+                class="rounded-lg px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                 :class="buttonClasses"
               >
                 Confirmar
@@ -76,7 +76,7 @@
             <button
               v-else-if="modal.persistent"
               @click="$emit('close')"
-              class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             >
               Cerrar
             </button>
@@ -85,7 +85,7 @@
             <button
               v-else
               @click="$emit('close')"
-              class="rounded-lg px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2"
+              class="rounded-lg px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
               :class="buttonClasses"
             >
               Entendido
@@ -112,8 +112,6 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-
-
 const iconComponents = {
   success: 'i-heroicons-check-circle',
   error: 'i-heroicons-x-circle',
@@ -126,44 +124,44 @@ const iconComponent = computed(() => iconComponents[props.modal.type])
 
 const iconContainerClasses = computed(() => {
   const classes = {
-    success: 'bg-green-100',
-    error: 'bg-red-100',
-    warning: 'bg-yellow-100',
-    info: 'bg-blue-100',
-    confirmation: 'bg-gray-100'
+    success: 'bg-green-100 dark:bg-green-900/30',
+    error: 'bg-red-100 dark:bg-red-900/30',
+    warning: 'bg-yellow-100 dark:bg-yellow-900/30',
+    info: 'bg-blue-100 dark:bg-blue-900/30',
+    confirmation: 'bg-gray-100 dark:bg-gray-700'
   }
   return classes[props.modal.type]
 })
 
 const iconClasses = computed(() => {
   const classes = {
-    success: 'text-green-600',
-    error: 'text-red-600',
-    warning: 'text-yellow-600',
-    info: 'text-blue-600',
-    confirmation: 'text-gray-600'
+    success: 'text-green-600 dark:text-green-400',
+    error: 'text-red-600 dark:text-red-400',
+    warning: 'text-yellow-600 dark:text-yellow-400',
+    info: 'text-blue-600 dark:text-blue-400',
+    confirmation: 'text-gray-600 dark:text-gray-400'
   }
   return classes[props.modal.type]
 })
 
 const buttonClasses = computed(() => {
   const classes = {
-    success: 'bg-green-600 hover:bg-green-700 focus:ring-green-500',
-    error: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
-    warning: 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500',
-    info: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
-    confirmation: 'bg-gray-600 hover:bg-gray-700 focus:ring-gray-500'
+    success: 'bg-green-600 hover:bg-green-700 focus:ring-green-500 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-400',
+    error: 'bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-400',
+    warning: 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500 dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:focus:ring-yellow-400',
+    info: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400',
+    confirmation: 'bg-gray-600 hover:bg-gray-700 focus:ring-gray-500 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-400'
   }
   return classes[props.modal.type]
 })
 
 const modalClasses = computed(() => {
   const classes = {
-    success: 'ring-green-200',
-    error: 'ring-red-200',
-    warning: 'ring-yellow-200',
-    info: 'ring-blue-200',
-    confirmation: 'ring-gray-200'
+    success: 'ring-green-200 dark:ring-green-800',
+    error: 'ring-red-200 dark:ring-red-800',
+    warning: 'ring-yellow-200 dark:ring-yellow-800',
+    info: 'ring-blue-200 dark:ring-blue-800',
+    confirmation: 'ring-gray-200 dark:ring-gray-700'
   }
   return classes[props.modal.type]
 })

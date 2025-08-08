@@ -67,7 +67,10 @@ const columns: TableColumn<ProductMapped>[] = [
   {
     accessorKey: 'id',
     header: 'N°',
-    cell: ({ row }) => `#${row.getValue('id')}`
+    cell: ({ row }) => {
+      const index = products.value.indexOf(row.original)
+      return index + 1
+    }
   },
   {
     accessorKey: 'nombreComercial',
@@ -89,14 +92,7 @@ const columns: TableColumn<ProductMapped>[] = [
             class: 'w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity',
             onClick: () => openImageModal(String(foto), String(nombreComercial))
           }),
-          h(UButton, {
-            size: 'xs',
-            icon: 'i-heroicons-eye',
-            variant: 'ghost',
-            color: 'blue',
-            onClick: () => openImageModal(String(foto), String(nombreComercial)),
-            title: 'Ver imagen'
-          })
+         
         ])
       }
       return h('span', { class: 'text-gray-400' }, 'Sin foto')

@@ -4,6 +4,7 @@ export interface ProductRubro {
 }
 export interface CreateProductRubroRequest {
     nombre: string
+    tipo: string
 }
 export interface ProductRubroResponse {
     success: boolean

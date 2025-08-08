@@ -181,6 +181,7 @@ const archivos = ref<{
     id: number
     nombre_archivo: string
     cantidad_rows: number
+    estadisticas: any
     created_at: string
     ruta_archivo: string
 }[]>([])
@@ -190,7 +191,10 @@ const columns: TableColumn<any>[] = [
     {
         accessorKey: 'id',
         header: 'N.',
-        cell: ({ row }) => row.getValue('id') as number
+        cell: ({ row }) => {
+            const index = archivos.value.indexOf(row.original)
+            return index + 1
+        }
     },
     {
         accessorKey: 'nombre_archivo',
@@ -214,7 +218,14 @@ const columns: TableColumn<any>[] = [
     {
         accessorKey: 'cantidad_rows',
         header: 'Registros importados',
-        cell: ({ row }) => row.getValue('cantidad_rows')
+        cell: ({ row }) =>{
+            return h('div', { class: 'flex  flex-col items-center gap-2' }, [
+                h('span', { class: 'text-sm font-medium text-gray-800 dark:text-gray-200' }, row.getValue('cantidad_rows')),
+                h('span', { class: 'text-xs text-gray-600 dark:text-gray-400' }, row.original.estadisticas.creados+' clientes creados'),
+                h('span', { class: 'text-xs text-gray-600 dark:text-gray-400' }, row.original.estadisticas.actualizados+' clientes actualizados'),
+                h('span', { class: 'text-xs text-gray-600 dark:text-gray-400' }, (row.original.estadisticas.total - (row.original.estadisticas.creados + row.original.estadisticas.actualizados))  +' clientes con errores')
+            ])
+        }
     },
     {
         accessorKey: 'excel',

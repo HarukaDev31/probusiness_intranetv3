@@ -219,7 +219,7 @@ const goBack = () => {
 const searchProducts = async (searchTerm: string) => {
   try {
     loadingProducts.value = true
-    const response = await productRubroService.getProductRubros(searchTerm)
+    const response = await productRubroService.getProductRubros(searchTerm,'DOCUMENTO_ESPECIAL')
 
     if (response.success && response.data) {
       // Convertir productos a formato de opciones para autocomplete
@@ -243,7 +243,8 @@ const createProduct = async () => {
       return
     }
     const response = await productRubroService.createProductRubro({
-      nombre: newProduct.value.nombre
+      nombre: newProduct.value.nombre,
+      tipo: 'DOCUMENTO_ESPECIAL'
     })
     if (response.success) {
       formData.value.producto = {
@@ -272,7 +273,7 @@ const selectDocument = (index: number) => {
   // Crear un input file oculto
   const input = document.createElement('input')
   input.type = 'file'
-  input.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png'
+  input.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx,.ppt,.pptx,.txt'
   
   input.onchange = (event) => {
     const target = event.target as HTMLInputElement

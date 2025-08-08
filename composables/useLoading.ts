@@ -96,7 +96,6 @@ export const useLoading = () => {
     // Métodos
     setGlobalLoading,
     setLoading,
-    isLoading,
     getLoadingMessage,
     clearLoading,
     clearAllLoading,

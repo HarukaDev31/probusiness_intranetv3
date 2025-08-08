@@ -107,9 +107,11 @@
               </form>
 
               <!-- Error Message -->
-              <div v-if="error" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p class="text-sm text-red-600">{{ error }}</p>
+              <div v-if="error" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800">
+                <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
               </div>
+
+             
             </div>
           </div>
         </div>
@@ -127,6 +129,10 @@ definePageMeta({
 // Auth composable
 const { login, loading, error } = useAuth()
 
+// Color mode composable
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
+
 // Login page state
 const email = ref('admin')
 const password = ref('')
@@ -143,6 +149,11 @@ const handleLogin = async () => {
     // Redirect to dashboard on success
     await navigateTo('/')
   }
+}
+
+// Theme toggle handler
+const toggleTheme = () => {
+  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
 }
 
 // Set page title
@@ -197,7 +208,12 @@ useHead({
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   max-width: 600px;
   min-height: 700px;
-  
+}
+
+/* Dark mode styles for panel */
+.dark .panel-container {
+  background-color: #1f2937;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .panel {
@@ -209,6 +225,11 @@ useHead({
 .panel-heading {
   padding: 20px;
   border-bottom: 1px solid #eee;
+}
+
+/* Dark mode styles for panel heading */
+.dark .panel-heading {
+  border-bottom: 1px solid #374151;
 }
 
 .panel-body {
@@ -230,10 +251,20 @@ useHead({
   margin-bottom: 8px;
 }
 
+/* Dark mode styles for welcome text */
+.dark .Welcome h2 {
+  color: #f9fafb;
+}
+
 .Welcome p {
   color: #666;
   font-size: 14px;
   margin-bottom: 0;
+}
+
+/* Dark mode styles for welcome paragraph */
+.dark .Welcome p {
+  color: #d1d5db;
 }
 
 .form-group {
@@ -248,11 +279,23 @@ useHead({
   overflow: hidden;
 }
 
+/* Dark mode styles for input group */
+.dark .input-group {
+  border: 1px solid #4b5563;
+}
+
 .input-group-addon {
   background-color: #f8f9fa;
   border-right: 1px solid #ddd;
   padding: 10px 12px;
   color: #666;
+}
+
+/* Dark mode styles for input group addon */
+.dark .input-group-addon {
+  background-color: #374151;
+  border-right: 1px solid #4b5563;
+  color: #d1d5db;
 }
 
 .form-control {
@@ -261,6 +304,18 @@ useHead({
   padding: 12px;
   font-size: 14px;
   outline: none;
+  background-color: white;
+  color: #333;
+}
+
+/* Dark mode styles for form control */
+.dark .form-control {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+.dark .form-control::placeholder {
+  color: #9ca3af;
 }
 
 .form-control:focus {
@@ -271,6 +326,12 @@ useHead({
 .input-group:focus-within {
   border-color: #FF6700;
   box-shadow: 0 0 0 2px rgba(255, 103, 0, 0.2);
+}
+
+/* Dark mode focus styles */
+.dark .input-group:focus-within {
+  border-color: #FF6700;
+  box-shadow: 0 0 0 2px rgba(255, 103, 0, 0.3);
 }
 
 .btn {
@@ -308,6 +369,11 @@ useHead({
   font-size: 14px;
 }
 
+/* Dark mode styles for link button */
+.dark .btn-link {
+  color: #d1d5db;
+}
+
 .btn-link:hover {
   color: #FF6700;
   text-decoration: none;
@@ -324,10 +390,22 @@ useHead({
   color: #666;
 }
 
+/* Dark mode styles for toggle password */
+.dark .toggle-password {
+  background-color: #374151;
+  border-left: 1px solid #4b5563;
+  color: #d1d5db;
+}
+
 .help-block {
   color: #dc3545;
   font-size: 12px;
   margin-top: 4px;
+}
+
+/* Dark mode styles for help block */
+.dark .help-block {
+  color: #f87171;
 }
 
 .div-msg {

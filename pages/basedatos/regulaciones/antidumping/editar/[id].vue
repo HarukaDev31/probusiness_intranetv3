@@ -469,7 +469,7 @@ const searchProducts = async (query: string) => {
   loadingProducts.value = true
   
   try {
-    const response = await productRubroService.getProductRubros(query)
+    const response = await productRubroService.getProductRubros(query,'ANTIDUMPING')
     
     if (response.success && response.data) {
       productOptions.value = response.data.map(product => ({
@@ -495,7 +495,8 @@ const createProduct = async () => {
   
   try {
     const response = await productRubroService.createProductRubro({
-      nombre: newProduct.value.nombre
+      nombre: newProduct.value.nombre,
+      tipo: 'ANTIDUMPING'
     })
     
     if (response.success && response.data) {

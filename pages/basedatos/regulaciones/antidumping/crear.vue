@@ -341,7 +341,7 @@ const searchProducts = async (searchTerm: string) => {
   console.log('searchTerm', searchTerm)
   try {
     loadingProducts.value = true
-    const response = await productRubroService.getProductRubros(searchTerm)
+    const response = await productRubroService.getProductRubros(searchTerm,'ANTIDUMPING')
 
     if (response.success && response.data) {
       // Convertir productos a formato de opciones para autocomplete
@@ -366,7 +366,8 @@ const createProduct = async () => {
       return
     }
     const response = await productRubroService.createProductRubro({
-      nombre: newProduct.value.nombre
+      nombre: newProduct.value.nombre,
+      tipo: 'ANTIDUMPING'
     })
     if (response.success) {
 

@@ -32,13 +32,15 @@ class ProductRubroService {
     /**
      * Obtener lista de rubros
      */
-    async getProductRubros(search?: string): Promise<ProductRubroListResponse> {
+    async getProductRubros(search?: string,tipo?: string): Promise<ProductRubroListResponse> {
         try {
             const queryParams = new URLSearchParams()
             if (search && search !== '') {
                 queryParams.append('search', search)
             }
-
+            if (tipo && tipo !== '') {
+                queryParams.append('tipo', tipo)
+            }
             const response = await apiCall<ProductRubroListResponse>(
                 `/api/base-datos/regulaciones/rubros${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
             )

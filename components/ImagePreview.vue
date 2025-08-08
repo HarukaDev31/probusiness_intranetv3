@@ -55,8 +55,8 @@ const selectedImage = ref('')
 
 // Methods
 const getImageUrl = (ruta: string) => {
-    const config = useRuntimeConfig()
-    return `${config.public.apiBaseUrl}${ruta}`
+    console.log(ruta)
+    return `${ruta}`
 }
 
 const openImageModal = (imageUrl: string) => {

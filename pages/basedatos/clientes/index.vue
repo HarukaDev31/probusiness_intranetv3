@@ -105,7 +105,10 @@ const columns: TableColumn<any>[] = [
     {
         accessorKey: 'id',
         header: 'N.',
-        cell: ({ row }) => row.getValue('id')
+        cell: ({ row }) => {
+            const index = clientes.value.indexOf(row.original)
+            return index + 1
+        }
     },
     {
         accessorKey: 'nombre',
