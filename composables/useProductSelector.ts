@@ -38,7 +38,6 @@ export function useProductSelector() {
       
       const response = await productRubroService.createProductRubro({
         nombre: productName,
-        tipo:
       })
       
       if (response.success) {
