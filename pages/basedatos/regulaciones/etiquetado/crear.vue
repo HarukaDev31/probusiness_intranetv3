@@ -330,7 +330,7 @@ const saveForm = async () => {
       // Mostrar notificación de éxito (aquí podrías usar un toast o notificación)
       
       // Redirigir de vuelta a la lista
-      router.push('/basedatos/regulaciones')
+      router.push('/basedatos/regulaciones?tab=etiquetado')
     } else {
       console.error('Error al guardar etiquetado:', response.error)
       // Aquí podrías mostrar un mensaje de error al usuario

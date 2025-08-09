@@ -385,7 +385,7 @@ const saveForm = async () => {
     
     if (response.success) {
       console.log('Permiso actualizado exitosamente')
-      router.push('/basedatos/regulaciones')
+      router.push('/basedatos/regulaciones?tab=permisos')
     } else {
       console.error('Error al actualizar el permiso:', response.error)
       alert('Error al actualizar el permiso: ' + response.error)

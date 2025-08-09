@@ -50,9 +50,14 @@
                                 <div class="flex items-center justify-between w-full">
                                     <strong>{{ row.original.nombre }}</strong>
 
-                                    <UButton variant="outline" color="neutral" class="mr-2" size="xs"
-                                        :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
-                                        @click="row.toggleExpanded()" />
+                                    <div class="flex items-center gap-2">
+                                        <UButton variant="outline" color="neutral" class="mr-2" size="xs"
+                                            :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
+                                            @click="row.toggleExpanded()" />
+                                        <!--Button to delete -->
+                                        <UButton icon="i-heroicons-trash" variant="outline" color="red" size="xs"
+                                            @click="deleteRubro(row.original.id)" />
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -73,12 +78,12 @@
                                         cell: ({ row }: { row: any }) => {
                                             const descripcion = row.getValue('descripcion')
                                             if (!descripcion) return h('span', { class: 'text-gray-400 dark:text-gray-500' }, 'Sin descripción')
-                                            
+
                                             // Dividir por saltos de línea HTML y normales
-                                            const lines = descripcion.split(/<br\s*\/?>/i).flatMap((line: string) => 
+                                            const lines = descripcion.split(/<br\s*\/?>/i).flatMap((line: string) =>
                                                 line.split('\n').filter((l: string) => l.trim())
                                             )
-                                            
+
                                             return h('div', {
                                                 class: 'max-w-xs text-wrap leading-relaxed',
                                                 style: {
@@ -86,9 +91,9 @@
                                                     'word-wrap': 'break-word'
                                                 },
                                                 title: descripcion.replace(/<br\s*\/?>/gi, '\n') // Tooltip con texto completo
-                                            }, lines.map((line: string) => 
-                                                h('div', { 
-                                                    class: 'text-sm text-gray-700 dark:text-gray-300 mb-1 last:mb-0' 
+                                            }, lines.map((line: string) =>
+                                                h('div', {
+                                                    class: 'text-sm text-gray-700 dark:text-gray-300 mb-1 last:mb-0'
                                                 }, line.trim())
                                             ))
                                         }
@@ -178,9 +183,14 @@
 
                                 <div class="flex items-center justify-between w-full">
                                     <strong>{{ row.original.nombre }}</strong>
-                                    <UButton variant="outline" color="neutral" class="mr-2" size="xs"
-                                        :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
-                                        @click="row.toggleExpanded()" />
+                                    <div class="flex items-center gap-2">
+                                        <UButton variant="outline" color="neutral" class="mr-2" size="xs"
+                                            :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
+                                            @click="row.toggleExpanded()" />
+                                        <!--Button to delete -->
+                                        <UButton icon="i-heroicons-trash" variant="outline" color="red" size="xs"
+                                            @click="deleteEntidad(row.original.id)" />
+                                    </div>
                                 </div>
 
                             </div>
@@ -234,6 +244,16 @@
                                                     onClick: () => editPermiso(row.original.id),
                                                     title: 'Editar'
                                                 })
+                                            ] : []),
+                                            ...(hasRole('Documentacion') ? [
+                                                h(UButton, {
+                                                    icon: 'i-heroicons-trash',
+                                                    variant: 'ghost',
+                                                    size: 'xs',
+                                                    color: 'red',
+                                                    onClick: () => deletePermiso(row.original.id),
+                                                    title: 'Eliminar'
+                                                })
                                             ] : [])
                                         ])
                                     }
@@ -272,10 +292,14 @@
                                 <span class="inline-block" :style="{ width: `calc(${row.depth} * 1rem)` }" />
                                 <div class="flex items-center justify-between w-full">
                                     <strong>{{ row.original.nombre }}</strong>
-
-                                    <UButton variant="outline" color="neutral" class="mr-2" size="xs"
-                                        :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
-                                        @click="row.toggleExpanded()" />
+                                    <div class="flex items-center gap-2">
+                                        <UButton variant="outline" color="neutral" class="mr-2" size="xs"
+                                            :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
+                                            @click="row.toggleExpanded()" />
+                                        <!--Button to delete -->
+                                        <UButton icon="i-heroicons-trash" variant="outline" color="red" size="xs"
+                                            @click="deleteRubro(row.original.id)" />
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -306,9 +330,9 @@
                                         return h('div', {
                                             class: 'w-50 text-wrap',
                                             style: {
-                                                    'white-space': 'pre-wrap',
-                                                    'word-wrap': 'break-word'
-                                                },
+                                                'white-space': 'pre-wrap',
+                                                'word-wrap': 'break-word'
+                                            },
                                             title: observaciones // oltip con texto completo
                                         }, observaciones)
                                     }
@@ -326,6 +350,16 @@
                                                 color: 'green',
                                                 onClick: () => editEtiquetado(row.original.id),
                                                 title: 'Editar'
+                                            })
+                                        ] : []),
+                                        ...(hasRole('Documentacion') ? [
+                                            h(UButton, {
+                                                icon: 'i-heroicons-trash',
+                                                variant: 'ghost',
+                                                size: 'xs',
+                                                color: 'red',
+                                                onClick: () => deleteEtiquetado(row.original.id),
+                                                title: 'Eliminar'
                                             })
                                         ] : [])
                                     ])
@@ -365,9 +399,14 @@
 
                                 <div class="flex items-center justify-between w-full">
                                     <strong>{{ row.original.nombre }}</strong>
-                                    <UButton variant="outline" color="neutral" class="mr-2" size="xs"
-                                        :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
-                                        @click="row.toggleExpanded()" />
+                                    <div class="flex items-center gap-2">
+                                        <UButton variant="outline" color="neutral" class="mr-2" size="xs"
+                                            :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
+                                            @click="row.toggleExpanded()" />
+                                        <!--Button to delete -->
+                                        <UButton icon="i-heroicons-trash" variant="outline" color="red" size="xs"
+                                            @click="deleteRubro(row.original.id)" />
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -412,6 +451,16 @@
                                                     onClick: () => editDocumento(row.original.id),
                                                     title: 'Editar'
                                                 })
+                                            ] : []),
+                                            ...(hasRole('Documentacion') ? [
+                                                h(UButton, {
+                                                    icon: 'i-heroicons-trash',
+                                                    variant: 'ghost',
+                                                    size: 'xs',
+                                                    color: 'red',
+                                                    onClick: () => deleteDocumento(row.original.id),
+                                                    title: 'Eliminar'
+                                                })
                                             ] : [])
                                         ])
                                     }
@@ -452,6 +501,7 @@ const { showCreateSuccess, showUpdateSuccess, showDeleteSuccess, showServerError
 const { withLoading } = useLoading()
 
 const UBadge = resolveComponent('UBadge')
+
 
 // Types
 interface RegulationItem {
@@ -699,7 +749,7 @@ const antidumpingService = AntidumpingService.getInstance()
 const permisoService = PermisoService.getInstance()
 const etiquetadoService = EtiquetadoService.getInstance()
 const documentoService = DocumentoService.getInstance()
-
+import entityService from '~/services/entityService'
 
 // Loading states
 const loadingAntidumping = ref(false)
@@ -1109,7 +1159,124 @@ const closeImageModal = () => {
     selectedImage.value = ''
 }
 
-// Watch for tab changes to load data
+const deleteRubro = (id: number) => {
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const response = await AntidumpingService.getInstance().deleteRubro(id)
+                    if (response.success) {
+                        //if activeTab is antidumping, loadAntidumpingData()
+                        if (activeTab.value === 'antidumping') {
+                            await loadAntidumpingData()
+                        }
+                        //if activeTab is permisos, loadPermisosData()
+                        if (activeTab.value === 'permisos') {
+                            await loadPermisosData()
+                        }
+                        //if activeTab is etiquetado, loadEtiquetadoData()
+                        if (activeTab.value === 'etiquetado') {
+                            await loadEtiquetadoData()
+                        }
+                        //if activeTab is documentos, loadDocumentosData()
+                        if (activeTab.value === 'documentos') {
+                            await loadDocumentosData()
+                        }
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
+}
+const deletePermiso = (id: number) => {
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const response = await PermisoService.getInstance().deletePermiso(id)
+                    if (response.success) {
+                        await loadPermisosData()
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
+}
+
+const deleteEntidad = (id: number) => {
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const response = await entityService.getInstance().deleteEntity(id)
+                    if (response.success) {
+                        await loadPermisosData()
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
+}
+const deleteDocumento = (id: number) => {
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const response = await DocumentoService.getInstance().deleteDocumento(id)
+                    if (response.success) {
+                        await loadDocumentosData()
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
+}
+
+const deleteEtiquetado = (id: number) => {
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const response = await EtiquetadoService.getInstance().deleteEtiquetado(id)
+                    if (response.success) {
+                        await loadEtiquetadoData()
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
+}
+
 watch(activeTab, (newTab) => {
     switch (newTab) {
         case 'antidumping':

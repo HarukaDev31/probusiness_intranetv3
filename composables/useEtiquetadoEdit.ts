@@ -143,7 +143,7 @@ export function useEtiquetadoEdit(regulationId: string) {
 
       if (response.success) {
         console.log('Etiquetado actualizado exitosamente:', response.data)
-        router.push('/basedatos/regulaciones')
+        router.push('/basedatos/regulaciones?tab=etiquetado')
       } else {
         console.error('Error al actualizar el etiquetado:', response.error)
         alert('Error al actualizar el etiquetado: ' + (response.error || 'Error desconocido'))

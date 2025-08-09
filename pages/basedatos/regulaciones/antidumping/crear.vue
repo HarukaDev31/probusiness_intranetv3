@@ -429,7 +429,7 @@ const saveForm = async () => {
       
       // Redirigir de vuelta a la lista después de un breve delay
       setTimeout(() => {
-        router.push('/basedatos/regulaciones')
+        router.push('/basedatos/regulaciones?tab=antidumping')
       }, 1500)
     } else {
       console.error('Error al guardar:', response.error)

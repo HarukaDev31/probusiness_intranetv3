@@ -478,7 +478,7 @@ const saveForm = async () => {
       console.log('Documento especial actualizado exitosamente:', response.data)
       
       // Redirigir de vuelta a la lista
-      router.push('/basedatos/regulaciones')
+      router.push('/basedatos/regulaciones?tab=documentos')
     } else {
       console.error('Error al actualizar documento especial:', response.error)
     }

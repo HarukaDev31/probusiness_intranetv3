@@ -257,6 +257,30 @@ class AntidumpingService {
       }
     }
   }
+
+  async deleteRubro(id: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await apiCall<{ success: boolean; error?: string }>(`/api/base-datos/regulaciones/rubros/${id}`, {
+        method: 'DELETE'
+      })
+      return response
+    } catch (error) {
+      console.error('Error deleting rubro:', error)
+      return { success: false, error: 'Error al eliminar el rubro' }
+    }
+  }
+
+  async deleteEntidad(id: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await apiCall<{ success: boolean; error?: string }>(`/api/base-datos/regulaciones/entidades/${id}`, {
+        method: 'DELETE'
+      })
+      return response
+    } catch (error) {
+      console.error('Error deleting entidad:', error)
+      return { success: false, error: 'Error al eliminar la entidad' }
+    }
+  }
 }
 
 export default AntidumpingService 

@@ -615,7 +615,7 @@ const saveForm = async () => {
     
     if (response.success) {
       // Redirect to detail view
-      router.push(`/basedatos/regulaciones`)
+      router.push(`/basedatos/regulaciones?tab=antidumping`)
     } else {
       alert('Error al actualizar la regulación: ' + response.error)
     }

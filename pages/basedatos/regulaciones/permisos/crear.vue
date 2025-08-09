@@ -201,7 +201,7 @@ const saveForm = async () => {
 
 
         // Redirigir de vuelta a la lista
-        router.push('/basedatos/regulaciones')
+        router.push('/basedatos/regulaciones?tab=permisos')
         showSuccess('Permiso guardado exitosamente', 'El permiso se ha guardado correctamente')
       } else {
         showError('Error al guardar permiso', 'Error al guardar el permiso')
