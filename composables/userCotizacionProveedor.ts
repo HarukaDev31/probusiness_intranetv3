@@ -14,10 +14,34 @@ export const useCotizacionProveedor = () => {
     const error = ref<string | null>(null)
     const filterConfig = ref<FilterConfig[]>([
         {
-            key: 'id_proveedor',
-            label: 'Proveedor',
-            placeholder: 'Seleccionar proveedor',
-            options: []
+            key: 'estado_china',
+            label: 'Estado China',
+            placeholder: 'Seleccionar estado',
+            options: [
+                {
+                    label: 'Todos',
+                    value: 'Todos'
+                },
+                {
+                    label: 'NC',
+                    value: 'NC'
+                }, {
+                    label: 'C',
+                    value: 'C'
+                }, {
+                    label: 'R',
+                    value: 'R'
+                }, {
+                    label: 'INSPECTION',
+                    value: 'INSPECTION'
+                }, {
+                    label: 'LOADED',
+                    value: 'LOADED' 
+                }, {
+                    label: 'NO LOADED',
+                    value: 'NO LOADED'
+                }
+            ]
         }
     ])
     const pagination = ref<PaginationInfo>({
@@ -38,7 +62,7 @@ export const useCotizacionProveedor = () => {
     const inspeccionChina = ref<FileItem[]>([])
     const notasChina = ref<string>('')
     const getCotizacionProveedor = async (id: number) => {
-            loading.value = true
+        loading.value = true
         try {
             const response = await CotizacionProveedorService.getCotizacionesProveedores(id)
             cotizacionProveedor.value = response.data
@@ -83,11 +107,11 @@ export const useCotizacionProveedor = () => {
             loadingNotas.value = false
         }
     }
-    const getNotasChina = async (id: number) => {   
+    const getNotasChina = async (id: number) => {
         loadingNotas.value = true
         try {
             const response = await CotizacionProveedorService.getNotasChina(id)
-            notasChina.value = response.data.nota   
+            notasChina.value = response.data.nota
         } catch (error: any) {
             error.value = error.message
         } finally {

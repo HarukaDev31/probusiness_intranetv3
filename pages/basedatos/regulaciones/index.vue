@@ -310,17 +310,35 @@
                                     header: 'ID',
                                     cell: ({ row }: { row: any }) => `#${row.index + 1}`
                                 },
-                                {
-                                    accessorKey: 'imagenes',
-                                    header: 'Fotos',
-                                    cell: ({ row }: { row: any }) => {
-                                        const imagenes = row.getValue('imagenes')
-                                        return h(ImageModal, {
-                                            images: imagenes || [],
-                                            altText: 'Vista previa de imagen'
-                                        })
-                                    }
-                                },
+                                                                    {
+                                        accessorKey: 'imagenes',
+                                        header: 'Fotos',
+                                        cell: ({ row }: { row: any }) => {
+                                            const imagenes = row.getValue('imagenes') as string[] || []
+                                            
+                                            if (imagenes.length === 0) {
+                                                return h('span', { class: 'text-gray-400 text-sm' }, 'Sin imágenes')
+                                            }
+                                            
+                                            return h('div', { class: 'flex flex-wrap gap-1' }, 
+                                                imagenes.slice(0, 3).map((imagen, index) => 
+                                                    h('img', {
+                                                        src: getImageUrl(imagen),
+                                                        alt: `Imagen ${index + 1}`,
+                                                        class: 'w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity border border-gray-200',
+                                                        onClick: () => openImageModal(imagen)
+                                                    })
+                                                ).concat(
+                                                    imagenes.length > 3 ? [
+                                                        h('div', { 
+                                                            class: 'w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors',
+                                                            onClick: () => openImageModal(imagenes[3])
+                                                        }, `+${imagenes.length - 3}`)
+                                                    ] : []
+                                                )
+                                            )
+                                        }
+                                    },
                                 {
                                     accessorKey: 'observaciones',
                                     header: 'Descripciones minimas',
@@ -1144,8 +1162,7 @@ const getFileExtension = (filePath: string): string => {
 
 // Image modal functions
 const getImageUrl = (ruta: string) => {
-    const config = useRuntimeConfig()
-    return `${config.public.apiBaseUrl}${ruta}`
+    return ruta
 }
 
 const openImageModal = (imageUrl: string) => {

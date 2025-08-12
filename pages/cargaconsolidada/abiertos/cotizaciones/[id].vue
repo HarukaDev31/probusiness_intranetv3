@@ -5,7 +5,7 @@
         <DataTable title="" icon="" :data="cotizacionProveedor" :columns="columns" :loading="loading"
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
-            :show-filters="true" :filter-config="filterConfig" :filters-value="filterConfig" :show-export="true"
+            :show-filters="true" :filter-config="filterConfig" :filters-value="filters" :show-export="true"
             empty-state-message="No se encontraron registros de cursos." @update:search-query="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange">
@@ -18,31 +18,16 @@ const { getCotizacionProveedor, cotizacionProveedor, loading, currentPage, total
 const route = useRoute()
 const id = route.params.id
 import { USelect, UInput, UButton, UIcon } from '#components'
+const filters = ref<any>({
+    estado_china: 'todos'
+})
 const columns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
-            const options = [{
-                label: 'NC',
-                value: 'NC'
-            }, {
-                label: 'C',
-                value: 'C'
-            }, {
-                label: 'R',
-                value: 'R'
-            }, {
-                label: 'INSPECTION',
-                value: 'INSPECTION'
-            }, {
-                label: 'LOADED',
-                value: 'LOADED'
-            }, {
-                label: 'NO LOADED',
-                value: 'NO LOADED'
-            }];
+          
             //create div and foreach proveedor, show select with options NC,C,R,INSPECTION,LOADED,NO LOADED AND SELECTED IS ROW.ORIGINAL.estado_china
             const div = h('div',
                 {
@@ -50,7 +35,7 @@ const columns = ref<TableColumn<any>[]>([
                 },
                 proveedores.map((proveedor: any) => {
                     return h(USelect as any, {
-                        items: options,
+                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
                         class: 'w-full',
