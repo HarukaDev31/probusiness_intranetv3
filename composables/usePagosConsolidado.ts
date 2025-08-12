@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { ConsolidadoService } from '~/services/consolidadoService'
-import type { ConsolidadoItem, ConsolidadoFilters, PaginationInfo, PagoDetalleResponse } from '~/types/consolidado'
+import type { ConsolidadoItem, ConsolidadoFilters, PaginationInfo, PagoDetalleResponse } from '~/types/pagos/consolidado-pagos'
 
 export const useConsolidado = () => {
   // State

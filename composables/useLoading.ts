@@ -12,11 +12,13 @@ export const useLoading = () => {
   const showLoading = (message?: string) => {
     loadingMessage.value = message || 'Cargando...'
     isLoading.value = true
+    setLoading('global', true, message)
   }
 
   const hideLoading = () => {
     isLoading.value = false
     loadingMessage.value = 'Cargando...'
+
   }
 
   const setGlobalLoading = (loading: boolean, message?: string) => {

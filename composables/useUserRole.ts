@@ -79,7 +79,7 @@ export const useUserRole = () => {
   const isUserActive = computed(() => {
     return userData.value?.isActive || false
   })
-
+ 
   // Función para obtener los datos del usuario actual desde localStorage
   const fetchCurrentUser = () => {
     try {

@@ -4,7 +4,22 @@ export interface FilterOption {
   label: string
   value: string
 }
-
+export interface PaginationInfo {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+  from: number
+  to: number
+}
+/**
+ * FilterConfig es una interfaz que define la configuración de los filtros para el DataTable
+ * key: string,
+ * label: string,
+ * type?: string,
+ * placeholder: string,
+ * options: FilterOption[]
+ */
 export interface FilterConfig {
   key: string
   label: string

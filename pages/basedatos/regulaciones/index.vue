@@ -315,7 +315,7 @@
                                     header: 'Fotos',
                                     cell: ({ row }: { row: any }) => {
                                         const imagenes = row.getValue('imagenes')
-                                        return h(ImagePreview, {
+                                        return h(ImageModal, {
                                             images: imagenes || [],
                                             altText: 'Vista previa de imagen'
                                         })
@@ -476,7 +476,6 @@
         </div>
     </div>
 
-    <!-- Image Modal -->
     <ImageModal :is-open="showImageModal" :image-url="selectedImage" alt-text="Vista previa de imagen"
         @close="closeImageModal" />
 </template>
@@ -490,7 +489,7 @@ import AntidumpingService from '~/services/antidumpingService'
 import PermisoService from '~/services/permisoService'
 import EtiquetadoService from '~/services/etiquetadoService'
 import DocumentoService from '~/services/documentoService'
-import ImagePreview from '~/components/ImagePreview.vue'
+import ImageModal from '~/components/ImageModal.vue'
 import DocumentPreview from '~/components/DocumentPreview.vue'
 
 // User role composable

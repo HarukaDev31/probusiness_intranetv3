@@ -1,135 +1,146 @@
+import type { TableColumn } from '@nuxt/ui'
 import { ref, computed } from 'vue'
 import { CursosService } from '~/services/cursosService'
-import type { CursoItem, CursosFilters, PaginationInfo, CursosDetalleResponse } from '~/types/cursos'
+import type { CursosFilters, PaginationInfo, CursosDetalleResponse, CursoItem } from '~/types/cursos/cursos'
+import type { FilterConfig } from '~/types/data-table'
+
 
 export const useCursos = () => {
-  // State
-  const cursosData = ref<CursoItem[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-  const filters = ref<CursosFilters>({})
-  const pagination = ref<PaginationInfo>({
-    current_page: 1,
-    last_page: 1,
-    per_page: 10,
-    total: 0,
-    from: 0,
-    to: 0
-  })
+    const cursosData = ref<CursoItem[]>([])
+    const loading = ref(false)
+    const error = ref<string | null>(null)
+    const filters = ref<CursosFilters>({})
+    const pagination = ref<PaginationInfo>({
+        current_page: 1,
+        last_page: 1,
+        per_page: 10,
+        total: 0,
+        from: 0,
+        to: 0
+    })
+    const search = ref('')
+    const itemsPerPage = ref(10)
+    const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
+    const totalRecords = computed(() => pagination.value.total)
+    const currentPage = computed(() => pagination.value.current_page)
+    const filterConfig = ref<FilterConfig[]>([
+        {
+            key: 'estado_pago',
+            label: 'Estado de pago',
+            placeholder: 'Seleccionar estado de pago',
+            options: [
+                { label: 'Todos', value: 'todos' },
+                //PENDIENTE ADELANTO PAGADO SOBREPAGO ,
+                { label: 'Pendiente', value: 'PENDIENTE' },
+                { label: 'Adelanto', value: 'ADELANTO' },
+                { label: 'Pagado', value: 'PAGADO' },
+                { label: 'Sobrepago', value: 'SOBREPAGO' },
+            ]
+        },
+        {
+            key: 'campana',
+            label: 'Campaña',
+            placeholder: 'Seleccionar campaña',
+            options: [
 
-  // Computed
-  const totalAmount = computed(() => {
-    return cursosData.value.reduce((sum, item) => sum + item.monto_a_pagar, 0)
-  })
 
-  const totalPaid = computed(() => {
-    return cursosData.value.reduce((sum, item) => sum + item.total_pagado, 0)
-  })
-
-  const filteredData = computed(() => {
-    if (!filters.value.search) return cursosData.value
-    
-    const searchTerm = filters.value.search.toLowerCase()
-    return cursosData.value.filter(item =>
-      item.nombre.toLowerCase().includes(searchTerm) ||
-      item.telefono.includes(searchTerm) ||
-      item.campana.toLowerCase().includes(searchTerm)
+            ]
+        },
+        {
+            key: 'fecha_inicio',
+            label: 'Fecha de inicio',
+            placeholder: 'Seleccionar fecha de inicio',
+            options: [
+                { label: 'Todos', value: 'todos' }
+            ]
+        },
+        {
+            key: 'fecha_fin',
+            label: 'Fecha de fin',
+            placeholder: 'Seleccionar fecha de fin',
+            options: [
+                { label: 'Todos', value: 'todos' }
+            ]
+        }
+    ]
     )
-  })
+    const fetchCursosData = async (customFilters?: CursosFilters, page: number = 1, perPage: number = 10) => {
+        loading.value = true
+        error.value = null
 
-  // Methods
-  const fetchCursosData = async (customFilters?: CursosFilters, page: number = 1, perPage: number = 10) => {
-    loading.value = true
-    error.value = null
-    
-    try {
-      const mergedFilters = { ...filters.value, ...customFilters, page, limit: perPage }
-      const response = await CursosService.getCursosPagos(mergedFilters)
-      
-      cursosData.value = response.data
-      pagination.value = response.pagination
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Error al obtener datos de cursos'
-      console.error('Error fetching cursos data:', err)
-    } finally {
-      loading.value = false
+        try {
+            const mergedFilters = { ...filters.value, ...customFilters, page, limit: perPage }
+            const response = await CursosService.getCursos(mergedFilters)
+            cursosData.value = response.data
+            pagination.value = response.pagination
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : 'Error al obtener datos de cursos'
+            console.error('Error al obtener datos de cursos:', err)
+        }
     }
-  }
 
-  const getCursoDetalle = async (id: number): Promise<CursosDetalleResponse> => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await CursosService.getCursoDetalle(id)
-      return response
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Error al obtener detalle'
-      console.error('Error fetching curso detail:', err)
-      throw err
-    } finally {
-      loading.value = false
+    const getCursoDetalle = async (id: number): Promise<CursosDetalleResponse> => {
+        loading.value = true
+        error.value = null
+
+        try {
+            const response = await CursosService.getCursoDetalle(id)
+            return response
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : 'Error al obtener detalle'
+            console.error('Error al obtener detalle:', err)
+            throw err
+        } finally {
+            loading.value = false
+        }
     }
-  }
-
-  const updateEstadoPago = async (id: number, estado: string) => {
-    try {
-      await CursosService.updateEstadoPago(id, estado)
-      // Actualizar el estado local
-      const curso = cursosData.value.find(c => c.id === id)
-      if (curso) {
-        curso.estado_pago = estado
-      }
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Error al actualizar estado'
-      console.error('Error updating estado:', err)
-      throw err
+    const updateCurso = async (id: number, curso: CursoItem) => {
+        try {
+            await CursosService.updateCurso(id, curso)
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : 'Error al actualizar curso'
+            console.error('Error al actualizar curso:', err)
+            throw err
+        }
     }
-  }
-
-  const exportData = async () => {
-    try {
-      const blob = await CursosService.exportCursos(filters.value)
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `cursos_${new Date().toISOString().split('T')[0]}.xlsx`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Error al exportar datos'
-      console.error('Error exporting data:', err)
+    const exportData = async () => {
+        try {
+            const response = await CursosService.exportCursos(filters.value)
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : 'Error al exportar datos'
+            console.error('Error al exportar datos:', err)
+            throw err
+        }
     }
-  }
+    const updateFilters = (newFilters: Partial<CursosFilters>) => {
+        filters.value = { ...filters.value, ...newFilters }
+    }
+    const clearFilters = () => {
+        filters.value = {}
+    }
+    const getFiltros = async () => {
+        const response = await CursosService.getFiltros()
+        return response
+    }
 
-  const updateFilters = (newFilters: Partial<CursosFilters>) => {
-    filters.value = { ...filters.value, ...newFilters }
-  }
-
-  const clearFilters = () => {
-    filters.value = {}
-  }
-
-  return {
-    // State
-    cursosData,
-    loading,
-    error,
-    pagination,
-    filters,
-
-    // Computed
-    totalAmount,
-    totalPaid,
-    filteredData,
-
-    // Methods
-    fetchCursosData,
-    getCursoDetalle,
-    updateEstadoPago,
-    exportData,
-    updateFilters,
-    clearFilters
-  }
-} 
+    return {
+        cursosData,
+        loading,
+        error,
+        pagination,
+        filters,
+        filterConfig,
+        fetchCursosData,
+        getCursoDetalle,
+        updateCurso,
+        exportData,
+        updateFilters,
+        clearFilters,
+        totalPages,
+        totalRecords,
+        currentPage,
+        itemsPerPage,
+        search,
+        getFiltros
+    }
+}

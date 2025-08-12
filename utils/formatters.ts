@@ -64,6 +64,15 @@ export const formatDate = (
   
   return new Intl.DateTimeFormat('es-PE', options).format(dateObj)
 }
+/**
+ * Formatea una fecha y hora en formato DD/MM/YYYY
+ * @param date - Fecha y hora a formatear
+ * @returns String formateado de fecha y hora
+ */
+export const formatDateTimeToDmy = (date: string): string => {
+  if (!date) return ''
+  return new Date(date).toLocaleDateString('es-PE', { year: 'numeric', month: 'numeric', day: 'numeric' })
+}
 
 /**
  * Formatea un porcentaje
@@ -121,4 +130,15 @@ export const formatPhone = (phone: string): string => {
   }
   
   return phone
+}
+const formatDateForBackend = (dateString: string): string => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  if (!isNaN(date.getTime())) {
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  }
+  return dateString
 }

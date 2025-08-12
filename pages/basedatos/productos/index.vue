@@ -238,10 +238,6 @@ const handleFilterChange = (filterType: string, value: string) => {
   applyFilters()
 }
 
-// Methods
-const onSecondarySearch = () => {
-  // La búsqueda secundaria se aplica en el computed
-}
 
 const onItemsPerPageChange = (newLimit: number) => {
   loadProducts({ page: 1, limit: newLimit })

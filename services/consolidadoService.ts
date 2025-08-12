@@ -1,5 +1,5 @@
 import { apiCall } from '~/utils/api'
-import type { ConsolidadoResponse, ConsolidadoFilters, PagoDetalleResponse } from '~/types/consolidado'
+import type { ConsolidadoResponse, ConsolidadoFilters, PagoDetalleResponse } from '~/types/pagos/consolidado-pagos'
 
 export class ConsolidadoService {
   private static baseUrl = 'api/carga-consolidada/pagos/consolidado'

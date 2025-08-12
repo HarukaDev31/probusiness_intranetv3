@@ -8,9 +8,7 @@ export const ESTADOS_PAGO = [
 
 export const CARGAS_DISPONIBLES = [
   { value: 'todos', label: 'Todas las cargas' },
-  { value: 'C-001', label: 'Carga C-001' },
-  { value: 'C-002', label: 'Carga C-002' },
-  { value: 'C-003', label: 'Carga C-003' }
+
 ]
 
 export const CONCEPTOS_PAGO = [

@@ -122,18 +122,7 @@ export const useClientes = () => {
     return dateString
   }
 
-  // Función para convertir fecha de YYYY-MM-DD a DD/MM/YYYY
-  const formatDateForBackend = (dateString: string): string => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    if (!isNaN(date.getTime())) {
-      const day = String(date.getDate()).padStart(2, '0')
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const year = date.getFullYear()
-      return `${day}/${month}/${year}`
-    }
-    return dateString
-  }
+  
 
   const handleFilterChange = async (filterType: string, value: string) => {
     // Convertir fechas de YYYY-MM-DD a DD/MM/YYYY para el backend
