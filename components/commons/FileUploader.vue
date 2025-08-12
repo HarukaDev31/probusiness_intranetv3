@@ -240,17 +240,6 @@ const getFileIcon = (nombre: string) => {
     return iconMap[extension || ''] || 'i-heroicons-document'
 }
 
-/**
- * Formatea el tamaño del archivo en unidades legibles
- * @param tamaño - Tamaño en bytes
- * @returns Tamaño formateado (B, KB, MB, GB)
- */
-const formatFileSize = (tamaño: number) => {
-    if (tamaño < 1024) return `${tamaño} B`
-    if (tamaño < 1024 * 1024) return `${(tamaño / 1024).toFixed(1)} KB`
-    if (tamaño < 1024 * 1024 * 1024) return `${(tamaño / (1024 * 1024)).toFixed(1)} MB`
-    return `${(tamaño / (1024 * 1024 * 1024)).toFixed(1)} GB`
-}
 
 /**
  * Formatea una fecha en formato legible

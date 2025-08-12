@@ -395,6 +395,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useClienteDocumentacion } from '~/composables/useClienteDocumentacion'
+import { useCotizacionProveedor } from '~/composables/userCotizacionProveedor'
 
 // Props
 interface Props {
@@ -427,7 +428,10 @@ const {
   validarVolumen,
   validarValor
 } = useClienteDocumentacion()
-
+const {
+  getProveedorById,
+  proveedor
+} = useCotizacionProveedor()
 // Reactive data
 const servicioActivo = ref<number | null>(null)
 
@@ -456,7 +460,7 @@ const goBack = () => {
 const cargarDatos = async () => {
   try {
     await cargarDocumentacion(props.clienteId)
-    // Establecer el primer proveedor como activo por defecto
+    await getProveedorById(props.clienteId)
     if (documentacion.value && documentacion.value.providers && documentacion.value.providers.length > 0) {
       servicioActivo.value = documentacion.value.providers[0].id
     }
@@ -608,13 +612,7 @@ const getFileIcon = (fileName: string): string => {
   }
 }
 
-const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes'
-  const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
+
 
 const formatDate = (dateString: string): string => {
   if (!dateString) return 'N/A'
@@ -634,7 +632,6 @@ const formatDate = (dateString: string): string => {
 
 // Lifecycle
 onMounted(() => {
-  console.log('Componente montado, cliente ID:', props.clienteId)
   cargarDatos()
 })
 </script>

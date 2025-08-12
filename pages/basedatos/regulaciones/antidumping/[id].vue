@@ -65,9 +65,9 @@
             <img 
               :src="mediaItem.ruta" 
               :alt="mediaItem.nombre_original"
-              class="w-full h-48 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 group-hover:border-blue-500 transition-colors"
+              class="w-full h-48  rounded-lg border-2 border-gray-200 dark:border-gray-700 group-hover:border-blue-500 transition-colors"
             />
-            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+            <div class="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
               <UIcon 
                 name="i-heroicons-magnifying-glass-plus" 
                 class="text-white opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8"
@@ -358,8 +358,7 @@ const handleMouseLeave = () => {
 }
 
 const getImageUrl = (ruta: string) => {
-    const config = useRuntimeConfig()
-    return `${config.public.apiBaseUrl}/storage/${ruta}`
+    return ruta
 }
 
 // Load regulation on mount

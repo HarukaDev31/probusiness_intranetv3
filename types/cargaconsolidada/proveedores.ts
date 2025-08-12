@@ -1,5 +1,5 @@
 import type { FileItem } from "../commons/file"
-import type { PaginationInfo,FilterConfig } from "../data-table"
+import type { PaginationInfo, FilterConfig } from "../data-table"
 
 export interface Proveedor {
     id: number
@@ -16,7 +16,7 @@ export interface Proveedor {
     supplier_phone: string
     cbm_total_china: number
     arrive_date_china: string
-    totales: ProveedorTotales[]
+    totales?: ProveedorTotales[]
 }
 
 export interface CotizacionProveedor {
@@ -30,35 +30,54 @@ export interface CotizacionProveedor {
     fecha_confirmacion: string
     No_Nombres_Apellidos: string
     proveedores: Proveedor[]
-
 }
+
 export interface ProveedoresResponse {
     success: boolean
     data: CotizacionProveedor[]
     filters: FilterConfig[]
+    pagination: PaginationInfo
 }
 
-export interface ProveedorTotales{
+export interface ProveedorTotales {
     key: string
     value: number
 }
 
-
 /**
- * {"success":true,"data":{"nota":""}}
+ * Respuesta para obtener notas de China
  */
-export interface getNotasChinaResponse {
+export interface NotasChinaResponse {
     success: boolean
     data: {
         nota: string
     }
 }
 
-export interface getInspeccionChinaResponse {
+/**
+ * Respuesta para obtener inspección de China
+ */
+export interface InspeccionChinaResponse {
     success: boolean
     data: FileItem[]
 }
-export interface getDocumentosChinaResponse {
+
+/**
+ * Respuesta para obtener documentos de China
+ */
+export interface DocumentosChinaResponse {
     success: boolean
     data: FileItem[]
 }
+
+export interface Filters {
+    estado_china: string
+}
+export interface CotizacionProveedorResponse {
+    success: boolean
+    data: Proveedor
+}
+// Mantener compatibilidad con nombres anteriores
+export type getNotasChinaResponse = NotasChinaResponse
+export type getInspeccionChinaResponse = InspeccionChinaResponse
+export type getDocumentosChinaResponse = DocumentosChinaResponse

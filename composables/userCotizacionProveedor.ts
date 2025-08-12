@@ -1,49 +1,44 @@
-import { CotizacionProveedorService } from "~/services/cotizacion-proveedorService"
-import type { CotizacionProveedor, ProveedoresResponse } from "~/types/cargaconsolidada/proveedores"
-import type { FileItem } from "~/types/commons/file"
-import type { FilterConfig, PaginationInfo } from "~/types/data-table"
+import { ref, computed } from 'vue'
+import { CotizacionProveedorService } from '~/services/cotizacion-proveedorService'
+import type {
+    CotizacionProveedor,
+    Filters,
+    Proveedor,
+    ProveedoresResponse
+} from '~/types/cargaconsolidada/proveedores'
+import type { FileItem } from '~/types/commons/file'
+import type { FilterConfig, PaginationInfo } from '~/types/data-table'
 
 export const useCotizacionProveedor = () => {
-    const cotizacionProveedor = ref<CotizacionProveedor[]>([
-
-    ])
+    // Estado principal
+    const cotizacionProveedor = ref<CotizacionProveedor[]>([])
     const loading = ref(false)
+    const error = ref<string | null>(null)
+
+    // Estados de carga específicos
     const loadingInspeccion = ref(false)
     const loadingNotas = ref(false)
     const loadingDocumentos = ref(false)
-    const error = ref<string | null>(null)
+
+    // Configuración de filtros
     const filterConfig = ref<FilterConfig[]>([
         {
             key: 'estado_china',
-            label: 'Estado China',
+            label: 'Status',
             placeholder: 'Seleccionar estado',
             options: [
-                {
-                    label: 'Todos',
-                    value: 'Todos'
-                },
-                {
-                    label: 'NC',
-                    value: 'NC'
-                }, {
-                    label: 'C',
-                    value: 'C'
-                }, {
-                    label: 'R',
-                    value: 'R'
-                }, {
-                    label: 'INSPECTION',
-                    value: 'INSPECTION'
-                }, {
-                    label: 'LOADED',
-                    value: 'LOADED' 
-                }, {
-                    label: 'NO LOADED',
-                    value: 'NO LOADED'
-                }
+                { label: 'Todos', value: 'todos' },
+                { label: 'NC', value: 'NC' },
+                { label: 'C', value: 'C' },
+                { label: 'R', value: 'R' },
+                { label: 'INSPECTION', value: 'INSPECTION' },
+                { label: 'LOADED', value: 'LOADED' },
+                { label: 'NO LOADED', value: 'NO LOADED' }
             ]
         }
     ])
+
+    // Paginación
     const pagination = ref<PaginationInfo>({
         current_page: 1,
         last_page: 1,
@@ -52,97 +47,226 @@ export const useCotizacionProveedor = () => {
         from: 0,
         to: 0
     })
+
+    // Filtros y búsqueda
+    const filters = ref<Filters>({ estado_china: 'todos' })
     const search = ref('')
     const itemsPerPage = ref(10)
-    const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
-    const totalRecords = computed(() => pagination.value.total)
-    const currentPage = computed(() => pagination.value.current_page)
-    const filters = ref<FilterConfig[]>([])
+
+    // Datos específicos de China
     const documentosChina = ref<FileItem[]>([])
     const inspeccionChina = ref<FileItem[]>([])
     const notasChina = ref<string>('')
+    const proveedor = ref<Proveedor>({
+        id: 0,
+        peso: 0,
+        estados: '',
+        qty_box: 0,
+        products: '',
+        supplier: '',
+        cbm_total: 0,
+        estado_china: '',
+        id_proveedor: 0,
+        code_supplier: '',
+        qty_box_china: 0,
+        supplier_phone: '',
+        cbm_total_china: 0,
+        arrive_date_china: ''
+    })
+
+    const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
+    const totalRecords = computed(() => pagination.value.total)
+    const currentPage = computed(() => pagination.value.current_page)
+    const hasData = computed(() => cotizacionProveedor.value.length > 0)
+
+    const route = useRoute()
+
+    /**
+     * Obtiene las cotizaciones de proveedores
+     */
     const getCotizacionProveedor = async (id: number) => {
+        if (!id) return
+
         loading.value = true
+        error.value = null
+
         try {
-            const response = await CotizacionProveedorService.getCotizacionesProveedores(id)
+            const response = await CotizacionProveedorService.getCotizacionesProveedores(
+                id,
+                filters.value,
+                search.value,
+                itemsPerPage.value,
+                currentPage.value
+            )
+
             cotizacionProveedor.value = response.data
-            filters.value = response.filters
-        } catch (error: any) {
-            error.value = error.message
+            pagination.value = response.pagination
+        } catch (err: any) {
+            error.value = err.message || 'Error al obtener las cotizaciones de proveedores'
+            console.error('Error en getCotizacionProveedor:', err)
         } finally {
             loading.value = false
         }
     }
+
+    /**
+     * Obtiene los documentos de China
+     */
     const getDocumentosChina = async (id: number) => {
+        if (!id) return
+
         loadingDocumentos.value = true
+        error.value = null
+
         try {
             const response = await CotizacionProveedorService.getDocumentosChina(id)
             documentosChina.value = response.data
-        } catch (error: any) {
-            error.value = error.message
+        } catch (err: any) {
+            error.value = err.message || 'Error al obtener los documentos de China'
+            console.error('Error en getDocumentosChina:', err)
         } finally {
             loadingDocumentos.value = false
         }
     }
-    const handleSearch = (value: string) => {
-        search.value = value
-    }
-    const handlePageChange = (value: number) => {
-        pagination.value.current_page = value
-    }
-    const handleItemsPerPageChange = (value: number) => {
-        itemsPerPage.value = value
-    }
-    const handleFilterChange = (filterType: string, value: string) => {
-        filters.value = filters.value.map(filter => filter.key === filterType ? { ...filter, value } : filter)
-    }
+
+    /**
+     * Obtiene la información de inspección de China
+     */
     const getInspeccionChina = async (id: number) => {
+        if (!id) return
+
         loadingInspeccion.value = true
+        error.value = null
+
         try {
             const response = await CotizacionProveedorService.getInspeccionChina(id)
             inspeccionChina.value = response.data
-        } catch (error: any) {
-            error.value = error.message
+        } catch (err: any) {
+            error.value = err.message || 'Error al obtener la información de inspección'
+            console.error('Error en getInspeccionChina:', err)
         } finally {
-            loadingNotas.value = false
+            loadingInspeccion.value = false
         }
     }
+
+    /**
+     * Obtiene las notas de China
+     */
     const getNotasChina = async (id: number) => {
+        if (!id) return
+
         loadingNotas.value = true
+        error.value = null
+
         try {
             const response = await CotizacionProveedorService.getNotasChina(id)
             notasChina.value = response.data.nota
-        } catch (error: any) {
-            error.value = error.message
+        } catch (err: any) {
+            error.value = err.message || 'Error al obtener las notas'
+            console.error('Error en getNotasChina:', err)
         } finally {
             loadingNotas.value = false
         }
     }
 
+    /**
+     * Maneja cambios en la búsqueda
+     */
+    const handleSearch = (value: string) => {
+        search.value = value
+        pagination.value.current_page = 1 // Resetear a la primera página
+        getCotizacionProveedor(Number(route.params.id))
+    }
+
+    /**
+     * Maneja cambios de página
+     */
+    const handlePageChange = (value: number) => {
+        pagination.value.current_page = value
+        getCotizacionProveedor(Number(route.params.id))
+    }
+
+    /**
+     * Maneja cambios en el número de elementos por página
+     */
+    const handleItemsPerPageChange = (value: number) => {
+        itemsPerPage.value = value
+        pagination.value.current_page = 1 // Resetear a la primera página
+        getCotizacionProveedor(Number(route.params.id))
+    }
+
+    /**
+     * Maneja cambios en los filtros
+     */
+    const handleFilterChange = async (filterType: string, value: string) => {
+        filters.value = {
+            ...filters.value,
+            [filterType]: value
+        }
+        pagination.value.current_page = 1 // Resetear a la primera página
+        await getCotizacionProveedor(Number(route.params.id))
+    }
+
+    const getProveedorById = async (id: string) => {
+        if (!id) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.getProveedor(id)
+            console.log(response)
+            proveedor.value = response.data
+        } catch (err: any) {
+            error.value = err.message || 'Error al obtener la cotización de proveedor'
+            console.error('Error en getCotizacionProveedor:', err)
+        } finally {
+            loading.value = false
+        }
+    }
+    const refresh = () => {
+        getCotizacionProveedor(Number(route.params.id))
+    }
+
     return {
+        // Estado principal
         cotizacionProveedor,
         loading,
         error,
-        getCotizacionProveedor,
+        hasData,
+
+        // Estados de carga específicos
+        loadingInspeccion,
+        loadingNotas,
+        loadingDocumentos,
+
+        // Configuración
         filterConfig,
         pagination,
         search,
         itemsPerPage,
+
+        // Computed properties
         totalPages,
         totalRecords,
         currentPage,
-        getDocumentosChina,
+
+        // Datos específicos
         documentosChina,
+        inspeccionChina,
+        notasChina,
+
+        // Métodos principales
+        getCotizacionProveedor,
+        getDocumentosChina,
+        getInspeccionChina,
+        getNotasChina,
+
+        // Métodos de manejo de UI
         handleSearch,
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange,
-        getInspeccionChina,
-        inspeccionChina,
-        getNotasChina,
-        notasChina,
-        loadingInspeccion,
-        loadingNotas,
-        loadingDocumentos
+        refresh,
+        getProveedorById,
+        proveedor
     }
 }

@@ -31,10 +31,7 @@ export const apiCall = async <T>(
   try {
     // Obtener el token de autenticación
     const token = getAuthToken()
-    
-    console.log('🔑 Token found:', token ? 'YES' : 'NO')
-    console.log('🌐 Endpoint:', endpoint)
-    console.log('🔧 Full URL would be:', API_CONFIG.baseURL + endpoint)
+ 
     
     // Determinar si es FormData para no establecer Content-Type manualmente
     const isFormData = options.body instanceof FormData
@@ -58,7 +55,6 @@ export const apiCall = async <T>(
     // Asegurar que los headers no se sobrescriban después
     config.headers = finalHeaders
 
-    console.log('📋 Final headers:', config.headers)
 
     return await $fetch<T>(endpoint, config)
   } catch (error: any) {

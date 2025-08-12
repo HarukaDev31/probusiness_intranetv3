@@ -100,7 +100,7 @@ export const useConsolidado = () => {
             filters.value[filterKey] = value
         }
         
-        console.log('Filters después del cambio:', filters.value)
+   
         
         // Reset a la primera página cuando cambian los filtros
         pagination.value.current_page = 1

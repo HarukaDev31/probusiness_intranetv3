@@ -36,8 +36,8 @@ export interface CreateAntidumpingRequest {
   producto_id: number
   descripcion: string
   partida: string
-  precio_declarado: number
-  antidumping: number
+  precio_declarado: number | string
+  antidumping: number | string
   observaciones?: string
   imagenes?: File[]
 }
@@ -74,8 +74,8 @@ class AntidumpingService {
     try {
       // Crear FormData para manejar archivos
       const formData = new FormData()
-      
-      // Agregar campos de texto
+      console.log('antidumpingData', antidumpingData)
+    
       formData.append('id_rubro', antidumpingData.producto_id.toString())
       formData.append('descripcion', antidumpingData.descripcion)
       formData.append('partida', antidumpingData.partida)

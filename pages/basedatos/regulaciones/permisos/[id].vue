@@ -156,7 +156,7 @@
         <!-- Footer -->
         <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div class="text-sm text-gray-500 dark:text-gray-400">
-            <p>Tamaño: {{ formatFileSize(selectedDocument?.peso) }}</p>
+            <p>Tamaño: {{ formatFileSize(selectedDocument?.peso || 0) }}</p>
             <p>Formato: {{ selectedDocument?.extension?.toUpperCase() }}</p>
           </div>
           <div class="flex space-x-2">
@@ -275,13 +275,6 @@ const getDocumentIcon = (extension: string) => {
   }
 }
 
-const formatFileSize = (bytes: number | undefined) => {
-  if (!bytes || bytes === 0) return '0 Bytes'
-  const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
 
 const getDocumentUrl = (ruta: string) => {
   const config = useRuntimeConfig()

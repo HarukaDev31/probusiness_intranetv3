@@ -5,8 +5,8 @@
         <DataTable title="" icon="" :data="cotizacionProveedor" :columns="columns" :loading="loading"
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
-            :show-filters="true" :filter-config="filterConfig" :filters-value="filters" :show-export="true"
-            empty-state-message="No se encontraron registros de cursos." @update:search-query="handleSearch"
+            :show-filters="true" :filter-config="filterConfig" :show-export="true"
+            empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange">
         </DataTable>
@@ -14,13 +14,11 @@
 </template>
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-const { getCotizacionProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
+const { getCotizacionProveedor, cotizacionProveedor,loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
 const route = useRoute()
 const id = route.params.id
 import { USelect, UInput, UButton, UIcon } from '#components'
-const filters = ref<any>({
-    estado_china: 'todos'
-})
+
 const columns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'status',

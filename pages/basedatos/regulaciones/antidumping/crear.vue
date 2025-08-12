@@ -401,13 +401,13 @@ const saveForm = async () => {
     console.log('Guardando regulación antidumping:', formData.value)
     console.log('Imágenes:', imageSlots.value)
     
-    // Crear payload para la API
+    console.log('formData.value.antidumping', formData.value.antidumping)
     const payload: CreateAntidumpingRequest = {
       producto_id: parseInt(formData.value.producto.value),
       descripcion: formData.value.descripcion,
       partida: formData.value.partida,
       precio_declarado: parseFloat(formData.value.precioDeclarado),
-      antidumping: parseFloat(formData.value.antidumping),
+      antidumping: formData.value.antidumping ? parseFloat(formData.value.antidumping) : 0,
       observaciones: formData.value.observaciones || undefined,
       imagenes: imageSlots.value
         .filter(slot => slot.file)
@@ -424,15 +424,12 @@ const saveForm = async () => {
     )
     
     if (response.success) {
-      console.log('Regulación antidumping guardada exitosamente:', response.data)
       showCreateSuccess('Regulación Antidumping')
       
-      // Redirigir de vuelta a la lista después de un breve delay
       setTimeout(() => {
         router.push('/basedatos/regulaciones?tab=antidumping')
       }, 1500)
     } else {
-      console.error('Error al guardar:', response.error)
       showServerError('crear la regulación antidumping', response.error)
     }
     
