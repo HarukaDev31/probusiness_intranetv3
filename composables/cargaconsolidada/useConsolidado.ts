@@ -126,8 +126,10 @@ export const useConsolidado = () => {
     }
     const getConsolidadoPasos = async (id: number) => {
         try {
+            loading.value = true
             const response = await ConsolidadoService.getConsolidadoPasos(id)
             pasos.value = response.data
+            loading.value = false
         } catch (error) {
             console.error('Error en getConsolidadoPasos:', error)
         }

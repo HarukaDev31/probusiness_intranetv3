@@ -22,9 +22,10 @@ export const useCotizacion = () => {
     const filters = ref<CotizacionFilters>({
         fecha_inicio: '',
         fecha_fin: '',
-        estado_china: 'todos', // Inicializar con 'todos' para consistencia
+        estado: 'todos', // Inicializar con 'todos' para consistencia
         completado: false
     })
+    
     const getCotizaciones = async (id: number) => {
         try {
             const params: any = {
@@ -40,8 +41,8 @@ export const useCotizacion = () => {
             if (filters.value.fecha_fin) {
                 params.fecha_fin = filters.value.fecha_fin
             }
-            if (filters.value.estado_china) {
-                params.estado_china = filters.value.estado_china
+            if (filters.value.estado && filters.value.estado !== 'todos') {
+                params.estado = filters.value.estado
             }
             if (filters.value.completado) {
                 params.completado = filters.value.completado
@@ -49,6 +50,15 @@ export const useCotizacion = () => {
             const response = await CotizacionService.getCotizaciones(id,params)
             cotizaciones.value = response.data
             pagination.value = response.pagination
+        } catch (err) {
+            error.value = err as string
+        } finally {
+            loading.value = false
+        }
+    }
+    const refreshCotizacionFile = async (id: number) => {
+        try {
+            const response = await CotizacionService.refreshCotizacionFile(id)
         } catch (err) {
             error.value = err as string
         } finally {
@@ -66,6 +76,7 @@ export const useCotizacion = () => {
         totalRecords,
         currentPage,
         filters,
-        getCotizaciones
+        getCotizaciones,
+        refreshCotizacionFile
     }
 }

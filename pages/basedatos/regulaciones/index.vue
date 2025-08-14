@@ -1126,7 +1126,6 @@ const viewPermisoDetail = (regulationId: number) => {
 
 // Edit permiso
 const editPermiso = (regulationId: number) => {
-    console.log('Navigating to edit permiso:', regulationId)
     navigateTo(`/basedatos/regulaciones/permisos/editar/${regulationId}`)
 }
 

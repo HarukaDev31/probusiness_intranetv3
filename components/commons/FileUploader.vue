@@ -113,7 +113,7 @@ interface Props {
     customMessage?: string
     /** Deshabilitar el componente */
     disabled?: boolean
-    initialFiles?: (FileItem)[]
+    initialFiles?: FileItem[] | FileItem
     loading?: boolean
 }
 

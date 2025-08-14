@@ -13,4 +13,15 @@ export class CotizacionService {
             throw error
         }
     }
+    static async refreshCotizacionFile(id: number) {
+        try {
+            const response = await apiCall<any>(`${this.baseUrl}/cotizaciones/${id}/refresh`, {
+                method: 'POST'
+            })
+            return response
+        } catch (error) {
+            console.error('Error al actualizar la cotización:', error)
+            throw error
+        }
+    }
 }   

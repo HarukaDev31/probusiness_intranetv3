@@ -56,9 +56,11 @@ export interface DocumentoFile {
   id: number
   nombre: string
   url: string
-  tipo: string
-  fecha_subida: string
-  tamaño: number
+  file_ext: string
+  file_url: string
+  file_name: string
+  folder_name: string
+  id_proveedor: number
 }
 
 export interface Proveedor {
