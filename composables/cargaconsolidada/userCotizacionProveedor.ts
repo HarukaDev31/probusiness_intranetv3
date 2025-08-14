@@ -168,6 +168,20 @@ export const useCotizacionProveedor = () => {
             loadingNotas.value = false
         }
     }
+    const saveNotasChina = async (data: any) => {
+        if (!data) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.saveNotasChina(data)
+            return response 
+        } catch (err: any) {
+            error.value = err.message || 'Error al enviar las notas'
+            console.error('Error en saveNotasChina:', err)
+        } finally {
+            loading.value = false
+        }
+    }
 
     /**
      * Maneja cambios en la búsqueda
@@ -207,14 +221,15 @@ export const useCotizacionProveedor = () => {
         await getCotizacionProveedor(Number(route.params.id))
     }
 
-    const getProveedorById = async (id: string) => {
+    const getProveedorById = async (id: number) => {
         if (!id) return
         loading.value = true
         error.value = null
         try {
             const response = await CotizacionProveedorService.getProveedor(id)
-            console.log(response)
             proveedor.value = response.data
+
+            return response
         } catch (err: any) {
             error.value = err.message || 'Error al obtener la cotización de proveedor'
             console.error('Error en getCotizacionProveedor:', err)
@@ -222,8 +237,61 @@ export const useCotizacionProveedor = () => {
             loading.value = false
         }
     }
-    const refresh = () => {
-        getCotizacionProveedor(Number(route.params.id))
+    const saveDocumentosChina = async (data: any) => {
+        if (!data) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.saveDocumentosChina(data)
+            return response
+        } catch (err: any) {
+            error.value = err.message || 'Error al enviar los documentos de China'
+            console.error('Error en saveDocumentosChina:', err)
+        } finally {
+            loading.value = false
+        }
+    }
+    const saveInspeccionChina = async (data: any) => {
+        if (!data) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.saveInspeccionChina(data)
+            return response
+        } catch (err: any) {
+            error.value = err.message || 'Error al enviar la inspección de China'
+            console.error('Error en saveInspeccionChina:', err)
+        } finally {
+            loading.value = false
+        }
+    }
+    const deleteDocumentosChina = async (id: number) => {
+        if (!id) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.deleteDocumentosChina(id)
+            return response
+        } catch (err: any) {
+            error.value = err.message || 'Error al eliminar el documento de China'
+            console.error('Error en deleteDocumentosChina:', err)
+        } finally {
+            loading.value = false
+        }
+    }
+    const deleteInspeccionChina = async (id: number) => {
+        if (!id) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.deleteInspeccionChina(id)
+            return response 
+        } catch (err: any) {
+            error.value = err.message || 'Error al eliminar la inspección de China'
+            console.error('Error en deleteInspeccionChina:', err)
+        } finally {
+            loading.value = false
+        }
     }
 
     return {
@@ -253,6 +321,8 @@ export const useCotizacionProveedor = () => {
         documentosChina,
         inspeccionChina,
         notasChina,
+        proveedor,
+
 
         // Métodos principales
         getCotizacionProveedor,
@@ -265,8 +335,11 @@ export const useCotizacionProveedor = () => {
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange,
-        refresh,
         getProveedorById,
-        proveedor
+        saveDocumentosChina,
+        saveInspeccionChina,
+        deleteDocumentosChina,
+        deleteInspeccionChina,
+        saveNotasChina
     }
 }

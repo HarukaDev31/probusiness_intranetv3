@@ -5,51 +5,51 @@
       icon="i-heroicons-clipboard-document-check" :hide-back-button="true" />
 
     <!-- Tab Content -->
-               <div v-if="activeTab === 'consolidado'">
-             <!-- Consolidado Tab -->
-             <DataTable title="" icon="" :data="consolidadoData" :columns="consolidadoColumns" :loading="loadingConsolidado"
-               :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-               :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false" :show-filters="true"
-               :filter-config="filterConfig" :filters-value="filtersConsolidado" :show-export="true"
-               empty-state-message="No se encontraron registros de consolidado." @update:search-query="handleSearch"
-               @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
-               @filter-change="handleFilterChange">
+    <div v-if="activeTab === 'consolidado'">
+      <!-- Consolidado Tab -->
+      <DataTable title="" icon="" :data="consolidadoData" :columns="consolidadoColumns" :loading="loadingConsolidado"
+        :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
+        :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false" :show-filters="true"
+        :filter-config="filterConfig" :filters-value="filtersConsolidado" :show-export="true"
+        empty-state-message="No se encontraron registros de consolidado." @update:search-query="handleSearch"
+        @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
+        @filter-change="handleFilterChange">
         <!-- Botón de filtros personalizado -->
         <template #body-top>
-          <UTabs size="md" variant="pill" :content="false" :items="tabs" v-model="activeTab" class="w-50   mb-6" />
+          <UTabs size="md" variant="pill" :content="false" :items="tabs" v-model="activeTab" class="w-50 mb-6" />
           <div class="mb-4 flex justify-end">
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
               Importe total: <span
                 class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
-                  </span>
+              </span>
             </div>
           </div>
         </template>
 
-                       <!-- Estado de error -->
-               <template #error-state>
-                 <ErrorState :message="errorConsolidado || 'Error desconocido'" />
-               </template>
-             </DataTable>
-           </div>
+        <!-- Estado de error -->
+        <template #error-state>
+          <ErrorState :message="errorConsolidado || 'Error desconocido'" />
+        </template>
+      </DataTable>
+    </div>
 
-           <div v-else-if="activeTab === 'cursos'">
-             <!-- Cursos Tab -->
-             <DataTable title="" icon="" :data="cursosData" :columns="cursosColumns" :loading="loadingCursos"
-               :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-               :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false" :show-filters="true"
-               :filter-config="filterConfig" :filters-value="filtersCursos" :show-export="true"
-               empty-state-message="No se encontraron registros de cursos." @update:search-query="handleSearch"
-               @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
-               @filter-change="handleFilterChange">
+    <div v-else-if="activeTab === 'cursos'">
+      <!-- Cursos Tab -->
+      <DataTable title="" icon="" :data="cursosData" :columns="cursosColumns" :loading="loadingCursos"
+        :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
+        :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false" :show-filters="true"
+        :filter-config="filterConfig" :filters-value="filtersCursos" :show-export="true"
+        empty-state-message="No se encontraron registros de cursos." @update:search-query="handleSearch"
+        @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
+        @filter-change="handleFilterChange">
 
         <template #body-top>
           <UTabs size="md" variant="pill" :content="false" :items="tabs" v-model="activeTab" class="w-50   mb-6" />
         </template>
-                       <!-- Estado de error -->
-               <template #error-state>
-                 <ErrorState :message="errorCursos || 'Error desconocido'" />
-               </template>
+        <!-- Estado de error -->
+        <template #error-state>
+          <ErrorState :message="errorCursos || 'Error desconocido'" />
+        </template>
       </DataTable>
     </div>
   </div>

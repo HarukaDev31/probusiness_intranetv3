@@ -6,18 +6,13 @@
           <UIcon name="i-heroicons-chat-bubble-left-ellipsis" class="mr-2" />
           Notas
         </h2>
-        <UButton 
-          label="Guardar" 
-          icon="i-heroicons-save" 
-          color="warning" 
-          size="sm"
-          @click="$emit('save')"
-        />
+       
       </div>
     </template>
 
           <div class="h-64">
         <UTextarea
+          :disabled="disabled"
           :model-value="modelValue"
           placeholder="Escribe tus notas aquí..."
           class="h-full resize-none"
@@ -31,11 +26,11 @@
 <script setup lang="ts">
 interface Props {
   modelValue: string
+  disabled: boolean
 }
 
 interface Emits {
   (e: 'update:modelValue', value: string): void
-  (e: 'save'): void
 }
 
 defineProps<Props>()

@@ -156,7 +156,8 @@
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 // Components
 const UButton = resolveComponent('UButton')
 
@@ -342,9 +343,7 @@ const handleFileUpload = async () => {
             }
         }, 'Importando archivo Excel...')
     } catch (error: any) {
-        console.error('Error al subir archivo:', error)
-        
-        // Cerrar modal de upload
+
         showCreateModal.value = false
         
         // Mostrar modal de error
@@ -369,8 +368,7 @@ const handleCreateArchivo = async () => {
         const { showSuccess } = useModal()
         showSuccess('Archivo Creado', 'El archivo se ha creado correctamente.')
     } catch (error) {
-        console.error('Error al crear archivo:', error)
-        const { showError } = useModal()
+    
         showError('Error de Creación', 'Error al crear el archivo')
     } finally {
         createLoading.value = false
@@ -401,7 +399,6 @@ const loadArchivos = async () => {
             }
         }, 'Cargando archivos...')
     } catch (error) {
-        console.error('Error al cargar archivos:', error)
         showError('Error de Carga', 'Error al cargar la lista de archivos')
     }
 }
@@ -416,7 +413,6 @@ const handleDeleteArchivo = async (id: number) => {
             }
         }, 'Eliminando archivo...')
     } catch (error) {
-        console.error('Error al eliminar archivo:', error)
         showError('Error de Eliminación', 'Error al eliminar el archivo')
     }
 }

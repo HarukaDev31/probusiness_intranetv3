@@ -34,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+import { useSpinner } from '~/composables/commons/useSpinner'
 const { isSpinning, spinnerMessage } = useSpinner()
 
 // Debug logs

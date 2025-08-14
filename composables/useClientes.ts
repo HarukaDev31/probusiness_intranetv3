@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { clienteService, type Cliente, type ClientesQueryParams, type PaginationInfo } from '~/services/clienteService'
 import type { Header } from '~/types/data-table'
+import { useSpinner } from '~/composables/commons/useSpinner'
 const { withSpinner } = useSpinner()
 
 export const useClientes = () => {
@@ -90,7 +91,7 @@ export const useClientes = () => {
       }
     } catch (err: any) {
       error.value = err.message || 'Error al cargar clientes'
-      console.error('Error loading clientes:', err)
+      showError(`Error al cargar clientes ${err}`)
     } finally {
       loading.value = false
     }
@@ -101,7 +102,7 @@ export const useClientes = () => {
       const options = await clienteService.getFilterOptions()
       filterOptions.value = options
     } catch (err: any) {
-      console.error('Error loading filter options:', err)
+      showError(`Error al cargar opciones de filtro ${err}`)
       // Mantener opciones por defecto
     }
   }
@@ -122,7 +123,15 @@ export const useClientes = () => {
     return dateString
   }
 
-  
+  const formatDateForBackend = (dateString: string): string => {
+    if (!dateString) return ''
+    const parts = dateString.split('-')
+    if (parts.length === 3) {
+      const [year, month, day] = parts
+      return `${day}/${month}/${year}`
+    }
+    return dateString
+  }
 
   const handleFilterChange = async (filterType: string, value: string) => {
     // Convertir fechas de YYYY-MM-DD a DD/MM/YYYY para el backend

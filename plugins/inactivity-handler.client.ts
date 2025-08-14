@@ -1,6 +1,7 @@
+import { useSession } from '~/composables/auth/useSession'
 export default defineNuxtPlugin(() => {
   const { handleSessionExpired } = useSession()
-  
+
   // Configuración de inactividad (30 minutos)
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutos en milisegundos
   let inactivityTimer: NodeJS.Timeout | null = null
@@ -10,7 +11,7 @@ export default defineNuxtPlugin(() => {
     if (inactivityTimer) {
       clearTimeout(inactivityTimer)
     }
-    
+
     inactivityTimer = setTimeout(() => {
       console.log('Inactividad detectada, expirando sesión...')
       handleSessionExpired()
@@ -41,7 +42,7 @@ export default defineNuxtPlugin(() => {
     if (inactivityTimer) {
       clearTimeout(inactivityTimer)
     }
-    
+
     activityEvents.forEach(event => {
       document.removeEventListener(event, resetInactivityTimer, true)
     })

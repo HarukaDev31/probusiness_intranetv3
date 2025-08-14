@@ -13,6 +13,7 @@
 </template>
 
 <script setup lang="ts">
+import { useModal } from '~/composables/commons/useModal'
 const { modals, removeModal } = useModal()
 
 const handleConfirm = (modal: any) => {

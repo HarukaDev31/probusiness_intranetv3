@@ -2,18 +2,8 @@
     <div class="p-6">
         <PageHeader title="Cotizaciones" subtitle="Gestión de cotizaciones" icon="i-heroicons-book-open"
             :hide-back-button="true" />
-        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
-
-        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizacionProveedor" :columns="columns"
-            :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-            :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
-            :show-filters="true" :filter-config="filterConfig" :show-export="true"
-            empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
-            @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChange">
-        </DataTable>
-        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :columns="columns"
-            :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
+        <DataTable title="" icon="" :data="cotizacionProveedor" :columns="columns" :loading="loading"
+            :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
@@ -25,63 +15,19 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/userCotizacionProveedor'
-import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
-const { getCotizacionProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
-const {cotizaciones,loading:loadingCotizaciones,error:errorCotizaciones,pagination:paginationCotizaciones,search:searchCotizaciones,itemsPerPage:itemsPerPageCotizaciones,totalPages:totalPagesCotizaciones,totalRecords:totalRecordsCotizaciones,currentPage:currentPageCotizaciones,filters:filtersCotizaciones,getCotizaciones} = useCotizacion()
+const { getCotizacionProveedor, cotizacionProveedor,loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
 const route = useRoute()
 const id = route.params.id
-const tabs = [
-    {
-        label: 'Prospectos',
-        value: 'prospectos'
-    },
-    {
-        label: 'Por Embarcar',
-        value: 'embarque'
-    },
-
-]
-const tab = ref('')
 import { USelect, UInput, UButton, UIcon } from '#components'
-// Watch inmediato para cargar datos cuando cambie el tab
-watch(tab, async (newVal, oldVal) => {
-    // Solo ejecutar si hay un cambio real de tab (no en la inicialización)
-    if (oldVal === '' || !newVal) {
-        return
-    }
-    
-    try {
-        if (newVal === 'prospectos') {
-            await getCotizaciones(Number(id))
-        } else if (newVal === 'embarque') {
-            await getCotizacionProveedor(Number(id))
-        }
-    } catch (error) {
-        console.error('Error al cambiar tab:', error)
-    }
-}, { immediate: false })
 
-// Watch inmediato para la carga inicial
-watch(() => tab.value, async (newVal) => {
-    if (newVal && newVal !== '') {
-        try {
-            if (newVal === 'prospectos') {
-                await getCotizaciones(Number(id))
-            } else if (newVal === 'embarque') {
-                await getCotizacionProveedor(Number(id))
-            }
-        } catch (error) {
-            console.error('Error en carga inicial:', error)
-        }
-    }
-}, { immediate: true })
 const columns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
-
+          
+            //create div and foreach proveedor, show select with options NC,C,R,INSPECTION,LOADED,NO LOADED AND SELECTED IS ROW.ORIGINAL.estado_china
             const div = h('div',
                 {
                     class: 'flex flex-col gap-2'
@@ -344,10 +290,10 @@ const columns = ref<TableColumn<any>[]>([
         header: 'Actions',
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
-
+            
             return h('div', {
                 class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
+            },proveedores.map((proveedor: any) => {
                 return h('div', {
                     class: 'flex flex-row gap-2'
                 }, [
@@ -356,23 +302,16 @@ const columns = ref<TableColumn<any>[]>([
                         variant: 'ghost',
                         size: 'xs',
                         onClick: () => {
-                            navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion-china/${proveedor.id}`)
+                            navigateTo(`/cargaconsolidada/completados/cotizaciones/proveedor/documentacion-china/${proveedor.id}`)
                         }
                     }),
-                    h(UButton, {
-                        icon: 'i-heroicons-document-arrow-down',
-                        variant: 'ghost',
-                        size: 'xs',
-                        onClick: () => {
-                        }
-                    })
+                  
                 ])
             }))
         }
     }
 ])
 onMounted(() => {
-    // Solo establecer el tab inicial, el watch se encargará de cargar los datos
-    tab.value = tabs[1].value
+    getCotizacionProveedor(Number(id))
 })
 </script>

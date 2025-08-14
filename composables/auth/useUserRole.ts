@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { ROLES } from '~/constants/roles'
 
 interface UserGroup {
   id: number
@@ -102,18 +103,32 @@ export const useUserRole = () => {
     }
   }
 
-  // Función para verificar si el usuario tiene un rol específico
-  const hasRole = (role: string): boolean => {
-    console.log('currentRole:', currentRole.value)
+  const hasRole = (role: string|string[]): boolean => {
+    if (Array.isArray(role)) {
+      return role.some(r => currentRole.value.toLowerCase() === r.toLowerCase())
+    }
     return currentRole.value.toLowerCase() === role.toLowerCase()
   }
 
-  // Función para verificar si el usuario tiene alguno de los roles especificados
   const hasAnyRole = (roles: string[]): boolean => {
     return roles.some(role => hasRole(role))
   }
+  const isCoordinacion = computed(() => {
+    return hasRole(ROLES.COORDINACION)
+  })
+  const isCotizador = computed(() => {
+    return hasRole(ROLES.COTIZADOR)
+  })
+  const isDocumentacion = computed(() => {
+    return hasRole(ROLES.DOCUMENTACION)
+  })
+  const isContenedorAlmacen = computed(() => {
+    return hasRole(ROLES.CONTENEDOR_ALMACEN)
+  })
+  const isContenedorConsolidado = computed(() => {
+    return hasRole(ROLES.CONTENEDOR_CONSOLIDADO)
+  })
 
-  // Función para obtener todos los datos del usuario
   const getUserData = () => {
     return userData.value
   }
@@ -130,6 +145,11 @@ export const useUserRole = () => {
     userEmail,
     userCompany,
     isUserActive,
+    isCoordinacion,
+    isCotizador,
+    isDocumentacion,
+    isContenedorAlmacen,
+    isContenedorConsolidado,
 
     // Métodos
     fetchCurrentUser,

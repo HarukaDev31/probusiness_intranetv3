@@ -15,8 +15,7 @@
       <!-- Header con botones de navegación -->
       <div class="row mb-2">
         <div class="col-12 col-md-2 col-xl-1">
-          <UButton @click="goBack" variant="outline"
-              class="btn-block btn-reporte btn-back-cotizacion-documentacion">
+          <UButton @click="goBack" variant="outline" class="btn-block btn-reporte btn-back-cotizacion-documentacion">
             <UIcon name="i-heroicons-arrow-left" class="mr-2" />
             Regresar
           </UButton>
@@ -35,16 +34,16 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <h2 class="text-xl font-bold text-gray-800 dark:text-white">{{ documentacion.nombre }}</h2>
-           
+
           </div>
-        
+
         </div>
       </div>
 
       <!-- Tabs de servicios dinámicos -->
       <div v-if="documentacion.providers.length > 0" class="documentos-clientes-tabs pt-6">
         <div v-for="provider in documentacion.providers" :key="provider.id" class="tab-cliente-documentacion tab"
-            :class="{ active: servicioActivo === provider.id }" @click="cambiarServicio(provider.id)">
+          :class="{ active: servicioActivo === provider.id }" @click="cambiarServicio(provider.id)">
           {{ provider.code_supplier }}
         </div>
       </div>
@@ -61,7 +60,7 @@
                   <UIcon name="i-heroicons-folder-open" />
                 </div>
                 <UButton v-if="edit" @click="crearNuevoDocumento" size="sm"
-                    class="btn-crear-documentacion-cliente bg-orange" :data-id="servicioActivo">
+                  class="btn-crear-documentacion-cliente bg-orange" :data-id="servicioActivo">
                   Nuevo Documento
                 </UButton>
               </div>
@@ -71,19 +70,20 @@
               <!-- Campos de volumen y valor -->
               <div class="flex justify-between align-items-center gap-4">
                 <div class="flex align-items-center justify-flex-start gap-2">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Volumen documento</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Volumen
+                    documento</label>
                   <UInput v-model="documentoProveedor.volumen" type="number" :min="0" step="any" class="w-25"
-                      :disabled="!edit"
-                      @update:model-value="(valor) => servicioActivo && validarVolumen(servicioActivo, valor)" />
+                    :disabled="!edit"
+                    @update:model-value="(valor) => servicioActivo && validarVolumen(servicioActivo, valor)" />
                 </div>
                 <div class="flex align-items-center justify-flex-start gap-2">
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 w-full">Valor
-                      documento</label>
+                    documento</label>
                   <div class="relative">
                     <span class="absolute left-3 top-2 dark:text-gray-300">$</span>
-                    <UInput v-model="documentoProveedor.valor" type="number" :min="0" step="any"
-                        class="w-75 pl-7 pr-3" :disabled="!edit"
-                        @update:model-value="(valor) => servicioActivo && validarValor(servicioActivo, valor)" />
+                    <UInput v-model="documentoProveedor.valor" type="number" :min="0" step="any" class="w-75 pl-7 pr-3"
+                      :disabled="!edit"
+                      @update:model-value="(valor) => servicioActivo && validarValor(servicioActivo, valor)" />
                   </div>
                 </div>
               </div>
@@ -92,8 +92,9 @@
               <div class="space-y-4" id="documentos-clientes-documentacion">
                 <!-- Factura Comercial -->
                 <div class="documento-item">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Factura Comercial</label>
-                  
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Factura
+                    Comercial</label>
+
                   <!-- Archivos existentes del proveedor -->
                   <div v-if="proveedorActivo?.factura_comercial" class="mb-4">
                     <div class="file-info-box">
@@ -108,10 +109,12 @@
                           </div>
                         </div>
                         <div class="flex gap-2">
-                          <UButton @click="descargarArchivo(proveedorActivo.factura_comercial)" color="primary" variant="ghost" size="xs">
+                          <UButton @click="descargarArchivo(proveedorActivo.factura_comercial)" color="primary"
+                            variant="ghost" size="xs">
                             <UIcon name="i-heroicons-arrow-down-tray" />
                           </UButton>
-                          <UButton v-if="edit" @click="borrarDocumentoProveedor('factura_comercial')" color="error" variant="ghost" size="xs">
+                          <UButton v-if="edit" @click="borrarDocumentoProveedor('factura_comercial')" color="error"
+                            variant="ghost" size="xs">
                             <UIcon name="i-heroicons-trash" />
                           </UButton>
                         </div>
@@ -137,7 +140,8 @@
                           <UButton @click="descargarArchivo(archivo.url)" color="primary" variant="ghost" size="xs">
                             <UIcon name="i-heroicons-arrow-down-tray" />
                           </UButton>
-                          <UButton v-if="edit" @click="eliminarArchivo(archivo.id)" color="error" variant="ghost" size="xs">
+                          <UButton v-if="edit" @click="eliminarArchivo(archivo.id)" color="error" variant="ghost"
+                            size="xs">
                             <UIcon name="i-heroicons-trash" />
                           </UButton>
                         </div>
@@ -146,11 +150,12 @@
                   </div>
 
                   <!-- Subir nuevo archivo - solo si no hay archivos y es editable -->
-                  <div v-if="edit && !proveedorActivo?.factura_comercial && (!archivosPorTipo.factura || archivosPorTipo.factura.length === 0)" 
-                       class="file-upload-box" @click="triggerFileInput('factura')">
+                  <div
+                    v-if="edit && !proveedorActivo?.factura_comercial && (!archivosPorTipo.factura || archivosPorTipo.factura.length === 0)"
+                    class="file-upload-box" @click="triggerFileInput('factura')">
                     <input ref="facturaInput" type="file" class="file-input"
-                        accept=".xlsx, .xls, .xlsm, .csv, .xlsb, .xltx, .xlt, .png, .jpg, .jpeg,.pdf"
-                        @change="handleFileSelect('factura', $event)" />
+                      accept=".xlsx, .xls, .xlsm, .csv, .xlsb, .xltx, .xlt, .png, .jpg, .jpeg,.pdf"
+                      @change="handleFileSelect('factura', $event)" />
                     <div class="file-label d-flex">
                       <UIcon name="i-heroicons-cloud-arrow-up" class="text-2xl" />
                       <div class="file-group-text">
@@ -181,7 +186,7 @@
                 <!-- Packing List -->
                 <div class="documento-item">
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Packing List</label>
-                  
+
                   <!-- Archivos existentes del proveedor -->
                   <div v-if="proveedorActivo?.packing_list" class="mb-4">
                     <div class="file-info-box">
@@ -196,10 +201,12 @@
                           </div>
                         </div>
                         <div class="flex gap-2">
-                          <UButton @click="descargarArchivo(proveedorActivo.packing_list)" color="primary" variant="ghost" size="xs">
+                          <UButton @click="descargarArchivo(proveedorActivo.packing_list)" color="primary"
+                            variant="ghost" size="xs">
                             <UIcon name="i-heroicons-arrow-down-tray" />
                           </UButton>
-                          <UButton v-if="edit" @click="borrarDocumentoProveedor('packing_list')" color="error" variant="ghost" size="xs">
+                          <UButton v-if="edit" @click="borrarDocumentoProveedor('packing_list')" color="error"
+                            variant="ghost" size="xs">
                             <UIcon name="i-heroicons-trash" />
                           </UButton>
                         </div>
@@ -225,7 +232,8 @@
                           <UButton @click="descargarArchivo(archivo.url)" color="primary" variant="ghost" size="xs">
                             <UIcon name="i-heroicons-arrow-down-tray" />
                           </UButton>
-                          <UButton v-if="edit" @click="eliminarArchivo(archivo.id)" color="error" variant="ghost" size="xs">
+                          <UButton v-if="edit" @click="eliminarArchivo(archivo.id)" color="error" variant="ghost"
+                            size="xs">
                             <UIcon name="i-heroicons-trash" />
                           </UButton>
                         </div>
@@ -234,11 +242,12 @@
                   </div>
 
                   <!-- Subir nuevo archivo - solo si no hay archivos y es editable -->
-                  <div v-if="edit && !proveedorActivo?.packing_list && (!archivosPorTipo.packing || archivosPorTipo.packing.length === 0)" 
-                       class="file-upload-box" @click="triggerFileInput('packing')">
+                  <div
+                    v-if="edit && !proveedorActivo?.packing_list && (!archivosPorTipo.packing || archivosPorTipo.packing.length === 0)"
+                    class="file-upload-box" @click="triggerFileInput('packing')">
                     <input ref="packingInput" type="file" class="file-input"
-                        accept=".xlsx, .xls, .xlsm, .csv, .xlsb, .xltx, .xlt, .png, .jpg, .jpeg,.pdf"
-                        @change="handleFileSelect('packing', $event)" />
+                      accept=".xlsx, .xls, .xlsm, .csv, .xlsb, .xltx, .xlt, .png, .jpg, .jpeg,.pdf"
+                      @change="handleFileSelect('packing', $event)" />
                     <div class="file-label d-flex">
                       <UIcon name="i-heroicons-cloud-arrow-up" class="text-2xl" />
                       <div class="file-group-text">
@@ -268,8 +277,9 @@
 
                 <!-- Excel Confirmación -->
                 <div class="documento-item">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Excel Confirmación</label>
-                  
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Excel
+                    Confirmación</label>
+
                   <!-- Archivos existentes del proveedor -->
                   <div v-if="proveedorActivo?.excel_confirmacion" class="mb-4">
                     <div class="file-info-box">
@@ -284,10 +294,12 @@
                           </div>
                         </div>
                         <div class="flex gap-2">
-                          <UButton @click="descargarArchivo(proveedorActivo.excel_confirmacion)" color="primary" variant="ghost" size="xs">
+                          <UButton @click="descargarArchivo(proveedorActivo.excel_confirmacion)" color="primary"
+                            variant="ghost" size="xs">
                             <UIcon name="i-heroicons-arrow-down-tray" />
                           </UButton>
-                          <UButton v-if="edit" @click="borrarDocumentoProveedor('excel_confirmacion')" color="error" variant="ghost" size="xs">
+                          <UButton v-if="edit" @click="borrarDocumentoProveedor('excel_confirmacion')" color="error"
+                            variant="ghost" size="xs">
                             <UIcon name="i-heroicons-trash" />
                           </UButton>
                         </div>
@@ -313,7 +325,8 @@
                           <UButton @click="descargarArchivo(archivo.url)" color="primary" variant="ghost" size="xs">
                             <UIcon name="i-heroicons-arrow-down-tray" />
                           </UButton>
-                          <UButton v-if="edit" @click="eliminarArchivo(archivo.id)" color="error" variant="ghost" size="xs">
+                          <UButton v-if="edit" @click="eliminarArchivo(archivo.id)" color="error" variant="ghost"
+                            size="xs">
                             <UIcon name="i-heroicons-trash" />
                           </UButton>
                         </div>
@@ -322,11 +335,12 @@
                   </div>
 
                   <!-- Subir nuevo archivo - solo si no hay archivos y es editable -->
-                  <div v-if="edit && !proveedorActivo?.excel_confirmacion && (!archivosPorTipo.confirmacion || archivosPorTipo.confirmacion.length === 0)" 
-                       class="file-upload-box" @click="triggerFileInput('confirmacion')">
+                  <div
+                    v-if="edit && !proveedorActivo?.excel_confirmacion && (!archivosPorTipo.confirmacion || archivosPorTipo.confirmacion.length === 0)"
+                    class="file-upload-box" @click="triggerFileInput('confirmacion')">
                     <input ref="confirmacionInput" type="file" class="file-input"
-                        accept=".xlsx, .xls, .xlsm, .csv, .xlsb, .xltx, .xlt, .png, .jpg, .jpeg,.pdf"
-                        @change="handleFileSelect('confirmacion', $event)" />
+                      accept=".xlsx, .xls, .xlsm, .csv, .xlsb, .xltx, .xlt, .png, .jpg, .jpeg,.pdf"
+                      @change="handleFileSelect('confirmacion', $event)" />
                     <div class="file-label d-flex">
                       <UIcon name="i-heroicons-cloud-arrow-up" class="text-2xl" />
                       <div class="file-group-text">
@@ -368,8 +382,8 @@
 
             <div class="space-y-4">
               <UButton
-                  class="w-full flex items-center justify-between px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                  variant="ghost" @click="descargarCotizacion('inicial')" :disabled="!documentacion?.cotizacion_file_url">
+                class="w-full flex items-center justify-between px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                variant="ghost" @click="descargarCotizacion('inicial')" :disabled="!documentacion?.cotizacion_file_url">
                 <span class="flex items-center gap-2">
                   <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
                   Descargar cotización inicial
@@ -377,8 +391,8 @@
               </UButton>
 
               <UButton
-                  class="w-full flex items-center justify-between px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                  variant="ghost" @click="descargarCotizacion('final')" :disabled="!documentacion?.cotizacion_final_url">
+                class="w-full flex items-center justify-between px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                variant="ghost" @click="descargarCotizacion('final')" :disabled="!documentacion?.cotizacion_final_url">
                 <span class="flex items-center gap-2">
                   <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
                   Descargar cotización final
@@ -395,8 +409,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useClienteDocumentacion } from '~/composables/useClienteDocumentacion'
-import { useCotizacionProveedor } from '~/composables/userCotizacionProveedor'
-
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 // Props
 interface Props {
   clienteId: string
@@ -428,11 +442,7 @@ const {
   validarVolumen,
   validarValor
 } = useClienteDocumentacion()
-const {
-  getProveedorById,
-  proveedor
-} = useCotizacionProveedor()
-// Reactive data
+const { withSpinner } = useSpinner()
 const servicioActivo = ref<number | null>(null)
 
 // Computed para el proveedor activo
@@ -460,12 +470,11 @@ const goBack = () => {
 const cargarDatos = async () => {
   try {
     await cargarDocumentacion(props.clienteId)
-    await getProveedorById(props.clienteId)
     if (documentacion.value && documentacion.value.providers && documentacion.value.providers.length > 0) {
       servicioActivo.value = documentacion.value.providers[0].id
     }
   } catch (err) {
-    console.error('Error al cargar datos:', err)
+    showError(`Error al cargar datos ${err}`)
   }
 }
 
@@ -478,20 +487,21 @@ const crearNuevoDocumento = () => {
 
 const guardarDocumentacion = async () => {
   if (!servicioActivo.value || !props.edit) return
-  
+
   try {
     const datos = documentoProveedor.value
     await actualizarDocumentacionProveedor(props.clienteId, servicioActivo.value, datos)
-    
+
     // Mostrar notificación de éxito
   } catch (err) {
-    console.error('Error al guardar documentación:', err)
+    showError(`Error al guardar documentación ${err}`)
+
   }
 }
 
 const triggerFileInput = (type: string) => {
   if (!props.edit) return
-  
+
   switch (type) {
     case 'factura':
       facturaInput.value?.click()
@@ -507,133 +517,112 @@ const triggerFileInput = (type: string) => {
 
 const handleFileSelect = async (type: string, event: Event) => {
   if (!props.edit) return
-  
+
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     const archivo = target.files[0]
     archivosSeleccionados.value[type as keyof typeof archivosSeleccionados.value] = archivo
-    
+
     try {
       // Subir archivo inmediatamente
       await subirDocumento(props.clienteId, type, archivo)
-      
+
       // Limpiar archivo seleccionado después de subir
       archivosSeleccionados.value[type as keyof typeof archivosSeleccionados.value] = null
-      
+
       // Resetear input
       target.value = ''
     } catch (err) {
-      console.error('Error al subir archivo:', err)
+      showError(`Error al subir archivo ${err}`)
     }
   }
-}
 
-const removeFile = (type: string) => {
-  if (!props.edit) return
-  
-  archivosSeleccionados.value[type as keyof typeof archivosSeleccionados.value] = null
-  // Resetear el input
-  switch (type) {
-    case 'factura':
-      if (facturaInput.value) facturaInput.value.value = ''
-      break
-    case 'packing':
-      if (packingInput.value) packingInput.value.value = ''
-      break
-    case 'confirmacion':
-      if (confirmacionInput.value) confirmacionInput.value.value = ''
-      break
+  const removeFile = (type: string) => {
+    if (!props.edit) return
+
+    archivosSeleccionados.value[type as keyof typeof archivosSeleccionados.value] = null
+    // Resetear el input
+    switch (type) {
+      case 'factura':
+        if (facturaInput.value) facturaInput.value.value = ''
+        break
+      case 'packing':
+        if (packingInput.value) packingInput.value.value = ''
+        break
+      case 'confirmacion':
+        if (confirmacionInput.value) confirmacionInput.value.value = ''
+        break
+    }
   }
-}
 
-const eliminarArchivo = async (fileId: number) => {
-  if (!props.edit) return
-  
-  try {
-    await eliminarDocumento(props.clienteId, fileId)
-    console.log('Archivo eliminado exitosamente')
-  } catch (err) {
-    console.error('Error al eliminar archivo:', err)
+  const eliminarArchivo = async (fileId: number) => {
+    if (!props.edit) return
+
+    try {
+      await eliminarDocumento(props.clienteId, fileId)
+    } catch (err) {
+      showError(`Error al eliminar archivo ${err}`)
+    }
   }
-}
 
-const borrarDocumentoProveedor = async (campo: string) => {
-  if (!proveedorActivo.value || !props.edit) return
-  
-  try {
-    // Aquí deberías llamar al servicio para borrar el documento del proveedor
-    console.log('Borrando documento del proveedor:', campo)
-    
-    // Por ahora solo recargamos los datos
+  const borrarDocumentoProveedor = async (campo: string) => {
+    if (!proveedorActivo.value || !props.edit) return
+
+    try {
+      // Aquí deberías llamar al servicio para borrar el documento del proveedor
+      console.log('Borrando documento del proveedor:', campo)
+
+      // Por ahora solo recargamos los datos
+      await cargarDatos()
+    } catch (err) {
+      showError(`Error al borrar documento del proveedor ${err}`)
+    }
+  }
+
+  const descargarArchivo = (url: string) => {
+    if (url) {
+      window.open(url, '_blank')
+    }
+  }
+
+  const descargarCotizacion = (tipo: string) => {
+    let url = ''
+    if (tipo === 'inicial' && documentacion.value?.cotizacion_file_url) {
+      url = documentacion.value.cotizacion_file_url
+    } else if (tipo === 'final' && documentacion.value?.cotizacion_final_url) {
+      url = documentacion.value.cotizacion_final_url
+    }
+
+    if (url) {
+      window.open(url, '_blank')
+    }
+  }
+
+  const getFileIcon = (fileName: string): string => {
+    const extension = fileName.split('.').pop()?.toLowerCase()
+    switch (extension) {
+      case 'pdf':
+        return 'i-heroicons-document-text'
+      case 'xlsx':
+      case 'xls':
+      case 'xlsm':
+      case 'csv':
+      case 'xlsb':
+      case 'xltx':
+      case 'xlt':
+        return 'i-heroicons-table-cells'
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+        return 'i-heroicons-photo'
+      default:
+        return 'i-heroicons-document'
+    }
+  }
+  onMounted(async () => {
     await cargarDatos()
-  } catch (err) {
-    console.error('Error al borrar documento del proveedor:', err)
-  }
-}
+  })
 
-const descargarArchivo = (url: string) => {
-  if (url) {
-    window.open(url, '_blank')
-  }
-}
-
-const descargarCotizacion = (tipo: string) => {
-  let url = ''
-  if (tipo === 'inicial' && documentacion.value?.cotizacion_file_url) {
-    url = documentacion.value.cotizacion_file_url
-  } else if (tipo === 'final' && documentacion.value?.cotizacion_final_url) {
-    url = documentacion.value.cotizacion_final_url
-  }
-  
-  if (url) {
-    window.open(url, '_blank')
-  }
-}
-
-const getFileIcon = (fileName: string): string => {
-  const extension = fileName.split('.').pop()?.toLowerCase()
-  switch (extension) {
-    case 'pdf':
-      return 'i-heroicons-document-text'
-    case 'xlsx':
-    case 'xls':
-    case 'xlsm':
-    case 'csv':
-    case 'xlsb':
-    case 'xltx':
-    case 'xlt':
-      return 'i-heroicons-table-cells'
-    case 'png':
-    case 'jpg':
-    case 'jpeg':
-      return 'i-heroicons-photo'
-    default:
-      return 'i-heroicons-document'
-  }
-}
-
-
-
-const formatDate = (dateString: string): string => {
-  if (!dateString) return 'N/A'
-  try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return dateString
-  }
-}
-
-// Lifecycle
-onMounted(() => {
-  cargarDatos()
-})
 </script>
 
 <style scoped>
@@ -870,4 +859,4 @@ onMounted(() => {
     margin-bottom: 0;
   }
 }
-</style> 
+</style>

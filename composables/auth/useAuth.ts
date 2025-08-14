@@ -1,5 +1,5 @@
-import type { AuthUser, AuthMenu, LoginCredentials, LoginResponse } from '../services/authService'
-import AuthService from '../services/authService'
+import type { AuthUser, AuthMenu, LoginCredentials, LoginResponse } from '@/services/authService'
+import AuthService from '@/services/authService'
 
 export const useAuth = () => {
   const user = ref<AuthUser | null>(null)

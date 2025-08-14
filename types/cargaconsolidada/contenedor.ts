@@ -42,4 +42,15 @@ export interface ContenedorFilters {
    fecha_fin?: string
    estado_china?: string
    search?: string
+   completado?: boolean|false
+}
+export interface ContenedorPasos {
+    id: number
+    name:string
+    status:string
+    iconURL:string
+}
+export interface ContenedorPasosResponse {
+    success: boolean
+    data: ContenedorPasos[]
 }

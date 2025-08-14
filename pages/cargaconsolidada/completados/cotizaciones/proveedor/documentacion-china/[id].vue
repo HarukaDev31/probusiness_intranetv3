@@ -16,14 +16,14 @@
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 mt-6">
             <!-- Sección de Documentación -->
             <div class="xl:col-span-4">
-                <DocumentacionSection :disabled="false" :loading="loadingDocumentacion" :files="documentosChina"
+                <DocumentacionSection :loading="loadingDocumentacion" :files="documentosChina" :disabled="true"
                     :selected-files="selectedDocumentacionFiles" @files-selected="handleDocumentacionFiles"
                     @download-file="downloadFile" @delete-file="deleteFileDocumentacion" />
             </div>
 
             <!-- Sección de Inspección -->
             <div class="xl:col-span-5">
-                <InspeccionSection :disabled="false" :loading="loadingInspeccion" :files="inspeccionChina"
+                <InspeccionSection :loading="loadingInspeccion" :files="inspeccionChina" :disabled="true"
                     :selected-files="selectedInspeccionFiles" @files-selected="handleInspeccionFiles"
                     @download-file="downloadFile" @delete-file="deleteFileInspeccion"
                     @file-removed="deleteFileInspeccion" />
@@ -31,8 +31,9 @@
 
             <!-- Sección de Notas -->
             <div class="xl:col-span-3">
-                <NotasSection :disabled="false" :loading="loadingNotas" :model-value="notasChina"
-                    @update:model-value="notasChina = $event" @save="saveNotas" />
+                <NotasSection :loading="loadingNotas" :model-value="notasChina" :disabled="true"
+                    @update:model-value="notasChina = $event" 
+                    />
             </div>
         </div>
     </div>
@@ -41,6 +42,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/userCotizacionProveedor'
+// Props
 const route = useRoute()
 const id = Number(route.params.id)
 const { getDocumentosChina,
@@ -80,7 +82,7 @@ const selectedInspeccionFiles = ref<File[]>([])
 
 // Métodos
 const navigateBack = () => {
-    navigateTo('/cargaconsolidada/abiertos/cotizaciones/proveedor')
+    navigateTo('/cargaconsolidada/completados/cotizaciones/proveedor')
 }
 
 const handleDocumentacionFiles = async (files: File[]) => {

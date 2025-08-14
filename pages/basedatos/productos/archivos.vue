@@ -155,7 +155,8 @@
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 // Components
 const UButton = resolveComponent('UButton')
 
@@ -171,9 +172,8 @@ importExcel,
 deleteExcel,
 getExcelsList
 } = useProducts()
-const { showSuccess, showError } = useModal()
-const { withSpinner } = useSpinner()
-
+const {showSuccess,showError} = useModal()
+const {withSpinner} = useSpinner()
 const newArchivo = ref({
     nombre: '',
     descripcion: ''
@@ -303,10 +303,6 @@ const removeFile = () => {
     fileError.value = ''
     // El UFileUpload maneja automáticamente la eliminación visual del archivo
 }
-
-
-
-
 const handleFileUpload = async () => {
     if (!selectedFile.value) return
 

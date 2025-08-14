@@ -246,7 +246,7 @@ import { ref, onMounted } from 'vue'
 import ProductService from '~/services/productService'
 import EntityService from '~/services/entityService'
 import ProductRubroService from '~/services/productRubroService'
-
+import { useUserRole } from '~/composables/auth/useUserRole'
 // Route
 const route = useRoute()
 const router = useRouter()
@@ -344,12 +344,12 @@ const loadProduct = async () => {
                 console.log('Datos del producto cargados:', formData.value)
             } else {
                 error.value = response.error || 'Error al cargar el producto'
-                console.error('Error en la respuesta:', response.error)
+                showError(`Error al cargar el producto ${response.error}`)
             }
 
         } catch (err) {
             error.value = 'Error al cargar el producto'
-            console.error('Error al cargar producto:', err)
+            showError(`Error al cargar el producto ${err}`)
         } finally {
             loading.value = false
         }

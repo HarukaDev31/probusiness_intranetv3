@@ -2,10 +2,11 @@
 export const ROLES = {
     CONTENEDOR_ALMACEN: 'ContenedorAlmacen',
     CONTENEDOR_CONSOLIDADO: 'ContenedorConsolidado',
+    COORDINACION: 'Coordinación',
     ADMIN: 'Admin',
     USER: 'User',
-    COORDINADOR: 'Coordinador',
-    VENTAS: 'Ventas'
+    COTIZADOR: 'Cotizador',
+    DOCUMENTACION: 'Documentacion',
 } as const
 
 // Tipos de roles

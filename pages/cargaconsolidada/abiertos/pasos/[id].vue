@@ -10,11 +10,13 @@
 
     <!-- Cards Container -->
     <div class="flex justify-center mb-8">
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-6 max-w-6xl">
+      <div class="flex flex-wrap  flex-row gap-6 max-w-6xl">
         <!-- Card 1: Cotización -->
         <div 
           class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6 text-center"
-          @click="navigateToStep('cotizacion')"
+          v-for="paso in pasos"
+          @click="handleNavigateToStep(paso.name)"
+          :key="paso.id"
         >
           <div class="flex flex-col items-center space-y-4">
             <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
@@ -25,56 +27,7 @@
         </div>
 
         <!-- Card 2: Clientes -->
-        <div 
-          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6 text-center"
-          @click="navigateToStep('clientes')"
-        >
-          <div class="flex flex-col items-center space-y-4">
-            <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
-              <UIcon name="i-heroicons-user-group" class="w-8 h-8 text-white" />
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Clientes</h3>
-          </div>
-        </div>
-
-        <!-- Card 3: Documentación -->
-        <div 
-          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6 text-center"
-          @click="navigateToStep('documentacion')"
-        >
-          <div class="flex flex-col items-center space-y-4">
-            <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
-              <UIcon name="i-heroicons-folder-open" class="w-8 h-8 text-white" />
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Documentación</h3>
-          </div>
-        </div>
-
-        <!-- Card 4: Cotización Final -->
-        <div 
-          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6 text-center"
-          @click="navigateToStep('cotizacion-final')"
-        >
-          <div class="flex flex-col items-center space-y-4">
-            <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
-              <UIcon name="i-heroicons-document-text" class="w-8 h-8 text-white" />
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Cotización Final</h3>
-          </div>
-        </div>
-
-        <!-- Card 5: Factura y Guía -->
-        <div 
-          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6 text-center"
-          @click="navigateToStep('factura-guia')"
-        >
-          <div class="flex flex-col items-center space-y-4">
-            <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
-              <UIcon name="i-heroicons-receipt-refund" class="w-8 h-8 text-white" />
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Factura y Guía</h3>
-          </div>
-        </div>
+       
       </div>
     </div>
 
@@ -93,30 +46,23 @@
 </template>
 
 <script setup lang="ts">
-// Methods
-const navigateToStep = (step: string) => {
-  // Navegar a la página correspondiente según el paso seleccionado
-  switch (step) {
-    case 'cotizacion':
-      navigateTo('/cargaconsolidada/abiertos/pasos/cotizacion')
-      break
-    case 'clientes':
-      navigateTo('/cargaconsolidada/abiertos/pasos/clientes')
-      break
-    case 'documentacion':
-      navigateTo('/cargaconsolidada/abiertos/pasos/documentacion')
-      break
-    case 'cotizacion-final':
-      navigateTo('/cargaconsolidada/abiertos/pasos/cotizacion-final')
-      break
-    case 'factura-guia':
-      navigateTo('/cargaconsolidada/abiertos/pasos/factura-guia')
-      break
-    default:
-      console.log('Paso no reconocido:', step)
-  }
+import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
+const {getConsolidadoPasos,pasos}=useConsolidado()
+const route=useRoute()
+const id=Number(route.params.id)  
+onMounted(()=>{
+  getConsolidadoPasos(id)
+})
+const pasosMap={
+  'COTIZACION':`/cargaconsolidada/abiertos/cotizaciones/${id}`,
+  'CLIENTES':`/cargaconsolidada/abiertos/clientes/${id}`,
+  'DOCUMENTACION':`/cargaconsolidada/abiertos/documentacion/${id}`,
+  'COTIZACION-FINAL':`/cargaconsolidada/abiertos/cotizacion-final/${id}`,
+  'FACTURA-GUIA':`/cargaconsolidada/abiertos/factura-guia/${id}`
 }
-
+const handleNavigateToStep = (step: string) => {
+  navigateTo(pasosMap[step as keyof typeof pasosMap])
+}
 const goBack = () => {
   navigateTo('/cargaconsolidada/abiertos')
 }

@@ -72,7 +72,8 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import type { SidebarCategory } from '~/types/module'
-
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { useAuth } from '~/composables/auth/useAuth'
 interface AuthUser {
   id: number | string
   email: string

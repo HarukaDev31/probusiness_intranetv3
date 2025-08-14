@@ -217,7 +217,8 @@
 <script setup lang="ts">
 import type { FileItem } from '~/types/commons/file'
 import * as XLSX from 'xlsx'
-
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
 const { withSpinner } = useSpinner()
 const { showError } = useModal()
 interface Props {
@@ -316,7 +317,6 @@ const downloadFile = async () => {
             window.URL.revokeObjectURL(url)
         }, 'Descargando archivo...')
     } catch (error) {
-        console.error('Error al descargar archivo:', error)
         showError('Error al descargar archivo', 'Error al descargar archivo')
     }
 }
@@ -458,7 +458,6 @@ const loadExcelFile = async () => {
         activeSheet.value = 0
         
     } catch (error) {
-        console.error('Error al cargar Excel:', error)
         showError('Error al cargar archivo Excel', 'No se pudo cargar la vista previa del archivo Excel')
     } finally {
         isLoadingExcel.value = false

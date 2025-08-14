@@ -75,7 +75,7 @@ export const useCursos = () => {
             pagination.value = response.pagination
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Error al obtener datos de cursos'
-            console.error('Error al obtener datos de cursos:', err)
+            showError(`Error al obtener datos de cursos ${err}`)
         }
     }
 
@@ -88,7 +88,7 @@ export const useCursos = () => {
             return response
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Error al obtener detalle'
-            console.error('Error al obtener detalle:', err)
+            showError(`Error al obtener detalle ${err}`)
             throw err
         } finally {
             loading.value = false
@@ -99,7 +99,6 @@ export const useCursos = () => {
             await CursosService.updateCurso(id, curso)
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Error al actualizar curso'
-            console.error('Error al actualizar curso:', err)
             throw err
         }
     }

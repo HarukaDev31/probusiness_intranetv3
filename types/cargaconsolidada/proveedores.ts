@@ -1,8 +1,10 @@
 import type { FileItem } from "../commons/file"
 import type { PaginationInfo, FilterConfig } from "../data-table"
+import type { Contenedor } from "./contenedor"
 
 export interface Proveedor {
     id: number
+    id_cotizacion?: number
     peso: number
     estados: string
     qty_box: number
@@ -17,6 +19,7 @@ export interface Proveedor {
     cbm_total_china: number
     arrive_date_china: string
     totales?: ProveedorTotales[]
+    contenedor?: Contenedor
 }
 
 export interface CotizacionProveedor {
@@ -76,6 +79,19 @@ export interface Filters {
 export interface CotizacionProveedorResponse {
     success: boolean
     data: Proveedor
+}
+export interface CreateDocumentosChina {
+    id_proveedor: number
+    id_cotizacion: number
+    files: FileItem[]
+}
+export interface SaveDocumentosChina {
+    id_proveedor: number
+    id_cotizacion: number
+    files: FileItem[]
+}
+export interface SaveDocumentosChinaResponse {
+    success: boolean
 }
 // Mantener compatibilidad con nombres anteriores
 export type getNotasChinaResponse = NotasChinaResponse

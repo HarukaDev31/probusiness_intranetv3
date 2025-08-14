@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import type { PaginationInfo } from '~/types/data-table'
-import type { Contenedor, ContenedorFilters } from '~/types/cargaconsolidada/contenedor'
+import type { Contenedor, ContenedorFilters, ContenedorPasos } from '~/types/cargaconsolidada/contenedor'
 
 export const useConsolidado = () => {
     const consolidadoData = ref<Contenedor[]>([])
@@ -23,15 +23,16 @@ export const useConsolidado = () => {
     const filters = ref<ContenedorFilters>({
         fecha_inicio: '',
         fecha_fin: '',
-        estado_china: 'todos' // Inicializar con 'todos' para consistencia
+        estado_china: 'todos', // Inicializar con 'todos' para consistencia
+        completado: false
     })
+    const pasos=ref<ContenedorPasos[]>([])
 
     const getConsolidadoData = async () => {
         try {
             loading.value = true
             error.value = null
 
-            // Preparar los parámetros para la API
             const params: any = {
                 page: pagination.value.current_page,
                 limit: itemsPerPage.value
@@ -51,6 +52,10 @@ export const useConsolidado = () => {
             }
             if (filters.value.estado_china) {
                 params.estado_china = filters.value.estado_china
+            }
+            console.log(filters.value.completado)
+            if (filters.value.completado) {
+                params.completado = filters.value.completado
             }
 
             const response = await ConsolidadoService.getConsolidadoData(params)
@@ -82,29 +87,22 @@ export const useConsolidado = () => {
     }
 
     const handleFilterChange = (filterType: string, value: string) => {
-        // Mapear los tipos de filtro a las propiedades correctas
         const filterKey = filterType as keyof ContenedorFilters
         
-        console.log('handleFilterChange:', { filterType, filterKey, value, currentFilters: filters.value })
         
         if (value === 'todos') {
-            // Si se selecciona "Todos", establecer el valor por defecto
             if (filterKey === 'estado_china') {
                 filters.value[filterKey] = 'todos'
             } else {
-                // Para otros filtros (fechas), eliminar si está vacío
                 delete filters.value[filterKey]
             }
         } else {
-            // Si se selecciona un valor específico, aplicar el filtro
             filters.value[filterKey] = value
         }
         
    
         
-        // Reset a la primera página cuando cambian los filtros
         pagination.value.current_page = 1
-        // Aplicar filtros inmediatamente
         getConsolidadoData()
     }
 
@@ -122,6 +120,17 @@ export const useConsolidado = () => {
         search.value = ''
         pagination.value.current_page = 1
         getConsolidadoData()
+    }
+    const setCompletado = (completado: boolean) => {
+        filters.value.completado = completado
+    }
+    const getConsolidadoPasos = async (id: number) => {
+        try {
+            const response = await ConsolidadoService.getConsolidadoPasos(id)
+            pasos.value = response.data
+        } catch (error) {
+            console.error('Error en getConsolidadoPasos:', error)
+        }
     }
 
     return {
@@ -141,6 +150,9 @@ export const useConsolidado = () => {
         handleItemsPerPageChange,
         handleFilterChange,
         clearFilters,
-        resetSearch
+        resetSearch,
+        setCompletado,
+        getConsolidadoPasos,
+        pasos
     }
 }

@@ -78,7 +78,7 @@
                 <span class="font-medium">{{ pago.banco }}</span>
               </div>
               
-                                                                                         <div class="flex justify-between items-center">
+                    <div class="flex justify-between items-center">
                   <span class="text-gray-600">Voucher:</span>
                   <div class="flex items-center space-x-2">
                     <UIcon name="i-heroicons-photo" class="w-4 h-4 text-gray-400" />

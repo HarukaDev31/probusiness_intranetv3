@@ -289,7 +289,7 @@ const loadCliente = async () => {
     }
   } catch (err: any) {
     error.value = err.message || 'Error al cargar los datos del cliente'
-    console.error('Error loading cliente:', err)
+    showError(`Error al cargar los datos del cliente ${err}`)
   } finally {
     loading.value = false
   }

@@ -37,7 +37,6 @@ import { ref, h, resolveComponent, onMounted, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import type { FilterConfig } from '~/types/data-table'
-import type { ContenedorFilters } from '~/types/cargaconsolidada/contenedor'
 import { ROLES } from '~/types/roles/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 const { hasRole, isCoordinacion } = useUserRole()
@@ -64,7 +63,8 @@ const {
     handleItemsPerPageChange,
     handleFilterChange,
     clearFilters,
-    resetSearch
+    resetSearch,
+    setCompletado
 } = useConsolidado()
 
 // Components
@@ -260,9 +260,7 @@ const getColorByEstado = (estado: string) => {
 
 const handleViewSteps = (id: number) => {
     if (hasRole('ContenedorAlmacen')) {
-        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}`)
-    }else{
-        navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
+        navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}`)
     }
 }
 
@@ -282,10 +280,21 @@ const exportClientes = async () => {
     }
 }
 
+const formatDateTimeToDmy = (dateTime: string) => {
+    if (!dateTime) return ''
+    const date = new Date(dateTime)
+    if (isNaN(date.getTime())) return dateTime
+    return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    })
+}
 
 // Inicialización
 onMounted(async () => {
     try {
+        setCompletado(true)
         await getConsolidadoData()
     } catch (error) {
         console.error('Error al cargar datos:', error)

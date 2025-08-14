@@ -212,7 +212,7 @@ const handleSubmit = async () => {
     emit('uploaded', selectedFile.value)
     closeModal()
   } catch (error) {
-    console.error('Error uploading file:', error)
+    showError(`Error al procesar el archivo ${error}`)
     fileError.value = 'Error al procesar el archivo. Intente nuevamente.'
   } finally {
     loading.value = false
