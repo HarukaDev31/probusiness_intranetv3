@@ -16,6 +16,12 @@ import { useCursos } from '~/composables/useCursos'
 import type { TableColumn } from '@nuxt/ui'
 const { cursosData, loading, currentPage, totalPages,getFiltros, fetchCursosData, totalRecords, itemsPerPage, search, filterConfig, filters, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, exportData } = useCursos()
 import { UButton, USelect } from '#components'
+const estadoClasses: Record<string, string> = {
+    pendiente: 'bg-gray-100 text-gray-800',
+    adelanto: 'bg-yellow-100 text-yellow-800',
+    pagado: 'bg-green-100 text-green-800',
+    sobrepago: 'bg-red-100 text-red-800'
+}
 const columns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
@@ -46,18 +52,26 @@ const columns = ref<TableColumn<any>[]>([
         accessorKey: 'tipo_curso',
         header: 'Curso',
         cell: ({ row }: { row: any }) => {
+            const value = row.original.tipo_curso
+            const items = [
+                { label: 'Virtual', value:0, icon: 'i-heroicons-video-camera' },
+                { label: 'En vivo', value:1, icon: 'i-heroicons-computer-desktop' }
+            ]
+            const icon = items.find(item => item.value === value)?.icon
             return h(USelect as any, {
-                modelValue: row.original.tipo_curso,
+                modelValue: value,
                 'onUpdate:modelValue': (value: any) => {
                     row.original.tipo_curso = value
                 },
                 placeholder: 'Seleccionar tipo',    
                 variant: 'outline',
                 size: 'sm',
-                items: [
-                    { label: 'Virtual', value:0, icon: 'i-heroicons-video-camera' },
-                    { label: 'En vivo', value:1, icon: 'i-heroicons-computer-desktop' }
-                ],
+                items,
+                option: (option: any) => h('div', { class: 'flex items-center gap-2' }, [
+                    h('span', { class: option.icon }),
+                    h('span', option.label)
+                ]),
+                icon,
                 class: 'w-full'
             })
         }
@@ -80,23 +94,69 @@ const columns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'usuario',
         header: 'Usuario',
-        cell: ({ row }: { row: any }) => row.getValue('usuario')
+        cell: ({ row }: { row: any }) => {
+            const items = [
+                { label: 'Pendiente', value:0, icon: 'ic:outline-access-time' },
+                { label: 'Creado', value:1, icon: 'ic:outline-person' },
+                { label: 'Constancia', value:2, icon: 'solar:diploma-outline' }
+            ]
+            const icon = items.find(item => item.value === row.original.Nu_Estado_Usuario_Externo)?.icon
+            return h(USelect as any, {
+                modelValue: row.original.Nu_Estado_Usuario_Externo,
+                'onUpdate:modelValue': (value: any) => {
+                    row.original.Nu_Estado_Usuario_Externo = value
+                },
+                placeholder: 'Seleccionar usuario',
+                items,
+                option: (option: any) => h('div', { class: 'flex items-center gap-2' }, [
+                    h('span', { class: option.icon }),
+                    h('span', option.label)
+                ]),
+                icon,
+            })
+        }
     },
     {
         accessorKey: 'importe',
         header: 'Importe',
-        cell: ({ row }: { row: any }) => row.getValue('importe')
+        cell: ({ row }: { row: any }) => formatCurrency(row.original.Ss_Total,'PEN'),
     },
     {
         accessorKey: 'estado',
         header: 'Estado',
-        cell: ({ row }: { row: any }) => row.getValue('estado')
+        cell: ({ row }: { row: any }) => {
+            const value = row.original.estado_pago
+            const items = [
+                { label: 'Pendiente', value: 'pendiente', icon: 'ic:outline-access-time' },
+                { label: 'Adelanto', value: 'adelanto', icon: 'ic:round-double-arrow' },
+                { label: 'Pagado', value: 'pagado', icon: 'ic:baseline-check-circle-outline' },
+                { label: 'Sobrepago', value: 'sobrepago', icon: 'ri:error-warning-line' }
+            ]
+            const icon = items.find(item => item.value === value)?.icon
+            return h(USelect as any, {
+                modelValue: value,
+                'onUpdate:modelValue': (val: any) => {
+                    row.original.estado_pago = val
+                },
+                placeholder: 'Seleccionar estado',
+                items,
+                option: (option: any) => h('div', { 
+                    class: estadoClasses[option.value] + ' rounded px-2 py-1 flex items-center gap-2'
+                }, [
+                    h('span', { class: option.icon }),
+                    h('span', option.label)
+                ]),
+                icon,
+                class: estadoClasses[value] + ' rounded px-2 py-1',
+                
+            })
+        },
     },
     {
         accessorKey: 'acciones',
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
-            //ver,borrar,guardar,editar
+            //ver,borrar,guardar
             return h('div', { class: 'flex items-center gap-2' }, [
                 h(UButton, {
                     icon: 'i-heroicons-eye',
@@ -113,7 +173,7 @@ const columns = ref<TableColumn<any>[]>([
                     }
                 }),
                 h(UButton, {
-                    icon: 'i-heroicons-save',
+                    icon: 'ic:outline-save',
                     variant: 'outline',
                     onClick: () => {
                         console.log('guardar')
