@@ -81,6 +81,40 @@ export class ConsolidadoService {
             throw error
         }
     }
+    static async getValidContainers(): Promise<any> {
+        try {
+            const response = await apiCall<any>(`${this.baseUrl}/valid-containers`, {
+                method: 'GET'
+            })
+            return response
+        } catch (error) {
+            console.error('Error en ConsolidadoService.getValidContainers:', error)
+            throw error
+        }
+    }
+    static async createConsolidado(payload: any): Promise<any> {
+        try {
+            const response = await apiCall<any>(`${this.baseUrl}`, {
+                method: 'POST',
+                body: payload
+            })
+            return response
+        } catch (error) {
+            console.error('Error en ConsolidadoService.createConsolidado:', error)
+            throw error
+        }
+    }
+    static async deleteConsolidado(id: number): Promise<{ success: boolean }> {
+        try {
+            const response = await apiCall<{ success: boolean }>(`${this.baseUrl}/${id}`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error) {
+            console.error('Error en ConsolidadoService.deleteConsolidado:', error)
+            throw error
+        }
+    }
 }
 
 export const consolidadoService = new ConsolidadoService()

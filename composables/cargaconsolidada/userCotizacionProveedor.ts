@@ -293,6 +293,20 @@ export const useCotizacionProveedor = () => {
             loading.value = false
         }
     }
+    const deleteCotizacion = async (id: number) => {
+        if (!id) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.deleteCotizacion(id)
+            return response
+        } catch (err: any) {
+            error.value = err.message || 'Error al eliminar la cotización'
+            console.error('Error en deleteCotizacion:', err)
+        } finally {
+            loading.value = false
+        }
+    }
 
     return {
         // Estado principal
@@ -340,6 +354,7 @@ export const useCotizacionProveedor = () => {
         saveInspeccionChina,
         deleteDocumentosChina,
         deleteInspeccionChina,
-        saveNotasChina
+        saveNotasChina,
+        deleteCotizacion
     }
 }

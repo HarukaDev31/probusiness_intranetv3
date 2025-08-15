@@ -4,7 +4,7 @@
             :hide-back-button="true" />
         <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
 
-        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="prospectosColumns"
+        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
             :loading="loadingCotizaciones" :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
             :total-records="totalRecordsCotizaciones" :items-per-page="itemsPerPageCotizaciones"
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
@@ -29,13 +29,16 @@ import { useCotizacionProveedor } from '~/composables/cargaconsolidada/userCotiz
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { useSpinner } from '~/composables/commons/useSpinner'
-
-
+import { ROLES } from '~/constants/roles'
+import { USelect, UInput, UButton, UIcon } from '#components'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { useModal } from '~/composables/commons/useModal'
 const { getCotizacionProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
-const { cotizaciones, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones } = useCotizacion()
+const { cotizaciones,deleteCotizacion, deleteCotizacionFile, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones } = useCotizacion()
 const { withSpinner } = useSpinner()
 const route = useRoute()
 const id = route.params.id
+const { showConfirmation, showSuccess } = useModal()
 const tabs = [
     {
         label: 'Prospectos',
@@ -48,8 +51,8 @@ const tabs = [
 
 ]
 const tab = ref('')
-import { USelect, UInput, UButton, UIcon } from '#components'
 
+const {currentRole} = useUserRole()
 // Configuración de filtros para prospectos
 const filterConfigProspectos = ref([
     {
@@ -66,8 +69,7 @@ const filterConfigProspectos = ref([
     }
 ])
 
-// Columnas para el tab de prospectos
-const prospectosColumns = ref<TableColumn<any>[]>([
+const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
         header: 'N°',
@@ -106,7 +108,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'estado_cliente',
         header: 'T. Cliente',
-        cell: ({ row }: { row: any }) => row.getValue('estado_cliente') || 'Sin estado'
+        cell: ({ row }: { row: any }) => row.original.tipo_cliente || 'Sin estado'
     },
     {
         accessorKey: 'volumen',
@@ -165,14 +167,14 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     tooltip: 'Ver Documentacion',
                     onClick: () => {
                         downloadFile(row.original.cotizacion_file_url)
-                        }
-                    }) : null,
-                h(UButton, { 
+                    }
+                }) : null,
+                h(UButton, {
                     icon: 'i-heroicons-arrow-path',
                     variant: 'ghost',
                     size: 'xs',
                     onClick: () => {
-                        //refresh
+                        handleRefresh(row.original.id)
                     }
                 }),
                 h(UButton, {
@@ -180,12 +182,149 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     onClick: () => {
-                        //delete    
+                        handleDeleteFile(row.original.id)
                     }
                 })
             ])
         }
-        
+
+    },
+    //action cols borrar cot
+    {
+        accessorKey: 'action',
+        header: 'Acciones',
+        cell: ({ row }: { row: any }) => {
+            return h(UButton, {
+                icon: 'i-heroicons-trash',
+                variant: 'ghost',
+                size: 'xs',
+                onClick: () => {
+                    handleDelete(row.original.id)
+                }
+            })
+        }
+    }   
+])
+
+const prospectosColumns = ref<TableColumn<any>[]>([
+    {
+        accessorKey: 'index',
+        header: 'N°',
+        cell: ({ row }: { row: any }) => {
+            return row.index + 1
+        }
+    },
+    {
+        accessorKey: 'fecha',
+        header: 'Fecha',
+        cell: ({ row }: { row: any }) => {
+            const fecha = row.getValue('fecha')
+            return fecha ? formatDate(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
+        }
+    },
+    {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        cell: ({ row }: { row: any }) => row.getValue('nombre')
+    },
+    {
+        accessorKey: 'documento',
+        header: 'DNI/RUC',
+        cell: ({ row }: { row: any }) => row.getValue('documento')
+    },
+    {
+        accessorKey: 'correo',
+        header: 'Correo',
+        cell: ({ row }: { row: any }) => row.getValue('correo') || 'Sin correo'
+    },
+    {
+        accessorKey: 'telefono',
+        header: 'Whatsapp',
+        cell: ({ row }: { row: any }) => row.getValue('telefono')
+    },
+    {
+        accessorKey: 'estado_cliente',
+        header: 'T. Cliente',
+        cell: ({ row }: { row: any }) => row.original.tipo_cliente || 'Sin estado'
+    },
+    {
+        accessorKey: 'volumen',
+        header: 'Volumen',
+        cell: ({ row }: { row: any }) => row.getValue('volumen')
+    },
+    {
+        accessorKey: 'qty_item',
+        header: 'Qty Item',
+        cell: ({ row }: { row: any }) => row.getValue('qty_item') || '0'
+    },
+    {
+        accessorKey: 'monto',
+        header: 'Fob',
+        cell: ({ row }: { row: any }) => {
+            const monto = parseFloat(row.getValue('monto'))
+            return formatCurrency(monto, 'USD')
+        }
+    },
+    {
+        accessorKey: 'logistica',
+        header: 'Logistica',
+        cell: ({ row }: { row: any }) => {
+            // Campo calculado o por defecto
+            return row.original.monto
+        }
+    },
+    {
+        accessorKey: 'impuestos',
+        header: 'Impuesto',
+        cell: ({ row }: { row: any }) => {
+            // Campo calculado o por defecto
+            return row.original.impuestos
+        }
+    },
+    {
+        accessorKey: 'tarifa',
+        header: 'Tarifa',
+        cell: ({ row }: { row: any }) => {
+            return row.original.tarifa
+        }
+    },
+    {
+        accessorKey: 'cotizacion',
+        header: 'Cotizacion',
+        cell: ({ row }: { row: any }) => {
+            // div with 3 button with icons file ,refresh an delete
+            return h('div', {
+                class: 'flex flex-row gap-2'
+            }, [
+                row.original.cotizacion_file_url ? h(UButton, {
+                    icon: 'i-heroicons-document-text',
+                    variant: 'ghost',
+                    size: 'xs',
+                    //add tooltip
+                    tooltip: 'Ver Documentacion',
+                    onClick: () => {
+                        downloadFile(row.original.cotizacion_file_url)
+                    }
+                }) : null,
+                h(UButton, {
+                    icon: 'i-heroicons-arrow-path',
+                    variant: 'ghost',
+                    size: 'xs',
+                    onClick: () => {
+                        handleRefresh(row.original.id)
+                    }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-trash',
+                    variant: 'ghost',
+                    size: 'xs',
+                    onClick: () => {
+                        handleDeleteFile(row.original.id)
+                    }
+                })
+            ])
+        }
+
     },
     {
         accessorKey: 'estado',
@@ -203,7 +342,46 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         }
     }
 ])
+const handleDeleteFile = async (idCotizacion: number) => {
+    try {
+        showConfirmation('¿Estás seguro de querer eliminar el archivo de esta cotización?', 'Esta acción no se puede deshacer.', async () => {
+            await withSpinner(async () => {
+                const response = await deleteCotizacionFile(idCotizacion)
+                if (response?.success) {
+                    showSuccess('Archivo eliminado correctamente', 'El archivo se ha eliminado correctamente.')
+                    await getCotizaciones(Number(id))
+                }
+            }, 'Eliminando archivo...')
+        })
+    } catch (error) {
+        showError('Error al eliminar el archivo de la cotización')
+    }
+}   
 
+const handleDelete = async (idCotizacion: number) => {
+    try {
+        showConfirmation('¿Estás seguro de querer eliminar esta cotización?', 'Esta acción no se puede deshacer.', async () => {
+        await withSpinner(async () => {
+            const response = await deleteCotizacion(idCotizacion)
+            console.log(response)
+            if (response?.success) {
+                showSuccess('Cotización eliminada correctamente', 'La cotización se ha eliminado correctamente.')
+                await getCotizaciones(Number(id))
+            }
+        }, 'Eliminando cotización...')
+        })
+    } catch (error) {
+        showError('Error al eliminar cotización')
+    }
+}
+const getProespectosColumns = () => {
+    switch (currentRole.value) {
+        case ROLES.COORDINACION:
+            return prospectosCoordinacionColumns.value
+        default:
+            return prospectosColumns.value
+    }
+}
 // Función para obtener el color del estado
 const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -218,7 +396,7 @@ const getEstadoColor = (estado: string) => {
     }
 }
 const downloadFile = async (fileUrl: string) => {
- 
+
     console.log(fileUrl)
     try {
         await withSpinner(async () => {

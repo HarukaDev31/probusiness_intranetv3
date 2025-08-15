@@ -24,4 +24,28 @@ export class CotizacionService {
             throw error
         }
     }
+    static async deleteCotizacion(id: number): Promise<{ success: boolean }> {
+        try {
+            const response = await apiCall<{ success: boolean }>(`${this.baseUrl}/cotizaciones/${id}`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error) {
+            console.error('Error al eliminar la cotización:', error)
+            throw new Error('No se pudo eliminar la cotización')
+        }
+    }
+    static async deleteCotizacionFile(id: number): Promise<{ success: boolean }> {
+        try {
+            const response = await apiCall<{ success: boolean }>(`${this.baseUrl}/cotizaciones/${id}/file`, {
+                method: 'DELETE'
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error al eliminar el archivo de la cotización:', error)
+            throw new Error('No se pudo eliminar el archivo de la cotización')
+        }
+    }   
+   
 }   

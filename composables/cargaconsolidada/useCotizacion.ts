@@ -59,10 +59,28 @@ export const useCotizacion = () => {
     const refreshCotizacionFile = async (id: number) => {
         try {
             const response = await CotizacionService.refreshCotizacionFile(id)
+            return response
         } catch (err) {
             error.value = err as string
         } finally {
             loading.value = false
+        }
+    }
+    const deleteCotizacion = async (id: number) => {
+        try {
+            const response = await CotizacionService.deleteCotizacion(id)
+            console.log(response)
+            return response
+        } catch (error) {
+            console.error('Error en deleteCotizacion:', error)
+        }
+    }
+    const deleteCotizacionFile = async (id: number) => {
+        try {
+            const response = await CotizacionService.deleteCotizacionFile(id)
+            return response
+        } catch (error) {
+            console.error('Error en deleteCotizacionFile:', error)
         }
     }
     return {
@@ -77,6 +95,8 @@ export const useCotizacion = () => {
         currentPage,
         filters,
         getCotizaciones,
-        refreshCotizacionFile
+        refreshCotizacionFile,
+        deleteCotizacion,
+        deleteCotizacionFile
     }
 }

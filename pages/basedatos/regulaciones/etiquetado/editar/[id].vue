@@ -7,12 +7,20 @@
       icon="i-heroicons-pencil-square"
       :loading="isSubmitting"
       @back="goBackToEtiquetado"
-      @save="enhancedSaveForm"
+      
     />
-
+    <div class="flex justify-end">
+        <UButton 
+            label="Guardar" 
+            icon="i-heroicons-document-arrow-down"
+            color="primary"
+            :loading="isSubmitting"
+            :disabled="isSubmitting"
+            @click="enhancedSaveForm"
+        />
+    </div>
     <!-- Loading State -->
     <LoadingState v-if="loading" message="Cargando regulación..." />
-
     <!-- Error State -->
     <ErrorState 
       v-else-if="error" 

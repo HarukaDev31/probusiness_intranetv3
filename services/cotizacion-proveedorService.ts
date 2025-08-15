@@ -173,5 +173,17 @@ export class CotizacionProveedorService {
             console.error('Error al enviar las notas de China:', error)
             throw new Error('No se pudo enviar las notas de China')
         }
-    }       
+    }
+    static async deleteCotizacion(id: number): Promise<{success: boolean}> {
+        try {
+            const response = await apiCall<{success: boolean}>(
+                `${this.baseUrl}/proveedor/cotizacion/${id}`,
+                { method: 'DELETE' }
+            )
+            return response
+        } catch (error) {
+            console.error('Error al eliminar la cotización:', error)
+            throw new Error('No se pudo eliminar la cotización')
+        }
+    }
 }

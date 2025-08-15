@@ -55,11 +55,11 @@
                 </div>
               </div>
             </div>
+            <slot name="actions" />
           </div>
         </div>
       </slot>
-      
-      <!-- Headers Section -->
+
       <div v-if="showHeaders" class="bg-gray-50 dark:bg-gray-900 ">
         <div class="px-6 py-3">
           <div class="flex flex-wrap gap-3">

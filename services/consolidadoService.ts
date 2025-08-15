@@ -109,4 +109,15 @@ export class ConsolidadoService {
       throw new Error('No se pudo exportar el consolidado')
     }
   }
+  static async deleteConsolidado(id: number): Promise<{ success: boolean }> {
+    try {
+      const response = await apiCall<{ success: boolean }>(`${this.baseUrl}/${id}`, {
+        method: 'DELETE'
+      })
+      return response
+    } catch (error) {
+      console.error('Error al eliminar consolidado:', error)
+      throw new Error('No se pudo eliminar el consolidado')
+    }
+  }
 } 
