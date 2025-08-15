@@ -39,7 +39,7 @@
           :alt="image.nombre_original"
           class="w-full h-full object-cover"
         />
-        <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all flex items-center justify-center">
+        <div class="absolute inset-0 bg-opacity-0 hover:bg-opacity-20 transition-all flex items-center justify-center">
           <UIcon 
             :name="selectedImages.includes(image.id) ? 'i-heroicons-check' : 'i-heroicons-trash'" 
             class="w-6 h-6 text-white opacity-0 hover:opacity-100 transition-opacity"
@@ -51,9 +51,7 @@
       </div>
     </div>
     <!-- Debug info -->
-    <div class="mt-2 text-xs text-gray-500">
-      Debug: {{ images.length }} imágenes existentes, {{ selectedCount }} marcadas para eliminar
-    </div>
+    
   </div>
 </template>
 
@@ -83,7 +81,6 @@ defineEmits<{
 }>()
 
 const getImageUrl = (ruta: string) => {
-    const config = useRuntimeConfig()
-    return `${config.public.apiBaseUrl}/storage/${ruta}`
+    return `${ruta}`
 }
 </script> 
