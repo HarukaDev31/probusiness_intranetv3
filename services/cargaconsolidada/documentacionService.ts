@@ -1,11 +1,11 @@
-import { apiCall } from '~/utils/api'
+
 import type { 
   DocumentacionFolder, 
   DocumentacionResponse, 
   DocumentacionFilters,
   DocumentacionUpdateRequest,
   DocumentacionUploadRequest
-} from '~/types/cargaconsolidada/documentacion'
+} from '../types/cargaconsolidada/documentacion'
 
 export class DocumentacionService {
     private static baseUrl = 'api/carga-consolidada/contenedor/documentacion'

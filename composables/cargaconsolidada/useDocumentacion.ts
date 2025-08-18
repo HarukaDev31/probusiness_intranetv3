@@ -1,11 +1,11 @@
 import { ref, computed } from 'vue'
-import { DocumentacionService } from '~/services/cargaconsolidada/documentacionService'
+import { DocumentacionService } from '../services/cargaconsolidada/documentacionService'
 import type { 
   DocumentacionFolder, 
   DocumentacionFilters,
   DocumentacionUpdateRequest,
   DocumentacionUploadRequest
-} from '~/types/cargaconsolidada/documentacion'
+} from '../types/cargaconsolidada/documentacion'
 
 export const useDocumentacion = () => {
   // Estado principal

@@ -1,5 +1,5 @@
-import { apiCall } from '~/utils/api'
-import type { Header } from '~/types/data-table'
+
+import type { Header } from '../types/data-table'
 // Interfaces para la API
 export interface Cliente {
   id: number
@@ -59,11 +59,7 @@ export interface ClientesQueryParams {
 export class ClienteService {
   private baseUrl: string
 
-  constructor() {
-    // Usar la URL base desde las variables de entorno
-    const config = useRuntimeConfig()
-    this.baseUrl = `${config.public.apiBaseUrl}/api/base-datos/clientes`
-  }
+  
 
   /**
    * Obtiene la lista de clientes con paginación y filtros
@@ -89,7 +85,7 @@ export class ClienteService {
         url += `&fecha_fin=${params.fecha_fin}`
       }
 
-      const response = await apiCall<ClientesResponse>(url, {
+      const response = await this.apiCall<ClientesResponse>(url, {
         method: 'GET'
       })
 
@@ -105,7 +101,7 @@ export class ClienteService {
    */
   async getClienteById(id: number): Promise<Cliente> {
     try {
-      const response = await apiCall<{ success: boolean; data: Cliente; message: string }>(`${this.baseUrl}/${id}`, {
+      const response = await this.apiCall<{ success: boolean; data: Cliente; message: string }>(`${this.baseUrl}/${id}`, {
         method: 'GET'
       })
 
@@ -121,7 +117,7 @@ export class ClienteService {
    */
   async createCliente(clienteData: Partial<Cliente>): Promise<Cliente> {
     try {
-      const response = await apiCall<{ success: boolean; data: Cliente }>(this.baseUrl, {
+      const response = await this.apiCall<{ success: boolean; data: Cliente }>(this.baseUrl, {
         method: 'POST',
         body: JSON.stringify(clienteData)
       })

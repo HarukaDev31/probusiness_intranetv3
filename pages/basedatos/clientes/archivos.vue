@@ -156,8 +156,8 @@
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { useModal } from '~/composables/commons/useModal'
-import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '../composables/commons/useModal'
+import { useSpinner } from '../composables/commons/useSpinner'
 // Components
 const UButton = resolveComponent('UButton')
 
@@ -168,7 +168,7 @@ const fileError = ref('')
 const uploadLoading = ref(false)
 const createLoading = ref(false)
 
-const { clienteService } = await import('~/services/clienteService')
+const { clienteService } = await import('../services/clienteService')
 const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
 
@@ -391,7 +391,7 @@ const handleDownloadExcel = async (id: number, rutaArchivo: string) => {
 const loadArchivos = async () => {
     try {
         await withSpinner(async () => {
-            const { clienteService } = await import('~/services/clienteService')
+            const { clienteService } = await import('../services/clienteService')
             const response = await clienteService.getExcelsList()
 
             if (response.success) {

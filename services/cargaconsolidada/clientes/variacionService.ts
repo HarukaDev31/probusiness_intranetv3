@@ -1,11 +1,11 @@
-import { apiCall } from '~/utils/api'
+
 import type { 
   VariacionCliente, 
   VariacionClienteResponse, 
   VariacionClienteUpdateRequest,
   ProveedorVariacion,
   ArchivoVariacion
-} from '~/types/cargaconsolidada/variacion'
+} from '../../../types/cargaconsolidada/variacion'
 
 export class VariacionService {
     private static baseUrl = 'api/carga-consolidada/contenedor/clientes/variacion'
@@ -14,7 +14,7 @@ export class VariacionService {
      * Obtiene la lista de clientes de un consolidado
      */
     static async getClientes(idConsolidado: number) {
-        const response = await apiCall<any>(`${this.baseUrl}/${idConsolidado}`)
+        const response = await this.apiCall<any>(`${this.baseUrl}/${idConsolidado}`)
         return response
     }
 
@@ -23,7 +23,7 @@ export class VariacionService {
      */
     static async getClienteDocumentacion(idCotizacion: number): Promise<VariacionClienteResponse> {
         try {
-            const response = await apiCall<VariacionClienteResponse>(`${this.baseUrl}/documentacion/${idCotizacion}`, {
+            const response = await this.apiCall<VariacionClienteResponse>(`${this.baseUrl}/documentacion/${idCotizacion}`, {
                 method: 'GET'
             })
             return response
@@ -41,7 +41,7 @@ export class VariacionService {
         data: VariacionClienteUpdateRequest
     ): Promise<VariacionClienteResponse> {
         try {
-            const response = await apiCall<VariacionClienteResponse>(`${this.baseUrl}/documentacion/${idCliente}`, {
+            const response = await this.apiCall<VariacionClienteResponse>(`${this.baseUrl}/documentacion/${idCliente}`, {
                 method: 'PUT',
                 data
             })
@@ -61,7 +61,7 @@ export class VariacionService {
         data: Partial<ProveedorVariacion>
     ): Promise<VariacionClienteResponse> {
         try {
-            const response = await apiCall<VariacionClienteResponse>(`${this.baseUrl}/documentacion/${idCliente}/proveedor/${idProveedor}`, {
+            const response = await this.apiCall<VariacionClienteResponse>(`${this.baseUrl}/documentacion/${idCliente}/proveedor/${idProveedor}`, {
                 method: 'PUT',
                 data
             })
@@ -95,7 +95,7 @@ export class VariacionService {
                 formData.append('observaciones', observaciones)
             }
 
-            const response = await apiCall(`${this.baseUrl}/documentacion/${idCliente}/upload`, {
+            const response = await this.apiCall(`${this.baseUrl}/documentacion/${idCliente}/upload`, {
                 method: 'POST',
                 body: formData
             })
@@ -118,7 +118,7 @@ export class VariacionService {
         idArchivo: number
     ): Promise<{ success: boolean; message?: string; error?: string }> {
         try {
-            await apiCall(`${this.baseUrl}/documentacion/${idCliente}/archivo/${idArchivo}`, {
+            await this.apiCall(`${this.baseUrl}/documentacion/${idCliente}/archivo/${idArchivo}`, {
                 method: 'DELETE'
             })
 
@@ -143,7 +143,7 @@ export class VariacionService {
         inspeccion: ArchivoVariacion[] 
     }> {
         try {
-            const response = await apiCall<{ 
+            const response = await this.apiCall<{ 
                 documentacion: ArchivoVariacion[], 
                 inspeccion: ArchivoVariacion[] 
             }>(`${this.baseUrl}/documentacion/${idCliente}/proveedor/${idProveedor}/archivos`, {

@@ -1,4 +1,4 @@
-import { apiCall } from '~/utils/api'
+
 
 // Interfaces
 export interface Documento {

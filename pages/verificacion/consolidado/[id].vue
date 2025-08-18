@@ -208,8 +208,8 @@
 import { toast } from '#build/ui'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useConsolidado } from '~/composables/usePagosConsolidado'
-import { formatCurrency } from '~/utils/consolidado'
+import { useConsolidado } from '../composables/usePagosConsolidado'
+import { formatCurrency } from '../utils/consolidado'
 
 // Route params
 const route = useRoute()

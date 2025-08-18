@@ -181,7 +181,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useOverlay } from '#imports'
-import AntidumpingService from '~/services/antidumpingService'
+import AntidumpingService from '../services/antidumpingService'
 
 // Types
 interface AntidumpingMedia {

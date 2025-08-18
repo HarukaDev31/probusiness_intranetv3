@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
-import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
-import type { PaginationInfo } from '~/types/data-table'
-import type { Contenedor, ContenedorFilters, ContenedorPasos } from '~/types/cargaconsolidada/contenedor'
+import { ConsolidadoService } from '../../services/cargaconsolidada/consolidadoService'
+import type { PaginationInfo } from '../../types/data-table'
+import type { Contenedor, ContenedorFilters, ContenedorPasos } from '../../types/cargaconsolidada/contenedor'
 
 export const useConsolidado = () => {
     const consolidadoData = ref<Contenedor[]>([])

@@ -27,10 +27,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useGeneral } from '~/composables/cargaconsolidada/cotizacion-final/useGeneral'
-import { usePagos } from '~/composables/cargaconsolidada/cotizacion-final/usePagos'
+import { useGeneral } from '../composables/cargaconsolidada/cotizacion-final/useGeneral'
+import { usePagos } from '../composables/cargaconsolidada/cotizacion-final/usePagos'
 import { USelect, UBadge } from '#components'
-import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
+import CreatePagoModal from '../components/commons/CreatePagoModal.vue'
 
 const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()

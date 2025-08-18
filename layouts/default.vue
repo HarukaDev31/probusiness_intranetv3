@@ -56,6 +56,7 @@ import GlobalSpinner from '../components/GlobalSpinner.vue'
 import type { AuthMenu } from '../services/authService'
 import type { SidebarCategory } from '../types/module'
 
+
 const sidebarVisible = ref(true)
 
 const pageTitle = computed(() => {

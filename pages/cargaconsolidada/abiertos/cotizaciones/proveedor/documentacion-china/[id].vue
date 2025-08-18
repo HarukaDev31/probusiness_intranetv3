@@ -16,23 +16,23 @@
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 mt-6">
             <!-- Sección de Documentación -->
             <div class="xl:col-span-4">
-                <DocumentacionSection :disabled="false" :loading="loadingDocumentacion" :files="documentosChina"
-                    :selected-files="selectedDocumentacionFiles" @files-selected="handleDocumentacionFiles"
+                <DocumentacionSection :disabled="currentRole !== ROLES.CONTENEDOR_ALMACEN" :loading="loadingDocumentacion" :files="documentosChina"
+                    :selected-files="selectedDocumentacionFiles" @files-selected="handleDocumentacionFiles" :disabled-delete="currentRole !== ROLES.CONTENEDOR_ALMACEN"
                     @download-file="downloadFile" @delete-file="deleteFileDocumentacion" />
             </div>
 
             <!-- Sección de Inspección -->
             <div class="xl:col-span-5">
-                <InspeccionSection :disabled="false" :loading="loadingInspeccion" :files="inspeccionChina"
-                    :selected-files="selectedInspeccionFiles" @files-selected="handleInspeccionFiles"
+                <InspeccionSection :disabled="currentRole !== ROLES.CONTENEDOR_ALMACEN" :loading="loadingInspeccion" :files="inspeccionChina"
+                    :selected-files="selectedInspeccionFiles" @files-selected="handleInspeccionFiles" :disabled-delete="currentRole !== ROLES.CONTENEDOR_ALMACEN"
                     @download-file="downloadFile" @delete-file="deleteFileInspeccion"
                     @file-removed="deleteFileInspeccion" />
             </div>
 
             <!-- Sección de Notas -->
             <div class="xl:col-span-3">
-                <NotasSection :disabled="false" :loading="loadingNotas" :model-value="notasChina"
-                    @update:model-value="notasChina = $event" @save="saveNotas" />
+                <NotasSection :disabled="currentRole !== ROLES.CONTENEDOR_ALMACEN" :loading="loadingNotas" :model-value="notasChina"
+                    @update:model-value="notasChina = $event" @save="saveNotas" :disabled-delete="currentRole !== ROLES.CONTENEDOR_ALMACEN" />
             </div>
         </div>
     </div>
@@ -40,7 +40,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useCotizacionProveedor } from '~/composables/cargaconsolidada/userCotizacionProveedor'
+import { useCotizacionProveedor } from '@/composables/cargaconsolidada/useCotizacionProveedor'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
+const { currentRole } = useUserRole()   
 const route = useRoute()
 const id = Number(route.params.id)
 const { getDocumentosChina,
@@ -91,10 +94,11 @@ const handleDocumentacionFiles = async (files: File[]) => {
         files: files
     }
     loadingDocumentacion.value = true
+    await withSpinner(async () => { 
     await saveDocumentosChina(data)
-    loadingDocumentacion.value = false
-    await getDocumentosChina(id)
-
+        loadingDocumentacion.value = false
+        await getDocumentosChina(id)
+    }, 'Guardando documentos...')
     selectedDocumentacionFiles.value = []
 }
 
@@ -157,8 +161,10 @@ const saveNotas = async () => {
             id_cotizacion: proveedor.value.id_cotizacion,
             notas: notasChina.value
         }
-        await saveNotasChina(data)
-        await getNotasChina(id)
+        await withSpinner(async () => {
+            await saveNotasChina(data)
+            await getNotasChina(id)
+        }, 'Guardando notas...')
     } catch (error) {
         console.error('Error al guardar notas:', error)
     }

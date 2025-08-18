@@ -1,5 +1,5 @@
-import type { Product, ProductFilters, ProductResponse, ProductsResponse, FilterOptionsResponse, FilterOptions, Pagination, ProductsServiceResponse } from '~/types/product'
-import { apiCall } from '~/utils/api'
+import type { Product, ProductFilters, ProductResponse, ProductsResponse, FilterOptionsResponse, FilterOptions, Pagination, ProductsServiceResponse } from '../types/product'
+
 
 class ProductService {
   private static instance: ProductService

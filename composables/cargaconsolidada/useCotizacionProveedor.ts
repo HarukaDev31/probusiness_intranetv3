@@ -1,13 +1,13 @@
 import { ref, computed } from 'vue'
-import { CotizacionProveedorService } from '~/services/cotizacion-proveedorService'
+import { CotizacionProveedorService } from '../../services/cargaconsolidada/cotizacion-proveedorService'
 import type {
     CotizacionProveedor,
     Filters,
     Proveedor,
     ProveedoresResponse
-} from '~/types/cargaconsolidada/proveedores'
-import type { FileItem } from '~/types/commons/file'
-import type { FilterConfig, PaginationInfo } from '~/types/data-table'
+} from '../../types/cargaconsolidada/proveedores'
+import type { FileItem } from '../../types/commons/file'
+import type { FilterConfig, PaginationInfo } from '../../types/data-table'
 
 export const useCotizacionProveedor = () => {
     // Estado principal

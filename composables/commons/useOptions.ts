@@ -1,4 +1,4 @@
-import { OptionsService } from "~/services/commons/optionsService"
+import { OptionsService } from "../services/commons/optionsService"
 
 export const useOptions = () => {
     const paises = ref<any[]>([])

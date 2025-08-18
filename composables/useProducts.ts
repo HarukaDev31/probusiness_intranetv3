@@ -1,6 +1,6 @@
-import type { Product, ProductMapped, ProductFilters, ProductResponse, ProductsServiceResponse, FilterOptions, Pagination } from '~/types/product'
-import type { Header } from '~/types/data-table'
-import ProductService from '~/services/productService'
+import type { Product, ProductMapped, ProductFilters, ProductResponse, ProductsServiceResponse, FilterOptions, Pagination } from '../types/product'
+import type { Header } from '../types/data-table'
+import ProductService from '../services/productService'
 
 export const useProducts = () => {
   const products = ref<ProductMapped[]>([])

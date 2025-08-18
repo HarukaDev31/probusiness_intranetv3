@@ -6,7 +6,7 @@ import type {
   SidebarCategory,
   SidebarResponse,
   SidebarModule
-} from '~/types/module'
+} from '../types/module'
 
 class ModuleService {
   private static instance: ModuleService

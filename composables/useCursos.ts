@@ -1,8 +1,8 @@
 import type { TableColumn } from '@nuxt/ui'
 import { ref, computed } from 'vue'
-import { CursosService } from '~/services/cursosService'
-import type { CursosFilters, PaginationInfo, CursosDetalleResponse, CursoItem } from '~/types/cursos/cursos'
-import type { FilterConfig } from '~/types/data-table'
+import { CursosService } from '../services/cursosService'
+import type { CursosFilters, PaginationInfo, CursosDetalleResponse, CursoItem } from '../types/cursos/cursos'
+import type { FilterConfig } from '../types/data-table'
 
 
 export const useCursos = () => {

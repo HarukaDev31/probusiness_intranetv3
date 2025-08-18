@@ -179,7 +179,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import PermisoService from '~/services/permisoService'
+import PermisoService from '../services/permisoService'
 
 // Interface temporal para la respuesta real del backend
 interface PermisoResponse {

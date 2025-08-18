@@ -193,12 +193,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import ProductService from '~/services/productService'
-import ProductRubroService from '~/services/productRubroService'
-import AntidumpingService, { type CreateAntidumpingRequest } from '~/services/antidumpingService'
-import type { ProductRubro } from '~/types/product-rubro'
-import { useNotifications } from '~/composables/useNotifications'
-import { useLoading } from '~/composables/useLoading'
+import ProductService from '../services/productService'
+import ProductRubroService from '../services/productRubroService'
+import AntidumpingService, { type CreateAntidumpingRequest } from '../services/antidumpingService'
+import type { ProductRubro } from '../types/product-rubro'
+import { useNotifications } from '../composables/useNotifications'
+import { useLoading } from '../composables/useLoading'
 // Router
 const router = useRouter()
 

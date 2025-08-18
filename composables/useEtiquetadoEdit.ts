@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import EtiquetadoService from '~/services/etiquetadoService'
-import { apiCall } from '~/utils/api'
+import EtiquetadoService from '../services/etiquetadoService'
 
 // Interface para la respuesta del backend
 interface EtiquetadoResponse {

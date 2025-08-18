@@ -1,5 +1,5 @@
-import type { AuthUser, AuthMenu, LoginCredentials, LoginResponse } from '@/services/authService'
-import AuthService from '@/services/authService'
+import type { AuthUser, AuthMenu, LoginCredentials, LoginResponse } from '../../services/authService'
+import AuthService from '../../services/authService'
 
 export const useAuth = () => {
   const user = ref<AuthUser | null>(null)
@@ -71,7 +71,9 @@ export const useAuth = () => {
   const checkAuth = (): boolean => {
     return isAuthenticated.value
   }
-
+  const getToken = (): string | null => {
+    return authService.getToken()
+  }
   // Initialize on mount
   onMounted(() => {
     initializeAuth()
@@ -91,6 +93,7 @@ export const useAuth = () => {
     getCurrentUser,
     getMenu,
     checkAuth,
+    getToken,
     initializeAuth
   }
 } 

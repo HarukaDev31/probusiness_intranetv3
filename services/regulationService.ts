@@ -1,4 +1,4 @@
-import { apiCall } from '~/utils/api'
+
 
 interface RegulationResponse {
   success: boolean

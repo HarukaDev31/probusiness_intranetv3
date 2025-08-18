@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ModalData } from '~/composables/commons/useModal'
+import type { ModalData } from '../composables/commons/useModal'
 
 interface Props {
   modal: ModalData

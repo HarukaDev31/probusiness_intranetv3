@@ -1,4 +1,4 @@
-import { apiCall } from '~/utils/api'
+
 
 export interface ClienteDocumentacion {
   id: number

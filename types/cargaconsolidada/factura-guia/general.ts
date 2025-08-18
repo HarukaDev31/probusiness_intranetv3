@@ -1,5 +1,5 @@
 
-import type { PaginationInfo } from '~/types/data-table'
+import type { PaginationInfo } from '../types/data-table'
 export interface GeneralResponse {  
     data: General[]
     pagination: PaginationInfo

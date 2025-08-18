@@ -332,10 +332,10 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useModal } from '~/composables/commons/useModal'
-import { useSpinner } from '~/composables/commons/useSpinner'
-import { useVariacionCliente } from '~/composables/cargaconsolidada/useVariacionCliente'
-import FileUploader from '~/components/commons/FileUploader.vue'
+import { useModal } from '../composables/commons/useModal'
+import { useSpinner } from '../composables/commons/useSpinner'
+import { useVariacionCliente } from '../composables/cargaconsolidada/useVariacionCliente'
+import FileUploader from '../components/commons/FileUploader.vue'
 
 // Composables
 const { showSuccess, showError } = useModal()

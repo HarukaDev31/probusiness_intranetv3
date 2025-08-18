@@ -1,4 +1,4 @@
-import { useSpinner } from '~/composables/commons/useSpinner'
+import { useSpinner } from '../composables/commons/useSpinner'
 export default defineNuxtPlugin(() => {
   const spinner = useSpinner()
 

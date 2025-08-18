@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import ProductRubroService from '~/services/productRubroService'
-import type { ProductRubro } from '~/types/product-rubro'
+import ProductRubroService from '../services/productRubroService'
+import type { ProductRubro } from '../types/product-rubro'
 
 export function useProductSelector() {
   const productRubroService = ProductRubroService.getInstance()

@@ -1,5 +1,4 @@
-import type { CreateProductRubroRequest, ProductRubro, ProductRubroListResponse, ProductRubroResponse } from "~/types/product-rubro";
-import { apiCall } from "~/utils/api";
+import type { CreateProductRubroRequest, ProductRubro, ProductRubroListResponse, ProductRubroResponse } from "../types/product-rubro";
 class ProductRubroService {
     private static instance: ProductRubroService
 
@@ -14,7 +13,7 @@ class ProductRubroService {
 
     async createProductRubro(productRubroData: CreateProductRubroRequest): Promise<ProductRubroResponse> {
         try {
-            const response = await apiCall<ProductRubroResponse>('/api/base-datos/regulaciones/rubros', {
+            const response = await this.apiCall<ProductRubroResponse>('/api/base-datos/regulaciones/rubros', {
                 method: 'POST',
                 body: JSON.stringify(productRubroData)
             })

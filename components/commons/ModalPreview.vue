@@ -215,10 +215,10 @@
 </template>
 
 <script setup lang="ts">
-import type { FileItem } from '~/types/commons/file'
+import type { FileItem } from '../types/commons/file'
 import * as XLSX from 'xlsx'
-import { useSpinner } from '~/composables/commons/useSpinner'
-import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '../composables/commons/useSpinner'
+import { useModal } from '../composables/commons/useModal'
 const { withSpinner } = useSpinner()
 const { showError } = useModal()
 interface Props {

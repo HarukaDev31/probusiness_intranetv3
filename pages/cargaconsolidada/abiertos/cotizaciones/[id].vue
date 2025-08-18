@@ -4,7 +4,8 @@
             :hide-back-button="true" />
         <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
 
-        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
+        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()" :headers="headersCotizaciones"
+            :show-headers="true"
             :loading="loadingCotizaciones" :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
             :total-records="totalRecordsCotizaciones" :items-per-page="itemsPerPageCotizaciones"
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
@@ -12,6 +13,11 @@
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos">
+
+            <template #actions>
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" variant="outline"
+                    label="Crear Prospecto" @click="handleAddProspecto" />
+            </template>
         </DataTable>
         <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :columns="columns"
             :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
@@ -25,7 +31,7 @@
 </template>
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import { useCotizacionProveedor } from '~/composables/cargaconsolidada/userCotizacionProveedor'
+import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -33,8 +39,11 @@ import { ROLES } from '~/constants/roles'
 import { USelect, UInput, UButton, UIcon } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
+import CreateProspectoModal from '~/components/cargaconsolidada/CreateProspectoModal'
+import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
+import MoveCotizacionModal from '~/components/cargaconsolidada/MoveCotizacionModal.vue'
 const { getCotizacionProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
-const { cotizaciones,deleteCotizacion, deleteCotizacionFile, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones } = useCotizacion()
+const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile,updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones, headersCotizaciones } = useCotizacion()
 const { withSpinner } = useSpinner()
 const route = useRoute()
 const id = route.params.id
@@ -52,7 +61,7 @@ const tabs = [
 ]
 const tab = ref('')
 
-const {currentRole} = useUserRole()
+const { currentRole } = useUserRole()
 // Configuración de filtros para prospectos
 const filterConfigProspectos = ref([
     {
@@ -203,7 +212,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                 }
             })
         }
-    }   
+    }
 ])
 
 const prospectosColumns = ref<TableColumn<any>[]>([
@@ -296,6 +305,16 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             return h('div', {
                 class: 'flex flex-row gap-2'
             }, [
+                !row.original.cotizacion_file_url ? h(UButton, {
+                    icon: 'i-heroicons-arrow-up-tray',
+                    variant: 'ghost',
+                    size: 'xs',
+                    //add tooltip
+                    tooltip: 'Subir Cotizacion',
+                    onClick: () => {
+                        handleUpdateCotizacion(row.original.id)
+                    }
+                }) : null,
                 row.original.cotizacion_file_url ? h(UButton, {
                     icon: 'i-heroicons-document-text',
                     variant: 'ghost',
@@ -306,20 +325,28 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         downloadFile(row.original.cotizacion_file_url)
                     }
                 }) : null,
-                h(UButton, {
+                row.original.cotizacion_file_url ? h(UButton, {
                     icon: 'i-heroicons-arrow-path',
                     variant: 'ghost',
                     size: 'xs',
                     onClick: () => {
                         handleRefresh(row.original.id)
                     }
-                }),
-                h(UButton, {
+                }) : null,
+                row.original.cotizacion_file_url ? h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
                     size: 'xs',
                     onClick: () => {
                         handleDeleteFile(row.original.id)
+                    }
+                }) : null,
+                h(UButton, {
+                    icon: 'i-heroicons-arrow-right',
+                    variant: 'ghost',
+                    size: 'xs',
+                    onClick: () => {
+                        handleMoveCotizacion(row.original.id)
                     }
                 })
             ])
@@ -327,10 +354,10 @@ const prospectosColumns = ref<TableColumn<any>[]>([
 
     },
     {
-        accessorKey: 'estado',
+        accessorKey: 'estado_cotizador',
         header: 'Estado',
         cell: ({ row }: { row: any }) => {
-            const estado = row.getValue('estado')
+            const estado = row.getValue('estado_cotizador')
             const color = getEstadoColor(estado)
             return h(USelect as any, {
                 items: filterConfigProspectos.value.find((filter: any) => filter.key === 'estado')?.options.filter((option: any) => option.inrow),
@@ -338,10 +365,70 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 value: estado,
                 class: 'w-full',
                 modelValue: estado,
+                'onUpdate:modelValue': (value: any) => {
+                    handleUpdateEstadoCotizacion(row.original.id, value)
+                }
             })
         }
     }
 ])
+const overlay = useOverlay()
+const handleAddProspecto = async () => {
+    const modal = overlay.create(CreateProspectoModal)
+    console.log(id)
+    modal.open({
+        idConsolidado: Number(id),
+        idCotizacion: null,
+        onSuccess: () => {
+            getCotizaciones(Number(id))
+        },
+
+    })
+}
+const handleMoveCotizacion = async (idCotizacion: number) => {
+    const modal = overlay.create(MoveCotizacionModal)
+    modal.open({
+        cotizacionId: idCotizacion,
+        idConsolidado: id,
+    })
+}
+const handleRefresh = async (idCotizacion: number) => {
+    try {
+        showConfirmation('¿Estás seguro de querer actualizar la cotización?', 'Esta acción no se puede deshacer.', async () => {
+            await withSpinner(async () => {
+                await refreshCotizacionFile(idCotizacion)
+                showSuccess('Cotización actualizada correctamente', 'La cotización se ha actualizado correctamente.')
+                await getCotizaciones(Number(id))
+            }, 'Actualizando cotización...')
+        })
+    } catch (error) {
+        showError('Error al actualizar la cotización')
+    }
+}
+const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string) => {
+    try {
+        await withSpinner(async () => {
+            const response = await updateEstadoCotizacionCotizador(idCotizacion, { estado })
+            if (response?.success) {
+                showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
+                await getCotizaciones(Number(id))
+            }
+        }, 'Actualizando estado de la cotización...')
+    } catch (error) {
+        showError('Error al actualizar el estado de la cotización')
+    }
+}
+const handleUpdateCotizacion = async (idCotizacion: number) => {
+    const modal = overlay.create(CreateProspectoModal)
+    console.log(idCotizacion)
+    modal.open({
+        idCotizacion: idCotizacion,
+        idConsolidado: null,
+        onSuccess: () => {
+            getCotizaciones(Number(id))
+        },
+    })
+}
 const handleDeleteFile = async (idCotizacion: number) => {
     try {
         showConfirmation('¿Estás seguro de querer eliminar el archivo de esta cotización?', 'Esta acción no se puede deshacer.', async () => {
@@ -356,19 +443,19 @@ const handleDeleteFile = async (idCotizacion: number) => {
     } catch (error) {
         showError('Error al eliminar el archivo de la cotización')
     }
-}   
+}
 
 const handleDelete = async (idCotizacion: number) => {
     try {
         showConfirmation('¿Estás seguro de querer eliminar esta cotización?', 'Esta acción no se puede deshacer.', async () => {
-        await withSpinner(async () => {
-            const response = await deleteCotizacion(idCotizacion)
-            console.log(response)
-            if (response?.success) {
-                showSuccess('Cotización eliminada correctamente', 'La cotización se ha eliminado correctamente.')
-                await getCotizaciones(Number(id))
-            }
-        }, 'Eliminando cotización...')
+            await withSpinner(async () => {
+                const response = await deleteCotizacion(idCotizacion)
+                console.log(response)
+                if (response?.success) {
+                    showSuccess('Cotización eliminada correctamente', 'La cotización se ha eliminado correctamente.')
+                    await getCotizaciones(Number(id))
+                }
+            }, 'Eliminando cotización...')
         })
     } catch (error) {
         showError('Error al eliminar cotización')
@@ -489,6 +576,7 @@ const columns = ref<TableColumn<any>[]>([
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
                         class: 'w-full',
+                        disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
                             proveedor.estados_proveedor = value
@@ -515,15 +603,14 @@ const columns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'products',
         header: 'Products',
+        
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
-            //foreach proveedor, show products in UINPUT DISABLED AND READONLY
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
+                    disabled: currentRole.value !== ROLES.COTIZADOR,
                     value: proveedor.products
                 })
             }))
@@ -761,6 +848,7 @@ const columns = ref<TableColumn<any>[]>([
                         variant: 'ghost',
                         size: 'xs',
                         onClick: () => {
+                            saveRow(row.original)
                         }
                     })
                 ])
@@ -768,7 +856,9 @@ const columns = ref<TableColumn<any>[]>([
         }
     }
 ])
-
+const saveRow = (row: any) => {
+    console.log(row)
+}
 onMounted(() => {
     // Solo establecer el tab inicial, el watch se encargará de cargar los datos
     tab.value = tabs[0].value // Cambiar a 'prospectos' como tab inicial

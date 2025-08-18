@@ -1,5 +1,4 @@
-import { apiCall } from "~/utils/api"
-import type { PagosResponse } from "~/types/cargaconsolidada/cotizacion-final/pagos"
+import type { PagosResponse } from "../../../types/cargaconsolidada/cotizacion-final/pagos"
 
     
 export class PagosService {
@@ -7,7 +6,7 @@ export class PagosService {
 
     static async getPagos(id: number): Promise<PagosResponse> {
         try {
-            const response = await apiCall<PagosResponse>(`${this.baseUrl}/${id}`)
+            const response = await this.apiCall<PagosResponse>(`${this.baseUrl}/${id}`)
             return response
         } catch (error) {
             console.error('Error al obtener los pagos:', error)

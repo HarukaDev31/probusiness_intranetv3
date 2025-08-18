@@ -1,5 +1,5 @@
-import type { RegulationFormConfig } from '~/composables/useRegulationForm'
-import type { RegulationEditConfig } from '~/composables/useRegulationEdit'
+import type { RegulationFormConfig } from '../composables/useRegulationForm'
+import type { RegulationEditConfig } from '../composables/useRegulationEdit'
 
 // Configuración para Antidumping
 export const antidumpingConfig: RegulationFormConfig = {

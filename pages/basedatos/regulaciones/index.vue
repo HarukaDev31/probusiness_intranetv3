@@ -503,15 +503,15 @@ import { ref, onMounted, watch, h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { getGroupedRowModel } from '@tanstack/vue-table'
 import type { GroupingOptions } from '@tanstack/vue-table'
-import AntidumpingService from '~/services/antidumpingService'
-import PermisoService from '~/services/permisoService'
-import EtiquetadoService from '~/services/etiquetadoService'
-import DocumentoService from '~/services/documentoService'
-import ImageModal from '~/components/ImageModal.vue'
-import DocumentPreview from '~/components/DocumentPreview.vue'
-import { useUserRole } from '~/composables/auth/useUserRole'
-import { useModal } from '~/composables/commons/useModal'
-import { useSpinner } from '~/composables/commons/useSpinner'
+import AntidumpingService from '../services/antidumpingService'
+import PermisoService from '../services/permisoService'
+import EtiquetadoService from '../services/etiquetadoService'
+import DocumentoService from '../services/documentoService'
+import ImageModal from '../components/ImageModal.vue'
+import DocumentPreview from '../components/DocumentPreview.vue'
+import { useUserRole } from '../composables/auth/useUserRole'
+import { useModal } from '../composables/commons/useModal'
+import { useSpinner } from '../composables/commons/useSpinner'
 // User role composable
 const { hasRole } = useUserRole()   
 
@@ -769,7 +769,7 @@ const antidumpingService = AntidumpingService.getInstance()
 const permisoService = PermisoService.getInstance()
 const etiquetadoService = EtiquetadoService.getInstance()
 const documentoService = DocumentoService.getInstance()
-import entityService from '~/services/entityService'
+import entityService from '../services/entityService'
 
 // Loading states
 const loadingAntidumping = ref(false)
@@ -925,12 +925,12 @@ const loadAntidumpingData = async () => {
         } else {
             console.error('Error al cargar datos de antidumping:', response.error)
             antidumpingData.value = []
-            showServerError('cargar datos de antidumping', response.error)
+            showError('cargar datos de antidumping', response.error)
         }
     } catch (error: any) {
         console.error('Error loading antidumping data:', error)
         antidumpingData.value = []
-        showServerError('cargar datos de antidumping', error.message)
+        showError('cargar datos de antidumping', error.message)
     } finally {
         loadingAntidumping.value = false
     }

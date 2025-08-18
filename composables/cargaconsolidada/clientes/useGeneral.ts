@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import { GeneralService } from '~/services/cargaconsolidada/clientes/generalService'
-import type { PaginationInfo } from '~/types/data-table'
+import { GeneralService } from '../services/cargaconsolidada/clientes/generalService'
+import type { PaginationInfo } from '../types/data-table'
 
 export const useGeneral = () => {
     const clientes = ref<any[]>([])

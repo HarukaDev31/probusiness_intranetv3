@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiCall } from '~/utils/api'
+
 
 export interface RegulationEditConfig {
   endpoint: string

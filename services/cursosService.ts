@@ -1,5 +1,5 @@
-import type { CursoItem, CursosDetalleResponse, CursosFilters, CursosResponse } from '~/types/cursos/cursos'
-import { apiCall } from '~/utils/api'
+import type { CursoItem, CursosDetalleResponse, CursosFilters, CursosResponse } from '../types/cursos/cursos'
+
 
 export class CursosService {
   private static baseUrl = 'api/cursos'

@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { clienteDocumentacionService, type ClienteDocumentacion, type DocumentoFile } from '~/services/clienteDocumentacionService'
+import { clienteDocumentacionService, type ClienteDocumentacion, type DocumentoFile } from '../services/clienteDocumentacionService'
 
 export const useClienteDocumentacion = () => {
   const documentacion = ref<ClienteDocumentacion | null>(null)

@@ -26,8 +26,8 @@
         </div>
     </template>
 <script setup lang="ts">
-import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
-import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
+import { useGeneral } from '../composables/cargaconsolidada/clientes/useGeneral'
+import { useVariacion } from '../composables/cargaconsolidada/clientes/useVariacion'
 import { UButton, UBadge } from '#components'
 const route = useRoute()
 const id = route.params.id

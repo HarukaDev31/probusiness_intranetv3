@@ -14,6 +14,7 @@
     <FileUploader 
     :loading="loading"
     :disabled="disabled"
+    :immediate="false"
     :multiple="true" @files-selected="handleFilesSelected"
       :initial-files="files" @file-removed="handleFileRemoved" />
 
@@ -21,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import type { FileItem } from '~/types/commons/file'
+import type { FileItem } from '../types/commons/file'
 import ModalPreview from './commons/ModalPreview.vue'
 import FileUploader from './commons/FileUploader.vue'
 

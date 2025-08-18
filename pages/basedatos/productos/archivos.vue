@@ -155,8 +155,8 @@
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { useModal } from '~/composables/commons/useModal'
-import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '../composables/commons/useModal'
+import { useSpinner } from '../composables/commons/useSpinner'
 // Components
 const UButton = resolveComponent('UButton')
 

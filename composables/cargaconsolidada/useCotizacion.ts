@@ -1,6 +1,6 @@
-import { CotizacionService } from "~/services/cargaconsolidada/cotizacionService"
-import type { PaginationInfo } from "~/types/data-table"
-import type { Cotizacion, CotizacionFilters } from "~/types/cargaconsolidada/cotizaciones"
+import { CotizacionService } from "../../services/cargaconsolidada/cotizacionService"
+import type { Header, PaginationInfo } from "../../types/data-table"
+import type { Cotizacion, CotizacionFilters } from "../../types/cargaconsolidada/cotizaciones"
 
 export const useCotizacion = () => {
     const cotizaciones = ref<Cotizacion[]>([])
@@ -14,6 +14,8 @@ export const useCotizacion = () => {
         from: 0,
         to: 0
     })
+    const headersCotizaciones = ref<Header[]>([])
+
     const search = ref('')
     const itemsPerPage = ref(10)
     const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
@@ -50,6 +52,7 @@ export const useCotizacion = () => {
             const response = await CotizacionService.getCotizaciones(id,params)
             cotizaciones.value = response.data
             pagination.value = response.pagination
+            headersCotizaciones.value = response.headers
         } catch (err) {
             error.value = err as string
         } finally {
@@ -83,6 +86,35 @@ export const useCotizacion = () => {
             console.error('Error en deleteCotizacionFile:', error)
         }
     }
+    const createProspecto = async (data: any) => {
+        try {
+            const formData = new FormData()
+            formData.append('cotizacion', data.file)
+            formData.append('id_contenedor', data.id_contenedor)
+            const response = await CotizacionService.createProspecto(formData)
+            return response
+        } catch (error) {
+            console.error('Error en createProspecto:', error)
+        }
+    }
+    const updateCotizacion = async (id: number, data: any) => {
+        try {
+            const formData = new FormData()
+            formData.append('cotizacion', data.file)
+            const response = await CotizacionService.updateCotizacion(id, formData)
+            return response
+        } catch (error) {
+            console.error('Error en updateCotizacion:', error)
+        }
+    }
+    const updateEstadoCotizacionCotizador = async (id: number, data: any) => {
+        try {
+            const response = await CotizacionService.updateEstadoCotizacionCotizador(id, data)
+            return response
+        } catch (error) {
+            console.error('Error en updateEstadoCotizacionCotizador:', error)
+        }
+    }
     return {
         cotizaciones,
         loading,
@@ -94,9 +126,13 @@ export const useCotizacion = () => {
         totalRecords,
         currentPage,
         filters,
+        headersCotizaciones,
         getCotizaciones,
         refreshCotizacionFile,
         deleteCotizacion,
-        deleteCotizacionFile
+        deleteCotizacionFile,
+        createProspecto,
+        updateCotizacion,
+        updateEstadoCotizacionCotizador
     }
 }

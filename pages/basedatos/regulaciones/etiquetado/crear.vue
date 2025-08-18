@@ -138,9 +138,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import EtiquetadoService, { type CreateEtiquetadoRequest } from '~/services/etiquetadoService'
-import ProductRubroService from '~/services/productRubroService'
-import type { ProductRubro } from '~/types/product-rubro'
+import EtiquetadoService, { type CreateEtiquetadoRequest } from '../services/etiquetadoService'
+import ProductRubroService from '../services/productRubroService'
+import type { ProductRubro } from '../types/product-rubro'
 
 // Router
 const router = useRouter()

@@ -1,6 +1,6 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import type { DataTableProps } from '~/types/data-table'
-import { formatDateForInput } from '~/utils/data-table'
+import type { DataTableProps } from '../types/data-table'
+import { formatDateForInput } from '../utils/data-table'
 
 export const useDataTable = (props: DataTableProps, emit: any) => {
   // Local state

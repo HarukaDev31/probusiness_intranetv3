@@ -103,9 +103,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import EntityService, { type CreateEntityRequest } from '~/services/entityService'
-import PermisoService, { type CreatePermisoRequest } from '~/services/permisoService'
-
+import EntityService, { type CreateEntityRequest } from '../services/entityService'
+import PermisoService, { type CreatePermisoRequest } from '../services/permisoService'
+import { useModal } from '../composables/commons/useModal'
+import { useSpinner } from '../composables/commons/useSpinner'
 // Router
 const router = useRouter()
 const { showSuccess, showError } = useModal()

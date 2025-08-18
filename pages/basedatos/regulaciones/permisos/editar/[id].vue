@@ -152,9 +152,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import EntityService, { type CreateEntityRequest } from '~/services/entityService'
-import PermisoService, { type CreatePermisoRequest } from '~/services/permisoService'
-import { apiCall } from '~/utils/api'
+import EntityService, { type CreateEntityRequest } from '../services/entityService'
+import PermisoService, { type CreatePermisoRequest } from '../services/permisoService'
+
 
 // Interface temporal para la respuesta real del backend
 interface PermisoResponse {

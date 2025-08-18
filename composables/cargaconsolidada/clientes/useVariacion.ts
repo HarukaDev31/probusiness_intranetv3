@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import { VariacionService } from '~/services/cargaconsolidada/clientes/variacionService'
-import type { PaginationInfo } from '~/types/data-table'
+import { VariacionService } from '../services/cargaconsolidada/clientes/variacionService'
+import type { PaginationInfo } from '../types/data-table'
 
 export const useVariacion = () => {
     const clientesVariacion = ref<any[]>([])

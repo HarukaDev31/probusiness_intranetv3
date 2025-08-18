@@ -408,9 +408,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useClienteDocumentacion } from '~/composables/useClienteDocumentacion'
-import { useModal } from '~/composables/commons/useModal'
-import { useSpinner } from '~/composables/commons/useSpinner'
+import { useClienteDocumentacion } from '../composables/useClienteDocumentacion'
+import { useModal } from '../composables/commons/useModal'
+import { useSpinner } from '../composables/commons/useSpinner'
 // Props
 interface Props {
   clienteId: string

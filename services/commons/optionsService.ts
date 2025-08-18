@@ -1,9 +1,11 @@
-export class OptionsService {
+import { BaseService } from "../base/BaseService"
+
+export class OptionsService extends BaseService {
     private static baseUrl = 'api/options'
 
     static async getPaises(): Promise<any> {
         try {
-            const response = await apiCall<any>(`${this.baseUrl}/paises`, {
+            const response = await this.apiCall<any>(`${this.baseUrl}/paises`, {
                 method: 'GET'
             })
             return response

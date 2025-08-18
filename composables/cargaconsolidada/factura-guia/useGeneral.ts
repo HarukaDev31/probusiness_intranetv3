@@ -1,7 +1,7 @@
 import { ref } from 'vue'
-import type { PaginationInfo } from '~/types/data-table'
-import { GeneralService } from '~/services/cargaconsolidada/factura-guia/generalService'
-import type { General } from '~/types/cargaconsolidada/factura-guia/general'
+import type { PaginationInfo } from '../types/data-table'
+import { GeneralService } from '../services/cargaconsolidada/factura-guia/generalService'
+import type { General } from '../types/cargaconsolidada/factura-guia/general'
 
 export const useGeneral  = () => {
     const general = ref<General[]>([])

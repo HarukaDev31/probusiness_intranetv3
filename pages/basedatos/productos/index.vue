@@ -21,10 +21,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, h, resolveComponent } from 'vue'
-import type { ProductMapped } from '~/types/product'
+import type { ProductMapped } from '../types/product'
 import type { TableColumn } from '@nuxt/ui'
-import ImageModal from '~/components/ImageModal.vue'
-import { formatCurrency } from '~/utils/formatters'
+import ImageModal from '../components/ImageModal.vue'
+import { formatCurrency } from '../utils/formatters'
 const UButton = resolveComponent('UButton')
 
 // Composable para productos

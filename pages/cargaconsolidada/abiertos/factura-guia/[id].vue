@@ -19,7 +19,7 @@
   
   <script setup lang="ts">
   import { ref } from 'vue'
-  import { useGeneral } from '~/composables/cargaconsolidada/factura-guia/useGeneral'
+  import { useGeneral } from '../composables/cargaconsolidada/factura-guia/useGeneral'
   import { USelect, UBadge } from '#components'
   
   const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()

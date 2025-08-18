@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import { PagosService } from '~/services/cargaconsolidada/cotizacion-final/pagosService'
-import type { PaginationInfo } from '~/types/data-table'
+import { PagosService } from '../services/cargaconsolidada/cotizacion-final/pagosService'
+import type { PaginationInfo } from '../types/data-table'
 
 export const usePagos = () => {
     const pagos = ref<any[]>([])

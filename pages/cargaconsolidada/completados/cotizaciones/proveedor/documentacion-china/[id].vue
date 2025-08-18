@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useCotizacionProveedor } from '~/composables/cargaconsolidada/userCotizacionProveedor'
+import { useCotizacionProveedor } from '../composables/cargaconsolidada/userCotizacionProveedor'
 // Props
 const route = useRoute()
 const id = Number(route.params.id)
@@ -68,9 +68,9 @@ const loadingNotas = ref(false)
 const consolidadoInfo = ref({
     numero: '',
 })
-import { useSpinner } from '~/composables/commons/useSpinner'
+import { useSpinner } from '../composables/commons/useSpinner'
 const { withSpinner } = useSpinner()
-import { useModal } from '~/composables/commons/useModal'
+import { useModal } from '../composables/commons/useModal'
 const { showSuccess, showError, showConfirmation } = useModal()
 const clienteInfo = ref({
     nombre: '',

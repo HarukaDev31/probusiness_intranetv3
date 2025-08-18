@@ -79,11 +79,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useEtiquetadoEdit } from '~/composables/useEtiquetadoEdit'
-import { useProductSelector } from '~/composables/useProductSelector'
-import { useImageManagement } from '~/composables/useImageManagement'
-import { useFormValidation } from '~/composables/useFormValidation'
-import { useNavigation } from '~/composables/useNavigation'
+import { useEtiquetadoEdit } from '../composables/useEtiquetadoEdit'
+import { useProductSelector } from '../composables/useProductSelector'
+import { useImageManagement } from '../composables/useImageManagement'
+import { useFormValidation } from '../composables/useFormValidation'
+import { useNavigation } from '../composables/useNavigation'
 
 // Router and Route
 const router = useRouter()

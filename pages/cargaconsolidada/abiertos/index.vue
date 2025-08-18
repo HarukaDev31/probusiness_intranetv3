@@ -36,16 +36,16 @@
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
-import type { FilterConfig } from '~/types/data-table'
-import type { ContenedorFilters } from '~/types/cargaconsolidada/contenedor'
-import { ROLES } from '~/types/roles/roles'
-import { useUserRole } from '~/composables/auth/useUserRole'
-import { useSpinner } from '~/composables/commons/useSpinner'
-import { useModal } from '~/composables/commons/useModal'
+import { useConsolidado } from '../composables/cargaconsolidada/useConsolidado'
+import type { FilterConfig } from '../types/data-table'
+import type { ContenedorFilters } from '../types/cargaconsolidada/contenedor'
+import { ROLES } from '../types/roles/roles'
+import { useUserRole } from '../composables/auth/useUserRole'
+import { useSpinner } from '../composables/commons/useSpinner'
+import { useModal } from '../composables/commons/useModal'
 const { withSpinner } = useSpinner()
 const { hasRole, isCoordinacion } = useUserRole()
-import CreateConsolidadoModal from '~/components/cargaconsolidada/CreateConsolidadoModal.vue'
+import CreateConsolidadoModal from '../components/cargaconsolidada/CreateConsolidadoModal.vue'
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
 const { showSuccess, showConfirmation } = useModal()
 const {

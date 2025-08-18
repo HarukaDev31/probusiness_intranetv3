@@ -35,10 +35,10 @@
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
-import type { FilterConfig } from '~/types/data-table'
-import { ROLES } from '~/types/roles/roles'
-import { useUserRole } from '~/composables/auth/useUserRole'
+import { useConsolidado } from '../composables/cargaconsolidada/useConsolidado'
+import type { FilterConfig } from '../types/data-table'
+import { ROLES } from '../types/roles/roles'
+import { useUserRole } from '../composables/auth/useUserRole'
 const { hasRole, isCoordinacion } = useUserRole()
 
 // Constante de roles

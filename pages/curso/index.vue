@@ -12,7 +12,7 @@
     </div>
 </template>
 <script setup lang="ts">
-import { useCursos } from '~/composables/useCursos'
+import { useCursos } from '../composables/useCursos'
 import type { TableColumn } from '@nuxt/ui'
 const { cursosData, loading, currentPage, totalPages,getFiltros, fetchCursosData, totalRecords, itemsPerPage, search, filterConfig, filters, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, exportData } = useCursos()
 import { UButton, USelect } from '#components'

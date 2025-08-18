@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
+import { useConsolidado } from '../../../../composables/cargaconsolidada/useConsolidado'
 const { getConsolidadoPasos, pasos, loading } = useConsolidado()
 const route = useRoute()
 const id = Number(route.params.id)

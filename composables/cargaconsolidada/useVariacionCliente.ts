@@ -1,12 +1,12 @@
 import { ref, computed } from 'vue'
-import { VariacionService } from '~/services/cargaconsolidada/clientes/variacionService'
+import { VariacionService } from '../services/cargaconsolidada/clientes/variacionService'
 import type { 
   VariacionCliente, 
   ProveedorVariacion, 
   ArchivoVariacion,
   VariacionClienteUpdateRequest,
   ProveedorUpdateRequest
-} from '~/types/cargaconsolidada/variacion'
+} from '../types/cargaconsolidada/variacion'
 
 export const useVariacionCliente = () => {
   // Estado principal

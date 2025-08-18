@@ -1,4 +1,4 @@
-import { apiCall } from '~/utils/api'
+
 
 // Interfaces
 export interface AntidumpingMedia {
@@ -93,7 +93,7 @@ class AntidumpingService {
         })
       }
 
-      const response = await apiCall<AntidumpingResponse>('/api/base-datos/regulaciones/antidumping', {
+      const response = await this.apiCall<AntidumpingResponse>('/api/base-datos/regulaciones/antidumping', {
         method: 'POST',
         body: formData
       })

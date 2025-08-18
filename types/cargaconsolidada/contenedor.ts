@@ -1,5 +1,5 @@
-import type { Pais } from '~/types/commons/location'
-import type { PaginationInfo } from '~/types/data-table'
+import type { Pais } from '../types/commons/location'
+import type { PaginationInfo } from '../types/data-table'
 export interface Contenedor {
     id: number
     mes: string

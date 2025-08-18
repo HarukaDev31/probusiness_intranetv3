@@ -195,7 +195,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, h } from 'vue'
-import type { Cliente } from '~/services/clienteService'
+import type { Cliente } from '../services/clienteService'
 import type { TableColumn } from '@nuxt/ui'
 import { UButton } from '#components'
 
@@ -268,7 +268,7 @@ const loadCliente = async () => {
   error.value = null
 
   try {
-    const { clienteService } = await import('~/services/clienteService')
+    const { clienteService } = await import('../services/clienteService')
     const clienteData = await clienteService.getClienteById(clienteId)
     cliente.value = clienteData
 

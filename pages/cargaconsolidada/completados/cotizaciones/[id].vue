@@ -14,14 +14,14 @@
 </template>
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import { useCotizacionProveedor } from '~/composables/cargaconsolidada/userCotizacionProveedor'
+import { useCotizacionProveedor } from '../composables/cargaconsolidada/userCotizacionProveedor'
 const { getCotizacionProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
 const route = useRoute()
 const id = route.params.id
 import { USelect, UInput, UButton, UIcon } from '#components'
-import { useUserRole } from '~/composables/auth/useUserRole'
+import { useUserRole } from '../composables/auth/useUserRole'
 const currentRole = useUserRole()
-import { ROLES } from '~/constants/roles'
+import { ROLES } from '../constants/roles'
 
 const columnsCoordinacion= ref<TableColumn<any>[]>([
     {

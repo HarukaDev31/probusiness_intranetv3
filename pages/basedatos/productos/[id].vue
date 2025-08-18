@@ -243,10 +243,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import ProductService from '~/services/productService'
-import EntityService from '~/services/entityService'
-import ProductRubroService from '~/services/productRubroService'
-import { useUserRole } from '~/composables/auth/useUserRole'
+import ProductService from '../services/productService'
+import EntityService from '../services/entityService'
+import ProductRubroService from '../services/productRubroService'
+import { useUserRole } from '../composables/auth/useUserRole'
 // Route
 const route = useRoute()
 const router = useRouter()

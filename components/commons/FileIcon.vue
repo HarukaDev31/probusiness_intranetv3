@@ -3,9 +3,9 @@
 </template>
 
 <script setup lang="ts">
-import { FILE_ICONS_MAP } from '~/constants/file'
+import { FILE_ICONS_MAP } from '../constants/file'
 import { UIcon } from '#components'
-import type { FileItem } from '~/types/commons/file'
+import type { FileItem } from '../types/commons/file'
 
 const props = defineProps<{
     file: FileItem | File

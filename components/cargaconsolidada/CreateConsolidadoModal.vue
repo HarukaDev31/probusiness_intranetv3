@@ -85,8 +85,8 @@
 import { ref, defineEmits, defineProps } from 'vue'
 import { CalendarDate } from '@internationalized/date'
 import { getLocalTimeZone, DateFormatter, } from '@internationalized/date'
-import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
-import { useOptions } from '~/composables/commons/useOptions'
+import { useConsolidado } from '../composables/cargaconsolidada/useConsolidado'
+import { useOptions } from '../composables/commons/useOptions'
 //const modelValue = shallowRef(new CalendarDate(2022, 1, 10))
 const id = ref<number | null>(null)
 const carga = ref<number>()

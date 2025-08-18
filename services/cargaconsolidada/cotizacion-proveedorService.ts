@@ -1,4 +1,4 @@
-import { apiCall } from '~/utils/api'
+
 import type {
     ProveedoresResponse,
     DocumentosChinaResponse,
@@ -8,9 +8,10 @@ import type {
     CotizacionProveedorResponse,
     Proveedor,
     SaveDocumentosChina
-} from '~/types/cargaconsolidada/proveedores'
+} from '../../types/cargaconsolidada/proveedores'
+import { BaseService } from '../base/BaseService'
 
-export class CotizacionProveedorService {
+export class CotizacionProveedorService extends BaseService {
     private static readonly baseUrl = 'api/carga-consolidada/cotizaciones-proveedores'
 
     /**
@@ -24,7 +25,7 @@ export class CotizacionProveedorService {
         currentPage: number
     ): Promise<ProveedoresResponse> {
         try {
-            const response = await apiCall<ProveedoresResponse>(
+            const response = await this.apiCall<ProveedoresResponse>(
                 `${this.baseUrl}/contenedor/${id}`,
                 {
                     method: 'GET',
@@ -48,7 +49,7 @@ export class CotizacionProveedorService {
      */
     static async getDocumentosChina(id: number): Promise<DocumentosChinaResponse> {
         try {
-            const response = await apiCall<DocumentosChinaResponse>(
+            const response = await this.apiCall<DocumentosChinaResponse>(
                 `${this.baseUrl}/proveedor/documentos/${id}`,
                 { method: 'GET' }
             )
@@ -64,7 +65,7 @@ export class CotizacionProveedorService {
      */
     static async getInspeccionChina(id: number): Promise<InspeccionChinaResponse> {
         try {
-            const response = await apiCall<InspeccionChinaResponse>(
+            const response = await this.apiCall<InspeccionChinaResponse>(
                 `${this.baseUrl}/proveedor/inspeccion/${id}`,
                 { method: 'GET' }
             )
@@ -80,7 +81,7 @@ export class CotizacionProveedorService {
      */
     static async getNotasChina(id: number): Promise<NotasChinaResponse> {
         try {
-            const response = await apiCall<NotasChinaResponse>(
+            const response = await this.apiCall<NotasChinaResponse>(
                 `${this.baseUrl}/proveedor/notas/${id}`,
                 { method: 'GET' }
             )
@@ -92,7 +93,7 @@ export class CotizacionProveedorService {
     }
     static async getProveedor(id: number): Promise<CotizacionProveedorResponse> {
         try {
-            const response = await apiCall<CotizacionProveedorResponse>(
+            const response = await this.apiCall<CotizacionProveedorResponse>(
                 `${this.baseUrl}/proveedor/${id}`,
                 { method: 'GET' }
             )
@@ -110,7 +111,7 @@ export class CotizacionProveedorService {
             data.files.forEach((file:any, index:number) => {
                 formData.append(`files[${index}]`, file)
             })
-            const response = await apiCall<CotizacionProveedorResponse>(
+            const response = await this.apiCall<CotizacionProveedorResponse>(
                 `${this.baseUrl}/proveedor/documento`,
                 { method: 'POST', body: formData }
             )
@@ -122,7 +123,7 @@ export class CotizacionProveedorService {
     }
     static async deleteDocumentosChina(id: number): Promise<CotizacionProveedorResponse> {
         try {
-            const response = await apiCall<CotizacionProveedorResponse>(
+            const response = await this.apiCall<CotizacionProveedorResponse>(
                 `${this.baseUrl}/proveedor/documento/${id}`,
                 { method: 'DELETE' }
             )
@@ -134,7 +135,7 @@ export class CotizacionProveedorService {
     }
     static async deleteInspeccionChina(id: number): Promise<CotizacionProveedorResponse> {
         try {
-            const response = await apiCall<CotizacionProveedorResponse>(
+            const response = await this.apiCall<CotizacionProveedorResponse>(
                 `${this.baseUrl}/proveedor/inspeccion/${id}`,
                 { method: 'DELETE' }
             )
@@ -152,7 +153,7 @@ export class CotizacionProveedorService {
             data.files.forEach((file:any, index:number) => {
                 formData.append(`files[${index}]`, file)
             })
-            const response = await apiCall<CotizacionProveedorResponse>(
+            const response = await this.apiCall<CotizacionProveedorResponse>(
                 `${this.baseUrl}/proveedor/inspeccion`,
                 { method: 'POST', body: formData }
             )
@@ -164,7 +165,7 @@ export class CotizacionProveedorService {
     }
     static async saveNotasChina(data: any): Promise<CotizacionProveedorResponse> {
         try {
-            const response = await apiCall<CotizacionProveedorResponse>(
+            const response = await this.apiCall<CotizacionProveedorResponse>(
                 `${this.baseUrl}/proveedor/notas`,
                 { method: 'POST', body: data }
             )
@@ -176,7 +177,7 @@ export class CotizacionProveedorService {
     }
     static async deleteCotizacion(id: number): Promise<{success: boolean}> {
         try {
-            const response = await apiCall<{success: boolean}>(
+            const response = await this.apiCall<{success: boolean}>(
                 `${this.baseUrl}/proveedor/cotizacion/${id}`,
                 { method: 'DELETE' }
             )

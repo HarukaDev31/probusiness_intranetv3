@@ -291,8 +291,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import AntidumpingService from '~/services/antidumpingService'
-import ProductRubroService from '~/services/productRubroService'
+import AntidumpingService from '../services/antidumpingService'
+import ProductRubroService from '../services/productRubroService'
 
 // Types
 interface AntidumpingRegulation {
