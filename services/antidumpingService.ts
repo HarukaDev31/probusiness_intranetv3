@@ -53,12 +53,15 @@ export interface AntidumpingListResponse {
   data: Antidumping[]
   error?: string
 }
+import { BaseService } from "~/services/base/BaseService"
 
 // Service class
-class AntidumpingService {
+class AntidumpingService extends BaseService {
   private static instance: AntidumpingService
 
-  private constructor() {}
+  private constructor() {
+    super()
+  }
 
   public static getInstance(): AntidumpingService {
     if (!AntidumpingService.instance) {

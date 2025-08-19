@@ -1,6 +1,7 @@
 import type { GeneralResponse } from "../../../types/cargaconsolidada/factura-guia/general"
+import { BaseService } from "~/services/base/BaseService"
 
-export class GeneralService {
+export class GeneralService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor/factura-guia/general'
 
     static async getGeneral(id: number): Promise<GeneralResponse> {

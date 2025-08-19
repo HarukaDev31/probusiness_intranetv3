@@ -1,15 +1,15 @@
-
-import type { 
-  VariacionCliente, 
-  VariacionClienteResponse, 
-  VariacionClienteUpdateRequest,
-  ProveedorVariacion,
-  ArchivoVariacion
+import { BaseService } from "~/services/base/BaseService"
+import type {
+    VariacionCliente,
+    VariacionClienteResponse,
+    VariacionClienteUpdateRequest,
+    ProveedorVariacion,
+    ArchivoVariacion
 } from '../../../types/cargaconsolidada/variacion'
 
-export class VariacionService {
+export class VariacionService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor/clientes/variacion'
-    
+
     /**
      * Obtiene la lista de clientes de un consolidado
      */
@@ -37,7 +37,7 @@ export class VariacionService {
      * Actualiza la documentación de un cliente
      */
     static async updateClienteDocumentacion(
-        idCliente: number, 
+        idCliente: number,
         data: VariacionClienteUpdateRequest
     ): Promise<VariacionClienteResponse> {
         try {
@@ -86,11 +86,11 @@ export class VariacionService {
             const formData = new FormData()
             formData.append('archivo', archivo)
             formData.append('tipo', tipoArchivo)
-            
+
             if (idProveedor) {
                 formData.append('id_proveedor', idProveedor.toString())
             }
-            
+
             if (observaciones) {
                 formData.append('observaciones', observaciones)
             }
@@ -103,9 +103,9 @@ export class VariacionService {
             return { success: true, message: 'Archivo subido correctamente' }
         } catch (error: any) {
             console.error('Error al subir archivo:', error)
-            return { 
-                success: false, 
-                error: error.message || 'Error al subir el archivo' 
+            return {
+                success: false,
+                error: error.message || 'Error al subir el archivo'
             }
         }
     }
@@ -125,9 +125,9 @@ export class VariacionService {
             return { success: true, message: 'Archivo eliminado correctamente' }
         } catch (error: any) {
             console.error('Error al eliminar archivo:', error)
-            return { 
-                success: false, 
-                error: error.message || 'Error al eliminar el archivo' 
+            return {
+                success: false,
+                error: error.message || 'Error al eliminar el archivo'
             }
         }
     }
@@ -138,14 +138,14 @@ export class VariacionService {
     static async getProveedorArchivos(
         idCliente: number,
         idProveedor: number
-    ): Promise<{ 
-        documentacion: ArchivoVariacion[], 
-        inspeccion: ArchivoVariacion[] 
+    ): Promise<{
+        documentacion: ArchivoVariacion[],
+        inspeccion: ArchivoVariacion[]
     }> {
         try {
-            const response = await this.apiCall<{ 
-                documentacion: ArchivoVariacion[], 
-                inspeccion: ArchivoVariacion[] 
+            const response = await this.apiCall<{
+                documentacion: ArchivoVariacion[],
+                inspeccion: ArchivoVariacion[]
             }>(`${this.baseUrl}/documentacion/${idCliente}/proveedor/${idProveedor}/archivos`, {
                 method: 'GET'
             })
@@ -158,5 +158,18 @@ export class VariacionService {
             console.error('Error al obtener archivos del proveedor:', error)
             throw error
         }
+    }
+    static async updateVolSelected(data: any) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/vol-selected`, {
+                method: 'POST',
+                body: data
+            })
+            return response
+        } catch (error) {
+            console.error('Error al actualizar el volumen seleccionado:', error)
+            throw error
+        }
+
     }
 }

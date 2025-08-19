@@ -2,8 +2,7 @@
     <div class="p-6">
         <PageHeader title="Documentación del Cliente" subtitle="Gestión de documentos y cotizaciones"
             icon="i-heroicons-folder" :hide-back-button="false"
-            @back="navigateTo(`/cargaconsolidada/abiertos/clientes/${cliente?.id_contenedor}`)"
-            />
+            @back="navigateTo(`/cargaconsolidada/abiertos/clientes/${cliente?.id_contenedor}`)" />
 
         <!-- Loading state -->
         <div v-if="loading" class="mt-6">
@@ -64,39 +63,57 @@
                         <div class="space-y-4">
                             <div class="space-y-2">
                                 <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-36 animate-pulse"></div>
-                                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                                    <div class="mx-auto w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center animate-pulse">
+                                <div
+                                    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+                                    <div
+                                        class="mx-auto w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center animate-pulse">
                                         <div class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded"></div>
                                     </div>
                                     <div class="mt-4 space-y-2">
-                                        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mx-auto animate-pulse"></div>
-                                        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto animate-pulse"></div>
+                                        <div
+                                            class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mx-auto animate-pulse">
+                                        </div>
+                                        <div
+                                            class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto animate-pulse">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="space-y-2">
                                 <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28 animate-pulse"></div>
-                                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                                    <div class="mx-auto w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center animate-pulse">
+                                <div
+                                    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+                                    <div
+                                        class="mx-auto w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center animate-pulse">
                                         <div class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded"></div>
                                     </div>
                                     <div class="mt-4 space-y-2">
-                                        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mx-auto animate-pulse"></div>
-                                        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto animate-pulse"></div>
+                                        <div
+                                            class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mx-auto animate-pulse">
+                                        </div>
+                                        <div
+                                            class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto animate-pulse">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="space-y-2">
                                 <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40 animate-pulse"></div>
-                                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                                    <div class="mx-auto w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center animate-pulse">
+                                <div
+                                    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+                                    <div
+                                        class="mx-auto w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center animate-pulse">
                                         <div class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded"></div>
                                     </div>
                                     <div class="mt-4 space-y-2">
-                                        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mx-auto animate-pulse"></div>
-                                        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto animate-pulse"></div>
+                                        <div
+                                            class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mx-auto animate-pulse">
+                                        </div>
+                                        <div
+                                            class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto animate-pulse">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -154,16 +171,16 @@
             <UCard class="mb-6 ">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-blue-800 mb-1">Cliente</label>
-                        <span class="text-blue-900 font-semibold">{{ cliente?.nombre }}</span>
+                        <label class="block text-sm font-medium ">Cliente</label>
+                        <span class=" font-semibold">{{ cliente?.nombre }}</span>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-blue-800 mb-1">Documento</label>
-                        <span class="text-blue-900">{{ cliente?.documento }}</span>
+                        <label class="block text-sm font-medium ">Documento</label>
+                        <span class="">{{ cliente?.documento }}</span>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-blue-800 mb-1">Estado</label>
-                        <span class="text-blue-900">{{ cliente?.estado }}</span>
+                        <label class="block text-sm font-medium ">Estado</label>
+                        <span class="">{{ cliente?.estado }}</span>
                     </div>
                 </div>
             </UCard>
@@ -181,16 +198,36 @@
                 <!-- Sección de Documentación -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                     <template #header>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Documentación - {{ proveedorActivo.code_supplier }}
-                                </h3>
+                                                    <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                        Documentación - {{ proveedorActivo.code_supplier }}
+                                    </h3>
+                                    <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
+                                        Cambios sin guardar
+                                    </UBadge>
+                                </div>
+                                <div class="flex gap-2">
+                                    <UButton 
+                                        v-if="hasUnsavedChanges"
+                                        label="Guardar cambios" 
+                                        color="primary" 
+                                        variant="solid" 
+                                        icon="i-heroicons-check"
+                                        size="sm" 
+                                        @click="handleSaveChanges" 
+                                    />
+                                    <UButton 
+                                        label="Nuevo Documento" 
+                                        color="warning" 
+                                        variant="solid" 
+                                        icon="i-heroicons-plus"
+                                        size="sm" 
+                                        @click="handleNuevoDocumento" 
+                                    />
+                                </div>
                             </div>
-                            <UButton label="Nuevo Documento" color="warning" variant="solid" icon="i-heroicons-plus"
-                                size="sm" @click="handleNuevoDocumento" />
-                        </div>
                     </template>
 
                     <div class="space-y-4">
@@ -237,10 +274,19 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Excel Confirmación
                             </label>
+                            {{ proveedorActivo.value }}
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']"
-                                :custom-message="'Selecciona o arrastra tu archivo aquí'"
-                                @files-selected="handleExcelConfirmacion"
-                                @file-removed="handleRemoveExcelConfirmacion" />
+                                :immediate="false"
+
+                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="[{
+                                    id:  proveedorActivo.id , // debe ser número
+                                    file_name: 'Excel Confirmación',
+                                    file_url: proveedorActivo.excel_confirmacion,
+                                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // tipo MIME si está disponible, si no dejar vacío
+                                    size: 0, // tamaño en bytes si está disponible, si no dejar en 0
+                                    lastModified: 0, // timestamp si está disponible, si no dejar en 0
+                                    file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
+                                }]" @files-selected="handleExcelConfirmacion" @file-removed="handleRemoveExcelConfirmacion" />
                         </div>
                     </div>
                 </UCard>
@@ -264,67 +310,7 @@
                 </UCard>
             </div>
 
-            <!-- Archivos del proveedor activo -->
-            <div v-if="proveedorActivo && (archivosDocumentacion.length > 0 || archivosInspeccion.length > 0)"
-                class="mt-6">
-                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                    <template #header>
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                            Archivos - {{ proveedorActivo.code_supplier }}
-                        </h3>
-                    </template>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Archivos de Documentación -->
-                        <div v-if="archivosDocumentacion.length > 0">
-                            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-3">Documentación</h4>
-                            <div class="space-y-2">
-                                <div v-for="archivo in archivosDocumentacion" :key="archivo.id"
-                                    class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                    <div class="flex items-center gap-3">
-                                        <UIcon name="i-heroicons-document" class="w-5 h-5 text-gray-500" />
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{
-                                                archivo.file_name }}</p>
-                                            <p class="text-xs text-gray-500">{{ archivo.file_ext }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <UButton icon="i-heroicons-arrow-down-tray" variant="ghost" size="xs"
-                                            @click="downloadArchivo(archivo.file_url)" />
-                                        <UButton icon="i-heroicons-trash" variant="ghost" size="xs" color="error"
-                                            @click="deleteArchivo(Number(cliente?.id), archivo.id)" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Archivos de Inspección -->
-                        <div v-if="archivosInspeccion.length > 0">
-                            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-3">Inspección</h4>
-                            <div class="space-y-2">
-                                <div v-for="archivo in archivosInspeccion" :key="archivo.id"
-                                    class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                    <div class="flex items-center gap-3">
-                                        <UIcon name="i-heroicons-camera" class="w-5 h-5 text-gray-500" />
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{
-                                                archivo.file_name }}</p>
-                                            <p class="text-xs text-gray-500">{{ archivo.file_ext }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <UButton icon="i-heroicons-arrow-down-tray" variant="ghost" size="xs"
-                                            @click="downloadArchivo(archivo.file_url)" />
-                                        <UButton icon="i-heroicons-trash" variant="ghost" size="xs" color="error"
-                                            @click="deleteArchivo(Number(cliente?.id), archivo.id)" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </UCard>
-            </div>
         </div>
     </div>
 </template>
@@ -332,10 +318,11 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useModal } from '../composables/commons/useModal'
-import { useSpinner } from '../composables/commons/useSpinner'
-import { useVariacionCliente } from '../composables/cargaconsolidada/useVariacionCliente'
-import FileUploader from '../components/commons/FileUploader.vue'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useVariacionCliente } from '~/composables/cargaconsolidada/useVariacionCliente'
+import FileUploader from '~/components/commons/FileUploader.vue'
+import type { FileItem } from '~/types/commons/file'
 
 // Composables
 const { showSuccess, showError } = useModal()
@@ -359,6 +346,24 @@ const {
     deleteArchivo
 } = useVariacionCliente()
 
+// Estado local para cambios pendientes
+const pendingChanges = ref({
+    volumen_doc: null as number | null,
+    valor_doc: null as number | null,
+    factura_comercial: null as File | null,
+    packing_list: null as File | null,
+    excel_confirmacion: null as File | null
+})
+
+// Estado para controlar si hay cambios sin guardar
+const hasUnsavedChanges = computed(() => {
+    return pendingChanges.value.volumen_doc !== null ||
+           pendingChanges.value.valor_doc !== null ||
+           pendingChanges.value.factura_comercial !== null ||
+           pendingChanges.value.packing_list !== null ||
+           pendingChanges.value.excel_confirmacion !== null
+})
+
 // Route
 const route = useRoute()
 const clienteId = Number(route.params.id)
@@ -369,99 +374,100 @@ const handleTabChange = async (tabId: string) => {
 }
 
 // Manejadores de campos del proveedor
-const handleVolumenChange = async (value: number) => {
-    if (!proveedorActivo.value) return
-
-    const result = await updateProveedorDocumentacion(clienteId, proveedorActivo.value.id, {
-        volumen_doc: value
-    })
-
-    if (result.success) {
-        showSuccess('Éxito', 'Volumen actualizado correctamente')
-    } else {
-        showError('Error', result.error || 'Error al actualizar el volumen')
-    }
+const handleVolumenChange = (value: number) => {
+    pendingChanges.value.volumen_doc = value
 }
 
-const handleValorChange = async (value: number) => {
-    if (!proveedorActivo.value) return
-
-    const result = await updateProveedorDocumentacion(clienteId, proveedorActivo.value.id, {
-        valor_doc: value
-    })
-
-    if (result.success) {
-        showSuccess('Éxito', 'Valor actualizado correctamente')
-    } else {
-        showError('Error', result.error || 'Error al actualizar el valor')
-    }
+const handleValorChange = (value: number) => {
+    pendingChanges.value.valor_doc = value
 }
 
 // Manejadores de archivos
-const handleFacturaComercial = async (files: File[]) => {
-    if (files.length > 0 && proveedorActivo.value) {
-        const result = await uploadArchivo(
-            clienteId,
-            'factura_comercial',
-            files[0],
-            proveedorActivo.value.id
-        )
-
-        if (result.success) {
-            showSuccess('Éxito', 'Factura comercial cargada correctamente')
-        } else {
-            showError('Error', result.error || 'Error al cargar la factura comercial')
-        }
+const handleFacturaComercial = (files: File[]) => {
+    if (files.length > 0) {
+        pendingChanges.value.factura_comercial = files[0]
     }
 }
 
-const handleRemoveFacturaComercial = (index: number) => {
-    console.log('Factura comercial removida:', index)
-    showSuccess('Éxito', 'Factura comercial removida')
+const handleRemoveFacturaComercial = () => {
+    pendingChanges.value.factura_comercial = null
 }
 
-const handlePackingList = async (files: File[]) => {
-    if (files.length > 0 && proveedorActivo.value) {
-        const result = await uploadArchivo(
-            clienteId,
-            'packing_list',
-            files[0],
-            proveedorActivo.value.id
-        )
-
-        if (result.success) {
-            showSuccess('Éxito', 'Packing list cargado correctamente')
-        } else {
-            showError('Error', result.error || 'Error al cargar el packing list')
-        }
+const handlePackingList = (files: File[]) => {
+    if (files.length > 0) {
+        pendingChanges.value.packing_list = files[0]
     }
 }
 
-const handleRemovePackingList = (index: number) => {
-    console.log('Packing list removido:', index)
-    showSuccess('Éxito', 'Packing list removido')
+const handleRemovePackingList = () => {
+    pendingChanges.value.packing_list = null
 }
 
-const handleExcelConfirmacion = async (files: File[]) => {
-    if (files.length > 0 && proveedorActivo.value) {
-        const result = await uploadArchivo(
-            clienteId,
-            'excel_confirmacion',
-            files[0],
-            proveedorActivo.value.id
-        )
-
-        if (result.success) {
-            showSuccess('Éxito', 'Excel confirmación cargado correctamente')
-        } else {
-            showError('Error', result.error || 'Error al cargar el excel confirmación')
-        }
+const handleExcelConfirmacion = (files: File[]) => {
+    if (files.length > 0) {
+        pendingChanges.value.excel_confirmacion = files[0]
     }
 }
 
-const handleRemoveExcelConfirmacion = (index: number) => {
-    console.log('Excel confirmación removido:', index)
-    showSuccess('Éxito', 'Excel confirmación removido')
+const handleRemoveExcelConfirmacion = () => {
+    pendingChanges.value.excel_confirmacion = null
+}
+
+// Función para guardar todos los cambios
+const handleSaveChanges = async () => {
+    if (!proveedorActivo.value || !hasUnsavedChanges.value) return
+
+    try {
+        await withSpinner(async () => {
+            // Preparar FormData con todos los cambios
+            const formData = new FormData()
+            
+            // Agregar valores si han cambiado
+            if (pendingChanges.value.volumen_doc !== null) {
+                formData.append('volumen_doc', pendingChanges.value.volumen_doc.toString())
+            }
+            if (pendingChanges.value.valor_doc !== null) {
+                formData.append('valor_doc', pendingChanges.value.valor_doc.toString())
+            }
+
+            // Agregar archivos si han cambiado
+            if (pendingChanges.value.factura_comercial) {
+                formData.append('file_comercial', pendingChanges.value.factura_comercial)
+            }
+            if (pendingChanges.value.packing_list) {
+                formData.append('packing_list', pendingChanges.value.packing_list)
+            }
+            if (pendingChanges.value.excel_confirmacion) {
+                formData.append('excel_confirmacion', pendingChanges.value.excel_confirmacion)
+            }
+
+            // Agregar IDs
+            formData.append('id', clienteId.toString())
+            formData.append('idProveedor', proveedorActivo.value.id.toString())
+
+            // Enviar todos los cambios en una sola petición
+            const result = await updateProveedorDocumentacion(clienteId, proveedorActivo.value.id, formData)
+
+            if (!result.success) {
+                throw new Error(result.error || 'Error al guardar los cambios')
+            }
+
+            // Limpiar cambios pendientes
+            pendingChanges.value = {
+                volumen_doc: null,
+                valor_doc: null,
+                factura_comercial: null,
+                packing_list: null,
+                excel_confirmacion: null
+            }
+
+            // Recargar datos
+            await getClienteDocumentacion(clienteId)
+            showSuccess('Éxito', 'Todos los cambios se han guardado correctamente')
+        }, 'Guardando cambios...')
+    } catch (error: any) {
+        showError('Error', error.message || 'Error al guardar los cambios')
+    }
 }
 
 // Manejadores de cotizaciones
@@ -536,10 +542,15 @@ const downloadArchivo = async (fileUrl: string) => {
     }
 }
 
-// Lifecycle
-onMounted(() => {
+onMounted(async () => {
     if (clienteId) {
-        getClienteDocumentacion(clienteId)
+        await getClienteDocumentacion(clienteId)
+        // Seleccionar el primer proveedor si existe
+        if (proveedores.value && proveedores.value.length > 0) {
+            const primerProveedor = proveedores.value[0]
+            activeTab.value = primerProveedor.id.toString()
+            await cambiarProveedor(primerProveedor.id.toString())
+        }
     }
 })
 </script>

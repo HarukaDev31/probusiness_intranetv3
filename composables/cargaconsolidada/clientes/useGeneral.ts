@@ -34,6 +34,14 @@ export const useGeneral = () => {
             loadingGeneral.value = false
         }
     }
+    const updateEstadoCliente = async (data: any) => {
+        try {
+            const response = await GeneralService.updateEstadoCliente(data)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
     return {
         clientes,
         loadingGeneral,
@@ -46,6 +54,7 @@ export const useGeneral = () => {
         filtersGeneral,
         filterConfig,
         getClientes,
-        totalRecordsGeneral
+        totalRecordsGeneral,
+        updateEstadoCliente
     }
 }   

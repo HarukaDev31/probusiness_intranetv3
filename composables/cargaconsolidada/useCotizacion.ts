@@ -112,7 +112,8 @@ export const useCotizacion = () => {
             const response = await CotizacionService.updateEstadoCotizacionCotizador(id, data)
             return response
         } catch (error) {
-            console.error('Error en updateEstadoCotizacionCotizador:', error)
+            console.log(error)
+            throw error
         }
     }
     return {

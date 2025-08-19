@@ -1,7 +1,8 @@
 import type { PagosResponse } from "../../../types/cargaconsolidada/cotizacion-final/pagos"
+import { BaseService } from "~/services/base/BaseService"
 
     
-export class PagosService {
+export class PagosService  extends BaseService  {
     private static baseUrl = 'api/carga-consolidada/contenedor/cotizacion-final/pagos'
 
     static async getPagos(id: number): Promise<PagosResponse> {

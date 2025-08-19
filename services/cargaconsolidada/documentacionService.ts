@@ -5,9 +5,10 @@ import type {
   DocumentacionFilters,
   DocumentacionUpdateRequest,
   DocumentacionUploadRequest
-} from '../types/cargaconsolidada/documentacion'
+} from '~/types/cargaconsolidada/documentacion'
+import { BaseService } from "~/services/base/BaseService"
 
-export class DocumentacionService {
+export class DocumentacionService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor/documentacion'
     
     /**
@@ -27,7 +28,7 @@ export class DocumentacionService {
 
             const url = `${this.baseUrl}/${id}`
             
-            const response = await apiCall<DocumentacionResponse>(url, {
+            const response = await this.apiCall<DocumentacionResponse>(url, {
                 method: 'GET'
             })
             return response
@@ -42,7 +43,7 @@ export class DocumentacionService {
      */
     static async getFolderById(folderId: string): Promise<DocumentacionFolder> {
         try {
-            const response = await apiCall<DocumentacionFolder>(`${this.baseUrl}/folders/${folderId}`, {
+            const response = await this.apiCall<DocumentacionFolder>(`${this.baseUrl}/folders/${folderId}`, {
                 method: 'GET'
             })
             return response
@@ -57,7 +58,7 @@ export class DocumentacionService {
      */
     static async getFoldersByCategoria(categoria: 'ENVIO' | 'COMERCIAL' | 'LEGAL'): Promise<DocumentacionResponse> {
         try {
-            const response = await apiCall<DocumentacionResponse>(`${this.baseUrl}/folders/categoria/${categoria}`, {
+            const response = await this.apiCall<DocumentacionResponse>(`${this.baseUrl}/folders/categoria/${categoria}`, {
                 method: 'GET'
             })
             return response
@@ -72,7 +73,7 @@ export class DocumentacionService {
      */
     static async createFolder(data: Omit<DocumentacionUpdateRequest, 'id_file' | 'file_url'>): Promise<DocumentacionResponse> {
         try {
-            const response = await apiCall<DocumentacionResponse>(`${this.baseUrl}/folders`, {
+            const response = await this.apiCall<DocumentacionResponse>(`${this.baseUrl}/folders`, {
                 method: 'POST',
                 data
             })
@@ -88,7 +89,7 @@ export class DocumentacionService {
      */
     static async updateFolder(folderId: string, data: DocumentacionUpdateRequest): Promise<DocumentacionResponse> {
         try {
-            const response = await apiCall<DocumentacionResponse>(`${this.baseUrl}/folders/${folderId}`, {
+            const response = await this.apiCall<DocumentacionResponse>(`${this.baseUrl}/folders/${folderId}`, {
                 method: 'PUT',
                 data
             })
@@ -104,7 +105,7 @@ export class DocumentacionService {
      */
     static async deleteFolder(folderId: string): Promise<{ success: boolean; message?: string; error?: string }> {
         try {
-            await apiCall(`${this.baseUrl}/folders/${folderId}`, {
+            await this.apiCall<any>(`${this.baseUrl}/folders/${folderId}`, {
                 method: 'DELETE'
             })
 
@@ -135,7 +136,7 @@ export class DocumentacionService {
                 formData.append('id_proveedor', data.id_proveedor.toString())
             }
 
-            const response = await apiCall(`${this.baseUrl}/upload`, {
+            const response = await this.apiCall<any>(`${this.baseUrl}/upload`, {
                 method: 'POST',
                 body: formData
             })
@@ -159,7 +160,7 @@ export class DocumentacionService {
      */
     static async getFolderFiles(folderId: string): Promise<{ success: boolean; files: any[]; error?: string }> {
         try {
-            const response = await apiCall(`${this.baseUrl}/folders/${folderId}/files`, {
+            const response = await this.apiCall<any>(`${this.baseUrl}/folders/${folderId}/files`, {
                 method: 'GET'
             })
 
@@ -182,7 +183,7 @@ export class DocumentacionService {
      */
     static async deleteFile(fileId: string): Promise<{ success: boolean; message?: string; error?: string }> {
         try {
-            await apiCall(`${this.baseUrl}/files/${fileId}`, {
+            await this.apiCall(`${this.baseUrl}/files/${fileId}`, {
                 method: 'DELETE'
             })
 
@@ -201,7 +202,7 @@ export class DocumentacionService {
      */
     static async getFoldersByContenedor(contenedorId: string): Promise<DocumentacionResponse> {
         try {
-            const response = await apiCall<DocumentacionResponse>(`${this.baseUrl}/folders/contenedor/${contenedorId}`, {
+            const response = await this.apiCall<DocumentacionResponse>(`${this.baseUrl}/folders/contenedor/${contenedorId}`, {
                 method: 'GET'
             })
             return response
@@ -220,7 +221,7 @@ export class DocumentacionService {
         folders_con_archivos: number
     }> {
         try {
-            const response = await apiCall(`${this.baseUrl}/stats`, {
+            const response = await this.apiCall<any>(`${this.baseUrl}/stats`, {
                 method: 'GET'
             })
 

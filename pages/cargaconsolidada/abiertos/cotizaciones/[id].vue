@@ -2,11 +2,11 @@
     <div class="p-6">
         <PageHeader title="Cotizaciones" subtitle="Gestión de cotizaciones" icon="i-heroicons-book-open"
             :hide-back-button="true" />
-        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
+        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" />
 
-        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()" :headers="headersCotizaciones"
-            :show-headers="true"
-            :loading="loadingCotizaciones" :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
+        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
+            :headers="headersCotizaciones" :show-headers="true" :loading="loadingCotizaciones"
+            :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
             :total-records="totalRecordsCotizaciones" :items-per-page="itemsPerPageCotizaciones"
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
             :filter-config="filterConfigProspectos" :show-export="true"
@@ -19,11 +19,19 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :columns="columns"
-            :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-            :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
-            :show-filters="true" :filter-config="filterConfig" :show-export="true"
+        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor"
+            :columns="getEmbarqueColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
+            :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
+            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
+            @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
+            @filter-change="handleFilterChange">
+        </DataTable>
+        <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos"
+            :columns="getPagosColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
+            :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
+            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
+            empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange">
         </DataTable>
@@ -36,18 +44,23 @@ import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES } from '~/constants/roles'
-import { USelect, UInput, UButton, UIcon } from '#components'
+import { USelect, UInput, UButton, UIcon ,UBadge} from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
-import CreateProspectoModal from '~/components/cargaconsolidada/CreateProspectoModal'
+import CreateProspectoModal from '~/components/cargaconsolidada/CreateProspectoModal.vue'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import MoveCotizacionModal from '~/components/cargaconsolidada/MoveCotizacionModal.vue'
-const { getCotizacionProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
-const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile,updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones, headersCotizaciones } = useCotizacion()
+import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
+import ModalPreview from '~/components/commons/ModalPreview.vue'
+import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
+import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
+const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
+const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones, headersCotizaciones } = useCotizacion()
+const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headersPagos } = useCotizacionPagos()
 const { withSpinner } = useSpinner()
 const route = useRoute()
 const id = route.params.id
-const { showConfirmation, showSuccess } = useModal()
+const { showConfirmation, showSuccess, showError } = useModal()
 const tabs = [
     {
         label: 'Prospectos',
@@ -57,12 +70,15 @@ const tabs = [
         label: 'Por Embarcar',
         value: 'embarque'
     },
+    {
+        label: 'Pagos',
+        value: 'pagos'
+    }
 
 ]
 const tab = ref('')
 
 const { currentRole } = useUserRole()
-// Configuración de filtros para prospectos
 const filterConfigProspectos = ref([
     {
         key: 'estado',
@@ -362,13 +378,489 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             return h(USelect as any, {
                 items: filterConfigProspectos.value.find((filter: any) => filter.key === 'estado')?.options.filter((option: any) => option.inrow),
                 placeholder: 'Seleccionar estado',
-                value: estado,
-                class: 'w-full',
                 modelValue: estado,
+                class: 'w-full',
                 'onUpdate:modelValue': (value: any) => {
-                    handleUpdateEstadoCotizacion(row.original.id, value)
+                    if (value && value !== estado) {
+                        handleUpdateEstadoCotizacion(row.original.id, value)
+                    }
                 }
             })
+        }
+    }
+])
+//N.	Nombre	DNI/RUC	Whatsapp	T. Cliente	Estado	Conceptop	Importe	Pagado	Adelantos
+const getPagosColumns = () => {
+    return [
+        {
+            accessorKey: 'index',
+            header: 'N°',
+            cell: ({ row }: { row: any }) => {
+                return row.index + 1
+            }
+        },
+        {
+            accessorKey: 'nombre',
+            header: 'Nombre',
+            cell: ({ row }: { row: any }) => row.original.nombre
+        },
+        {
+            accessorKey: 'documento',
+            header: 'DNI/RUC',
+            cell: ({ row }: { row: any }) => row.original.documento
+        },
+        {
+            accessorKey: 'whatsapp',
+            header: 'Whatsapp',
+            cell: ({ row }: { row: any }) => row.original.telefono
+        },
+        {
+            accessorKey: 'tipo_cliente',
+            header: 'T. Cliente',
+            cell: ({ row }: { row: any }) => {
+                return row.original.tipo_cliente
+            }
+        },
+        {
+            accessorKey: 'estado_pago',
+            header: 'Estado',
+            cell: ({ row }: { row: any }) => {
+                const estado = row.original.estado_pago
+                const color = getEstadoPago(estado)
+                return h('span', {
+                    class: `px-2 py-1 rounded-md text-xs font-medium ${color}`
+                }, estado)
+            }
+        },
+       
+        {
+            accessorKey: 'concepto',
+            header: 'Concepto',
+            cell: ({ row }: { row: any }) => row.original.tipo_pago
+        },
+        {
+            accessorKey: 'importe',
+            header: 'Importe',
+            cell: ({ row }: { row: any }) => formatCurrency(row.original.monto)
+        },
+        {
+            accessorKey: 'pagado',
+            header: 'Pagado',
+            cell: ({ row }: { row: any }) => formatCurrency(row.original.total_pagos)
+        },
+        /**adleantos "pagos": [
+                {
+                    "id": 291,
+                    "monto": "1237.6000",
+                    "fecha_pago": "2025-07-30",
+                    "estado": "PENDIENTE",
+                    "is_confirmed": 0,
+                    "banco": "BCP",
+                    "voucher_url": "https:\/\/intranet.probusiness.pe\/assets\/cargaconsolidada\/pagos\/1753917804_WhatsApp%20Image%202025-07-30%20at%206.22.03%20PM.jpeg"
+                }
+            ] */
+        {
+            accessorKey: 'adelantos',   
+            header: 'Adelantos',
+            cell: ({ row }: { row: any }) => {
+                const pagos = row.original.pagos || []
+                
+                return h('div', {
+                    class: 'flex flex-row gap-2 items-center flex-wrap'
+                }, [
+                    ...pagos.map((pago: any) => 
+                        h('div', {
+                            class: 'flex items-center bg-gray-100 rounded-lg p-2 cursor-pointer hover:bg-gray-200',
+                            onClick: () => {
+                                const modal = overlay.create(AdelantoPreviewModal)
+                                modal.open({
+                                    modelValue: true,
+                                    pago,
+                                    'update:modelValue': (value: boolean) => {
+                                        if (!value) modal.close()
+                                    },
+                                    onDelete: async () => {
+                                        try {
+                                            // TODO: Implementar la eliminación del voucher
+                                            showSuccess('Voucher eliminado correctamente', 'El voucher se ha eliminado correctamente')
+                                            await getCotizaciones(Number(id))
+                                            modal.close()
+                                        } catch (error) {
+                                            showError('Error al eliminar el voucher', error)
+                                        }
+                                    }
+                                })
+                            }
+                        }, [
+                            h(UBadge, {
+                                color: pago.is_confirmed ? 'success' : 'neutral',
+                                variant: 'subtle',
+                                size: 'xs',
+                                label: formatCurrency(pago.monto, 'USD')
+                            })  
+                           
+                        ])
+                    ),
+                    h(UButton, {
+                        icon: 'i-heroicons-plus',
+                        variant: 'ghost',
+                        size: 'xs',
+                        onClick: () => {
+                            const modal = overlay.create(CreatePagoModal)
+                            modal.open({
+                                idCotizacion: row.original.cotizacion_id,
+                                onSuccess: () => {
+                                    getCotizaciones(Number(id))
+                                }
+                            })
+                        }
+                    })
+                ])
+            }
+        }
+        ]
+}
+const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
+    //Asesor	Status	N.	Buyer	Whatsapp	Estado	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
+    {
+        accessorKey: 'asesor',
+        header: 'Asesor',
+        cell: ({ row }: { row: any }) => row.original.No_Nombres_Apellidos
+    },
+    {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+
+            const div = h('div',
+                {
+                    class: 'flex flex-col gap-2'
+                },
+                proveedores.map((proveedor: any) => {
+                    return h(USelect as any, {
+                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
+                        placeholder: 'Seleccionar estado',
+                        value: proveedor.estados_proveedor,
+                        class: 'w-full',
+                        disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
+                        modelValue: proveedor.estados_proveedor,
+                        'onUpdate:modelValue': (value: any) => {
+                            proveedor.estados_proveedor = value
+                        }
+                    })
+                }))
+            return div
+
+        }
+    },
+    {
+        accessorKey: 'n',
+        header: 'N.',
+        cell: ({ row }: { row: any }) => {
+            //return index + 1
+            return row.index + 1
+        }
+    },
+    {
+        accessorKey: 'buyer',
+        header: 'Buyer',
+        cell: ({ row }: { row: any }) => {
+            return row.original.nombre
+        }
+    },
+    {
+        accessorKey: 'whatsapp',
+        header: 'Whatsapp',
+        cell: ({ row }: { row: any }) => row.original.telefono
+    },
+    {
+        accessorKey: 'estado',
+        header: 'Estado',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const estados = [
+                {
+                    label: 'Seleccionar',
+                    value: 'PENDIENTE',
+                    disabled: true
+                },
+                {
+                    label: 'ROTULADO',
+                    value: 'ROTULADO',
+                },
+                {
+                    label: 'DATOS PROVEEDOR',
+                    value: 'DATOS PROVEEDOR',
+                    disabled: true
+                },
+                {
+                    label: 'INSPECCIONADO',
+                    value: 'INSPECCIONADO',
+                    disabled: true
+                },
+                {
+                    label: 'COBRANDO',
+                    value: 'COBRANDO',
+                },
+                {
+                    label: 'RESERVADO',
+                    value: 'RESERVADO',
+                },
+
+
+            ]
+            console.log(proveedores)
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(USelect as any, {
+                    items: estados,
+                    placeholder: 'Seleccionar estado',
+                    modelValue: proveedor.estados,
+                    class: 'w-full',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.estados = value
+                        handleUpdateProveedorEstado(proveedor.id, value)
+                    }
+                })
+            }))
+            return div
+
+        }
+    },
+    {
+        accessorKey: 'productos',
+        header: 'Productos',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.products,
+                    class: 'w-full',
+                    disabled: currentRole.value !== ROLES.COTIZADOR,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.products = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'qty_box',
+        header: 'Qty Box',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.qty_box,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.qty_box = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'cbm_total',
+        header: 'CBM t.',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.cbm_total,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.cbm_total = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'peso',
+        header: 'Weight',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.peso,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.peso = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'supplier',
+        header: 'Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.supplier,
+                    class: 'w-full',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.supplier = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'code_supplier',
+        header: 'Code Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.code_supplier,
+                    class: 'w-full',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.code_supplier = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'supplier_phone',
+        header: 'Supplier Phone',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.supplier_phone,
+                    class: 'w-full',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.supplier_phone = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'qty_box_supplier',
+        header: 'Qty Box Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.qty_box_china,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.qty_box_china = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'cbm_total_supplier',
+        header: 'CBM Total Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.cbm_total_china,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.cbm_total_china = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+
+    {
+        accessorKey: 'arrive_date',
+        header: 'Arrive Date',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.arrive_date_china,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.arrive_date_china = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'actions',
+        header: 'Actions',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+
+            return h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h('div', {
+                    class: 'flex flex-row gap-2'
+                }, [
+                    h(UButton, {
+                        icon: 'i-heroicons-eye',
+                        variant: 'ghost',
+                        size: 'xs',
+                        onClick: () => {
+                            navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion-china/${proveedor.id}`)
+                        }
+                    }),
+                    h(UButton, {
+                        icon: 'i-heroicons-document-arrow-down',
+                        variant: 'ghost',
+                        size: 'xs',
+                        onClick: () => {
+                            updateProveedorData(proveedor)
+                        }
+                    })
+                ])
+            }))
         }
     }
 ])
@@ -402,20 +894,36 @@ const handleRefresh = async (idCotizacion: number) => {
             }, 'Actualizando cotización...')
         })
     } catch (error) {
-        showError('Error al actualizar la cotización')
+        showError('Error al actualizar la cotización', error)
     }
 }
 const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string) => {
     try {
         await withSpinner(async () => {
-            const response = await updateEstadoCotizacionCotizador(idCotizacion, { estado })
-            if (response?.success) {
-                showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
-                await getCotizaciones(Number(id))
+            try {
+                const response = await updateEstadoCotizacionCotizador(idCotizacion, { estado })
+                if (response?.success) {
+                    showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
+                    await getCotizaciones(Number(id))
+                }
+            } catch (error: any) {
+                console.log(error.data)
+                showError('Error al actualizar el estado de la cotización', error)
             }
         }, 'Actualizando estado de la cotización...')
     } catch (error) {
-        showError('Error al actualizar el estado de la cotización')
+        showError('Error al actualizar el estado de la cotización', error)
+    }
+}
+const handleUpdateProveedorEstado = async (idProveedor: number, estado: string) => {
+    try {
+        await withSpinner(async () => {
+            await updateProveedorEstado({ id: idProveedor, estado })
+            showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
+            await getCotizaciones(Number(id))
+        }, 'Actualizando estado del proveedor...')
+    } catch (error) {
+        showError('Error al actualizar el estado del proveedor', error)
     }
 }
 const handleUpdateCotizacion = async (idCotizacion: number) => {
@@ -441,7 +949,7 @@ const handleDeleteFile = async (idCotizacion: number) => {
             }, 'Eliminando archivo...')
         })
     } catch (error) {
-        showError('Error al eliminar el archivo de la cotización')
+        showError('Error al eliminar el archivo de la cotización', error)
     }
 }
 
@@ -458,7 +966,7 @@ const handleDelete = async (idCotizacion: number) => {
             }, 'Eliminando cotización...')
         })
     } catch (error) {
-        showError('Error al eliminar cotización')
+        showError('Error al eliminar cotización', error)
     }
 }
 const getProespectosColumns = () => {
@@ -467,6 +975,12 @@ const getProespectosColumns = () => {
             return prospectosCoordinacionColumns.value
         default:
             return prospectosColumns.value
+    }
+}
+const getEmbarqueColumns = () => {
+    switch (currentRole.value) {
+        default:
+            return embarqueCotizadorColumns.value
     }
 }
 // Función para obtener el color del estado
@@ -478,6 +992,21 @@ const getEstadoColor = (estado: string) => {
             return 'bg-blue-100 text-blue-800 border-blue-200'
         case 'CONFIRMADO':
             return 'bg-green-100 text-green-800 border-green-200'
+        default:
+            return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+}
+const getEstadoPago = (estado: string) => {
+    //PENDIENTE, PAGADO,ADELANTO,SOBREPAGADO
+    switch (estado) {
+        case 'PENDIENTE':
+            return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        case 'PAGADO':
+            return 'bg-green-100 text-green-800 border-green-200'
+        case 'ADELANTO':
+            return 'bg-blue-100 text-blue-800 border-blue-200'
+        case 'SOBREPAGADO':
+            return 'bg-red-100 text-red-800 border-red-200'
         default:
             return 'bg-gray-100 text-gray-800 border-gray-200'
     }
@@ -538,7 +1067,10 @@ watch(tab, async (newVal, oldVal) => {
             await getCotizaciones(Number(id))
         } else if (newVal === 'embarque') {
             await getCotizacionProveedor(Number(id))
+        } else if (newVal === 'pagos') {
+            await getCotizacionPagos(Number(id))
         }
+
     } catch (error) {
         console.error('Error al cambiar tab:', error)
     }
@@ -559,305 +1091,39 @@ watch(() => tab.value, async (newVal) => {
     }
 }, { immediate: true })
 
-const columns = ref<TableColumn<any>[]>([
-    {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
 
-            const div = h('div',
-                {
-                    class: 'flex flex-col gap-2'
-                },
-                proveedores.map((proveedor: any) => {
-                    return h(USelect as any, {
-                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
-                        placeholder: 'Seleccionar estado',
-                        value: proveedor.estados_proveedor,
-                        class: 'w-full',
-                        disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
-                        modelValue: proveedor.estados_proveedor,
-                        'onUpdate:modelValue': (value: any) => {
-                            proveedor.estados_proveedor = value
-                        }
-                    })
-                }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'index',
-        header: 'N.',
-        cell: ({ row }: { row: any }) => {
-            return row.index + 1
-        }
-    },
-    {
-        accessorKey: 'nombre',
-        header: 'Buyer',
-        cell: ({ row }: { row: any }) => {
-            return row.original.nombre
-        }
-    },
-    {
-        accessorKey: 'products',
-        header: 'Products',
-        
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: currentRole.value !== ROLES.COTIZADOR,
-                    value: proveedor.products
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'qty_box',
-        header: 'Qty Box',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2',
-                style: {
-                    width: '100px'
-                }
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
-                    value: proveedor.qty_box ?? 0
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'cbm_total',
-        header: 'CBM t.',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2',
-                style: {
-                    width: '100px'
-                }
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
-                    value: proveedor.cbm_total ?? 0
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'weight',
-        header: 'Weight',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2',
-                style: {
-                    width: '100px'
-                }
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
-                    value: proveedor.peso ?? 0
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'supplier',
-        header: 'Supplier',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2',
-                style: {
-                    width: '100px'
-                }
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
-                    value: proveedor.supplier
-                })
-            }))
-            return div
-        }
-    },
-    //COD SUPPLIER
-    {
-        accessorKey: 'code_supplier',
-        header: 'C. Supplier',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2',
-                style: {
-                    width: '100px'
-                }
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
-                    value: proveedor.code_supplier
-                })
-            }))
-            return div
-        }
-    },
-    //supplier_phone
-    {
-        accessorKey: 'supplier_phone',
-        header: 'P. Number',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2',
-                style: {
-                    width: '100px'
-                }
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
-                    value: proveedor.supplier_phone
-                })
-            }))
-            return div
-        }
-    },
-    //qty_box_china, cbm_total_china ,arrive_date_china,ACTIONS SHOW AND SAVE
-    //arrive_date_china
-    {
-        accessorKey: 'arrive_date_china',
-        header: 'Arrive Date',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2',
-                style: {
-                    width: '100px'
-                }
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
-                    value: proveedor.arrive_date_china ?? 0
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'cbm_total_china',
-        header: 'CBM Ch.',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2',
-                style: {
-                    width: '100px'
-                }
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
-                    value: proveedor.cbm_total_china ?? 0
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'qty_box_china',
-        header: 'Qty Box Ch.',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2',
-                style: {
-                    width: '100px'
-                }
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
-                    value: proveedor.qty_box_china ?? 0
-                })
-            }))
-            return div
-        }
-    },
-    //arrive_date_china
-    {
-        accessorKey: 'arrive_date_china',
-        header: 'Arrive Date',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2',
-                style: {
-                    width: '100px'
-                }
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    disabled: true,
-                    readonly: true,
-                    value: proveedor.arrive_date_china ?? 0
-                })
-            }))
-            return div
-        }
-    },
-    //actions
-    {
-        accessorKey: 'actions',
-        header: 'Actions',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
+const updateProveedorData = async (row: any) => {
+    const data: any = {
+        id: row.id_proveedor,
 
-            return h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h('div', {
-                    class: 'flex flex-row gap-2'
-                }, [
-                    h(UButton, {
-                        icon: 'i-heroicons-eye',
-                        variant: 'ghost',
-                        size: 'xs',
-                        onClick: () => {
-                            navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion-china/${proveedor.id}`)
-                        }
-                    }),
-                    h(UButton, {
-                        icon: 'i-heroicons-document-arrow-down',
-                        variant: 'ghost',
-                        size: 'xs',
-                        onClick: () => {
-                            saveRow(row.original)
-                        }
-                    })
-                ])
-            }))
-        }
     }
-])
-const saveRow = (row: any) => {
-    console.log(row)
+    const formData = new FormData()
+
+    if (currentRole.value === ROLES.COTIZADOR) {
+        data.products = row.products ?? []
+        formData.append('products', data.products)
+    }
+    if (currentRole.value === ROLES.COORDINACION) {
+        data.supplier = row.supplier ?? []
+        data.code_supplier = row.code_supplier ?? []
+        data.supplier_phone = row.supplier_phone ?? []
+        formData.append('supplier', data.supplier)
+        formData.append('code_supplier', data.code_supplier)
+        formData.append('supplier_phone', data.supplier_phone)
+    }
+    formData.append('id', data.id)
+
+    try {
+        await withSpinner(async () => {
+            await updateProveedor(formData)
+            showSuccess('Proveedor actualizado correctamente', 'El proveedor se ha actualizado correctamente.')
+            await getCotizaciones(Number(id))
+        }, 'Actualizando proveedor...')
+        await getCotizaciones(Number(id))
+    } catch (error) {
+        showError('Error al actualizar el proveedor', error)
+    }
+
 }
 onMounted(() => {
     // Solo establecer el tab inicial, el watch se encargará de cargar los datos

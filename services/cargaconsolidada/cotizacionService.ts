@@ -83,7 +83,7 @@ export class CotizacionService extends BaseService {
             return response
         } catch (error) {
             console.error('Error al actualizar el estado de la cotización:', error)
-            throw new Error('No se pudo actualizar el estado de la cotización')
+            throw new Error(error.data.message)
         }
     }
 }

@@ -64,15 +64,16 @@
                         Voucher
                     </label>
                     <FileUploader :multiple="false" :max-file-size="10 * 1024 * 1024"
-                        :accepted-types="acceptedFileTypes" :initial-files="formData.voucher ? [formData.voucher] : []"
+                        :accepted-types="acceptedFileTypes" 
+                        :immediate="false"
                         @files-selected="handleFilesSelected" @file-removed="handleFileRemoved" />
                 </div>
             </div>
         </template>
         <!-- Footer Actions -->
         <template #footer>
-            <div class="flex justify-end space-x-3">
-                <UButton label="Cancelar" color="neutral" variant="ghost" @click="closeModal" />
+                <div class="flex justify-end space-x-3">
+                    <UButton label="Cancelar" color="neutral" variant="ghost" @click="closeModal" />
                 <UButton label="Guardar" color="warning" @click="handleSave" />
             </div>
         </template>
@@ -82,13 +83,20 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-
+import FileUploader from './FileUploader.vue'
 // Props
 interface Props {
     modelValue: boolean
     clienteNombre: string
+    
 }
-
+const selectedFile = ref<File | null>(null)
+const handleFileSelected = (files: File[]) => {
+    console.log(files)
+    if (files.length > 0) {
+        selectedFile.value = files[0]
+    }
+}
 const props = defineProps<Props>()
 
 // Emits
@@ -134,7 +142,7 @@ const bancos = [
 ]
 
 // Accepted file types
-const acceptedFileTypes = '.pdf,.docx,.xlsx,.xls,.xlsm,.csv,.xlsb,.xltx,.xlt,.png,.jpg,.jpeg'
+const acceptedFileTypes = ['image/*']
 
 // Methods
 const closeModal = () => {
@@ -151,11 +159,7 @@ const resetForm = () => {
     }
 }
 
-const handleFilesSelected = (files: File[]) => {
-    if (files.length > 0) {
-        formData.value.voucher = files[0]
-    }
-}
+
 
 const handleFileRemoved = (index: number) => {
     formData.value.voucher = null

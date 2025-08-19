@@ -187,4 +187,28 @@ export class CotizacionProveedorService extends BaseService {
             throw new Error('No se pudo eliminar la cotización')
         }
     }
+    static async updateProveedor(data: any): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(
+                `${this.baseUrl}/proveedor`,
+                { method: 'POST', body: data }
+            )
+            return response
+        } catch (error) {
+            console.error('Error al actualizar el proveedor:', error)
+            throw new Error('No se pudo actualizar el proveedor')
+        }
+    }
+    static async updateProveedorEstado(data: any): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(
+                `${this.baseUrl}/proveedor/estado`,
+                { method: 'POST', body: data }
+            )
+            return response
+        } catch (error) {
+            console.error('Error al actualizar el proveedor:', error)
+            throw new Error('No se pudo actualizar el proveedor')
+        }
+    }
 }

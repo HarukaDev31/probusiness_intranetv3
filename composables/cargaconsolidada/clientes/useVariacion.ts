@@ -34,6 +34,14 @@ export const useVariacion = () => {
             loadingVariacion.value = false
         }
     }
+    const updateVolumenSelected = async (data: any) => {
+        try {
+            const response = await VariacionService.updateVolSelected(data)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
     return {
         clientesVariacion,
         loadingVariacion,
@@ -46,6 +54,7 @@ export const useVariacion = () => {
         filtersVariacion,
         filterConfig,
         getClientesVariacion,
-        totalRecordsVariacion
+        totalRecordsVariacion,
+        updateVolumenSelected
     }
 }   

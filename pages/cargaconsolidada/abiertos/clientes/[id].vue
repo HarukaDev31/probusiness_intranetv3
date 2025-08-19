@@ -28,12 +28,16 @@
 <script setup lang="ts">
 import { useGeneral } from '../composables/cargaconsolidada/clientes/useGeneral'
 import { useVariacion } from '../composables/cargaconsolidada/clientes/useVariacion'
-import { UButton, UBadge } from '#components'
+import { UButton, UBadge,USelect} from '#components'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
+const { withSpinner } = useSpinner()
+const { showConfirmation, showSuccess, showError } = useModal()
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
-const { getClientes, clientes, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useGeneral()
-const { getClientesVariacion, clientesVariacion, totalRecordsVariacion, loadingVariacion, errorVariacion, paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion, filterConfigVariacion, handleSearchVariacion, handlePageChangeVariacion, handleItemsPerPageChangeVariacion, handleFilterChangeVariacion } = useVariacion()
+const { getClientes, clientes,updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useGeneral()
+const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion, errorVariacion, paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion, filterConfigVariacion, handleSearchVariacion, handlePageChangeVariacion, handleItemsPerPageChangeVariacion, handleFilterChangeVariacion } = useVariacion()
 const tabs = ref([
     {
         label: 'General',
@@ -57,6 +61,7 @@ const handleTabChange = (value: string) => {
         getClientesVariacion(Number(id))
     }
 }
+//N° Fecha	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Volumen	Qty Item	Fob	Logistica	Impuesto	Tarifa	Estados	Status	Acciones
 const columns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
@@ -65,46 +70,12 @@ const columns = ref<TableColumn<any>[]>([
             return row.index + 1
         }
     },
-    {
-        accessorKey: 'carga',
-        header: 'Carga',
-        cell: ({ row }: { row: any }) => {
-            return row.original.carga
-        }
-    },
-    {
-        accessorKey: 'f_cierre',
-        header: 'F. Cierre',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('f_cierre')
-        }
-    },
-    {
-        accessorKey: 'asesor',
-        header: 'Asesor',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('asesor')
-        }
-    },
-    {
-        accessorKey: 'COD',
-        header: 'Codigo',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('COD')
-        }
-    },
+
     {
         accessorKey: 'fecha',
         header: 'Fecha',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('fecha')
-        }
-    },
-    {
-        accessorKey: 'updated_at',
-        header: 'Fecha Modificación',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('updated_at')
+            return formatDateTimeToDmy(row.getValue('fecha'))
         }
     },
     {
@@ -121,6 +92,10 @@ const columns = ref<TableColumn<any>[]>([
             return row.getValue('documento')
         }
     },
+
+      
+   
+   
     {
         accessorKey: 'correo',
         header: 'Correo',
@@ -149,13 +124,7 @@ const columns = ref<TableColumn<any>[]>([
             return row.getValue('volumen')
         }
     },
-    {
-        accessorKey: 'volumen_china',
-        header: 'Volumen China',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('volumen_china')
-        }
-    },
+  
     {
         accessorKey: 'qty_item',
         header: 'Qty Item',
@@ -195,16 +164,31 @@ const columns = ref<TableColumn<any>[]>([
         accessorKey: 'estados',
         header: 'Estados',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('estados')
+            //show estado_cliente in USELECT WITH STATUS RESERVADO,NO RESERVADO DOCUMENTACION C FINAL FACTURADO
+            return h(USelect as any, {
+                modelValue: row.original.estado_cliente,
+                items: [
+                    { label: 'Reservado', value: 'RESERVADO' },
+                    { label: 'No Reservado', value: 'NO RESERVADO' },
+                    { label: 'Documentación', value: 'DOCUMENTACION' },
+                    { label: 'C Final', value: 'C FINAL' },
+                    { label: 'Facturado', value: 'FACTURADO' }
+                ],
+                placeholder: 'Seleccionar estado',
+                class: 'w-full',
+                'onUpdate:modelValue': async (value: any) => {
+                    if (value && value !== row.original.estado_cliente) {
+                        const data = {
+                            id_cotizacion: row.original.id_cotizacion,
+                            estado_cliente: value
+                        }
+                        await handleUpdateEstadoCliente(data)
+                    }
+                }
+            })
         }
     },
-    {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('status')
-        }
-    },
+   
     {
         accessorKey: 'acciones',
         header: 'Acciones',
@@ -270,21 +254,43 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         accessorKey: 'volumen',
         header: 'Vol. Cot',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('volumen')
+            //RETURN UBADGET WITH COLOR PRIMARY WHERE vol_selected is = accessorKey
+            return h(UBadge, {
+                color: row.original.vol_selected === 'volumen' ? 'primary' : 'neutral',
+                variant: 'soft',
+                label: row.getValue('volumen'),
+                onClick: () => {
+                    updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen'})
+                }
+            })
         }
     },
     {
         accessorKey: 'volumen_china',
         header: 'Vol. China',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('volumen_china')
+            return h(UBadge, {
+                color: row.original.vol_selected === 'volumen_china' ? 'primary' : 'neutral',
+                variant: 'soft',
+                label: row.getValue('volumen_china'),
+                onClick: () => {
+                    updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen_china'})
+                }
+            })
         }
     },
     {
         accessorKey: 'volumen_doc',
         header: 'Vol. Doc',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('volumen_doc')
+            return h(UBadge, {
+                color: row.original.vol_selected === 'volumen_doc' ? 'primary' : 'neutral',
+                variant: 'soft',
+                label: row.getValue('volumen_doc'),
+                onClick: () => {
+                    updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen_doc'})
+                }
+            })
         }
     },
     {
@@ -328,6 +334,43 @@ watch(tab, (newVal, oldVal) => {
         handleTabChange(newVal)
     }
 })
+const handleUpdateEstadoCliente = async (data: any) => {
+    try {
+        await withSpinner(async () => {
+            const response = await updateEstadoCliente(data)
+            if (response.success) {
+                await getClientes(Number(id))
+                showSuccess('Actualización Exitosa', 'El estado del cliente se ha actualizado correctamente.')
+            }
+        }, 'Actualizando estado del cliente...')
+    } catch (err) {
+        error.value = err as string
+    }
+}
+const updateVolSelected = async (data: any) => {
+    try {
+        showConfirmation(
+        'Confirmar actualización',
+        '¿Está seguro de que desea actualizar el volumen seleccionado? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const response = await updateVolumenSelected(data)
+                    if (response.success) {
+                        await getClientesVariacion(Number(id))
+                        showSuccess('Actualización Exitosa', 'El volumen seleccionado se ha actualizado correctamente.')
+                    }
+                }, 'Actualizando volumen seleccionado...')
+            } catch (error) {
+                console.error('Error al actualizar el volumen seleccionado:', error)
+                showError('Error de Actualización', 'Error al actualizar el volumen seleccionado')
+            }
+        }
+    )
+    } catch (err) {
+        error.value = err as string
+    }
+}
 onMounted(() => {
     handleTabChange(tab.value)
 })
