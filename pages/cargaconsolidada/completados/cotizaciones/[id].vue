@@ -1025,7 +1025,7 @@ const downloadFile = async (fileUrl: string) => {
             document.body.removeChild(a)
         }, 'Descargando archivo...')
     } catch (error) {
-        showError('Error al descargar archivo')
+        showError('Error al descargar archivo', error as string)
     }
 }
 // Manejadores para prospectos

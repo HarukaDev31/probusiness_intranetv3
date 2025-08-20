@@ -1,6 +1,6 @@
 import type { Product, ProductMapped, ProductFilters, ProductResponse, ProductsServiceResponse, FilterOptions, Pagination } from '../types/product'
 import type { Header } from '../types/data-table'
-import ProductService from '../services/productService'
+import {ProductService} from '../services/productService'
 
 export const useProducts = () => {
   const products = ref<ProductMapped[]>([])
@@ -66,8 +66,7 @@ export const useProducts = () => {
 
     try {
 
-      const productService = ProductService.getInstance()
-      const response: ProductsServiceResponse = await productService.getProducts({
+      const response: ProductsServiceResponse = await ProductService.getProducts({
         page: params.page || currentPage.value,
         limit: params.limit || itemsPerPage.value,
         search: params.search || searchQuery.value,
@@ -115,8 +114,7 @@ export const useProducts = () => {
   const loadFilterOptions = async () => {
     try {
       console.log('Loading filter options...')
-      const productService = ProductService.getInstance()
-      const options = await productService.getFilterOptions()
+      const options = await ProductService.getFilterOptions()
       console.log('Filter options response:', options)
       filterOptions.value = options
     } catch (err) {
@@ -154,8 +152,7 @@ export const useProducts = () => {
 
   const getProductById = async (id: number): Promise<Product | null> => {
     try {
-      const productService = ProductService.getInstance()
-      const response: ProductResponse = await productService.getProductById(id)
+      const response: ProductResponse = await ProductService.getProductById(id)
       
       if (response.success && response.data) {
         return response.data
@@ -175,8 +172,7 @@ export const useProducts = () => {
     error.value = null
 
     try {
-      const productService = ProductService.getInstance()
-      const response: ProductResponse = await productService.createProduct(product)
+      const response: ProductResponse = await ProductService.createProduct(product)
       
       if (response.success) {
         await loadProducts() // Recargar la lista
@@ -199,7 +195,6 @@ export const useProducts = () => {
     error.value = null
 
     try {
-      const productService = ProductService.getInstance()
       // Mapear solo los campos que acepta el servicio de actualización
       const updateData = {
         link: product.link,
@@ -216,7 +211,7 @@ export const useProducts = () => {
         tiene_observaciones: product.tiene_observaciones,
         observaciones: product.observaciones
       }
-      const response: ProductResponse = await productService.updateProduct(id, updateData)
+      const response: ProductResponse = await ProductService.updateProduct(id, updateData)
       
       if (response.success) {
         await loadProducts() // Recargar la lista
@@ -239,8 +234,7 @@ export const useProducts = () => {
     error.value = null
 
     try {
-      const productService = ProductService.getInstance()
-      const response = await productService.deleteProduct(id)
+      const response = await ProductService.deleteProduct(id)
       
       if (response.success) {
         await loadProducts() // Recargar la lista
@@ -260,8 +254,7 @@ export const useProducts = () => {
 
   const exportProducts = async (format: 'excel' | 'csv' | 'pdf' = 'excel'): Promise<boolean> => {
     try {
-      const productService = ProductService.getInstance()
-      const response = await productService.exportProducts({
+      const response = await ProductService.exportProducts({
         format,
         filters: filters.value,
         search: searchQuery.value
@@ -294,8 +287,7 @@ export const useProducts = () => {
     message: string
   }> => {
     try {                                                                                                 
-      const productService = ProductService.getInstance()
-      const response = await productService.importExcel(file)
+      const response = await ProductService.importExcel(file)
       return response
     } catch (err) {
       error.value = 'Error de conexión'
@@ -305,8 +297,7 @@ export const useProducts = () => {
   }
   const deleteExcel = async (id: number): Promise<{ success: boolean; message: string }> => {
     try {
-      const productService = ProductService.getInstance()
-      const response = await productService.deleteExcel(id)
+      const response = await ProductService.deleteExcel(id)
       return response
     } catch (err) {
       error.value = 'Error de conexión'
@@ -325,8 +316,7 @@ export const useProducts = () => {
     }[]
   }> => { 
     try {
-      const productService = ProductService.getInstance()
-      const response = await productService.getExcelsList()
+      const response = await ProductService.getExcelsList()
       return response
     } catch (err) {
       error.value = 'Error de conexión'

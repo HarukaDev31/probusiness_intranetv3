@@ -19,7 +19,7 @@ function createModalInstance() {
     const id = Date.now().toString()
     const modal: ModalData = {
       id,
-      duration: 5000,
+      duration: 500000,
       persistent: false,
       ...data
     }

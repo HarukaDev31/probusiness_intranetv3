@@ -58,15 +58,13 @@ export interface ClientesQueryParams {
 import { BaseService } from "~/services/base/BaseService"
 
 export class ClienteService extends BaseService {
-  private baseUrl: string
-  constructor(){
-    super()
-  }
+  private static baseUrl='/api/clientes'
+  
 
   /**
    * Obtiene la lista de clientes con paginación y filtros
    */
-  async getClientes(params: ClientesQueryParams = {}): Promise<ClientesResponse> {
+  static async getClientes(params: ClientesQueryParams = {}): Promise<ClientesResponse> {
     try {
       const queryParams = new URLSearchParams()
 
@@ -101,7 +99,7 @@ export class ClienteService extends BaseService {
   /**
    * Obtiene un cliente específico por ID
    */
-  async getClienteById(id: number): Promise<Cliente> {
+  static async getClienteById(id: number): Promise<Cliente> {
     try {
       const response = await this.apiCall<{ success: boolean; data: Cliente; message: string }>(`${this.baseUrl}/${id}`, {
         method: 'GET'
@@ -117,7 +115,7 @@ export class ClienteService extends BaseService {
   /**
    * Crea un nuevo cliente
    */
-  async createCliente(clienteData: Partial<Cliente>): Promise<Cliente> {
+  static async createCliente(clienteData: Partial<Cliente>): Promise<Cliente> {
     try {
       const response = await this.apiCall<{ success: boolean; data: Cliente }>(this.baseUrl, {
         method: 'POST',
@@ -134,7 +132,7 @@ export class ClienteService extends BaseService {
   /**
    * Actualiza un cliente existente
    */
-  async updateCliente(id: number, clienteData: Partial<Cliente>): Promise<Cliente> {
+  static async updateCliente(id: number, clienteData: Partial<Cliente>): Promise<Cliente> {
     try {
       const response = await this.apiCall<{ success: boolean; data: Cliente }>(`${this.baseUrl}/${id}`, {
         method: 'PUT',
@@ -151,7 +149,7 @@ export class ClienteService extends BaseService {
   /**
    * Elimina un cliente
    */
-  async deleteCliente(id: number): Promise<void> {
+  static async deleteCliente(id: number): Promise<void> {
     try {
       await this.apiCall(`${this.baseUrl}/${id}`, {
         method: 'DELETE'
@@ -165,7 +163,7 @@ export class ClienteService extends BaseService {
   /**
    * Sube un archivo de clientes
    */
-  async uploadClientesFile(file: File): Promise<{ success: boolean; message: string }> {
+  static async uploadClientesFile(file: File): Promise<{ success: boolean; message: string }> {
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -185,7 +183,7 @@ export class ClienteService extends BaseService {
   /**
    * Importa clientes desde un archivo Excel
    */
-  async importExcel(file: File): Promise<{ success: boolean; message: string }> {
+  static async importExcel(file: File): Promise<{ success: boolean; message: string }> {
     try {
       const formData = new FormData()
       formData.append('excel_file', file)
@@ -205,7 +203,7 @@ export class ClienteService extends BaseService {
   /**
    * Exporta clientes a Excel
    */
-  async exportClientes(params: ClientesQueryParams = {}): Promise<Blob> {
+  static async exportClientes(params: ClientesQueryParams = {}): Promise<Blob> {
     try {
       const queryParams = new URLSearchParams()
 
@@ -242,12 +240,12 @@ export class ClienteService extends BaseService {
   /**
    * Obtiene las opciones de filtros disponibles
    */
-  async getFilterOptions(): Promise<{
+  static async getFilterOptions(): Promise<{
     categorias: string[]
     fechas: string[]
   }> {
     try {
-      const response = await apiCall<{
+      const response = await this.apiCall<{
         success: boolean
         data: {
           categorias: string[]
@@ -267,7 +265,7 @@ export class ClienteService extends BaseService {
       }
     }
   }
-  async getExcelsList(): Promise<{ 
+  static async getExcelsList(): Promise<{ 
     success: boolean; 
     data: { 
       id: number; 
@@ -279,7 +277,7 @@ export class ClienteService extends BaseService {
     }[] 
   }> {
     try {
-      const response = await apiCall<{ 
+      const response = await this.apiCall<{ 
         success: boolean; 
         data: { 
           id: number; 
@@ -299,9 +297,9 @@ export class ClienteService extends BaseService {
       throw new Error(error?.data?.message || 'Error al obtener la lista de archivos')
     }
   }
-  async deleteExcel(id: number): Promise<{ success: boolean; message: string }> {
+  static async deleteExcel(id: number): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/delete-excel/${id}`, {
+      const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/delete-excel/${id}`, {
         method: 'DELETE'
       })
       return response
@@ -312,5 +310,3 @@ export class ClienteService extends BaseService {
   }
 }
 
-// Instancia singleton del servicio
-export const clienteService = new ClienteService() 

@@ -83,24 +83,18 @@ export interface DocumentoListResponse {
 }
 
 // Service class
-class DocumentoService extends BaseService {
+export class DocumentoService extends BaseService {
   private static instance: DocumentoService
 
   private constructor() {
     super()
   }
 
-  public static getInstance(): DocumentoService {
-    if (!DocumentoService.instance) {
-      DocumentoService.instance = new DocumentoService()
-    }
-    return DocumentoService.instance
-  }
 
   /**
    * Crear un nuevo documento especial
    */
-  async createDocumento(documentoData: CreateDocumentoRequest): Promise<DocumentoResponse> {
+  static async createDocumento(documentoData: CreateDocumentoRequest): Promise<DocumentoResponse> {
     try {
       // Crear FormData para manejar archivos
       const formData = new FormData()
@@ -137,7 +131,7 @@ class DocumentoService extends BaseService {
   /**
    * Obtener lista de documentos especiales
    */
-  async getDocumentos(params: {
+  static async getDocumentos(params: {
     page?: number
     limit?: number
     search?: string
@@ -168,7 +162,7 @@ class DocumentoService extends BaseService {
   /**
    * Obtener un documento especial por ID
    */
-  async getDocumentoById(id: number): Promise<DocumentoResponse> {
+  static async getDocumentoById(id: number): Promise<DocumentoResponse> {
     try {
       const response = await this.apiCall<DocumentoResponse>(`/api/base-datos/regulaciones/documentos/${id}`)
       return response
@@ -185,7 +179,7 @@ class DocumentoService extends BaseService {
   /**
    * Actualizar un documento especial
    */
-  async updateDocumento(id: number, documentoData: Partial<CreateDocumentoRequest> | FormData): Promise<DocumentoResponse> {
+  static async updateDocumento(id: number, documentoData: Partial<CreateDocumentoRequest> | FormData): Promise<DocumentoResponse> {
     try {
       let body: any
       
@@ -227,7 +221,7 @@ class DocumentoService extends BaseService {
   /**
    * Eliminar un documento especial
    */
-  async deleteDocumento(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deleteDocumento(id: number): Promise<{ success: boolean; error?: string }> {
     try {
       const response = await this.apiCall<{ success: boolean; error?: string }>(
         `/api/base-datos/regulaciones/documentos/${id}`,
@@ -248,7 +242,7 @@ class DocumentoService extends BaseService {
   /**
    * Cambiar estado del documento especial
    */
-  async toggleDocumentoStatus(id: number, status: 'active' | 'inactive'): Promise<DocumentoResponse> {
+  static async toggleDocumentoStatus(id: number, status: 'active' | 'inactive'): Promise<DocumentoResponse> {
     try {
       const response = await this.apiCall<DocumentoResponse>(`/api/base-datos/regulaciones/documentos/${id}/status`, {
         method: 'PATCH',
@@ -268,7 +262,7 @@ class DocumentoService extends BaseService {
   /**
    * Obtener documentos especiales activos
    */
-  async getActiveDocumentos(): Promise<DocumentoListResponse> {
+  static async getActiveDocumentos(): Promise<DocumentoListResponse> {
     try {
       const response = await this.apiCall<DocumentoListResponse>('/api/base-datos/regulaciones/documentos/active')
       return response
@@ -285,7 +279,7 @@ class DocumentoService extends BaseService {
   /**
    * Obtener documentos especiales en estructura jerárquica
    */
-  async getDocumentosHierarchical(): Promise<DocumentoHierarchicalResponse> {
+  static async getDocumentosHierarchical(): Promise<DocumentoHierarchicalResponse> {
     try {
       const response = await this.apiCall<DocumentoHierarchicalResponse>('/api/base-datos/regulaciones/documentos')
       return response
@@ -308,7 +302,7 @@ class DocumentoService extends BaseService {
   /**
    * Exportar documentos especiales
    */
-  async exportDocumentos(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
+  static async exportDocumentos(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
     try {
       const response = await this.apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/documentos/export?format=${format}`, {
         method: 'GET'

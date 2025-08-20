@@ -4,9 +4,7 @@ import { BaseService } from "~/services/base/BaseService"
 
 export class ConsolidadoService extends BaseService {
   private static baseUrl = 'api/carga-consolidada/pagos/consolidado'
-  constructor(){
-    super()
-  }
+ 
 
   /**
    * Obtiene la lista de pagos consolidados

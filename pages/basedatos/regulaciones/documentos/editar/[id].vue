@@ -210,18 +210,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import ProductRubroService from '../services/productRubroService'
-import DocumentoService, { type CreateDocumentoRequest } from '../services/documentoService'
-import type { ProductRubro } from '../types/product-rubro'
+import { ProductRubroService } from '~/services/productRubroService'
+import { DocumentoService, type CreateDocumentoRequest } from '~/services/documentoService'
+import type { ProductRubro } from '~/types/product-rubro'
 
 // Router and route
 const router = useRouter()
 const route = useRoute()
 const regulationId = route.params.id as string
 
-// Service instances
-const productRubroService = ProductRubroService.getInstance()
-const documentoService = DocumentoService.getInstance()
+  
 
 // Form data
 const formData = ref({
@@ -291,7 +289,7 @@ const clearFieldError = (field: string) => {
 const searchProducts = async (searchTerm: string) => {
   try {
     loadingProducts.value = true
-    const response = await productRubroService.getProductRubros(searchTerm,'DOCUMENTO_ESPECIAL')
+    const response = await ProductRubroService.getProductRubros(searchTerm,'DOCUMENTO_ESPECIAL')
 
     if (response.success && response.data) {
       // Convertir productos a formato de opciones para autocomplete
@@ -314,7 +312,7 @@ const createProduct = async () => {
       console.error('Nombre es requerido')
       return
     }
-    const response = await productRubroService.createProductRubro({
+    const response = await ProductRubroService.createProductRubro({
       nombre: newProduct.value.nombre,
       tipo: 'DOCUMENTO_ESPECIAL'
     })
@@ -397,7 +395,7 @@ const removeDocumentSlot = (index: number) => {
 const loadRegulation = async () => {
   try {
     loading.value = true
-    const response = await documentoService.getDocumentoById(parseInt(regulationId))
+    const response = await DocumentoService.getDocumentoById(parseInt(regulationId))
     
     if (response.success && response.data) {
       // Buscar productos primero para poder establecer el producto seleccionado
@@ -472,7 +470,7 @@ const saveForm = async () => {
       })
 
     // Llamar al servicio para actualizar el documento especial
-    const response = await documentoService.updateDocumento(parseInt(regulationId), formDataToSend)
+    const response = await DocumentoService.updateDocumento(parseInt(regulationId), formDataToSend)
 
     if (response.success && response.data) {
       console.log('Documento especial actualizado exitosamente:', response.data)

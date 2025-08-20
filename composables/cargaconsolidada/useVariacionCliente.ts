@@ -33,6 +33,8 @@ export const useVariacionCliente = () => {
     if (!proveedorActivo.value) return null
     return proveedores.value.find(p => p.id === proveedorActivo.value?.id)
   })
+  const filesAlmacenDocumentacion = ref<ArchivoVariacion[]>([])
+  const filesAlmacenInspection = ref<ArchivoVariacion[]>([])
 
   /**
    * Obtiene la documentación del cliente
@@ -57,6 +59,8 @@ export const useVariacionCliente = () => {
           activeTab.value = tabs.value[0].id
           await cambiarProveedor(tabs.value[0].id)
         }
+        filesAlmacenDocumentacion.value = response.data.files_almacen_documentacion
+        filesAlmacenInspection.value = response.data.files_almacen_inspection
       } else {
         error.value = 'Error al obtener la documentación'
       }
@@ -83,7 +87,6 @@ export const useVariacionCliente = () => {
       }
 
       proveedores.value = providersData
-
       // Crear tabs basados en los proveedores
       tabs.value = providersData.map(provider => ({
         id: provider.id.toString(),
@@ -323,6 +326,8 @@ export const useVariacionCliente = () => {
     deleteExcelConfirmacion,
     uploadArchivo,
     deleteArchivo,
-    clearState
+    clearState,
+    filesAlmacenDocumentacion,
+    filesAlmacenInspection
   }
 }

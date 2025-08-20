@@ -27,7 +27,7 @@ export class CotizacionService extends BaseService {
     }
     static async deleteCotizacion(id: number): Promise<{ success: boolean }> {
         try {
-            const response = await apiCall<{ success: boolean }>(`${this.baseUrl}/cotizaciones/${id}`, {
+            const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/cotizaciones/${id}`, {
                 method: 'DELETE'
             })
             return response

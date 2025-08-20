@@ -72,7 +72,8 @@ const pasosMap = {
   'CLIENTES': `/cargaconsolidada/abiertos/clientes/${id}`,
   'DOCUMENTACION': `/cargaconsolidada/abiertos/documentacion/${id}`,
   'COTIZACION FINAL': `/cargaconsolidada/abiertos/cotizacion-final/${id}`,
-  'FACTURA Y GUIA': `/cargaconsolidada/abiertos/factura-guia/${id}`
+  'FACTURA Y GUIA': `/cargaconsolidada/abiertos/factura-guia/${id}`,
+  'ADUANA': `/cargaconsolidada/abiertos/aduana/${id}`
 }
 const handleNavigateToStep = (step: string) => {
   navigateTo(pasosMap[step as keyof typeof pasosMap])

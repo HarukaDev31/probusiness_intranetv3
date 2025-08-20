@@ -103,8 +103,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import EntityService, { type CreateEntityRequest } from '../services/entityService'
-import PermisoService, { type CreatePermisoRequest } from '../services/permisoService'
+import {EntityService} from '~/services/entityService'
+import { type CreateEntityRequest } from '~/services/entityService'
+import { type CreatePermisoRequest } from '~/services/permisoService'
 import { useModal } from '../composables/commons/useModal'
 import { useSpinner } from '../composables/commons/useSpinner'
 // Router
@@ -112,8 +113,6 @@ const router = useRouter()
 const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
 // Service instances
-const entityService = EntityService.getInstance()
-const permisoService = PermisoService.getInstance()
 
 // Form data
 const formData = ref({
@@ -247,7 +246,7 @@ const handleCreateEntity = async (entity: { nombre: string; descripcion: string 
         descripcion: entity.descripcion,
       }
 
-      const response = await entityService.createEntity(entityData)
+      const response = await EntityService.createEntity(entityData)
 
       if (response.success && response.data) {
         // Agregar la nueva entidad a las opciones

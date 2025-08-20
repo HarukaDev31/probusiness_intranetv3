@@ -2,22 +2,15 @@ import type { Product, ProductFilters, ProductResponse, ProductsResponse, Filter
 import { BaseService } from "~/services/base/BaseService"
 
 
-class ProductService extends BaseService {
+export class ProductService extends BaseService {
   private static instance: ProductService
-  private baseUrl: string
-  private constructor() {
-    this.baseUrl = '/api/base-datos/productos'
-  }
+  private static baseUrl = '/api/base-datos/productos';
 
-  public static getInstance(): ProductService {
-    if (!ProductService.instance) {
-      ProductService.instance = new ProductService()
-    }
-    return ProductService.instance
-  }
+
+ 
 
   // Obtener todos los productos con paginación y filtros
-  async getProducts(params: {
+  static async getProducts(params: {
     page?: number
     limit?: number
     search?: string
@@ -75,7 +68,7 @@ class ProductService extends BaseService {
   }
 
   // Obtener un producto por ID
-  async getProductById(id: number): Promise<ProductResponse> {
+  static async getProductById(id: number): Promise<ProductResponse> {
     try {
       const response = await this.apiCall<ProductResponse>(`${this.baseUrl}/${id}`)
       console.log('Product response:', response)
@@ -91,7 +84,7 @@ class ProductService extends BaseService {
   }
 
   // Crear un nuevo producto
-  async createProduct(product: Omit<Product, 'id'>): Promise<ProductResponse> {
+  static async createProduct(product: Omit<Product, 'id'>): Promise<ProductResponse> {
     try {
       const response = await this.apiCall<ProductResponse>(`${this.baseUrl}`, {
         method: 'POST',
@@ -109,7 +102,7 @@ class ProductService extends BaseService {
   }
 
   // Actualizar un producto con campos opcionales
-  async updateProduct(id: number, productData: {
+  static async updateProduct(id: number, productData: {
     link?: string
     arancel_sunat?: string
     arancel_tlc?: string
@@ -146,7 +139,7 @@ class ProductService extends BaseService {
   }
 
   // Eliminar un producto
-  async deleteProduct(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deleteProduct(id: number): Promise<{ success: boolean; error?: string }> {
     try {
       await this.apiCall(`/api/base-datos/productos/${id}`, {
         method: 'DELETE'
@@ -162,7 +155,7 @@ class ProductService extends BaseService {
   }
 
   // Obtener opciones para filtros
-  async getFilterOptions(): Promise<FilterOptions> {
+  static async getFilterOptions(): Promise<FilterOptions> {
     try {
       console.log('Calling filter options API...')
       const response = await this.apiCall<FilterOptionsResponse>(`${this.baseUrl}/filters/options`)
@@ -194,7 +187,7 @@ class ProductService extends BaseService {
   }
 
   // Exportar productos
-  async exportProducts(params: {
+  static async exportProducts(params: {
     format: 'excel' | 'csv' | 'pdf'
     filters?: ProductFilters
     search?: string
@@ -223,7 +216,7 @@ class ProductService extends BaseService {
       }
     }
   }
-  async importExcel(file: File): Promise<{ success: boolean; message: string }> {
+  static async importExcel(file: File): Promise<{ success: boolean; message: string }> {
     try {
       const formData = new FormData()
       formData.append('excel_file', file)
@@ -239,7 +232,7 @@ class ProductService extends BaseService {
       throw new Error(error?.data?.message || 'Error al importar el archivo Excel')
     }
   }
-  async deleteExcel(id: number): Promise<{ success: boolean; message: string }> {
+  static async deleteExcel(id: number): Promise<{ success: boolean; message: string }> {
     try {
       const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/delete-excel/${id}`, {
         method: 'DELETE'
@@ -250,7 +243,7 @@ class ProductService extends BaseService {
       throw new Error(error?.data?.message || 'Error al eliminar el archivo')
     }
   }
-  async getExcelsList(): Promise<{
+  static async getExcelsList(): Promise<{
     success: boolean;
     data: {
       id: number;
@@ -282,4 +275,3 @@ class ProductService extends BaseService {
   }
 }
 
-export default ProductService 

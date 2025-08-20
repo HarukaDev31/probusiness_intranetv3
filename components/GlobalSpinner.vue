@@ -4,7 +4,7 @@
       enter-to-class="opacity-100" leave-active-class="transition-opacity duration-200" leave-from-class="opacity-100"
       leave-to-class="opacity-0">
       <div v-if="isSpinning"
-        class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-sm loader-overlay">
+        class="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/50 backdrop-blur-sm loader-overlay">
         <div class="loader-container">
           <div class="logo-spinner">
             <div class="spinner-ring"></div>

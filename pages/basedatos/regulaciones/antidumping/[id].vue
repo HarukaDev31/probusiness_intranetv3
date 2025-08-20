@@ -220,7 +220,6 @@ const route = useRoute()
 const router = useRouter()
 
 // Service instance
-const antidumpingService = AntidumpingService.getInstance()
 
 // Reactive data
 const regulation = ref<AntidumpingRegulation | null>(null)
@@ -244,7 +243,7 @@ const loadRegulation = async () => {
   error.value = null
 
   try {
-    const response = await antidumpingService.getAntidumpingById(regulationId)
+    const response = await AntidumpingService.getAntidumpingById(regulationId)
 
     if (response.success && response.data) {
       regulation.value = {

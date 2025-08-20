@@ -17,7 +17,7 @@
         <PageHeader title="Contenedores" subtitle="Gestión de contenedores" icon="i-heroicons-book-open"
             :hide-back-button="true" />
 
-        <DataTable title="" icon="" :data="consolidadoData" :columns="columns" :loading="loading"
+        <DataTable title="" icon="" :data="consolidadoData" :columns="getColumns()" :loading="loading"
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
@@ -34,20 +34,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, resolveComponent, onMounted, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import type { FilterConfig } from '~/types/data-table'
-import type { ContenedorFilters } from '~/types/cargaconsolidada/contenedor'
-import { ROLES } from '~/types/roles/roles'
+import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
+import { ROLES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 const { withSpinner } = useSpinner()
-const { hasRole, isCoordinacion } = useUserRole()
-import CreateConsolidadoModal from '~/components/cargaconsolidada/CreateConsolidadoModal.vue'
+const { hasRole, isCoordinacion,currentRole } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
+import CreateConsolidadoModal from '~/components/cargaconsolidada/CreateConsolidadoModal.vue'
+import TextModal  from '~/components/commons/TextModal.vue'
+
 const { showSuccess, showConfirmation } = useModal()
+
 const {
     consolidadoData,
     loading,
@@ -69,11 +70,12 @@ const {
 } = useConsolidado()
 const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
+const textModal = overlay.create(TextModal)
 const currentConsolidado = ref<number | null>(null)
+
 // Components
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
-
 // Configuración de filtros según el rol
 const filterConfig = computed<FilterConfig[]>(() => {
     const baseConfig: FilterConfig[] = [
@@ -93,7 +95,6 @@ const filterConfig = computed<FilterConfig[]>(() => {
         }
     ]
 
-    console.log('isAlmacen', isAlmacen.value)
     if (isAlmacen.value) {
         // Para rol ContenedorConsolidado: estados en inglés
         baseConfig.push({
@@ -244,6 +245,135 @@ const columns: TableColumn<any>[] = [
         }
     }
 ]
+/*Mes	Empresa	Carga	T. Ctn	Canal	F. Cierre	F. Arribo	F. Declaración	F. Levante	Días de levante	N. Dua	Ajuste	Multa	FOB	Flete	C. Destino	Acciones
+*/
+const documentacionColumns: TableColumn<any>[] = [
+    {
+        accessorKey: 'mes',
+        header: 'Mes',
+        cell: ({ row }) => row.getValue('mes')
+    },
+    {
+        accessorKey: 'empresa',
+        header: 'Empresa',
+        cell: ({ row }) => row.getValue('empresa')
+    },
+    {
+        accessorKey: 'carga',
+        header: 'Carga',
+        cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}`
+    },
+    {
+        accessorKey: 'tipo_contenedor',
+        header: 'T. Ctn',
+        cell: ({ row }) => row.getValue('tipo_contenedor')
+    },
+    {
+        accessorKey: 'canal_control',
+        header: 'Canal',
+        cell: ({ row }) => {
+            const canal = row.getValue('canal_control')
+            return h(UBadge, {
+                color: canal === 'Verde' ? 'success' : canal === 'Naranja' ? 'warning' : 'error',
+                variant: 'subtle',
+                label: canal
+            })
+        }
+    },
+    {
+        accessorKey: 'f_cierre',
+        header: 'F. Cierre',
+        cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre'))
+    },
+    {
+        accessorKey: 'fecha_arribo',
+        header: 'F. Arribo',
+        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_arribo'))
+    },
+    {
+        accessorKey: 'fecha_declaracion',
+        header: 'F. Declaración',
+        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_declaracion'))
+    },
+    {
+        accessorKey: 'fecha_levante',
+        header: 'F. Levante',
+        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_levante'))
+    },
+    {
+        accessorKey: 'dias_levante',
+        header: 'Días de levante',
+        cell: ({ row }) => 0   
+    },
+    {
+        accessorKey: 'numero_dua',
+        header: 'N. Dua',
+        cell: ({ row }) => row.getValue('numero_dua')
+    },
+    {
+        accessorKey: 'ajuste_valor',
+        header: 'Ajuste',
+        cell: ({ row }) => row.getValue('ajuste_valor')
+    },
+    {
+        accessorKey: 'multa',
+        header: 'Multa',
+        cell: ({ row }) => row.getValue('multa')
+    },
+    {
+        accessorKey: 'valor_fob',
+        header: 'FOB',
+        cell: ({ row }) => row.getValue('valor_fob')
+    },
+    {
+        accessorKey: 'valor_flete',
+        header: 'Flete',
+        cell: ({ row }) => row.getValue('valor_flete')
+    },
+    {
+        accessorKey: 'costo_destino',
+        header: 'C. Destino',
+        cell: ({ row }) => row.getValue('costo_destino')
+    },
+    {
+        accessorKey: 'acciones',
+        header: 'Acciones',
+        cell: ({ row }) => {
+            return h('div', { class: 'flex space-x-2' }, [
+                h(UButton, {
+                    size: 'xs',
+                    icon: 'i-heroicons-eye',
+                    color: 'primary',
+                    variant: 'ghost',
+                    onClick: () => handleViewSteps(row.original.id)
+                }),
+                row.original.observaciones ?
+                h(UButton, {
+                    size: 'xs',
+                    //icon  mail
+                    icon: 'i-heroicons-envelope',
+                    color: 'primary',
+                    variant: 'ghost',
+                    onClick: () => {
+                        textModal.open({
+                            content: row.original.observaciones,
+                            title: 'Observaciones'
+                        })
+                    }
+                }) : null
+            ])
+        }
+    }
+    
+]
+const getColumns = ()=>{
+    switch(currentRole.value){
+        case ROLES.DOCUMENTACION:
+            return documentacionColumns
+        default:
+            return columns
+    }
+}
 
 // Función para mapear estados según el rol
 const getEstadoLabel = (estado: string) => {
@@ -310,7 +440,7 @@ const handleDeleteCarga = async (id: number) => {
                 }
                 await getConsolidadoData()
 
-            }, 'Eliminando carga consolidada...')
+            }, 'Eliminando carga consolidada~.')
         })
     } catch (error) {
         showError(error as string)
@@ -319,7 +449,7 @@ const handleDeleteCarga = async (id: number) => {
 
 const exportClientes = async () => {
     try {
-        console.log('Exportando contenedores...')
+        console.log('Exportando contenedores~.')
     } catch (error) {
         console.error('Error al exportar:', error)
     }
@@ -331,7 +461,6 @@ onMounted(async () => {
     try {
         filters.value.completado = true
         await getConsolidadoData()
-
     } catch (error) {
         console.error('Error al cargar datos:', error)
     }

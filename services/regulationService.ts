@@ -7,22 +7,17 @@ interface RegulationResponse {
   error?: string
 }
 
-class RegulationService extends BaseService {
+export class RegulationService extends BaseService {
   private static instance: RegulationService
 
   private constructor() {
     super()
   }
 
-  public static getInstance(): RegulationService {
-    if (!RegulationService.instance) {
-      RegulationService.instance = new RegulationService()
-    }
-    return RegulationService.instance
-  }
+ 
 
   // Obtener entidades para autocompletado
-  async getEntidades(search?: string): Promise<RegulationResponse> {
+  static async getEntidades(search?: string): Promise<RegulationResponse> {
     try {
       const queryParams = new URLSearchParams()
       if (search && search !== '') {
@@ -42,7 +37,7 @@ class RegulationService extends BaseService {
   }
 
   // Obtener etiquetados para autocompletado
-  async getEtiquetados(search?: string): Promise<RegulationResponse> {
+  static async getEtiquetados(search?: string): Promise<RegulationResponse> {
     try {
       const queryParams = new URLSearchParams()
       if (search) {

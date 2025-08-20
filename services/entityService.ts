@@ -29,24 +29,19 @@ export interface EntityListResponse {
 import { BaseService } from "~/services/base/BaseService"
 
 // Service class
-class EntityService extends BaseService {
+export class EntityService extends BaseService {
   private static instance: EntityService
 
   private constructor() { 
     super()
   }
 
-  public static getInstance(): EntityService {
-    if (!EntityService.instance) {
-      EntityService.instance = new EntityService()
-    }
-    return EntityService.instance
-  }
+ 
 
   /**
    * Crear una nueva entidad
    */
-  async createEntity(entityData: CreateEntityRequest): Promise<EntityResponse> {
+  static async createEntity(entityData: CreateEntityRequest): Promise<EntityResponse> {
     try {
       const response = await this.apiCall<EntityResponse>('/api/base-datos/regulaciones/entidades', {
         method: 'POST',
@@ -66,7 +61,7 @@ class EntityService extends BaseService {
   /**
    * Obtener lista de entidades
    */
-  async getEntities(search?: string): Promise<EntityListResponse> {
+  static async getEntities(search?: string): Promise<EntityListResponse> {
     try {
       const queryParams = new URLSearchParams()
       if (search && search !== '') {
@@ -90,7 +85,7 @@ class EntityService extends BaseService {
   /**
    * Obtener una entidad por ID
    */
-  async getEntityById(id: number): Promise<EntityResponse> {
+  static async getEntityById(id: number): Promise<EntityResponse> {
     try {
       const response = await this.apiCall<EntityResponse>(`/api/base-datos/regulaciones/entidades/${id}`)
       return response
@@ -107,7 +102,7 @@ class EntityService extends BaseService {
   /**
    * Actualizar una entidad
    */
-  async updateEntity(id: number, entityData: Partial<CreateEntityRequest>): Promise<EntityResponse> {
+  static async updateEntity(id: number, entityData: Partial<CreateEntityRequest>): Promise<EntityResponse> {
     try {
       const response = await this.apiCall<EntityResponse>(`/api/base-datos/regulaciones/entidades/${id}`, {
         method: 'PUT',
@@ -127,7 +122,7 @@ class EntityService extends BaseService {
   /**
    * Eliminar una entidad
    */
-  async deleteEntity(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deleteEntity(id: number): Promise<{ success: boolean; error?: string }> {
     try {
       const response = await this.apiCall<{ success: boolean; error?: string }>(
         `/api/base-datos/regulaciones/entidades/${id}`,
@@ -148,7 +143,7 @@ class EntityService extends BaseService {
   /**
    * Cambiar estado de una entidad (activar/desactivar)
    */
-  async toggleEntityStatus(id: number, status: 'active' | 'inactive'): Promise<EntityResponse> {
+  static async toggleEntityStatus(id: number, status: 'active' | 'inactive'): Promise<EntityResponse> {
     try {
       const response = await this.apiCall<EntityResponse>(`/api/base-datos/regulaciones/entidades/${id}/status`, {
         method: 'PATCH',
@@ -168,7 +163,7 @@ class EntityService extends BaseService {
   /**
    * Verificar si un código de entidad ya existe
    */
-  async checkEntityCodeExists(code: string): Promise<{ exists: boolean; error?: string }> {
+  static async checkEntityCodeExists(code: string): Promise<{ exists: boolean; error?: string }> {
     try {
       const response = await this.apiCall<{ exists: boolean }>(
         `/api/base-datos/regulaciones/entidades/check-code?code=${encodeURIComponent(code)}`
@@ -186,7 +181,7 @@ class EntityService extends BaseService {
   /**
    * Obtener entidades activas para formularios
    */
-  async getActiveEntities(): Promise<EntityListResponse> {
+  static async getActiveEntities(): Promise<EntityListResponse> {
     try {
       const response = await this.apiCall<EntityListResponse>('/api/base-datos/regulaciones/entidades/active')
       return response

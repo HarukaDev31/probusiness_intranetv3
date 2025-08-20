@@ -83,21 +83,12 @@ export interface ClienteDocumentacionResponse {
 }
 import { BaseService } from "~/services/base/BaseService"
 
-class ClienteDocumentacionService extends BaseService {
-  private static instance: ClienteDocumentacionService
+export class ClienteDocumentacionService extends BaseService {
+  private static baseUrl = 'api/consolidado/cotizacion/clientes-documentacion'
 
-  private constructor() {
-    super()
-  }
+ 
 
-  static getInstance(): ClienteDocumentacionService {
-    if (!ClienteDocumentacionService.instance) {
-      ClienteDocumentacionService.instance = new ClienteDocumentacionService()
-    }
-    return ClienteDocumentacionService.instance
-  }
-
-  async getClienteDocumentacion(id: string): Promise<ClienteDocumentacionResponse> {
+  static async getClienteDocumentacion(id: string): Promise<ClienteDocumentacionResponse> {
     try {
       const response = await this.apiCall<ClienteDocumentacionResponse>(`/api/consolidado/cotizacion/clientes-documentacion/${id}`)
       return response
@@ -111,7 +102,7 @@ class ClienteDocumentacionService extends BaseService {
     }
   }
 
-  async subirDocumento(id: string, tipo: string, archivo: File, observaciones?: string): Promise<{ success: boolean; error?: string }> {
+  static async subirDocumento(id: string, tipo: string, archivo: File, observaciones?: string): Promise<{ success: boolean; error?: string }> {
     try {
       const formData = new FormData()
       formData.append('archivo', archivo)
@@ -135,7 +126,7 @@ class ClienteDocumentacionService extends BaseService {
     }
   }
 
-  async eliminarDocumento(id: string, fileId: number): Promise<{ success: boolean; error?: string }> {
+  static async eliminarDocumento(id: string, fileId: number): Promise<{ success: boolean; error?: string }> {
     try {
       await this.apiCall(`/api/consolidado/cotizacion/clientes-documentacion/${id}/documento/${fileId}`, {
         method: 'DELETE'
@@ -150,7 +141,7 @@ class ClienteDocumentacionService extends BaseService {
     }
   }
 
-  async actualizarDocumentacionProveedor(id: string, proveedorId: number, datos: { volumen: number; valor: number }): Promise<{ success: boolean; error?: string }> {
+  static async actualizarDocumentacionProveedor(id: string, proveedorId: number, datos: { volumen: number; valor: number }): Promise<{ success: boolean; error?: string }> {
     try {
       await this.apiCall(`/api/consolidado/cotizacion/clientes-documentacion/${id}/proveedor/${proveedorId}`, {
         method: 'PUT',
@@ -166,7 +157,7 @@ class ClienteDocumentacionService extends BaseService {
     }
   }
 
-  async actualizarDocumentacion(id: string, datos: Partial<ClienteDocumentacion>): Promise<{ success: boolean; error?: string }> {
+  static async actualizarDocumentacion(id: string, datos: Partial<ClienteDocumentacion>): Promise<{ success: boolean; error?: string }> {
     try {
       await this.apiCall(`/api/consolidado/cotizacion/clientes-documentacion/${id}`, {
         method: 'PUT',
@@ -183,4 +174,3 @@ class ClienteDocumentacionService extends BaseService {
   }
 }
 
-export const clienteDocumentacionService = ClienteDocumentacionService.getInstance() 

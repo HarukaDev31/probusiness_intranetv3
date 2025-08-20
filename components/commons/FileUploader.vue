@@ -41,7 +41,7 @@
                     <UButton color="primary" variant="ghost" class="p-2" @click="saveFile(file)">
                         <UIcon name="i-heroicons-arrow-up-tray" />
                     </UButton>
-                    <UButton color="neutral" variant="ghost" class="p-1" @click="removeSelectedFile(index)">
+                    <UButton v-if="showRemoveButton" color="neutral" variant="ghost" class="p-1" @click="removeSelectedFile(index)">
                         <UIcon name="i-heroicons-trash" class="text-lg" />
                     </UButton>
                     
@@ -56,7 +56,7 @@
                 <div class="flex items-center gap-3">
                     <FileIcon :file="file" class="w-8 h-8" />
                     <div>
-                        <p class="text-sm font-medium">{{ file.file_name }}</p>
+                        <p class="text-sm font-medium" style="word-break: break-all;">{{ file.file_name }}</p>
                         <p class="text-xs">{{ formatFileSize(file.size || 0) }}</p>
                     </div>
                 </div>
@@ -65,7 +65,7 @@
                         title="Descargar archivo">
                         <UIcon name="i-heroicons-arrow-down-tray" />
                     </UButton>
-                    <UButton color="error" variant="ghost" class="p-2" @click="removeFile(file.id)"
+                    <UButton v-if="showRemoveButton" color="error" variant="ghost" class="p-2" @click="removeFile(file.id)"
                         title="Eliminar archivo">
                         <UIcon name="i-heroicons-trash" />
                     </UButton>
@@ -92,6 +92,7 @@ interface Props {
     loading?: boolean
     immediate?: boolean
     showSaveButton?: boolean
+    showRemoveButton?: boolean
 }
 
 interface Emits {
@@ -112,7 +113,8 @@ const props = withDefaults(defineProps<Props>(), {
     initialFiles: () => [],
     loading: false,
     immediate: true,
-    showSaveButton: false
+    showSaveButton: false,
+    showRemoveButton: true
 })
 
 const emit = defineEmits<Emits>()

@@ -1,21 +1,15 @@
 import type { CreateProductRubroRequest, ProductRubro, ProductRubroListResponse, ProductRubroResponse } from "../types/product-rubro";
 import { BaseService } from "~/services/base/BaseService"
 
-class ProductRubroService extends BaseService {
+export class ProductRubroService extends BaseService {
     private static instance: ProductRubroService
 
     private constructor() { 
         super()
     }
 
-    public static getInstance(): ProductRubroService {
-        if (!ProductRubroService.instance) {
-            ProductRubroService.instance = new ProductRubroService()
-        }
-        return ProductRubroService.instance
-    }
-
-    async createProductRubro(productRubroData: CreateProductRubroRequest): Promise<ProductRubroResponse> {
+ 
+    static async createProductRubro(productRubroData: CreateProductRubroRequest): Promise<ProductRubroResponse> {
         try {
             const response = await this.apiCall<ProductRubroResponse>('/api/base-datos/regulaciones/rubros', {
                 method: 'POST',
@@ -35,7 +29,7 @@ class ProductRubroService extends BaseService {
     /**
      * Obtener lista de rubros
      */
-    async getProductRubros(search?: string,tipo?: string): Promise<ProductRubroListResponse> {
+    static async getProductRubros(search?: string,tipo?: string): Promise<ProductRubroListResponse> {
         try {
             const queryParams = new URLSearchParams()
             if (search && search !== '') {
@@ -61,7 +55,7 @@ class ProductRubroService extends BaseService {
     /**
      * Obtener un rubro por ID
      */
-    async getProductRubroById(id: number): Promise<ProductRubroResponse> {
+    static async getProductRubroById(id: number): Promise<ProductRubroResponse> {
         try {
             const response = await this.apiCall<ProductRubroResponse>(`/api/base-datos/regulaciones/rubros/${id}`)
             return response

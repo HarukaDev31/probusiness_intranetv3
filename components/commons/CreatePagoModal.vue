@@ -1,5 +1,5 @@
 <template>
-    <UModal v-model="isOpen" class="max-w-2xl">
+    <UModal v-model="isOpen" class="max-w-2xl ">
         <template #header>
             <div class="text-center">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">

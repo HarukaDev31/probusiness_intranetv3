@@ -27,10 +27,10 @@
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange">
         </DataTable>
-        <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos"
-            :columns="getPagosColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
-            :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
+        <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
+            :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
+            :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
+            :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange">
@@ -44,7 +44,7 @@ import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES } from '~/constants/roles'
-import { USelect, UInput, UButton, UIcon ,UBadge} from '#components'
+import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
 import CreateProspectoModal from '~/components/cargaconsolidada/CreateProspectoModal.vue'
@@ -382,7 +382,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 class: 'w-full',
                 'onUpdate:modelValue': (value: any) => {
                     if (value && value !== estado) {
-                    handleUpdateEstadoCotizacion(row.original.id, value)
+                        handleUpdateEstadoCotizacion(row.original.id, value)
                     }
                 }
             })
@@ -432,7 +432,7 @@ const getPagosColumns = () => {
                 }, estado)
             }
         },
-       
+
         {
             accessorKey: 'concepto',
             header: 'Concepto',
@@ -460,32 +460,29 @@ const getPagosColumns = () => {
                 }
             ] */
         {
-            accessorKey: 'adelantos',   
+            accessorKey: 'adelantos',
             header: 'Adelantos',
             cell: ({ row }: { row: any }) => {
                 const pagos = row.original.pagos || []
-                
+
                 return h('div', {
                     class: 'flex flex-row gap-2 items-center flex-wrap'
                 }, [
-                    ...pagos.map((pago: any) => 
+                    ...pagos.map((pago: any) =>
                         h('div', {
                             class: 'flex items-center bg-gray-100 rounded-lg p-2 cursor-pointer hover:bg-gray-200',
                             onClick: () => {
                                 const modal = overlay.create(AdelantoPreviewModal)
-    modal.open({
+                                modal.open({
                                     modelValue: true,
                                     pago,
-                                    'update:modelValue': (value: boolean) => {
-                                        if (!value) modal.close()
-                                    },
-                                    onDelete: async () => {
+                                    onOnDelete: async () => {
                                         try {
-                                            // TODO: Implementar la eliminación del voucher
+                                            
                                             showSuccess('Voucher eliminado correctamente', 'El voucher se ha eliminado correctamente')
-                await getCotizaciones(Number(id))
+                                            await getCotizaciones(Number(id))
                                             modal.close()
-    } catch (error) {
+                                        } catch (error) {
                                             showError('Error al eliminar el voucher', error)
                                         }
                                     }
@@ -497,8 +494,8 @@ const getPagosColumns = () => {
                                 variant: 'subtle',
                                 size: 'xs',
                                 label: formatCurrency(pago.monto, 'USD')
-                            })  
-                           
+                            })
+
                         ])
                     ),
                     h(UButton, {
@@ -507,10 +504,9 @@ const getPagosColumns = () => {
                         size: 'xs',
                         onClick: () => {
                             const modal = overlay.create(CreatePagoModal)
-    modal.open({
-                                idCotizacion: row.original.cotizacion_id,
-        onSuccess: () => {
-            getCotizaciones(Number(id))
+                            modal.open({
+                                onSuccess: () => {
+                                    getCotizaciones(Number(id))
                                 }
                             })
                         }
@@ -518,7 +514,7 @@ const getPagosColumns = () => {
                 ])
             }
         }
-        ]
+    ]
 }
 const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
     //Asesor	Status	N.	Buyer	Whatsapp	Estado	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
@@ -1025,7 +1021,7 @@ const downloadFile = async (fileUrl: string) => {
             document.body.removeChild(a)
         }, 'Descargando archivo...')
     } catch (error) {
-        showError('Error al descargar archivo')
+        showError('Error al descargar archivo', error as string)
     }
 }
 // Manejadores para prospectos

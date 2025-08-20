@@ -17,7 +17,7 @@
         <PageHeader title="Contenedores" subtitle="Gestión de contenedores" icon="i-heroicons-book-open"
             :hide-back-button="true" />
 
-        <DataTable title="" icon="" :data="consolidadoData" :columns="columns" :loading="loading"
+        <DataTable title="" icon="" :data="consolidadoData" :columns="getColumns()" :loading="loading"
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
@@ -36,17 +36,16 @@
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { useConsolidado } from '../composables/cargaconsolidada/useConsolidado'
-import type { FilterConfig } from '../types/data-table'
-import type { ContenedorFilters } from '../types/cargaconsolidada/contenedor'
-import { ROLES } from '../types/roles/roles'
-import { useUserRole } from '../composables/auth/useUserRole'
-import { useSpinner } from '../composables/commons/useSpinner'
-import { useModal } from '../composables/commons/useModal'
+import type { FilterConfig } from '~/types/data-table'
+import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
+import { ROLES } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
 const { withSpinner } = useSpinner()
-const { hasRole, isCoordinacion } = useUserRole()
-import CreateConsolidadoModal from '../components/cargaconsolidada/CreateConsolidadoModal.vue'
+const { hasRole, isCoordinacion,currentRole } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
+import CreateConsolidadoModal from '~/components/cargaconsolidada/CreateConsolidadoModal.vue'
 const { showSuccess, showConfirmation } = useModal()
 const {
     consolidadoData,
@@ -70,6 +69,7 @@ const {
 const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
 const currentConsolidado = ref<number | null>(null)
+
 // Components
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
@@ -93,7 +93,6 @@ const filterConfig = computed<FilterConfig[]>(() => {
         }
     ]
 
-    console.log('isAlmacen', isAlmacen.value)
     if (isAlmacen.value) {
         // Para rol ContenedorConsolidado: estados en inglés
         baseConfig.push({
@@ -244,6 +243,75 @@ const columns: TableColumn<any>[] = [
         }
     }
 ]
+//documentacion columns Carga	Mes	Pais	F. Cierre	Empresa	Estado	Accione
+const documentacionColumns: TableColumn<any>[] = [
+    {
+        accessorKey: 'carga',
+        header: 'Carga',
+        cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}`
+    },
+    {
+        accessorKey: 'mes',
+        header: 'Mes',
+        cell: ({ row }) => row.getValue('mes')
+    },
+    
+    {
+        accessorKey: 'pais',
+        header: 'País',
+        cell: ({ row }) => row.original.pais?.No_Pais || 'N/A'
+    },
+    
+    {
+        accessorKey: 'f_cierre',
+        header: 'F. Cierre',
+        cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre'))
+    },
+    
+    {
+        accessorKey: 'empresa',
+        header: 'Empresa',
+        cell: ({ row }) => row.getValue('empresa')
+    },
+    
+    {
+        accessorKey: 'estado',
+        header: 'Estado',
+        cell: ({ row }) => {
+            const estado = row.original.estado_documentacion as string
+            const color = getColorByEstado(estado)
+            return h(UBadge, {
+                color,
+                variant: 'subtle',
+                label: getEstadoLabel(estado)
+            })
+        }
+    },
+    {
+        accessorKey: 'actions',
+        header: 'Acciones',
+        cell: ({ row }) => {
+            return h('div', { class: 'flex space-x-2' }, [
+                h(UButton, {
+                    size: 'xs',
+                    icon: 'i-heroicons-eye',
+                    color: 'primary',
+                    variant: 'ghost',
+                    onClick: () => handleViewSteps(row.original.id)
+                })
+            ])
+        }
+    }
+    
+]
+const getColumns = ()=>{
+    switch(currentRole.value){
+        case ROLES.DOCUMENTACION:
+            return documentacionColumns
+        default:
+            return columns
+    }
+}
 
 // Función para mapear estados según el rol
 const getEstadoLabel = (estado: string) => {
@@ -310,7 +378,7 @@ const handleDeleteCarga = async (id: number) => {
                 }
                 await getConsolidadoData()
 
-            }, 'Eliminando carga consolidada...')
+            }, 'Eliminando carga consolidada~.')
         })
     } catch (error) {
         showError(error as string)
@@ -319,7 +387,7 @@ const handleDeleteCarga = async (id: number) => {
 
 const exportClientes = async () => {
     try {
-        console.log('Exportando contenedores...')
+        console.log('Exportando contenedores~.')
     } catch (error) {
         console.error('Error al exportar:', error)
     }

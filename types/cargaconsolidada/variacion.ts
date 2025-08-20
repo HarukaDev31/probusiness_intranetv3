@@ -67,6 +67,8 @@ export interface ProveedorVariacion {
   code_supplier: string
   factura_comercial: string | null
   excel_confirmacion: string | null
+  files_almacen_documentacion: string | null
+  files_almacen_inspection: string | null
 }
 
 export interface ArchivoVariacion {

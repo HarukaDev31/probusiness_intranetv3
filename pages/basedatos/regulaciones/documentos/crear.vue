@@ -136,16 +136,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import ProductRubroService from '../services/productRubroService'
-import DocumentoService, { type CreateDocumentoRequest } from '../services/documentoService'
-import type { ProductRubro } from '../types/product-rubro'
+import { ProductRubroService } from '~/services/productRubroService'
+import { DocumentoService, type CreateDocumentoRequest } from '~/services/documentoService'
+import type { ProductRubro } from '~/types/product-rubro'
 
 // Router
 const router = useRouter()
 
 // Service instances
-const productRubroService = ProductRubroService.getInstance()
-const documentoService = DocumentoService.getInstance()
+
 
 // Form data
 const formData = ref({

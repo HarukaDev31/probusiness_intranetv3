@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { clienteService, type Cliente, type ClientesQueryParams, type PaginationInfo } from '../services/clienteService'
+import { ClienteService, type Cliente, type ClientesQueryParams, type PaginationInfo } from '../services/clienteService'
 import type { Header } from '../types/data-table'
 import { useSpinner } from '../composables/commons/useSpinner'
 const { withSpinner } = useSpinner()

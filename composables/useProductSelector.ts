@@ -1,9 +1,8 @@
 import { ref } from 'vue'
-import ProductRubroService from '../services/productRubroService'
+import {ProductRubroService} from '../services/productRubroService'
 import type { ProductRubro } from '../types/product-rubro'
 
 export function useProductSelector() {
-  const productRubroService = ProductRubroService.getInstance()
 
   // Product options (reactive)
   const productOptions = ref<{ label: string; value: string; }[]>([])
@@ -12,7 +11,7 @@ export function useProductSelector() {
   const searchProducts = async (searchTerm: string) => {
     try {
       loadingProducts.value = true
-      const response = await productRubroService.getProductRubros(searchTerm)
+      const response = await ProductRubroService.getProductRubros(searchTerm)
 
       if (response.success && response.data) {
         // Convertir productos a formato de opciones para autocomplete
@@ -36,8 +35,9 @@ export function useProductSelector() {
         return null
       }
       
-      const response = await productRubroService.createProductRubro({
+      const response = await ProductRubroService.createProductRubro({
         nombre: productName,
+        tipo: ''
       })
       
       if (response.success) {

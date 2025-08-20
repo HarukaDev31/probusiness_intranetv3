@@ -10,15 +10,18 @@
     >
       <div
         v-if="visible"
-        class="fixed inset-0 z-[99999] flex items-center justify-center p-4"
-        @click.self="handleBackdropClick"
+        class="fixed inset-0 flex items-center justify-center p-4 z-[8000] pointer-events-auto"
+        @click.self.stop="handleBackdropClick"
       >
         <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+        <div 
+          class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+          style="pointer-events: none;"
+        ></div>
         
         <!-- Modal -->
         <div
-          class="relative w-full max-w-md transform rounded-xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-gray-800 dark:ring-gray-700"
+          class="relative w-full max-w-md transform rounded-xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-gray-800 dark:ring-gray-700 z-[8001]"
           :class="modalClasses"
         >
           <!-- Icon and Close Button -->

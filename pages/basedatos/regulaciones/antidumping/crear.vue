@@ -193,19 +193,18 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import ProductService from '../services/productService'
-import ProductRubroService from '../services/productRubroService'
-import AntidumpingService, { type CreateAntidumpingRequest } from '../services/antidumpingService'
+import {ProductService} from '../services/productService'
+import {ProductRubroService} from '../services/productRubroService'
+import {AntidumpingService} from '../services/antidumpingService'
 import type { ProductRubro } from '../types/product-rubro'
 import { useNotifications } from '../composables/useNotifications'
 import { useLoading } from '../composables/useLoading'
 // Router
 const router = useRouter()
-
 // Service instances
-const productService = ProductService.getInstance()
-const productRubroService = ProductRubroService.getInstance()
-const antidumpingService = AntidumpingService.getInstance()
+const productService = ProductService 
+const productRubroService = ProductRubroService
+const antidumpingService = AntidumpingService
 
 // Notifications and loading
 const { showCreateSuccess, showServerError, showValidationError } = useNotifications()
