@@ -40,8 +40,8 @@ import type { TableColumn } from '@nuxt/ui'
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
-const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useGeneral()
-const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion, errorVariacion, paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion, filterConfigVariacion, handleSearchVariacion, handlePageChangeVariacion, handleItemsPerPageChangeVariacion, handleFilterChangeVariacion } = useVariacion()
+const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig,} = useGeneral()
+const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion,  paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion } = useVariacion()
 const tabs = ref()
 const handleTabChange = (value: string) => {
     //set tab to value

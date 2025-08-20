@@ -193,7 +193,6 @@ const getCategoriaColor = (categoria: string) => {
 }
 
 const handleSecondarySearch = (value: string) => {
-    secondarySearch.value = value
     loadClientes({ page: 1 })
 }
 
