@@ -21,13 +21,14 @@
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
-                console.log('Pasando filters al DataTable:', filters)
                 return filters
             })()" :show-export="true" empty-state-message="No se encontraron registros de contenedores."
             @update:search-query="handleSearch" @update:primary-search="handleSearch" @page-change="handlePageChange"
             @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
             @filter-change="handleFilterChange">
-
+            <template #actions>
+                <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
+            </template>
         </DataTable>
     </div>
 </template>
@@ -37,17 +38,16 @@ import { ref, h, resolveComponent, onMounted, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useConsolidado } from '../composables/cargaconsolidada/useConsolidado'
 import type { FilterConfig } from '../types/data-table'
+import type { ContenedorFilters } from '../types/cargaconsolidada/contenedor'
 import { ROLES } from '../types/roles/roles'
 import { useUserRole } from '../composables/auth/useUserRole'
+import { useSpinner } from '../composables/commons/useSpinner'
+import { useModal } from '../composables/commons/useModal'
+const { withSpinner } = useSpinner()
 const { hasRole, isCoordinacion } = useUserRole()
-
-// Constante de roles
-
-
-// Verificar si el usuario tiene rol de consolidado
+import CreateConsolidadoModal from '../components/cargaconsolidada/CreateConsolidadoModal.vue'
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
-
-// Obtener datos del composable
+const { showSuccess, showConfirmation } = useModal()
 const {
     consolidadoData,
     loading,
@@ -64,9 +64,12 @@ const {
     handleFilterChange,
     clearFilters,
     resetSearch,
-    setCompletado
+    createConsolidado,
+    deleteConsolidado
 } = useConsolidado()
-
+const overlay = useOverlay()
+const modal = overlay.create(CreateConsolidadoModal)
+const currentConsolidado = ref<number | null>(null)
 // Components
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
@@ -123,9 +126,27 @@ const filterConfig = computed<FilterConfig[]>(() => {
 
     return baseConfig
 })
-
-
-
+const handleCreateConsolidado = async (data: any) => {
+    try {
+        const payload = {
+            id: data.id,
+            carga: data.carga,
+            mes: data.mes,
+            id_pais: data.pais,
+            empresa: data.empresa,
+            f_cierre: `${data.fechaCierre.year}-${data.fechaCierre.month}-${data.fechaCierre.day}`,
+            f_puerto: `${data.fechaArribo.year}-${data.fechaArribo.month}-${data.fechaArribo.day}`,
+            f_entrega: `${data.fechaEntrega.year}-${data.fechaEntrega.month}-${data.fechaEntrega.day}`
+        }
+        await withSpinner(async () => {
+            await createConsolidado(payload)
+        })
+        showSuccess('Carga consolidada creada correctamente', 'La carga consolidada se ha creado correctamente y ya está disponible en el sistema.')
+        await getConsolidadoData()
+    } catch (error) {
+        showError(error as string)
+    }
+}
 const columns: TableColumn<any>[] = [
     {
         accessorKey: 'carga',
@@ -193,7 +214,16 @@ const columns: TableColumn<any>[] = [
                     icon: 'i-heroicons-pencil',
                     color: 'warning',
                     variant: 'ghost',
-                    onClick: () => handleEditCarga(row.original.id)
+                    onClick: () => {
+                        currentConsolidado.value = row.original.id
+                        //define on emit
+                        modal.open({
+                            id: row.original.id,
+                            onSubmit: (data: any) => {
+                                handleCreateConsolidado(data)
+                            }
+                        })
+                    }
                 }),
                 h(UButton, {
                     size: 'xs',
@@ -260,7 +290,9 @@ const getColorByEstado = (estado: string) => {
 
 const handleViewSteps = (id: number) => {
     if (hasRole('ContenedorAlmacen')) {
-        navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}`)
+        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}`)
+    } else {
+        navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
     }
 }
 
@@ -268,8 +300,21 @@ const handleEditCarga = (id: number) => {
     console.log('Editar carga:', id)
 }
 
-const handleDeleteCarga = (id: number) => {
-    console.log('Eliminar carga:', id)
+const handleDeleteCarga = async (id: number) => {
+    try {
+        showConfirmation('¿Estás seguro de querer eliminar esta carga consolidada?', 'Esta acción no se puede deshacer.',async () => {
+            await withSpinner(async () => {
+                const response=await deleteConsolidado(id)
+                if (response.success) {
+                    showSuccess('Carga consolidada eliminada correctamente', 'La carga consolidada se ha eliminado correctamente.')
+                }
+                await getConsolidadoData()
+
+            }, 'Eliminando carga consolidada...')
+        })
+    } catch (error) {
+        showError(error as string)
+    }
 }
 
 const exportClientes = async () => {
@@ -280,21 +325,10 @@ const exportClientes = async () => {
     }
 }
 
-const formatDateTimeToDmy = (dateTime: string) => {
-    if (!dateTime) return ''
-    const date = new Date(dateTime)
-    if (isNaN(date.getTime())) return dateTime
-    return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    })
-}
 
 // Inicialización
 onMounted(async () => {
     try {
-        setCompletado(true)
         await getConsolidadoData()
     } catch (error) {
         console.error('Error al cargar datos:', error)
