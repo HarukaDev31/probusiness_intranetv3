@@ -53,7 +53,6 @@ export const useConsolidado = () => {
             if (filters.value.estado_china) {
                 params.estado_china = filters.value.estado_china
             }
-            console.log(filters.value.completado)
             if (filters.value.completado) {
                 params.completado = filters.value.completado
             }
