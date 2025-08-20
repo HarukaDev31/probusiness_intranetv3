@@ -70,7 +70,7 @@ class AuthService {
         wsHost: this.nuxtApp.$config.public.pusherWsHost,
         forceTLS: false,
         enabledTransports: ['ws', 'wss'],
-        authEndpoint: `${this.nuxtApp.$config.public.pusherWsHost}/api/broadcasting/auth`,
+        authEndpoint: `/api/broadcasting/auth`,
         auth: {
           headers: {
             Authorization: `Bearer ${this.token}`,
