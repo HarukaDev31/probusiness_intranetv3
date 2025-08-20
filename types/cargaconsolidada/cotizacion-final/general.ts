@@ -1,6 +1,6 @@
 import type { PaginationInfo } from "../types/data-table"
 
-/**type this {
+
     "success": true,
     "data": [
         {

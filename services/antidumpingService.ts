@@ -126,7 +126,7 @@ class AntidumpingService extends BaseService {
       if (params.limit) queryParams.append('limit', params.limit.toString())
       if (params.search) queryParams.append('search', params.search)
 
-      const response = await apiCall<AntidumpingListResponse>(
+      const response = await this.apiCall<AntidumpingListResponse>(
         `/api/base-datos/regulaciones/antidumping${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
       )
       return response
@@ -145,7 +145,7 @@ class AntidumpingService extends BaseService {
    */
   async getAntidumpingById(id: number): Promise<AntidumpingResponse> {
     try {
-      const response = await apiCall<AntidumpingResponse>(`/api/base-datos/regulaciones/antidumping/${id}`)
+      const response = await this.apiCall<AntidumpingResponse>(`/api/base-datos/regulaciones/antidumping/${id}`)
       return response
     } catch (error) {
       console.error('Error fetching antidumping:', error)
@@ -202,7 +202,7 @@ class AntidumpingService extends BaseService {
       }
 
       // Usar el mismo endpoint que crear pero con id_regulacion
-      const response = await apiCall<AntidumpingResponse>('/api/base-datos/regulaciones/antidumping', {
+      const response = await this.apiCall<AntidumpingResponse>('/api/base-datos/regulaciones/antidumping', {
         method: 'POST',
         body: formData
       })
@@ -222,7 +222,7 @@ class AntidumpingService extends BaseService {
    */
   async deleteAntidumping(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(
+      const response = await this.apiCall<{ success: boolean; error?: string }>(
         `/api/base-datos/regulaciones/antidumping/${id}`,
         {
           method: 'DELETE'
@@ -243,7 +243,7 @@ class AntidumpingService extends BaseService {
    */
   async exportAntidumping(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/antidumping/export?format=${format}`, {
+      const response = await this.apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/antidumping/export?format=${format}`, {
         method: 'GET'
       })
       
@@ -263,7 +263,7 @@ class AntidumpingService extends BaseService {
 
   async deleteRubro(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(`/api/base-datos/regulaciones/rubros/${id}`, {
+      const response = await this.apiCall<{ success: boolean; error?: string }>(`/api/base-datos/regulaciones/rubros/${id}`, {
         method: 'DELETE'
       })
       return response
@@ -275,7 +275,7 @@ class AntidumpingService extends BaseService {
 
   async deleteEntidad(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(`/api/base-datos/regulaciones/entidades/${id}`, {
+      const response = await this.apiCall<{ success: boolean; error?: string }>(`/api/base-datos/regulaciones/entidades/${id}`, {
         method: 'DELETE'
       })
       return response

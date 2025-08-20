@@ -1,5 +1,4 @@
-import type { PaginationInfo } from "../types/data-table"
-
+import type { PaginationInfo } from "~/types/data-table"
 
 export interface Pagos {
     index: number

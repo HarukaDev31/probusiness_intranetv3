@@ -382,7 +382,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 class: 'w-full',
                 'onUpdate:modelValue': (value: any) => {
                     if (value && value !== estado) {
-                        handleUpdateEstadoCotizacion(row.original.id, value)
+                    handleUpdateEstadoCotizacion(row.original.id, value)
                     }
                 }
             })
@@ -473,7 +473,7 @@ const getPagosColumns = () => {
                             class: 'flex items-center bg-gray-100 rounded-lg p-2 cursor-pointer hover:bg-gray-200',
                             onClick: () => {
                                 const modal = overlay.create(AdelantoPreviewModal)
-                                modal.open({
+    modal.open({
                                     modelValue: true,
                                     pago,
                                     'update:modelValue': (value: boolean) => {
@@ -483,9 +483,9 @@ const getPagosColumns = () => {
                                         try {
                                             // TODO: Implementar la eliminación del voucher
                                             showSuccess('Voucher eliminado correctamente', 'El voucher se ha eliminado correctamente')
-                                            await getCotizaciones(Number(id))
+                await getCotizaciones(Number(id))
                                             modal.close()
-                                        } catch (error) {
+    } catch (error) {
                                             showError('Error al eliminar el voucher', error)
                                         }
                                     }
@@ -507,10 +507,10 @@ const getPagosColumns = () => {
                         size: 'xs',
                         onClick: () => {
                             const modal = overlay.create(CreatePagoModal)
-                            modal.open({
+    modal.open({
                                 idCotizacion: row.original.cotizacion_id,
-                                onSuccess: () => {
-                                    getCotizaciones(Number(id))
+        onSuccess: () => {
+            getCotizaciones(Number(id))
                                 }
                             })
                         }

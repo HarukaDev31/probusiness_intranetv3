@@ -1,8 +1,11 @@
-
+import { BaseService } from "~/services/base/BaseService"
 import type { CursosResponse, CursosFilters, CursosDetalleResponse } from '../types/cursos-pagos'
 
-export class PagosService {
+export class PagosService  extends BaseService{
   private static baseUrl = 'api/carga-consolidada/pagos/cursos'
+  constructor(){
+    super()
+  }
 
   /**
    * Obtiene la lista de pagos de cursos con filtros y paginación
@@ -25,7 +28,7 @@ export class PagosService {
       
       const url = `${this.baseUrl}?${queryParams.toString()}`
       
-      const response = await apiCall<CursosResponse>(url, {
+      const response = await this.apiCall<CursosResponse>(url, {
         method: 'GET'
       })
       
@@ -41,7 +44,7 @@ export class PagosService {
    */
   static async getCursoDetalle(id: number): Promise<CursosDetalleResponse> {
     try {
-      const response = await apiCall<CursosDetalleResponse>(
+      const response = await this.apiCall<CursosDetalleResponse>(
         `${this.baseUrl}/${id}`,
         {
           method: 'GET'

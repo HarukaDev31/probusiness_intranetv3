@@ -1,33 +1,33 @@
 
-import type { 
-  DocumentacionFolder, 
-  DocumentacionResponse, 
-  DocumentacionFilters,
-  DocumentacionUpdateRequest,
-  DocumentacionUploadRequest
+import type {
+    DocumentacionFolder,
+    DocumentacionResponse,
+    DocumentacionFilters,
+    DocumentacionUpdateRequest,
+    DocumentacionUploadRequest
 } from '~/types/cargaconsolidada/documentacion'
 import { BaseService } from "~/services/base/BaseService"
 
 export class DocumentacionService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor/documentacion'
-    
+
     /**
      * Obtiene todos los folders de documentación
      */
     static async getFolders(id: string, filters?: DocumentacionFilters): Promise<DocumentacionResponse> {
         try {
             const params = new URLSearchParams()
-            
+
             if (filters?.categoria && filters.categoria !== 'TODAS') {
                 params.append('categoria', filters.categoria)
             }
-            
+
             if (filters?.only_doc_profile) {
                 params.append('only_doc_profile', filters.only_doc_profile)
             }
 
             const url = `${this.baseUrl}/${id}`
-            
+
             const response = await this.apiCall<DocumentacionResponse>(url, {
                 method: 'GET'
             })
@@ -112,9 +112,9 @@ export class DocumentacionService extends BaseService {
             return { success: true, message: 'Folder eliminado correctamente' }
         } catch (error: any) {
             console.error('Error al eliminar folder:', error)
-            return { 
-                success: false, 
-                error: error.message || 'Error al eliminar el folder' 
+            return {
+                success: false,
+                error: error.message || 'Error al eliminar el folder'
             }
         }
     }
@@ -127,11 +127,11 @@ export class DocumentacionService extends BaseService {
             const formData = new FormData()
             formData.append('file', data.file)
             formData.append('folder_id', data.folder_id)
-            
+
             if (data.observaciones) {
                 formData.append('observaciones', data.observaciones)
             }
-            
+
             if (data.id_proveedor) {
                 formData.append('id_proveedor', data.id_proveedor.toString())
             }
@@ -141,16 +141,16 @@ export class DocumentacionService extends BaseService {
                 body: formData
             })
 
-            return { 
-                success: true, 
+            return {
+                success: true,
                 message: 'Archivo subido correctamente',
                 file_url: response.file_url || undefined
             }
         } catch (error: any) {
             console.error('Error al subir archivo:', error)
-            return { 
-                success: false, 
-                error: error.message || 'Error al subir el archivo' 
+            return {
+                success: false,
+                error: error.message || 'Error al subir el archivo'
             }
         }
     }
@@ -170,8 +170,8 @@ export class DocumentacionService extends BaseService {
             }
         } catch (error: any) {
             console.error('Error al obtener archivos del folder:', error)
-            return { 
-                success: false, 
+            return {
+                success: false,
                 error: error.message || 'Error al obtener archivos del folder',
                 files: []
             }
@@ -190,9 +190,9 @@ export class DocumentacionService extends BaseService {
             return { success: true, message: 'Archivo eliminado correctamente' }
         } catch (error: any) {
             console.error('Error al eliminar archivo:', error)
-            return { 
-                success: false, 
-                error: error.message || 'Error al eliminar el archivo' 
+            return {
+                success: false,
+                error: error.message || 'Error al eliminar el archivo'
             }
         }
     }
@@ -215,7 +215,7 @@ export class DocumentacionService extends BaseService {
     /**
      * Obtiene estadísticas de documentación
      */
-    static async getDocumentacionStats(): Promise<{ 
+    static async getDocumentacionStats(): Promise<{
         total_folders: number
         folders_por_categoria: { [key: string]: number }
         folders_con_archivos: number
@@ -232,6 +232,69 @@ export class DocumentacionService extends BaseService {
             }
         } catch (error) {
             console.error('Error al obtener estadísticas de documentación:', error)
+            throw error
+        }
+    }
+    static async uploadFileDocumentation(data: FormData) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/upload-file-documentation`, {
+                method: 'POST',
+                body: data
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error al subir archivo de documentación:', error)
+            throw error
+        }
+    }
+    static async downloadFacturaComercial(idContenedor: string) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/download-factura-comercial/${idContenedor}`, {
+                method: 'GET'
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error al descargar factura comercial:', error)
+            throw error
+        }
+    }
+    static async downloadAllFiles(idContenedor: string) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/download-zip/${idContenedor}`, {
+                method: 'GET'
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error al descargar todos los archivos:', error)
+            throw error
+        }
+    }
+    static async deleteFileDocumentation(idFile: number) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/delete/${idFile}`, {
+                method: 'DELETE'
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error al eliminar archivo de documentación:', error)
+            throw error
+        }
+    }
+
+    static async createNewFolder(data: FormData) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/create-folder/`, {
+                method: 'POST',
+                body: data
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error al crear nuevo folder:', error)
             throw error
         }
     }

@@ -1,4 +1,4 @@
-
+import { BaseService } from "~/services/base/BaseService"
 
 // Interfaces
 export interface Permiso {
@@ -38,10 +38,12 @@ export interface PermisoListResponse {
 }
 
 // Service class
-class PermisoService {
+class PermisoService extends BaseService {
   private static instance: PermisoService
 
-  private constructor() {}
+  private constructor() {
+    super()
+  }
 
   public static getInstance(): PermisoService {
     if (!PermisoService.instance) {
@@ -76,7 +78,7 @@ class PermisoService {
         })
       }
 
-      const response = await apiCall<PermisoResponse>('/api/base-datos/regulaciones/permisos', {
+      const response = await this.apiCall<PermisoResponse>('/api/base-datos/regulaciones/permisos', {
         method: 'POST',
         body: formData
       })
@@ -108,7 +110,7 @@ class PermisoService {
       if (params.search) queryParams.append('search', params.search)
       if (params.entidad_id) queryParams.append('entidad_id', params.entidad_id.toString())
 
-      const response = await apiCall<PermisoListResponse>(
+      const response = await this.apiCall<PermisoListResponse>(
         `/api/base-datos/regulaciones/permisos${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
       )
       return response
@@ -127,7 +129,7 @@ class PermisoService {
    */
   async getPermisoById(id: number): Promise<PermisoResponse> {
     try {
-      const response = await apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}`)
+      const response = await this.apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}`)
       return response
     } catch (error) {
       console.error('Error fetching permiso:', error)
@@ -159,7 +161,7 @@ class PermisoService {
         }
       })
 
-      const response = await apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}`, {
+      const response = await this.apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}`, {
         method: 'PUT',
         body: formData
       })
@@ -179,7 +181,7 @@ class PermisoService {
    */
   async deletePermiso(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(
+      const response = await this.apiCall<{ success: boolean; error?: string }>(
         `/api/base-datos/regulaciones/permisos/${id}`,
         {
           method: 'DELETE'
@@ -200,7 +202,7 @@ class PermisoService {
    */
   async togglePermisoStatus(id: number, status: 'active' | 'inactive'): Promise<PermisoResponse> {
     try {
-      const response = await apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}/status`, {
+      const response = await this.apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status })
       })
@@ -220,7 +222,7 @@ class PermisoService {
    */
   async checkPermisoCodeExists(codigo: string): Promise<{ exists: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ exists: boolean; error?: string }>(
+      const response = await this.apiCall<{ exists: boolean; error?: string }>(
         `/api/base-datos/regulaciones/permisos/check-code?codigo=${encodeURIComponent(codigo)}`
       )
       return response
@@ -238,7 +240,7 @@ class PermisoService {
    */
   async getActivePermisos(): Promise<PermisoListResponse> {
     try {
-      const response = await apiCall<PermisoListResponse>('/api/base-datos/regulaciones/permisos/active')
+      const response = await this.apiCall<PermisoListResponse>('/api/base-datos/regulaciones/permisos/active')
       return response
     } catch (error) {
       console.error('Error fetching active permisos:', error)
@@ -255,7 +257,7 @@ class PermisoService {
    */
   async exportPermisos(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/permisos/export?format=${format}`, {
+      const response = await this.apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/permisos/export?format=${format}`, {
         method: 'GET'
       })
       

@@ -49,6 +49,28 @@ export const useGeneral  = () => {
             loadingGeneral.value = false
         }
     }
+    const uploadFacturaComercial = async (data: any) => {
+        try {
+            const formData = new FormData()
+            formData.append('file', data.file)
+            formData.append('idCotizacion', data.idCotizacion)
+            const response = await GeneralService.uploadFacturaComercial(formData)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
+    const uploadGuiaRemision = async (data: any) => {
+        try {
+            const formData = new FormData()
+            formData.append('file', data.file)
+            formData.append('idCotizacion', data.idCotizacion)
+            const response = await GeneralService.uploadGuiaRemision(formData)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
     return {
         general,
         loadingGeneral,
@@ -61,6 +83,8 @@ export const useGeneral  = () => {
         filtersGeneral,
         filterConfigGeneral,
         getGeneral,
-        totalRecordsGeneral
+        totalRecordsGeneral,
+        uploadFacturaComercial,
+        uploadGuiaRemision
     }
 }   

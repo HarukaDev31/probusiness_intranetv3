@@ -1,12 +1,15 @@
 import type { CursoItem, CursosDetalleResponse, CursosFilters, CursosResponse } from '../types/cursos/cursos'
 
+import { BaseService } from "~/services/base/BaseService"
 
-export class CursosService {
+export class CursosService extends BaseService {
   private static baseUrl = 'api/cursos'
-
+  constructor(){
+    super()
+  }
   static async getCursos(filters: CursosFilters): Promise<CursosResponse> {
     try {
-      const response = await apiCall<CursosResponse>(`${this.baseUrl}`, {
+      const response = await this.apiCall<CursosResponse>(`${this.baseUrl}`, {
         method: 'GET',
         params: filters
       })
@@ -18,7 +21,7 @@ export class CursosService {
   }
   static async getCursoDetalle(id: number): Promise<CursosDetalleResponse> {
     try {
-      const response = await apiCall<CursosDetalleResponse>(`${this.baseUrl}/${id}`, {
+      const response = await this.apiCall<CursosDetalleResponse>(`${this.baseUrl}/${id}`, {
         method: 'GET'
       })
       return response
@@ -29,7 +32,7 @@ export class CursosService {
   }
   static async borrarCurso(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(`${this.baseUrl}/${id}`, {
+      const response = await this.apiCall<{ success: boolean; error?: string }>(`${this.baseUrl}/${id}`, {
         method: 'DELETE'
       })
       return response
@@ -40,7 +43,7 @@ export class CursosService {
   }
   static async updateCurso(id: number, curso: CursoItem): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(`${this.baseUrl}/${id}`, {
+      const response = await this.apiCall<{ success: boolean; error?: string }>(`${this.baseUrl}/${id}`, {
         method: 'PUT',
         body: curso
       })
@@ -52,7 +55,7 @@ export class CursosService {
   }
   static async exportCursos(filters: CursosFilters): Promise<Blob> {
     try {
-      const response = await apiCall<Blob>(`${this.baseUrl}/export`, {
+      const response = await this.apiCall<Blob>(`${this.baseUrl}/export`, {
         method: 'POST',
         body: filters
       })
@@ -64,7 +67,7 @@ export class CursosService {
   }
   static async getFiltros(): Promise<FiltrosResponse> {   
     try {
-      const response = await apiCall<FiltrosResponse>(`${this.baseUrl}/filters/options`, {
+      const response = await this.apiCall<FiltrosResponse>(`${this.baseUrl}/filters/options`, {
         method: 'GET'
       })
       return response

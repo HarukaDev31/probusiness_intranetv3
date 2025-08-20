@@ -2,32 +2,30 @@
     <div class="p-6">
         <!-- Header con botones de acción -->
         <div class="flex items-center justify-between mb-6">
-            <UButton 
-                label="Regresar" 
-                icon="i-heroicons-arrow-left"
-                @click="goBack"
-            />
-            
+            <UButton label="Regresar" icon="i-heroicons-arrow-left" @click="goBack" />
+
             <div class="flex items-center gap-3">
                 <UButton 
                     label="Factura General" 
                     variant="outline" 
-                    icon="i-heroicons-document"
+                    icon="i-heroicons-document" 
                     color="neutral"
+                    :loading="downloadingFactura"
+                    @click="handleDownloadFactura" 
                 />
                 <UButton 
                     label="Descargar todo" 
                     variant="outline" 
-                    icon="i-heroicons-arrow-down-tray"
+                    icon="i-heroicons-arrow-down-tray" 
                     color="neutral"
-                    @click="handleDownloadAll"
+                    @click="handleDownloadAll" 
                 />
                 <UButton 
-                    label="Nuevo documento +" 
+                    label="Nuevo documento" 
                     variant="solid" 
-                    icon="i-heroicons-plus"
+                    icon="i-heroicons-plus" 
                     color="warning"
-                    @click="handleNuevoDocumento"
+                    @click="handleNuevoDocumento" 
                 />
             </div>
         </div>
@@ -37,11 +35,7 @@
             <!-- Skeleton para el grid de folders -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Skeleton para cada folder -->
-                <div 
-                    v-for="i in 6" 
-                    :key="i"
-                    class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate-pulse"
-                >
+                <div v-for="i in 6" :key="i" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate-pulse">
                     <!-- Header del folder skeleton -->
                     <div class="flex items-center justify-between mb-4">
                         <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
@@ -51,7 +45,8 @@
                     <!-- FileUploader skeleton -->
                     <div class="space-y-4">
                         <!-- Área de drag & drop skeleton -->
-                        <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+                        <div
+                            class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
                             <div class="h-16 w-16 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-4"></div>
                             <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mx-auto mb-2"></div>
                             <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto"></div>
@@ -77,73 +72,32 @@
         <!-- Main content - Grid de folders con FileUploader -->
         <div v-else-if="hasData" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Iterar sobre cada folder y crear un FileUploader -->
-            <div 
-                v-for="folder in foldersByCategoria" 
-                :key="folder.id"
-                class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md "
-            >
+            <div v-for="folder in foldersByCategoria" :key="folder.id"
+                class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md ">
                 <!-- Header del folder -->
                 <div class="flex items-center justify-between mb-4">
-                    <h3 
-                        class="text-lg font-semibold text-gray-900 dark:text-white px-3 py-1 rounded"
-                        
-                    >
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white px-3 py-1 rounded">
                         {{ folder.folder_name }}
                     </h3>
-                    
-                    
+
+
                 </div>
 
                 <!-- FileUploader para este folder -->
-                <FileUploader
-                    :accepted-types="acceptedFileTypes"
-                    :custom-message="uploadMessage"
-                    :initial-files="folder.file_url ? [{
+                <FileUploader :accepted-types="acceptedFileTypes" :custom-message="uploadMessage" :immediate="false"
+                    :showSaveButton="true" :initial-files="folder.file_url ? [{
                         id: typeof folder.id === 'number' ? folder.id : 0, // debe ser número
                         file_name: folder.folder_name,
                         file_url: folder.file_url,
-                        type: folder.type||'', // tipo MIME si está disponible, si no dejar vacío
+                        type: folder.type || '', // tipo MIME si está disponible, si no dejar vacío
                         size: 0, // tamaño en bytes si está disponible, si no dejar en 0
                         lastModified: 0, // timestamp si está disponible, si no dejar en 0
-                        file_ext: folder.type||'' // extensión si está disponible, si no dejar vacío
-                    }] : undefined"
-                       
-                    :loading="isFolderLoading(folder.id)"
-                    @files-selected="(files) => handleFileUpload(files, folder.id)"
-                    @file-removed="(index) => handleFileRemove(index, folder.id)"
-                />
-                <div v-if="getFolderFiles(folder.id).length > 0" class="mt-4">
-                    <div class="space-y-2">
-                        <div 
-                            v-for="(file, index) in getFolderFiles(folder.id)" 
-                            :key="file.id || index"
-                            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                        >
-                            <div class="flex items-center gap-3">
-                                <UIcon name="i-heroicons-document" class="w-5 h-5 text-blue-500" />
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ file.file_name || file.name }}</p>
-                                    <p class="text-xs text-gray-500">{{ formatFileSize(file.size || file.file_size) }}</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-2">
-                                <UButton
-                                    icon="i-heroicons-eye"
-                                    variant="ghost"
-                                    size="xs"
-                                    @click="handleViewFile(file)"
-                                />
-                                <UButton
-                                    icon="i-heroicons-trash"
-                                    variant="ghost"
-                                    size="xs"
-                                    color="error"
-                                    @click="handleDeleteFile(file, folder.id)"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        file_ext: folder.type || '' // extensión si está disponible, si no dejar vacío
+                    }] : []" :loading="isFolderLoading(folder.id)"
+                    @file-removed="(index) => handleFileRemove(folder.id_file)"
+                    @save-file="(file) => handleSaveFile(file, folder.id)"
+                    />
+                
             </div>
         </div>
 
@@ -165,17 +119,21 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useModal } from '../composables/commons/useModal'
-import { useSpinner } from '../composables/commons/useSpinner'
-import { useDocumentacion } from '../composables/cargaconsolidada/useDocumentacion'
-import FileUploader from '../components/commons/FileUploader.vue'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useDocumentacion } from '~/composables/cargaconsolidada/useDocumentacion'
+import FileUploader from '~/components/commons/FileUploader.vue'
+import CreateDocumentModal from '~/components/CreateDocumentModal.vue'
+
+// Estado local
+const downloadingFactura = ref(false)
 
 // Composables
-const { showSuccess, showError } = useModal()
+const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
-const { 
+const {
     folders,
     loading,
     error,
@@ -186,7 +144,12 @@ const {
     uploadFile,
     deleteFile,
     getFolderFiles,
-    isFolderLoading
+    isFolderLoading,
+    uploadFileDocumentation,
+    downloadFacturaComercial,
+    deleteFileDocumentation,
+    downloadAllFiles,
+    createNewFolder
 } = useDocumentacion()
 
 // Route y Router
@@ -199,28 +162,50 @@ const acceptedFileTypes = ['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.
 const uploadMessage = 'Selecciona o arrastra tu archivo aquí'
 
 // Manejadores de archivos
-const handleFileUpload = async (files: File[], folderId: string) => {
-    if (files.length === 0) return
-
-    try {
-        const result = await uploadFile({
-            folder_id: folderId,
-            file: files[0]
-        })
-        
+const handleSaveFile = async (file: File, folderId: string) => {
+    await withSpinner(async () => {
+        try {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('idFolder', folderId)
+        formData.append('idContenedor', contenedorId)
+        const result = await uploadFileDocumentation(formData)
         if (result.success) {
             showSuccess('Éxito', 'Archivo subido correctamente')
         } else {
             showError('Error', result.error || 'Error al subir el archivo')
         }
-    } catch (err) {
-        showError('Error', 'Error inesperado al subir el archivo')
-    }
+        }
+        catch (error) {
+            showError('Error', 'Error al subir el archivo')
+        }
+    })
+
 }
 
-const handleFileRemove = (index: number, folderId: string) => {
-    console.log('Archivo removido del folder:', folderId, 'índice:', index)
-    showSuccess('Éxito', 'Archivo removido de la lista')
+const handleFileRemove = (idFile:number) => {
+    if (!idFile) {
+        showError('Error', 'ID de archivo no válido')
+        return
+    }
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const result = await deleteFileDocumentation(idFile)
+                    if (result.success) {
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                        await getFolders(contenedorId)
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
 }
 
 const handleViewFile = (file: any) => {
@@ -232,38 +217,70 @@ const handleViewFile = (file: any) => {
     }
 }
 
-const handleDeleteFile = async (file: any, folderId: string) => {
-    try {
-        const result = await deleteFile(file.id, folderId)
-        
-        if (result.success) {
-            showSuccess('Éxito', 'Archivo eliminado correctamente')
-        } else {
-            showError('Error', result.error || 'Error al eliminar el archivo')
-        }
-    } catch (err) {
-        showError('Error', 'Error inesperado al eliminar el archivo')
-    }
-}
+
 
 // Manejadores de botones
 const handleDownloadAll = async () => {
     try {
         await withSpinner(async () => {
-            // Aquí implementarías la lógica para descargar todos los archivos
-            console.log('Descargando todos los archivos...')
-            await new Promise(resolve => setTimeout(resolve, 2000)) // Simulación
+            const result = await downloadAllFiles(contenedorId)
+            if (result.success) {
+                showSuccess('Éxito', 'Descarga iniciada correctamente')
+            } else {
+                showError('Error', 'Error al preparar la descarga')
+            }
         }, 'Preparando descarga de todos los archivos...')
-        
-        showSuccess('Éxito', 'Descarga iniciada correctamente')
     } catch (error) {
         showError('Error', 'Error al preparar la descarga')
     }
 }
 
+const overlay = useOverlay()
+const createDocumentModal = overlay.create(CreateDocumentModal)
 const handleNuevoDocumento = () => {
-    console.log('Crear nuevo documento')
-    showSuccess('Éxito', 'Funcionalidad de nuevo documento implementada')
+    createDocumentModal.open({
+     
+            onClose: () => createDocumentModal.close(),
+            onSave: async ({ name, file }) => {
+                try {
+                    const formData = new FormData()
+                    formData.append('idContenedor', contenedorId)
+                    formData.append('file', file)
+                    formData.append('folder_name', name)
+
+                    await withSpinner(async () => {
+                        const result = await createNewFolder(formData)
+                        if (result.success) {
+                            showSuccess('Éxito', 'Folder creado correctamente')
+                            await getFolders(contenedorId)
+                            createDocumentModal.close()
+                        } else {
+                            showError('Error', result.error || 'Error al crear el folder')
+                        }
+                    }, 'Creando folder...')
+                } catch (error: any) {
+                    showError('Error', error.message || 'Error al crear el folder')
+                }
+            }
+        
+    })
+}
+
+const handleDownloadFactura = async () => {
+    if (!contenedorId) {
+        showError('Error', 'ID de contenedor no válido')
+        return
+    }
+
+    downloadingFactura.value = true
+    try {
+        await downloadFacturaComercial(contenedorId)
+        showSuccess('Éxito', 'Factura comercial descargada correctamente')
+    } catch (error: any) {
+        showError('Error', error.message || 'Error al descargar la factura comercial')
+    } finally {
+        downloadingFactura.value = false
+    }
 }
 
 const goBack = () => {
@@ -273,7 +290,7 @@ const goBack = () => {
 // Utilidades
 const formatFileSize = (bytes: number): string => {
     if (!bytes) return '0 B'
-    
+
     const sizes = ['B', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(1024))
     return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`

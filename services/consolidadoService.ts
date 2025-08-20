@@ -1,8 +1,12 @@
 
 import type { ConsolidadoResponse, ConsolidadoFilters, PagoDetalleResponse } from '../types/pagos/consolidado-pagos'
+import { BaseService } from "~/services/base/BaseService"
 
-export class ConsolidadoService {
+export class ConsolidadoService extends BaseService {
   private static baseUrl = 'api/carga-consolidada/pagos/consolidado'
+  constructor(){
+    super()
+  }
 
   /**
    * Obtiene la lista de pagos consolidados
@@ -25,7 +29,7 @@ export class ConsolidadoService {
         ? `${this.baseUrl}?${queryParams.toString()}`
         : this.baseUrl
 
-      const response = await apiCall<ConsolidadoResponse>(url, {
+      const response = await this.apiCall<ConsolidadoResponse>(url, {
         method: 'GET'
       })
 
@@ -41,7 +45,7 @@ export class ConsolidadoService {
    */
   static async updateEstadoPago(id: number, estado: string): Promise<{ success: boolean }> {
     try {
-      const response = await apiCall<{ success: boolean }>(
+      const response = await this.apiCall<{ success: boolean }>(
         `${this.baseUrl}/${id}/estado`,
         {
           method: 'PUT',
@@ -61,7 +65,7 @@ export class ConsolidadoService {
    */
   static async getPagoDetalle(id: number): Promise<PagoDetalleResponse> {
     try {
-      const response = await apiCall<PagoDetalleResponse>(
+      const response = await this.apiCall<PagoDetalleResponse>(
         `${this.baseUrl}/${id}`,
         {
           method: 'GET'
@@ -95,7 +99,7 @@ export class ConsolidadoService {
         : `${this.baseUrl}/export`
 
       // Corregido: apiCall espera un string como primer argumento (la URL) y un objeto de opciones como segundo argumento
-      const response = await apiCall<Blob>(
+      const response = await this.apiCall<Blob>(
         url,
         {
           method: 'GET',
@@ -111,7 +115,7 @@ export class ConsolidadoService {
   }
   static async deleteConsolidado(id: number): Promise<{ success: boolean }> {
     try {
-      const response = await apiCall<{ success: boolean }>(`${this.baseUrl}/${id}`, {
+      const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/${id}`, {
         method: 'DELETE'
       })
       return response

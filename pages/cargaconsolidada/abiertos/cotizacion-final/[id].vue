@@ -3,7 +3,19 @@
     <!-- Header Section -->
     <PageHeader title="Cotizaciones finales" subtitle="Gestión de cotizaciones" icon="i-heroicons-book-open"
       :hide-back-button="false" @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
-
+    <!-- add 3 buttons 
+ Subir Factura
+ Plantilla General
+ Plantilla Final
+-->
+    <div class="flex justify-end gap-3 mb-4">
+      <UButton label="Subir Factura" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
+        @click="handleUploadFactura" />
+      <UButton label="Plantilla General" icon="i-heroicons-arrow-down-tray" color="primary" variant="outline"
+        @click="handleDownloadPlantillaGeneral" />
+      <UButton label="Plantilla Final" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
+        @click="handleUploadPlantillaFinal" />
+    </div>
     <UTabs v-model="activeTab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
     <DataTable title="General" v-if="activeTab === 'general'" :data="general" :columns="generalColumns"
       :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
@@ -27,12 +39,16 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useGeneral } from '../composables/cargaconsolidada/cotizacion-final/useGeneral'
-import { usePagos } from '../composables/cargaconsolidada/cotizacion-final/usePagos'
+import { useGeneral } from '~/composables/cargaconsolidada/cotizacion-final/useGeneral'
+import { usePagos } from '~/composables/cargaconsolidada/cotizacion-final/usePagos'
 import { USelect, UBadge } from '#components'
-import CreatePagoModal from '../components/commons/CreatePagoModal.vue'
-
-const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
+import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/SimpleUploadFile.vue'
+const { showSuccess, showError, showConfirmation } = useModal()
+const { withSpinner } = useSpinner()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 
 const route = useRoute()
@@ -50,7 +66,50 @@ const tabs = [
   { value: 'general', label: 'General' },
   { value: 'pagos', label: 'Pagos' }
 ]
-
+const handleUploadFactura = () => {
+  simpleUploadFileModal.open({
+    title: 'Subir Factura',
+    onClose: () => simpleUploadFileModal.close(),
+    onSave: async (data: { file: File }) => {
+      await withSpinner(async () => {
+        const formData = new FormData()
+        formData.append('file', data.file)
+        formData.append('idContenedor', id.toString())
+        const result = await uploadFacturaComercial(formData)
+        if (result.success) {
+          showSuccess('Éxito', 'Factura subida correctamente')
+        } else {
+          showError('Error', 'Error al subir la factura')
+        }
+      }, 'Subiendo factura...')
+    }
+  })
+}
+const handleDownloadPlantillaGeneral = () => {
+  withSpinner(async () => {
+    await downloadPlantillaGeneral(Number(id))
+  }, 'Descargando plantilla general...')
+}
+const handleUploadPlantillaFinal = () => {
+  simpleUploadFileModal.open({
+    title: 'Subir Plantilla Final',
+    onClose: () => simpleUploadFileModal.close(),
+    onSave: async (data: { file: File }) => {
+     
+      await withSpinner(async () => {
+        const formData = new FormData()
+        formData.append('file', data.file)
+        formData.append('idContenedor', id.toString())
+        const result = await uploadPlantillaFinal(formData)
+        if (result.success) {
+          showSuccess('Éxito', 'Plantilla final subida correctamente')
+        } else {
+          showError('Error', 'Error al subir la plantilla final')
+        }
+      }, 'Subiendo plantilla final...')
+    }
+  })
+}
 const generalColumns = ref<TableColumn<any>[]>([
   {
     accessorKey: 'nro',
@@ -116,8 +175,10 @@ const generalColumns = ref<TableColumn<any>[]>([
       return h(USelect as any, {
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
         modelValue: row.original.estado_cotizacion_final,
-        onChange: (value: string) => {
-          row.original.estado_cotizacion_final = value
+        'onUpdate:modelValue': async (value: any) => {
+          if (value && value !== row.original.estado_cliente) {
+            await handleUpdateEstadoCotizacionFinal(row.original.id_cotizacion, value)
+          }
         }
       })
     }
@@ -221,7 +282,20 @@ const pagosColumns = ref<TableColumn<any>[]>([
     }
   }
 ])
+const overlay = useOverlay()
+const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 // Navigation
+const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: string) => {
+  withSpinner(async () => {
+    const result = await updateEstadoCotizacionFinal(idCotizacion, estado)
+    if (result.success) {
+      await getGeneral(Number(id))
+      showSuccess('Éxito', 'Estado actualizado correctamente')
+    } else {
+      showError('Error', 'Error al actualizar el estado')
+    }
+  })
+}
 const goBack = () => {
   navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
 }

@@ -42,8 +42,8 @@ export class VariacionService extends BaseService {
     ): Promise<VariacionClienteResponse> {
         try {
             const response = await this.apiCall<VariacionClienteResponse>(`${this.baseUrl}/documentacion/${idCliente}`, {
-                method: 'PUT',
-                data
+                method: 'POST',
+                body: data
             })
             return response
         } catch (error) {
@@ -56,14 +56,13 @@ export class VariacionService extends BaseService {
      * Actualiza la documentación de un proveedor específico
      */
     static async updateProveedorDocumentacion(
-        idCliente: number,
         idProveedor: number,
-        data: Partial<ProveedorVariacion>
+        data: any
     ): Promise<VariacionClienteResponse> {
         try {
-            const response = await this.apiCall<VariacionClienteResponse>(`${this.baseUrl}/documentacion/${idCliente}/proveedor/${idProveedor}`, {
-                method: 'PUT',
-                data
+            const response = await this.apiCall<VariacionClienteResponse>(`${this.baseUrl}/documentacion/proveedor/${idProveedor}`, {
+                method: 'POST',
+                body: data
             })
             return response
         } catch (error) {
@@ -171,5 +170,38 @@ export class VariacionService extends BaseService {
             throw error
         }
 
+    }
+    static async deleteFacturaComercial(idProveedor: number) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/documentacion/proveedor/${idProveedor}/factura-comercial`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error) {
+            console.error('Error al eliminar la factura comercial:', error)
+            throw error
+        }
+    }
+    static async deletePackingList(idProveedor: number) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/documentacion/proveedor/${idProveedor}/packing-list`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error) {
+            console.error('Error al eliminar el packing list:', error)
+            throw error
+        }
+    }
+    static async deleteExcelConfirmacion(idProveedor: number) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/documentacion/proveedor/${idProveedor}/excel-confirmacion`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error) {
+            console.error('Error al eliminar la excel de confirmación:', error)
+            throw error
+        }
     }
 }

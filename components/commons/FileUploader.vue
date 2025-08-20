@@ -1,14 +1,11 @@
-
-
-
-
 <template>
     <div class="space-y-4">
-        <div v-if="!disabled">
+        <!-- Zona de subida solo visible si no hay archivos iniciales o si es multiple -->
+        <div v-if="!disabled && (multiple || (!multiple && (!initialFiles || initialFiles.length === 0) && selectedFiles.length === 0))">
             <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                 <div>
-                    <p class="text-sm text-gray-700">Selecciona o arrastra tu archivo aquí</p>
-                    <p class="text-xs text-gray-500">Formatos: {{ acceptedTypesText }}</p>
+                    <p class="text-sm">{{ customMessage || 'Selecciona o arrastra tu archivo aquí' }}</p>
+                    <p class="text-xs">Formatos: {{ acceptedTypesText }}</p>
                 </div>
                 <UButton color="neutral" variant="soft" class="whitespace-nowrap" @click.stop="handleSelectFiles">
                     Subir archivo
@@ -20,7 +17,7 @@
                 @change="handleFileInputChange" />
 
             <!-- Zona de drop -->
-            <div v-show="isDragOver" class="fixed inset-0 bg-primary-500/10 z-50 flex items-center justify-center"
+            <div v-show="isDragOver" class="fixed inset-0 z-50 flex items-center justify-center"
                 @dragover.prevent="handleDragOver" @dragleave.prevent="handleDragLeave" @drop.prevent="handleDrop">
                 <div class="bg-white p-8 rounded-lg shadow-lg text-center">
                     <UIcon name="i-heroicons-arrow-up-tray" class="text-6xl text-primary-500 mb-4" />
@@ -28,10 +25,11 @@
                 </div>
             </div>
         </div>
+
         <!-- Lista de archivos seleccionados -->
-        <div v-if="selectedFiles.length > 0 && immediate" class="space-y-2">
+        <div v-if="selectedFiles.length > 0" class="space-y-2">
             <div v-for="(file, index) in selectedFiles" :key="getFileKey(file, index)"
-                class="flex items-center justify-between p-3  rounded-lg">
+                class="flex items-center justify-between p-3 rounded-lg border border-gray-200">
                 <div class="flex items-center gap-3">
                     <UIcon name="i-heroicons-document" class="text-xl text-green-600" />
                     <div>
@@ -39,20 +37,27 @@
                         <p class="text-xs text-gray-500">{{ formatFileSize(file.size) }}</p>
                     </div>
                 </div>
-                <UButton color="neutral" variant="ghost" class="p-1" @click="removeSelectedFile(index)">
-                    <UIcon name="i-heroicons-trash" class="text-lg" />
-                </UButton>
+                <div>
+                    <UButton color="primary" variant="ghost" class="p-2" @click="saveFile(file)">
+                        <UIcon name="i-heroicons-arrow-up-tray" />
+                    </UButton>
+                    <UButton color="neutral" variant="ghost" class="p-1" @click="removeSelectedFile(index)">
+                        <UIcon name="i-heroicons-trash" class="text-lg" />
+                    </UButton>
+                    
+                </div>
             </div>
         </div>
 
         <!-- Lista de archivos iniciales -->
         <div v-if="initialFiles && initialFiles.length > 0" class="space-y-2">
-            <div v-for="file in initialFiles" :key="file.id" class="flex items-center justify-between p-3 rounded-lg">
+            <div v-for="file in initialFiles" :key="file.id" 
+                class="flex items-center justify-between p-3 border border-gray-200 rounded-lg transition-colors">
                 <div class="flex items-center gap-3">
                     <FileIcon :file="file" class="w-8 h-8" />
                     <div>
                         <p class="text-sm font-medium">{{ file.file_name }}</p>
-                        <p class="text-xs text-gray-500">{{ formatFileSize(file.size || 0) }}</p>
+                        <p class="text-xs">{{ formatFileSize(file.size || 0) }}</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
@@ -86,6 +91,7 @@ interface Props {
     initialFiles?: FileItem[] | FileItem
     loading?: boolean
     immediate?: boolean
+    showSaveButton?: boolean
 }
 
 interface Emits {
@@ -94,17 +100,19 @@ interface Emits {
     (e: 'file-removed', index: number): void
     (e: 'files-cleared'): void
     (e: 'error', message: string): void
+    (e: 'save-file', file: File): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
     multiple: false,
-    maxFileSize: 10 * 1024 * 1024,
+    maxFileSize: 100 * 1024 * 1024,
     acceptedTypes: () => ['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar'],
     customMessage: undefined,
     disabled: false,
     initialFiles: () => [],
     loading: false,
-    immediate: true
+    immediate: true,
+    showSaveButton: false
 })
 
 const emit = defineEmits<Emits>()
@@ -120,7 +128,6 @@ const acceptedTypesText = computed(() => {
         ?.map(type => type.replace('.', '').toUpperCase())
         .join(', ')
 })
-
 
 const handleSelectFiles = () => {
     fileInput.value?.click()
@@ -153,6 +160,9 @@ const handleDrop = (event: DragEvent) => {
         addFiles(files)
     }
 }
+const saveFile = (file: File) => {
+   emit('save-file', file)
+}
 
 const addFiles = (files: File[]) => {
     const validFiles: File[] = []
@@ -170,7 +180,7 @@ const addFiles = (files: File[]) => {
 
         validFiles.push(file)
     })
-
+   
     if (validFiles.length > 0) {
         if (props.multiple) {
             selectedFiles.value.push(...validFiles)
@@ -198,8 +208,6 @@ const isValidFileType = (file: File): boolean => {
 const getFileKey = (file: File, index: number): string => {
     return `file-${file.name}-${file.size}-${index}`
 }
-
-
 
 const downloadFileExisting = async (file_url: string | null) => {
     if (!file_url) return

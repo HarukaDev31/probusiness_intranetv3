@@ -1,8 +1,12 @@
 import type { CreateProductRubroRequest, ProductRubro, ProductRubroListResponse, ProductRubroResponse } from "../types/product-rubro";
-class ProductRubroService {
+import { BaseService } from "~/services/base/BaseService"
+
+class ProductRubroService extends BaseService {
     private static instance: ProductRubroService
 
-    private constructor() { }
+    private constructor() { 
+        super()
+    }
 
     public static getInstance(): ProductRubroService {
         if (!ProductRubroService.instance) {
@@ -40,7 +44,7 @@ class ProductRubroService {
             if (tipo && tipo !== '') {
                 queryParams.append('tipo', tipo)
             }
-            const response = await apiCall<ProductRubroListResponse>(
+            const response = await this.apiCall<ProductRubroListResponse>(
                 `/api/base-datos/regulaciones/rubros${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
             )
             return response
@@ -59,7 +63,7 @@ class ProductRubroService {
      */
     async getProductRubroById(id: number): Promise<ProductRubroResponse> {
         try {
-            const response = await apiCall<ProductRubroResponse>(`/api/base-datos/regulaciones/rubros/${id}`)
+            const response = await this.apiCall<ProductRubroResponse>(`/api/base-datos/regulaciones/rubros/${id}`)
             return response
         } catch (error) {
             console.error('Error fetching rubro:', error)

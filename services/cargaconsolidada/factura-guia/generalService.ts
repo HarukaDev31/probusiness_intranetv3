@@ -13,4 +13,28 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+    static async uploadFacturaComercial(data: any): Promise<GeneralResponse> {
+        try {
+            const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/upload-factura-comercial`, {
+                method: 'POST',
+                body: data
+            })
+            return response
+        } catch (error) {
+            console.error('Error al subir la factura comercial:', error)
+            throw error
+        }
+    }
+    static async uploadGuiaRemision(data: any): Promise<GeneralResponse> {
+        try {
+            const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/upload-guia-remision`, {
+                method: 'POST',
+                body: data
+            })
+            return response
+        } catch (error) {
+            console.error('Error al subir la guía remisión:', error)
+            throw error
+        }
+    }
 }

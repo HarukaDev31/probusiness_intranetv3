@@ -55,11 +55,13 @@ export interface ClientesQueryParams {
   fecha_fin?: string
   servicio?: string
 }
+import { BaseService } from "~/services/base/BaseService"
 
-export class ClienteService {
+export class ClienteService extends BaseService {
   private baseUrl: string
-
-  
+  constructor(){
+    super()
+  }
 
   /**
    * Obtiene la lista de clientes con paginación y filtros
@@ -134,7 +136,7 @@ export class ClienteService {
    */
   async updateCliente(id: number, clienteData: Partial<Cliente>): Promise<Cliente> {
     try {
-      const response = await apiCall<{ success: boolean; data: Cliente }>(`${this.baseUrl}/${id}`, {
+      const response = await this.apiCall<{ success: boolean; data: Cliente }>(`${this.baseUrl}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(clienteData)
       })
@@ -151,7 +153,7 @@ export class ClienteService {
    */
   async deleteCliente(id: number): Promise<void> {
     try {
-      await apiCall(`${this.baseUrl}/${id}`, {
+      await this.apiCall(`${this.baseUrl}/${id}`, {
         method: 'DELETE'
       })
     } catch (error: any) {
@@ -168,7 +170,7 @@ export class ClienteService {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/upload`, {
+      const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/upload`, {
         method: 'POST',
         body: formData
       })
@@ -188,7 +190,7 @@ export class ClienteService {
       const formData = new FormData()
       formData.append('excel_file', file)
 
-      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/import-excel`, {
+      const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/import-excel`, {
         method: 'POST',
         body: formData
       })
@@ -222,7 +224,7 @@ export class ClienteService {
         url += `&fecha_fin=${params.fecha_fin}`
       }
 
-      const response = await apiCall<Blob>(url, {
+      const response = await this.apiCall<Blob>(url, {
         method: 'GET',
         responseType: 'blob',
         headers: {

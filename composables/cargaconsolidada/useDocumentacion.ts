@@ -1,201 +1,145 @@
-import { ref, computed } from 'vue'
-import { DocumentacionService } from '../services/cargaconsolidada/documentacionService'
-import type { 
-  DocumentacionFolder, 
-  DocumentacionFilters,
-  DocumentacionUpdateRequest,
-  DocumentacionUploadRequest
-} from '../types/cargaconsolidada/documentacion'
+import { ref } from 'vue'
+import { DocumentacionService } from '~/services/cargaconsolidada/documentacionService'
 
 export const useDocumentacion = () => {
-  // Estado principal
-  const folders = ref<DocumentacionFolder[]>([])
+  const folders = ref<any[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
-  
-  // Estado de filtros
-  const filters = ref<DocumentacionFilters>({
-    categoria: 'TODAS'
-  })
-  
-  // Estado de archivos por folder
-  const filesByFolder = ref<{ [folderId: string]: any[] }>({})
-  const loadingFiles = ref<{ [folderId: string]: boolean }>({})
-  
-  // Computed properties
-  const hasData = computed(() => folders.value.length > 0)
-  const foldersByCategoria = computed(() => {
-    if (filters.value.categoria === 'TODAS') {
-      return folders.value
-    }
-    return folders.value.filter(folder => folder.categoria === filters.value.categoria)
-  })
-  
-  const foldersEnvio = computed(() => folders.value.filter(f => f.categoria === 'ENVIO'))
-  const foldersComercial = computed(() => folders.value.filter(f => f.categoria === 'COMERCIAL'))
-  const foldersLegal = computed(() => folders.value.filter(f => f.categoria === 'LEGAL'))
+  const filters = ref({})
+  const hasData = ref(false)
+  const foldersByCategoria = ref<any[]>([])
 
-  /**
-   * Obtiene todos los folders de documentación
-   */
-  const getFolders = async (id: string, customFilters?: DocumentacionFilters) => {
+  const getFolders = async (idContenedor: string) => {
     loading.value = true
     error.value = null
-
     try {
-      const response = await DocumentacionService.getFolders(id, customFilters || filters.value)
-      
+      const response = await DocumentacionService.getFolders(idContenedor)
       if (response.success) {
         folders.value = response.data
-        // Cargar archivos para cada folder
-       
+        hasData.value = response.data.length > 0
+        foldersByCategoria.value = response.data
       } else {
-        error.value = 'Error al obtener los folders de documentación'
+        error.value = response.error || 'Error al obtener los folders'
       }
-    } catch (err: any) {
-      error.value = err.message || 'Error al obtener los folders de documentación'
-      console.error('Error en getFolders:', err)
+    } catch (err) {
+      error.value = 'Error al cargar los folders'
+      console.error(err)
     } finally {
       loading.value = false
     }
   }
 
-
- 
-  /**
-   * Sube un archivo a un folder específico
-   */
-  const uploadFile = async (data: DocumentacionUploadRequest) => {
+  const uploadFileDocumentation = async (data: FormData) => {
     try {
-      const result = await DocumentacionService.uploadFile(data)
-      
-      if (result.success) {
-        // Recargar archivos del folder
-        await loadFolderFiles(data.folder_id)
-        return result
-      } else {
-        return result
-      }
-    } catch (err: any) {
-      console.error('Error al subir archivo:', err)
-      return { success: false, error: err.message || 'Error al subir el archivo' }
-    }
-  }
-
-  /**
-   * Elimina un archivo específico
-   */
-  const deleteFile = async (fileId: string, folderId: string) => {
-    try {
-      const result = await DocumentacionService.deleteFile(fileId)
-      
-      if (result.success) {
-        // Recargar archivos del folder
-        await loadFolderFiles(folderId)
-      }
-      
-      return result
-    } catch (err: any) {
-      console.error('Error al eliminar archivo:', err)
-      return { success: false, error: err.message || 'Error al eliminar el archivo' }
-    }
-  }
-
-  /**
-   * Carga archivos de un folder específico
-   */
-  const loadFolderFiles = async (folderId: string) => {
-    if (loadingFiles.value[folderId]) return
-
-    loadingFiles.value[folderId] = true
-
-    try {
-      const response = await DocumentacionService.getFolderFiles(folderId)
-      
+      const response = await DocumentacionService.uploadFileDocumentation(data)
       if (response.success) {
-        filesByFolder.value[folderId] = response.files
-      } else {
-        console.error(`Error al cargar archivos del folder ${folderId}:`, response.error)
-        filesByFolder.value[folderId] = []
+        await getFolders(data.get('idContenedor') as string)
       }
-    } catch (err: any) {
-      console.error(`Error al cargar archivos del folder ${folderId}:`, err)
-      filesByFolder.value[folderId] = []
-    } finally {
-      loadingFiles.value[folderId] = false
+      return response
+    } catch (error) {
+      console.error('Error al subir archivo:', error)
+      throw error
     }
   }
 
-  /**
-   * Actualiza un folder existente
-   */
- 
-  /**
-   * Crea un nuevo folder
-   */
-
-  /**
-   * Elimina un folder
-   */
-
-  /**
-   * Cambia los filtros y recarga los datos
-   */
-  const changeFilters = async (id: string, newFilters: DocumentacionFilters) => {
-    filters.value = { ...filters.value, ...newFilters }
-    await getFolders(id)
+  const deleteFile = async (idFile: number, idFolder: string) => {
+    try {
+      const response = await DocumentacionService.deleteFile(idFile, idFolder)
+      if (response.success) {
+        // Actualizar la lista de folders después de eliminar
+        await getFolders(idFolder)
+      }
+      return response
+    } catch (error) {
+      console.error('Error al eliminar archivo:', error)
+      throw error
+    }
+  }
+  const downloadAllFiles = async (idContenedor: string) => {
+    try {
+      const response = await DocumentacionService.downloadAllFiles(idContenedor)
+      const blob = new Blob([response], { type: 'application/zip' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `documentacion_${idContenedor}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      return { success: true }
+    }
+    catch (error) {
+      console.error('Error al descargar todos los archivos:', error)
+      throw error
+    }
+  }
+  const downloadFacturaComercial = async (idContenedor: string) => {
+    try {
+      const response = await DocumentacionService.downloadFacturaComercial(idContenedor)
+      // Crear un blob URL y descargar el archivo
+      const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `factura_procesada_${idContenedor}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      return { success: true }
+    } catch (error) {
+      console.error('Error al descargar factura comercial:', error)
+      throw error
+    }
+  }
+  const deleteFileDocumentation = async (idFile: number) => {
+    try {
+      const response = await DocumentacionService.deleteFileDocumentation(idFile)
+      return response
+    }
+    catch (error) {
+      console.error('Error al eliminar archivo de documentación:', error)
+      throw error
+    }
   }
 
-  /**
-   * Obtiene archivos de un folder específico (getter)
-   */
+  // Funciones auxiliares para el manejo de archivos en folders
   const getFolderFiles = (folderId: string) => {
-    return filesByFolder.value[folderId] || []
+    const folder = folders.value.find(f => f.id === folderId)
+    return folder?.files || []
   }
 
-  /**
-   * Verifica si un folder está cargando archivos
-   */
   const isFolderLoading = (folderId: string) => {
-    return loadingFiles.value[folderId] || false
+    // Implementar lógica de loading por folder si es necesario
+    return false
   }
-
-  /**
-   * Limpia el estado
-   */
-  const clearState = () => {
-    folders.value = []
-    loading.value = false
-    error.value = null
-    filesByFolder.value = {}
-    loadingFiles.value = {}
-    filters.value = { categoria: 'TODAS' }
+  const createNewFolder = async (data: FormData) => {
+    try {
+      const response = await DocumentacionService.createNewFolder( data)
+      return response
+    }
+    catch (error) {
+      console.error('Error al crear el folder:', error)
+      throw error
+    }
   }
 
   return {
-    // Estado
     folders,
     loading,
     error,
     filters,
-    filesByFolder,
-    loadingFiles,
-    
-    // Computed
     hasData,
     foldersByCategoria,
-    foldersEnvio,
-    foldersComercial,
-    foldersLegal,
-    
-    // Métodos
     getFolders,
-    uploadFile,
+    uploadFileDocumentation,
     deleteFile,
-    loadFolderFiles,
-    changeFilters,
     getFolderFiles,
     isFolderLoading,
-    clearState
+    downloadFacturaComercial,
+    deleteFileDocumentation,
+    downloadAllFiles,
+    createNewFolder
   }
 }

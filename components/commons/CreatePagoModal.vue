@@ -66,7 +66,8 @@
                     <FileUploader :multiple="false" :max-file-size="10 * 1024 * 1024"
                         :accepted-types="acceptedFileTypes" 
                         :immediate="false"
-                        @files-selected="handleFilesSelected" @file-removed="handleFileRemoved" />
+                        :initial-file="formData.voucher"
+                         @file-removed="handleFileRemoved" />
                 </div>
             </div>
         </template>
@@ -142,7 +143,7 @@ const bancos = [
 ]
 
 // Accepted file types
-const acceptedFileTypes = ['image/*']
+const acceptedFileTypes = ['image/*', 'application/pdf','image/jpeg','image/png']
 
 // Methods
 const closeModal = () => {

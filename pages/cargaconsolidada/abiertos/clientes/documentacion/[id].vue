@@ -255,8 +255,17 @@
                                 Factura Comercial
                             </label>
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']"
+                                :immediate="false"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'"
-                                @files-selected="handleFacturaComercial" @file-removed="handleRemoveFacturaComercial" />
+                                :initial-files="proveedorActivo.factura_comercial ? [{
+                                    id:  proveedorActivo.id , // debe ser número
+                                    file_name: 'Factura Comercial',
+                                    file_url: proveedorActivo.factura_comercial,
+                                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // tipo MIME si está disponible, si no dejar vacío
+                                    size: 0, // tamaño en bytes si está disponible, si no dejar en 0
+                                    lastModified: 0, // timestamp si está disponible, si no dejar en 0
+                                    file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
+                                }] : []" @files-selected="handleFacturaComercial" @file-removed="handleRemoveFacturaComercial" />
                         </div>
 
                         <!-- Área de carga de Packing List -->
@@ -266,6 +275,16 @@
                             </label>
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'"
+                                :immediate="false"
+                                :initial-files="proveedorActivo.packing_list ? [{
+                                    id:  proveedorActivo.id , // debe ser número
+                                    file_name: 'Packing List',
+                                    file_url: proveedorActivo.packing_list,
+                                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // tipo MIME si está disponible, si no dejar vacío
+                                    size: 0, // tamaño en bytes si está disponible, si no dejar en 0
+                                    lastModified: 0, // timestamp si está disponible, si no dejar en 0
+                                    file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
+                                }] : []"
                                 @files-selected="handlePackingList" @file-removed="handleRemovePackingList" />
                         </div>
 
@@ -278,7 +297,7 @@
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']"
                                 :immediate="false"
 
-                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="[{
+                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="proveedorActivo.excel_confirmacion ? [{
                                     id:  proveedorActivo.id , // debe ser número
                                     file_name: 'Excel Confirmación',
                                     file_url: proveedorActivo.excel_confirmacion,
@@ -286,7 +305,7 @@
                                     size: 0, // tamaño en bytes si está disponible, si no dejar en 0
                                     lastModified: 0, // timestamp si está disponible, si no dejar en 0
                                     file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
-                                }]" @files-selected="handleExcelConfirmacion" @file-removed="handleRemoveExcelConfirmacion" />
+                                }] : []" @files-selected="handleExcelConfirmacion" @file-removed="handleRemoveExcelConfirmacion" />
                         </div>
                     </div>
                 </UCard>
@@ -323,9 +342,10 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useVariacionCliente } from '~/composables/cargaconsolidada/useVariacionCliente'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import type { FileItem } from '~/types/commons/file'
+import type { id } from '@nuxt/ui/runtime/locale/index.js'
 
 // Composables
-const { showSuccess, showError } = useModal()
+const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const {
     cliente,
@@ -342,8 +362,12 @@ const {
     getClienteDocumentacion,
     cambiarProveedor,
     updateProveedorDocumentacion,
+    updateClienteDocumentacion,
     uploadArchivo,
-    deleteArchivo
+    deleteArchivo,
+    deleteFacturaComercial,
+    deletePackingList,
+    deleteExcelConfirmacion
 } = useVariacionCliente()
 
 // Estado local para cambios pendientes
@@ -389,8 +413,27 @@ const handleFacturaComercial = (files: File[]) => {
     }
 }
 
-const handleRemoveFacturaComercial = () => {
+const handleRemoveFacturaComercial = (idProveedor: number) => {
+    
     pendingChanges.value.factura_comercial = null
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const result = await deleteFacturaComercial( idProveedor)
+                    if (result.success) {
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                        await getClienteDocumentacion(clienteId)
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
 }
 
 const handlePackingList = (files: File[]) => {
@@ -399,8 +442,26 @@ const handlePackingList = (files: File[]) => {
     }
 }
 
-const handleRemovePackingList = () => {
+const handleRemovePackingList = (idProveedor: number) => {
     pendingChanges.value.packing_list = null
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const result = await deletePackingList(idProveedor)
+                    if (result.success) {
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                        await getClienteDocumentacion(clienteId)
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
 }
 
 const handleExcelConfirmacion = (files: File[]) => {
@@ -409,8 +470,26 @@ const handleExcelConfirmacion = (files: File[]) => {
     }
 }
 
-const handleRemoveExcelConfirmacion = () => {
+const handleRemoveExcelConfirmacion = (idProveedor: number) => {
     pendingChanges.value.excel_confirmacion = null
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const result = await deleteExcelConfirmacion(idProveedor)
+                    if (result.success) {
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                        await getClienteDocumentacion(clienteId)
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
 }
 
 // Función para guardar todos los cambios
@@ -446,7 +525,7 @@ const handleSaveChanges = async () => {
             formData.append('idProveedor', proveedorActivo.value.id.toString())
 
             // Enviar todos los cambios en una sola petición
-            const result = await updateProveedorDocumentacion(clienteId, proveedorActivo.value.id, formData)
+            const result = await updateProveedorDocumentacion( proveedorActivo.value.id, formData)
 
             if (!result.success) {
                 throw new Error(result.error || 'Error al guardar los cambios')
@@ -548,8 +627,8 @@ onMounted(async () => {
         // Seleccionar el primer proveedor si existe
         if (proveedores.value && proveedores.value.length > 0) {
             const primerProveedor = proveedores.value[0]
-            activeTab.value = primerProveedor.id.toString()
-            await cambiarProveedor(primerProveedor.id.toString())
+            activeTab.value = primerProveedor.code_supplier
+            await cambiarProveedor(primerProveedor.code_supplier)
         }
     }
 })

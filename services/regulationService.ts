@@ -1,4 +1,5 @@
 
+import { BaseService } from "~/services/base/BaseService"
 
 interface RegulationResponse {
   success: boolean
@@ -6,10 +7,12 @@ interface RegulationResponse {
   error?: string
 }
 
-class RegulationService {
+class RegulationService extends BaseService {
   private static instance: RegulationService
 
-  private constructor() {}
+  private constructor() {
+    super()
+  }
 
   public static getInstance(): RegulationService {
     if (!RegulationService.instance) {
@@ -26,7 +29,7 @@ class RegulationService {
         queryParams.append('search', search)
       }
 
-      const response = await apiCall<RegulationResponse>(`/api/base-datos/regulaciones/entidades${queryParams.toString() ? `?${queryParams.toString()}` : ''}`)
+      const response = await this.apiCall<RegulationResponse>(`/api/base-datos/regulaciones/entidades${queryParams.toString() ? `?${queryParams.toString()}` : ''}`)
       return response
     } catch (error) {
       console.error('Error fetching entidades:', error)
@@ -46,7 +49,7 @@ class RegulationService {
         queryParams.append('search', search)
       }
 
-      const response = await apiCall<RegulationResponse>(`/api/regulaciones/etiquetado?${queryParams.toString()}`)
+      const response = await this.apiCall<RegulationResponse>(`/api/regulaciones/etiquetado?${queryParams.toString()}`)
       return response
     } catch (error) {
       console.error('Error fetching etiquetados:', error)

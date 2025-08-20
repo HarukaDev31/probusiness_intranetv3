@@ -1,103 +1,225 @@
 <template>
-    <div class="p-6">
-      <!-- Header Section -->
-      <PageHeader title="Factura y Guía" subtitle="Gestión de factura y guía" icon="i-heroicons-book-open"
-        :hide-back-button="false" @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
-  
-      <DataTable title="General"  :data="general" :columns="generalColumns"
-        :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
-        :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
-        :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigGeneral" :show-export="true"
-        empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
-        @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
-        @filter-change="handleFilterChangeGeneral" />
-     
-  
-      <!-- CreatePagoModal -->
-    </div>
-  </template>
-  
-  <script setup lang="ts">
-  import { ref } from 'vue'
-  import { useGeneral } from '../composables/cargaconsolidada/factura-guia/useGeneral'
-  import { USelect, UBadge } from '#components'
-  
-  const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
-  
-  const route = useRoute()
-  const id = Number(route.params.id)
-  
-  // Modal state for creating pagos
-  const showCreatePagoModal = ref(false)
-  const selectedCliente = ref('')
-  
-  // Tab state
-  const activeTab = ref('general') as Ref<string>
-  
-  // Tab configuration
-  const tabs = [
-    { value: 'general', label: 'General' },
-    { value: 'pagos', label: 'Pagos' }
-  ]
-  
-  const generalColumns = ref<TableColumn<any>[]>([
-    {
-      accessorKey: 'nro',
-      header: 'N°',
-      cell: ({ row }: { row: any }) => {
-        return row.index + 1
-      }
-    },
-    {
-      accessorKey: 'nombre',
-      header: 'Nombre'
-    },
-  
-    {
-      accessorKey: 'documento',
-      header: 'DNI/RUC'
-    },
-  
-    {
-      accessorKey: 'correo',
-      header: 'Correo'
-    },
-  
-    {
-      accessorKey: 'telefono',
-      header: 'Whatsapp'
-    },
-  
-    {
-      accessorKey: 'tipo_cliente',
-      header: 'T. Cliente'
-    },
-    //Ajuste	C.Final	Factura C.	Guia R.
-    {
-        accessorKey: 'ajuste',
-        header: 'Ajuste'
-    },
-    {
-        accessorKey: 'c_final',
-        header: 'C. Final'
-    },
-    {
-        accessorKey: 'factura_c_',
-        header: 'Factura C. '
-    },
-    {
-        accessorKey: 'guia_r_',
-        header: 'Guia R. '
+  <div class="p-6">
+    <!-- Header Section -->
+    <PageHeader title="Factura y Guía" subtitle="Gestión de factura y guía" icon="i-heroicons-book-open"
+      :hide-back-button="false" @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
+
+    <DataTable title="General" :data="general" :columns="generalColumns" :loading="loadingGeneral"
+      :current-page="currentPageGeneral" :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
+      :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
+      :show-filters="true" :filter-config="filterConfigGeneral" :show-export="true"
+      empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
+      @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
+      @filter-change="handleFilterChangeGeneral" />
+
+
+    <!-- CreatePagoModal -->
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useGeneral } from '../composables/cargaconsolidada/factura-guia/useGeneral'
+import { USelect, UBadge, UButton } from '#components'
+import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/SimpleUploadFile.vue'
+
+const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, uploadFacturaComercial, uploadGuiaRemision } = useGeneral()
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
+const { withSpinner } = useSpinner()
+const { showSuccess, showError } = useModal()
+const route = useRoute()
+const id = Number(route.params.id)
+const overlay = useOverlay()
+const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
+// Modal state for creating pagos
+
+const selectedCliente = ref('')
+
+// Tab state
+const activeTab = ref('general') as Ref<string>
+
+// Tab configuration
+const tabs = [
+  { value: 'general', label: 'General' },
+  { value: 'pagos', label: 'Pagos' }
+]
+
+const generalColumns = ref<TableColumn<any>[]>([
+  {
+    accessorKey: 'nro',
+    header: 'N°',
+    cell: ({ row }: { row: any }) => {
+      return row.index + 1
     }
-  ])
+  },
+  {
+    accessorKey: 'nombre',
+    header: 'Nombre'
+  },
 
+  {
+    accessorKey: 'documento',
+    header: 'DNI/RUC'
+  },
 
- 
-  onMounted(async () => {
-    await getGeneral(Number(id))
+  {
+    accessorKey: 'correo',
+    header: 'Correo'
+  },
+
+  {
+    accessorKey: 'telefono',
+    header: 'Whatsapp'
+  },
+
+  {
+    accessorKey: 'tipo_cliente',
+    header: 'T. Cliente',
+    cell: ({ row }: { row: any }) => {
+      return row.original.name
+    }
+  },
+  //Ajuste	C.Final	Factura C.	Guia R.
+  {
+    accessorKey: 'ajuste',
+    header: 'Ajuste',
+    cell: ({ row }: { row: any }) => {
+      return h(UBadge, {
+        color: row.original.estado_cotizacion_final === 'AJUSTADO' ? 'error' : 'success',
+        label: row.original.estado_cotizacion_final === 'AJUSTADO' ? 'SI' : 'NO'
+      })
+    }
+  },
+  {
+    accessorKey: 'c_final',
+    header: 'C. Final',
+    cell: ({ row }: { row: any }) => {
+      // cotizacion_final_url SHOW DOWNLOAD ICON 
+      if (row.original.cotizacion_final_url) {
+        return h(UButton, {
+          icon: 'i-heroicons-arrow-down-tray',
+          color: 'primary',
+          variant: 'outline',
+          onClick: () => {
+            window.open(row.original.cotizacion_final_url, '_blank')
+          }
+        })
+      } else {
+        return
+      }
+    }
+  },
+  {
+    accessorKey: 'factura_c_',
+    header: 'Factura C. ',
+    cell: ({ row }: { row: any }) => {
+      // if factura_comercial exist show download icon else show button to open modal to upload
+      if (row.original.factura_comercial) {
+        return h(UButton, {
+          icon: 'i-heroicons-arrow-down-tray',
+          color: 'primary',
+          variant: 'outline',
+          onClick: () => {
+            window.open(row.original.factura_comercial, '_blank')
+          }
+        })
+      } else {
+        return h(UButton, {
+          icon: 'i-heroicons-arrow-up-tray',
+          color: 'primary',
+          label: 'Subir',
+
+          variant: 'outline',
+          onClick: () => {
+            simpleUploadFileModal.open({
+              title: 'Subir Factura Comercial',
+              onClose: () => simpleUploadFileModal.close(),
+              onSave: async (data: { file: File }) => {
+                await handleUploadFacturaComercial(data, row.original.id_cotizacion)
+              }
+            })
+          }
+        })
+      }
+    }
+  },
+  {
+    accessorKey: 'guia_r_',
+    header: 'Guia R. ',
+    cell: ({ row }: { row: any }) => {
+      // if guia_r exist show download icon else show button to open modal to upload
+      if (row.original.guia_remision_url) {
+        return h(UButton, {
+          icon: 'i-heroicons-arrow-down-tray',
+          color: 'primary',
+          variant: 'outline',
+
+          onClick: () => {
+            window.open(row.original.guia_remision_url, '_blank')
+          }
+        })
+      } else {
+        return h(UButton, {
+          icon: 'i-heroicons-arrow-up-tray',
+          color: 'primary',
+          variant: 'outline',
+          label: 'Subir',
+          onClick: () => {
+            simpleUploadFileModal.open({
+              title: 'Subir Guia Remisión',
+              onClose: () => simpleUploadFileModal.close(),
+              onSave: async (data: { file: File }) => {
+                await handleUploadGuiaRemision(data, row.original.id_cotizacion)
+              }
+            })
+          }
+        })
+      }
+    }
+  }
+])
+
+const handleUploadFacturaComercial = async (data: { file: File }, idCotizacion: number) => {
+  await withSpinner(async () => {
+    try {
+      const response = await uploadFacturaComercial({
+        idCotizacion: idCotizacion,
+        file: data.file
+      })
+      if (response.success) {
+        showSuccess('Factura comercial subida correctamente', 'success')
+        await getGeneral(Number(id))
+      } else {
+        showError('Error al subir la factura comercial', 'error')
+      }
+    } catch (error) {
+      showError('Error al subir la factura comercial', 'error')
+    }
   })
-  </script>
-  
-  <style scoped>
-  </style>
-  
+}
+const handleUploadGuiaRemision = async (data: { file: File }, idCotizacion: number) => {
+  await withSpinner(async () => {
+    try {
+      const response = await uploadGuiaRemision({
+        idCotizacion: idCotizacion,
+        file: data.file
+      })
+      if (response.success) {
+        showSuccess('Guía remisión subida correctamente', 'success')
+        await getGeneral(Number(id))
+      } else {
+        showError('Error al subir la guía remisión', 'error')
+      }
+    } catch (error) {
+      showError('Error al subir la guía remisión', 'error')
+    }
+  })
+}
+
+onMounted(async () => {
+  await getGeneral(Number(id))
+})
+</script>
+
+<style scoped></style>

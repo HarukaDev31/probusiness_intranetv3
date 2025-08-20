@@ -1,7 +1,8 @@
 import type { Product, ProductFilters, ProductResponse, ProductsResponse, FilterOptionsResponse, FilterOptions, Pagination, ProductsServiceResponse } from '../types/product'
+import { BaseService } from "~/services/base/BaseService"
 
 
-class ProductService {
+class ProductService extends BaseService {
   private static instance: ProductService
   private baseUrl: string
   private constructor() {
@@ -41,7 +42,7 @@ class ProductService {
       }
 
       console.log('Calling API with URL:', `${this.baseUrl}?${queryParams.toString()}`)
-      const response = await apiCall<ProductsResponse>(`${this.baseUrl}?${queryParams.toString()}`)
+      const response = await this.apiCall<ProductsResponse>(`${this.baseUrl}?${queryParams.toString()}`)
       
       // Verificar si la respuesta tiene la estructura esperada
       if (Array.isArray(response.data)) {
@@ -76,7 +77,7 @@ class ProductService {
   // Obtener un producto por ID
   async getProductById(id: number): Promise<ProductResponse> {
     try {
-      const response = await apiCall<ProductResponse>(`${this.baseUrl}/${id}`)
+      const response = await this.apiCall<ProductResponse>(`${this.baseUrl}/${id}`)
       console.log('Product response:', response)
       return response
     } catch (error) {
@@ -92,7 +93,7 @@ class ProductService {
   // Crear un nuevo producto
   async createProduct(product: Omit<Product, 'id'>): Promise<ProductResponse> {
     try {
-      const response = await apiCall<ProductResponse>(`${this.baseUrl}`, {
+      const response = await this.apiCall<ProductResponse>(`${this.baseUrl}`, {
         method: 'POST',
         body: product
       })
@@ -129,7 +130,7 @@ class ProductService {
         Object.entries(productData).filter(([_, value]) => value !== undefined && value !== null && value !== '')
       )
 
-      const response = await apiCall<ProductResponse>(`${this.baseUrl}/${id}`, {
+      const response = await this.apiCall<ProductResponse>(`${this.baseUrl}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(filteredData)
       })
@@ -147,7 +148,7 @@ class ProductService {
   // Eliminar un producto
   async deleteProduct(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      await apiCall(`/api/base-datos/productos/${id}`, {
+      await this.apiCall(`/api/base-datos/productos/${id}`, {
         method: 'DELETE'
       })
       return { success: true }
@@ -164,7 +165,7 @@ class ProductService {
   async getFilterOptions(): Promise<FilterOptions> {
     try {
       console.log('Calling filter options API...')
-      const response = await apiCall<FilterOptionsResponse>(`${this.baseUrl}/filters/options`)
+      const response = await this.apiCall<FilterOptionsResponse>(`${this.baseUrl}/filters/options`)
       console.log('Filter options API response:', response)
       
       if (response.status === 'success') {
@@ -209,7 +210,7 @@ class ProductService {
         })
       }
 
-      const response = await apiCall<Blob>(`${this.baseUrl}/export?${queryParams.toString()}`, {
+      const response = await this.apiCall<Blob>(`${this.baseUrl}/export?${queryParams.toString()}`, {
         responseType: 'blob'
       })
       
@@ -227,7 +228,7 @@ class ProductService {
       const formData = new FormData()
       formData.append('excel_file', file)
 
-      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/import-excel`, {
+      const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/import-excel`, {
         method: 'POST',
         body: formData
       })
@@ -240,7 +241,7 @@ class ProductService {
   }
   async deleteExcel(id: number): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/delete-excel/${id}`, {
+      const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/delete-excel/${id}`, {
         method: 'DELETE'
       })
       return response
@@ -260,7 +261,7 @@ class ProductService {
     }[]
   }> {
     try {
-      const response = await apiCall<{
+      const response = await this.apiCall<{
         success: boolean;
         data: {
           id: number;

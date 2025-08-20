@@ -1,12 +1,12 @@
 import { ref, computed } from 'vue'
-import { VariacionService } from '../services/cargaconsolidada/clientes/variacionService'
+import { VariacionService } from '~/services/cargaconsolidada/clientes/variacionService'
 import type { 
   VariacionCliente, 
   ProveedorVariacion, 
   ArchivoVariacion,
   VariacionClienteUpdateRequest,
   ProveedorUpdateRequest
-} from '../types/cargaconsolidada/variacion'
+} from '~/types/cargaconsolidada/variacion'
 
 export const useVariacionCliente = () => {
   // Estado principal
@@ -185,33 +185,46 @@ export const useVariacionCliente = () => {
    * Actualiza la documentación de un proveedor específico
    */
   const updateProveedorDocumentacion = async (
-    idCliente: number, 
     idProveedor: number, 
-    data: ProveedorUpdateRequest
+    data: any
   ) => {
     try {
-      if (!cliente.value) return { success: false, error: 'No hay documentación cargada' }
+  
 
-      // Encontrar y actualizar el proveedor
-      const proveedorIndex = proveedores.value.findIndex(p => p.id === idProveedor)
-      if (proveedorIndex === -1) {
-        return { success: false, error: 'Proveedor no encontrado' }
-      }
+      // Llamar al servicio para actualizar la documentación del cliente con los proveedores actualizados
+      const response = await VariacionService.updateProveedorDocumentacion(idProveedor, data);
 
-      // Actualizar el proveedor localmente
-      proveedores.value[proveedorIndex] = { ...proveedores.value[proveedorIndex], ...data }
-
-      // Actualizar en el servidor
-      const updateData = {
-        ...cliente.value,
-        providers: JSON.stringify(proveedores.value)
-      }
-
-      const response = await updateClienteDocumentacion(idCliente, updateData)
       return response
     } catch (err: any) {
       console.error('Error al actualizar proveedor:', err)
       return { success: false, error: err.message || 'Error al actualizar el proveedor' }
+    }
+  }
+  const deleteFacturaComercial = async (idProveedor: number) => {
+    try {
+      const response = await VariacionService.deleteFacturaComercial(idProveedor);
+      return response
+    } catch (err: any) {
+      console.error('Error al eliminar factura comercial:', err)
+      return { success: false, error: err.message || 'Error al eliminar la factura comercial' }
+    }
+  }
+  const deletePackingList = async (idProveedor: number) => {
+    try {
+      const response = await VariacionService.deletePackingList(idProveedor);
+      return response
+    } catch (err: any) {
+      console.error('Error al eliminar packing list:', err)
+      return { success: false, error: err.message || 'Error al eliminar el packing list' }
+    }
+  }
+  const deleteExcelConfirmacion = async (idProveedor: number) => {
+    try {
+      const response = await VariacionService.deleteExcelConfirmacion(idProveedor);
+      return response
+    } catch (err: any) {
+      console.error('Error al eliminar excel de confirmación:', err)
+      return { success: false, error: err.message || 'Error al eliminar la excel de confirmación' }
     }
   }
 
@@ -305,6 +318,9 @@ export const useVariacionCliente = () => {
     cambiarProveedor,
     updateClienteDocumentacion,
     updateProveedorDocumentacion,
+    deleteFacturaComercial,
+    deletePackingList,
+    deleteExcelConfirmacion,
     uploadArchivo,
     deleteArchivo,
     clearState

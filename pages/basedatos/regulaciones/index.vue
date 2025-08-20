@@ -510,8 +510,8 @@ import DocumentoService from '../services/documentoService'
 import ImageModal from '../components/ImageModal.vue'
 import DocumentPreview from '../components/DocumentPreview.vue'
 import { useUserRole } from '../composables/auth/useUserRole'
-import { useModal } from '../composables/commons/useModal'
-import { useSpinner } from '../composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 // User role composable
 const { hasRole } = useUserRole()   
 
