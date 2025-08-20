@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { clienteDocumentacionService, type ClienteDocumentacion, type DocumentoFile } from '../services/clienteDocumentacionService'
+import { ClienteDocumentacionService, type ClienteDocumentacion, type DocumentoFile } from '../services/clienteDocumentacionService'
 
 export const useClienteDocumentacion = () => {
   const documentacion = ref<ClienteDocumentacion | null>(null)
@@ -22,7 +22,7 @@ export const useClienteDocumentacion = () => {
     error.value = null
     
     try {
-      const response = await clienteDocumentacionService.getClienteDocumentacion(id)
+      const response = await ClienteDocumentacionService.getClienteDocumentacion(id)
       
       if (response.success) {
         documentacion.value = response.data
@@ -53,7 +53,7 @@ export const useClienteDocumentacion = () => {
   // Subir documento
   const subirDocumento = async (id: string, tipo: string, archivo: File, observaciones?: string) => {
     try {
-      const response = await clienteDocumentacionService.subirDocumento(id, tipo, archivo, observaciones)
+      const response = await ClienteDocumentacionService.subirDocumento(id, tipo, archivo, observaciones)
       
       if (response.success) {
         // Recargar la documentación para obtener los archivos actualizados
@@ -72,7 +72,7 @@ export const useClienteDocumentacion = () => {
   // Eliminar documento
   const eliminarDocumento = async (id: string, fileId: number) => {
     try {
-      const response = await clienteDocumentacionService.eliminarDocumento(id, fileId)
+      const response = await ClienteDocumentacionService.eliminarDocumento(id, fileId)
       
       if (response.success) {
         // Recargar la documentación para obtener los archivos actualizados
@@ -91,7 +91,7 @@ export const useClienteDocumentacion = () => {
   // Actualizar documentación por proveedor
   const actualizarDocumentacionProveedor = async (id: string, proveedorId: number, datos: { volumen: number; valor: number }) => {
     try {
-      const response = await clienteDocumentacionService.actualizarDocumentacionProveedor(id, proveedorId, datos)
+      const response = await ClienteDocumentacionService.actualizarDocumentacionProveedor(id, proveedorId, datos)
       
       if (response.success) {
         // Actualizar datos locales
@@ -110,7 +110,7 @@ export const useClienteDocumentacion = () => {
   // Actualizar documentación (método general)
   const actualizarDocumentacion = async (id: string, datos: Partial<ClienteDocumentacion>) => {
     try {
-      const response = await clienteDocumentacionService.actualizarDocumentacion(id, datos)
+      const response = await ClienteDocumentacionService.actualizarDocumentacion(id, datos)
       
       if (response.success) {
         // Recargar la documentación para obtener los datos actualizados
