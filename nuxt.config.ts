@@ -38,8 +38,9 @@ export default defineNuxtConfig({
       apiBaseUrl: process.env.NUXT_API_BASE_URL || 'http://localhost:8000',
       appName: process.env.NUXT_PUBLIC_APP_NAME || 'Probusiness Intranet',
       appVersion: process.env.NUXT_PUBLIC_APP_VERSION || '2.0.0',
-      pusherAppKey: process.env.PUSHER_APP_KEY,
-      pusherAppCluster: process.env.PUSHER_APP_CLUSTER
+      pusherAppKey: process.env.NUXT_PUSHER_APP_KEY,
+      pusherAppCluster: process.env.NUXT_PUSHER_APP_CLUSTER,
+      pusherWsHost: process.env.NUXT_WEBSOCKETS_URL,
     }
   },
 

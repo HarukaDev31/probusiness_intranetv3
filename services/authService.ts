@@ -67,11 +67,10 @@ class AuthService {
   async initializeEcho() {
     if (!this.isEchoInitialized && this.token) {
       const config = {
-        wsHost: window.location.hostname,
-        wsPort: 6001,
+        wsHost: this.nuxtApp.$config.public.pusherWsHost,
         forceTLS: false,
         enabledTransports: ['ws', 'wss'],
-        authEndpoint: `${this.nuxtApp.$config.public.apiBaseUrl}/api/broadcasting/auth`,
+        authEndpoint: `${this.nuxtApp.$config.public.pusherWsHost}/api/broadcasting/auth`,
         auth: {
           headers: {
             Authorization: `Bearer ${this.token}`,
