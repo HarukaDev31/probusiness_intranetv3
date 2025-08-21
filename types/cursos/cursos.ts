@@ -83,7 +83,38 @@ export interface EstadoDisponible {
     Nu_Edad: number
     No_Signo: string
     No_Usuario: string
+    Url_Constancia: string | null
   }
+
+  export interface DatosClientePorPedido {
+    id_entidad: number;
+    nombres: string;
+    sexo: string;
+    dni: string;
+    whatsapp: string;
+    correo: string;
+    nacimiento: string;
+    red_social: string;
+    id_pais: number;
+    id_departamento: number;
+    id_provincia: number;
+    id_distrito: number;
+    pais: string;
+    departamento: string;
+    provincia: string;
+    distrito: string;
+    id_usuario: number;
+    usuario_moodle: string;
+    password_moodle: string;
+    ID_Campana: number;
+    tipo_curso: number;
+    Nu_Estado: number;
+    Nu_Estado_Usuario_Externo: number;
+    id_pedido_curso: number;
+    url_constancia: string;
+    mes_numero: number;
+    mes_nombre: string;
+}
   
   export interface PaginationInfo {
     current_page: number

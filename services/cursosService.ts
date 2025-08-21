@@ -1,4 +1,4 @@
-import type { CursoItem, CursosDetalleResponse, CursosFilters, CursosResponse } from '~/types/cursos/cursos'
+import type { CursoItem, CursosDetalleResponse, CursosFilters, CursosResponse, DatosClientePorPedido } from '~/types/cursos/cursos'
 import { apiCall } from '~/utils/api'
 
 export class CursosService {
@@ -73,5 +73,27 @@ export class CursosService {
       throw new Error('No se pudieron obtener los filtros')
     }
   }
-
-}   
+  static async getDatosClientePorPedido(idPedido: number): Promise<DatosClientePorPedido> {
+    try {
+      const response = await apiCall<DatosClientePorPedido>(`${this.baseUrl}/pedido/${idPedido}/cliente`, {
+        method: 'GET'
+      })
+      return response
+    } catch (error) {
+      console.error('Error al obtener datos del cliente por pedido:', error)
+      throw new Error('No se pudieron obtener los datos del cliente por pedido')
+    }
+  }
+  static async actualizarDatosCliente(id: number, datos: Partial<DatosClientePorPedido>): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await apiCall<{ success: boolean; error?: string }>(`${this.baseUrl}/cliente/${id}`, {
+      method: 'PUT',
+      body: datos
+    })
+    return response
+  } catch (error) {
+    console.error('Error al actualizar datos del cliente:', error)
+    throw new Error('No se pudo actualizar los datos del cliente')
+  }
+}
+}

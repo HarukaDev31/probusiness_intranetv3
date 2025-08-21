@@ -1,20 +1,59 @@
 <template>
     <div class="p-6">
         <PageHeader title="Cursos" subtitle="Gestión de cursos" icon="i-heroicons-book-open" :hide-back-button="true" />
-        <DataTable title="" icon="" :data="cursosData" :columns="columns" :loading="loading" :current-page="currentPage"
-            :total-pages="totalPages" :total-records="totalRecords" :items-per-page="itemsPerPage"
-            :search-query-value="search" :show-secondary-search="false" :show-filters="true"
-            :filter-config="filterConfig" :filters-value="filters" :show-export="true"
-            empty-state-message="No se encontraron registros de cursos." @update:search-query="handleSearch"
-            @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
+        <DataTable 
+            title="Base de datos de cursos" 
+            icon="i-heroicons-book-open" 
+            :data="cursosData" 
+            :columns="columns"
+            :loading="loading" 
+            :current-page="currentPage" 
+            :total-pages="totalPages" 
+            :total-records="totalRecords"
+            :items-per-page="itemsPerPage" 
+            :search-query-value="searchQuery"
+            :show-primary-search="true" 
+            :primary-search-label="'Buscar por'"
+            :primary-search-placeholder="'Buscar...'" 
+            :show-filters="true"
+            :filter-config="filterConfig" 
+            :filters-value="filters" 
+            :show-export="true"
+            empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
+            @update:primarySearch="handleSearch"
+            @page-change="handlePageChange" 
+            @items-per-page-change="handleItemsPerPageChange" 
+            @export="exportData"
             @filter-change="handleFilterChange">
         </DataTable>
     </div>
 </template>
 <script setup lang="ts">
+import { ref, h, resolveComponent, onMounted, watch } from 'vue'
 import { useCursos } from '~/composables/useCursos'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+import type { CursoItem } from '~/types/cursos/cursos'
 import type { TableColumn } from '@nuxt/ui'
-const { cursosData, loading, currentPage, totalPages,getFiltros, fetchCursosData, totalRecords, itemsPerPage, search, filterConfig, filters, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, exportData } = useCursos()
+const { 
+    cursosData, 
+    loading, 
+    currentPage, 
+    totalPages,getFiltros, 
+    loadCursos, 
+    totalRecords, 
+    itemsPerPage, 
+    searchQuery, 
+    filterConfig, 
+    filters, 
+    handleSearch, 
+    handlePageChange, 
+    handleItemsPerPageChange, 
+    handleFilterChange, 
+    exportData 
+} = useCursos()
+
+
 import { UButton, USelect } from '#components'
 const estadoClasses: Record<string, string> = {
     pendiente: 'bg-gray-100 text-gray-800',
@@ -22,12 +61,18 @@ const estadoClasses: Record<string, string> = {
     pagado: 'bg-green-100 text-green-800',
     sobrepago: 'bg-red-100 text-red-800'
 }
-const columns = ref<TableColumn<any>[]>([
+
+const onItemsPerPageChange = (newLimit: number) => {
+  loadCursos({ page: 1, limit: newLimit })
+}
+
+const columns = ref<TableColumn<CursoItem>[]>([
     {
         accessorKey: 'index',
         header: 'N.',
-        cell: ({ row }: { row: any }) => {
-            return row.index + 1
+        cell: ({ row }) => {
+            const index = cursosData.value.indexOf(row.original)
+            return index + 1
         }
     },
 
@@ -96,13 +141,18 @@ const columns = ref<TableColumn<any>[]>([
         header: 'Usuario',
         cell: ({ row }: { row: any }) => {
             const items = [
-                { label: 'Pendiente', value:0, icon: 'ic:outline-access-time' },
-                { label: 'Creado', value:1, icon: 'ic:outline-person' },
-                { label: 'Constancia', value:2, icon: 'solar:diploma-outline' }
+                { label: 'Pendiente', value:1, icon: 'ic:outline-access-time' },
+                { label: 'Creado', value:2, icon: 'ic:outline-person' }
             ]
+            // Solo mostrar la opción de constancia si puede_constancia es verdadero
+            if (row.original.puede_constancia) {
+                items.push({ label: 'Constancia', value:3, icon: 'solar:diploma-outline' })
+            }
             const icon = items.find(item => item.value === row.original.Nu_Estado_Usuario_Externo)?.icon
+            // Valor por defecto: pendiente (1) si no está definido
+            const modelValue = row.original.Nu_Estado_Usuario_Externo ?? 1
             return h(USelect as any, {
-                modelValue: row.original.Nu_Estado_Usuario_Externo,
+                modelValue,
                 'onUpdate:modelValue': (value: any) => {
                     row.original.Nu_Estado_Usuario_Externo = value
                 },
@@ -155,15 +205,13 @@ const columns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'acciones',
         header: 'Acciones',
-        cell: ({ row }: { row: any }) => {
-            //ver,borrar,guardar
+        cell: ({ row }) => {
+            const curso = row.original
             return h('div', { class: 'flex items-center gap-2' }, [
                 h(UButton, {
                     icon: 'i-heroicons-eye',
                     variant: 'solid',
-                    onClick: () => {
-                        console.log('ver')
-                    }
+                    onClick: () => viewCurso(curso)
                 }),
                 h(UButton, {
                     icon: 'i-heroicons-trash',
@@ -183,6 +231,10 @@ const columns = ref<TableColumn<any>[]>([
         }
     }
 ])
+
+// Computed para productos filtrados
+
+
 const fillFilters = async () => {
     const response = await getFiltros()
     console.log(response)
@@ -190,7 +242,11 @@ const fillFilters = async () => {
     
 }
 onMounted(() => {
-    fetchCursosData(filters.value, 1, itemsPerPage.value)
+    loadCursos()
     fillFilters()
 })
+
+const viewCurso = (curso: CursoItem) => {
+  navigateTo(`/curso/${curso.ID_Pedido_Curso}`)
+}
 </script>
