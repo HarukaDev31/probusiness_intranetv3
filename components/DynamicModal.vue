@@ -130,7 +130,7 @@ const iconContainerClasses = computed(() => {
     success: 'bg-green-100 dark:bg-green-900/30',
     error: 'bg-red-100 dark:bg-red-900/30',
     warning: 'bg-yellow-100 dark:bg-yellow-900/30',
-    info: 'bg-blue-100 dark:bg-blue-900/30',
+    info: 'bg-orange-100 dark:bg-orange-900/30',
     confirmation: 'bg-gray-100 dark:bg-gray-700'
   }
   return classes[props.modal.type]
@@ -141,7 +141,7 @@ const iconClasses = computed(() => {
     success: 'text-green-600 dark:text-green-400',
     error: 'text-red-600 dark:text-red-400',
     warning: 'text-yellow-600 dark:text-yellow-400',
-    info: 'text-blue-600 dark:text-blue-400',
+    info: 'text-orange-600 dark:text-orange-400',
     confirmation: 'text-gray-600 dark:text-gray-400'
   }
   return classes[props.modal.type]
@@ -152,7 +152,7 @@ const buttonClasses = computed(() => {
     success: 'bg-green-600 hover:bg-green-700 focus:ring-green-500 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-400',
     error: 'bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-400',
     warning: 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500 dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:focus:ring-yellow-400',
-    info: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400',
+    info: 'bg-orange-600 hover:bg-orange-700 focus:ring-orange-500 dark:bg-orange-600 dark:hover:bg-orange-700 dark:focus:ring-orange-400',
     confirmation: 'bg-gray-600 hover:bg-gray-700 focus:ring-gray-500 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-400'
   }
   return classes[props.modal.type]
@@ -163,7 +163,7 @@ const modalClasses = computed(() => {
     success: 'ring-green-200 dark:ring-green-800',
     error: 'ring-red-200 dark:ring-red-800',
     warning: 'ring-yellow-200 dark:ring-yellow-800',
-    info: 'ring-blue-200 dark:ring-blue-800',
+    info: 'ring-orange-200 dark:ring-orange-800',
     confirmation: 'ring-gray-200 dark:ring-gray-700'
   }
   return classes[props.modal.type]

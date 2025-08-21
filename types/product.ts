@@ -51,6 +51,8 @@ export interface ProductMapped {
   cargaContenedor?: string
   createdAt?: string
   updatedAt?: string
+  observaciones: string
+  tiene_observaciones: boolean
 }
 
 // Filtros para productos

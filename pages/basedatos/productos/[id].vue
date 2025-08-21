@@ -1,8 +1,17 @@
 <template>
+  <UButton label="Regresar" icon="i-heroicons-arrow-left" variant="solid" color="secondary" class="bg-white text-gray-700 px-4 py-2 rounded-md font-medium flex items-center gap-2" @click="goBack" />
     <div class="p-6 max-w-4xl mx-auto">
         <!-- Top Navigation Bar -->
         <div class="flex items-center justify-between mb-6">
-            <UButton label="Regresar" icon="i-heroicons-arrow-left" variant="outline" @click="goBack" />
+            <div v-if="loading" class="space-y-6 w-full">
+              <!-- Skeleton para el título -->
+              <div class="animate-pulse">
+                <div class="h-6 bg-gray-200 rounded w-2/3 mb-2"></div>
+              </div>
+            </div>
+            <div v-else>
+              <h1 class="text-2xl font-bold">{{ formData.productName }}</h1>
+            </div>
             <div class="flex items-center gap-2">
                 <!-- Botón de Editar (solo visible para rol Documentacion) -->
                 <UButton 
@@ -10,6 +19,7 @@
                     label="Editar" 
                     icon="i-heroicons-pencil-square" 
                     color="primary" 
+                    class="px-6 py-2 text-base font-semibold"
                     @click="startEditing" 
                 />
                 <!-- Botón de Guardar (solo visible cuando está editando) -->
@@ -73,7 +83,13 @@
                     </div>
                     <div class="h-24 bg-gray-200 rounded w-full"></div>
                 </div>
-            </UCard>
+                <!-- Caracteristicas-->
+                <div class="mt-6 space-y-4">
+                     <div class="flex items-center gap-4">
+                         <div class="h-4 bg-gray-200 rounded w-32"></div>
+                     </div>
+                </div>
+            </UCard> 
         </div>
 
         <!-- Error State -->
@@ -92,7 +108,7 @@
             <div class="mb-6">
                 <div class="flex items-center gap-4">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-24">
-                        Link producto:
+                        Enlace producto:
                     </label>
                     <UInput v-model="formData.productLink" placeholder="www.alibaba.com/..." class="flex-1" :disabled="!isEditing" />
                     <UButton 
@@ -165,53 +181,47 @@
                     </h3>
 
                     <div class="space-y-3">
+
+
+                        <!-- Campo adicional para entidad cuando es RESTRINGIDO -->
                         <div class="flex items-center gap-4">
-                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-32">
-                                Tipo de producto:
-                            </label>
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-32">
+                          Tipo de producto:
+                        </label>
                             <USelect v-model="formData.tipoProducto" :items="tipoProductoOptions"
-                                placeholder="Seleccionar" class="flex-1" :disabled="!isEditing" />
+                              placeholder="Seleccionar" class="flex-1" :disabled="!isEditing" />
+                            <UInputMenu  
+                              v-if="formData.tipoProducto === 'RESTRINGIDO'"
+                              v-model="formData.entidad" 
+                              :items="entidadesOptions.map(e => e.nombre)"
+                              placeholder="Buscar entidad..." 
+                              class="flex-1" 
+                              :loading="loadingEntidades"
+                              :disabled="!isEditing"
+                              @update:searchTerm="searchEntidades"
+                              @update:model-value="onEntidadSelected" />
                         </div>
 
-                                                 <!-- Campo adicional para entidad cuando es RESTRINGIDO -->
-                         <div v-if="formData.tipoProducto === 'RESTRINGIDO'" class="flex items-center gap-4">
-                             <label class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-32">
-                                 Entidad:
-                             </label>
-                             <UInputMenu  
-                                 v-model="formData.entidad" 
-                                 :items="entidadesOptions.map(e => e.nombre)"
-                                 placeholder="Buscar entidad..." 
-                                 class="flex-1" 
-                                 :loading="loadingEntidades"
-                                 :disabled="!isEditing"
-                                 @update:searchTerm="searchEntidades"
-                                 @update:model-value="onEntidadSelected" />
-                         </div>
 
-                        <div class="flex items-center gap-4">
-                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-32">
-                                Etiquetado:
-                            </label>
-                            <USelect v-model="formData.etiquetado" :items="etiquetadoOptions" placeholder="Seleccionar"
-                                class="flex-1" :disabled="!isEditing" />
-                        </div>
 
-                                                 <!-- Campo adicional para etiquetado especial -->
-                         <div v-if="formData.etiquetado === 'ESPECIAL'" class="flex items-center gap-4">
-                             <label class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-32">
-                                 Tipo Etiquetado:
-                             </label>
-                             <UInputMenu  
-                                 v-model="formData.tipoEtiquetado" 
-                                 :items="etiquetadosOptions.map(e => e.nombre)"
-                                 placeholder="Buscar tipo de etiquetado..." 
-                                 class="flex-1" 
-                                 :loading="loadingEtiquetados"
-                                 :disabled="!isEditing"
-                                 @update:searchTerm="searchEtiquetados"
-                                 @update:model-value="onEtiquetadoSelected" />
-                         </div>
+                          <!-- Campo adicional para etiquetado especial -->
+                          <div class="flex items-center gap-4">
+                              <label class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-32">
+                                  Etiquetado:
+                              </label>
+                              <USelect v-model="formData.etiquetado" :items="etiquetadoOptions" placeholder="Seleccionar"
+                                  class="flex-1" :disabled="!isEditing" />
+                              <UInputMenu  
+                                  v-if="formData.etiquetado === 'ESPECIAL'"
+                                  v-model="formData.tipoEtiquetado" 
+                                  :items="etiquetadosOptions.map(e => e.nombre)"
+                                  placeholder="Buscar tipo de etiquetado..." 
+                                  class="flex-1" 
+                                  :loading="loadingEtiquetados"
+                                  :disabled="!isEditing"
+                                  @update:searchTerm="searchEtiquetados"
+                                  @update:model-value="onEtiquetadoSelected" />
+                          </div>
 
                         <div class="flex items-center gap-4">
                             <label class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-32">
@@ -237,6 +247,20 @@
                 <UTextarea v-model="formData.observaciones" v-if="formData.tieneObservaciones"
                     placeholder="El vista de aduanas observo la medida del producto." :rows="4" class="w-full" :disabled="!isEditing" />
             </div>
+            <div class="p-4">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                    Caracteristicas
+                </h3>
+                <div v-if="isEditing">
+                    <UTextarea v-model="caracteristicasFormateadas" placeholder="Ingrese las características del producto"
+                        :rows="4" class="w-full" />
+                </div>
+                <div v-else>
+                    <ul class="list-disc pl-6 text-gray-700">
+                      <li v-for="(car, idx) in caracteristicasFormateadas" :key="idx">{{ car }}</li>
+                    </ul>
+                </div>
+              </div>
         </UCard>
     </div>
 </template>
@@ -269,6 +293,7 @@ const loadingEtiquetados = ref(false)
 
 // Form data
 const formData = ref({
+    productName: '',
     productLink: '',
     arancelSunat: '',
     arancelTlc: '',
@@ -281,7 +306,8 @@ const formData = ref({
     tipoEtiquetado: '',
     documentoEspecial: '',
     tieneObservaciones: false,
-    observaciones: ''
+    observaciones: '',
+    caracteristicas: ''
 })
 
 // Options for selects
@@ -321,6 +347,7 @@ const loadProduct = async () => {
 
                 // Cargar datos iniciales del formulario
                 formData.value = {
+                    productName: product.nombre_comercial || '',
                     productLink: product.link || '',
                     arancelSunat: product.arancel_sunat || '',
                     arancelTlc: product.arancel_tlc || '',
@@ -333,7 +360,8 @@ const loadProduct = async () => {
                     tipoEtiquetado: '', // Se cargará después
                     documentoEspecial: product.doc_especial || 'NO',
                     tieneObservaciones: product.tiene_observaciones || false, // Valor por defecto
-                    observaciones:product.observaciones || ''
+                    observaciones: product.observaciones || '',
+                    caracteristicas: product.caracteristicas || ''
                 }
 
                 // Establecer los IDs seleccionados
@@ -359,6 +387,32 @@ const loadProduct = async () => {
 }
 
 
+const caracteristicasFormateadas = computed(() => {
+  const keywords = [
+    'marca', 'tamaño', 'material', 'incluye', 'voltaje', 'peso', 'modelo', 'cantidad', 'color',
+    'caja de carga', 'bluetooth', 'potencia', 'distancia de transmisión', 'amperaje', 'función',
+    'autonomía', 'velocidad máxima', 'peso neto', 'capacidad de carga', 'batería', 'tamaño de ruedas',
+    'distancia entre ruedas'
+  ];
+  // Regex para encontrar todas las coincidencias de 'keyword: valor' (case-insensitive)
+  const pattern = new RegExp(`\\b(${keywords.join('|')})\\s*:(.*?)(?=\\b(${keywords.join('|')})\\s*:|$)`, 'gi');
+  const raw = formData.value.caracteristicas || '';
+  const result = [];
+  let match;
+  while ((match = pattern.exec(raw)) !== null) {
+    // match[1] = keyword, match[2] = valor
+    const keyword = capitalize(match[1]);
+    const value = match[2].trim();
+    if (value) {
+      result.push(`${keyword}: ${value}`);
+    }
+  }
+  return result;
+});
+
+function capitalize(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
 
 // Search functions for autocomplete
 const searchEntidades = async (search: string) => {
@@ -467,7 +521,8 @@ const saveForm = async () => {
       tipo_etiquetado_id: selectedEtiquetadoId.value || undefined, // Convertir null a undefined
       doc_especial: formData.value.documentoEspecial,
       tiene_observaciones: formData.value.tieneObservaciones,
-      observaciones: formData.value.observaciones
+      observaciones: formData.value.observaciones,
+      caracteristicas: formData.value.caracteristicas
     }
 
     console.log('Datos a enviar al backend:', updateData)
