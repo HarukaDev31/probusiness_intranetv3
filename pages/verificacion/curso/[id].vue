@@ -154,8 +154,8 @@
   import { toast } from '#build/ui'
   import { ref, computed, onMounted } from 'vue'
   import { useRoute } from 'vue-router'
-  import { usePagos } from '~/composables/usePagos'
-import { formatCurrency } from '~/utils/cursos'
+  import { usePagos } from '../composables/usePagos'
+import { formatCurrency } from '../utils/cursos'
   
   // Route params
   const route = useRoute()

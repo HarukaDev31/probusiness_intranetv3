@@ -27,7 +27,11 @@ export const formatCurrency = (amount: number, type: string = 'USD'): string => 
     }).format(amount)
   }
 }
-
+export const getDateParts = (date: string): { year: number, month: number, day: number } => {
+  //from 2025-06-09T00:00:00.000000Z to 2025-06-09
+  const [year, month, day] = date.split('T')[0].split('-')
+  return { year: parseInt(year), month: parseInt(month), day: parseInt(day) }
+}
 /**
  * Formatea un número con separadores de miles
  * @param number - Número a formatear

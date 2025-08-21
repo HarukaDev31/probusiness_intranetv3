@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import EtiquetadoService from '~/services/etiquetadoService'
-import { apiCall } from '~/utils/api'
+import {EtiquetadoService} from '~/services/etiquetadoService'
 
 // Interface para la respuesta del backend
 interface EtiquetadoResponse {
@@ -27,10 +26,9 @@ interface EtiquetadoResponse {
     updated_at: string
   }>
 }
-
 export function useEtiquetadoEdit(regulationId: string) {
   const router = useRouter()
-  const etiquetadoService = EtiquetadoService.getInstance()
+
 
   // Form data
   const formData = ref({

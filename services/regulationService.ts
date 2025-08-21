@@ -1,4 +1,5 @@
-import { apiCall } from '~/utils/api'
+
+import { BaseService } from "~/services/base/BaseService"
 
 interface RegulationResponse {
   success: boolean
@@ -6,27 +7,24 @@ interface RegulationResponse {
   error?: string
 }
 
-class RegulationService {
+export class RegulationService extends BaseService {
   private static instance: RegulationService
 
-  private constructor() {}
-
-  public static getInstance(): RegulationService {
-    if (!RegulationService.instance) {
-      RegulationService.instance = new RegulationService()
-    }
-    return RegulationService.instance
+  private constructor() {
+    super()
   }
 
+ 
+
   // Obtener entidades para autocompletado
-  async getEntidades(search?: string): Promise<RegulationResponse> {
+  static async getEntidades(search?: string): Promise<RegulationResponse> {
     try {
       const queryParams = new URLSearchParams()
       if (search && search !== '') {
         queryParams.append('search', search)
       }
 
-      const response = await apiCall<RegulationResponse>(`/api/base-datos/regulaciones/entidades${queryParams.toString() ? `?${queryParams.toString()}` : ''}`)
+      const response = await this.apiCall<RegulationResponse>(`/api/base-datos/regulaciones/entidades${queryParams.toString() ? `?${queryParams.toString()}` : ''}`)
       return response
     } catch (error) {
       console.error('Error fetching entidades:', error)
@@ -39,14 +37,14 @@ class RegulationService {
   }
 
   // Obtener etiquetados para autocompletado
-  async getEtiquetados(search?: string): Promise<RegulationResponse> {
+  static async getEtiquetados(search?: string): Promise<RegulationResponse> {
     try {
       const queryParams = new URLSearchParams()
       if (search) {
         queryParams.append('search', search)
       }
 
-      const response = await apiCall<RegulationResponse>(`/api/regulaciones/etiquetado?${queryParams.toString()}`)
+      const response = await this.apiCall<RegulationResponse>(`/api/regulaciones/etiquetado?${queryParams.toString()}`)
       return response
     } catch (error) {
       console.error('Error fetching etiquetados:', error)

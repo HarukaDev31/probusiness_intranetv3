@@ -179,7 +179,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import PermisoService from '~/services/permisoService'
+import {PermisoService} from '~/services/permisoService'
 
 // Interface temporal para la respuesta real del backend
 interface PermisoResponse {
@@ -217,7 +217,6 @@ const router = useRouter()
 const route = useRoute()
 
 // Service instances
-const permisoService = PermisoService.getInstance()
 
 // Reactive data
 const permiso = ref<PermisoResponse | null>(null)
@@ -239,7 +238,7 @@ const loadPermiso = async () => {
   
   try {
     const permisoId = parseInt(route.params.id as string)
-    const response = await permisoService.getPermisoById(permisoId)
+    const response = await PermisoService.getPermisoById(permisoId)
     
     if (response.success && response.data) {
       permiso.value = response.data as unknown as PermisoResponse

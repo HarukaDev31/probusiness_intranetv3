@@ -291,8 +291,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import AntidumpingService from '~/services/antidumpingService'
-import ProductRubroService from '~/services/productRubroService'
+import {AntidumpingService} from '~/services/antidumpingService'
+import {ProductRubroService} from '~/services/productRubroService'
 
 // Types
 interface AntidumpingRegulation {
@@ -318,8 +318,7 @@ const route = useRoute()
 const router = useRouter()
 
 // Service instances
-const antidumpingService = AntidumpingService.getInstance()
-const productRubroService = ProductRubroService.getInstance()
+
 
 // Reactive data
 const regulation = ref<AntidumpingRegulation | null>(null)
@@ -373,7 +372,7 @@ const loadRegulation = async () => {
   error.value = null
   
   try {
-    const response = await antidumpingService.getAntidumpingById(regulationId)
+    const response = await AntidumpingService.getAntidumpingById(regulationId)
     
     if (response.success && response.data) {
       regulation.value = {
@@ -469,7 +468,7 @@ const searchProducts = async (query: string) => {
   loadingProducts.value = true
   
   try {
-    const response = await productRubroService.getProductRubros(query,'ANTIDUMPING')
+    const response = await ProductRubroService.getProductRubros(query,'ANTIDUMPING')
     
     if (response.success && response.data) {
       productOptions.value = response.data.map(product => ({
@@ -494,7 +493,7 @@ const createProduct = async () => {
   creatingProduct.value = true
   
   try {
-    const response = await productRubroService.createProductRubro({
+    const response = await ProductRubroService.createProductRubro({
       nombre: newProduct.value.nombre,
       tipo: 'ANTIDUMPING'
     })
@@ -611,7 +610,7 @@ const saveForm = async () => {
     console.log('Enviando datos de actualización:', updateData)
     console.log('Imágenes a eliminar:', imagesToDelete.value)
     
-    const response = await antidumpingService.updateAntidumping(regulationId, updateData, imagesToDelete.value)
+    const response = await AntidumpingService.updateAntidumping(regulationId, updateData, imagesToDelete.value)
     
     if (response.success) {
       // Redirect to detail view

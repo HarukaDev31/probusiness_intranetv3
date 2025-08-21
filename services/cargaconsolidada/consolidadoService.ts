@@ -1,6 +1,5 @@
-import type { Contenedor, ContenedorFilters, ContenedorPasosResponse, ContenedorResponse } from '~/types/cargaconsolidada/contenedor'
-import { apiCall } from '~/utils/api'
-
+import type { Contenedor, ContenedorPasosResponse, ContenedorResponse } from '../../types/cargaconsolidada/contenedor'
+import { BaseService } from '../base/BaseService'
 export interface ConsolidadoParams {
     page?: number
     limit?: number
@@ -11,9 +10,18 @@ export interface ConsolidadoParams {
     completado?: boolean | false
 }
 
-export class ConsolidadoService {
+export class ConsolidadoService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor'
-
+    private static instance: ConsolidadoService
+    private constructor() {
+        super()
+    }
+    public static getInstance(): ConsolidadoService {
+        if (!ConsolidadoService.instance) {
+          ConsolidadoService.instance = new ConsolidadoService()
+        }
+        return ConsolidadoService.instance
+      }
     static async getConsolidadoData(params: ConsolidadoParams = {}): Promise<ContenedorResponse> {
         try {
             // Validar y limpiar parámetros
@@ -47,7 +55,7 @@ export class ConsolidadoService {
                 cleanParams.completado = params.completado
             }
 
-            const response = await apiCall<ContenedorResponse>(`${this.baseUrl}`, {
+            const response = await this.apiCall<ContenedorResponse>(`${this.baseUrl}`, {
                 method: 'GET',
                 params: cleanParams
             })
@@ -61,7 +69,7 @@ export class ConsolidadoService {
 
     static async getConsolidadoById(id: number): Promise<Contenedor> {
         try {
-            const response = await apiCall<{ success: boolean, data: Contenedor }>(`${this.baseUrl}/${id}`, {
+            const response = await this.apiCall<{ success: boolean, data: Contenedor }>(`${this.baseUrl}/${id}`, {
                 method: 'GET'
             })
             return response.data
@@ -70,9 +78,10 @@ export class ConsolidadoService {
             throw error
         }
     }
+
     static async getConsolidadoPasos(id: number): Promise<ContenedorPasosResponse> {
         try {
-            const response = await apiCall<ContenedorPasosResponse>(`${this.baseUrl}/pasos/${id}`, {
+            const response = await this.apiCall<ContenedorPasosResponse>(`${this.baseUrl}/pasos/${id}`, {
                 method: 'GET'
             })
             return response
@@ -81,6 +90,65 @@ export class ConsolidadoService {
             throw error
         }
     }
+
+    static async getValidContainers(): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/valid-containers`, {
+                method: 'GET'
+            })
+            return response
+        } catch (error) {
+            console.error('Error en ConsolidadoService.getValidContainers:', error)
+            throw error
+        }
+    }
+    static async getContenedoresDisponibles(): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/cargas-disponibles`, {
+                method: 'GET'
+            })
+            return response
+        } catch (error) {
+            console.error('Error en ConsolidadoService.getContenedoresDisponibles:', error)
+            throw error
+        }
+    }
+    static async moveCotizacion(payload: any): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/move-cotizacion`, {
+                method: 'POST',
+                body: payload
+            })
+            return response
+        } catch (error) {
+            console.error('Error en ConsolidadoService.moveCotizacion:', error)
+            throw error
+        }
+    }
+    static async createConsolidado(payload: any): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}`, {
+                method: 'POST',
+                body: payload
+            })
+            return response
+        } catch (error) {
+            console.error('Error en ConsolidadoService.createConsolidado:', error)
+            throw error
+        }
+    }
+
+    static async deleteConsolidado(id: number): Promise<{ success: boolean }> {
+        try {
+            const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/${id}`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error) {
+            console.error('Error en ConsolidadoService.deleteConsolidado:', error)
+            throw error
+        }
+    }
 }
 
-export const consolidadoService = new ConsolidadoService()
+export default ConsolidadoService 

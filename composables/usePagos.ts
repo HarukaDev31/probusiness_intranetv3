@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
-import { PagosService } from '~/services/pagosService'
-import type { CursoItem, CursosFilters, PaginationInfo, CursosDetalleResponse } from '~/types/cursos-pagos'
+import { PagosService } from '../services/pagosService'
+import type { CursoItem, CursosFilters, PaginationInfo, CursosDetalleResponse } from '../types/cursos-pagos'
 
 export const usePagos = () => {
   // State

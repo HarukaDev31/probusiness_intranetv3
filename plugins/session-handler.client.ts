@@ -1,4 +1,4 @@
-import { useSession } from '~/composables/auth/useSession'
+import { useSession } from '../composables/auth/useSession'
 export default defineNuxtPlugin(() => {
   const { clearSession } = useSession()
 

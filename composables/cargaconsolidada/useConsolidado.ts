@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
-import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
-import type { PaginationInfo } from '~/types/data-table'
-import type { Contenedor, ContenedorFilters, ContenedorPasos } from '~/types/cargaconsolidada/contenedor'
+import { ConsolidadoService } from '../../services/cargaconsolidada/consolidadoService'
+import type { PaginationInfo } from '../../types/data-table'
+import type { Contenedor, ContenedorFilters, ContenedorPasos } from '../../types/cargaconsolidada/contenedor'
 
 export const useConsolidado = () => {
     const consolidadoData = ref<Contenedor[]>([])
@@ -27,7 +27,7 @@ export const useConsolidado = () => {
         completado: false
     })
     const pasos=ref<ContenedorPasos[]>([])
-
+    const validContainers=ref<any[]>([])
     const getConsolidadoData = async () => {
         try {
             loading.value = true
@@ -53,7 +53,6 @@ export const useConsolidado = () => {
             if (filters.value.estado_china) {
                 params.estado_china = filters.value.estado_china
             }
-            console.log(filters.value.completado)
             if (filters.value.completado) {
                 params.completado = filters.value.completado
             }
@@ -126,13 +125,46 @@ export const useConsolidado = () => {
     }
     const getConsolidadoPasos = async (id: number) => {
         try {
+            loading.value = true
             const response = await ConsolidadoService.getConsolidadoPasos(id)
             pasos.value = response.data
+            loading.value = false
         } catch (error) {
             console.error('Error en getConsolidadoPasos:', error)
         }
     }
-
+    const getValidContainers = async () => {
+        try {
+            const response = await ConsolidadoService.getValidContainers()
+            validContainers.value = response.data
+        } catch (error) {
+            console.error('Error en getValidContainers:', error)
+        }
+    }
+    const createConsolidado = async (payload: any) => {
+        try {
+            const response = await ConsolidadoService.createConsolidado(payload)
+            console.log(response)
+        } catch (error) {
+            console.error('Error en createConsolidado:', error)
+        }
+    }
+    const getConsolidadoById = async (id: number) => {
+        try {
+            const response = await ConsolidadoService.getConsolidadoById(id)
+            return response
+        } catch (error) {
+            console.error('Error en getConsolidadoById:', error)
+        }
+    }
+    const deleteConsolidado = async (id: number) => {
+        try {
+            const response = await ConsolidadoService.deleteConsolidado(id)
+            return response
+        } catch (error) {
+            console.error('Error en deleteConsolidado:', error)
+        }
+    }
     return {
         consolidadoData,
         loading,
@@ -153,6 +185,11 @@ export const useConsolidado = () => {
         resetSearch,
         setCompletado,
         getConsolidadoPasos,
-        pasos
+        pasos,
+        getValidContainers,
+        validContainers,
+        createConsolidado,
+        getConsolidadoById,
+        deleteConsolidado
     }
 }

@@ -408,9 +408,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useClienteDocumentacion } from '~/composables/useClienteDocumentacion'
-import { useModal } from '~/composables/commons/useModal'
-import { useSpinner } from '~/composables/commons/useSpinner'
+import { useClienteDocumentacion } from '../composables/useClienteDocumentacion'
+import { useModal } from '../composables/commons/useModal'
+import { useSpinner } from '../composables/commons/useSpinner'
 // Props
 interface Props {
   clienteId: string
@@ -536,95 +536,96 @@ const handleFileSelect = async (type: string, event: Event) => {
       showError(`Error al subir archivo ${err}`)
     }
   }
+}
 
-  const removeFile = (type: string) => {
-    if (!props.edit) return
 
-    archivosSeleccionados.value[type as keyof typeof archivosSeleccionados.value] = null
-    // Resetear el input
-    switch (type) {
-      case 'factura':
-        if (facturaInput.value) facturaInput.value.value = ''
-        break
-      case 'packing':
-        if (packingInput.value) packingInput.value.value = ''
-        break
-      case 'confirmacion':
-        if (confirmacionInput.value) confirmacionInput.value.value = ''
-        break
-    }
+const removeFile = (type: string) => {
+  if (!props.edit) return
+
+  archivosSeleccionados.value[type as keyof typeof archivosSeleccionados.value] = null
+  // Resetear el input
+  switch (type) {
+    case 'factura':
+      if (facturaInput.value) facturaInput.value.value = ''
+      break
+    case 'packing':
+      if (packingInput.value) packingInput.value.value = ''
+      break
+    case 'confirmacion':
+      if (confirmacionInput.value) confirmacionInput.value.value = ''
+      break
   }
+}
 
-  const eliminarArchivo = async (fileId: number) => {
-    if (!props.edit) return
+const eliminarArchivo = async (fileId: number) => {
+  if (!props.edit) return
 
-    try {
-      await eliminarDocumento(props.clienteId, fileId)
-    } catch (err) {
-      showError(`Error al eliminar archivo ${err}`)
-    }
+  try {
+    await eliminarDocumento(props.clienteId, fileId)
+  } catch (err) {
+    showError(`Error al eliminar archivo ${err}`)
   }
+}
 
-  const borrarDocumentoProveedor = async (campo: string) => {
-    if (!proveedorActivo.value || !props.edit) return
+const borrarDocumentoProveedor = async (campo: string) => {
+  if (!proveedorActivo.value || !props.edit) return
 
-    try {
-      // Aquí deberías llamar al servicio para borrar el documento del proveedor
-      console.log('Borrando documento del proveedor:', campo)
+  try {
+    // Aquí deberías llamar al servicio para borrar el documento del proveedor
+    console.log('Borrando documento del proveedor:', campo)
 
-      // Por ahora solo recargamos los datos
-      await cargarDatos()
-    } catch (err) {
-      showError(`Error al borrar documento del proveedor ${err}`)
-    }
-  }
-
-  const descargarArchivo = (url: string) => {
-    if (url) {
-      window.open(url, '_blank')
-    }
-  }
-
-  const descargarCotizacion = (tipo: string) => {
-    let url = ''
-    if (tipo === 'inicial' && documentacion.value?.cotizacion_file_url) {
-      url = documentacion.value.cotizacion_file_url
-    } else if (tipo === 'final' && documentacion.value?.cotizacion_final_url) {
-      url = documentacion.value.cotizacion_final_url
-    }
-
-    if (url) {
-      window.open(url, '_blank')
-    }
-  }
-
-  const getFileIcon = (fileName: string): string => {
-    const extension = fileName.split('.').pop()?.toLowerCase()
-    switch (extension) {
-      case 'pdf':
-        return 'i-heroicons-document-text'
-      case 'xlsx':
-      case 'xls':
-      case 'xlsm':
-      case 'csv':
-      case 'xlsb':
-      case 'xltx':
-      case 'xlt':
-        return 'i-heroicons-table-cells'
-      case 'png':
-      case 'jpg':
-      case 'jpeg':
-        return 'i-heroicons-photo'
-      default:
-        return 'i-heroicons-document'
-    }
-  }
-  onMounted(async () => {
+    // Por ahora solo recargamos los datos
     await cargarDatos()
-  })
+  } catch (err) {
+    showError(`Error al borrar documento del proveedor ${err}`)
+  }
+}
+
+const descargarArchivo = (url: string) => {
+  if (url) {
+    window.open(url, '_blank')
+  }
+}
+
+const descargarCotizacion = (tipo: string) => {
+  let url = ''
+  if (tipo === 'inicial' && documentacion.value?.cotizacion_file_url) {
+    url = documentacion.value.cotizacion_file_url
+  } else if (tipo === 'final' && documentacion.value?.cotizacion_final_url) {
+    url = documentacion.value.cotizacion_final_url
+  }
+
+  if (url) {
+    window.open(url, '_blank')
+  }
+}
+
+const getFileIcon = (fileName: string): string => {
+  const extension = fileName.split('.').pop()?.toLowerCase()
+  switch (extension) {
+    case 'pdf':
+      return 'i-heroicons-document-text'
+    case 'xlsx':
+    case 'xls':
+    case 'xlsm':
+    case 'csv':
+    case 'xlsb':
+    case 'xltx':
+    case 'xlt':
+      return 'i-heroicons-table-cells'
+    case 'png':
+    case 'jpg':
+    case 'jpeg':
+      return 'i-heroicons-photo'
+    default:
+      return 'i-heroicons-document'
+  }
+}
+onMounted(async () => {
+  await cargarDatos()
+})
 
 </script>
-
 <style scoped>
 /* Estilos específicos del componente */
 .content {

@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useCotizacionProveedor } from '~/composables/cargaconsolidada/userCotizacionProveedor'
+import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 // Props
 const route = useRoute()
 const id = Number(route.params.id)

@@ -1,4 +1,4 @@
-import { useUserRole } from '~/composables/auth/useUserRole'
+import { useUserRole } from '../composables/auth/useUserRole'
 export default defineNuxtPlugin(() => {
   // Solo ejecutar en el cliente
   if (process.server) return

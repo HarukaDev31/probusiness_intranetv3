@@ -1,4 +1,4 @@
-import { apiCall } from '~/utils/api'
+
 
 // Interfaces
 export interface Documento {
@@ -17,6 +17,7 @@ export interface Documento {
   created_at: string
   updated_at: string
 }
+import { BaseService } from "~/services/base/BaseService"
 
 // Interface para la respuesta jerárquica de documentos especiales
 export interface DocumentoHierarchicalResponse {
@@ -82,22 +83,18 @@ export interface DocumentoListResponse {
 }
 
 // Service class
-class DocumentoService {
+export class DocumentoService extends BaseService {
   private static instance: DocumentoService
 
-  private constructor() {}
-
-  public static getInstance(): DocumentoService {
-    if (!DocumentoService.instance) {
-      DocumentoService.instance = new DocumentoService()
-    }
-    return DocumentoService.instance
+  private constructor() {
+    super()
   }
+
 
   /**
    * Crear un nuevo documento especial
    */
-  async createDocumento(documentoData: CreateDocumentoRequest): Promise<DocumentoResponse> {
+  static async createDocumento(documentoData: CreateDocumentoRequest): Promise<DocumentoResponse> {
     try {
       // Crear FormData para manejar archivos
       const formData = new FormData()
@@ -116,7 +113,7 @@ class DocumentoService {
         })
       }
 
-      const response = await apiCall<DocumentoResponse>('/api/base-datos/regulaciones/documentos', {
+      const response = await this.apiCall<DocumentoResponse>('/api/base-datos/regulaciones/documentos', {
         method: 'POST',
         body: formData
       })
@@ -134,7 +131,7 @@ class DocumentoService {
   /**
    * Obtener lista de documentos especiales
    */
-  async getDocumentos(params: {
+  static async getDocumentos(params: {
     page?: number
     limit?: number
     search?: string
@@ -148,7 +145,7 @@ class DocumentoService {
       if (params.search) queryParams.append('search', params.search)
       if (params.id_rubro) queryParams.append('id_rubro', params.id_rubro.toString())
 
-      const response = await apiCall<DocumentoListResponse>(
+      const response = await this.apiCall<DocumentoListResponse>(
         `/api/base-datos/regulaciones/documentos${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
       )
       return response
@@ -165,9 +162,9 @@ class DocumentoService {
   /**
    * Obtener un documento especial por ID
    */
-  async getDocumentoById(id: number): Promise<DocumentoResponse> {
+  static async getDocumentoById(id: number): Promise<DocumentoResponse> {
     try {
-      const response = await apiCall<DocumentoResponse>(`/api/base-datos/regulaciones/documentos/${id}`)
+      const response = await this.apiCall<DocumentoResponse>(`/api/base-datos/regulaciones/documentos/${id}`)
       return response
     } catch (error) {
       console.error('Error fetching documento:', error)
@@ -182,7 +179,7 @@ class DocumentoService {
   /**
    * Actualizar un documento especial
    */
-  async updateDocumento(id: number, documentoData: Partial<CreateDocumentoRequest> | FormData): Promise<DocumentoResponse> {
+  static async updateDocumento(id: number, documentoData: Partial<CreateDocumentoRequest> | FormData): Promise<DocumentoResponse> {
     try {
       let body: any
       
@@ -206,7 +203,7 @@ class DocumentoService {
         body = formData
       }
 
-      const response = await apiCall<DocumentoResponse>(`/api/base-datos/regulaciones/documentos`, {
+      const response = await this.apiCall<DocumentoResponse>(`/api/base-datos/regulaciones/documentos`, {
         method: 'POST',
         body: body
       })
@@ -224,9 +221,9 @@ class DocumentoService {
   /**
    * Eliminar un documento especial
    */
-  async deleteDocumento(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deleteDocumento(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(
+      const response = await this.apiCall<{ success: boolean; error?: string }>(
         `/api/base-datos/regulaciones/documentos/${id}`,
         {
           method: 'DELETE'
@@ -245,9 +242,9 @@ class DocumentoService {
   /**
    * Cambiar estado del documento especial
    */
-  async toggleDocumentoStatus(id: number, status: 'active' | 'inactive'): Promise<DocumentoResponse> {
+  static async toggleDocumentoStatus(id: number, status: 'active' | 'inactive'): Promise<DocumentoResponse> {
     try {
-      const response = await apiCall<DocumentoResponse>(`/api/base-datos/regulaciones/documentos/${id}/status`, {
+      const response = await this.apiCall<DocumentoResponse>(`/api/base-datos/regulaciones/documentos/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status })
       })
@@ -265,9 +262,9 @@ class DocumentoService {
   /**
    * Obtener documentos especiales activos
    */
-  async getActiveDocumentos(): Promise<DocumentoListResponse> {
+  static async getActiveDocumentos(): Promise<DocumentoListResponse> {
     try {
-      const response = await apiCall<DocumentoListResponse>('/api/base-datos/regulaciones/documentos/active')
+      const response = await this.apiCall<DocumentoListResponse>('/api/base-datos/regulaciones/documentos/active')
       return response
     } catch (error) {
       console.error('Error fetching active documentos:', error)
@@ -282,9 +279,9 @@ class DocumentoService {
   /**
    * Obtener documentos especiales en estructura jerárquica
    */
-  async getDocumentosHierarchical(): Promise<DocumentoHierarchicalResponse> {
+  static async getDocumentosHierarchical(): Promise<DocumentoHierarchicalResponse> {
     try {
-      const response = await apiCall<DocumentoHierarchicalResponse>('/api/base-datos/regulaciones/documentos')
+      const response = await this.apiCall<DocumentoHierarchicalResponse>('/api/base-datos/regulaciones/documentos')
       return response
     } catch (error) {
       console.error('Error fetching documentos hierarchical:', error)
@@ -305,9 +302,9 @@ class DocumentoService {
   /**
    * Exportar documentos especiales
    */
-  async exportDocumentos(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
+  static async exportDocumentos(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/documentos/export?format=${format}`, {
+      const response = await this.apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/documentos/export?format=${format}`, {
         method: 'GET'
       })
       

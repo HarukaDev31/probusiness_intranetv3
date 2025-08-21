@@ -1,4 +1,4 @@
-import type { ConsolidadoItem, PagoDetalle } from '~/types/pagos/consolidado-pagos'
+import type { ConsolidadoItem, PagoDetalle } from '../types/pagos/consolidado-pagos'
 
 /**
  * Formatea un monto como moneda

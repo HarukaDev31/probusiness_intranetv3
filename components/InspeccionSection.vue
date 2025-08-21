@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import type { FileItem } from '~/types/commons/file'
+import type { FileItem } from '../types/commons/file'
 import FileUploader from './commons/FileUploader.vue'
 interface Props {
   files: FileItem[]

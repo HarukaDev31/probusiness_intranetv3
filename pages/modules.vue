@@ -174,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Module } from '~/types/module'
+import type { Module } from '../types/module'
 
 // Composable para módulos
 const { 

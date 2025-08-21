@@ -1,22 +1,16 @@
-import type { Product, ProductFilters, ProductResponse, ProductsResponse, FilterOptionsResponse, FilterOptions, Pagination, ProductsServiceResponse } from '~/types/product'
-import { apiCall } from '~/utils/api'
+import type { Product, ProductFilters, ProductResponse, ProductsResponse, FilterOptionsResponse, FilterOptions, Pagination, ProductsServiceResponse } from '../types/product'
+import { BaseService } from "~/services/base/BaseService"
 
-class ProductService {
+
+export class ProductService extends BaseService {
   private static instance: ProductService
-  private baseUrl: string
-  private constructor() {
-    this.baseUrl = '/api/base-datos/productos'
-  }
+  private static baseUrl = '/api/base-datos/productos';
 
-  public static getInstance(): ProductService {
-    if (!ProductService.instance) {
-      ProductService.instance = new ProductService()
-    }
-    return ProductService.instance
-  }
+
+ 
 
   // Obtener todos los productos con paginación y filtros
-  async getProducts(params: {
+  static async getProducts(params: {
     page?: number
     limit?: number
     search?: string
@@ -41,7 +35,7 @@ class ProductService {
       }
 
       console.log('Calling API with URL:', `${this.baseUrl}?${queryParams.toString()}`)
-      const response = await apiCall<ProductsResponse>(`${this.baseUrl}?${queryParams.toString()}`)
+      const response = await this.apiCall<ProductsResponse>(`${this.baseUrl}?${queryParams.toString()}`)
       
       // Verificar si la respuesta tiene la estructura esperada
       if (Array.isArray(response.data)) {
@@ -74,9 +68,9 @@ class ProductService {
   }
 
   // Obtener un producto por ID
-  async getProductById(id: number): Promise<ProductResponse> {
+  static async getProductById(id: number): Promise<ProductResponse> {
     try {
-      const response = await apiCall<ProductResponse>(`${this.baseUrl}/${id}`)
+      const response = await this.apiCall<ProductResponse>(`${this.baseUrl}/${id}`)
       console.log('Product response:', response)
       return response
     } catch (error) {
@@ -90,9 +84,9 @@ class ProductService {
   }
 
   // Crear un nuevo producto
-  async createProduct(product: Omit<Product, 'id'>): Promise<ProductResponse> {
+  static async createProduct(product: Omit<Product, 'id'>): Promise<ProductResponse> {
     try {
-      const response = await apiCall<ProductResponse>(`${this.baseUrl}`, {
+      const response = await this.apiCall<ProductResponse>(`${this.baseUrl}`, {
         method: 'POST',
         body: product
       })
@@ -108,7 +102,7 @@ class ProductService {
   }
 
   // Actualizar un producto con campos opcionales
-  async updateProduct(id: number, productData: {
+  static async updateProduct(id: number, productData: {
     link?: string
     arancel_sunat?: string
     arancel_tlc?: string
@@ -129,7 +123,7 @@ class ProductService {
         Object.entries(productData).filter(([_, value]) => value !== undefined && value !== null && value !== '')
       )
 
-      const response = await apiCall<ProductResponse>(`${this.baseUrl}/${id}`, {
+      const response = await this.apiCall<ProductResponse>(`${this.baseUrl}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(filteredData)
       })
@@ -145,9 +139,9 @@ class ProductService {
   }
 
   // Eliminar un producto
-  async deleteProduct(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deleteProduct(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      await apiCall(`/api/base-datos/productos/${id}`, {
+      await this.apiCall(`/api/base-datos/productos/${id}`, {
         method: 'DELETE'
       })
       return { success: true }
@@ -161,10 +155,10 @@ class ProductService {
   }
 
   // Obtener opciones para filtros
-  async getFilterOptions(): Promise<FilterOptions> {
+  static async getFilterOptions(): Promise<FilterOptions> {
     try {
       console.log('Calling filter options API...')
-      const response = await apiCall<FilterOptionsResponse>(`${this.baseUrl}/filters/options`)
+      const response = await this.apiCall<FilterOptionsResponse>(`${this.baseUrl}/filters/options`)
       console.log('Filter options API response:', response)
       
       if (response.status === 'success') {
@@ -193,7 +187,7 @@ class ProductService {
   }
 
   // Exportar productos
-  async exportProducts(params: {
+  static async exportProducts(params: {
     format: 'excel' | 'csv' | 'pdf'
     filters?: ProductFilters
     search?: string
@@ -209,7 +203,7 @@ class ProductService {
         })
       }
 
-      const response = await apiCall<Blob>(`${this.baseUrl}/export?${queryParams.toString()}`, {
+      const response = await this.apiCall<Blob>(`${this.baseUrl}/export?${queryParams.toString()}`, {
         responseType: 'blob'
       })
       
@@ -222,12 +216,12 @@ class ProductService {
       }
     }
   }
-  async importExcel(file: File): Promise<{ success: boolean; message: string }> {
+  static async importExcel(file: File): Promise<{ success: boolean; message: string }> {
     try {
       const formData = new FormData()
       formData.append('excel_file', file)
 
-      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/import-excel`, {
+      const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/import-excel`, {
         method: 'POST',
         body: formData
       })
@@ -238,9 +232,9 @@ class ProductService {
       throw new Error(error?.data?.message || 'Error al importar el archivo Excel')
     }
   }
-  async deleteExcel(id: number): Promise<{ success: boolean; message: string }> {
+  static async deleteExcel(id: number): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/delete-excel/${id}`, {
+      const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/delete-excel/${id}`, {
         method: 'DELETE'
       })
       return response
@@ -249,7 +243,7 @@ class ProductService {
       throw new Error(error?.data?.message || 'Error al eliminar el archivo')
     }
   }
-  async getExcelsList(): Promise<{
+  static async getExcelsList(): Promise<{
     success: boolean;
     data: {
       id: number;
@@ -260,7 +254,7 @@ class ProductService {
     }[]
   }> {
     try {
-      const response = await apiCall<{
+      const response = await this.apiCall<{
         success: boolean;
         data: {
           id: number;
@@ -281,4 +275,3 @@ class ProductService {
   }
 }
 
-export default ProductService 

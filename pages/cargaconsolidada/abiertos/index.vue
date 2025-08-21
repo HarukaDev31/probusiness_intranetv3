@@ -17,17 +17,18 @@
         <PageHeader title="Contenedores" subtitle="Gestión de contenedores" icon="i-heroicons-book-open"
             :hide-back-button="true" />
 
-        <DataTable title="" icon="" :data="consolidadoData" :columns="columns" :loading="loading"
+        <DataTable title="" icon="" :data="consolidadoData" :columns="getColumns()" :loading="loading"
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
-                console.log('Pasando filters al DataTable:', filters)
                 return filters
             })()" :show-export="true" empty-state-message="No se encontraron registros de contenedores."
             @update:search-query="handleSearch" @update:primary-search="handleSearch" @page-change="handlePageChange"
             @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
             @filter-change="handleFilterChange">
-
+            <template #actions>
+                <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
+            </template>
         </DataTable>
     </div>
 </template>
@@ -35,20 +36,17 @@
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import type { FilterConfig } from '~/types/data-table'
-import type { ContenedorFilters } from '~/types/cargaconsolidada/contenedor'
-import { ROLES } from '~/types/roles/roles'
+import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
+import { ROLES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { hasRole, isCoordinacion } = useUserRole()
-
-// Constante de roles
-
-
-// Verificar si el usuario tiene rol de consolidado
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
+const { withSpinner } = useSpinner()
+const { hasRole, isCoordinacion,currentRole } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
-
-// Obtener datos del composable
+import CreateConsolidadoModal from '~/components/cargaconsolidada/CreateConsolidadoModal.vue'
+const { showSuccess, showConfirmation } = useModal()
 const {
     consolidadoData,
     loading,
@@ -64,8 +62,13 @@ const {
     handleItemsPerPageChange,
     handleFilterChange,
     clearFilters,
-    resetSearch
+    resetSearch,
+    createConsolidado,
+    deleteConsolidado
 } = useConsolidado()
+const overlay = useOverlay()
+const modal = overlay.create(CreateConsolidadoModal)
+const currentConsolidado = ref<number | null>(null)
 
 // Components
 const UButton = resolveComponent('UButton')
@@ -90,7 +93,6 @@ const filterConfig = computed<FilterConfig[]>(() => {
         }
     ]
 
-    console.log('isAlmacen', isAlmacen.value)
     if (isAlmacen.value) {
         // Para rol ContenedorConsolidado: estados en inglés
         baseConfig.push({
@@ -123,9 +125,27 @@ const filterConfig = computed<FilterConfig[]>(() => {
 
     return baseConfig
 })
-
-
-
+const handleCreateConsolidado = async (data: any) => {
+    try {
+        const payload = {
+            id: data.id,
+            carga: data.carga,
+            mes: data.mes,
+            id_pais: data.pais,
+            empresa: data.empresa,
+            f_cierre: `${data.fechaCierre.year}-${data.fechaCierre.month}-${data.fechaCierre.day}`,
+            f_puerto: `${data.fechaArribo.year}-${data.fechaArribo.month}-${data.fechaArribo.day}`,
+            f_entrega: `${data.fechaEntrega.year}-${data.fechaEntrega.month}-${data.fechaEntrega.day}`
+        }
+        await withSpinner(async () => {
+            await createConsolidado(payload)
+        })
+        showSuccess('Carga consolidada creada correctamente', 'La carga consolidada se ha creado correctamente y ya está disponible en el sistema.')
+        await getConsolidadoData()
+    } catch (error) {
+        showError(error as string)
+    }
+}
 const columns: TableColumn<any>[] = [
     {
         accessorKey: 'carga',
@@ -193,7 +213,16 @@ const columns: TableColumn<any>[] = [
                     icon: 'i-heroicons-pencil',
                     color: 'warning',
                     variant: 'ghost',
-                    onClick: () => handleEditCarga(row.original.id)
+                    onClick: () => {
+                        currentConsolidado.value = row.original.id
+                        //define on emit
+                        modal.open({
+                            id: row.original.id,
+                            onSubmit: (data: any) => {
+                                handleCreateConsolidado(data)
+                            }
+                        })
+                    }
                 }),
                 h(UButton, {
                     size: 'xs',
@@ -214,6 +243,75 @@ const columns: TableColumn<any>[] = [
         }
     }
 ]
+//documentacion columns Carga	Mes	Pais	F. Cierre	Empresa	Estado	Accione
+const documentacionColumns: TableColumn<any>[] = [
+    {
+        accessorKey: 'carga',
+        header: 'Carga',
+        cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}`
+    },
+    {
+        accessorKey: 'mes',
+        header: 'Mes',
+        cell: ({ row }) => row.getValue('mes')
+    },
+    
+    {
+        accessorKey: 'pais',
+        header: 'País',
+        cell: ({ row }) => row.original.pais?.No_Pais || 'N/A'
+    },
+    
+    {
+        accessorKey: 'f_cierre',
+        header: 'F. Cierre',
+        cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre'))
+    },
+    
+    {
+        accessorKey: 'empresa',
+        header: 'Empresa',
+        cell: ({ row }) => row.getValue('empresa')
+    },
+    
+    {
+        accessorKey: 'estado',
+        header: 'Estado',
+        cell: ({ row }) => {
+            const estado = row.original.estado_documentacion as string
+            const color = getColorByEstado(estado)
+            return h(UBadge, {
+                color,
+                variant: 'subtle',
+                label: getEstadoLabel(estado)
+            })
+        }
+    },
+    {
+        accessorKey: 'actions',
+        header: 'Acciones',
+        cell: ({ row }) => {
+            return h('div', { class: 'flex space-x-2' }, [
+                h(UButton, {
+                    size: 'xs',
+                    icon: 'i-heroicons-eye',
+                    color: 'primary',
+                    variant: 'ghost',
+                    onClick: () => handleViewSteps(row.original.id)
+                })
+            ])
+        }
+    }
+    
+]
+const getColumns = ()=>{
+    switch(currentRole.value){
+        case ROLES.DOCUMENTACION:
+            return documentacionColumns
+        default:
+            return columns
+    }
+}
 
 // Función para mapear estados según el rol
 const getEstadoLabel = (estado: string) => {
@@ -261,7 +359,7 @@ const getColorByEstado = (estado: string) => {
 const handleViewSteps = (id: number) => {
     if (hasRole('ContenedorAlmacen')) {
         navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}`)
-    }else{
+    } else {
         navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
     }
 }
@@ -270,13 +368,26 @@ const handleEditCarga = (id: number) => {
     console.log('Editar carga:', id)
 }
 
-const handleDeleteCarga = (id: number) => {
-    console.log('Eliminar carga:', id)
+const handleDeleteCarga = async (id: number) => {
+    try {
+        showConfirmation('¿Estás seguro de querer eliminar esta carga consolidada?', 'Esta acción no se puede deshacer.',async () => {
+            await withSpinner(async () => {
+                const response=await deleteConsolidado(id)
+                if (response.success) {
+                    showSuccess('Carga consolidada eliminada correctamente', 'La carga consolidada se ha eliminado correctamente.')
+                }
+                await getConsolidadoData()
+
+            }, 'Eliminando carga consolidada~.')
+        })
+    } catch (error) {
+        showError(error as string)
+    }
 }
 
 const exportClientes = async () => {
     try {
-        console.log('Exportando contenedores...')
+        console.log('Exportando contenedores~.')
     } catch (error) {
         console.error('Error al exportar:', error)
     }

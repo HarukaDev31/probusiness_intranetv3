@@ -503,18 +503,21 @@ import { ref, onMounted, watch, h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { getGroupedRowModel } from '@tanstack/vue-table'
 import type { GroupingOptions } from '@tanstack/vue-table'
-import AntidumpingService from '~/services/antidumpingService'
-import PermisoService from '~/services/permisoService'
-import EtiquetadoService from '~/services/etiquetadoService'
-import DocumentoService from '~/services/documentoService'
+import {AntidumpingService} from '~/services/antidumpingService'
+import {PermisoService} from '~/services/permisoService'
+import {EtiquetadoService} from '~/services/etiquetadoService'
+import {DocumentoService} from '~/services/documentoService'
 import ImageModal from '~/components/ImageModal.vue'
 import DocumentPreview from '~/components/DocumentPreview.vue'
-
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 // User role composable
-const { hasRole } = useUserRole()
+const { hasRole } = useUserRole()   
+
 
 // Notifications and loading
-const { showCreateSuccess, showUpdateSuccess, showDeleteSuccess, showServerError } = useNotifications()
+
 const { withLoading } = useLoading()
 
 const UBadge = resolveComponent('UBadge')
@@ -762,11 +765,8 @@ if (!['antidumping', 'permisos', 'etiquetado', 'documentos'].includes(activeTab.
 }
 
 // Service instances
-const antidumpingService = AntidumpingService.getInstance()
-const permisoService = PermisoService.getInstance()
-const etiquetadoService = EtiquetadoService.getInstance()
-const documentoService = DocumentoService.getInstance()
-import entityService from '~/services/entityService'
+
+import {EntityService} from '~/services/entityService'
 
 // Loading states
 const loadingAntidumping = ref(false)
@@ -889,7 +889,7 @@ const loadAntidumpingData = async () => {
     try {
         // Llamar al servicio para obtener los datos de antidumping
         const response = await withLoading(
-            () => antidumpingService.getAntidumpingList(),
+            () => AntidumpingService.getAntidumpingList(),
             'loadAntidumping',
             'Cargando datos de antidumping...'
         )
@@ -922,12 +922,12 @@ const loadAntidumpingData = async () => {
         } else {
             console.error('Error al cargar datos de antidumping:', response.error)
             antidumpingData.value = []
-            showServerError('cargar datos de antidumping', response.error)
+            showError('cargar datos de antidumping', response.error)
         }
     } catch (error: any) {
         console.error('Error loading antidumping data:', error)
         antidumpingData.value = []
-        showServerError('cargar datos de antidumping', error.message)
+        showError('cargar datos de antidumping', error.message)
     } finally {
         loadingAntidumping.value = false
     }
@@ -937,7 +937,7 @@ const loadPermisosData = async () => {
     loadingPermisos.value = true
     try {
         // Llamar al servicio para obtener los datos de permisos
-        const response = await permisoService.getPermisos()
+        const response = await PermisoService.getPermisos()
 
         if (response.success && response.data) {
             // Hacer cast a la respuesta jerárquica del backend
@@ -982,7 +982,7 @@ const loadEtiquetadoData = async () => {
     loadingEtiquetado.value = true
     try {
         // Llamar al servicio para obtener los datos de etiquetado
-        const response = await etiquetadoService.getEtiquetadosHierarchical()
+        const response = await EtiquetadoService.getEtiquetadosHierarchical()
 
         if (response.success && response.data) {
             // El backend ya devuelve la estructura jerárquica correcta
@@ -1019,7 +1019,7 @@ const loadDocumentosData = async () => {
     loadingDocumentos.value = true
     try {
         // Llamar al servicio para obtener los datos de documentos especiales
-        const response = await documentoService.getDocumentosHierarchical()
+        const response = await DocumentoService.getDocumentosHierarchical()
 
         if (response.success && response.data) {
             // El backend ya devuelve la estructura jerárquica correcta
@@ -1104,7 +1104,7 @@ const deleteRegulation = (regulationId: number) => {
         async () => {
             try {
                 await withSpinner(async () => {
-                    const response = await AntidumpingService.getInstance().deleteAntidumping(regulationId)
+                    const response = await AntidumpingService.deleteAntidumping(regulationId)
                     if (response.success) {
                         await loadAntidumpingData()
                         showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
@@ -1126,7 +1126,6 @@ const viewPermisoDetail = (regulationId: number) => {
 
 // Edit permiso
 const editPermiso = (regulationId: number) => {
-    console.log('Navigating to edit permiso:', regulationId)
     navigateTo(`/basedatos/regulaciones/permisos/editar/${regulationId}`)
 }
 
@@ -1182,7 +1181,7 @@ const deleteRubro = (id: number) => {
         async () => {
             try {
                 await withSpinner(async () => {
-                    const response = await AntidumpingService.getInstance().deleteRubro(id)
+                    const response = await AntidumpingService.deleteRubro(id)
                     if (response.success) {
                         //if activeTab is antidumping, loadAntidumpingData()
                         if (activeTab.value === 'antidumping') {
@@ -1217,7 +1216,7 @@ const deletePermiso = (id: number) => {
         async () => {
             try {
                 await withSpinner(async () => {
-                    const response = await PermisoService.getInstance().deletePermiso(id)
+                    const response = await PermisoService.deletePermiso(id)
                     if (response.success) {
                         await loadPermisosData()
                         showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
@@ -1238,7 +1237,7 @@ const deleteEntidad = (id: number) => {
         async () => {
             try {
                 await withSpinner(async () => {
-                    const response = await entityService.getInstance().deleteEntity(id)
+                    const response = await EntityService.deleteEntity(id)
                     if (response.success) {
                         await loadPermisosData()
                         showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
@@ -1258,7 +1257,7 @@ const deleteDocumento = (id: number) => {
         async () => {
             try {
                 await withSpinner(async () => {
-                    const response = await DocumentoService.getInstance().deleteDocumento(id)
+                    const response = await DocumentoService.deleteDocumento(id)
                     if (response.success) {
                         await loadDocumentosData()
                         showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
@@ -1279,7 +1278,7 @@ const deleteEtiquetado = (id: number) => {
         async () => {
             try {
                 await withSpinner(async () => {
-                    const response = await EtiquetadoService.getInstance().deleteEtiquetado(id)
+                    const response = await EtiquetadoService.deleteEtiquetado(id)
                     if (response.success) {
                         await loadEtiquetadoData()
                         showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')

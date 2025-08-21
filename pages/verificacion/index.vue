@@ -58,12 +58,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, h, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { useConsolidado } from '~/composables/usePagosConsolidado'
-import { usePagos } from '~/composables/usePagos'
-import { ESTADOS_PAGO, CARGAS_DISPONIBLES } from '~/constants/consolidado'
-import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS, CAMPANAS } from '~/constants/cursos'
-import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '~/utils/consolidado'
-import { getEstadoColor as getEstadoColorCursos, formatCurrency as formatCurrencyCursos, formatPhoneNumber as formatPhoneNumberCursos } from '~/utils/cursos'
+import { useConsolidado } from '../composables/usePagosConsolidado'
+import { usePagos } from '../composables/usePagos'
+import { ESTADOS_PAGO, CARGAS_DISPONIBLES } from '../constants/consolidado'
+import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS, CAMPANAS } from '../constants/cursos'
+import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '../utils/consolidado'
+import { getEstadoColor as getEstadoColorCursos, formatCurrency as formatCurrencyCursos, formatPhoneNumber as formatPhoneNumberCursos } from '../utils/cursos'
 import { UButton } from '#components'
 
 // Tabs

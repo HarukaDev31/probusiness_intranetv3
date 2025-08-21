@@ -198,7 +198,7 @@ import { ref, onMounted, h } from 'vue'
 import type { Cliente } from '~/services/clienteService'
 import type { TableColumn } from '@nuxt/ui'
 import { UButton } from '#components'
-
+import { ClienteService } from '~/services/clienteService'
 // Props
 const route = useRoute()
 const clienteId = parseInt(route.params.id as string)
@@ -268,8 +268,7 @@ const loadCliente = async () => {
   error.value = null
 
   try {
-    const { clienteService } = await import('~/services/clienteService')
-    const clienteData = await clienteService.getClienteById(clienteId)
+    const clienteData = await ClienteService.getClienteById(clienteId)
     cliente.value = clienteData
 
     // Actualizar historial de compras basado en los servicios del cliente
@@ -299,10 +298,7 @@ const navigateBack = () => {
   navigateTo('/basedatos/clientes')
 }
 
-const handleRevisarDocumento = (id: number) => {
-  // Implementar lógica para revisar documento
-  console.log('Revisar documento del servicio:', id)
-}
+
 
 // Initialize
 onMounted(() => {

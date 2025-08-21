@@ -1,8 +1,11 @@
-import { apiCall } from '~/utils/api'
-import type { CursosResponse, CursosFilters, CursosDetalleResponse } from '~/types/cursos-pagos'
+import { BaseService } from "~/services/base/BaseService"
+import type { CursosResponse, CursosFilters, CursosDetalleResponse } from '../types/cursos-pagos'
 
-export class PagosService {
+export class PagosService extends BaseService {
   private static baseUrl = 'api/carga-consolidada/pagos/cursos'
+  constructor() {
+    super()
+  }
 
   /**
    * Obtiene la lista de pagos de cursos con filtros y paginación
@@ -10,25 +13,25 @@ export class PagosService {
   static async getCursosPagos(filters?: CursosFilters & { page?: number; limit?: number }): Promise<CursosResponse> {
     try {
       const queryParams = new URLSearchParams()
-      
+
       // Parámetros de paginación
       if (filters?.page) queryParams.append('page', filters.page.toString())
       if (filters?.limit) queryParams.append('limit', filters.limit.toString())
-      
+
       // Filtros de fecha
       if (filters?.Filtro_Fe_Inicio) queryParams.append('Filtro_Fe_Inicio', filters.Filtro_Fe_Inicio)
       if (filters?.Filtro_Fe_Fin) queryParams.append('Filtro_Fe_Fin', filters.Filtro_Fe_Fin)
-      
+
       // Filtros adicionales
       if (filters?.campana) queryParams.append('campana', filters.campana.toString())
       if (filters?.estado_pago) queryParams.append('estado_pago', filters.estado_pago)
-      
+
       const url = `${this.baseUrl}?${queryParams.toString()}`
-      
-      const response = await apiCall<CursosResponse>(url, {
+
+      const response = await this.apiCall<CursosResponse>(url, {
         method: 'GET'
       })
-      
+
       return response
     } catch (error) {
       console.error('Error al obtener pagos de cursos:', error)
@@ -41,7 +44,7 @@ export class PagosService {
    */
   static async getCursoDetalle(id: number): Promise<CursosDetalleResponse> {
     try {
-      const response = await apiCall<CursosDetalleResponse>(
+      const response = await this.apiCall<CursosDetalleResponse>(
         `${this.baseUrl}/${id}`,
         {
           method: 'GET'
@@ -59,7 +62,7 @@ export class PagosService {
    */
   static async updateEstadoPago(id: number, estado: string): Promise<any> {
     try {
-      const response = await apiCall(`${this.baseUrl}/${id}/estado`, {
+      const response = await this.apiCall<any>(`${this.baseUrl}/${id}/estado`, {
         method: 'PUT',
         body: JSON.stringify({ estado_pago: estado })
       })
@@ -76,17 +79,17 @@ export class PagosService {
   static async exportCursos(filters?: CursosFilters): Promise<Blob> {
     try {
       const queryParams = new URLSearchParams()
-      
+
       // Filtros de fecha
       if (filters?.Filtro_Fe_Inicio) queryParams.append('Filtro_Fe_Inicio', filters.Filtro_Fe_Inicio)
       if (filters?.Filtro_Fe_Fin) queryParams.append('Filtro_Fe_Fin', filters.Filtro_Fe_Fin)
-      
+
       // Filtros adicionales
       if (filters?.campana) queryParams.append('campana', filters.campana.toString())
       if (filters?.estado_pago) queryParams.append('estado_pago', filters.estado_pago)
-      
+
       const url = `${this.baseUrl}/export?${queryParams.toString()}`
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -94,16 +97,16 @@ export class PagosService {
           'Content-Type': 'application/json'
         }
       })
-      
+
       if (!response.ok) {
         throw new Error('Error al exportar datos')
       }
-      
+
       return await response.blob()
     } catch (error) {
       console.error('Error al exportar cursos:', error)
       throw new Error('No se pudo exportar los datos de cursos')
     }
   }
-  
+
 } 

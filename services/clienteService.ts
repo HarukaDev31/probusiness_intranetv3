@@ -1,5 +1,5 @@
-import { apiCall } from '~/utils/api'
-import type { Header } from '~/types/data-table'
+
+import type { Header } from '../types/data-table'
 // Interfaces para la API
 export interface Cliente {
   id: number
@@ -55,20 +55,16 @@ export interface ClientesQueryParams {
   fecha_fin?: string
   servicio?: string
 }
+import { BaseService } from "~/services/base/BaseService"
 
-export class ClienteService {
-  private baseUrl: string
-
-  constructor() {
-    // Usar la URL base desde las variables de entorno
-    const config = useRuntimeConfig()
-    this.baseUrl = `${config.public.apiBaseUrl}/api/base-datos/clientes`
-  }
+export class ClienteService extends BaseService {
+  private static baseUrl='/api/clientes'
+  
 
   /**
    * Obtiene la lista de clientes con paginación y filtros
    */
-  async getClientes(params: ClientesQueryParams = {}): Promise<ClientesResponse> {
+  static async getClientes(params: ClientesQueryParams = {}): Promise<ClientesResponse> {
     try {
       const queryParams = new URLSearchParams()
 
@@ -89,7 +85,7 @@ export class ClienteService {
         url += `&fecha_fin=${params.fecha_fin}`
       }
 
-      const response = await apiCall<ClientesResponse>(url, {
+      const response = await this.apiCall<ClientesResponse>(url, {
         method: 'GET'
       })
 
@@ -103,9 +99,9 @@ export class ClienteService {
   /**
    * Obtiene un cliente específico por ID
    */
-  async getClienteById(id: number): Promise<Cliente> {
+  static async getClienteById(id: number): Promise<Cliente> {
     try {
-      const response = await apiCall<{ success: boolean; data: Cliente; message: string }>(`${this.baseUrl}/${id}`, {
+      const response = await this.apiCall<{ success: boolean; data: Cliente; message: string }>(`${this.baseUrl}/${id}`, {
         method: 'GET'
       })
 
@@ -119,9 +115,9 @@ export class ClienteService {
   /**
    * Crea un nuevo cliente
    */
-  async createCliente(clienteData: Partial<Cliente>): Promise<Cliente> {
+  static async createCliente(clienteData: Partial<Cliente>): Promise<Cliente> {
     try {
-      const response = await apiCall<{ success: boolean; data: Cliente }>(this.baseUrl, {
+      const response = await this.apiCall<{ success: boolean; data: Cliente }>(this.baseUrl, {
         method: 'POST',
         body: JSON.stringify(clienteData)
       })
@@ -136,9 +132,9 @@ export class ClienteService {
   /**
    * Actualiza un cliente existente
    */
-  async updateCliente(id: number, clienteData: Partial<Cliente>): Promise<Cliente> {
+  static async updateCliente(id: number, clienteData: Partial<Cliente>): Promise<Cliente> {
     try {
-      const response = await apiCall<{ success: boolean; data: Cliente }>(`${this.baseUrl}/${id}`, {
+      const response = await this.apiCall<{ success: boolean; data: Cliente }>(`${this.baseUrl}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(clienteData)
       })
@@ -153,9 +149,9 @@ export class ClienteService {
   /**
    * Elimina un cliente
    */
-  async deleteCliente(id: number): Promise<void> {
+  static async deleteCliente(id: number): Promise<void> {
     try {
-      await apiCall(`${this.baseUrl}/${id}`, {
+      await this.apiCall(`${this.baseUrl}/${id}`, {
         method: 'DELETE'
       })
     } catch (error: any) {
@@ -167,12 +163,12 @@ export class ClienteService {
   /**
    * Sube un archivo de clientes
    */
-  async uploadClientesFile(file: File): Promise<{ success: boolean; message: string }> {
+  static async uploadClientesFile(file: File): Promise<{ success: boolean; message: string }> {
     try {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/upload`, {
+      const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/upload`, {
         method: 'POST',
         body: formData
       })
@@ -187,12 +183,12 @@ export class ClienteService {
   /**
    * Importa clientes desde un archivo Excel
    */
-  async importExcel(file: File): Promise<{ success: boolean; message: string }> {
+  static async importExcel(file: File): Promise<{ success: boolean; message: string }> {
     try {
       const formData = new FormData()
       formData.append('excel_file', file)
 
-      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/import-excel`, {
+      const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/import-excel`, {
         method: 'POST',
         body: formData
       })
@@ -207,7 +203,7 @@ export class ClienteService {
   /**
    * Exporta clientes a Excel
    */
-  async exportClientes(params: ClientesQueryParams = {}): Promise<Blob> {
+  static async exportClientes(params: ClientesQueryParams = {}): Promise<Blob> {
     try {
       const queryParams = new URLSearchParams()
 
@@ -226,7 +222,7 @@ export class ClienteService {
         url += `&fecha_fin=${params.fecha_fin}`
       }
 
-      const response = await apiCall<Blob>(url, {
+      const response = await this.apiCall<Blob>(url, {
         method: 'GET',
         responseType: 'blob',
         headers: {
@@ -244,12 +240,12 @@ export class ClienteService {
   /**
    * Obtiene las opciones de filtros disponibles
    */
-  async getFilterOptions(): Promise<{
+  static async getFilterOptions(): Promise<{
     categorias: string[]
     fechas: string[]
   }> {
     try {
-      const response = await apiCall<{
+      const response = await this.apiCall<{
         success: boolean
         data: {
           categorias: string[]
@@ -269,7 +265,7 @@ export class ClienteService {
       }
     }
   }
-  async getExcelsList(): Promise<{ 
+  static async getExcelsList(): Promise<{ 
     success: boolean; 
     data: { 
       id: number; 
@@ -281,7 +277,7 @@ export class ClienteService {
     }[] 
   }> {
     try {
-      const response = await apiCall<{ 
+      const response = await this.apiCall<{ 
         success: boolean; 
         data: { 
           id: number; 
@@ -301,9 +297,9 @@ export class ClienteService {
       throw new Error(error?.data?.message || 'Error al obtener la lista de archivos')
     }
   }
-  async deleteExcel(id: number): Promise<{ success: boolean; message: string }> {
+  static async deleteExcel(id: number): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/delete-excel/${id}`, {
+      const response = await this.apiCall<{ success: boolean; message: string }>(`${this.baseUrl}/delete-excel/${id}`, {
         method: 'DELETE'
       })
       return response
@@ -314,5 +310,3 @@ export class ClienteService {
   }
 }
 
-// Instancia singleton del servicio
-export const clienteService = new ClienteService() 

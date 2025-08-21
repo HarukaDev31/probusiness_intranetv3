@@ -1,5 +1,11 @@
 <template>
-  <div>
+  <div class="fixed inset-0 flex items-center justify-center p-4"
+  :class="[
+    modals.length > 0 ? 'z-[9000]' : 'z-[-1]',
+    'pointer-events-auto'
+  ]"
+  >
+    
     <DynamicModal
       v-for="modal in modals"
       :key="modal.id"
@@ -13,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { useModal } from '~/composables/commons/useModal'
+import { useModal } from '../composables/commons/useModal'
 const { modals, removeModal } = useModal()
 
 const handleConfirm = (modal: any) => {

@@ -170,8 +170,8 @@ const result = await withLoading(
 </template>
 
 <script setup lang="ts">
-import { useNotifications } from '~/composables/useNotifications'
-import { useLoading } from '~/composables/useLoading'
+import { useNotifications } from '../composables/useNotifications'
+import { useLoading } from '../composables/useLoading'
 
 const { showUpdateSuccess, showServerError, showValidationError } = useNotifications()
 const { withLoading, isLoading } = useLoading()

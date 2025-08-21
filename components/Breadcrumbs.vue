@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAuth } from '~/composables/auth/useAuth'
+import { useAuth } from '../composables/auth/useAuth'
 
 interface Breadcrumb {
   label: string

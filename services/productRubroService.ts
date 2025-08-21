@@ -1,20 +1,17 @@
-import type { CreateProductRubroRequest, ProductRubro, ProductRubroListResponse, ProductRubroResponse } from "~/types/product-rubro";
-import { apiCall } from "~/utils/api";
-class ProductRubroService {
+import type { CreateProductRubroRequest, ProductRubro, ProductRubroListResponse, ProductRubroResponse } from "../types/product-rubro";
+import { BaseService } from "~/services/base/BaseService"
+
+export class ProductRubroService extends BaseService {
     private static instance: ProductRubroService
 
-    private constructor() { }
-
-    public static getInstance(): ProductRubroService {
-        if (!ProductRubroService.instance) {
-            ProductRubroService.instance = new ProductRubroService()
-        }
-        return ProductRubroService.instance
+    private constructor() { 
+        super()
     }
 
-    async createProductRubro(productRubroData: CreateProductRubroRequest): Promise<ProductRubroResponse> {
+ 
+    static async createProductRubro(productRubroData: CreateProductRubroRequest): Promise<ProductRubroResponse> {
         try {
-            const response = await apiCall<ProductRubroResponse>('/api/base-datos/regulaciones/rubros', {
+            const response = await this.apiCall<ProductRubroResponse>('/api/base-datos/regulaciones/rubros', {
                 method: 'POST',
                 body: JSON.stringify(productRubroData)
             })
@@ -32,7 +29,7 @@ class ProductRubroService {
     /**
      * Obtener lista de rubros
      */
-    async getProductRubros(search?: string,tipo?: string): Promise<ProductRubroListResponse> {
+    static async getProductRubros(search?: string,tipo?: string): Promise<ProductRubroListResponse> {
         try {
             const queryParams = new URLSearchParams()
             if (search && search !== '') {
@@ -41,7 +38,7 @@ class ProductRubroService {
             if (tipo && tipo !== '') {
                 queryParams.append('tipo', tipo)
             }
-            const response = await apiCall<ProductRubroListResponse>(
+            const response = await this.apiCall<ProductRubroListResponse>(
                 `/api/base-datos/regulaciones/rubros${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
             )
             return response
@@ -58,9 +55,9 @@ class ProductRubroService {
     /**
      * Obtener un rubro por ID
      */
-    async getProductRubroById(id: number): Promise<ProductRubroResponse> {
+    static async getProductRubroById(id: number): Promise<ProductRubroResponse> {
         try {
-            const response = await apiCall<ProductRubroResponse>(`/api/base-datos/regulaciones/rubros/${id}`)
+            const response = await this.apiCall<ProductRubroResponse>(`/api/base-datos/regulaciones/rubros/${id}`)
             return response
         } catch (error) {
             console.error('Error fetching rubro:', error)

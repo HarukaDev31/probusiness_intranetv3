@@ -1,4 +1,4 @@
-import { apiCall } from '~/utils/api'
+
 
 // Interfaces
 export interface Entity {
@@ -26,26 +26,24 @@ export interface EntityListResponse {
   data: Entity[]
   error?: string
 }
+import { BaseService } from "~/services/base/BaseService"
 
 // Service class
-class EntityService {
+export class EntityService extends BaseService {
   private static instance: EntityService
 
-  private constructor() { }
-
-  public static getInstance(): EntityService {
-    if (!EntityService.instance) {
-      EntityService.instance = new EntityService()
-    }
-    return EntityService.instance
+  private constructor() { 
+    super()
   }
+
+ 
 
   /**
    * Crear una nueva entidad
    */
-  async createEntity(entityData: CreateEntityRequest): Promise<EntityResponse> {
+  static async createEntity(entityData: CreateEntityRequest): Promise<EntityResponse> {
     try {
-      const response = await apiCall<EntityResponse>('/api/base-datos/regulaciones/entidades', {
+      const response = await this.apiCall<EntityResponse>('/api/base-datos/regulaciones/entidades', {
         method: 'POST',
         body: JSON.stringify(entityData)
       })
@@ -63,14 +61,14 @@ class EntityService {
   /**
    * Obtener lista de entidades
    */
-  async getEntities(search?: string): Promise<EntityListResponse> {
+  static async getEntities(search?: string): Promise<EntityListResponse> {
     try {
       const queryParams = new URLSearchParams()
       if (search && search !== '') {
         queryParams.append('search', search)
       }
 
-      const response = await apiCall<EntityListResponse>(
+      const response = await this.apiCall<EntityListResponse>(
         `/api/base-datos/regulaciones/entidades${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
       )
       return response
@@ -87,9 +85,9 @@ class EntityService {
   /**
    * Obtener una entidad por ID
    */
-  async getEntityById(id: number): Promise<EntityResponse> {
+  static async getEntityById(id: number): Promise<EntityResponse> {
     try {
-      const response = await apiCall<EntityResponse>(`/api/base-datos/regulaciones/entidades/${id}`)
+      const response = await this.apiCall<EntityResponse>(`/api/base-datos/regulaciones/entidades/${id}`)
       return response
     } catch (error) {
       console.error('Error fetching entity:', error)
@@ -104,9 +102,9 @@ class EntityService {
   /**
    * Actualizar una entidad
    */
-  async updateEntity(id: number, entityData: Partial<CreateEntityRequest>): Promise<EntityResponse> {
+  static async updateEntity(id: number, entityData: Partial<CreateEntityRequest>): Promise<EntityResponse> {
     try {
-      const response = await apiCall<EntityResponse>(`/api/base-datos/regulaciones/entidades/${id}`, {
+      const response = await this.apiCall<EntityResponse>(`/api/base-datos/regulaciones/entidades/${id}`, {
         method: 'PUT',
         body: JSON.stringify(entityData)
       })
@@ -124,9 +122,9 @@ class EntityService {
   /**
    * Eliminar una entidad
    */
-  async deleteEntity(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deleteEntity(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(
+      const response = await this.apiCall<{ success: boolean; error?: string }>(
         `/api/base-datos/regulaciones/entidades/${id}`,
         {
           method: 'DELETE'
@@ -145,9 +143,9 @@ class EntityService {
   /**
    * Cambiar estado de una entidad (activar/desactivar)
    */
-  async toggleEntityStatus(id: number, status: 'active' | 'inactive'): Promise<EntityResponse> {
+  static async toggleEntityStatus(id: number, status: 'active' | 'inactive'): Promise<EntityResponse> {
     try {
-      const response = await apiCall<EntityResponse>(`/api/base-datos/regulaciones/entidades/${id}/status`, {
+      const response = await this.apiCall<EntityResponse>(`/api/base-datos/regulaciones/entidades/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status })
       })
@@ -165,9 +163,9 @@ class EntityService {
   /**
    * Verificar si un código de entidad ya existe
    */
-  async checkEntityCodeExists(code: string): Promise<{ exists: boolean; error?: string }> {
+  static async checkEntityCodeExists(code: string): Promise<{ exists: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ exists: boolean }>(
+      const response = await this.apiCall<{ exists: boolean }>(
         `/api/base-datos/regulaciones/entidades/check-code?code=${encodeURIComponent(code)}`
       )
       return response
@@ -183,9 +181,9 @@ class EntityService {
   /**
    * Obtener entidades activas para formularios
    */
-  async getActiveEntities(): Promise<EntityListResponse> {
+  static async getActiveEntities(): Promise<EntityListResponse> {
     try {
-      const response = await apiCall<EntityListResponse>('/api/base-datos/regulaciones/entidades/active')
+      const response = await this.apiCall<EntityListResponse>('/api/base-datos/regulaciones/entidades/active')
       return response
     } catch (error) {
       console.error('Error fetching active entities:', error)

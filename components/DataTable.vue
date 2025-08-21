@@ -55,11 +55,11 @@
                 </div>
               </div>
             </div>
+            <slot name="actions" />
           </div>
         </div>
       </slot>
-      
-      <!-- Headers Section -->
+
       <div v-if="showHeaders" class="bg-gray-50 dark:bg-gray-900 ">
         <div class="px-6 py-3">
           <div class="flex flex-wrap gap-3">
@@ -134,10 +134,10 @@
 
 <script setup lang="ts">
 import { h, resolveComponent, computed } from 'vue'
-import type { DataTableProps, DataTableEmits } from '~/types/data-table'
-import { useDataTable } from '~/composables/useDataTable'
-import { DATA_TABLE_DEFAULTS, PAGINATION_OPTIONS } from '~/constants/data-table'
-import { formatDateForInput } from '~/utils/data-table'
+import type { DataTableProps, DataTableEmits } from '../types/data-table'
+import { useDataTable } from '../composables/useDataTable'
+import { DATA_TABLE_DEFAULTS, PAGINATION_OPTIONS } from '../constants/data-table'
+import { formatDateForInput } from '../utils/data-table'
 const UButton = resolveComponent('UButton')
 
 // Props

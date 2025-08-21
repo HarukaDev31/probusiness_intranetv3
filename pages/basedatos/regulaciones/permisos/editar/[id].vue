@@ -152,9 +152,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import EntityService, { type CreateEntityRequest } from '~/services/entityService'
-import PermisoService, { type CreatePermisoRequest } from '~/services/permisoService'
-import { apiCall } from '~/utils/api'
+import {EntityService} from '~/services/entityService'
+import { type CreateEntityRequest } from '~/services/entityService'
+import {PermisoService} from '~/services/permisoService'
+import { type CreatePermisoRequest } from '~/services/permisoService'
+
 
 // Interface temporal para la respuesta real del backend
 interface PermisoResponse {
@@ -191,8 +193,6 @@ const router = useRouter()
 const route = useRoute()
 
 // Service instances
-const entityService = EntityService.getInstance()
-const permisoService = PermisoService.getInstance()
 
 // Loading states
 const loading = ref(true)
@@ -279,7 +279,7 @@ const loadPermiso = async () => {
     const permisoId = parseInt(route.params.id as string)
     console.log('Cargando permiso ID:', permisoId)
     
-    const response = await permisoService.getPermisoById(permisoId)
+    const response = await PermisoService.getPermisoById(permisoId)
     console.log('Respuesta del servicio:', response)
     
     if (response.success && response.data) {
@@ -372,16 +372,11 @@ const saveForm = async () => {
       }
     })
     
-    console.log('FormData contents for update:')
     for (let [key, value] of formDataToSend.entries()) {
       console.log(`${key}:`, value)
     }
     
-    // Usar el mismo endpoint que crear pero con id_regulacion
-    const response = await apiCall<any>('/api/base-datos/regulaciones/permisos', {
-      method: 'POST',
-      body: formDataToSend
-    })
+    const response = await PermisoService.updatePermiso(permisoId, formDataToSend)
     
     if (response.success) {
       console.log('Permiso actualizado exitosamente')
@@ -401,7 +396,7 @@ const saveForm = async () => {
 const loadEntities = async () => {
   try {
     loadingEntities.value = true
-    const response = await entityService.getEntities()
+    const response = await EntityService.getEntities()
 
     if (response.success && response.data) {
       // Convertir las entidades a formato de opciones
@@ -437,7 +432,7 @@ const createEntity = async (entity: { nombre: string; descripcion: string }) => 
     }
 
     // Llamar al servicio para crear la entidad
-    const response = await entityService.createEntity(entityData)
+    const response = await EntityService.createEntity(entityData)
 
     if (response.success && response.data) {
       // Agregar la nueva entidad a las opciones

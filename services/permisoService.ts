@@ -1,4 +1,4 @@
-import { apiCall } from '~/utils/api'
+import { BaseService } from "~/services/base/BaseService"
 
 // Interfaces
 export interface Permiso {
@@ -38,37 +38,34 @@ export interface PermisoListResponse {
 }
 
 // Service class
-class PermisoService {
+export class PermisoService extends BaseService {
   private static instance: PermisoService
 
-  private constructor() {}
-
-  public static getInstance(): PermisoService {
-    if (!PermisoService.instance) {
-      PermisoService.instance = new PermisoService()
-    }
-    return PermisoService.instance
+  private constructor() {
+    super()
   }
+
+
 
   /**
    * Crear un nuevo permiso
    */
-  async createPermiso(permisoData: CreatePermisoRequest): Promise<PermisoResponse> {
+  static async createPermiso(permisoData: CreatePermisoRequest): Promise<PermisoResponse> {
     try {
       // Crear FormData para manejar archivos
       const formData = new FormData()
-      
+
       // Agregar campos de texto
       formData.append('entidad_id', permisoData.entidad_id.toString())
       formData.append('nombre_permiso', permisoData.nombre_permiso)
       formData.append('codigo_permiso', permisoData.codigo_permiso)
       formData.append('costo_base', permisoData.costo_base.toString())
       formData.append('costo_tramitador', permisoData.costo_tramitador.toString())
-      
+
       if (permisoData.observaciones) {
         formData.append('observaciones', permisoData.observaciones)
       }
-      
+
       // Agregar documentos si existen
       if (permisoData.documentos && permisoData.documentos.length > 0) {
         permisoData.documentos.forEach((documento, index) => {
@@ -76,7 +73,7 @@ class PermisoService {
         })
       }
 
-      const response = await apiCall<PermisoResponse>('/api/base-datos/regulaciones/permisos', {
+      const response = await this.apiCall<PermisoResponse>('/api/base-datos/regulaciones/permisos', {
         method: 'POST',
         body: formData
       })
@@ -94,7 +91,7 @@ class PermisoService {
   /**
    * Obtener lista de permisos
    */
-  async getPermisos(params: {
+  static async getPermisos(params: {
     page?: number
     limit?: number
     search?: string
@@ -102,13 +99,13 @@ class PermisoService {
   } = {}): Promise<PermisoListResponse> {
     try {
       const queryParams = new URLSearchParams()
-      
+
       if (params.page) queryParams.append('page', params.page.toString())
       if (params.limit) queryParams.append('limit', params.limit.toString())
       if (params.search) queryParams.append('search', params.search)
       if (params.entidad_id) queryParams.append('entidad_id', params.entidad_id.toString())
 
-      const response = await apiCall<PermisoListResponse>(
+      const response = await this.apiCall<PermisoListResponse>(
         `/api/base-datos/regulaciones/permisos${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
       )
       return response
@@ -125,9 +122,9 @@ class PermisoService {
   /**
    * Obtener un permiso por ID
    */
-  async getPermisoById(id: number): Promise<PermisoResponse> {
+  static async getPermisoById(id: number): Promise<PermisoResponse> {
     try {
-      const response = await apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}`)
+      const response = await this.apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}`)
       return response
     } catch (error) {
       console.error('Error fetching permiso:', error)
@@ -142,30 +139,16 @@ class PermisoService {
   /**
    * Actualizar un permiso
    */
-  async updatePermiso(id: number, permisoData: Partial<CreatePermisoRequest>): Promise<PermisoResponse> {
+  static async updatePermiso(id: number, permisoData: any): Promise<PermisoResponse> {
     try {
-      const formData = new FormData()
-      
-      // Agregar solo los campos que se van a actualizar
-      Object.entries(permisoData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (key === 'documentos' && Array.isArray(value)) {
-            value.forEach((documento, index) => {
-              formData.append(`documentos[${index}]`, documento)
-            })
-          } else {
-            formData.append(key, value.toString())
-          }
-        }
-      })
+     
 
-      const response = await apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}`, {
-        method: 'PUT',
-        body: formData
+      const response = await this.apiCall<PermisoResponse>('/api/base-datos/regulaciones/permisos', {
+        method: 'POST',
+        body: permisoData
       })
       return response
     } catch (error) {
-      console.error('Error updating permiso:', error)
       return {
         success: false,
         data: {} as Permiso,
@@ -177,9 +160,9 @@ class PermisoService {
   /**
    * Eliminar un permiso
    */
-  async deletePermiso(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deletePermiso(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(
+      const response = await this.apiCall<{ success: boolean; error?: string }>(
         `/api/base-datos/regulaciones/permisos/${id}`,
         {
           method: 'DELETE'
@@ -198,9 +181,9 @@ class PermisoService {
   /**
    * Cambiar estado del permiso
    */
-  async togglePermisoStatus(id: number, status: 'active' | 'inactive'): Promise<PermisoResponse> {
+  static async togglePermisoStatus(id: number, status: 'active' | 'inactive'): Promise<PermisoResponse> {
     try {
-      const response = await apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}/status`, {
+      const response = await this.apiCall<PermisoResponse>(`/api/base-datos/regulaciones/permisos/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status })
       })
@@ -218,9 +201,9 @@ class PermisoService {
   /**
    * Verificar si existe un código de permiso
    */
-  async checkPermisoCodeExists(codigo: string): Promise<{ exists: boolean; error?: string }> {
+  static async checkPermisoCodeExists(codigo: string): Promise<{ exists: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ exists: boolean; error?: string }>(
+      const response = await this.apiCall<{ exists: boolean; error?: string }>(
         `/api/base-datos/regulaciones/permisos/check-code?codigo=${encodeURIComponent(codigo)}`
       )
       return response
@@ -236,9 +219,9 @@ class PermisoService {
   /**
    * Obtener permisos activos
    */
-  async getActivePermisos(): Promise<PermisoListResponse> {
+  static async getActivePermisos(): Promise<PermisoListResponse> {
     try {
-      const response = await apiCall<PermisoListResponse>('/api/base-datos/regulaciones/permisos/active')
+      const response = await this.apiCall<PermisoListResponse>('/api/base-datos/regulaciones/permisos/active')
       return response
     } catch (error) {
       console.error('Error fetching active permisos:', error)
@@ -253,12 +236,12 @@ class PermisoService {
   /**
    * Exportar permisos
    */
-  async exportPermisos(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
+  static async exportPermisos(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/permisos/export?format=${format}`, {
+      const response = await this.apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/permisos/export?format=${format}`, {
         method: 'GET'
       })
-      
+
       if (response.success && response.data) {
         return { success: true, data: response.data }
       } else {
@@ -272,6 +255,7 @@ class PermisoService {
       }
     }
   }
+ 
 }
 
 export default PermisoService 

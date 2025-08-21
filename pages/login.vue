@@ -125,7 +125,7 @@
 definePageMeta({
   layout: 'auth'
 })
-import { useAuth } from '~/composables/auth/useAuth'
+import { useAuth } from '../composables/auth/useAuth'
 // Auth composable
 const { login, loading, error } = useAuth()
 

@@ -243,10 +243,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import ProductService from '~/services/productService'
-import EntityService from '~/services/entityService'
-import ProductRubroService from '~/services/productRubroService'
-import { useUserRole } from '~/composables/auth/useUserRole'
+import {ProductService} from '../services/productService'
+import {EntityService} from '../services/entityService'
+import {ProductRubroService} from '../services/productRubroService'
+import { useUserRole } from '../composables/auth/useUserRole'
 // Route
 const route = useRoute()
 const router = useRouter()
@@ -313,8 +313,7 @@ const loadProduct = async () => {
 
             console.log('Cargando datos del producto:', productId)
 
-            const productService = ProductService.getInstance()
-            const response = await productService.getProductById(Number(productId))
+            const response = await ProductService.getProductById(Number(productId))
             console.log('Response:', response)
             if (response.success && response.data) {
                 // Mapear los datos del producto al formulario
@@ -365,8 +364,8 @@ const loadProduct = async () => {
 const searchEntidades = async (search: string) => {
   try {
     loadingEntidades.value = true
-    const entityService = EntityService.getInstance()
-    const response = await entityService.getEntities(search)
+
+    const response = await EntityService.getEntities(search)
     console.log('response:', response)  
     if (response.success) {
       entidadesOptions.value = response.data.map(entity => ({
@@ -394,8 +393,7 @@ const searchEntidades = async (search: string) => {
 const searchEtiquetados = async (search: string) => {
   try {
     loadingEtiquetados.value = true
-    const productRubroService = ProductRubroService.getInstance()
-    const response = await productRubroService.getProductRubros(search,'ETIQUETADO')
+    const response = await ProductRubroService.getProductRubros(search,'ETIQUETADO')
     
     if (response.success) {
       etiquetadosOptions.value = response.data.map(rubro => ({
@@ -453,7 +451,7 @@ const saveForm = async () => {
 
     console.log('Guardando formulario:', formData.value)
     
-    const productService = ProductService.getInstance()
+ 
     
     // Preparar datos para el request
     const updateData = {
@@ -475,7 +473,7 @@ const saveForm = async () => {
     console.log('Datos a enviar al backend:', updateData)
     
     const response = await withLoading(
-      () => productService.updateProduct(Number(productId), updateData),
+      () => ProductService.updateProduct(Number(productId), updateData),
       'saveProduct',
       'Guardando cambios...'
     )
@@ -532,9 +530,7 @@ const openProductLink = () => {
 onMounted(() => {
     // Los datos del usuario se cargan globalmente en el plugin
     loadProduct()
-    const entityService = EntityService.getInstance()
-    const productRubroService = ProductRubroService.getInstance()
-    productRubroService.getProductRubros('')
+    ProductRubroService.getProductRubros('')
     searchEntidades('')
     searchEtiquetados('')
 })

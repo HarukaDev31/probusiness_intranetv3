@@ -1,5 +1,12 @@
 import type { User, LoginCredentials as _LoginCredentials, LoginResponse as _LoginResponse, ApiLoginResponse } from '../types/auth'
-import { authApiCall } from '../utils/api'
+import { websocketRoles } from '../config/websocket/channels'
+import { useEcho } from '../composables/websocket/useEcho'
+
+interface ApiPlugin {
+  call: <T>(endpoint: string, options?: any) => Promise<T>
+  auth: <T>(endpoint: string, credentials: { No_Usuario: string; No_Password: string }) => Promise<T>
+  config: any
+}
 
 export interface AuthUser {
   id: number | string
@@ -9,7 +16,7 @@ export interface AuthUser {
   avatar?: string | null
   lastLogin?: string
   isActive?: boolean
-  raw?: any // datos originales
+  raw?: any
 }
 
 export interface AuthMenu {
@@ -38,6 +45,9 @@ class AuthService {
   private currentUser: AuthUser | null = null
   private token: string | null = null
   private menu: AuthMenu[] = []
+  private nuxtApp: any = null
+  private echo = useEcho()
+  private isEchoInitialized = false
 
   private constructor() {
     this.initializeFromStorage()
@@ -50,12 +60,40 @@ class AuthService {
     return AuthService.instance
   }
 
+  setNuxtApp(app: any) {
+    this.nuxtApp = app
+  }
+
+  async initializeEcho() {
+    if (!this.isEchoInitialized && this.token) {
+      const config = {
+        wsHost: this.nuxtApp.$config.public.pusherWsHost,
+        forceTLS: false,
+        enabledTransports: ['ws', 'wss'],
+        authEndpoint: `https://${this.nuxtApp.$config.public.pusherWsHost}/api/broadcasting/auth`,
+        auth: {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            Accept: 'application/json'
+          }
+        }
+      }
+
+      await this.echo.initializeEcho(config)
+      this.isEchoInitialized = true
+      const role = this.currentUser?.raw?.grupo.nombre
+      if (role) {
+        this.setupWebSocketChannels(role)
+      }
+    }
+  }
+
   private initializeFromStorage(): void {
     if (process.client) {
       const storedToken = localStorage.getItem('auth_token')
       const storedUser = localStorage.getItem('auth_user')
       const storedMenu = localStorage.getItem('auth_menu')
-      
+
       if (storedToken && storedUser) {
         this.token = storedToken
         this.currentUser = JSON.parse(storedUser)
@@ -63,6 +101,19 @@ class AuthService {
       if (storedMenu) {
         this.menu = JSON.parse(storedMenu)
       }
+    }
+  }
+
+  private setupWebSocketChannels(role: string) {
+    if (!this.isEchoInitialized) {
+      console.warn('Echo no está inicializado. Los canales se configurarán después de la inicialización.')
+      return
+    }
+
+    const roleConfig = websocketRoles[role]
+    if (roleConfig) {
+      console.log('Suscribiendo a canales para rol:', role)
+      this.echo.subscribeToRoleChannels(roleConfig)
     }
   }
 
@@ -90,7 +141,9 @@ class AuthService {
 
   async login(credentials: _LoginCredentials): Promise<_LoginResponse> {
     try {
-      const response = await authApiCall<any>('/api/auth/login', {
+      if (!this.nuxtApp) throw new Error('Nuxt app not initialized')
+
+      const response = await this.nuxtApp.$api.auth<any>('/api/auth/login', {
         No_Usuario: credentials.email,
         No_Password: credentials.password
       })
@@ -100,7 +153,7 @@ class AuthService {
           id: response.user.ID_Usuario,
           email: response.user.Txt_Email || response.user.No_Usuario,
           name: response.user.No_Usuario,
-          role: '',
+          role: response.user.role || 'user',
           avatar: null,
           lastLogin: response.user.Fe_Creacion,
           isActive: response.user.Nu_Estado === 1,
@@ -113,6 +166,9 @@ class AuthService {
         this.token = token
         this.menu = menu
         this.saveToStorage()
+
+        // Inicializar Echo y configurar canales
+        await this.initializeEcho()
 
         return {
           success: true,
@@ -133,13 +189,18 @@ class AuthService {
       return {
         success: false,
         data: null,
-        error: 'Error de conexión'
+        error: error.message || 'Error de conexión'
       }
     }
   }
 
   async logout(): Promise<void> {
     try {
+      if (this.isEchoInitialized) {
+        this.echo.disconnect()
+        this.isEchoInitialized = false
+      }
+
       this.currentUser = null
       this.token = null
       this.menu = []
@@ -167,4 +228,4 @@ class AuthService {
 }
 
 export default AuthService
-export type { _LoginCredentials as LoginCredentials, _LoginResponse as LoginResponse } 
+export type { _LoginCredentials as LoginCredentials, _LoginResponse as LoginResponse }

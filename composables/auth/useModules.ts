@@ -4,8 +4,8 @@ import type {
   ModulesResponse, 
   SidebarCategory,
   SidebarResponse 
-} from '~/types/module'
-import ModuleService from '~/services/moduleService'
+} from '../types/module'
+import ModuleService from '../services/moduleService'
 
 export const useModules = () => {
   const modules = ref<Module[]>([])

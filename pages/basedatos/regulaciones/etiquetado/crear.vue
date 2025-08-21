@@ -138,16 +138,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import EtiquetadoService, { type CreateEtiquetadoRequest } from '~/services/etiquetadoService'
-import ProductRubroService from '~/services/productRubroService'
-import type { ProductRubro } from '~/types/product-rubro'
+import EtiquetadoService, { type CreateEtiquetadoRequest } from '../services/etiquetadoService'
+import ProductRubroService from '../services/productRubroService'
+import type { ProductRubro } from '../types/product-rubro'
 
 // Router
 const router = useRouter()
 
-// Service instances
-const etiquetadoService = EtiquetadoService.getInstance()
-const productRubroService = ProductRubroService.getInstance()
+
 
 // Form data
 const formData = ref({
@@ -224,7 +222,7 @@ const goBack = () => {
 const searchProducts = async (searchTerm: string) => {
   try {
     loadingProducts.value = true
-    const response = await productRubroService.getProductRubros(searchTerm,'ETIQUETADO')
+    const response = await ProductRubroService.getProductRubros(searchTerm,'ETIQUETADO')
 
     if (response.success && response.data) {
       // Convertir productos a formato de opciones para autocomplete
@@ -247,7 +245,7 @@ const createProduct = async () => {
       console.error('Nombre es requerido')
       return
     }
-    const response = await productRubroService.createProductRubro({
+    const response = await ProductRubroService.createProductRubro({
       nombre: newProduct.value.nombre,
       tipo: 'ETIQUETADO'
     })
@@ -322,7 +320,7 @@ const saveForm = async () => {
     }
 
     // Llamar al servicio para crear el etiquetado
-    const response = await etiquetadoService.createEtiquetado(etiquetadoData)
+    const response = await EtiquetadoService.createEtiquetado(etiquetadoData)
 
     if (response.success && response.data) {
       console.log('Regulación de etiquetado guardada exitosamente:', response.data)

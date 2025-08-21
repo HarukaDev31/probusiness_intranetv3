@@ -1,4 +1,4 @@
-import { apiCall } from '~/utils/api'
+
 
 // Interfaces
 export interface AntidumpingMedia {
@@ -53,24 +53,22 @@ export interface AntidumpingListResponse {
   data: Antidumping[]
   error?: string
 }
+import { BaseService } from "~/services/base/BaseService"
 
 // Service class
-class AntidumpingService {
+export class AntidumpingService extends BaseService {
   private static instance: AntidumpingService
 
-  private constructor() {}
-
-  public static getInstance(): AntidumpingService {
-    if (!AntidumpingService.instance) {
-      AntidumpingService.instance = new AntidumpingService()
-    }
-    return AntidumpingService.instance
+  private constructor() {
+    super()
   }
+
+ 
 
   /**
    * Crear una nueva regulación antidumping
    */
-  async createAntidumping(antidumpingData: CreateAntidumpingRequest): Promise<AntidumpingResponse> {
+  static async createAntidumping(antidumpingData: CreateAntidumpingRequest): Promise<AntidumpingResponse> {
     try {
       // Crear FormData para manejar archivos
       const formData = new FormData()
@@ -93,7 +91,7 @@ class AntidumpingService {
         })
       }
 
-      const response = await apiCall<AntidumpingResponse>('/api/base-datos/regulaciones/antidumping', {
+      const response = await this.apiCall<AntidumpingResponse>('/api/base-datos/regulaciones/antidumping', {
         method: 'POST',
         body: formData
       })
@@ -111,7 +109,7 @@ class AntidumpingService {
   /**
    * Obtener lista de regulaciones antidumping
    */
-  async getAntidumpingList(params: {
+  static async getAntidumpingList(params: {
     page?: number
     limit?: number
     search?: string
@@ -123,7 +121,7 @@ class AntidumpingService {
       if (params.limit) queryParams.append('limit', params.limit.toString())
       if (params.search) queryParams.append('search', params.search)
 
-      const response = await apiCall<AntidumpingListResponse>(
+      const response = await this.apiCall<AntidumpingListResponse>(
         `/api/base-datos/regulaciones/antidumping${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
       )
       return response
@@ -140,9 +138,9 @@ class AntidumpingService {
   /**
    * Obtener una regulación antidumping por ID
    */
-  async getAntidumpingById(id: number): Promise<AntidumpingResponse> {
+  static async getAntidumpingById(id: number): Promise<AntidumpingResponse> {
     try {
-      const response = await apiCall<AntidumpingResponse>(`/api/base-datos/regulaciones/antidumping/${id}`)
+      const response = await this.apiCall<AntidumpingResponse>(`/api/base-datos/regulaciones/antidumping/${id}`)
       return response
     } catch (error) {
       console.error('Error fetching antidumping:', error)
@@ -157,7 +155,7 @@ class AntidumpingService {
   /**
    * Actualizar una regulación antidumping
    */
-  async updateAntidumping(
+  static async updateAntidumping(
     id: number, 
     antidumpingData: Partial<CreateAntidumpingRequest>,
     imagenesEliminar: number[] = []
@@ -199,7 +197,7 @@ class AntidumpingService {
       }
 
       // Usar el mismo endpoint que crear pero con id_regulacion
-      const response = await apiCall<AntidumpingResponse>('/api/base-datos/regulaciones/antidumping', {
+      const response = await this.apiCall<AntidumpingResponse>('/api/base-datos/regulaciones/antidumping', {
         method: 'POST',
         body: formData
       })
@@ -217,9 +215,9 @@ class AntidumpingService {
   /**
    * Eliminar una regulación antidumping
    */
-  async deleteAntidumping(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deleteAntidumping(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(
+      const response = await this.apiCall<{ success: boolean; error?: string }>(
         `/api/base-datos/regulaciones/antidumping/${id}`,
         {
           method: 'DELETE'
@@ -238,9 +236,9 @@ class AntidumpingService {
   /**
    * Exportar regulaciones antidumping
    */
-  async exportAntidumping(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
+  static async exportAntidumping(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/antidumping/export?format=${format}`, {
+      const response = await this.apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/antidumping/export?format=${format}`, {
         method: 'GET'
       })
       
@@ -258,9 +256,9 @@ class AntidumpingService {
     }
   }
 
-  async deleteRubro(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deleteRubro(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(`/api/base-datos/regulaciones/rubros/${id}`, {
+      const response = await this.apiCall<{ success: boolean; error?: string }>(`/api/base-datos/regulaciones/rubros/${id}`, {
         method: 'DELETE'
       })
       return response
@@ -270,9 +268,9 @@ class AntidumpingService {
     }
   }
 
-  async deleteEntidad(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deleteEntidad(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(`/api/base-datos/regulaciones/entidades/${id}`, {
+      const response = await this.apiCall<{ success: boolean; error?: string }>(`/api/base-datos/regulaciones/entidades/${id}`, {
         method: 'DELETE'
       })
       return response

@@ -1,17 +1,25 @@
-import type { PaginationInfo } from "~/services/clienteService"
+import type { PaginationInfo } from "../services/clienteService"
 
 export interface Cotizacion {
     id: number
+    nombre: string
+    documento: string
+    telefono: string
+    correo: string
     fecha: string
     estado: string
-    cliente: string
-    proveedor: string
+    estado_cliente: string
+    estado_cotizador: string
+    monto: string
+    monto_final: string | null
+    volumen: string
+    volumen_final: string | null
 }
 
 export interface CotizacionFilters {
     fecha_inicio: string
     fecha_fin: string
-    estado_china: string
+    estado: string
     completado: boolean|false
 }
 

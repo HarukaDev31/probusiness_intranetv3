@@ -1,4 +1,4 @@
-import { apiCall } from '~/utils/api'
+
 
 // Interfaces
 export interface Etiquetado {
@@ -58,24 +58,21 @@ export interface EtiquetadoRegulation {
   created_at: string
   updated_at: string
 }
+import { BaseService } from "~/services/base/BaseService"
 
 // Service class
-class EtiquetadoService {
+export class EtiquetadoService extends BaseService {
   private static instance: EtiquetadoService
 
-  private constructor() {}
-
-  public static getInstance(): EtiquetadoService {
-    if (!EtiquetadoService.instance) {
-      EtiquetadoService.instance = new EtiquetadoService()
-    }
-    return EtiquetadoService.instance
+  private constructor() {
+    super()
   }
 
+  
   /**
    * Crear una nueva regulación de etiquetado
    */
-  async createEtiquetado(etiquetadoData: CreateEtiquetadoRequest): Promise<EtiquetadoResponse> {
+  static async createEtiquetado(etiquetadoData: CreateEtiquetadoRequest): Promise<EtiquetadoResponse> {
     try {
       // Crear FormData para manejar archivos
       const formData = new FormData()
@@ -94,7 +91,7 @@ class EtiquetadoService {
         })
       }
 
-      const response = await apiCall<EtiquetadoResponse>('/api/base-datos/regulaciones/etiquetado', {
+      const response = await this.apiCall<EtiquetadoResponse>('/api/base-datos/regulaciones/etiquetado', {
         method: 'POST',
         body: formData
       })
@@ -112,7 +109,7 @@ class EtiquetadoService {
   /**
    * Obtener lista de regulaciones de etiquetado
    */
-  async getEtiquetados(params: {
+  static async getEtiquetados(params: {
     page?: number
     limit?: number
     search?: string
@@ -126,7 +123,7 @@ class EtiquetadoService {
       if (params.search) queryParams.append('search', params.search)
       if (params.id_rubro) queryParams.append('id_rubro', params.id_rubro.toString())
 
-      const response = await apiCall<EtiquetadoListResponse>(
+      const response = await this.apiCall<EtiquetadoListResponse>(
         `/api/base-datos/regulaciones/etiquetado${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
       )
       return response
@@ -143,7 +140,7 @@ class EtiquetadoService {
   /**
    * Obtener lista jerárquica de regulaciones de etiquetado
    */
-  async getEtiquetadosHierarchical(params: {
+  static async getEtiquetadosHierarchical(params: {
     page?: number
     limit?: number
     search?: string
@@ -155,7 +152,7 @@ class EtiquetadoService {
       if (params.limit) queryParams.append('limit', params.limit.toString())
       if (params.search) queryParams.append('search', params.search)
 
-      const response = await apiCall<EtiquetadoHierarchicalResponse>(
+      const response = await this.apiCall<EtiquetadoHierarchicalResponse>(
         `/api/base-datos/regulaciones/etiquetado${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
       )
       return response
@@ -178,9 +175,9 @@ class EtiquetadoService {
   /**
    * Obtener una regulación de etiquetado por ID
    */
-  async getEtiquetadoById(id: number): Promise<EtiquetadoResponse> {
+  static async getEtiquetadoById(id: number): Promise<EtiquetadoResponse> {
     try {
-      const response = await apiCall<EtiquetadoResponse>(`/api/base-datos/regulaciones/etiquetado/${id}`)
+      const response = await this.apiCall<EtiquetadoResponse>(`/api/base-datos/regulaciones/etiquetado/${id}`)
       return response
     } catch (error) {
       console.error('Error fetching etiquetado:', error)
@@ -195,7 +192,7 @@ class EtiquetadoService {
   /**
    * Actualizar una regulación de etiquetado
    */
-  async updateEtiquetado(id: number, etiquetadoData: Partial<CreateEtiquetadoRequest>): Promise<EtiquetadoResponse> {
+  static async updateEtiquetado(id: number, etiquetadoData: Partial<CreateEtiquetadoRequest>): Promise<EtiquetadoResponse> {
     try {
       const formData = new FormData()
       
@@ -212,7 +209,7 @@ class EtiquetadoService {
         }
       })
 
-      const response = await apiCall<EtiquetadoResponse>(`/api/base-datos/regulaciones/etiquetado/${id}`, {
+      const response = await this.apiCall<EtiquetadoResponse>(`/api/base-datos/regulaciones/etiquetado/${id}`, {
         method: 'PUT',
         body: formData
       })
@@ -230,9 +227,9 @@ class EtiquetadoService {
   /**
    * Eliminar una regulación de etiquetado
    */
-  async deleteEtiquetado(id: number): Promise<{ success: boolean; error?: string }> {
+  static async deleteEtiquetado(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; error?: string }>(
+      const response = await this.apiCall<{ success: boolean; error?: string }>(
         `/api/base-datos/regulaciones/etiquetado/${id}`,
         {
           method: 'DELETE'
@@ -251,9 +248,9 @@ class EtiquetadoService {
   /**
    * Cambiar estado de la regulación de etiquetado
    */
-  async toggleEtiquetadoStatus(id: number, status: 'active' | 'inactive'): Promise<EtiquetadoResponse> {
+  static async toggleEtiquetadoStatus(id: number, status: 'active' | 'inactive'): Promise<EtiquetadoResponse> {
     try {
-      const response = await apiCall<EtiquetadoResponse>(`/api/base-datos/regulaciones/etiquetado/${id}/status`, {
+      const response = await this.apiCall<EtiquetadoResponse>(`/api/base-datos/regulaciones/etiquetado/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status })
       })
@@ -271,9 +268,9 @@ class EtiquetadoService {
   /**
    * Obtener regulaciones de etiquetado activas
    */
-  async getActiveEtiquetados(): Promise<EtiquetadoListResponse> {
+  static async getActiveEtiquetados(): Promise<EtiquetadoListResponse> {
     try {
-      const response = await apiCall<EtiquetadoListResponse>('/api/base-datos/regulaciones/etiquetado/active')
+      const response = await this.apiCall<EtiquetadoListResponse>('/api/base-datos/regulaciones/etiquetado/active')
       return response
     } catch (error) {
       console.error('Error fetching active etiquetados:', error)
@@ -288,9 +285,9 @@ class EtiquetadoService {
   /**
    * Exportar regulaciones de etiquetado
    */
-  async exportEtiquetados(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
+  static async exportEtiquetados(format: 'xlsx' | 'csv' | 'pdf' = 'xlsx'): Promise<{ success: boolean; data?: Blob; error?: string }> {
     try {
-      const response = await apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/etiquetado/export?format=${format}`, {
+      const response = await this.apiCall<{ success: boolean; data: Blob; error?: string }>(`/api/base-datos/regulaciones/etiquetado/export?format=${format}`, {
         method: 'GET'
       })
       
