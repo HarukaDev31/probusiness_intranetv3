@@ -284,7 +284,7 @@ const handleDownloadFactura = async () => {
 }
 
 const goBack = () => {
-    navigateTo(`/cargaconsolidada/abiertos/pasos/${contenedorId}`)
+    navigateTo(`/cargaconsolidada/completados/pasos/${contenedorId}`)
 }
 
 // Utilidades

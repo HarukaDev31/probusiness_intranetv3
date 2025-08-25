@@ -1,31 +1,54 @@
 import { ref } from 'vue'
-import { GeneralService } from '../services/cargaconsolidada/clientes/generalService'
-import type { PaginationInfo } from '../types/data-table'
+import { GeneralService } from '~/services/cargaconsolidada/clientes/generalService'
+import type { PaginationInfo } from '~/types/data-table'
 
 export const useGeneral = () => {
+    const route = useRoute()
+    const id = route.params.id
     const clientes = ref<any[]>([])
     const loadingGeneral = ref(false)
     const error = ref<string | null>(null)
     const paginationGeneral = ref<PaginationInfo>({
         current_page: 1,
         last_page: 1,
-        per_page: 10,
+        per_page: 100,
         total: 0,
         from: 0,
         to: 0
     })
     const searchGeneral = ref('')
-    const itemsPerPageGeneral = ref(10)
+    const itemsPerPageGeneral = ref(100)
     const totalPagesGeneral = computed(() => Math.ceil(paginationGeneral.value.total / itemsPerPageGeneral.value))
     const totalRecordsGeneral = computed(() => paginationGeneral.value.total)
     const currentPageGeneral = computed(() => paginationGeneral.value.current_page)
     const filtersGeneral = ref<any>({})
     const filterConfig = ref<any>({
     })
+    const handlePageGeneralChange = (page: number) => {
+        paginationGeneral.value.current_page = page
+        getClientes(Number(id))
+    }
+    const handleItemsPerPageChangeGeneral = (itemsPerPage: number) => {
+        itemsPerPageGeneral.value = itemsPerPage
+        getClientes(Number(id))
+    }
+    const handleFilterChangeGeneral = (filter: any) => {
+        filtersGeneral.value = filter
+        getClientes(Number(id))
+    }
+    const handleSearchGeneral = (search: string) => {
+        searchGeneral.value = search
+        getClientes(Number(id))
+    }
     const getClientes = async (id: number) => {
         try {
             loadingGeneral.value = true
-            const response = await GeneralService.getClientes(id)
+            const response = await GeneralService.getClientes(id,
+                filtersGeneral.value,
+                searchGeneral.value,
+                itemsPerPageGeneral.value,
+                currentPageGeneral.value
+            )
             clientes.value = response.data
             paginationGeneral.value = response.pagination
         } catch (err) {
@@ -55,6 +78,10 @@ export const useGeneral = () => {
         filterConfig,
         getClientes,
         totalRecordsGeneral,
-        updateEstadoCliente
+        updateEstadoCliente,
+        handlePageGeneralChange,
+        handleItemsPerPageChangeGeneral,
+        handleFilterChangeGeneral,
+        handleSearchGeneral
     }
 }   

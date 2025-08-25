@@ -3,16 +3,15 @@
         <div class="p-6">
             <PageHeader title="Clientes" subtitle="Gestión de clientes" icon="i-heroicons-user"
                 :hide-back-button="true" />
-            <UTabs v-model="tab"  :items="tabs" size="sm" variant="pill"
-                class="mb-4 w-50" />
-            <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="columns"
+            <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
+            <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
                 :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="true"
                 :filter-config="filterConfig" :show-export="true"
-                empty-state-message="No se encontraron registros de clientes." @update:primary-search="handleSearch"
-                @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-                @filter-change="handleFilterChange">
+                empty-state-message="No se encontraron registros de clientes." @update:primary-search="handleSearchGeneral"
+                @page-change="handlePageGeneralChange" @items-per-page-change="handleItemsPerPageChangeGeneral"
+                @filter-change="handleFilterChangeGeneral">
             </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
                 :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
@@ -20,49 +19,41 @@
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="true"
                 :filter-config="filterConfigVariacion" :show-export="true"
                 empty-state-message="No se encontraron registros de clientes."
-                @update:primary-search="handleSearchVariacion" @page-change="handlePageChangeVariacion"
+                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
             </DataTable>
         </div>
     </template>
 <script setup lang="ts">
-import { useGeneral } from '../composables/cargaconsolidada/clientes/useGeneral'
-import { useVariacion } from '../composables/cargaconsolidada/clientes/useVariacion'
-import { UButton, UBadge,USelect} from '#components'
+import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
+import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
+import { UButton, UBadge, USelect } from '#components'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { ROLES } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
+const { currentRole } = useUserRole()
+import type { TableColumn } from '@nuxt/ui'
+
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
-const { getClientes, clientes,updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useGeneral()
-const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion, errorVariacion, paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion, filterConfigVariacion, handleSearchVariacion, handlePageChangeVariacion, handleItemsPerPageChangeVariacion, handleFilterChangeVariacion } = useVariacion()
-const tabs = ref([
-    {
-        label: 'General',
-        value: 'general'
-    },
-    {
-        label: 'Variación',
-        value: 'variacion'
-    },
-    /*{
-        label: 'Pagos',
-        value: 'pagos'
-    }*/
-])
+const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig,handlePageGeneralChange,handleItemsPerPageChangeGeneral,handleFilterChangeGeneral,handleSearchGeneral} = useGeneral()
+const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion,  paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion } = useVariacion()
+const tabs = ref()
 const handleTabChange = (value: string) => {
     //set tab to value
     console.log(value)
     if (tab.value === 'general') {
         getClientes(Number(id))
-    }else if (tab.value === 'variacion') {
+    } else if (tab.value === 'variacion') {
         getClientesVariacion(Number(id))
     }
 }
 //N° Fecha	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Volumen	Qty Item	Fob	Logistica	Impuesto	Tarifa	Estados	Status	Acciones
-const columns = ref<TableColumn<any>[]>([
+const columns:TableColumn<any>[] = [
     {
         accessorKey: 'index',
         header: 'N°',
@@ -93,9 +84,6 @@ const columns = ref<TableColumn<any>[]>([
         }
     },
 
-      
-   
-   
     {
         accessorKey: 'correo',
         header: 'Correo',
@@ -124,7 +112,7 @@ const columns = ref<TableColumn<any>[]>([
             return row.getValue('volumen')
         }
     },
-  
+
     {
         accessorKey: 'qty_item',
         header: 'Qty Item',
@@ -188,7 +176,7 @@ const columns = ref<TableColumn<any>[]>([
             })
         }
     },
-   
+
     {
         accessorKey: 'acciones',
         header: 'Acciones',
@@ -199,14 +187,102 @@ const columns = ref<TableColumn<any>[]>([
                 variant: 'ghost',
                 size: 'xs',
                 onClick: () => {
-                    navigateTo(`/cargaconsolidada/abiertos/clientes/documentacion/${row.original.id_cotizacion}`)
+                    navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
                 }
             },
             )
         }
     }
-])
-
+]
+//N°	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Status	Accio
+const columnsDocumentacion:TableColumn<any>[] = [
+    {
+        accessorKey: 'index',
+        header: 'N°',
+        cell: ({ row }: { row: any }) => {
+            return row.index + 1
+        }
+    },
+    {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('nombre')
+        }
+    },
+    {
+        accessorKey: 'documento',
+        header: 'DNI/RUC',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('documento')
+        }
+    },
+    {
+        accessorKey: 'correo',
+        header: 'Correo',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('correo')
+        }
+    },
+    {
+        accessorKey: 'telefono',
+        header: 'Whatsapp',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('telefono')
+        }
+    },
+    {
+        accessorKey: 'name',
+        header: 'T. Cliente',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('name')
+        }   
+    },{
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }: { row: any }) => {
+            return h(UBadge, {
+                label: row.original.status_cliente_doc,
+                color: getColorStatusDocumentacion(row.original.status_cliente_doc),
+                variant: 'soft'
+            })
+        }
+    },
+    {
+        accessorKey: 'acciones',
+        header: 'Acciones',
+        cell: ({ row }: { row: any }) => {
+            return h(UButton, {
+                icon: 'i-heroicons-eye',
+                variant: 'ghost',
+                size: 'xs',
+                onClick: () => {
+                    navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
+                }
+            })
+        }
+    }
+]
+const getColumnsGeneral = ()=>{
+    switch(currentRole.value){
+        case ROLES.DOCUMENTACION:
+            return columnsDocumentacion
+        default:
+            return columns
+    }
+}
+const getColorStatusDocumentacion = (status: string) => {
+    //Completado,Pendiente,Incompleto
+    switch(status){
+        case 'Completado':
+            return 'primary'
+        case 'Pendiente':
+            return 'warning'
+        case 'Incompleto':
+            return 'error'
+    }
+    return 'neutral'
+}
 const columnsVariacion = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
@@ -260,7 +336,7 @@ const columnsVariacion = ref<TableColumn<any>[]>([
                 variant: 'soft',
                 label: row.getValue('volumen'),
                 onClick: () => {
-                    updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen'})
+                    updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen' })
                 }
             })
         }
@@ -274,7 +350,7 @@ const columnsVariacion = ref<TableColumn<any>[]>([
                 variant: 'soft',
                 label: row.getValue('volumen_china'),
                 onClick: () => {
-                    updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen_china'})
+                    updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen_china' })
                 }
             })
         }
@@ -288,7 +364,7 @@ const columnsVariacion = ref<TableColumn<any>[]>([
                 variant: 'soft',
                 label: row.getValue('volumen_doc'),
                 onClick: () => {
-                    updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen_doc'})
+                    updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen_doc' })
                 }
             })
         }
@@ -350,28 +426,50 @@ const handleUpdateEstadoCliente = async (data: any) => {
 const updateVolSelected = async (data: any) => {
     try {
         showConfirmation(
-        'Confirmar actualización',
-        '¿Está seguro de que desea actualizar el volumen seleccionado? Esta acción no se puede deshacer.',
-        async () => {
-            try {
-                await withSpinner(async () => {
-                    const response = await updateVolumenSelected(data)
-                    if (response.success) {
-                        await getClientesVariacion(Number(id))
-                        showSuccess('Actualización Exitosa', 'El volumen seleccionado se ha actualizado correctamente.')
-                    }
-                }, 'Actualizando volumen seleccionado...')
-            } catch (error) {
-                console.error('Error al actualizar el volumen seleccionado:', error)
-                showError('Error de Actualización', 'Error al actualizar el volumen seleccionado')
+            'Confirmar actualización',
+            '¿Está seguro de que desea actualizar el volumen seleccionado? Esta acción no se puede deshacer.',
+            async () => {
+                try {
+                    await withSpinner(async () => {
+                        const response = await updateVolumenSelected(data)
+                        if (response.success) {
+                            await getClientesVariacion(Number(id))
+                            showSuccess('Actualización Exitosa', 'El volumen seleccionado se ha actualizado correctamente.')
+                        }
+                    }, 'Actualizando volumen seleccionado...')
+                } catch (error) {
+                    console.error('Error al actualizar el volumen seleccionado:', error)
+                    showError('Error de Actualización', 'Error al actualizar el volumen seleccionado')
+                }
             }
-        }
-    )
+        )
     } catch (err) {
         error.value = err as string
     }
 }
 onMounted(() => {
+    if (currentRole.value === ROLES.DOCUMENTACION) {
+        tabs.value = [
+            {
+                label: 'General',
+                value: 'general'
+            }
+        ]
+    }
+    else {
+        tabs.value = [
+            {
+                label: 'General',
+                value: 'general'
+            },
+            currentRole.value !== ROLES.DOCUMENTACION ?
+                {
+                    label: 'Variación',
+                    value: 'variacion'
+                } : null,
+           
+        ]
+    }
     handleTabChange(tab.value)
 })
 

@@ -9,9 +9,9 @@
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
                 :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="true"
                 :filter-config="filterConfig" :show-export="true"
-                empty-state-message="No se encontraron registros de clientes." @update:primary-search="handleSearch"
-                @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-                @filter-change="handleFilterChange">
+                empty-state-message="No se encontraron registros de clientes."
+                @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
+                @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral">
             </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
                 :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
@@ -19,7 +19,16 @@
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="true"
                 :filter-config="filterConfigVariacion" :show-export="true"
                 empty-state-message="No se encontraron registros de clientes."
-                @update:primary-search="handleSearchVariacion" @page-change="handlePageChangeVariacion"
+                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
+                @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
+            </DataTable>
+            <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
+                :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
+                :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
+                :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="true"
+                :filter-config="filterConfigVariacion" :show-export="true"
+                empty-state-message="No se encontraron registros de clientes."
+                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
             </DataTable>
         </div>
@@ -27,6 +36,7 @@
 <script setup lang="ts">
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
 import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
+import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { UButton, UBadge, USelect } from '#components'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -40,20 +50,95 @@ import type { TableColumn } from '@nuxt/ui'
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
-const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig,} = useGeneral()
-const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion,  paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion } = useVariacion()
+const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handlePageGeneralChange, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, handleSearchGeneral } = useGeneral()
+const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion, paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion } = useVariacion()
+const { getClientesPagos, clientesPagos, totalRecordsPagos, loadingPagos, paginationPagos, searchPagos, itemsPerPagePagos, totalPagesPagos, currentPagePagos, filtersPagos, filterConfigPagos, handlePagePagosChange, handleItemsPerPageChangePagos, handleFilterChangePagos, handleSearchPagos } = usePagos()
 const tabs = ref()
 const handleTabChange = (value: string) => {
     //set tab to value
-    console.log(value)
     if (tab.value === 'general') {
         getClientes(Number(id))
     } else if (tab.value === 'variacion') {
         getClientesVariacion(Number(id))
+    } else if (tab.value === 'pagos') {
+        getClientesPagos(Number(id))
     }
 }
+//N.	Nombre	DNI/RUC	Whatsapp	T. Cliente	Estado	Conceptop	Importe	Pagado	Adelantos
+const columnsPagos = ref<TableColumn<any>[]>([
+    {
+        accessorKey: 'index',
+        header: 'N°',
+        cell: ({ row }: { row: any }) => {
+            return row.index + 1
+        }
+    },
+    {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('nombre')
+        }
+    },
+    {
+        accessorKey: 'documento',
+        header: 'DNI/RUC',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('documento')
+        }
+    },
+    {
+        accessorKey: 'telefono',
+        header: 'Whatsapp',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('telefono')
+        }
+    },
+    {
+        accessorKey: 'name',
+        header: 'T. Cliente',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('name')
+        }
+    },
+    {
+        accessorKey: 'estado',
+        header: 'Estado',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('estado')
+        }
+    },
+    {
+        accessorKey: 'concepto',
+        header: 'Concepto',
+        cell: ({ row }: { row: any }) => {
+            return 'Logistica'
+        }
+    },
+    {
+        accessorKey: 'importe',
+        header: 'Importe',
+        cell: ({ row }: { row: any }) => {
+            return formatCurrency(row.original.monto)
+        }
+    },
+    {
+        accessorKey: 'pagado',
+        header: 'Pagado',
+        cell: ({ row }: { row: any }) => {
+            return formatCurrency(row.original.total_pagos)
+        }
+    },
+    {
+        accessorKey: 'adelantos',
+        header: 'Adelantos',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('adelantos')
+        }
+    }
+])
 //N° Fecha	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Volumen	Qty Item	Fob	Logistica	Impuesto	Tarifa	Estados	Status	Acciones
-const columns:TableColumn<any>[] = [
+const columns: TableColumn<any>[] = [
     {
         accessorKey: 'index',
         header: 'N°',
@@ -195,7 +280,7 @@ const columns:TableColumn<any>[] = [
     }
 ]
 //N°	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Status	Accio
-const columnsDocumentacion:TableColumn<any>[] = [
+const columnsDocumentacion: TableColumn<any>[] = [
     {
         accessorKey: 'index',
         header: 'N°',
@@ -236,8 +321,8 @@ const columnsDocumentacion:TableColumn<any>[] = [
         header: 'T. Cliente',
         cell: ({ row }: { row: any }) => {
             return row.getValue('name')
-        }   
-    },{
+        }
+    }, {
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }: { row: any }) => {
@@ -263,8 +348,8 @@ const columnsDocumentacion:TableColumn<any>[] = [
         }
     }
 ]
-const getColumnsGeneral = ()=>{
-    switch(currentRole.value){
+const getColumnsGeneral = () => {
+    switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
             return columnsDocumentacion
         default:
@@ -273,7 +358,7 @@ const getColumnsGeneral = ()=>{
 }
 const getColorStatusDocumentacion = (status: string) => {
     //Completado,Pendiente,Incompleto
-    switch(status){
+    switch (status) {
         case 'Completado':
             return 'primary'
         case 'Pendiente':
@@ -456,18 +541,31 @@ onMounted(() => {
             }
         ]
     }
-    else {
+    else if (currentRole.value === ROLES.COORDINACION) {
         tabs.value = [
             {
                 label: 'General',
                 value: 'general'
             },
-            currentRole.value !== ROLES.DOCUMENTACION ?
-                {
-                    label: 'Variación',
-                    value: 'variacion'
-                } : null,
-           
+            {
+                label: 'Variación',
+                value: 'variacion'
+            },
+            {
+                label: 'Pagos',
+                value: 'pagos'
+            }
+        ]
+    } else {
+        tabs.value = [
+            {
+                label: 'General',
+                value: 'general'
+            },
+            {
+                label: 'Variación',
+                value: 'variacion'
+            }
         ]
     }
     handleTabChange(tab.value)

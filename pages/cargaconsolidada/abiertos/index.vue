@@ -43,7 +43,7 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 const { withSpinner } = useSpinner()
-const { hasRole, isCoordinacion,currentRole } = useUserRole()
+const { hasRole, isCoordinacion, currentRole, currentId } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
 import CreateConsolidadoModal from '~/components/cargaconsolidada/CreateConsolidadoModal.vue'
 const { showSuccess, showConfirmation } = useModal()
@@ -255,25 +255,25 @@ const documentacionColumns: TableColumn<any>[] = [
         header: 'Mes',
         cell: ({ row }) => row.getValue('mes')
     },
-    
+
     {
         accessorKey: 'pais',
         header: 'País',
         cell: ({ row }) => row.original.pais?.No_Pais || 'N/A'
     },
-    
+
     {
         accessorKey: 'f_cierre',
         header: 'F. Cierre',
         cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre'))
     },
-    
+
     {
         accessorKey: 'empresa',
         header: 'Empresa',
         cell: ({ row }) => row.getValue('empresa')
     },
-    
+
     {
         accessorKey: 'estado',
         header: 'Estado',
@@ -302,10 +302,10 @@ const documentacionColumns: TableColumn<any>[] = [
             ])
         }
     }
-    
+
 ]
-const getColumns = ()=>{
-    switch(currentRole.value){
+const getColumns = () => {
+    switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
             return documentacionColumns
         default:
@@ -355,10 +355,12 @@ const getColorByEstado = (estado: string) => {
 
     return 'neutral'
 }
-
+const IDGINO = 28791
 const handleViewSteps = (id: number) => {
     if (hasRole('ContenedorAlmacen')) {
-        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}`)
+        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=embarque`)
+    } else if (currentId.value !== IDGINO && currentRole.value === ROLES.COTIZADOR) {
+        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`)
     } else {
         navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
     }
@@ -370,9 +372,9 @@ const handleEditCarga = (id: number) => {
 
 const handleDeleteCarga = async (id: number) => {
     try {
-        showConfirmation('¿Estás seguro de querer eliminar esta carga consolidada?', 'Esta acción no se puede deshacer.',async () => {
+        showConfirmation('¿Estás seguro de querer eliminar esta carga consolidada?', 'Esta acción no se puede deshacer.', async () => {
             await withSpinner(async () => {
-                const response=await deleteConsolidado(id)
+                const response = await deleteConsolidado(id)
                 if (response.success) {
                     showSuccess('Carga consolidada eliminada correctamente', 'La carga consolidada se ha eliminado correctamente.')
                 }

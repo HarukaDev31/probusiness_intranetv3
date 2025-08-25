@@ -2,9 +2,16 @@ import { BaseService } from "~/services/base/BaseService"
 
 export class GeneralService extends BaseService {
     static baseUrl = 'api/carga-consolidada/contenedor/clientes/general'
-    static async getClientes(idConsolidado: number) {
+    static async getClientes(idConsolidado: number, filters: any, search: string, itemsPerPage: number, currentPage: number ) {
         try {
-            const response = await this.apiCall<any>(`${this.baseUrl}/${idConsolidado}`)
+            const response = await this.apiCall<any>(`${this.baseUrl}/${idConsolidado}`, {
+                method: 'GET',
+                params: {
+                    search,
+                    itemsPerPage,
+                    currentPage
+                }
+            })
             return response
         } catch (error) {
             console.error('Error al obtener el cliente:', error)

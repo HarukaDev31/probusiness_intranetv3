@@ -2,7 +2,7 @@
     <div class="p-6">
         <PageHeader title="Cotizaciones" subtitle="Gestión de cotizaciones" icon="i-heroicons-book-open"
             :hide-back-button="true" />
-        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" />
+        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
 
         <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
             :headers="headersCotizaciones" :show-headers="true" :loading="loadingCotizaciones"
@@ -27,10 +27,10 @@
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange">
         </DataTable>
-        <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos"
-            :columns="getPagosColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
-            :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
+        <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
+            :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
+            :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
+            :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange">
@@ -44,7 +44,7 @@ import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES } from '~/constants/roles'
-import { USelect, UInput, UButton, UIcon ,UBadge} from '#components'
+import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
 import CreateProspectoModal from '~/components/cargaconsolidada/CreateProspectoModal.vue'
@@ -61,24 +61,58 @@ const { withSpinner } = useSpinner()
 const route = useRoute()
 const id = route.params.id
 const { showConfirmation, showSuccess, showError } = useModal()
-const tabs = [
-    {
-        label: 'Prospectos',
-        value: 'prospectos'
-    },
-    {
-        label: 'Por Embarcar',
-        value: 'embarque'
-    },
-    {
-        label: 'Pagos',
-        value: 'pagos'
-    }
 
-]
 const tab = ref('')
 
 const { currentRole } = useUserRole()
+const tabs = ref([
+
+
+])
+const loadTabs = () => {
+    switch (currentRole.value) {
+        case ROLES.COORDINACION:
+            tabs.value = [
+                {
+                    label: 'Prospectos',
+                    value: 'prospectos'
+                },
+                {
+                    label: 'Por Embarcar',
+                    value: 'embarque'
+                },
+                {
+                    label: 'Pagos',
+                    value: 'pagos'
+                }
+
+            ]
+            break
+        case ROLES.COTIZADOR:
+            tabs.value = [
+                {
+                    label: 'Prospectos',
+                    value: 'prospectos'
+                },
+                {
+                    label: 'Por Embarcar',
+                    value: 'embarque'
+                }
+            ]
+            break
+        default:
+            tabs.value = [
+                {
+                    label: 'Por Embarcar',
+                    value: 'embarque'
+                }
+            ]
+            break
+    }
+}
+
+
+
 const filterConfigProspectos = ref([
     {
         key: 'estado',
@@ -382,7 +416,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 class: 'w-full',
                 'onUpdate:modelValue': (value: any) => {
                     if (value && value !== estado) {
-                    handleUpdateEstadoCotizacion(row.original.id, value)
+                        handleUpdateEstadoCotizacion(row.original.id, value)
                     }
                 }
             })
@@ -432,7 +466,7 @@ const getPagosColumns = () => {
                 }, estado)
             }
         },
-       
+
         {
             accessorKey: 'concepto',
             header: 'Concepto',
@@ -460,32 +494,29 @@ const getPagosColumns = () => {
                 }
             ] */
         {
-            accessorKey: 'adelantos',   
+            accessorKey: 'adelantos',
             header: 'Adelantos',
             cell: ({ row }: { row: any }) => {
                 const pagos = row.original.pagos || []
-                
+
                 return h('div', {
                     class: 'flex flex-row gap-2 items-center flex-wrap'
                 }, [
-                    ...pagos.map((pago: any) => 
+                    ...pagos.map((pago: any) =>
                         h('div', {
                             class: 'flex items-center bg-gray-100 rounded-lg p-2 cursor-pointer hover:bg-gray-200',
                             onClick: () => {
                                 const modal = overlay.create(AdelantoPreviewModal)
-    modal.open({
+                                modal.open({
                                     modelValue: true,
                                     pago,
-                                    'update:modelValue': (value: boolean) => {
-                                        if (!value) modal.close()
-                                    },
-                                    onDelete: async () => {
+                                    onOnDelete: async () => {
                                         try {
-                                            // TODO: Implementar la eliminación del voucher
+
                                             showSuccess('Voucher eliminado correctamente', 'El voucher se ha eliminado correctamente')
-                await getCotizaciones(Number(id))
+                                            await getCotizaciones(Number(id))
                                             modal.close()
-    } catch (error) {
+                                        } catch (error) {
                                             showError('Error al eliminar el voucher', error)
                                         }
                                     }
@@ -497,8 +528,8 @@ const getPagosColumns = () => {
                                 variant: 'subtle',
                                 size: 'xs',
                                 label: formatCurrency(pago.monto, 'USD')
-                            })  
-                           
+                            })
+
                         ])
                     ),
                     h(UButton, {
@@ -507,10 +538,9 @@ const getPagosColumns = () => {
                         size: 'xs',
                         onClick: () => {
                             const modal = overlay.create(CreatePagoModal)
-    modal.open({
-                                idCotizacion: row.original.cotizacion_id,
-        onSuccess: () => {
-            getCotizaciones(Number(id))
+                            modal.open({
+                                onSuccess: () => {
+                                    getCotizaciones(Number(id))
                                 }
                             })
                         }
@@ -518,7 +548,7 @@ const getPagosColumns = () => {
                 ])
             }
         }
-        ]
+    ]
 }
 const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
     //Asesor	Status	N.	Buyer	Whatsapp	Estado	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
@@ -848,7 +878,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         variant: 'ghost',
                         size: 'xs',
                         onClick: () => {
-                            navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion-china/${proveedor.id}`)
+                            navigateTo(`/cargaconsolidada/completados/cotizaciones/proveedor/documentacion/${proveedor.id}`)
                         }
                     }),
                     h(UButton, {
@@ -1055,35 +1085,21 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
     await getCotizaciones(Number(id))
 }
 
-// Watch inmediato para cargar datos cuando cambie el tab
-watch(tab, async (newVal, oldVal) => {
-    // Solo ejecutar si hay un cambio real de tab (no en la inicialización)
-    if (oldVal === '' || !newVal) {
-        return
-    }
 
-    try {
-        if (newVal === 'prospectos') {
-            await getCotizaciones(Number(id))
-        } else if (newVal === 'embarque') {
-            await getCotizacionProveedor(Number(id))
-        } else if (newVal === 'pagos') {
-            await getCotizacionPagos(Number(id))
-        }
-
-    } catch (error) {
-        console.error('Error al cambiar tab:', error)
-    }
-}, { immediate: false })
 
 // Watch inmediato para la carga inicial
 watch(() => tab.value, async (newVal) => {
     if (newVal && newVal !== '') {
         try {
             if (newVal === 'prospectos') {
+                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos`)
                 await getCotizaciones(Number(id))
             } else if (newVal === 'embarque') {
+                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=embarque`)
                 await getCotizacionProveedor(Number(id))
+            } else if (newVal === 'pagos') {
+                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=pagos`)
+                await getCotizacionPagos(Number(id))
             }
         } catch (error) {
             console.error('Error en carga inicial:', error)
@@ -1126,7 +1142,14 @@ const updateProveedorData = async (row: any) => {
 
 }
 onMounted(() => {
-    // Solo establecer el tab inicial, el watch se encargará de cargar los datos
-    tab.value = tabs[0].value // Cambiar a 'prospectos' como tab inicial
+    loadTabs();
+   
+    const tabQuery = route.query.tab
+    
+    if (tabQuery) {
+        tab.value = tabQuery as string
+    } else {
+        tab.value = tabs[0].value // Cambiar a 'prospectos' como tab inicial
+    }
 })
 </script>

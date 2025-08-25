@@ -2,7 +2,7 @@
   <div class="p-6">
     <!-- Header Section -->
     <PageHeader title="Cotizaciones finales" subtitle="Gestión de cotizaciones" icon="i-heroicons-book-open"
-      :hide-back-button="false" @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
+      :hide-back-button="false" @back="navigateTo(`/cargaconsolidada/completados/pasos/${id}`)" />
     <!-- add 3 buttons 
  Subir Factura
  Plantilla General
@@ -297,7 +297,7 @@ const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: s
   })
 }
 const goBack = () => {
-  navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
+  navigateTo(`/cargaconsolidada/completados/pasos/${id}`)
 }
 
 // Handle save pago

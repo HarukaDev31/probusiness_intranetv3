@@ -420,9 +420,9 @@ const getColorByEstado = (estado: string) => {
 
 const handleViewSteps = (id: number) => {
     if (hasRole('ContenedorAlmacen')) {
-        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}`)
+        navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}`)
     } else {
-        navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
+        navigateTo(`/cargaconsolidada/completados/pasos/${id}`)
     }
 }
 

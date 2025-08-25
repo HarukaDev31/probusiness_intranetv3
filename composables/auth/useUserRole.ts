@@ -61,7 +61,9 @@ export const useUserRole = () => {
   const currentRole = computed(() => {
     return userData.value?.raw?.grupo?.nombre || ''
   })
-
+const currentId = computed(() => {
+  return userData.value?.raw?.id || ''
+})
   const userName = computed(() => {
     return userData.value?.raw?.nombres_apellidos || userData.value?.raw?.nombre || ''
   })
@@ -139,7 +141,7 @@ export const useUserRole = () => {
     loading: readonly(loading),
     error: readonly(error),
 
-    // Computed
+    currentId,
     currentRole,
     userName,
     userEmail,
