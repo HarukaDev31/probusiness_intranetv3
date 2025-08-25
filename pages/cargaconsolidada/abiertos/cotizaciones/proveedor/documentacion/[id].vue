@@ -1,7 +1,7 @@
 <template>
     <div class="p-6">
         <!-- Header con botones de navegación -->
-        <PageHeader title="Documentación China" subtitle="Gestión de documentos e inspección"
+        <PageHeader title="Documentación" subtitle="Gestión de documentos e inspección"
             icon="i-heroicons-document-text" :show-back-button="true" @back="navigateBack">
             <template #actions>
                 <UButton label="Guardar" icon="i-heroicons-save" color="warning" @click="saveAll" :loading="saving" />
@@ -69,6 +69,7 @@ const loadingNotas = ref(false)
 const consolidadoInfo = ref({
     numero: '',
 })
+const router = useRouter()
 import { useSpinner } from '~/composables/commons/useSpinner'
 const { withSpinner } = useSpinner()
 import { useModal } from '~/composables/commons/useModal'
@@ -83,7 +84,8 @@ const selectedInspeccionFiles = ref<File[]>([])
 
 // Métodos
 const navigateBack = () => {
-    navigateTo('/cargaconsolidada/abiertos/cotizaciones/proveedor')
+    //route.back()
+    router.back()
 }
 
 const handleDocumentacionFiles = async (files: File[]) => {

@@ -2,7 +2,7 @@
     <div class="p-6">
         <PageHeader title="Cotizaciones" subtitle="Gestión de cotizaciones" icon="i-heroicons-book-open"
             :hide-back-button="true" />
-        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" />
+        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
 
         <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
             :headers="headersCotizaciones" :show-headers="true" :loading="loadingCotizaciones"
@@ -61,24 +61,58 @@ const { withSpinner } = useSpinner()
 const route = useRoute()
 const id = route.params.id
 const { showConfirmation, showSuccess, showError } = useModal()
-const tabs = [
-    {
-        label: 'Prospectos',
-        value: 'prospectos'
-    },
-    {
-        label: 'Por Embarcar',
-        value: 'embarque'
-    },
-    {
-        label: 'Pagos',
-        value: 'pagos'
-    }
 
-]
 const tab = ref('')
 
 const { currentRole } = useUserRole()
+const tabs = ref([
+
+
+])
+const loadTabs = () => {
+    switch (currentRole.value) {
+        case ROLES.COORDINACION:
+            tabs.value = [
+                {
+                    label: 'Prospectos',
+                    value: 'prospectos'
+                },
+                {
+                    label: 'Por Embarcar',
+                    value: 'embarque'
+                },
+                {
+                    label: 'Pagos',
+                    value: 'pagos'
+                }
+
+            ]
+            break
+        case ROLES.COTIZADOR:
+            tabs.value = [
+                {
+                    label: 'Prospectos',
+                    value: 'prospectos'
+                },
+                {
+                    label: 'Por Embarcar',
+                    value: 'embarque'
+                }
+            ]
+            break
+        default:
+            tabs.value = [
+                {
+                    label: 'Por Embarcar',
+                    value: 'embarque'
+                }
+            ]
+            break
+    }
+}
+
+
+
 const filterConfigProspectos = ref([
     {
         key: 'estado',
@@ -478,7 +512,7 @@ const getPagosColumns = () => {
                                     pago,
                                     onOnDelete: async () => {
                                         try {
-                                            
+
                                             showSuccess('Voucher eliminado correctamente', 'El voucher se ha eliminado correctamente')
                                             await getCotizaciones(Number(id))
                                             modal.close()
@@ -844,7 +878,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         variant: 'ghost',
                         size: 'xs',
                         onClick: () => {
-                            navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion-china/${proveedor.id}`)
+                            navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion/${proveedor.id}`)
                         }
                     }),
                     h(UButton, {
@@ -1051,35 +1085,21 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
     await getCotizaciones(Number(id))
 }
 
-// Watch inmediato para cargar datos cuando cambie el tab
-watch(tab, async (newVal, oldVal) => {
-    // Solo ejecutar si hay un cambio real de tab (no en la inicialización)
-    if (oldVal === '' || !newVal) {
-        return
-    }
 
-    try {
-        if (newVal === 'prospectos') {
-            await getCotizaciones(Number(id))
-        } else if (newVal === 'embarque') {
-            await getCotizacionProveedor(Number(id))
-        } else if (newVal === 'pagos') {
-            await getCotizacionPagos(Number(id))
-        }
-
-    } catch (error) {
-        console.error('Error al cambiar tab:', error)
-    }
-}, { immediate: false })
 
 // Watch inmediato para la carga inicial
 watch(() => tab.value, async (newVal) => {
     if (newVal && newVal !== '') {
         try {
             if (newVal === 'prospectos') {
+                navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`)
                 await getCotizaciones(Number(id))
             } else if (newVal === 'embarque') {
+                navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=embarque`)
                 await getCotizacionProveedor(Number(id))
+            } else if (newVal === 'pagos') {
+                navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=pagos`)
+                await getCotizacionPagos(Number(id))
             }
         } catch (error) {
             console.error('Error en carga inicial:', error)
@@ -1122,7 +1142,14 @@ const updateProveedorData = async (row: any) => {
 
 }
 onMounted(() => {
-    // Solo establecer el tab inicial, el watch se encargará de cargar los datos
-    tab.value = tabs[0].value // Cambiar a 'prospectos' como tab inicial
+    loadTabs();
+   
+    const tabQuery = route.query.tab
+    
+    if (tabQuery) {
+        tab.value = tabQuery as string
+    } else {
+        tab.value = tabs[0].value // Cambiar a 'prospectos' como tab inicial
+    }
 })
 </script>

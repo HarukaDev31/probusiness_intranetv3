@@ -68,7 +68,7 @@ const getPasos = async () => {
   const pasos = await getConsolidadoPasos(id)
 }
 const pasosMap = {
-  'COTIZACION': `/cargaconsolidada/abiertos/cotizaciones/${id}`,
+  'COTIZACION': `/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`,
   'CLIENTES': `/cargaconsolidada/abiertos/clientes/${id}`,
   'DOCUMENTACION': `/cargaconsolidada/abiertos/documentacion/${id}`,
   'COTIZACION FINAL': `/cargaconsolidada/abiertos/cotizacion-final/${id}`,

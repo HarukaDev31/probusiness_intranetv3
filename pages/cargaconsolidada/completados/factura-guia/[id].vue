@@ -2,7 +2,7 @@
   <div class="p-6">
     <!-- Header Section -->
     <PageHeader title="Factura y Guía" subtitle="Gestión de factura y guía" icon="i-heroicons-book-open"
-      :hide-back-button="false" @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
+      :hide-back-button="false" @back="navigateTo(`/cargaconsolidada/completados/pasos/${id}`)" />
 
     <DataTable title="General" :data="general" :columns="generalColumns" :loading="loadingGeneral"
       :current-page="currentPageGeneral" :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"

@@ -159,6 +159,8 @@ import type { TableColumn } from '@nuxt/ui'
 import { useModal } from '../composables/commons/useModal'
 import { useSpinner } from '../composables/commons/useSpinner'
 // Components
+import { ClienteService } from '~/services/clienteService'
+    
 const UButton = resolveComponent('UButton')
 
 // State
@@ -168,7 +170,6 @@ const fileError = ref('')
 const uploadLoading = ref(false)
 const createLoading = ref(false)
 
-const { clienteService } = await import('../services/clienteService')
 const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
 
@@ -323,7 +324,7 @@ const handleFileUpload = async () => {
     try {
         await withSpinner(async () => {
             // Importar el archivo Excel usando el servicio
-            const response = await clienteService.importExcel(selectedFile.value!)
+            const response = await ClienteService.importExcel(selectedFile.value!)
             console.log(response)
             
             if (response.success) {
@@ -391,8 +392,7 @@ const handleDownloadExcel = async (id: number, rutaArchivo: string) => {
 const loadArchivos = async () => {
     try {
         await withSpinner(async () => {
-            const { clienteService } = await import('../services/clienteService')
-            const response = await clienteService.getExcelsList()
+            const response = await ClienteService.getExcelsList()
 
             if (response.success) {
                 archivos.value = response.data
@@ -406,7 +406,7 @@ const loadArchivos = async () => {
 const handleDeleteArchivo = async (id: number) => {
     try {
         await withSpinner(async () => {
-            const response = await clienteService.deleteExcel(id)
+            const response = await ClienteService.deleteExcel(id)
             if (response.success) {
                 await loadArchivos()
                 showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')

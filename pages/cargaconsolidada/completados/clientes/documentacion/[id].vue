@@ -2,7 +2,7 @@
     <div class="p-6">
         <PageHeader title="Documentación del Cliente" subtitle="Gestión de documentos y cotizaciones"
             icon="i-heroicons-folder" :hide-back-button="false"
-            @back="navigateTo(`/cargaconsolidada/abiertos/clientes/${cliente?.id_contenedor}`)" />
+            @back="navigateTo(`/cargaconsolidada/completados/clientes/${cliente?.id_contenedor}`)" />
 
         <!-- Loading state -->
         <div v-if="loading" class="mt-6">
@@ -194,40 +194,27 @@
 
 
             <!-- Contenido por proveedor -->
-            <div v-if="proveedorActivo" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div v-if="proveedorActivo" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Sección de Documentación -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                     <template #header>
-                                                    <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                        Documentación - {{ proveedorActivo.code_supplier }}
-                                    </h3>
-                                    <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
-                                        Cambios sin guardar
-                                    </UBadge>
-                                </div>
-                                <div class="flex gap-2">
-                                    <UButton 
-                                        v-if="hasUnsavedChanges"
-                                        label="Guardar cambios" 
-                                        color="primary" 
-                                        variant="solid" 
-                                        icon="i-heroicons-check"
-                                        size="sm" 
-                                        @click="handleSaveChanges" 
-                                    />
-                                    <UButton 
-                                        label="Nuevo Documento" 
-                                        color="warning" 
-                                        variant="solid" 
-                                        icon="i-heroicons-plus"
-                                        size="sm" 
-                                        @click="handleNuevoDocumento" 
-                                    />
-                                </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Documentación {{ currentRole === ROLES.DOCUMENTACION ? 'Perú' : '' }}
+                                </h3>
+                                <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
+                                    Cambios sin guardar
+                                </UBadge>
                             </div>
+                            <div class="flex gap-2">
+                                <UButton v-if="hasUnsavedChanges" label="Guardar cambios" color="primary"
+                                    variant="solid" icon="i-heroicons-check" size="sm" @click="handleSaveChanges" />
+                                <UButton label="Nuevo Documento" color="warning" variant="solid" icon="i-heroicons-plus"
+                                    size="sm" v-if="currentRole === ROLES.COORDINACION" @click="handleNuevoDocumento" />
+                            </div>
+                        </div>
                     </template>
 
                     <div class="space-y-4">
@@ -238,14 +225,16 @@
                                     Volumen documento
                                 </label>
                                 <UInput v-model="proveedorActivo.volumen_doc" type="number" placeholder="0"
-                                    class="w-full" @update:model-value="handleVolumenChange" />
+                                    class="w-full" @update:model-value="handleVolumenChange"
+                                    :disabled="currentRole === ROLES.DOCUMENTACION" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Valor documento
                                 </label>
                                 <UInput v-model="proveedorActivo.valor_doc" type="number" placeholder="$ 0"
-                                    class="w-full" @update:model-value="handleValorChange" />
+                                    class="w-full" @update:model-value="handleValorChange"
+                                    :disabled="currentRole === ROLES.DOCUMENTACION" />
                             </div>
                         </div>
 
@@ -254,18 +243,18 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Factura Comercial
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']"
-                                :immediate="false"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'"
-                                :initial-files="proveedorActivo.factura_comercial ? [{
-                                    id:  proveedorActivo.id , // debe ser número
+                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.factura_comercial ? [{
+                                    id: proveedorActivo.id, // debe ser número
                                     file_name: 'Factura Comercial',
                                     file_url: proveedorActivo.factura_comercial,
                                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // tipo MIME si está disponible, si no dejar vacío
                                     size: 0, // tamaño en bytes si está disponible, si no dejar en 0
                                     lastModified: 0, // timestamp si está disponible, si no dejar en 0
                                     file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
-                                }] : []" @files-selected="handleFacturaComercial" @file-removed="handleRemoveFacturaComercial" />
+                                }] : []" @files-selected="handleFacturaComercial"
+                                @file-removed="handleRemoveFacturaComercial" />
                         </div>
 
                         <!-- Área de carga de Packing List -->
@@ -274,18 +263,16 @@
                                 Packing List
                             </label>
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']"
-                                :custom-message="'Selecciona o arrastra tu archivo aquí'"
-                                :immediate="false"
-                                :initial-files="proveedorActivo.packing_list ? [{
-                                    id:  proveedorActivo.id , // debe ser número
+                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :immediate="false"
+                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.packing_list ? [{
+                                    id: proveedorActivo.id, // debe ser número
                                     file_name: 'Packing List',
                                     file_url: proveedorActivo.packing_list,
                                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // tipo MIME si está disponible, si no dejar vacío
                                     size: 0, // tamaño en bytes si está disponible, si no dejar en 0
                                     lastModified: 0, // timestamp si está disponible, si no dejar en 0
                                     file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
-                                }] : []"
-                                @files-selected="handlePackingList" @file-removed="handleRemovePackingList" />
+                                }] : []" @files-selected="handlePackingList" @file-removed="handleRemovePackingList" />
                         </div>
 
                         <!-- Área de carga de Excel Confirmación -->
@@ -294,24 +281,101 @@
                                 Excel Confirmación
                             </label>
                             {{ proveedorActivo.value }}
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']"
-                                :immediate="false"
-
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
+                                :show-remove-button="currentRole === ROLES.COORDINACION"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="proveedorActivo.excel_confirmacion ? [{
-                                    id:  proveedorActivo.id , // debe ser número
+                                    id: proveedorActivo.id, // debe ser número
                                     file_name: 'Excel Confirmación',
                                     file_url: proveedorActivo.excel_confirmacion,
                                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // tipo MIME si está disponible, si no dejar vacío
                                     size: 0, // tamaño en bytes si está disponible, si no dejar en 0
                                     lastModified: 0, // timestamp si está disponible, si no dejar en 0
                                     file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
-                                }] : []" @files-selected="handleExcelConfirmacion" @file-removed="handleRemoveExcelConfirmacion" />
+                                }] : []" @files-selected="handleExcelConfirmacion"
+                                @file-removed="handleRemoveExcelConfirmacion" />
                         </div>
                     </div>
                 </UCard>
+                <!--add files_almacen_documentacion show fileuploader foreach file in merge of  files_almacen_inspection and files_almacen_documentacion with id_proveedor same proveedorActivo.id-->
+                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
+                    v-if="currentRole === ROLES.DOCUMENTACION">
+                    <template #header>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Documentación China
+                                </h3>
+                                <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
+                                    Cambios sin guardar
+                                </UBadge>
+                            </div>
+                            <div class="flex gap-2">
+                                <UButton v-if="hasUnsavedChanges" label="Guardar cambios" color="primary"
+                                    variant="solid" icon="i-heroicons-check" size="sm" @click="handleSaveChanges" />
+                                
+                            </div>
+                        </div>
+                    </template>
+                    <div class="space-y-4">
+                        <div v-for="file in filesAlmacenDocumentacion.filter(f => f.id_proveedor === proveedorActivo.id)" :key="file.id">
 
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
+                                :show-remove-button="false" :initial-files="[{
+                                    id: file.id,
+                                    file_name: file.file_name,
+                                    file_url: file.file_url,
+                                    type: file.file_ext,
+                                    size: 0,
+                                    lastModified: 0,
+                                    file_ext: file.file_ext
+                                }]" />
+                        </div>
+                       
+                    </div>
+
+                </UCard>
+                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
+                    v-if="currentRole === ROLES.DOCUMENTACION">
+                    <template #header>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Inspección
+                                </h3>
+                                <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
+                                    Cambios sin guardar
+                                </UBadge>
+                            </div>
+                            <div class="flex gap-2">
+                                <UButton v-if="hasUnsavedChanges" label="Guardar cambios" color="primary"
+                                    variant="solid" icon="i-heroicons-check" size="sm" @click="handleSaveChanges" />
+                                
+                            </div>
+                        </div>
+                    </template>
+                    <div class="space-y-4">
+                        <div v-for="file in filesAlmacenInspection.filter(f => f.id_proveedor === proveedorActivo.id)" :key="file.id">
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
+                                :show-remove-button="false" :initial-files="[{
+                                    id: file.id,
+                                    file_name: file.file_name,
+                                    file_url: file.file_url,
+                                    type: file.file_ext,
+                                    size: 0,
+                                    lastModified: 0,
+                                    file_ext: file.file_ext
+                                }]" />
+                        </div>
+                       
+                    </div>
+
+                </UCard>
+               
                 <!-- Sección de Cotizaciones -->
-                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg h-40 shadow-md">
+                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg h-40 shadow-md"
+                    v-if="currentRole === ROLES.COORDINACION">
 
                     <div class="space-y-4">
 
@@ -343,6 +407,9 @@ import { useVariacionCliente } from '~/composables/cargaconsolidada/useVariacion
 import FileUploader from '~/components/commons/FileUploader.vue'
 import type { FileItem } from '~/types/commons/file'
 import type { id } from '@nuxt/ui/runtime/locale/index.js'
+import { ROLES } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
+const { currentRole } = useUserRole()
 
 // Composables
 const { showSuccess, showError, showConfirmation } = useModal()
@@ -359,7 +426,10 @@ const {
     archivosInspeccion,
     hasData,
     hasProveedores,
+    filesAlmacenDocumentacion,
+    filesAlmacenInspection,
     getClienteDocumentacion,
+
     cambiarProveedor,
     updateProveedorDocumentacion,
     updateClienteDocumentacion,
@@ -382,10 +452,10 @@ const pendingChanges = ref({
 // Estado para controlar si hay cambios sin guardar
 const hasUnsavedChanges = computed(() => {
     return pendingChanges.value.volumen_doc !== null ||
-           pendingChanges.value.valor_doc !== null ||
-           pendingChanges.value.factura_comercial !== null ||
-           pendingChanges.value.packing_list !== null ||
-           pendingChanges.value.excel_confirmacion !== null
+        pendingChanges.value.valor_doc !== null ||
+        pendingChanges.value.factura_comercial !== null ||
+        pendingChanges.value.packing_list !== null ||
+        pendingChanges.value.excel_confirmacion !== null
 })
 
 // Route
@@ -414,7 +484,7 @@ const handleFacturaComercial = (files: File[]) => {
 }
 
 const handleRemoveFacturaComercial = (idProveedor: number) => {
-    
+
     pendingChanges.value.factura_comercial = null
     showConfirmation(
         'Confirmar eliminación',
@@ -422,7 +492,7 @@ const handleRemoveFacturaComercial = (idProveedor: number) => {
         async () => {
             try {
                 await withSpinner(async () => {
-                    const result = await deleteFacturaComercial( idProveedor)
+                    const result = await deleteFacturaComercial(idProveedor)
                     if (result.success) {
                         showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
                         await getClienteDocumentacion(clienteId)
@@ -500,7 +570,7 @@ const handleSaveChanges = async () => {
         await withSpinner(async () => {
             // Preparar FormData con todos los cambios
             const formData = new FormData()
-            
+
             // Agregar valores si han cambiado
             if (pendingChanges.value.volumen_doc !== null) {
                 formData.append('volumen_doc', pendingChanges.value.volumen_doc.toString())
@@ -525,7 +595,7 @@ const handleSaveChanges = async () => {
             formData.append('idProveedor', proveedorActivo.value.id.toString())
 
             // Enviar todos los cambios en una sola petición
-            const result = await updateProveedorDocumentacion( proveedorActivo.value.id, formData)
+            const result = await updateProveedorDocumentacion(proveedorActivo.value.id, formData)
 
             if (!result.success) {
                 throw new Error(result.error || 'Error al guardar los cambios')

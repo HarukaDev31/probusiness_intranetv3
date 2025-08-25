@@ -70,8 +70,7 @@ export const useClientes = () => {
         }
       })
 
-      const response = await clienteService.getClientes(queryParams)
-
+      const response = await ClienteService.getClientes(queryParams)
       clientes.value = response.data
       headers.value = response.headers
       // Actualizar pagination de forma más explícita para asegurar reactividad
@@ -99,7 +98,7 @@ export const useClientes = () => {
 
   const loadFilterOptions = async () => {
     try {
-      const options = await clienteService.getFilterOptions()
+      const options = await ClienteService.getFilterOptions()
       filterOptions.value = options
     } catch (err: any) {
       showError(`Error al cargar opciones de filtro ${err}`)
@@ -163,7 +162,7 @@ export const useClientes = () => {
     error.value = null
 
     try {
-      const newCliente = await clienteService.createCliente(clienteData)
+      const newCliente = await ClienteService.createCliente(clienteData)
       clientes.value.unshift(newCliente)
       return { success: true, data: newCliente }
     } catch (err: any) {
@@ -179,7 +178,7 @@ export const useClientes = () => {
     error.value = null
 
     try {
-      const updatedCliente = await clienteService.updateCliente(id, clienteData)
+      const updatedCliente = await ClienteService.updateCliente(id, clienteData)
       const index = clientes.value.findIndex(c => c.id === id)
       if (index !== -1) {
         clientes.value[index] = updatedCliente
@@ -198,7 +197,7 @@ export const useClientes = () => {
     error.value = null
 
     try {
-      await clienteService.deleteCliente(id)
+      await ClienteService.deleteCliente(id)
       clientes.value = clientes.value.filter(c => c.id !== id)
       return { success: true }
     } catch (err: any) {
@@ -214,7 +213,7 @@ export const useClientes = () => {
     error.value = null
 
     try {
-      const result = await clienteService.uploadClientesFile(file)
+      const result = await ClienteService.uploadClientesFile(file)
       // Recargar la lista después de subir
       await loadClientes()
       return { success: true, message: result.message }
@@ -232,7 +231,7 @@ export const useClientes = () => {
 
     try {
       await withSpinner(async () => {
-        const blob = await clienteService.exportClientes({
+        const blob = await ClienteService.exportClientes({
           search: search.value,
           categoria: filters.value.categoria,
           fecha_inicio: filters.value.fecha_inicio,
@@ -264,7 +263,7 @@ export const useClientes = () => {
     error.value = null
 
     try {
-      const cliente = await clienteService.getClienteById(id)
+      const cliente = await ClienteService.getClienteById(id)
       return { success: true, data: cliente }
     } catch (err: any) {
       error.value = err.message || 'Error al obtener cliente'
