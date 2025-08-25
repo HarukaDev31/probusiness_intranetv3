@@ -111,16 +111,20 @@
               @click="deleteProduct(product)"
               aria-label="Eliminar"
             />
-            <UButton
-              v-if="isDocumentacion"
-              icon="i-heroicons-bell"
-              size="xs"
-              :color="product.tiene_observaciones ? 'warning' : 'neutral'"
-              variant="soft"
-              @click="showObservations(product)"
-              :disabled="!product.tiene_observaciones"
-              aria-label="Observaciones"
-            />
+            <div class="relative inline-block" @click="showObservations(product)" :disabled="!product.tiene_observaciones">
+              <UButton
+                v-if="isDocumentacion"
+                icon="i-heroicons-bell"
+                size="xs"
+                :color="product.tiene_observaciones ? 'warning' : 'neutral'"
+                variant="soft"       
+                aria-label="Observaciones"
+              />
+              <span
+                v-if="product.tiene_observaciones"
+                class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full z-10"
+              ></span>
+            </div>
           </div>
         </div>
       </template>

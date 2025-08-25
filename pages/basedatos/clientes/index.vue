@@ -1,11 +1,14 @@
 <template>
     <div class="p-6">
-        <!--div with content align right-->
-        <div class="flex justify-end">
-            <UButton label="Ver Excel de clientes" icon="i-heroicons-eye" color="neutral"
-                variant="outline" @click="goToArchivos" />
+        <!-- <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="mb-4">
+                <h1 class="text-2xl font-bold text-gray-900">Base de datos de clientes</h1>
+            </div>
+            <div class="flex justify-end">
+                <UButton label="Ver Excel de clientes" icon="i-heroicons-eye" color="neutral"
+                    variant="outline" @click="goToArchivos" />
+            </div>
         </div>
-
         <DataTable title="Base de datos de clientes" icon="i-heroicons-users" :data="clientes" :columns="columns"
             :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalItems"
             :items-per-page="itemsPerPage" :search-query-value="search" :primary-search-value="primarySearch"
@@ -19,11 +22,89 @@
             @filter-change="handleFilterChange">
             
 
-            <!-- Estado de error -->
             <template #error-state>
                 <ErrorState :message="error || 'Error desconocido'" />
             </template>
-        </DataTable>
+        </DataTable> -->
+
+        <!-- Encabezado y acciones -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Base de datos clientes</h1>
+        <p class="text-gray-500 text-sm mt-1">Total de clientes: {{ totalItems }}</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <UInput
+          v-model="primarySearch"
+          icon="i-heroicons-magnifying-glass"
+          placeholder="Buscar por"
+          class="w-56"
+          @input="handleSearch"
+        />
+        <UButton label="Filtros" icon="i-heroicons-adjustments-horizontal" variant="outline" @click="showFilters = true" />
+        <UButton label="Exportar" icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportClientes" />
+        <UButton label="Cargar cliente" icon="i-heroicons-plus" color="primary" @click="goToArchivos" />
+      </div>
+    </div>
+
+        <!-- Tabla de clientes -->
+        <div class="bg-white rounded-lg shadow">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">N°</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Fecha</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Nombre</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">DNI/RUC</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Correo</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">WhstApp</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Servicio</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Categoría</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Acción</th>
+            </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+            <tr v-for="(cliente, idx) in clientes" :key="cliente.id" class="hover:bg-gray-50">
+                <td class="px-4 py-2">{{ idx + 1 }}</td>
+                <td class="px-4 py-2">{{ cliente.fecha }}</td>
+                <td class="px-4 py-2">{{ cliente.nombre }}</td>
+                <td class="px-4 py-2">{{ cliente.documento }}</td>
+                <td class="px-4 py-2">{{ cliente.correo }}</td>
+                <td class="px-4 py-2">{{ cliente.telefono }}</td>
+                <td class="px-4 py-2">{{ cliente.primer_servicio?.servicio || '-' }}</td>
+                <td class="px-4 py-2">
+                <span :class="getCategoriaColor(cliente.primer_servicio?.categoria)" class="px-2 py-1 rounded-full text-xs font-medium">
+                    {{ cliente.primer_servicio?.categoria || '-' }}
+                </span>
+                </td>
+                <td class="px-4 py-2">
+                <UButton
+                    icon="i-heroicons-eye"
+                    size="xs"
+                    color="primary"
+                    variant="ghost"
+                    @click="navigateTo(`/basedatos/clientes/${cliente.id}`)"
+                    aria-label="Ver"
+                />
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div v-if="clientes.length === 0" class="p-6 text-center text-gray-400">
+            No se encontraron clientes que coincidan con los criterios de búsqueda.
+        </div>
+        </div>
+            <!-- Paginación limpia como productos -->
+            <div class="flex justify-end mt-8">
+            <UPagination
+                :page="currentPage"
+                :page-count="totalPages"
+                :total="totalItems"
+                :items-per-page="itemsPerPage"
+                @update:page="handlePageChange"
+                @update:items-per-page="handleItemsPerPageChange"
+                />
+            </div>
     </div>
 </template>
 
@@ -54,6 +135,18 @@ const {
     handleItemsPerPageChange,
     exportClientes
 } = useClientes()
+
+const localCurrentPage = ref(1)
+
+const onPageChange = (page: number) => {
+  localCurrentPage.value = page
+  loadClientes({ page })
+}
+
+const onItemsPerPageChange = (limit: number) => {
+  loadClientes({ page: 1, limit })
+}
+
 
 // Configuración de filtros para DataTable
 const filterConfig = computed(() => [
@@ -101,82 +194,67 @@ const filterConfig = computed(() => [
 const columns: TableColumn<any>[] = [
     {
         accessorKey: 'id',
-        header: 'N.',
+        header: 'N°',
         cell: ({ row }) => {
             const index = clientes.value.indexOf(row.original)
-            return index + 1
+            return h('div', { class: 'font-semibold text-gray-700 py-3' }, index + 1)
         }
-    },
-    {
-        accessorKey: 'nombre',
-        header: 'Nombre',
-        cell: ({ row }) => row.getValue('nombre')
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI',
-        cell: ({ row }) => row.getValue('documento') || '-'
-    },
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }) => row.getValue('correo')
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }) => row.getValue('telefono')
     },
     {
         accessorKey: 'fecha',
         header: 'Fecha',
-        cell: ({ row }) => row.getValue('fecha')
+        cell: ({ row }) => h('div', { class: 'text-gray-500 py-3' }, row.getValue('fecha'))
+    },
+    {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        cell: ({ row }) => h('div', { class: 'font-medium text-gray-900 py-3' }, row.getValue('nombre'))
+    },
+    {
+        accessorKey: 'documento',
+        header: 'DNI/RUC',
+        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3' }, row.getValue('documento') || '-')
+    },
+    {
+        accessorKey: 'correo',
+        header: 'Correo',
+        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3' }, row.getValue('correo'))
+    },
+    {
+        accessorKey: 'telefono',
+        header: 'WhstApp',
+        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3' }, row.getValue('telefono'))
     },
     {
         accessorKey: 'primer_servicio',
         header: 'Servicio',
         cell: ({ row }) => {
             const primerServicio = row.getValue('primer_servicio') as any
-            if (primerServicio) {
-                return h('div', { class: 'space-y-1' }, [
-                    h('div', { class: 'font-medium' }, primerServicio.servicio),
-                    
-                ])
-            }
-            return '-'
+            return h('div', { class: 'font-medium text-gray-700 py-3' }, primerServicio?.servicio || '-')
         }
     },
     {
         accessorKey: 'categoria',
         header: 'Categoría',
-        cell: ({ row }) =>{
+        cell: ({ row }) => {
             const primerServicio = row.getValue('primer_servicio') as any
-            if (primerServicio) {
-                return h('div', { class: 'space-y-1' }, [
-             
-                    h('div', { class: 'text-xs' }, [
-                        h('span', { class: `px-2 py-1 rounded-full text-xs font-medium ${getCategoriaColor(primerServicio.categoria)}` }, primerServicio.categoria)
-                    ])
-                ])
-            }
-            return '-'
+            return h('span', {
+                class: `px-2 py-1 rounded-full text-xs font-medium ${getCategoriaColor(primerServicio?.categoria)}`
+            }, primerServicio?.categoria || '-')
         }
     },
     {
         accessorKey: 'acciones',
-        header: 'Acciones',
-        cell: ({ row }) => {
-            return h('div', { class: 'flex items-center gap-2' }, [
-                h(UButton as any, {
-                    size: 'xs',
-                    icon: 'i-heroicons-eye',
-                    color: 'primary',
-                    variant: 'ghost',
-                    onClick: () => navigateTo(`/basedatos/clientes/${row.original.id}`)
-                }),
-           
-            ])
-        }
+        header: 'Acción',
+        cell: ({ row }) => h('div', { class: 'flex items-center justify-center py-3' }, [
+            h(UButton as any, {
+                size: 'xs',
+                icon: 'i-heroicons-eye',
+                color: 'primary',
+                variant: 'ghost',
+                onClick: () => navigateTo(`/basedatos/clientes/${row.original.id}`)
+            })
+        ])
     }
 ]
 
