@@ -61,7 +61,7 @@ export function useEtiquetadoEdit(regulationId: string) {
 
     try {
       const id = parseInt(regulationId)
-      const response = await etiquetadoService.getEtiquetadoById(id)
+      const response = await EtiquetadoService.getEtiquetadoById(id)
 
       if (response.success && response.data) {
         const regulation = response.data as unknown as EtiquetadoResponse

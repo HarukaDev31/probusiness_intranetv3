@@ -108,6 +108,9 @@ import { type CreateEntityRequest } from '~/services/entityService'
 import { type CreatePermisoRequest } from '~/services/permisoService'
 import { useModal } from '../composables/commons/useModal'
 import { useSpinner } from '../composables/commons/useSpinner'
+import { PermisoService } from '~/services/permisoService'
+const permisoService = new PermisoService()
+const entityService = new EntityService()
 // Router
 const router = useRouter()
 const { showSuccess, showError } = useModal()
@@ -127,12 +130,7 @@ const formData = ref({
 
 
 // Entity options
-const entityOptions = ref([
-  { label: 'MTC', value: 'MTC' },
-  { label: 'MINSA', value: 'MINSA' },
-  { label: 'PRODUCE', value: 'PRODUCE' },
-  { label: 'MINCETUR', value: 'MINCETUR' }
-])
+const entityOptions = ref([])
 
 // Loading state for entities
 const loadingEntities = ref(false)
@@ -195,7 +193,7 @@ const saveForm = async () => {
     }
     await withSpinner(async () => {
       // Llamar al servicio para crear el permiso
-      const response = await permisoService.createPermiso(permisoData)
+      const response = await PermisoService.createPermiso(permisoData)
 
       if (response.success && response.data) {
 
@@ -216,8 +214,8 @@ const saveForm = async () => {
 
 const loadEntities = async () => {
   try {
+    const response = await EntityService.getEntities()
     loadingEntities.value = true
-    const response = await entityService.getEntities()
 
     if (response.success && response.data) {
       // Convertir las entidades a formato de opciones

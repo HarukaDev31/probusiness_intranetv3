@@ -218,7 +218,7 @@ const goBack = () => {
 const searchProducts = async (searchTerm: string) => {
   try {
     loadingProducts.value = true
-    const response = await productRubroService.getProductRubros(searchTerm,'DOCUMENTO_ESPECIAL')
+    const response = await ProductRubroService.getProductRubros(searchTerm,'DOCUMENTO_ESPECIAL')
 
     if (response.success && response.data) {
       // Convertir productos a formato de opciones para autocomplete
@@ -241,7 +241,7 @@ const createProduct = async () => {
       console.error('Nombre es requerido')
       return
     }
-    const response = await productRubroService.createProductRubro({
+    const response = await ProductRubroService.createProductRubro({
       nombre: newProduct.value.nombre,
       tipo: 'DOCUMENTO_ESPECIAL'
     })
@@ -307,7 +307,7 @@ const saveForm = async () => {
     }
 
     // Llamar al servicio para crear el documento especial
-    const response = await documentoService.createDocumento(documentoData)
+    const response = await DocumentoService.createDocumento(documentoData)
 
     if (response.success && response.data) {
       console.log('Documento especial guardado exitosamente:', response.data)

@@ -33,7 +33,9 @@ export const useProducts = () => {
       antidumping_value: product.antidumping_value || '',
       cargaContenedor: product.carga_contenedor,
       createdAt: product.created_at,
-      updatedAt: product.updated_at
+      updatedAt: product.updated_at,
+      tiene_observaciones: product.tiene_observaciones,
+      observaciones: product.observaciones || ''
     }
     return mapped
   }

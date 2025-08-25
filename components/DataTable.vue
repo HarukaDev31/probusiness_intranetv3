@@ -2,7 +2,7 @@
   <div class="space-y-6">
     
     <!-- Sticky Top Section -->
-    <div class="sticky top-0 z-40 bg-white dark:bg-gray-900 shadow-sm">
+    <div class="sticky top-0 z-40 bg-transparent">
       <slot name="filters ">
         <div class="flex flex-wrap items-center justify-end gap-4 p-4">
           <!-- Search and Actions -->
@@ -60,7 +60,7 @@
         </div>
       </slot>
 
-      <div v-if="showHeaders" class="bg-gray-50 dark:bg-gray-900 ">
+      <div v-if="showHeaders" class="bg-transparent">
         <div class="px-6 py-3">
           <div class="flex flex-wrap gap-3">
             <div v-for="header in headers" :key="header.value" class="flex items-center gap-2">
@@ -80,9 +80,14 @@
     </div>
 
     <!-- Table Section -->
-    <UCard class="mb-6">
+    <UCard class="mb-6 ring-0 bg-transparent">
       <div class="overflow-x-auto">
-        <UTable :data="filteredData" :sticky="true" :columns="columns" :loading="loading" class=""
+        <UTable :data="filteredData" :sticky="true" :columns="columns" :loading="loading" class="bg-transparent"
+          :ui="{
+            thead: 'bg-transparent',
+            tbody: 'border-separate border-spacing-y-3',
+            td: 'bg-white dark:bg-gray-800'
+          }"
           style="width: calc(100vw - 450px);min-height: 200px!important; height: 100% ">
 
           <template #loading>

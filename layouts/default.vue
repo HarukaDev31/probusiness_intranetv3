@@ -22,7 +22,7 @@
       </header>
 
       <!-- Page Content -->
-      <main class="flex-1 pt-6 px-6">
+      <main class="flex-1 pt-6 px-6 bg-[#f0f4f9] dark:bg-gray-900">
         <div class="mb-3">
           <Breadcrumbs />
         </div>

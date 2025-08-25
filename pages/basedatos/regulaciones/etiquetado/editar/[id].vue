@@ -78,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+
 import { ref, onMounted } from 'vue'
 import { useEtiquetadoEdit } from '../composables/useEtiquetadoEdit'
 import { useProductSelector } from '../composables/useProductSelector'
@@ -157,11 +158,14 @@ const createProduct = async () => {
     formData.value.producto = createdProduct
     newProduct.value = { nombre: '' }
     showCreateProductModal.value = false
+    searchProducts('')
   }
 }
+
 
 // Load regulation and products on mount
 onMounted(async () => {
   await enhancedLoadRegulation()
+  searchProducts('')
 })
 </script> 

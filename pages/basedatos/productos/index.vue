@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-3">
     <!-- Título y barra de acciones -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
       <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">
@@ -45,16 +45,16 @@
     </div>
 
     <!-- Headers -->
-    <div class="hidden md:flex rounded-t-xl px-6 py-3 font-semibold text-gray-600 dark:text-gray-300 text-sm justify-around">
-      <div class="w-16 text-center">N°</div>
-      <div class="w-16">Foto</div>
-      <div class="flex-1 max-w-[380px]">Nombre comercial</div>
-      <div class="w-32">Rubro</div>
-      <div class="w-24">T. Producto</div>
-      <div class="w-24">Unidad Com.</div>
-      <div class="w-28">Precio Exw</div>
-      <div class="w-28">Subpartida</div>
-      <div class="w-24">Campaña</div>
+     <!--bg-white dark:bg-gray-800 rounded-xl shadow-sm flex items-center px-6 py-4 gap-10-->
+    <div class="hidden md:flex rounded-xl px-6 py-4 gap-10 font-semibold text-gray-600 dark:text-gray-300 text-sm ">
+      <div class="w-8 text-center">N°</div>
+      <div class="w-32 text-center">Foto</div>
+      <div class="w-64">Nombre comercial</div>
+      <div class="w-32 text-center">Rubro</div>
+      <div class="w-32 text-center">T. Producto</div>
+      <div class="w-32 text-center">Unidad Com.</div>
+      <div class="w-32 text-center">Subpartida</div>
+      <div class="w-24 text-center">Campaña</div>
       <div class="w-32 text-center">Acciones</div>
     </div>
 
@@ -64,7 +64,7 @@
         <div
           v-for="(product, idx) in filteredProducts"
           :key="product.id"
-          class="bg-white dark:bg-gray-800 rounded-xl shadow-sm flex items-center px-6 py-4 gap-6"
+          class="bg-white dark:bg-gray-800 rounded-xl shadow-sm flex items-center px-6 py-6 gap-10"
         >
           <!-- N° -->
           <div class="w-8 text-center text-gray-500 dark:text-gray-400 font-medium">{{ idx + 1 }}</div>
@@ -74,27 +74,25 @@
               v-if="product.foto"
               :src="product.foto"
               :alt="product.nombreComercial"
-              class="w-16 h-16 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
+              class="w-32 h-32 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
               @click="openImageModal(product.foto, product.nombreComercial)"
             />
             <span v-else class="text-gray-400 dark:text-gray-500">Sin foto</span>
           </div>
           <!-- Nombre comercial -->
-          <div class="flex-1 min-w-[180px]">
+          <div class="flex w-64">
             <div class="font-semibold text-gray-800 dark:text-gray-100">{{ product.nombreComercial }}</div>
           </div>
           <!-- Rubro -->
-          <div class="w-32 text-gray-700 dark:text-gray-300">{{ product.rubro }}</div>
+          <div class="w-32 text-center text-gray-700 dark:text-gray-300">{{ product.rubro }}</div>
           <!-- Tipo Producto -->
-          <div class="w-24 text-gray-700 dark:text-gray-300">{{ product.tipoProducto }}</div>
+          <div class="w-32 text-center text-gray-700 dark:text-gray-300">{{ product.tipoProducto }}</div>
           <!-- Unidad Comercial -->
-          <div class="w-24 text-gray-700 dark:text-gray-300">{{ product.unidadComercial }}</div>
-          <!-- Precio Exw -->
-          <div class="w-28 text-gray-700 dark:text-gray-300">{{ formatPrice(product.precioExw) }}</div>
+          <div class="w-32 text-center text-gray-700 dark:text-gray-300">{{ product.unidadComercial }}</div>
           <!-- Subpartida -->
-          <div class="w-28 text-gray-700 dark:text-gray-300">{{ product.subpartida }}</div>
+          <div class="w-32 text-center text-gray-700 dark:text-gray-300">{{ product.subpartida }}</div>
           <!-- Campaña -->
-          <div class="w-24 text-gray-700 dark:text-gray-300">#{{ product.cargaContenedor }}</div>
+          <div class="w-24 text-center text-gray-700 dark:text-gray-300">#{{ product.cargaContenedor }}</div>
           <!-- Acciones -->
           <div class="w-32 flex gap-2 items-center justify-center">
             <UButton
@@ -113,6 +111,20 @@
               @click="deleteProduct(product)"
               aria-label="Eliminar"
             />
+            <div class="relative inline-block" @click="showObservations(product)" :disabled="!product.tiene_observaciones">
+              <UButton
+                v-if="isDocumentacion"
+                icon="i-heroicons-bell"
+                size="xs"
+                :color="product.tiene_observaciones ? 'warning' : 'neutral'"
+                variant="soft"       
+                aria-label="Observaciones"
+              />
+              <span
+                v-if="product.tiene_observaciones"
+                class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full z-10"
+              ></span>
+            </div>
           </div>
         </div>
       </template>
@@ -143,15 +155,26 @@
       @close="closeImageModal"
     />
   </div>
+  <!-- Modal de observaciones fuera del contenido principal -->
+  <DynamicModal
+    :visible="showModal"
+    :modal="modalData"
+    @close="showModal = false"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, h, resolveComponent } from 'vue'
-import type { ProductMapped } from '../types/product'
-import type { TableColumn } from '@nuxt/ui'
-import ImageModal from '../components/ImageModal.vue'
-import { formatCurrency } from '../utils/formatters'
+import type { ProductMapped } from '~/types/product'
+import DynamicModal from '~/components/DynamicModal.vue'
+import ImageModal from '~/components/ImageModal.vue'
+import { useUserRole } from '~/composables/auth/useUserRole'
+const userRole = useUserRole()
 const UButton = resolveComponent('UButton')
+
+// Constante de roles
+const { hasRole, isDocumentacion } = useUserRole()
+
 
 // Composable para productos
 const {
@@ -189,107 +212,14 @@ const showImageModal = ref(false)
 const selectedImage = ref('')
 const selectedImageTitle = ref('')
 
-const columns: TableColumn<ProductMapped>[] = [
-  {
-    accessorKey: 'id',
-    header: 'N°',
-    cell: ({ row }) => {
-      const index = products.value.indexOf(row.original)
-      return index + 1
-    }
-  },
-  {
-    accessorKey: 'nombreComercial',
-    header: 'Nombre comercial',
-    cell: ({ row }) => row.getValue('nombreComercial')
-  },
-  {
-    accessorKey: 'foto',
-    header: 'Foto',
-    cell: ({ row }) => {
-      const foto = row.getValue('foto')
-      const nombreComercial = row.getValue('nombreComercial')
-
-      if (foto) {
-        return h('div', { class: 'flex items-center gap-2' }, [
-          h('img', {
-            src: foto,
-            alt: nombreComercial,
-            class: 'w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity',
-            onClick: () => openImageModal(String(foto), String(nombreComercial))
-          }),
-         
-        ])
-      }
-      return h('span', { class: 'text-gray-400' }, 'Sin foto')
-    }
-  },
-  {
-    accessorKey: 'caracteristicas',
-    header: 'Características',
-    cell: ({ row }) => {
-      const caracteristicas = row.getValue('caracteristicas') as string
-      return h('div', {
-        class: 'w-80 text-wrap',
-        title: caracteristicas // oltip con texto completo
-      }, caracteristicas)
-    }
-  },
-  {
-    accessorKey: 'rubro',
-    header: 'Rubro',
-    cell: ({ row }) => row.getValue('rubro')
-  },
-  {
-    accessorKey: 'tipoProducto',
-    header: 'T. Producto',
-    cell: ({ row }) => row.getValue('tipoProducto')
-  },
-  {
-    accessorKey: 'unidadComercial',
-    header: 'Unidad Com.',
-    cell: ({ row }) => row.getValue('unidadComercial')
-  },
-  {
-    accessorKey: 'precioExw',
-    header: 'Precio Exw',
-    cell: ({ row }) => {
-      const precio = Number(row.getValue('precioExw'))
-      return formatCurrency(precio)
-    }
-  },
-  {
-    accessorKey: 'subpartida',
-    header: 'Subpartida',
-    cell: ({ row }) => row.getValue('subpartida')
-  },
-  {
-    accessorKey: 'cargaContenedor',
-    header: 'Campaña',
-    cell: ({ row }) => `# ${row.getValue('cargaContenedor')}`
-  },
-  {
-    id: 'actions',
-    header: 'Acciones',
-    cell: ({ row }) => {
-      const product = row.original
-      return h('div', { class: 'flex space-x-2' }, [
-        h(UButton, {
-          size: 'xs',
-          icon: 'i-heroicons-eye',
-          onClick: () => viewProduct(product)
-        }),
-
-        h(UButton, {
-          size: 'xs',
-          icon: 'i-heroicons-trash',
-          color: 'error',
-          onClick: () => deleteProduct(product)
-        })
-      ])
-    }
-  }
-]
+//Estado para el modal de mensajes
+const showModal = ref(false)
+const modalData = ref({
+  title: 'Observaciones',
+  message: '',
+  type: 'info', // o el tipo que necesites
+  persistent: false
+})
 
 // Configuración de filtros para el componente DataTable
 const filterConfig = computed(() => [
@@ -393,6 +323,17 @@ const viewProduct = (product: ProductMapped) => {
 const editProduct = (product: ProductMapped) => {
   // Navegar a la página de edición del producto
   navigateTo(`/basedatos/productos/${product.id}`)
+}
+
+function showObservations(product: ProductMapped) {
+  if (product.tiene_observaciones && product.observaciones) {
+    modalData.value.message = Array.isArray(product.observaciones)
+      ? product.observaciones.join('\n')
+      : product.observaciones
+  } else {
+    modalData.value.message = 'No hay observaciones'
+  }
+  showModal.value = true
 }
 
 const deleteProduct = async (product: ProductMapped) => {
