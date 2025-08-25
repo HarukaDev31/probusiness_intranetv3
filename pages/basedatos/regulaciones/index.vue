@@ -39,9 +39,6 @@
                 @click="navigateToCreate(activeTab)"
             />
         </div>
-        <UButton label="Exportar" icon="i-heroicons-arrow-down-tray" variant="outline" @click="handleExport(activeTab)"
-            :loading="getLoading(activeTab)">
-        </UButton>
         <!-- Modal de crear rubro-->
         <UModal v-model="showCreateModal" :title="getCreateTitle(activeTab)" :triger="true">
             <UButton label="Regulación" icon="i-heroicons-plus" variant="outline"
@@ -84,9 +81,9 @@
             <!-- Tab Antidumping -->
             <div v-if="activeTab === 'antidumping'">
                 <UCard class="bg-transparent ring-0">
-                    <div class="flex gap-8">
+                    <div class="flex gap-8 max-w-full">
                         <!-- Lista de rubros/productos -->
-                        <div class="w-120 flex flex-col gap-4">
+                        <div class="w-100 flex flex-col gap-4">
                             <!-- Encabezados -->
                             <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
                                 <span class="w-14 mr-10 text-center">N°</span>
@@ -130,7 +127,7 @@
                             :data="selectedRubro.regulaciones"
                             :columns="[
                                 { accessorKey: 'id', header: 'N°', cell: ({ row }) => row.index + 1 },
-                                { accessorKey: 'descripcion', header: 'Descripción' },
+                                { accessorKey: 'descripcion', header: 'Descripción', cell: ({ row }) => row.getValue('descripcion').slice(0, 50) + (row.getValue('descripcion').length > 50 ? '...' : '') },
                                 { accessorKey: 'partida', header: 'Partida' },
                                 { accessorKey: 'precio_declarado', header: 'P. Declaración', cell: ({ row }) => `$${row.getValue('precio_declarado')}` },
                                 { accessorKey: 'antidumping', header: 'Antidumping', cell: ({ row }) => `$${row.getValue('antidumping')}` },
@@ -178,10 +175,10 @@
                         class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex-1 flex">
                             <!-- Documentos a presentar -->
                             <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
-                                <h4 class="font-semibold mb-4">Detalle de Regulación</h4>
+                                <h4 class="font-semibold mb-4">Imágenes de producto</h4>
                                 <div v-if="regulationDetail.imagenes && regulationDetail.imagenes.length">
                                     <div class="flex gap-2 mt-2">
-                                    <img v-for="(img, idx) in regulationDetail.imagenes" :key="idx" :src="getImageUrl(img)" class="w-16 h-16 object-cover rounded border cursor-pointer" @click="openImageModal(img)" />
+                                    <img v-for="(img, idx) in regulationDetail.imagenes" :key="idx" :src="getImageUrl(img)" class="w-35 h-35 object-cover rounded border cursor-pointer" @click="openImageModal(img)" />
                                     </div>
                                 </div>
                                 <div v-else class="text-gray-400 text-sm">Sin imagenes</div>
@@ -578,13 +575,6 @@
                                     color="primary"
                                     @click.stop="editEtiquetado(rubro.id)"
                                 />
-                                <UButton
-                                    icon="i-heroicons-trash"
-                                    variant="ghost"
-                                    size="xs"
-                                    color="red"
-                                    @click.stop="deleteEtiquetado(rubro.id)"
-                                />
                                 </div>
                             </div>
                         </div>
@@ -778,13 +768,6 @@
                                     color="primary"
                                     @click.stop="editDocumento(rubro.id)"
                                 />
-                                <UButton
-                                    icon="i-heroicons-trash"
-                                    variant="ghost"
-                                    size="xs"
-                                    color="red"
-                                    @click.stop="deleteDocumento(rubro.id)"
-                                />
                                 </div>
                             </div>
                         </div>
@@ -839,22 +822,24 @@
                             <div class="w-1/2 pl-6 flex flex-col justify-start">
                                 <div class="flex items-center justify-between mb-4">
                                 <h4 class="font-semibold">Comentarios</h4>
-                                <UButton
+                                <div class="flex gap-1">
+                                    <UButton
                                     icon="i-heroicons-pencil-square"
                                     variant="outline"
                                     size="xs"
                                     color="primary"
                                     @click="editDocumento(selectedDocumentos.regulaciones[0]?.id)"
                                     aria-label="Editar"
-                                />
-                                <UButton
+                                    />
+                                    <UButton
                                     icon="i-heroicons-trash"
                                     variant="outline"
                                     size="xs"
                                     color="red"
                                     @click="deleteDocumento(selectedDocumentos.regulaciones[0]?.id)"
                                     aria-label="Eliminar"
-                                />
+                                    />
+                                </div>
                                 </div>
                                 <div class="bg-gray-50 dark:bg-gray-900 rounded p-3 text-gray-800 dark:text-gray-200 min-h-[80px]">
                                 {{ selectedDocumentos.regulaciones[0]?.observaciones || 'Sin comentarios' }}
@@ -1631,14 +1616,6 @@ const getLoading = (tab: string) => {
   }
 }
 
-const handleExport = (tab: string) => {
-  switch (tab) {
-    case 'antidumping': exportAntidumping(); break
-    case 'permisos': exportPermisos(); break
-    case 'etiquetado': exportEtiquetado(); break
-    case 'documentos': exportDocumentos(); break
-  }
-}
 
 const getCreateTitle = (tab: string) => {
   switch (tab) {

@@ -48,9 +48,9 @@
     </div>
 
         <!-- Tabla de clientes -->
-        <div class="bg-white rounded-lg shadow">
+        <div class="bg-transparent rounded-lg shadow">
         <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+            <thead class="bg-transparent">
             <tr>
                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">N°</th>
                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Fecha</th>
