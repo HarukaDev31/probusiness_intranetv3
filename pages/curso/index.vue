@@ -1,27 +1,78 @@
 <template>
     <div class="p-6">
         <PageHeader title="Cursos" subtitle="Gestión de cursos" icon="i-heroicons-book-open" :hide-back-button="true" />
-        <DataTable title="" icon="" :data="cursosData" :columns="columns" :loading="loading" :current-page="currentPage"
-            :total-pages="totalPages" :total-records="totalRecords" :items-per-page="itemsPerPage"
-            :search-query-value="search" :show-secondary-search="false" :show-filters="true"
-            :filter-config="filterConfig" :filters-value="filters" :show-export="true"
-            empty-state-message="No se encontraron registros de cursos." @update:search-query="handleSearch"
-            @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
+        <DataTable 
+            title="Base de datos de cursos" 
+            icon="i-heroicons-book-open" 
+            :data="cursosData" 
+            :columns="columns"
+            :loading="loading" 
+            :current-page="currentPage" 
+            :total-pages="totalPages" 
+            :total-records="totalRecords"
+            :items-per-page="itemsPerPage" 
+            :search-query-value="searchQuery"
+            :show-primary-search="true" 
+            :primary-search-label="'Buscar por'"
+            :primary-search-placeholder="'Buscar...'" 
+            :show-filters="true"
+            :filter-config="filterConfig" 
+            :filters-value="filters" 
+            :show-export="true"
+            empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
+            @update:primarySearch="handleSearch"
+            @page-change="handlePageChange" 
+            @items-per-page-change="handleItemsPerPageChange" 
+            @export="exportData"
             @filter-change="handleFilterChange">
         </DataTable>
     </div>
 </template>
 <script setup lang="ts">
-import { useCursos } from '../composables/useCursos'
+import { ref, h, resolveComponent, onMounted, watch } from 'vue'
+import { useCursos } from '~/composables/useCursos'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+import type { CursoItem } from '~/types/cursos/cursos'
 import type { TableColumn } from '@nuxt/ui'
-const { cursosData, loading, currentPage, totalPages,getFiltros, fetchCursosData, totalRecords, itemsPerPage, search, filterConfig, filters, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, exportData } = useCursos()
+const { 
+    cursosData, 
+    loading, 
+    currentPage, 
+    totalPages,getFiltros, 
+    loadCursos, 
+    totalRecords, 
+    itemsPerPage, 
+    searchQuery, 
+    filterConfig, 
+    filters, 
+    handleSearch, 
+    handlePageChange, 
+    handleItemsPerPageChange, 
+    handleFilterChange, 
+    exportData 
+} = useCursos()
+
+
 import { UButton, USelect } from '#components'
-const columns = ref<TableColumn<any>[]>([
+const estadoClasses: Record<string, string> = {
+    pendiente: 'bg-gray-100 text-gray-800',
+    adelanto: 'bg-yellow-100 text-yellow-800',
+    pagado: 'bg-green-100 text-green-800',
+    sobrepago: 'bg-red-100 text-red-800'
+}
+
+const onItemsPerPageChange = (newLimit: number) => {
+  loadCursos({ page: 1, limit: newLimit })
+}
+
+const columns = ref<TableColumn<CursoItem>[]>([
     {
         accessorKey: 'index',
         header: 'N.',
-        cell: ({ row }: { row: any }) => {
-            return row.index + 1
+        cell: ({ row }) => {
+            const index = cursosData.value.indexOf(row.original)
+            return index + 1
         }
     },
 
@@ -46,18 +97,26 @@ const columns = ref<TableColumn<any>[]>([
         accessorKey: 'tipo_curso',
         header: 'Curso',
         cell: ({ row }: { row: any }) => {
+            const value = row.original.tipo_curso
+            const items = [
+                { label: 'Virtual', value:0, icon: 'i-heroicons-video-camera' },
+                { label: 'En vivo', value:1, icon: 'i-heroicons-computer-desktop' }
+            ]
+            const icon = items.find(item => item.value === value)?.icon
             return h(USelect as any, {
-                modelValue: row.original.tipo_curso,
+                modelValue: value,
                 'onUpdate:modelValue': (value: any) => {
                     row.original.tipo_curso = value
                 },
                 placeholder: 'Seleccionar tipo',    
                 variant: 'outline',
                 size: 'sm',
-                items: [
-                    { label: 'Virtual', value:0, icon: 'i-heroicons-video-camera' },
-                    { label: 'En vivo', value:1, icon: 'i-heroicons-computer-desktop' }
-                ],
+                items,
+                option: (option: any) => h('div', { class: 'flex items-center gap-2' }, [
+                    h('span', { class: option.icon }),
+                    h('span', option.label)
+                ]),
+                icon,
                 class: 'w-full'
             })
         }
@@ -80,30 +139,79 @@ const columns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'usuario',
         header: 'Usuario',
-        cell: ({ row }: { row: any }) => row.getValue('usuario')
+        cell: ({ row }: { row: any }) => {
+            const items = [
+                { label: 'Pendiente', value:1, icon: 'ic:outline-access-time' },
+                { label: 'Creado', value:2, icon: 'ic:outline-person' }
+            ]
+            // Solo mostrar la opción de constancia si puede_constancia es verdadero
+            if (row.original.puede_constancia) {
+                items.push({ label: 'Constancia', value:3, icon: 'solar:diploma-outline' })
+            }
+            const icon = items.find(item => item.value === row.original.Nu_Estado_Usuario_Externo)?.icon
+            // Valor por defecto: pendiente (1) si no está definido
+            const modelValue = row.original.Nu_Estado_Usuario_Externo ?? 1
+            return h(USelect as any, {
+                modelValue,
+                'onUpdate:modelValue': (value: any) => {
+                    row.original.Nu_Estado_Usuario_Externo = value
+                },
+                placeholder: 'Seleccionar usuario',
+                items,
+                option: (option: any) => h('div', { class: 'flex items-center gap-2' }, [
+                    h('span', { class: option.icon }),
+                    h('span', option.label)
+                ]),
+                icon,
+            })
+        }
     },
     {
         accessorKey: 'importe',
         header: 'Importe',
-        cell: ({ row }: { row: any }) => row.getValue('importe')
+        cell: ({ row }: { row: any }) => formatCurrency(row.original.Ss_Total,'PEN'),
     },
     {
         accessorKey: 'estado',
         header: 'Estado',
-        cell: ({ row }: { row: any }) => row.getValue('estado')
+        cell: ({ row }: { row: any }) => {
+            const value = row.original.estado_pago
+            const items = [
+                { label: 'Pendiente', value: 'pendiente', icon: 'ic:outline-access-time' },
+                { label: 'Adelanto', value: 'adelanto', icon: 'ic:round-double-arrow' },
+                { label: 'Pagado', value: 'pagado', icon: 'ic:baseline-check-circle-outline' },
+                { label: 'Sobrepago', value: 'sobrepago', icon: 'ri:error-warning-line' }
+            ]
+            const icon = items.find(item => item.value === value)?.icon
+            return h(USelect as any, {
+                modelValue: value,
+                'onUpdate:modelValue': (val: any) => {
+                    row.original.estado_pago = val
+                },
+                placeholder: 'Seleccionar estado',
+                items,
+                option: (option: any) => h('div', { 
+                    class: estadoClasses[option.value] + ' rounded px-2 py-1 flex items-center gap-2'
+                }, [
+                    h('span', { class: option.icon }),
+                    h('span', option.label)
+                ]),
+                icon,
+                class: estadoClasses[value] + ' rounded px-2 py-1',
+                
+            })
+        },
     },
     {
         accessorKey: 'acciones',
         header: 'Acciones',
-        cell: ({ row }: { row: any }) => {
-            //ver,borrar,guardar,editar
+        cell: ({ row }) => {
+            const curso = row.original
             return h('div', { class: 'flex items-center gap-2' }, [
                 h(UButton, {
                     icon: 'i-heroicons-eye',
                     variant: 'solid',
-                    onClick: () => {
-                        console.log('ver')
-                    }
+                    onClick: () => viewCurso(curso)
                 }),
                 h(UButton, {
                     icon: 'i-heroicons-trash',
@@ -113,7 +221,7 @@ const columns = ref<TableColumn<any>[]>([
                     }
                 }),
                 h(UButton, {
-                    icon: 'i-heroicons-save',
+                    icon: 'ic:outline-save',
                     variant: 'outline',
                     onClick: () => {
                         console.log('guardar')
@@ -123,6 +231,10 @@ const columns = ref<TableColumn<any>[]>([
         }
     }
 ])
+
+// Computed para productos filtrados
+
+
 const fillFilters = async () => {
     const response = await getFiltros()
     console.log(response)
@@ -130,7 +242,11 @@ const fillFilters = async () => {
     
 }
 onMounted(() => {
-    fetchCursosData(filters.value, 1, itemsPerPage.value)
+    loadCursos()
     fillFilters()
 })
+
+const viewCurso = (curso: CursoItem) => {
+  navigateTo(`/curso/${curso.ID_Pedido_Curso}`)
+}
 </script>

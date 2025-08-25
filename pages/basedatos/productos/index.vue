@@ -1,21 +1,147 @@
 <template>
-  <div class="p-6">
-    <div class="flex justify-end">
-      <UButton label="Ver Excel de productos" icon="i-heroicons-eye" color="neutral" variant="outline"
-        @click="goToArchivos" />
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+    <!-- Título y barra de acciones -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+      <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">
+        Historial de productos importados
+      </h1>
+      <div class="flex gap-2 items-center">
+        <UInput
+          v-model="searchQuery"
+          icon="i-heroicons-magnifying-glass"
+          placeholder="Buscar por"
+          class="w-56"
+        />
+        <UButton
+          icon="i-heroicons-adjustments-horizontal"
+          color="neutral"
+          variant="outline"
+          label="Filtros"
+          @click="showFilters = !showFilters"
+        />
+        <UButton
+          label="Ver Excel de productos"
+          icon="i-heroicons-eye"
+          color="neutral"
+          variant="outline"
+          @click="goToArchivos"
+        />
+      </div>
     </div>
-    <DataTable title="Productos" icon="i-heroicons-document-text" :data="filteredProducts" :columns="columns"
-      :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-      :items-per-page="itemsPerPage" :show-secondary-search="true" secondary-search-label="Buscar por"
-      secondary-search-placeholder="Filtro específico..." :show-filters="true" :filter-config="filterConfig"
-      empty-state-message="No se encontraron productos que coincidan con los criterios de búsqueda."
-      :search-query-value="searchQuery" :secondary-search-value="secondarySearch" :filters-value="filters"
-      :show-headers="true" :headers="headers" @update:search-query="searchQuery = $event"
-      @update:primary-search="handleSearch" @filter-change="handleFilterChange" @update:current-page="onPageChange"
-      @update:items-per-page="onItemsPerPageChange" />
 
-    <ImageModal v-if="showImageModal" :is-open="showImageModal" :image-url="selectedImage" :title="selectedImageTitle"
-      @close="closeImageModal" />
+    <!-- Filtros -->
+    <div v-if="showFilters" class="mb-4">
+      <div class="flex flex-wrap gap-4">
+        <USelect
+          v-for="filter in filterConfig"
+          :key="filter.key"
+          v-model="filters[filter.key]"
+          :options="filter.options"
+          :placeholder="filter.placeholder"
+          class="w-48"
+          @change="handleFilterChange(filter.key, filters[filter.key])"
+        />
+      </div>
+    </div>
+
+    <!-- Headers -->
+    <div class="hidden md:flex rounded-t-xl px-6 py-3 font-semibold text-gray-600 dark:text-gray-300 text-sm justify-around">
+      <div class="w-16 text-center">N°</div>
+      <div class="w-16">Foto</div>
+      <div class="flex-1 max-w-[380px]">Nombre comercial</div>
+      <div class="w-32">Rubro</div>
+      <div class="w-24">T. Producto</div>
+      <div class="w-24">Unidad Com.</div>
+      <div class="w-28">Precio Exw</div>
+      <div class="w-28">Subpartida</div>
+      <div class="w-24">Campaña</div>
+      <div class="w-32 text-center">Acciones</div>
+    </div>
+
+    <!-- Tabla de productos -->
+    <div class="space-y-4">
+      <template v-if="filteredProducts.length">
+        <div
+          v-for="(product, idx) in filteredProducts"
+          :key="product.id"
+          class="bg-white dark:bg-gray-800 rounded-xl shadow-sm flex items-center px-6 py-4 gap-6"
+        >
+          <!-- N° -->
+          <div class="w-8 text-center text-gray-500 dark:text-gray-400 font-medium">{{ idx + 1 }}</div>
+          <!-- Foto -->
+          <div>
+            <img
+              v-if="product.foto"
+              :src="product.foto"
+              :alt="product.nombreComercial"
+              class="w-16 h-16 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
+              @click="openImageModal(product.foto, product.nombreComercial)"
+            />
+            <span v-else class="text-gray-400 dark:text-gray-500">Sin foto</span>
+          </div>
+          <!-- Nombre comercial -->
+          <div class="flex-1 min-w-[180px]">
+            <div class="font-semibold text-gray-800 dark:text-gray-100">{{ product.nombreComercial }}</div>
+          </div>
+          <!-- Rubro -->
+          <div class="w-32 text-gray-700 dark:text-gray-300">{{ product.rubro }}</div>
+          <!-- Tipo Producto -->
+          <div class="w-24 text-gray-700 dark:text-gray-300">{{ product.tipoProducto }}</div>
+          <!-- Unidad Comercial -->
+          <div class="w-24 text-gray-700 dark:text-gray-300">{{ product.unidadComercial }}</div>
+          <!-- Precio Exw -->
+          <div class="w-28 text-gray-700 dark:text-gray-300">{{ formatPrice(product.precioExw) }}</div>
+          <!-- Subpartida -->
+          <div class="w-28 text-gray-700 dark:text-gray-300">{{ product.subpartida }}</div>
+          <!-- Campaña -->
+          <div class="w-24 text-gray-700 dark:text-gray-300">#{{ product.cargaContenedor }}</div>
+          <!-- Acciones -->
+          <div class="w-32 flex gap-2 items-center justify-center">
+            <UButton
+              icon="i-heroicons-eye"
+              size="xs"
+              color="neutral"
+              variant="soft"
+              @click="viewProduct(product)"
+              aria-label="Ver"
+            />
+            <UButton
+              icon="i-heroicons-trash"
+              size="xs"
+              color="error"
+              variant="soft"
+              @click="deleteProduct(product)"
+              aria-label="Eliminar"
+            />
+          </div>
+        </div>
+      </template>
+      <div v-else class="text-center py-12 text-gray-400 dark:text-gray-500">
+        No se encontraron productos que coincidan con los criterios de búsqueda.
+      </div>
+    </div>
+
+    <!-- Paginación -->
+    <div class="flex justify-end mt-8">
+      <UPagination
+        v-model="localCurrentPage"
+        :page-count="totalPages"
+        :total="totalRecords"
+        :page="localCurrentPage"
+        :items-per-page="itemsPerPage"
+        @update:page="onPageChange"
+        @update:items-per-page="onItemsPerPageChange"
+      />
+    </div>
+
+    <!-- Modal de imagen -->
+    <ImageModal
+      v-if="showImageModal"
+      :is-open="showImageModal"
+      :image-url="selectedImage"
+      :title="selectedImageTitle"
+      @close="closeImageModal"
+    />
   </div>
 </template>
 
