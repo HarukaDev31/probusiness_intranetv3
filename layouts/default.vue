@@ -215,9 +215,10 @@ const sidebarCategories = computed(() => {
 const convertIconToHeroicons = (faIcon: string): string => {
   const iconMap: Record<string, string> = {
     'fa fa-home': 'i-heroicons-home',
-    'fas fa-boxes': 'i-heroicons-cube-transparent',
+    'fas fa-boxes': 'gravity-ui:boxes-3',
     'fa fa-list': 'i-heroicons-document-text',
-    'fa fa-file-excel': 'i-heroicons-document-text',
+    'fa fa-file-excel': 'vscode-icons:file-type-excel',
+    'fa fa-file-pdf' : 'vscode-icons:file-type-pdf',
     'fa fa-users': 'i-heroicons-users',
     'fa fa-cog': 'i-heroicons-cog-6-tooth',
     'fa fa-chart-bar': 'i-heroicons-chart-bar',
@@ -228,10 +229,11 @@ const convertIconToHeroicons = (faIcon: string): string => {
     'fa fa-plane': 'i-heroicons-paper-airplane',
     'fa fa-file': 'i-heroicons-document',
     'fa fa-folder': 'i-heroicons-folder',
-    'fa fa-database': 'i-heroicons-circle-stack'
+    'fa fa-database': 'i-heroicons-circle-stack',
+    'bi bi-clipboard': 'i-heroicons-clipboard'
   }
 
-  return iconMap[faIcon] || 'i-heroicons-square-3-stack-3d'
+  return iconMap[faIcon] || 'gravity-ui:boxes-3'
 }
 
 // Función para convertir URLs a rutas de Nuxt

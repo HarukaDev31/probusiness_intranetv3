@@ -14,7 +14,7 @@
       <div class="flex items-center gap-2">
         <!-- Dark Mode Toggle -->
         <UButton :icon="isDark ? 'i-heroicons-sun' : 'i-heroicons-moon'" variant="ghost" @click="toggleDarkMode" />
-        <UButton icon="i-heroicons-bars-3" variant="ghost" @click="toggleSidebar" />
+        <UButton icon="i-heroicons-bars-3" variant="ghost" @click="toggleSidebar" class="lg:hidden" />
       </div>
     </div>
 
