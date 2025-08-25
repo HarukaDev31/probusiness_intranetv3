@@ -58,7 +58,7 @@ export interface ClientesQueryParams {
 import { BaseService } from "~/services/base/BaseService"
 
 export class ClienteService extends BaseService {
-  private static baseUrl='/api/clientes'
+  private static baseUrl='/api/base-datos/clientes'
   
 
   /**

@@ -28,7 +28,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, resolveComponent, onMounted, computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
 // Components
