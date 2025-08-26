@@ -22,6 +22,11 @@ export interface Cliente {
     categoria: string
     detalle: string
   }>
+  pais?: string
+  ciudad?: string
+  capacidad_comercial?: string
+  rubro?: string
+  red_social?: string
 }
 
 export interface PaginationInfo {
@@ -47,8 +52,8 @@ export interface ErrorResponse {
 
 // Parámetros para la consulta
 export interface ClientesQueryParams {
-  limit?: number
-  page?: number
+  itemsPerPage?: number
+  currentPage?: number
   search?: string
   categoria?: string
   fecha_inicio?: string
@@ -68,8 +73,8 @@ export class ClienteService extends BaseService {
     try {
       const queryParams = new URLSearchParams()
 
-      if (params.limit) queryParams.append('limit', params.limit.toString())
-      if (params.page) queryParams.append('page', params.page.toString())
+      if (params.itemsPerPage) queryParams.append('itemsPerPage', params.itemsPerPage.toString())
+      if (params.currentPage) queryParams.append('currentPage', params.currentPage.toString())
       if (params.search) queryParams.append('search', params.search)
       if (params.categoria) queryParams.append('categoria', params.categoria)
       if (params.servicio) queryParams.append('servicio', params.servicio)

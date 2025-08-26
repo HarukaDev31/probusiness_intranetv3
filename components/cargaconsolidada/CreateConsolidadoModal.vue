@@ -1,7 +1,7 @@
 <template>
     <UModal>
 
-        <UButton color="primary" variant="outline" icon="i-heroicons-plus" label="Crear" />
+        <UButton color="primary" icon="i-heroicons-plus" label="Crear" class="h-11 w-24"/>
         <!-- Header -->
         <template #header>
             <div class="flex items-center justify-between w-full">

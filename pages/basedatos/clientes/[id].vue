@@ -60,141 +60,45 @@
     <ErrorState v-else-if="error" :message="error || 'Error desconocido'" />
 
     <!-- Cliente details -->
-    <div v-else-if="cliente" class="space-y-6">
-      <!-- Información básica con foto de perfil -->
-      <UCard>
-        <div class="flex items-start space-x-6">
-          <!-- Foto de perfil -->
-          <div class="flex-shrink-0">
-            <div class="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-              <UIcon name="i-heroicons-user" class="w-16 h-16 text-gray-400" />
-            </div>
-          </div>
-
-          <!-- Información del cliente -->
-          <div class="flex-1">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              {{ cliente.nombre }}
-            </h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Columna izquierda - Información personal -->
-              <div class="space-y-4">
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    País
-                  </label>
-                  <p class="text-gray-900 dark:text-white">Perú</p>
-                </div>
-
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Ciudad
-                  </label>
-                  <p class="text-gray-900 dark:text-white">Lima</p>
-                </div>
-
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    DNI
-                  </label>
-                  <p class="text-gray-900 dark:text-white">{{ cliente.documento || 'No especificado' }}</p>
-                </div>
-
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    WhatsApp
-                  </label>
-                  <p class="text-gray-900 dark:text-white">{{ cliente.telefono }}</p>
-                </div>
-
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Correo
-                  </label>
-                  <p class="text-gray-900 dark:text-white">{{ cliente.correo }}</p>
-                </div>
-
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Fecha de registro
-                  </label>
-                  <p class="text-gray-900 dark:text-white">{{ cliente.fecha }}</p>
-                </div>
-
-              </div>
-
-              <!-- Columna derecha - Información del primer servicio -->
-              <div class="space-y-4">
-                <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Primer servicio
-                  </label>
-                  <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.servicio }}</p>
-                </div>
-
-                <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Fecha primer servicio
-                  </label>
-                  <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.fecha }}</p>
-                </div>
-
-                <div v-if="cliente.primer_servicio" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Categoría
-                  </label>
-                  <p class="text-gray-900 dark:text-white">{{ cliente.primer_servicio.categoria }}</p>
-                </div>
-
-                <!-- Campos adicionales para futuras implementaciones -->
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Empresa
-                  </label>
-                  <p class="text-gray-900 dark:text-white">{{ cliente.empresa }}</p>
-                </div>
-
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    RUC
-                  </label>
-                  <p class="text-gray-900 dark:text-white">{{ cliente.ruc }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div v-else-if="cliente" class="flex flex-col md:flex-row gap-8 items-start">
+      <!-- Card de información del cliente -->
+      <div class="bg-white rounded-xl shadow p-6 w-1/4 md:w-1/3 flex flex-col items-center">
+        <div class="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center mb-4 overflow-hidden">
+          <UIcon name="i-heroicons-user" class="w-20 h-20 text-gray-400" />
         </div>
-      </UCard>
+        <h2 class="text-xl font-semibold text-gray-900 mb-2 text-center">{{ cliente?.nombre }}</h2>
+        <div class="w-full space-y-2 text-sm">
+          <div><span class="font-medium text-gray-500">País:</span> <span class="text-gray-900">{{ cliente?.pais || 'Perú' }}</span></div>
+          <div><span class="font-medium text-gray-500">Ciudad:</span> <span class="text-gray-900">{{ cliente?.ciudad || 'Lima' }}</span></div>
+          <div><span class="font-medium text-gray-500">DNI:</span> <span class="text-gray-900">{{ cliente?.documento }}</span></div>
+          <div><span class="font-medium text-gray-500">WhatsApp:</span> <span class="text-gray-900">{{ cliente?.telefono }}</span></div>
+          <div><span class="font-medium text-gray-500">Correo:</span> <span class="text-gray-900">{{ cliente?.correo }}</span></div>
+          <div><span class="font-medium text-gray-500">Empresa:</span> <span class="text-gray-900">{{ cliente?.empresa }}</span></div>
+          <div><span class="font-medium text-gray-500">RUC:</span> <span class="text-gray-900">{{ cliente?.ruc }}</span></div>
+          <div><span class="font-medium text-gray-500">Capacidad comercial:</span> <span class="text-gray-900">{{ cliente?.capacidad_comercial }}</span></div>
+          <div><span class="font-medium text-gray-500">Rubro:</span> <span class="text-gray-900">{{ cliente?.rubro }}</span></div>
+          <div><span class="font-medium text-gray-500">Red social:</span> <span class="text-gray-900">{{ cliente?.red_social }}</span></div>
+        </div>
+      </div>
 
       <!-- Historial de compras -->
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Historial de compras
-          </h3>
-        </template>
-
+      <div class="flex-1 max-w-3xl mx-auto">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">Historial de compras</h3>
         <div class="overflow-x-auto">
-          <UTable :data="historialCompras" :columns="historialColumns" class="w-full">
-            <template #empty-state>
-              <div class="text-center py-8">
-                <UIcon name="i-heroicons-shopping-cart" class="mx-auto h-12 w-12 text-gray-400" />
-                <h3 class="mt-2 text-sm font-semibold text-gray-900">Sin historial</h3>
-                <p class="mt-1 text-sm text-gray-500">
-                  No hay compras registradas para este cliente.
-                </p>
-              </div>
-            </template>
-          </UTable>
+          <DataTable
+            :data="historialCompras"
+            :columns="historialColumns"
+            :loading="loading"
+          />
         </div>
-      </UCard>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, h } from 'vue'
+import DataTable from '~/components/DataTable.vue'
 import type { Cliente } from '~/services/clienteService'
 import type { TableColumn } from '@nuxt/ui'
 import { UButton } from '#components'
@@ -265,15 +169,10 @@ const historialColumns: TableColumn<any>[] = [
 // Methods
 const loadCliente = async () => {
   loading.value = true
-  error.value = null
-
   try {
     const clienteData = await ClienteService.getClienteById(clienteId)
     cliente.value = clienteData
-
-    // Actualizar historial de compras basado en los servicios del cliente
     if (clienteData.servicios) {
-      console.log(clienteData.servicios)
       historialCompras.value = clienteData.servicios.map((servicio: any, index: number) => ({
         id: index + 1,
         id_servicio: servicio.id,
@@ -282,13 +181,9 @@ const loadCliente = async () => {
         is_imported: servicio.is_imported,
         detalle: servicio.detalle,
         servicio: servicio.servicio,
-        monto: servicio.servicio === 'Curso' ? `S/${servicio.monto??0.0}` : `$${servicio.monto??0.0}`, // Montos de ejemplo
-        tieneDocumento: servicio.servicio === 'Consolidado' // Solo consolidados tienen documentos
+        monto: servicio.servicio === 'Curso' ? `S/${servicio.monto??0.0}` : `$${servicio.monto??0.0}`,
       }))
     }
-  } catch (err: any) {
-    error.value = err.message || 'Error al cargar los datos del cliente'
-    showError(`Error al cargar los datos del cliente ${err}`)
   } finally {
     loading.value = false
   }

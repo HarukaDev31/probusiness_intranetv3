@@ -35,6 +35,7 @@ export interface DataTableProps {
   // Basic props
   title: string
   icon?: string
+  showTitle?: boolean
 
   // Data props
   data: any[]
@@ -44,6 +45,7 @@ export interface DataTableProps {
   // Search props
   searchPlaceholder?: string
   showPrimarySearch?: boolean
+  showPrimarySearchLabel?: boolean
   primarySearchLabel?: string
   primarySearchPlaceholder?: string
 
@@ -69,6 +71,11 @@ export interface DataTableProps {
   filtersValue?: Record<string, any>
   showHeaders?: boolean
   headers?: Header[]
+
+  //New Button
+  showNewButton?: boolean
+  newButtonLabel?: string
+  onNewButtonClick?: () => void  
 }
 
 export interface DataTableEmits {

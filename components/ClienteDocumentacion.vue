@@ -55,7 +55,7 @@
           <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md" style="width:60%">
             <template #header>
               <div class="flex items-center gap-2 mb-6 justify-between">
-                <div>
+                <div class="flex items-center gap-2">
                   <h2 class="text-lg dark:text-white">Documentación</h2>
                   <UIcon name="i-heroicons-folder-open" />
                 </div>
@@ -100,7 +100,7 @@
                     <div class="file-info-box">
                       <div class="file-info">
                         <div class="file-iconic">
-                          <UIcon name="i-heroicons-document-text" />
+                          <UIcon name="vscode-icons:file-type-excel" class="w-10 h-10 mr-2 mt-2" />
                         </div>
                         <div class="flex-1">
                           <span class="file-name">Factura Comercial del Proveedor</span>
@@ -192,7 +192,7 @@
                     <div class="file-info-box">
                       <div class="file-info">
                         <div class="file-iconic">
-                          <UIcon name="i-heroicons-document-text" />
+                          <UIcon name="vscode-icons:file-type-excel" class="w-10 h-10 mr-2 mt-2" />
                         </div>
                         <div class="flex-1">
                           <span class="file-name">Packing List del Proveedor</span>
@@ -285,7 +285,7 @@
                     <div class="file-info-box">
                       <div class="file-info">
                         <div class="file-iconic">
-                          <UIcon name="i-heroicons-table-cells" />
+                          <UIcon name="vscode-icons:file-type-excel" class="w-10 h-10 mr-2 mt-2" />
                         </div>
                         <div class="flex-1">
                           <span class="file-name">Excel Confirmación del Proveedor</span>
@@ -604,7 +604,7 @@ const getFileIcon = (fileName: string): string => {
   const extension = fileName.split('.').pop()?.toLowerCase()
   switch (extension) {
     case 'pdf':
-      return 'i-heroicons-document-text'
+      return 'vscode-icons:file-type-pdf2'
     case 'xlsx':
     case 'xls':
     case 'xlsm':
@@ -612,7 +612,7 @@ const getFileIcon = (fileName: string): string => {
     case 'xlsb':
     case 'xltx':
     case 'xlt':
-      return 'i-heroicons-table-cells'
+      return 'vscode-icons:file-type-excel'
     case 'png':
     case 'jpg':
     case 'jpeg':

@@ -86,6 +86,11 @@ definePageMeta({
 
 <style scoped>
 /* Estilos específicos para mantener la funcionalidad original */
+@import url('https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&display=swap');
+
+* {
+  font-family: 'Epilogue', sans-serif;
+}
 .content-header {
   font-family: 'Epilogue', sans-serif;
 }
