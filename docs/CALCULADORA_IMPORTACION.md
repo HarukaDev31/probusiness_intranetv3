@@ -158,3 +158,4 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 Para soporte técnico o preguntas sobre la implementación, contacta al equipo de desarrollo o crea un issue en el repositorio.
 
 
+

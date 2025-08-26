@@ -69,8 +69,10 @@
 
             <div>
               <UFormField label="WhatsApp" name="whatsapp">
-                <UInput v-model="clienteInfo.whatsapp" type="text"
-                  class="w-full px-4 py-2  rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                <UInputMenu v-model="clienteInfo.whatsapp" :items="clientes" placeholder="Buscar whatsapp..."
+                  class="flex-1" @update:searchTerm="(term: string) => getClientesByWhatsapp(term)"
+                  @update:model-value="onClienteSelected" />
+
               </UFormField>
             </div>
 
@@ -118,14 +120,14 @@
                 <h3 class="text-lg font-semibold ">
                   {{ proveedor.id }}) Proveedor
                 </h3>
-                <Ubutton @click="removeProveedor(proveedor.id)" class="text-red-500 hover:text-red-700 p-2"
+                <UButton @click="removeProveedor(proveedor.id)" class="text-red-500 hover:text-red-700 p-2"
                   title="Eliminar proveedor">
                   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd"
                       d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
                       clip-rule="evenodd" />
                   </svg>
-                </Ubutton>
+                </UButton>
                 <div>
                   <label class="block text-sm font-medium  mb-2">
                     CBM Total <span class="text-red-500">*</span>
@@ -188,16 +190,16 @@
                 </div>
               </div>
 
-              <Ubutton @click="addProducto(proveedor.id)"
+              <UButton @click="addProducto(proveedor.id)"
                 class="bg-orange-500  px-4 py-2 rounded-md hover:bg-orange-600 transition-colors">
                 + item
-              </Ubutton>
+              </UButton>
             </div>
 
-            <Ubutton @click="addProveedor"
+            <UButton @click="addProveedor"
               class="bg-blue-500  px-6 py-3 rounded-md hover:bg-blue-600 transition-colors">
               + Agregar Proveedor
-            </Ubutton>
+            </UButton>
           </div>
         </div>
 
@@ -227,28 +229,29 @@
             </div>
           </div>
 
-         
+
 
 
           <!-- Botón para continuar -->
-         
+
         </div>
 
         <!-- Step 4: Cálculos Finales -->
         <div v-if="currentStep === 3">
 
-          
+
 
           <!-- Tabla de Cálculos -->
           <div class="overflow-x-auto">
             <table class="w-full border-collapse ">
               <thead>
-                
+
               </thead>
               <tbody>
                 <tr>
                   <td class=" px-4 py-2 ">N. Proveedor</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" px-4 py-2 text-center" :colspan="proveedor.productos.length">
+                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" px-4 py-2 text-center"
+                    :colspan="proveedor.productos.length">
                     {{ proveedor.id }}
                   </td>
                   <td class=" px-4 py-2 text-center ">
@@ -257,25 +260,28 @@
                 </tr>
                 <tr>
                   <td class=" px-4 py-2 ">Qty Cajas</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" px-4 py-2 text-center" :colspan="proveedor.productos.length">
+                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" px-4 py-2 text-center"
+                    :colspan="proveedor.productos.length">
                     {{ proveedor.qtyCaja || 0 }}
                   </td>
                   <td class=" px-4 py-2 text-center ">
-                    {{proveedores.reduce((sum, p) => sum + (p.qtyCaja || 0), 0)}}
+                    {{ totalCajas }}
                   </td>
                 </tr>
                 <tr>
                   <td class=" px-4 py-2 ">Peso</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" px-4 py-2 text-center" :colspan="proveedor.productos.length">
+                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" px-4 py-2 text-center"
+                    :colspan="proveedor.productos.length">
                     {{ proveedor.peso || 0 }}
                   </td>
                   <td class=" px-4 py-2 text-center ">
-                    {{proveedores.reduce((sum, p) => sum + (p.peso || 0), 0)}}
+                    {{ totalPeso }}
                   </td>
                 </tr>
                 <tr>
                   <td class=" px-4 py-2 ">Vol. x Prov.</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" px-4 py-2 text-center" :colspan="proveedor.productos.length">
+                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" px-4 py-2 text-center"
+                    :colspan="proveedor.productos.length">
                     {{ proveedor.cbm || 0 }}
                   </td>
                   <td class=" px-4 py-2 text-center ">
@@ -323,15 +329,15 @@
                     </td>
                   </template>
                   <td class=" px-4 py-2 text-center ">
-                    ${{ proveedores.reduce((sum, p) => sum + (p.productos.reduce((sum, p) => sum + (p.precio * p.cantidad || 0), 0)), 0).toFixed(2) }}
+                    ${{ totalValorFOB.toFixed(2) }}
                   </td>
                 </tr>
                 <tr>
                   <td class=" px-4 py-2 ">Distribución %</td>
                   <template v-for="proveedor in proveedores" :key="proveedor.id" class=" px-4 py-2 text-center">
                     <td v-for="producto in proveedor.productos" :key="producto.id" class=" px-4 py-2 text-center">
-                      {{ proveedores.reduce((sum, p) => sum + (p.productos.reduce((sum, p) => sum + (p.precio * p.cantidad || 0), 0)), 0) > 0 ? ((producto.precio *
-                        producto.cantidad || 0) / proveedores.reduce((sum, p) => sum + (p.productos.reduce((sum, p) => sum + (p.precio * p.cantidad || 0), 0)), 0) * 100).toFixed(0) : 0 }}%
+                      {{ totalValorFOB > 0 ? ((producto.precio * producto.cantidad || 0) / totalValorFOB *
+                      100).toFixed(0) : 0 }}%
                     </td>
                   </template>
                   <td class=" px-4 py-2 text-center ">
@@ -346,7 +352,7 @@
                     </td>
                   </template>
                   <td class=" px-4 py-2 text-center">
-                    ${{ calculosFinales.flete.toFixed(2) }}
+                    ${{ totalFlete.toFixed(2) }}
                   </td>
                 </tr>
                 <tr>
@@ -357,18 +363,18 @@
                     </td>
                   </template>
                   <td class=" px-4 py-2 text-center ">
-                    ${{ calculosFinales.valorCFR.toFixed(2) }}
+                    ${{ totalCFR.toFixed(2) }}
                   </td>
                 </tr>
                 <tr>
                   <td class=" px-4 py-2">Seguro</td>
                   <template v-for="proveedor in proveedores" :key="proveedor.id" class=" px-4 py-2 text-center">
                     <td v-for="producto in proveedor.productos" :key="producto.id" class=" px-4 py-2 text-center">
-                      ${{ (producto.precio * producto.cantidad || 0).toFixed(2) }}
+                      ${{ (producto.precio || 0).toFixed(2) }}
                     </td>
                   </template>
                   <td class=" px-4 py-2 text-center">
-                    ${{ calculosFinales.seguro.toFixed(2) }}
+                    ${{ totalSeguro.toFixed(2) }}
                   </td>
                 </tr>
                 <tr>
@@ -380,7 +386,7 @@
                     </td>
                   </template>
                   <td class=" px-4 py-2 text-center ">
-                    ${{ calculosFinales.valorCIF.toFixed(2) }}
+                    ${{ totalCIF.toFixed(2) }}
                   </td>
                 </tr>
               </tbody>
@@ -409,7 +415,7 @@
                       }}
                     </td>
                     <td class=" px-4 py-2 text-center ">
-                      ${{ calculosFinales.antidumping.toFixed(2) }}
+                      ${{ totalAntidumping.toFixed(2) }}
                     </td>
                   </tr>
                   <tr>
@@ -419,7 +425,7 @@
                       $0.00
                     </td>
                     <td class=" px-4 py-2 text-center ">
-                      ${{ calculosFinales.adValorem.toFixed(2) }}
+                      $0.00
                     </td>
                   </tr>
                   <tr>
@@ -429,7 +435,7 @@
                         (proveedor.productos[0]?.precio || 0)) * 0.16).toFixed(2) }}
                     </td>
                     <td class=" px-4 py-2 text-center ">
-                      ${{ calculosFinales.igv.toFixed(2) }}
+                      ${{ totalIGV.toFixed(2) }}
                     </td>
                   </tr>
                   <tr>
@@ -438,7 +444,7 @@
                       $0.00
                     </td>
                     <td class=" px-4 py-2 text-center ">
-                      ${{ calculosFinales.ipm.toFixed(2) }}
+                      $0.00
                     </td>
                   </tr>
                   <tr>
@@ -447,7 +453,7 @@
                       $0.00
                     </td>
                     <td class=" px-4 py-2 text-center ">
-                      ${{ calculosFinales.percepcion.toFixed(2) }}
+                      $0.00
                     </td>
                   </tr>
                   <tr>
@@ -456,7 +462,7 @@
                       $0.00
                     </td>
                     <td class=" px-4 py-2 text-center ">
-                      ${{ calculosFinales.total.toFixed(2) }}
+                      ${{ totalTributos.toFixed(2) }}
                     </td>
                   </tr>
                 </tbody>
@@ -510,9 +516,19 @@ const {
   calcularTotales,
   isStepValid,
   canGoNext,
-  canGoPrev
+  canGoPrev,
+  getClientesByWhatsapp,
+  getTarifas,
+  clientes,
+  tarifas
 } = useCalculadoraImportacion()
 
+const onClienteSelected = (cliente: any) => {
+  clienteInfo.value.nombre = cliente.nombre || ''
+  clienteInfo.value.dni = cliente.documento || ''
+  clienteInfo.value.whatsapp = cliente.label || ''
+  clienteInfo.value.correo = cliente.correo || ''
+}
 const getStepLabel = (step: number): string => {
   switch (step) {
     case 1:
@@ -529,8 +545,154 @@ const getStepLabel = (step: number): string => {
 const totalCbm = computed(() => {
   return proveedores.value.reduce((sum, proveedor) => sum + proveedor.cbm, 0)
 })
+
 const totalItems = computed(() => {
   return proveedores.value.reduce((sum, proveedor) => sum + proveedor.productos.length, 0)
+})
+
+// Computed para cálculos de proveedores
+const proveedoresResumen = computed(() => {
+  return proveedores.value.map(proveedor => ({
+    id: proveedor.id,
+    qtyCajas: proveedor.qtyCaja || 0,
+    peso: proveedor.peso || 0,
+    cbm: proveedor.cbm || 0,
+    productos: proveedor.productos.map(producto => ({
+      id: producto.id,
+      nombre: producto.nombre || '-',
+      precio: producto.precio || 0,
+      cantidad: producto.cantidad || 0,
+      valorFOB: (producto.precio || 0) * (producto.cantidad || 0)
+    }))
+  }))
+})
+
+// Total de cajas
+const totalCajas = computed(() => {
+  return proveedores.value.reduce((sum, p) => sum + (p.qtyCaja || 0), 0)
+})
+
+// Total de peso
+const totalPeso = computed(() => {
+  return proveedores.value.reduce((sum, p) => sum + (p.peso || 0), 0)
+})
+
+// Total valor FOB
+const totalValorFOB = computed(() => {
+  return proveedores.value.reduce((sum, p) =>
+    sum + p.productos.reduce((sumProd, prod) =>
+      sumProd + (prod.precio || 0) * (prod.cantidad || 0), 0
+    ), 0
+  )
+})
+
+// Distribución por producto
+const distribucionPorProducto = computed(() => {
+  const total = totalValorFOB.value
+  if (total <= 0) return []
+
+  return proveedores.value.flatMap(proveedor =>
+    proveedor.productos.map(producto => ({
+      proveedorId: proveedor.id,
+      productoId: producto.id,
+      porcentaje: ((producto.precio || 0) * (producto.cantidad || 0) / total * 100).toFixed(0)
+    }))
+  )
+})
+
+// Cálculos de flete y seguro
+const fletePorProducto = computed(() => {
+  return proveedores.value.flatMap(proveedor =>
+    proveedor.productos.map(producto => ({
+      proveedorId: proveedor.id,
+      productoId: producto.id,
+      valor: (producto.precio || 0) * (producto.cantidad || 0)
+    }))
+  )
+})
+
+const seguroPorProducto = computed(() => {
+  return proveedores.value.flatMap(proveedor =>
+    proveedor.productos.map(producto => ({
+      proveedorId: proveedor.id,
+      productoId: producto.id,
+      valor: producto.precio || 0
+    }))
+  )
+})
+
+// Total de flete
+const totalFlete = computed(() => {
+  return fletePorProducto.value.reduce((sum, item) => sum + item.valor, 0)
+})
+
+// Total de seguro
+const totalSeguro = computed(() => {
+  return seguroPorProducto.value.reduce((sum, item) => sum + item.valor, 0)
+})
+
+// Cálculos de CFR y CIF
+const valorCFRPorProducto = computed(() => {
+  return proveedores.value.flatMap(proveedor =>
+    proveedor.productos.map(producto => ({
+      proveedorId: proveedor.id,
+      productoId: producto.id,
+      valor: ((producto.precio || 0) * (producto.cantidad || 0)) * 2
+    }))
+  )
+})
+
+const valorCIFPorProducto = computed(() => {
+  return proveedores.value.flatMap(proveedor =>
+    proveedor.productos.map(producto => ({
+      proveedorId: proveedor.id,
+      productoId: producto.id,
+      valor: ((producto.precio || 0) * (producto.cantidad || 0)) * 2 + (producto.precio || 0)
+    }))
+  )
+})
+
+// Totales de CFR y CIF
+const totalCFR = computed(() => {
+  return valorCFRPorProducto.value.reduce((sum, item) => sum + item.valor, 0)
+})
+
+const totalCIF = computed(() => {
+  return valorCIFPorProducto.value.reduce((sum, item) => sum + item.valor, 0)
+})
+
+// Cálculos de tributos
+const antidumpingPorProducto = computed(() => {
+  return proveedores.value.flatMap(proveedor =>
+    proveedor.productos.map(producto => ({
+      proveedorId: proveedor.id,
+      productoId: producto.id,
+      valor: ((producto.precio || 0) * (producto.cantidad || 0)) * 0.01
+    }))
+  )
+})
+
+const igvPorProducto = computed(() => {
+  return proveedores.value.flatMap(proveedor =>
+    proveedor.productos.map(producto => ({
+      proveedorId: proveedor.id,
+      productoId: producto.id,
+      valor: (((producto.precio || 0) * (producto.cantidad || 0)) * 2 + (producto.precio || 0)) * 0.16
+    }))
+  )
+})
+
+// Totales de tributos
+const totalAntidumping = computed(() => {
+  return antidumpingPorProducto.value.reduce((sum, item) => sum + item.valor, 0)
+})
+
+const totalIGV = computed(() => {
+  return igvPorProducto.value.reduce((sum, item) => sum + item.valor, 0)
+})
+
+const totalTributos = computed(() => {
+  return totalAntidumping.value + totalIGV.value
 })
 
 const finalizarCalculadora = () => {

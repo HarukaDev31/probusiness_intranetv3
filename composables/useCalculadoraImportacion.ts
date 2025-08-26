@@ -1,13 +1,15 @@
 import type { ClienteInfo, ProductoItem, Proveedor, CalculosFinales } from '~/types/calculadora-importacion'
+import { CalculadoraImportacionService } from '~/services/calculadora-importacion/calculadoraImportacionService'
 
 export const useCalculadoraImportacion = () => {
-  const currentStep = ref(3)
+  const currentStep = ref(1)
   const totalSteps = 3
-
+  const clientes = ref<any[]>([])
+  const tarifas = ref<any[]>([])
   const clienteInfo = ref<ClienteInfo>({
     nombre: '',
     dni: '12345678',
-    whatsapp: '+51 999 999 999',
+    whatsapp: '',
     correo: 'correo@ejemplo.com',
     qtyProveedores: 1
   })
@@ -209,7 +211,24 @@ export const useCalculadoraImportacion = () => {
 
   const canGoNext = computed(() => isStepValid(currentStep.value))
   const canGoPrev = computed(() => currentStep.value > 1)
-
+  const getClientesByWhatsapp = async (whatsapp: string) => {
+    try {
+      const response = await CalculadoraImportacionService.getClientesByWhatsapp(whatsapp)
+      clientes.value = response.data
+    } catch (error) {
+      console.error('Error al obtener clientes por whatsapp:', error)
+      throw new Error('No se pudieron obtener los clientes')
+    }
+  }
+  const getTarifas = async () => {
+    try {
+      const response = await CalculadoraImportacionService.getTarifas()
+      tarifas.value = response
+    } catch (error) {
+      console.error('Error al obtener tarifas:', error)
+      throw new Error('No se pudieron obtener las tarifas')
+    }
+  }
   return {
     currentStep,
     totalSteps,
@@ -226,6 +245,10 @@ export const useCalculadoraImportacion = () => {
     calcularTotales,
     isStepValid,
     canGoNext,
-    canGoPrev
+    canGoPrev,
+    getClientesByWhatsapp,
+    getTarifas,
+    clientes,
+    tarifas
   }
 }
