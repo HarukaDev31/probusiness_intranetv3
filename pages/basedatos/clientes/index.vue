@@ -1,22 +1,17 @@
 <template>
     <div class="p-6">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div class="mb-4">
-                <h1 class="text-2xl font-bold text-gray-900">Base de datos de clientes</h1>
-            </div>
-            <div class="flex justify-end">
-                <UButton label="Ver Excel de clientes" icon="i-heroicons-eye" color="neutral"
-                    variant="outline" @click="goToArchivos" />
-            </div>
-        </div>
-        <DataTable title="Base de datos de clientes" icon="i-heroicons-users" :data="clientes" :columns="columns"
+
+        <DataTable title="Base de datos de clientes" :show-title="true" icon="i-heroicons-users" :data="clientes" :columns="columns"
             :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalItems"
             :items-per-page="itemsPerPage" :search-query-value="search" :primary-search-value="primarySearch"
-            :show-primary-search="true" :primary-search-label="'Buscar por'"
-            :primary-search-placeholder="'Buscar por nombre, DNI/RUC, correo...'" :show-filters="true"
+            :show-primary-search="true" :showPrimarySearchLabel="false"
+            :primary-search-placeholder="'Buscar por'" :show-filters="true"
             :filter-config="filterConfig" :filters-value="filters" :show-export="true"
             :show-headers="true" :headers="headers"
             empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
+            :show-new-button="true"
+            new-button-label="Cargar Cliente"
+            :on-new-button-click="goToArchivos"
             @update:search-query="handleSearch" @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
             @filter-change="handleFilterChange">
@@ -140,11 +135,11 @@ const localCurrentPage = ref(1)
 
 const onPageChange = (page: number) => {
   localCurrentPage.value = page
-  loadClientes({ page })
+  loadClientes({ currentPage: page })
 }
 
 const onItemsPerPageChange = (limit: number) => {
-  loadClientes({ page: 1, limit })
+  loadClientes({ currentPage: 1, itemsPerPage: limit })
 }
 
 
@@ -197,40 +192,40 @@ const columns: TableColumn<any>[] = [
         header: 'N°',
         cell: ({ row }) => {
             const index = clientes.value.indexOf(row.original)
-            return h('div', { class: 'font-semibold text-gray-700 py-3' }, index + 1)
+            return h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, index + 1)
         }
     },
     {
         accessorKey: 'fecha',
         header: 'Fecha',
-        cell: ({ row }) => h('div', { class: 'text-gray-500 py-3' }, row.getValue('fecha'))
+        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-400' }, row.getValue('fecha'))
     },
     {
         accessorKey: 'nombre',
         header: 'Nombre',
-        cell: ({ row }) => h('div', { class: 'font-medium text-gray-900 py-3' }, row.getValue('nombre'))
+        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-100' }, row.getValue('nombre'))
     },
     {
         accessorKey: 'documento',
         header: 'DNI/RUC',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3' }, row.getValue('documento') || '-')
+        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, row.getValue('documento') || '-')
     },
     {
         accessorKey: 'correo',
         header: 'Correo',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3' }, row.getValue('correo'))
+        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, row.getValue('correo'))
     },
     {
         accessorKey: 'telefono',
         header: 'WhstApp',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3' }, row.getValue('telefono'))
+        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, row.getValue('telefono'))
     },
     {
         accessorKey: 'primer_servicio',
         header: 'Servicio',
         cell: ({ row }) => {
             const primerServicio = row.getValue('primer_servicio') as any
-            return h('div', { class: 'font-medium text-gray-700 py-3' }, primerServicio?.servicio || '-')
+            return h('div', { class: 'font-medium text-gray-700 py-3 dark:text-gray-300' }, primerServicio?.servicio || '-')
         }
     },
     {
@@ -239,7 +234,7 @@ const columns: TableColumn<any>[] = [
         cell: ({ row }) => {
             const primerServicio = row.getValue('primer_servicio') as any
             return h('span', {
-                class: `px-2 py-1 rounded-full text-xs font-medium ${getCategoriaColor(primerServicio?.categoria)}`
+                class: `px-2 py-1 rounded-full dark:bg-gray-800 dark:text-gray-300 text-xs font-medium ${getCategoriaColor(primerServicio?.categoria)}`
             }, primerServicio?.categoria || '-')
         }
     },
@@ -270,7 +265,7 @@ const getCategoriaColor = (categoria: string) => {
 }
 
 const handleSecondarySearch = (value: string) => {
-    loadClientes({ page: 1 })
+    loadClientes({ currentPage: 1 })
 }
 
 const goToArchivos = () => {
@@ -293,3 +288,10 @@ onMounted(async () => {
     await loadClientes()
 })
 </script>
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&display=swap');
+
+* {
+  font-family: 'Epilogue', sans-serif;
+}
+</style>

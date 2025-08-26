@@ -230,7 +230,8 @@ const convertIconToHeroicons = (faIcon: string): string => {
     'fa fa-file': 'i-heroicons-document',
     'fa fa-folder': 'i-heroicons-folder',
     'fa fa-database': 'i-heroicons-circle-stack',
-    'bi bi-clipboard': 'i-heroicons-clipboard'
+    'bi bi-clipboard': 'i-heroicons-clipboard',
+    'fa fa-user': 'mdi:account-box-outline'
   }
 
   return iconMap[faIcon] || 'gravity-ui:boxes-3'

@@ -54,8 +54,8 @@ export const useClientes = () => {
     try {
       // Combinar parámetros locales con los pasados
       const queryParams: ClientesQueryParams = {
-        page: params.page || currentPage.value,
-        limit: params.limit || itemsPerPage.value,
+        currentPage: params.currentPage || currentPage.value,
+        itemsPerPage: params.itemsPerPage || itemsPerPage.value,
         search: params.search || search.value,
         categoria: params.categoria || filters.value.categoria,
         fecha_inicio: params.fecha_inicio || filters.value.fecha_inicio,
@@ -86,7 +86,7 @@ export const useClientes = () => {
       // Si la página actual es mayor que el total de páginas disponibles, 
       // cargar la primera página automáticamente
       if (pagination.value.current_page > pagination.value.last_page && pagination.value.last_page > 0) {
-        await loadClientes({ page: 1 })
+        await loadClientes({ currentPage: 1 })
       }
     } catch (err: any) {
       error.value = err.message || 'Error al cargar clientes'
@@ -108,7 +108,7 @@ export const useClientes = () => {
 
   const handleSearch = async (searchTerm: string) => {
     search.value = searchTerm
-    await loadClientes({ page: 1, search: searchTerm })
+    await loadClientes({ currentPage: 1, search: searchTerm })
   }
 
   // Función para convertir fecha de DD/MM/YYYY a YYYY-MM-DD
@@ -145,16 +145,16 @@ export const useClientes = () => {
 
     filters.value = { ...filters.value, [filterType]: formattedValue }
     // Resetear a la primera página cuando se cambian los filtros
-    await loadClientes({ page: 1 })
+    await loadClientes({ currentPage: 1 })
   }
 
-  const handlePageChange = async (page: number) => {
-    await loadClientes({ page })
+  const handlePageChange = async (currentPage: number) => {
+    await loadClientes({ currentPage })
   }
 
-  const handleItemsPerPageChange = async (limit: number) => {
+  const handleItemsPerPageChange = async (itemsPerPage: number) => {
     // Cargar los datos con el nuevo límite
-    await loadClientes({ page: 1, limit })
+    await loadClientes({ currentPage: 1, itemsPerPage })
   }
 
   const createCliente = async (clienteData: Partial<Cliente>) => {

@@ -1,12 +1,12 @@
 
 
 export const FILE_ICONS_MAP = {
-    pdf: 'i-heroicons-document-text',
-    docx: 'i-heroicons-document-text',
-    xlsx: 'i-heroicons:table-cells',
-    xls: 'i-heroicons:table-cells',
+    pdf: 'vscode-icons:file-type-pdf2',
+    docx: 'vscode-icons:file-type-word',
+    xlsx: 'vscode-icons:file-type-excel',
+    xls: 'vscode-icons:file-type-excel',
     doc: 'i-heroicons-document',
-    xlsm: 'i-heroicons:table-cells',
+    xlsm: 'vscode-icons:file-type-excel',
     jpg: 'i-heroicons-photo',
     jpeg: 'i-heroicons-photo',
     png: 'i-heroicons-photo',

@@ -257,13 +257,13 @@ const loadPermiso = async () => {
 const getDocumentIcon = (extension: string) => {
   switch (extension?.toLowerCase()) {
     case 'pdf':
-      return 'i-heroicons-document-text'
+      return 'vscode-icons:file-type-pdf2'
     case 'doc':
     case 'docx':
-      return 'i-heroicons-document'
+      return 'vscode-icons:file-type-word'
     case 'xls':
     case 'xlsx':
-      return 'i-heroicons-table-cells'
+      return 'vscode-icons:file-type-excel'
     case 'jpg':
     case 'jpeg':
     case 'png':

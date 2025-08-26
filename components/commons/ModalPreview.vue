@@ -281,11 +281,11 @@ const getDocumentIcon = computed(() => {
 
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
     const iconMap: Record<string, string> = {
-        'pdf': 'i-heroicons-document-text',
-        'doc': 'i-heroicons-document-text',
-        'docx': 'i-heroicons-document-text',
-        'xls': 'i-heroicons-table-cells',
-        'xlsx': 'i-heroicons-table-cells',
+        'pdf': 'vscode-icons:file-type-pdf2',
+        'doc': 'vscode-icons:file-type-word',
+        'docx': 'vscode-icons:file-type-word',
+        'xls': 'vscode-icons:file-type-excel',
+        'xlsx': 'vscode-icons:file-type-excel',
         'ppt': 'i-heroicons-presentation-chart-line',
         'pptx': 'i-heroicons-presentation-chart-line',
         'txt': 'i-heroicons-document-text'
