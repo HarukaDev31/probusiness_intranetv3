@@ -9,15 +9,15 @@ export interface ClienteInfo {
 export interface ProductoItem {
   id: string
   nombre: string
-  cbm: number
-  peso: number
   precio: number
-  qtyCaja: number
   cantidad: number
 }
 
 export interface Proveedor {
   id: string
+  cbm: number
+  peso: number
+  qtyCaja: number
   productos: ProductoItem[]
 }
 

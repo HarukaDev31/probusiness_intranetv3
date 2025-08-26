@@ -1,8 +1,8 @@
 import type { ClienteInfo, ProductoItem, Proveedor, CalculosFinales } from '~/types/calculadora-importacion'
 
 export const useCalculadoraImportacion = () => {
-  const currentStep = ref(1)
-  const totalSteps = 4
+  const currentStep = ref(3)
+  const totalSteps = 3
 
   const clienteInfo = ref<ClienteInfo>({
     nombre: '',
@@ -15,15 +15,41 @@ export const useCalculadoraImportacion = () => {
   const proveedores = ref<Proveedor[]>([
     {
       id: '1',
+      cbm: 100,
+      peso: 100,
+      qtyCaja: 10,
       productos: [
         {
           id: '1-1',
-          nombre: '',
-          cbm: 0,
-          peso: 0,
-          precio: 0,
-          qtyCaja: 0,
-          cantidad: 0
+          nombre: 'Producto 1',
+          precio: 10,
+          cantidad: 10
+        },
+        {
+          id: '1-2',
+          nombre: 'Producto 2',
+          precio: 20,
+          cantidad: 20
+        }
+      ]
+    },
+    {
+      id: '2',
+      cbm: 200,
+      peso: 200,
+      qtyCaja: 20,
+      productos: [
+        {
+          id: '2-1',
+          nombre: 'Producto 3',
+          precio: 30,
+          cantidad: 30
+        },
+        {
+          id: '2-2',
+          nombre: 'Producto 4',
+          precio: 40,
+          cantidad: 40
         }
       ]
     }
@@ -67,14 +93,14 @@ export const useCalculadoraImportacion = () => {
     const newId = (proveedores.value.length + 1).toString()
     proveedores.value.push({
       id: newId,
+      cbm: 0,
+      peso: 0,
+      qtyCaja: 0,
       productos: [
         {
           id: `${newId}-1`,
           nombre: '',
-          cbm: 0,
-          peso: 0,
           precio: 0,
-          qtyCaja: 0,
           cantidad: 0
         }
       ]
@@ -104,10 +130,7 @@ export const useCalculadoraImportacion = () => {
       proveedor.productos.push({
         id: newId,
         nombre: '',
-        cbm: 0,
-        peso: 0,
         precio: 0,
-        qtyCaja: 0,
         cantidad: 0
       })
     }
@@ -133,8 +156,8 @@ export const useCalculadoraImportacion = () => {
     let valorFOB = 0
 
     proveedores.value.forEach(proveedor => {
+      totalCbm += proveedor.cbm
       proveedor.productos.forEach(producto => {
-        totalCbm += producto.cbm * producto.cantidad
         totalItems += producto.cantidad
         valorFOB += producto.precio * producto.cantidad
       })
@@ -172,9 +195,9 @@ export const useCalculadoraImportacion = () => {
                clienteInfo.value.correo.trim() !== ''
       case 2:
         return proveedores.value.every(proveedor =>
+          proveedor.cbm > 0 &&
           proveedor.productos.every(producto =>
             producto.nombre.trim() !== '' &&
-            producto.cbm > 0 &&
             producto.precio > 0 &&
             producto.cantidad > 0
           )
