@@ -1,6 +1,6 @@
 <template>
     <div class="p-6">
-        <!-- <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
             <div class="mb-4">
                 <h1 class="text-2xl font-bold text-gray-900">Base de datos de clientes</h1>
             </div>
@@ -25,10 +25,10 @@
             <template #error-state>
                 <ErrorState :message="error || 'Error desconocido'" />
             </template>
-        </DataTable> -->
+        </DataTable>
 
         <!-- Encabezado y acciones -->
-    <div class="flex items-center justify-between mb-6">
+    <!-- <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Base de datos clientes</h1>
         <p class="text-gray-500 text-sm mt-1">Total de clientes: {{ totalItems }}</p>
@@ -45,10 +45,10 @@
         <UButton label="Exportar" icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportClientes" />
         <UButton label="Cargar cliente" icon="i-heroicons-plus" color="primary" @click="goToArchivos" />
       </div>
-    </div>
+    </div> -->
 
         <!-- Tabla de clientes -->
-        <div class="bg-transparent rounded-lg shadow">
+        <!-- <div class="bg-transparent rounded-lg shadow">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-transparent">
             <tr>
@@ -93,9 +93,9 @@
         <div v-if="clientes.length === 0" class="p-6 text-center text-gray-400">
             No se encontraron clientes que coincidan con los criterios de búsqueda.
         </div>
-        </div>
+        </div> -->
             <!-- Paginación limpia como productos -->
-            <div class="flex justify-end mt-8">
+            <!-- <div class="flex justify-end mt-8">
             <UPagination
                 :page="currentPage"
                 :page-count="totalPages"
@@ -104,7 +104,7 @@
                 @update:page="handlePageChange"
                 @update:items-per-page="handleItemsPerPageChange"
                 />
-            </div>
+            </div> -->
     </div>
 </template>
 
