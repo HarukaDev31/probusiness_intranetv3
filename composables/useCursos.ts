@@ -222,6 +222,7 @@ export const useCursos = () => {
         currentPage,
         itemsPerPage,
         loadCursos,
+        fetchCursosData,
         handleSearch,
         handleFilterChange,
         handlePageChange,
