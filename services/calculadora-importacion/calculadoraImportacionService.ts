@@ -38,14 +38,51 @@ export class CalculadoraImportacionService extends BaseService {
             throw new Error('No se pudo guardar la cotización')
         }   
     }
-    static async getCotizaciones(): Promise<any> {
+    static async getCotizaciones(params: any): Promise<any> {
         try {
-            const response = await this.apiCall<any>(`${this.baseUrl}`)
+            const queryString = new URLSearchParams(params).toString()
+            const response = await this.apiCall<any>(`${this.baseUrl}?${queryString}`)
             return response
         } catch (error) {
             console.error('Error al obtener cotizaciones:', error)
             throw new Error('No se pudieron obtener las cotizaciones')
         }
     }
-
+    static async deleteCotizacion(id: number): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/${id}`, {
+                method: 'DELETE',
+                body: { id }
+            })
+            return response
+        } catch (error) {
+            console.error('Error al eliminar la cotización:', error)
+            throw new Error('No se pudo eliminar la cotización')
+        }
+    }
+    static async duplicateCotizacion(id: number): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/duplicate/${id}`, {
+                method: 'POST',
+                body: { id }
+            })
+            return response
+        } catch (error) {
+            console.error('Error al duplicar la cotización:', error)
+            throw new Error('No se pudo duplicar la cotización')
+        }
+    }
+    static async changeEstadoCotizacion(id: number, estado: string): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/change-estado/${id}`, {
+                method: 'POST',
+                body: { id, estado }
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error al cambiar el estado de la cotización:', error)
+            throw new Error('No se pudo cambiar el estado de la cotización')
+        }
+    }
 }

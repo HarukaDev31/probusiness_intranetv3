@@ -1,11 +1,12 @@
-import type { ClienteInfo, ProductoItem, Proveedor, Tarifa, saveCotizacionRequest } from '~/types/calculadora-importacion'
+import type { ClienteInfo, ProductoItem, Proveedor, Tarifa, saveCotizacionRequest, CotizacionFilters, FilterOptions } from '~/types/calculadora-importacion'
 import { CalculadoraImportacionService } from '~/services/calculadora-importacion/calculadoraImportacionService'
 import type { Header, PaginationInfo } from "~/types/data-table"
-import type { CotizacionFilters } from '~/types/cargaconsolidada/cotizaciones'
+import type { CotizacionFilters as CotizacionFiltersLegacy } from '~/types/cargaconsolidada/cotizaciones'
+import { CotizacionService } from '~/services/cargaconsolidada/cotizacionService'
 
 export const useCalculadoraImportacion = () => {
   const currentStep = ref(1)
-  const ISDEBUG = true
+  const ISDEBUG = false;
   const totalSteps = 3
   const MAX_PROVEEDORES = 3;
   const MAX_PROVEEDORES_EXTRA = 3;
@@ -40,6 +41,33 @@ export const useCalculadoraImportacion = () => {
   const tarifas = ref<Tarifa[]>([])
   const cotizaciones = ref<any[]>([])
   const loading = ref(false)
+  const estadoCotizaciones = ref<any[]>([
+    {
+      label: 'Todos',
+      value: 'todos',
+      showOptions: false,
+      class: 'bg-primary'
+    },
+
+    {
+      label: 'PENDIENTE',
+      value: 'PENDIENTE',
+      class: 'bg-warning-500',
+      showOptions: true
+    },
+    {
+      label: 'COTIZADO',
+      value: 'COTIZADO',
+      class: 'bg-secondary',
+      showOptions: true
+    },
+    {
+      label: 'CONFIRMADO',
+      value: 'CONFIRMADO',
+      class: 'bg-success',
+      showOptions: true
+    }
+  ])
   const error = ref<string | null>(null)
   const pagination = ref<PaginationInfo>({
     current_page: 1,
@@ -49,7 +77,7 @@ export const useCalculadoraImportacion = () => {
     from: 0,
     to: 0
   })
-  const headers=ref<Header[]>([])
+  const headers = ref<Header[]>([])
   const search = ref('')
   const itemsPerPage = ref(10)
   const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
@@ -59,11 +87,19 @@ export const useCalculadoraImportacion = () => {
     fecha_inicio: '',
     fecha_fin: '',
     estado: 'todos', // Inicializar con 'todos' para consistencia
-    completado: false
+    completado: false,
+    campania: '', // Agregar filtro de campaña
+    estado_calculadora: '' // Agregar filtro de estado de calculadora
+  })
+
+  // Agregar opciones de filtro para campaña y estado
+  const filterOptions = ref<FilterOptions>({
+    contenedores: [],
+    estadoCalculadora: []
   })
 
   const tarifasSelect = computed(() => {
-  
+
     const grouped = tarifas.value.reduce((acc, tarifa) => {
       acc[tarifa.value] = tarifa
       return acc
@@ -130,8 +166,7 @@ export const useCalculadoraImportacion = () => {
     }
   ])
   const handleChangeToStep2 = () => {
-    console.log('handleChangeToStep2', currentStep.value)
-    console.log('clienteInfo.value.qtyProveedores', clienteInfo.value.qtyProveedores)
+
     const proveedoresLength = proveedores.value.length
     const clienteQtyProveedores = clienteInfo.value.qtyProveedores
     const diff = clienteQtyProveedores - proveedoresLength
@@ -179,9 +214,9 @@ export const useCalculadoraImportacion = () => {
       tarifaTotalExtraItem: tarifaTotalExtraItem,
       tarifa: selectedTarifa.value,
     }
-    //send to service
+
     const response = await CalculadoraImportacionService.saveCotizacion(saveCotizacionRequest)
-    console.log(response)
+    return response
   }
   const nextStep = () => {
     switch (currentStep.value) {
@@ -205,6 +240,10 @@ export const useCalculadoraImportacion = () => {
   const prevStep = () => {
     if (currentStep.value > 1) {
       currentStep.value--
+      return
+    }
+    if (currentStep.value === 1) {
+      navigateTo('/cotizaciones')
     }
   }
 
@@ -281,7 +320,7 @@ export const useCalculadoraImportacion = () => {
       const isExtra = proveedor.productos.length + 1 > tarifaExtra?.item_base
       proveedor.productos.push({
         id: newId,
-        nombre: `Producto ${newId}`,  
+        nombre: `Producto ${newId}`,
         precio: ISDEBUG ? 10 : 0,
         cantidad: ISDEBUG ? 100 : 0,
         antidumpingCU: 0,
@@ -337,7 +376,7 @@ export const useCalculadoraImportacion = () => {
   }
 
   const canGoNext = computed(() => isStepValid(currentStep.value))
-  const canGoPrev = computed(() => currentStep.value > 1)
+  const canGoPrev = computed(() => currentStep.value > 0)
   const getClientesByWhatsapp = async (whatsapp: string) => {
     try {
       const response = await CalculadoraImportacionService.getClientesByWhatsapp(whatsapp)
@@ -358,24 +397,94 @@ export const useCalculadoraImportacion = () => {
   }
   const getCotizaciones = async () => {
     try {
-      const response = await CalculadoraImportacionService.getCotizaciones()
+      const params: any = {
+        page: pagination.value.current_page,
+        per_page: itemsPerPage.value
+      }
+      if (search.value.trim()) {
+        params.search = search.value.trim()
+      }
+      if (filters.value.fecha_inicio) {
+        params.fecha_inicio = filters.value.fecha_inicio
+      }
+      if (filters.value.fecha_fin) {
+        params.fecha_fin = filters.value.fecha_fin
+      }
+      if (filters.value.estado && filters.value.estado !== 'todos') {
+        params.estado = filters.value.estado
+      }
+      if (filters.value.campania && filters.value.campania !== '' && filters.value.campania !== 'todas') {
+        params.campania = filters.value.campania
+      }
+      if (filters.value.estado_calculadora && filters.value.estado_calculadora !== '' && filters.value.estado_calculadora !== 'todos') {
+        params.estado_calculadora = filters.value.estado_calculadora
+      }
+
+      const response = await CalculadoraImportacionService.getCotizaciones(params)
       cotizaciones.value = response.data
+      pagination.value = response.pagination
+      headers.value = response.headers
+      
+      // Actualizar las opciones de filtro si vienen en la respuesta
+      if (response.filters) {
+        filterOptions.value.contenedores = response.filters.contenedores || []
+        filterOptions.value.estadoCalculadora = response.filters.estadoCalculadora || []
+      }
     } catch (error) {
       console.error('Error al obtener cotizaciones:', error)
       throw new Error('No se pudieron obtener las cotizaciones')
     }
   }
-  const handleSearch = (value: string) => {
+  const handleSearch = async (value: string) => {
     search.value = value
+    await getCotizaciones()
   }
-  const handlePageChange = (page: number) => {
+  const handlePageChange = async (page: number) => {
     pagination.value.current_page = page
+    await getCotizaciones()
   }
-  const handleItemsPerPageChange = (itemsPerPage: number) => {
+  const handleItemsPerPageChange = async (itemsPerPage: number) => {
     pagination.value.per_page = itemsPerPage
+    await getCotizaciones()
   }
-  const handleFilterChange = (filters: any) => {
-    filters.value = filters
+  const handleFilterChange = async (filterType: string, value: string) => {
+    // Manejar el valor 'todos' y 'todas' como vacío para el backend
+    let formattedValue = value
+    if (value === 'todos' || value === 'todas') {
+      formattedValue = ''
+    }
+
+    filters.value = { ...filters.value, [filterType]: formattedValue }
+    // Resetear a la primera página cuando se cambian los filtros
+    pagination.value.current_page = 1
+    await getCotizaciones()
+  }
+  const deleteCotizacionCalculadora = async (id: number) => {
+    try {
+      const response = await CalculadoraImportacionService.deleteCotizacion(id)
+      return response
+    } catch (error) {
+      console.error('Error al eliminar la cotización:', error)
+      throw new Error('No se pudo eliminar la cotización')
+    }
+  }
+  const duplicateCotizacionCalculadora = async (id: number) => {
+    try {
+      const response = await CalculadoraImportacionService.duplicateCotizacion(id)
+      return response
+    } catch (error) {
+      console.error('Error al duplicar la cotización:', error)
+      throw new Error('No se pudo duplicar la cotización')
+    }
+  }
+  const changeEstadoCotizacionCalculadora = async (id: number, estado: string) => {
+    try {
+      const response = await CalculadoraImportacionService.changeEstadoCotizacion(id, estado)
+      return response
+    } catch (error) {
+      console.error('Error al cambiar el estado de la cotización:', error)
+      throw new Error('No se pudo cambiar el estado de la cotización')
+    }
   }
   return {
     currentStep,
@@ -418,9 +527,14 @@ export const useCalculadoraImportacion = () => {
     totalRecords,
     currentPage,
     filters,
+    filterOptions,
     handleSearch,
     handlePageChange,
     handleItemsPerPageChange,
-    handleFilterChange
+    handleFilterChange,
+    estadoCotizaciones,
+    deleteCotizacionCalculadora,
+    duplicateCotizacionCalculadora,
+    changeEstadoCotizacionCalculadora
   }
 }

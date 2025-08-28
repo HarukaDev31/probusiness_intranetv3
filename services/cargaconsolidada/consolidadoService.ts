@@ -115,6 +115,13 @@ export class ConsolidadoService extends BaseService {
     }
     static async moveCotizacion(payload: any): Promise<any> {
         try {
+            if(payload.isFromCalculadora){
+                const response = await this.apiCall<any>(`${this.baseUrl}/move-cotizacion-calculadora`, {
+                    method: 'POST',
+                    body: payload
+                })
+                return response
+            }
             const response = await this.apiCall<any>(`${this.baseUrl}/move-cotizacion`, {
                 method: 'POST',
                 body: payload

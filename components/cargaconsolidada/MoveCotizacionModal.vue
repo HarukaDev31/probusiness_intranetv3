@@ -51,11 +51,19 @@ import { ref, onMounted } from 'vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import { CotizacionService } from '~/services/cargaconsolidada/cotizacionService'
 
-const props = defineProps<{
+interface Props {
   show: boolean
   cotizacionId?: number
   idConsolidado?: string
-}>()
+  isFromCalculadora?: boolean
+}
+//set defaults values
+const props = withDefaults(defineProps<Props>(), {
+  isFromCalculadora: false,
+  show: true,
+
+
+})
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -91,7 +99,8 @@ const handleMove = async () => {
   try {
     await ConsolidadoService.moveCotizacion({
       idCotizacion: props.cotizacionId,
-      idContenedorDestino: selectedConsolidado.value
+      idContenedorDestino: selectedConsolidado.value,
+      isFromCalculadora: props.isFromCalculadora
     })
     
     emit('moved')

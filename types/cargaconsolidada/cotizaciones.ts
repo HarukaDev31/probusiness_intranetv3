@@ -1,4 +1,4 @@
-import type { PaginationInfo } from "../services/clienteService"
+import type { PaginationInfo } from "../data-table"
 
 export interface Cotizacion {
     id: number

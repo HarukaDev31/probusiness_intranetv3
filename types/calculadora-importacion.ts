@@ -70,3 +70,23 @@ export interface saveCotizacionRequest {
   tarifaTotalExtraItem: number
   tarifa: Tarifa
 }
+
+export interface CotizacionFilters {
+  fecha_inicio: string
+  fecha_fin: string
+  estado: string
+  completado: boolean
+  campania: string
+  estado_calculadora: string
+}
+
+export interface FilterOption {
+  id?: number
+  label: string
+  value: string | number
+}
+
+export interface FilterOptions {
+  contenedores: FilterOption[]
+  estadoCalculadora: FilterOption[]
+}

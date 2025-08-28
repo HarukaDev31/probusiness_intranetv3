@@ -28,7 +28,6 @@ const handleConfirm = (modal: any) => {
   }
   removeModal(modal.id)
 }
-
 const handleCancel = (modal: any) => {
   if (modal.onCancel) {
     modal.onCancel()
