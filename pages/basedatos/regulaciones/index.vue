@@ -41,7 +41,7 @@
         </div>
         <!-- Modal de crear rubro-->
         <UModal v-model="showCreateModal" :title="getCreateTitle(activeTab)" :triger="true">
-            <UButton label="Regulación" icon="i-heroicons-plus" variant="outline"
+            <UButton v-if="!['etiquetado','documentos'].includes(activeTab)" label="Regulación" icon="i-heroicons-plus" variant="outline"
                 @click="showCreateModal = true"
                 :loading="getLoading(activeTab)" loading-icon="i-heroicons-plus" />
             <template #body>
@@ -64,6 +64,7 @@
                     <div v-else-if="activeTab === 'documentos'">
                         <h2 class="text-lg font-semibold mb-4">Crear Documento Especial</h2>
                         <!-- Formulario de crear documento especial -->
+                        <UInput v-model="newDocumento.nombre" placeholder="Ej: Nombre del documento" class="w-full" />
                     </div>
                 </div>
             </template>
@@ -87,54 +88,77 @@
                             <!-- Encabezados -->
                             <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
                                 <span class="w-14 mr-10 text-center">N°</span>
-                                <span class="flex-1">Producto</span>
+                                <span class="flex-1">{{ listLabel }}</span>
                                 <span class="w-20 text-right">Acción</span>
                             </div>
                             <div
-                            v-for="rubro in antidumpingData"
-                            :key="rubro.id"
-                            @click="selectedRubroId = rubro.id"
-                            :class="[
-                                'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
-                                selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
-                                'hover:border-orange-300 hover:shadow'
-                            ]"
-                            >
-                            <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ rubro.id }}</span>
-                            <span class="font-semibold text-gray-800 dark:text-gray-200 flex-1">{{ rubro.nombre }}</span>
-                            <div class="flex gap-2">
-                                <UButton
-                                icon="i-heroicons-pencil-square"
-                                variant="ghost"
-                                size="xs"
-                                color="primary"
-                                @click.stop="editRubro(rubro.id)"
-                                />
-                                <UButton
-                                icon="i-heroicons-trash"
-                                variant="ghost"
-                                size="xs"
-                                color="red"
-                                @click.stop="deleteRubro(rubro.id)"
-                                />
+                            v-for="(rubro, idx) in antidumpingData"
+                             :key="rubro.id"
+                             @click="selectedRubroId = rubro.id"
+                             :class="[
+                                 'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
+                                 selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
+                                 'hover:border-orange-300 hover:shadow'
+                             ]"
+                             >
+                            <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                            <div class="flex-1">
+                                <template v-if="editingRubroId === rubro.id">
+                                    <input
+                                    v-model="editingNombre"
+                                    class="w-full border rounded px-2 py-1 text-sm"
+                                    @keyup.enter="confirmEdit()"
+                                    @keyup.esc="cancelEdit()"
+                                    />
+                                </template>
+                                <template v-else>
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
+                                </template>
+                            </div>
+                            <div class="flex gap-2 items-center">
+                                <!-- Inline edit controls: only show buttons here; input is rendered in the name column -->
+                                <template v-if="editingRubroId === rubro.id">
+                                    <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
+                                    <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
+                                </template>
+                                <template v-else>
+                                    <UButton
+                                    icon="i-heroicons-pencil-square"
+                                    variant="ghost"
+                                    size="xs"
+                                    color="primary"
+                                    @click.stop="startEdit(rubro)"
+                                    />
+                                    <UButton
+                                    icon="i-heroicons-trash"
+                                    variant="ghost"
+                                    size="xs"
+                                    color="red"
+                                    @click.stop="deleteRubro(rubro.id)"
+                                    />
+                                </template>
                             </div>
                             </div>
                         </div>
                         <!-- Tabla de regulaciones del rubro seleccionado -->
-                        <div class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                        <div v-if="selectedRubro" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                            <!-- use table-fixed and wrapping to prevent horizontal expansion -->
                             <UTable
                             v-if="selectedRubro"
                             :data="selectedRubro.regulaciones"
                             :columns="[
                                 { accessorKey: 'id', header: 'N°', cell: ({ row }) => row.index + 1 },
-                                { accessorKey: 'descripcion', header: 'Descripción', cell: ({ row }) => row.getValue('descripcion').slice(0, 50) + (row.getValue('descripcion').length > 50 ? '...' : '') },
+                                { accessorKey: 'descripcion', header: 'Descripción', cell: ({ row }) => {
+                                    const val = row.getValue('descripcion')
+                                    return (typeof val === 'string' ? (val.length > 120 ? val.slice(0, 117) + '...' : val) : '')
+                                } },
                                 { accessorKey: 'partida', header: 'Partida' },
                                 { accessorKey: 'precio_declarado', header: 'P. Declaración', cell: ({ row }) => `$${row.getValue('precio_declarado')}` },
                                 { accessorKey: 'antidumping', header: 'Antidumping', cell: ({ row }) => `$${row.getValue('antidumping')}` },
                                 {
                                 id: 'actions',
                                 header: 'Acciones',
-                                cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
+                                cell: ({ row }) => h('div', { class: 'flex gap-2 flex-wrap items-center' }, [
                                     h(UButton, {
                                     icon: 'i-heroicons-eye',
                                     variant: 'ghost',
@@ -162,13 +186,13 @@
                                 ])
                                 }
                             ]"
-                            :ui="{ root: 'min-w-full', td: 'py-2 px-3' }"
+                            :ui="{ root: 'w-full table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
                             />
                         </div>
                     </div>
                     <!-- Detalle de regulación debajo de la tabla -->
                     <div class="flex gap-8">
-                        <div class="w-120">
+                        <div class="w-100">
                         </div>
                         <div
                         v-if="regulationDetail"
@@ -177,8 +201,10 @@
                             <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
                                 <h4 class="font-semibold mb-4">Imágenes de producto</h4>
                                 <div v-if="regulationDetail.imagenes && regulationDetail.imagenes.length">
-                                    <div class="flex gap-2 mt-2">
-                                    <img v-for="(img, idx) in regulationDetail.imagenes" :key="idx" :src="getImageUrl(img)" class="w-35 h-35 object-cover rounded border cursor-pointer" @click="openImageModal(img)" />
+                                    <div class="grid grid-cols-3 gap-4 mt-2">
+                                        <div v-for="(img, idx) in regulationDetail.imagenes.slice(0,3)" :key="idx" class="w-full h-36 rounded overflow-hidden border bg-white">
+                                            <img :src="getImageUrl(img)" class="w-full h-full object-cover cursor-pointer" @click="openImageModal(img)" />
+                                        </div>
                                     </div>
                                 </div>
                                 <div v-else class="text-gray-400 text-sm">Sin imagenes</div>
@@ -197,108 +223,7 @@
 
 
             <!-- Tab Permisos -->
-            <div v-if="activeTab === 'permisos'">
-                <!-- <UCard>
-                    <div class="flex items-center justify-between mb-4">
-
-                        <UButton icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportPermisos"
-                            :loading="loadingPermisos">
-                            Exportar
-                        </UButton>
-                    </div>
-
-                    <UTable :data="permisosData" :columns="permisosColumns" :grouping="['nombre']"
-                        :grouping-options="grouping_options" :loading="loadingPermisos" :ui="{
-                            root: 'min-w-full',
-                            td: 'empty:p-0'
-                        }" class="flex-1">
-                        <template #title-cell="{ row }">
-                            <div v-if="row.getIsGrouped()" class="flex items-center">
-                                <span class="inline-block" :style="{ width: `calc(${row.depth} * 1rem)` }" />
-
-                                <div class="flex items-center justify-between w-full">
-                                    <strong>{{ row.original.nombre }}</strong>
-                                    <div class="flex items-center gap-2">
-                                        <UButton variant="outline" color="neutral" class="mr-2" size="xs"
-                                            :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
-                                            @click="row.toggleExpanded()" />
-
-                                        <UButton icon="i-heroicons-trash" variant="outline" color="red" size="xs"
-                                            @click="deleteEntidad(row.original.id)" />
-                                    </div>
-                                </div>
-
-                            </div>
-                        </template>
-
-                        <template #expanded="{ row }">
-                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg m-2">
-
-
-                                <UTable :data="row.original.regulaciones" :columns="[
-                                    {
-                                        accessorKey: 'id',
-                                        header: 'ID',
-                                        cell: ({ row }: { row: any }) => `#${row.index + 1}`
-                                    },
-                                    {
-                                        accessorKey: 'nombre',
-                                        header: 'Nombre'
-                                    },
-
-                                    {
-                                        accessorKey: 'c_permiso',
-                                        header: 'C. Permiso',
-                                        cell: ({ row }: { row: any }) => `S/.${row.getValue('c_permiso')}`
-                                    },
-                                    {
-                                        accessorKey: 'c_tramitador',
-                                        header: 'C. Tramitador',
-                                        cell: ({ row }: { row: any }) => `S/.${row.getValue('c_tramitador')}`
-                                    },
-
-                                    {
-                                        id: 'actions',
-                                        header: 'Acciones',
-                                        cell: ({ row }: { row: any }) => h('div', { class: 'flex items-center gap-2' }, [
-                                            h(UButton, {
-                                                icon: 'i-heroicons-eye',
-                                                variant: 'ghost',
-                                                size: 'xs',
-                                                color: 'blue',
-                                                onClick: () => viewPermisoDetail(row.original.id),
-                                                title: 'Ver detalle'
-                                            }),
-                                            ...(hasRole('Documentacion') ? [
-                                                h(UButton, {
-                                                    icon: 'i-heroicons-pencil-square',
-                                                    variant: 'ghost',
-                                                    size: 'xs',
-                                                    color: 'green',
-                                                    onClick: () => editPermiso(row.original.id),
-                                                    title: 'Editar'
-                                                })
-                                            ] : []),
-                                            ...(hasRole('Documentacion') ? [
-                                                h(UButton, {
-                                                    icon: 'i-heroicons-trash',
-                                                    variant: 'ghost',
-                                                    size: 'xs',
-                                                    color: 'red',
-                                                    onClick: () => deletePermiso(row.original.id),
-                                                    title: 'Eliminar'
-                                                })
-                                            ] : [])
-                                        ])
-                                    }
-                                ]" :ui="{
-                                    root: 'min-w-full',
-                                    td: 'py-2 px-3'
-                                }" />
-                            </div>
-                        </template>
-                    </UTable>
-                </UCard> -->
+            <div v-if="activeTab === 'permisos'">  
                 <UCard class="bg-transparent ring-0">
                     <div class="flex gap-8">
                     <!-- Lista de entidades/rubros -->
@@ -310,7 +235,7 @@
                         <span class="w-20 text-right">Acción</span>
                         </div>
                         <div
-                        v-for="entidad in permisosData"
+                        v-for="(entidad, idx) in permisosData"
                         :key="entidad.id"
                         @click="selectedRubroId = entidad.id"
                         :class="[
@@ -319,28 +244,46 @@
                             'hover:border-orange-300 hover:shadow'
                         ]"
                         >
-                        <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ entidad.id }}</span>
-                        <span class="font-semibold text-gray-800 dark:text-gray-200 flex-1">{{ entidad.nombre }}</span>
+                        <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                        <div class="flex-1">
+                            <template v-if="editingRubroId === entidad.id">
+                                <input
+                                    v-model="editingNombre"
+                                    class="w-full border rounded px-2 py-1 text-sm"
+                                    @keyup.enter="confirmEdit()"
+                                    @keyup.esc="cancelEdit()"
+                                />
+                            </template>
+                            <template v-else>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ entidad.nombre }}</span>
+                            </template>
+                        </div>
                         <div class="flex gap-2">
-                            <UButton
-                            icon="i-heroicons-pencil-square"
-                            variant="ghost"
-                            size="xs"
-                            color="primary"
-                            @click.stop="editPermiso(entidad.id)"
-                            />
-                            <UButton
-                            icon="i-heroicons-trash"
-                            variant="ghost"
-                            size="xs"
-                            color="red"
-                            @click.stop="deleteEntidad(entidad.id)"
-                            />
+                            <template v-if="editingRubroId === entidad.id">
+                                <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
+                                <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
+                            </template>
+                            <template v-else>
+                                <UButton
+                                icon="i-heroicons-pencil-square"
+                                variant="ghost"
+                                size="xs"
+                                color="primary"
+                                @click.stop="startEdit(entidad)"
+                                />
+                                <UButton
+                                icon="i-heroicons-trash"
+                                variant="ghost"
+                                size="xs"
+                                color="red"
+                                @click.stop="deleteEntidad(entidad.id)"
+                                />
+                            </template>
                         </div>
                         </div>
                     </div>
                     <!-- Tabla de regulaciones de la entidad seleccionada -->
-                    <div class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                    <div v-if="selectedEntidad" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                         <UTable
                         v-if="selectedEntidad"
                         :data="selectedEntidad.regulaciones"
@@ -380,7 +323,7 @@
                             ])
                             }
                         ]"
-                        :ui="{ root: 'min-w-full', td: 'py-2 px-3' }"
+                        :ui="{ root: 'w-full table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
                         />
                     </div>
                     </div>
@@ -429,122 +372,6 @@
 
             <!-- Tab Etiquetado -->
             <div v-if="activeTab === 'etiquetado'">
-                <!-- <UCard>
-                    <div class="flex items-center justify-between mb-4">
-
-                        <UButton icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportEtiquetado"
-                            :loading="loadingEtiquetado">
-                            Exportar
-                        </UButton>
-                    </div>
-
-                    <UTable :data="etiquetadoData" :columns="etiquetadoColumns" :grouping="['nombre']"
-                        :grouping-options="grouping_options" :loading="loadingEtiquetado" :ui="{
-                            root: 'min-w-full',
-                            td: 'empty:p-0'
-                        }" class="flex-1">
-                        <template #title-cell="{ row }">
-                            <div v-if="row.getIsGrouped()" class="flex items-center">
-                                <span class="inline-block" :style="{ width: `calc(${row.depth} * 1rem)` }" />
-                                <div class="flex items-center justify-between w-full">
-                                    <strong>{{ row.original.nombre }}</strong>
-                                    <div class="flex items-center gap-2">
-                                        <UButton variant="outline" color="neutral" class="mr-2" size="xs"
-                                            :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
-                                            @click="row.toggleExpanded()" />
-                                        <UButton icon="i-heroicons-trash" variant="outline" color="red" size="xs"
-                                            @click="deleteRubro(row.original.id)" />
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                        <template #expanded="{ row }">
-                            <UTable :data="row.original.regulaciones" :columns="[
-                                {
-                                    accessorKey: 'id',
-                                    header: 'ID',
-                                    cell: ({ row }: { row: any }) => `#${row.index + 1}`
-                                },
-                                                                    {
-                                        accessorKey: 'imagenes',
-                                        header: 'Fotos',
-                                        cell: ({ row }: { row: any }) => {
-                                            const imagenes = row.getValue('imagenes') as string[] || []
-                                            
-                                            if (imagenes.length === 0) {
-                                                return h('span', { class: 'text-gray-400 text-sm' }, 'Sin imágenes')
-                                            }
-                                            
-                                            return h('div', { class: 'flex flex-wrap gap-1' }, 
-                                                imagenes.slice(0, 3).map((imagen, index) => 
-                                                    h('img', {
-                                                        src: getImageUrl(imagen),
-                                                        alt: `Imagen ${index + 1}`,
-                                                        class: 'w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity border border-gray-200',
-                                                        onClick: () => openImageModal(imagen)
-                                                    })
-                                                ).concat(
-                                                    imagenes.length > 3 ? [
-                                                        h('div', { 
-                                                            class: 'w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors',
-                                                            onClick: () => openImageModal(imagenes[3])
-                                                        }, `+${imagenes.length - 3}`)
-                                                    ] : []
-                                                )
-                                            )
-                                        }
-                                    },
-                                {
-                                    accessorKey: 'observaciones',
-                                    header: 'Descripciones minimas',
-                                    cell: ({ row }: { row: any }) => {
-                                        //foreach 30 word in a line
-                                        const observaciones = row.getValue('observaciones')
-                                        return h('div', {
-                                            class: 'w-50 text-wrap',
-                                            style: {
-                                                'white-space': 'pre-wrap',
-                                                'word-wrap': 'break-word'
-                                            },
-                                            title: observaciones // oltip con texto completo
-                                        }, observaciones)
-                                    }
-                                },
-
-                                {
-                                    id: 'actions',
-                                    header: 'Acciones',
-                                    cell: ({ row }: { row: any }) => h('div', { class: 'flex items-center gap-2' }, [
-                                        ...(hasRole('Documentacion') ? [
-                                            h(UButton, {
-                                                icon: 'i-heroicons-pencil-square',
-                                                variant: 'ghost',
-                                                size: 'xs',
-                                                color: 'green',
-                                                onClick: () => editEtiquetado(row.original.id),
-                                                title: 'Editar'
-                                            })
-                                        ] : []),
-                                        ...(hasRole('Documentacion') ? [
-                                            h(UButton, {
-                                                icon: 'i-heroicons-trash',
-                                                variant: 'ghost',
-                                                size: 'xs',
-                                                color: 'red',
-                                                onClick: () => deleteEtiquetado(row.original.id),
-                                                title: 'Eliminar'
-                                            })
-                                        ] : [])
-                                    ])
-                                }
-                            ]" :ui="{
-                                root: 'min-w-full',
-                                td: 'py-2 px-3'
-                            }" />
-                        </template>
-                    </UTable>
-                </UCard> -->
-  
                 <UCard class="bg-transparent ring-0">
                     <div class="flex gap-8">
                         <!-- Lista de rubros/productos -->
@@ -556,7 +383,7 @@
                                 <span class="w-20 text-right">Acción</span>
                             </div>
                             <div
-                                v-for="rubro in etiquetadoData"
+                                v-for="(rubro, idx) in etiquetadoData"
                                 :key="rubro.id"
                                 @click="selectedRubroId = rubro.id"
                                 :class="[
@@ -565,21 +392,39 @@
                                 'hover:border-orange-300 hover:shadow'
                                 ]"
                             >
-                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ rubro.id }}</span>
-                                <span class="font-semibold text-gray-800 dark:text-gray-200 flex-1">{{ rubro.nombre }}</span>
+                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                                <div class="flex-1">
+                                    <template v-if="editingRubroId === rubro.id">
+                                        <input
+                                            v-model="editingNombre"
+                                            class="w-full border rounded px-2 py-1 text-sm"
+                                            @keyup.enter="confirmEdit()"
+                                            @keyup.esc="cancelEdit()"
+                                        />
+                                    </template>
+                                    <template v-else>
+                                        <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
+                                    </template>
+                                </div>
                                 <div class="flex gap-2">
-                                <UButton
-                                    icon="i-heroicons-pencil-square"
-                                    variant="ghost"
-                                    size="xs"
-                                    color="primary"
-                                    @click.stop="editEtiquetado(rubro.id)"
-                                />
+                                    <template v-if="editingRubroId === rubro.id">
+                                        <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
+                                        <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
+                                    </template>
+                                    <template v-else>
+                                        <UButton
+                                            icon="i-heroicons-pencil-square"
+                                            variant="ghost"
+                                            size="xs"
+                                            color="primary"
+                                            @click.stop="startEdit(rubro)"
+                                        />
+                                    </template>
                                 </div>
                             </div>
                         </div>
                         <!-- Tabla de regulaciones del rubro seleccionado -->
-                        <div class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                        <div v-if="selectedEtiquetado" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <UTable
                                 v-if="selectedEtiquetado"
                                 :data="selectedEtiquetado.regulaciones"
@@ -638,7 +483,7 @@
                                     }
                                 }
                                 ]"
-                                :ui="{ root: 'min-w-full', td: 'py-2 px-3' }"
+                                :ui="{ root: 'w-full table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
                             />
                         </div>
                     </div>
@@ -647,97 +492,6 @@
 
             <!-- Tab Documentos Especiales -->
             <div v-if="activeTab === 'documentos'">
-                <!-- <UCard>
-                    <div class="flex items-center justify-between mb-4">
-
-                        <UButton icon="i-heroicons-arrow-down-tray" variant="outline" @click="exportDocumentos"
-                            :loading="loadingDocumentos">
-                            Exportar
-                        </UButton>
-                    </div>
-
-                    <UTable :data="documentosData" :columns="documentosColumns" :grouping="['nombre']"
-                        :grouping-options="grouping_options" :loading="loadingDocumentos" :ui="{
-                            root: 'min-w-full',
-                            td: 'empty:p-0'
-                        }" class="flex-1">
-                        <template #title-cell="{ row }">
-                            <div v-if="row.getIsGrouped()" class="flex items-center">
-                                <span class="inline-block" :style="{ width: `calc(${row.depth} * 1rem)` }" />
-
-                                <div class="flex items-center justify-between w-full">
-                                    <strong>{{ row.original.nombre }}</strong>
-                                    <div class="flex items-center gap-2">
-                                        <UButton variant="outline" color="neutral" class="mr-2" size="xs"
-                                            :icon="row.getIsExpanded() ? 'i-lucide-minus' : 'i-lucide-plus'"
-                                            @click="row.toggleExpanded()" />
-                                        <UButton icon="i-heroicons-trash" variant="outline" color="red" size="xs"
-                                            @click="deleteRubro(row.original.id)" />
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                        <template #expanded="{ row }">
-                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg m-2">
-
-
-                                <UTable :data="row.original.regulaciones" :columns="[
-
-                                    {
-                                        accessorKey: 'observaciones',
-                                        header: 'Comentarios',
-                                        cell: ({ row }: { row: any }) => {
-                                            const obs = row.getValue('observaciones')
-                                            return obs ? obs : 'Sin observaciones'
-                                        }
-                                    },
-                                    {
-                                        accessorKey: 'documentos',
-                                        header: 'Documentos a presentar',
-                                        cell: ({ row }: { row: any }) => {
-                                            const docs = row.getValue('documentos')
-                                            const media = row.original.media
-                                            return h(DocumentPreview, {
-                                                documents: docs || [],
-                                                media: media || []
-                                            })
-                                        }
-                                    },
-
-                                    {
-                                        id: 'actions',
-                                        header: 'Acciones',
-                                        cell: ({ row }: { row: any }) => h('div', { class: 'flex items-center gap-2' }, [
-                                            ...(hasRole('Documentacion') ? [
-                                                h(UButton, {
-                                                    icon: 'i-heroicons-pencil-square',
-                                                    variant: 'ghost',
-                                                    size: 'xs',
-                                                    color: 'green',
-                                                    onClick: () => editDocumento(row.original.id),
-                                                    title: 'Editar'
-                                                })
-                                            ] : []),
-                                            ...(hasRole('Documentacion') ? [
-                                                h(UButton, {
-                                                    icon: 'i-heroicons-trash',
-                                                    variant: 'ghost',
-                                                    size: 'xs',
-                                                    color: 'red',
-                                                    onClick: () => deleteDocumento(row.original.id),
-                                                    title: 'Eliminar'
-                                                })
-                                            ] : [])
-                                        ])
-                                    }
-                                ]" :ui="{
-                                    root: 'min-w-full',
-                                    td: 'py-2 px-3'
-                                }" />
-                            </div>
-                        </template>
-                    </UTable>
-                </UCard> -->
                 <UCard class="bg-transparent ring-0">
                     <div class="flex gap-8">
                         <!-- lista de rubros/productos-->
@@ -749,7 +503,7 @@
                                 <span class="w-20 text-right">Acción</span>
                             </div>
                             <div
-                                v-for="rubro in documentosData"
+                                v-for="(rubro, idx) in documentosData"
                                 :key="rubro.id"
                                 @click="selectedRubroId = rubro.id"
                                 :class="[
@@ -758,16 +512,34 @@
                                 'hover:border-orange-300 hover:shadow'
                                 ]"
                             >
-                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ rubro.id }}</span>
-                                <span class="font-semibold text-gray-800 dark:text-gray-200 flex-1">{{ rubro.nombre }}</span>
+                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                                <div class="flex-1">
+                                    <template v-if="editingRubroId === rubro.id">
+                                        <input
+                                            v-model="editingNombre"
+                                            class="w-full border rounded px-2 py-1 text-sm"
+                                            @keyup.enter="confirmEdit()"
+                                            @keyup.esc="cancelEdit()"
+                                        />
+                                    </template>
+                                    <template v-else>
+                                        <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
+                                    </template>
+                                </div>
                                 <div class="flex gap-2">
-                                <UButton
-                                    icon="i-heroicons-pencil-square"
-                                    variant="ghost"
-                                    size="xs"
-                                    color="primary"
-                                    @click.stop="editDocumento(rubro.id)"
-                                />
+                                    <template v-if="editingRubroId === rubro.id">
+                                        <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
+                                        <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
+                                    </template>
+                                    <template v-else>
+                                        <UButton
+                                            icon="i-heroicons-pencil-square"
+                                            variant="ghost"
+                                            size="xs"
+                                            color="primary"
+                                            @click.stop="startEdit(rubro)"
+                                        />
+                                    </template>
                                 </div>
                             </div>
                         </div>
@@ -856,7 +628,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, h, resolveComponent } from 'vue'
+import { ref, onMounted, watch, h, resolveComponent, computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { getGroupedRowModel } from '@tanstack/vue-table'
 import type { GroupingOptions } from '@tanstack/vue-table'
@@ -877,24 +649,28 @@ const { hasRole } = useUserRole()
 
 
 const selectedRubroId = ref<number | null>(null)
-const selectedRubro = computed(() =>
-  antidumpingData.value.find(r => r.id === selectedRubroId.value) || antidumpingData.value[0]
-)
+const selectedRubro = computed(() => {
+    if (selectedRubroId.value === null) return null
+    return antidumpingData.value.find(r => r.id === selectedRubroId.value) ?? null
+})
 
 // Computed para la entidad seleccionada en permisos
-const selectedEntidad = computed(() =>
-  permisosData.value.find(e => e.id === selectedRubroId.value) || permisosData.value[0]
-)
+const selectedEntidad = computed(() => {
+    if (selectedRubroId.value === null) return null
+    return permisosData.value.find(e => e.id === selectedRubroId.value) ?? null
+})
 
 //Computed para la entidad seleccionada en etiquetado
-const selectedEtiquetado = computed(() =>
-  etiquetadoData.value.find(e => e.id === selectedRubroId.value) || etiquetadoData.value[0]
-)
+const selectedEtiquetado = computed(() => {
+    if (selectedRubroId.value === null) return null
+    return etiquetadoData.value.find(e => e.id === selectedRubroId.value) ?? null
+})
 
 //Computed para la entidad seleccionada en documentos
-const selectedDocumentos = computed(() =>
-  documentosData.value.find(e => e.id === selectedRubroId.value) || documentosData.value[0]
-)
+const selectedDocumentos = computed(() => {
+    if (selectedRubroId.value === null) return null
+    return documentosData.value.find(e => e.id === selectedRubroId.value) ?? null
+})
 
 // New product form
 const newProduct = ref({
@@ -1017,7 +793,8 @@ const createEtiqueta = async() => {
                 return
             }
             const response = await EtiquetadoService.createEtiquetado({
-                nombre: newEtiquetado.value.nombre
+                id_rubro: selectedRubroId.value ?? 0,
+                observaciones: newEtiquetado.value.nombre
             })
             if (response.success) {
                 newEtiquetado.value = {
@@ -1035,11 +812,54 @@ const createEtiqueta = async() => {
     })
 }
 
+const createDocumento = async() => {
+    showConfirmation('Crear Documento', '¿Estás seguro de que deseas crear este documento?', 
+    async () => {
+        try {
+            // Validar campo requerido
+            if (!newDocumento.value.nombre) {
+                console.error('Nombre es requerido')
+                return
+            }
+            // require a selected rubro/entity to assign the documento
+            if (!selectedRubroId.value) {
+                showError('Validación', 'Debes seleccionar un producto / rubro antes de crear el documento')
+                return
+            }
+
+            const response = await DocumentoService.createDocumento({
+                id_rubro: selectedRubroId.value,
+                observaciones: newDocumento.value.nombre
+            })
+            if (response.success) {
+                newDocumento.value = {
+                    nombre: ''
+                }
+                showCreateModal.value = false
+                await loadDocumentosData()
+                showSuccess('Creación Exitosa', 'El documento se ha creado correctamente.')
+            } else {
+                console.error('Error al crear documento:', response.error)
+            }
+        } catch (error) {
+            // Try to surface any validation errors returned by the server
+            console.error('Error al crear documento:', error)
+            if (error && (error as any).response) {
+                console.error('Server response:', (error as any).response)
+            }
+        }
+    })
+}
+
 // Notifications and loading
 
 const { withLoading } = useLoading()
 
 const UBadge = resolveComponent('UBadge')
+
+// Dynamic labels according to active tab
+const listLabel = computed(() => activeTab.value === 'permisos' ? 'Entidad' : 'Producto')
+const saveLabel = computed(() => activeTab.value === 'permisos' ? 'Guardar entidad' : 'Guardar rubro')
 
 
 // Types
@@ -1283,9 +1103,6 @@ if (!['antidumping', 'permisos', 'etiquetado', 'documentos'].includes(activeTab.
     activeTab.value = 'antidumping'
 }
 
-// Service instances
-
-import {EntityService} from '~/services/entityService'
 
 // Loading states
 const loading = ref(false)
@@ -1320,80 +1137,6 @@ const getColorByStatus = (status: string) => {
         inactive: 'error'
     }[status] || 'neutral'
 }
-
-// Columns for Antidumping (hierarchical structure)
-const antidumpingColumns: TableColumn<any>[] = [
-    {
-        accessorKey: 'id',
-        header: 'ID',
-        cell: ({ row }: { row: any }) => `#${row.index + 1}`
-    },
-    {
-        accessorKey: 'nombre',
-        header: 'Producto'
-    },
-    {
-        id: 'title',
-        header: 'Producto'
-    },
-
-
-
-
-]
-
-// Columns for Permisos (hierarchical structure)
-const permisosColumns: TableColumn<any>[] = [
-    {
-        accessorKey: 'id',
-        header: 'ID',
-        cell: ({ row }: { row: any }) => `#${row.index + 1}`
-    },
-    {
-        accessorKey: 'nombre',
-        header: 'Rubro'
-    },
-    {
-        id: 'title',
-        header: 'Entidad'
-    },
-
-]
-
-// Columns for Etiquetado (hierarchical structure)
-const etiquetadoColumns: TableColumn<any>[] = [
-    {
-        accessorKey: 'id',
-        header: 'ID',
-        cell: ({ row }: { row: any }) => `#${row.index + 1}`
-    },
-    {
-        accessorKey: 'nombre',
-        header: 'Rubro'
-    },
-    {
-        id: 'title',
-        header: 'Producto'
-    },
-
-]
-
-// Columns for Documentos Especiales (hierarchical structure)
-const documentosColumns: TableColumn<any>[] = [
-    {
-        accessorKey: 'id',
-        header: 'ID',
-        cell: ({ row }: { row: any }) => `#${row.index + 1}`
-    },
-    {
-        accessorKey: 'nombre',
-        header: 'Rubro'
-    },
-    {
-        id: 'title',
-        header: 'Producto'
-    },
-]
 
 // Helper function to transform data for grouping
 const transformDataForGrouping = (data: any[], groupBy: string) => {
@@ -1573,22 +1316,6 @@ const loadDocumentosData = async () => {
     }
 }
 
-const exportAntidumping = () => {
-    console.log('Exporting antidumping data')
-}
-
-const exportPermisos = () => {
-    console.log('Exporting permisos data')
-}
-
-const exportEtiquetado = () => {
-    console.log('Exporting etiquetado data')
-}
-
-const exportDocumentos = () => {
-    console.log('Exporting documentos data')
-}
-
 // Navigation function
 const navigateToCreate = (type: string) => {
     switch (type) {
@@ -1696,11 +1423,6 @@ const editPermiso = (regulationId: number) => {
     navigateTo(`/basedatos/regulaciones/permisos/editar/${regulationId}`)
 }
 
-// View etiquetado detail
-const viewEtiquetadoDetail = (regulationId: number) => {
-    navigateTo(`/basedatos/regulaciones/etiquetado/${regulationId}`)
-}
-
 // Edit etiquetado
 const editEtiquetado = (regulationId: number) => {
     console.log('Navigating to edit etiquetado:', regulationId)
@@ -1751,6 +1473,149 @@ const openImageModal = (imageUrl: string) => {
 const closeImageModal = () => {
     showImageModal.value = false
     selectedImage.value = ''
+}
+
+
+const showEditModal = ref(false)
+const editRubroData = ref<{ id: number | null; nombre: string }>({ id: null, nombre: '' })
+
+const editRubro = (id: number) => {
+  const rubro = antidumpingData.value.find(r => r.id === id)
+  if (!rubro) return
+  editRubroData.value = { id: rubro.id, nombre: rubro.nombre }
+  showEditModal.value = true
+}
+
+const resetEdit = () => {
+  showEditModal.value = false
+  editRubroData.value = { id: null, nombre: '' }
+}
+
+const saveRubro = async () => {
+  if (!editRubroData.value.id) return
+  try {
+    await withSpinner(async () => {
+      // Ajusta el nombre del método si tu service usa otro nombre
+      const response = await ProductRubroService.updateProductRubro?.(editRubroData.value.id, { nombre: editRubroData.value.nombre }) ?? 
+                       await ProductRubroService.updateRubro?.(editRubroData.value.id, { nombre: editRubroData.value.nombre })
+      if (response && response.success) {
+        await loadAntidumpingData()
+        showSuccess('Actualización', 'Rubro actualizado correctamente')
+      } else {
+        showError('Error al actualizar', response?.error || 'No se pudo actualizar el rubro')
+      }
+    }, 'Actualizando rubro...')
+  } catch (error) {
+    console.error('Error al actualizar rubro:', error)
+    showError('Error', 'Error al actualizar rubro')
+  } finally {
+    resetEdit()
+  }
+}
+
+// Inline edit state (replace modal flow)
+const editingRubroId = ref<number | null>(null)
+const editingNombre = ref('')
+
+const startEdit = (item: ProductRubro | PermisoEntidad | EtiquetadoEntidad | DocumentoEntidad | { id: number; nombre?: string }) => {
+    const id = (item && (item as any).id) ?? null
+    if (!id) return
+
+    if (activeTab.value === 'permisos') {
+        // Editing an entity
+        const entidad = permisosData.value.find(e => e.id === id)
+        if (!entidad) {
+            showError('Edición', 'Entidad no encontrada para editar')
+            return
+        }
+        editingRubroId.value = entidad.id
+        editingNombre.value = entidad.nombre
+        return
+    }
+
+    if (activeTab.value === 'etiquetado') {
+        const rub = etiquetadoData.value.find(r => r.id === id)
+        if (!rub) {
+            showError('Edición', 'Rubro no encontrado para editar')
+            return
+        }
+        editingRubroId.value = rub.id
+        editingNombre.value = rub.nombre
+        return
+    }
+
+    if (activeTab.value === 'documentos') {
+        const rub = documentosData.value.find(r => r.id === id)
+        if (!rub) {
+            showError('Edición', 'Rubro no encontrado para editar')
+            return
+        }
+        editingRubroId.value = rub.id
+        editingNombre.value = rub.nombre
+        return
+    }
+
+    // Default: editing a rubro/product (antidumping)
+    const rubro = antidumpingData.value.find(r => r.id === id)
+    if (!rubro) {
+        showError('Edición', 'Rubro no encontrado para editar')
+        return
+    }
+    editingRubroId.value = rubro.id
+    editingNombre.value = rubro.nombre
+}
+
+const cancelEdit = () => {
+    editingRubroId.value = null
+    editingNombre.value = ''
+}
+
+const confirmEdit = async () => {
+    if (!editingRubroId.value) return
+    const id = editingRubroId.value
+    const nombre = editingNombre.value.trim()
+    if (!nombre) {
+        showError('Validación', 'El nombre no puede estar vacío')
+        return
+    }
+    try {
+        await withSpinner(async () => {
+            if (activeTab.value === 'permisos') {
+                // Update entity via EntityService when in permisos tab
+                const response = await EntityService.updateEntity(id, { nombre })
+                if (response && response.success) {
+                    await loadPermisosData()
+                    showSuccess('Actualización', 'Entidad actualizada correctamente')
+                } else {
+                    showError('Error al actualizar', response?.error || 'No se pudo actualizar la entidad')
+                }
+            } else {
+                // For all non-permisos tabs update the rubro via ProductRubroService
+                const response = await ProductRubroService.updateProductRubro(id, { nombre })
+                if (response && response.success) {
+                    // Reload appropriate list depending on active tab
+                    if (activeTab.value === 'antidumping') {
+                        await loadAntidumpingData()
+                    } else if (activeTab.value === 'etiquetado') {
+                        await loadEtiquetadoData()
+                    } else if (activeTab.value === 'documentos') {
+                        await loadDocumentosData()
+                    } else {
+                        // fallback
+                        await loadAntidumpingData()
+                    }
+                    showSuccess('Actualización', 'Rubro actualizado correctamente')
+                } else {
+                    showError('Error al actualizar', response?.error || 'No se pudo actualizar el rubro')
+                }
+            }
+        }, activeTab.value === 'permisos' ? 'Actualizando entidad...' : 'Actualizando rubro...')
+    } catch (err) {
+        console.error('Error updating item:', err)
+        showError('Error', 'Error al actualizar')
+    } finally {
+        cancelEdit()
+    }
 }
 
 const deleteRubro = (id: number) => {
@@ -1870,6 +1735,20 @@ const deleteEtiquetado = (id: number) => {
         }
     )
 }
+
+// Hide detail panels when the selected product (rubro) changes.
+// This ensures any opened detail table is closed when user selects another product.
+watch(selectedRubroId, (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+        regulationDetail.value = null
+        permisoDetail.value = null
+        // also close image preview if open
+        showImageModal.value = false
+        selectedImage.value = ''
+    // cancel any inline edit in progress
+    cancelEdit()
+    }
+})
 
 watch(activeTab, (newTab) => {
     switch (newTab) {

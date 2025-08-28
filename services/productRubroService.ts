@@ -68,5 +68,25 @@ export class ProductRubroService extends BaseService {
             }
         }
     }
+
+    /**
+     * Actualizar un rubro por ID
+     */
+    static async updateProductRubro(id: number, payload: Partial<CreateProductRubroRequest>): Promise<ProductRubroResponse> {
+        try {
+            const response = await this.apiCall<ProductRubroResponse>(`/api/base-datos/regulaciones/rubros/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            })
+            return response
+        } catch (error) {
+            console.error('Error updating rubro:', error)
+            return {
+                success: false,
+                data: {} as ProductRubro,
+                error: 'Error al actualizar el rubro'
+            }
+        }
+    }
 }
 export default ProductRubroService

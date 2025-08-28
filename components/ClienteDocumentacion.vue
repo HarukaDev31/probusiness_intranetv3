@@ -15,7 +15,7 @@
       <!-- Header con botones de navegación -->
       <div class="row mb-2">
         <div class="col-12 col-md-2 col-xl-1">
-          <UButton @click="goBack" variant="outline" class="btn-block btn-reporte btn-back-cotizacion-documentacion">
+          <UButton @click="goBack" variant="outline" class="inline-flex items-center gap-3 px-3.5 py-2 bg-white border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 hover:bg-gray-50 ring-0 focus:outline-none focus:ring-2 focus:ring-primary-200">
             <UIcon name="i-heroicons-arrow-left" class="mr-2" />
             Regresar
           </UButton>
