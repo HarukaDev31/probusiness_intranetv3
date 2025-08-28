@@ -426,7 +426,6 @@ const searchEntidades = async (search: string) => {
         id: entity.id,
         nombre: entity.nombre
       }))
-      console.log('entidadesOptions:', entidadesOptions.value)
       
       // Marcar como seleccionada la entidad que corresponde al ID guardado
       if (selectedEntidadId.value) {
