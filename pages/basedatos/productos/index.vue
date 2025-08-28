@@ -34,9 +34,9 @@
       <div class="flex flex-wrap gap-4">
         <USelect
           v-for="filter in filterConfig"
-          :key="filter.key"
+          :key="`uselect-${filter.key}-${filter.options.length}-${filter.options.map(o => o.value).join(',')}`"
           v-model="filters[filter.key]"
-          :options="filter.options"
+          :items="filter.options.map(o => ({ label: o.label ,value: o.value }))"
           :placeholder="filter.placeholder"
           class="w-48"
           @change="handleFilterChange(filter.key, filters[filter.key])"
@@ -169,6 +169,7 @@ import type { ProductMapped } from '~/types/product'
 import DynamicModal from '~/components/DynamicModal.vue'
 import ImageModal from '~/components/ImageModal.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import type { ModalData } from '~/composables/commons/useModal'
 const userRole = useUserRole()
 const UButton = resolveComponent('UButton')
 
@@ -204,6 +205,9 @@ const {
 // State local
 const secondarySearch = ref('')
 
+// Toggle para mostrar/ocultar filtros
+const showFilters = ref(false)
+
 // Paginación local (para manejar el v-model de UPagination)
 const localCurrentPage = ref(1)
 
@@ -214,7 +218,9 @@ const selectedImageTitle = ref('')
 
 //Estado para el modal de mensajes
 const showModal = ref(false)
-const modalData = ref({
+
+const modalData = ref<ModalData>({
+  id: Date.now().toString(),
   title: 'Observaciones',
   message: '',
   type: 'info', // o el tipo que necesites
@@ -228,8 +234,8 @@ const filterConfig = computed(() => [
     label: 'Rubro',
     placeholder: 'Seleccionar rubro',
     options: [
-      { label: 'Todos', value: 'todos' },
-      ...filterOptions.value.rubros.map(rubro => ({ label: rubro, value: rubro }))
+      { label: 'Todos', value: 'todos', text: 'Todos' },
+      ...filterOptions.value.rubros.map(rubro => ({ label: rubro, value: rubro, text: rubro }))
     ]
   },
   {
@@ -237,8 +243,8 @@ const filterConfig = computed(() => [
     label: 'Tipo Producto',
     placeholder: 'Seleccionar tipo',
     options: [
-      { label: 'Todos', value: 'todos' },
-      ...filterOptions.value.tiposProducto.map(tipo => ({ label: tipo, value: tipo }))
+      { label: 'Todos', value: 'todos', text: 'Todos' },
+      ...filterOptions.value.tiposProducto.map(tipo => ({ label: tipo, value: tipo, text: tipo }))
     ]
   },
   {
@@ -246,8 +252,8 @@ const filterConfig = computed(() => [
     label: 'Campaña',
     placeholder: 'Seleccionar campaña',
     options: [
-      { label: 'Todos', value: 'todos' },
-      ...filterOptions.value.campanas.map(campana => ({ label: campana, value: campana }))
+      { label: 'Todos', value: 'todos', text: 'Todos' },
+      ...filterOptions.value.campanas.map(campana => ({ label: campana, value: campana, text: campana }))
     ]
   }
 ])

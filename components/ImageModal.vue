@@ -15,7 +15,7 @@
                 <img 
                     :src="imageUrl" 
                     :alt="altText"
-                    class="max-w-full max-h-[80vh] object-contain select-none"
+                    class="max-w-full max-h-[80vh] min-h-[50vh] object-contain select-none"
                     @mousedown="handleMouseDown"
                     @mousemove="handleMouseMove"
                     @mouseup="handleMouseUp"
