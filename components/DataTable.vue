@@ -4,22 +4,22 @@
     <!-- Sticky Top Section -->
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-800">
       <slot name="filters ">
-        <div class="flex flex-wrap items-center justify-end gap-4 p-4">
+        <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center justify-end gap-4 p-4">
           <div class="flex items-center">
         </div>
           <!--Title of table-->
-          <div v-if="showTitle" class="flex items-center mr-auto">
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <UIcon :name="icon" class="text-secondary mr-3 text-2xl" />
+          <div v-if="showTitle" class="flex items-center mr-auto mb-4 lg:mb-0">
+            <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+              <UIcon :name="icon" class="text-secondary mr-3 text-xl lg:text-2xl" />
               {{ title }}
             </h1>
           </div>
-          <div class=" w-250 flex justify-end">
+          <div class="w-full lg:w-auto flex flex-col lg:flex-row justify-end gap-3">
             <!-- Search and Actions -->
-            <div class="flex items-center gap-3">
-              <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10">
-                <label v-if="showPrimarySearchLabel" class="text-sm text-gray-600 dark:text-gray-400">{{ primarySearchLabel }}:</label>
-                <UInput :model-value="primarySearchValue || ''" :placeholder="primarySearchPlaceholder" class="flex-1 h-10"
+            <div class="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full lg:w-auto">
+              <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
+                <label v-if="showPrimarySearchLabel" class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ primarySearchLabel }}:</label>
+                <UInput :model-value="primarySearchValue || ''" :placeholder="primarySearchPlaceholder" class="flex-1 h-10 min-w-0"
                   :ui="{  base:'h-11'  }"
                   @update:model-value="(value) => emit('update:primarySearch', value)">
                   <template #leading>
@@ -27,15 +27,20 @@
                   </template>
                 </UInput>
               </div>
-              <div class="flex items-center gap-2 relative">
-                <div ref="filtersButtonRef">
-                  <UButton v-if="showFilters" label="Filtros" icon="i-heroicons-funnel" class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
+              <div class="flex items-center gap-2 relative w-full lg:w-auto">
+                <div ref="filtersButtonRef" class="w-full lg:w-auto">
+                  <UButton v-if="showFilters" label="Filtros" icon="i-heroicons-funnel" class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
                     @click="showFiltersPanel = !showFiltersPanel" />
                 </div>
+                <!-- Overlay para mobile -->
+                <div v-if="showFiltersPanel && showFilters" 
+                  class="fixed inset-0  bg-opacity-50 z-40 lg:hidden"
+                  @click="showFiltersPanel = false">
+                </div>
                 <div ref="filtersPanelRef" v-if="showFiltersPanel && showFilters"
-                  class="absolute top-full right-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4"
+                  class="absolute lg:absolute fixed lg:fixed top-full lg:top-full top-1/2 lg:top-full right-0 lg:right-0 left-1/2 lg:left-auto transform lg:transform-none -translate-x-1/2 lg:translate-x-0 -translate-y-1/2 lg:translate-y-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
                   @click.stop>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div v-for="filter in filterConfig" :key="filter.key" class="field">
                       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ filter.label }}
@@ -67,17 +72,17 @@
                 </div>
               </div>
               <!-- Export Button -->
-              <UButton v-if="showExport" label="Exportar" icon="i-heroicons-arrow-up-tray" class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
+              <UButton v-if="showExport" label="Exportar" icon="i-heroicons-arrow-up-tray" class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
                 @click="handleExport" />
               <slot name="actions" />
               <!--Show New Button-->
-            <div class="flex">
-              <div v-if="showNewButton">
+            <div class="flex w-full lg:w-auto">
+              <div v-if="showNewButton" class="w-full lg:w-auto">
                 <UButton
                   :label="newButtonLabel || 'Nuevo'"
                   icon="i-heroicons-plus"
                   color="primary"
-                  class="h-11 flex-1 font-normal"
+                  class="h-11 flex-1 font-normal w-full lg:w-auto"
                   @click="onNewButtonClick"
                 />
               </div>
@@ -88,36 +93,35 @@
       </slot>
 
       <div v-if="showHeaders" class="bg-transparent border-b border-gray-200 dark:border-gray-700">
-        <div class="px-6 py-3">
-          <div class="flex flex-wrap gap-3">
+        <div class="px-4 lg:px-6 py-3">
+          <div class="flex flex-wrap gap-2 lg:gap-3">
             <div v-for="header in headers" :key="header.value" class="flex items-center gap-2">
-              <span class="text-sm text-gray-600 dark:text-gray-400">
+              <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
                 {{ header.label }}:
               </span>
-              <UBadge :label="header.value || 'N/A'" color="neutral" variant="outline" size="md" class="font-medium" />
+              <UBadge :label="header.value || 'N/A'" color="neutral" variant="outline" size="sm" class="font-medium text-xs" />
             </div>
           </div>
         </div>
       </div>
       
       <!-- Body Top Slot -->
-      <div class="flex flex-row justify-between px-4 py-2 ">
+      <div class="flex flex-row justify-between px-4 py-2">
         <slot name="body-top" />
       </div>
     </div>
 
     <!-- Table Section -->
-    <UCard class="mb-6 ring-0 bg-transparent min-w-auto">
+    <UCard class="mb-6 ring-0 bg-transparent">
       <div class="overflow-x-auto">
-        <UTable :data="filteredData" :sticky="true" :columns="columns" :loading="loading" class="bg-transparent"
+        <UTable :data="filteredData" :sticky="true" :columns="columns" :loading="loading" class="bg-transparent min-w-full"
           :ui="{
             thead: 'bg-transparent',
             tbody: 'border-separate border-spacing-y-6',
-            td: 'bg-white dark:bg-gray-800 dark:text-white p-4',
-            th: 'font-normal',
+            td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
+            th: 'font-normal text-xs lg:text-sm p-2 lg:p-4',
             tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
-          }"
-          style="width: calc(100vw - 450px);min-height: 200px!important; height: 100%; max-width: 100%;">
+          }">
 
           <template #loading>
             <div class="flex items-center justify-center py-8">
@@ -145,21 +149,21 @@
 
     <!-- Sticky Bottom Section - Pagination -->
     <div v-if="showPagination" class="sticky bottom-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-sm">
-      <div class="flex items-center justify-between p-4">
-        <div class="text-sm text-gray-700 dark:text-gray-300">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
+        <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
           Mostrando {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} a {{ Math.min((currentPage || 1) *
             (itemsPerPage || 100), totalRecords) }}
           de {{ totalRecords }} resultados
         </div>
-        <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2">
-            <label class="text-sm text-gray-600 dark:text-gray-400">Mostrar:</label>
+        <div class="flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto">
+          <div class="flex items-center gap-2 justify-center lg:justify-start">
+            <label class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">Mostrar:</label>
             <USelect :model-value="itemsPerPage" :items="PAGINATION_OPTIONS" placeholder="10" class="w-20"
               @update:model-value="(value: any) => onItemsPerPageChange(Number(value))" />
-            <span class="text-sm text-gray-600 dark:text-gray-400">registros</span>
+            <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">registros</span>
           </div>
           <UPagination v-if="totalRecords > 0" v-model:page="currentPageModel" :total="totalRecords"
-            :items-per-page="itemsPerPage" />
+            :items-per-page="itemsPerPage" class="flex justify-center lg:justify-end" />
         </div>
       </div>
     </div>
@@ -204,5 +208,154 @@ const {
 <style scoped>
 tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\){
   display: none;
+}
+
+/* Estilos para mejorar la responsividad */
+@media (max-width: 1024px) {
+  .field {
+    min-width: 100%;
+  }
+}
+
+/* Asegurar que la tabla sea responsive */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mejorar la legibilidad en mobile */
+@media (max-width: 768px) {
+  .text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+  
+  .p-2 {
+    padding: 0.5rem;
+  }
+  
+  .gap-2 {
+    gap: 0.5rem;
+  }
+  
+  .gap-3 {
+    gap: 0.75rem;
+  }
+  
+  .gap-4 {
+    gap: 1rem;
+  }
+}
+
+/* Asegurar que los botones no se corten en mobile */
+@media (max-width: 640px) {
+  .h-11 {
+    height: 2.75rem;
+  }
+  
+  .w-full {
+    width: 100%;
+  }
+  
+  .flex-col {
+    flex-direction: column;
+  }
+  
+  .items-start {
+    align-items: flex-start;
+  }
+  
+  .justify-center {
+    justify-content: center;
+  }
+  
+  .text-center {
+    text-align: center;
+  }
+}
+
+/* Mejorar el panel de filtros en mobile */
+@media (max-width: 1024px) {
+  .filters-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+}
+
+/* Mejorar la tabla en mobile */
+@media (max-width: 768px) {
+  .min-w-full {
+    min-width: 100%;
+  }
+  
+  /* Asegurar que las celdas de la tabla no se corten */
+  .overflow-x-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+  }
+  
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 3px;
+  }
+  
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+  }
+  
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+  }
+}
+
+/* Mejorar la experiencia táctil en mobile */
+@media (hover: none) and (pointer: coarse) {
+  .h-11 {
+    min-height: 44px; /* Tamaño mínimo recomendado para touch */
+  }
+  
+  .gap-2 {
+    gap: 0.75rem; /* Espaciado más generoso para touch */
+  }
+  
+  .gap-3 {
+    gap: 1rem;
+  }
+  
+  .gap-4 {
+    gap: 1.25rem;
+  }
+}
+
+/* Asegurar que el overlay funcione correctamente */
+.fixed.inset-0 {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+/* Mejorar la legibilidad del texto en mobile */
+@media (max-width: 640px) {
+  .text-xl {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+  
+  .text-2xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
 }
 </style>
