@@ -4,6 +4,7 @@ export interface ClienteInfo {
   whatsapp: string
   correo: string
   qtyProveedores: number
+  tipoCliente: string
 }
 
 export interface ProductoItem {
@@ -11,6 +12,21 @@ export interface ProductoItem {
   nombre: string
   precio: number
   cantidad: number
+  antidumpingCU: number
+  antidumping: number
+  adValorem: number
+  adValoremP: number
+  igv: number
+  ipm: number
+  percepcion: number
+  total: number
+  costoDestino: number
+  costoTotal: number
+  costoUnitarioUSD: number
+  costoUnitarioPEN: number
+  valoracion: number
+  showValoracion: boolean
+  extraItem: number
 }
 
 export interface Proveedor {
@@ -19,28 +35,38 @@ export interface Proveedor {
   peso: number
   qtyCaja: number
   productos: ProductoItem[]
+  extraProveedor: number
 }
 
-export interface CalculosFinales {
-  totalCbm: number
-  totalItems: number
-  valorFOB: number
-  flete: number
-  seguro: number
-  valorCFR: number
-  valorCIF: number
-  antidumping: number
-  adValorem: number
-  igv: number
-  ipm: number
-  percepcion: number
-  total: number
-}
 
-export interface CalculadoraImportacionState {
-  currentStep: number
-  totalSteps: number
+export interface Tarifa {
+  id: number
+  limit_inf: string
+  limit_sup: string
+  type: 'STANDARD' | 'PLAIN'
+  tarifa: number
+  label: string
+  value: string
+}
+export interface ProveedorRequest {
+  cbm: number
+  peso: number
+  qtyCaja: number
+  productos: ProductoItemRequest[]
+}
+export interface ProductoItemRequest {
+  nombre: string
+  precio: number
+  valoracion: number
+  cantidad: number
+  antidumpingCU: number
+  adValoremP: number
+ 
+}
+export interface saveCotizacionRequest {
   clienteInfo: ClienteInfo
-  proveedores: Proveedor[]
-  calculosFinales: CalculosFinales
+  proveedores: ProveedorRequest[]
+  tarifaTotalExtraProveedor: number
+  tarifaTotalExtraItem: number
+  tarifa: Tarifa
 }

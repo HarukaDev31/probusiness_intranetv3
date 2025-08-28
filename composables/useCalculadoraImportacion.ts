@@ -1,79 +1,202 @@
-import type { ClienteInfo, ProductoItem, Proveedor, CalculosFinales } from '~/types/calculadora-importacion'
+import type { ClienteInfo, ProductoItem, Proveedor, Tarifa, saveCotizacionRequest } from '~/types/calculadora-importacion'
 import { CalculadoraImportacionService } from '~/services/calculadora-importacion/calculadoraImportacionService'
+import type { Header, PaginationInfo } from "~/types/data-table"
+import type { CotizacionFilters } from '~/types/cargaconsolidada/cotizaciones'
 
 export const useCalculadoraImportacion = () => {
   const currentStep = ref(1)
+  const ISDEBUG = true
   const totalSteps = 3
-  const clientes = ref<any[]>([])
-  const tarifas = ref<any[]>([])
-  const clienteInfo = ref<ClienteInfo>({
-    nombre: '',
-    dni: '12345678',
-    whatsapp: '',
-    correo: 'correo@ejemplo.com',
-    qtyProveedores: 1
-  })
-
-  const proveedores = ref<Proveedor[]>([
+  const MAX_PROVEEDORES = 3;
+  const MAX_PROVEEDORES_EXTRA = 3;
+  const TARIFA_EXTRA_PROVEEDOR = 50;
+  const TARIFAS_EXTRA_ITEM_PER_CBM = [
     {
-      id: '1',
-      cbm: 100,
-      peso: 100,
-      qtyCaja: 10,
-      productos: [
-        {
-          id: '1-1',
-          nombre: 'Producto 1',
-          precio: 10,
-          cantidad: 10
-        },
-        {
-          id: '1-2',
-          nombre: 'Producto 2',
-          precio: 20,
-          cantidad: 20
-        }
-      ]
+      id: 1,
+      limit_inf: 0.1,
+      limit_sup: 1,
+      item_base: 6,
+      item_extra: 4,
+      tarifa: 20
     },
     {
-      id: '2',
-      cbm: 200,
-      peso: 200,
-      qtyCaja: 20,
-      productos: [
-        {
-          id: '2-1',
-          nombre: 'Producto 3',
-          precio: 30,
-          cantidad: 30
-        },
-        {
-          id: '2-2',
-          nombre: 'Producto 4',
-          precio: 40,
-          cantidad: 40
-        }
-      ]
+      id: 2,
+      limit_inf: 1.1,
+      limit_sup: 2,
+      item_base: 8,
+      item_extra: 7,
+      tarifa: 10
+    },
+    {
+      id: 3,
+      limit_inf: 2.1,
+      limit_sup: 3,
+      item_base: 10,
+      item_extra: 5,
+      tarifa: 10
     }
-  ])
-
-  const calculosFinales = ref<CalculosFinales>({
-    totalCbm: 0,
-    totalItems: 0,
-    valorFOB: 0,
-    flete: 0,
-    seguro: 0,
-    valorCFR: 0,
-    valorCIF: 0,
-    antidumping: 0,
-    adValorem: 0,
-    igv: 0,
-    ipm: 0,
-    percepcion: 0,
-    total: 0
+  ]
+  const clientes = ref<any[]>([])
+  const tarifas = ref<Tarifa[]>([])
+  const cotizaciones = ref<any[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+  const pagination = ref<PaginationInfo>({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+    from: 0,
+    to: 0
+  })
+  const headers=ref<Header[]>([])
+  const search = ref('')
+  const itemsPerPage = ref(10)
+  const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
+  const totalRecords = computed(() => pagination.value.total)
+  const currentPage = computed(() => pagination.value.current_page)
+  const filters = ref<CotizacionFilters>({
+    fecha_inicio: '',
+    fecha_fin: '',
+    estado: 'todos', // Inicializar con 'todos' para consistencia
+    completado: false
   })
 
+  const tarifasSelect = computed(() => {
+  
+    const grouped = tarifas.value.reduce((acc, tarifa) => {
+      acc[tarifa.value] = tarifa
+      return acc
+    }, {})
+    return Object.values(grouped)
+  })
+  const clienteInfo = ref<ClienteInfo>({
+    nombre: '',
+    dni: '',
+    whatsapp: null,
+    correo: '',
+    qtyProveedores: 0,
+    tipoCliente: 'NUEVO'
+  })
+  //computed totalItems
+  const totalItems = computed(() => {
+    return proveedores.value.reduce((acc, proveedor) => {
+      return acc + proveedor.productos.reduce((acc, producto) => acc + producto.cantidad, 0)
+    }, 0)
+  })
+  const totalCbm = computed(() => {
+    return proveedores.value.reduce((acc, proveedor) => {
+      return acc + proveedor.cbm
+    }, 0)
+  })
+  const proveedores = ref<Proveedor[]>([
+
+  ])
+  const selectedTarifa = computed(() => {
+    let tarifa = tarifas.value.find(tarifa => {
+      const limitInferior = parseFloat(tarifa.limit_inf.replace(',', '.'))
+      const limitSuperior = parseFloat(tarifa.limit_sup.replace(',', '.'))
+      const totalCbmValue = parseFloat(totalCbm.value.toFixed(2))
+      return totalCbmValue >= limitInferior && totalCbmValue <= limitSuperior &&
+        tarifa.label === clienteInfo.value.tipoCliente
+    })
+    if (typeof tarifa === 'undefined') {
+      tarifa = tarifas.value.find(tarifa => tarifa.label === 'NUEVO')
+    }
+    return tarifa
+  })
+
+  //NUEVO RECURRENTE PREMIUM SOCIO INACTIVO
+  const tipoClientes = ref<any[]>([
+    {
+      label: 'NUEVO',
+      value: 'NUEVO'
+    },
+    {
+      label: 'RECURRENTE',
+      value: 'RECURRENTE'
+    },
+    {
+      label: 'PREMIUM',
+      value: 'PREMIUM'
+    },
+    {
+      label: 'SOCIO',
+      value: 'SOCIO'
+    },
+    {
+      label: 'INACTIVO',
+      value: 'INACTIVO'
+    }
+  ])
+  const handleChangeToStep2 = () => {
+    console.log('handleChangeToStep2', currentStep.value)
+    console.log('clienteInfo.value.qtyProveedores', clienteInfo.value.qtyProveedores)
+    const proveedoresLength = proveedores.value.length
+    const clienteQtyProveedores = clienteInfo.value.qtyProveedores
+    const diff = clienteQtyProveedores - proveedoresLength
+    console.log('diff', diff)
+    if (currentStep.value === 1) {
+      if (diff > 0) {
+        for (let i = 0; i < diff; i++) {
+          addProveedor()
+        }
+      } else {
+        for (let i = 0; i < diff; i++) {
+          removeProveedor(proveedores.value[i].id)
+        }
+      }
+      clienteInfo.value.qtyProveedores = proveedores.value.length
+    }
+
+  }
+
+  const handleEndFormulario = async () => {
+    //get extra per proveedor and item from proveedores
+    const tarifaTotalExtraProveedor = proveedores.value.reduce((acc, proveedor) => {
+      return acc + proveedor.extraProveedor
+    }, 0)
+    const tarifaTotalExtraItem = proveedores.value.reduce((acc, proveedor) => {
+      return acc + proveedor.productos.reduce((acc, producto) => acc + producto.extraItem, 0)
+    }, 0)
+    //create saveCotizacionRequest
+    const saveCotizacionRequest: saveCotizacionRequest = {
+      clienteInfo: clienteInfo.value,
+      proveedores: proveedores.value.map(proveedor => ({
+        cbm: proveedor.cbm,
+        peso: proveedor.peso,
+        qtyCaja: proveedor.qtyCaja,
+        productos: proveedor.productos.map(producto => ({
+          nombre: producto.nombre,
+          precio: producto.precio,
+          valoracion: producto.valoracion,
+          cantidad: producto.cantidad,
+          antidumpingCU: producto.antidumpingCU,
+          adValoremP: producto.adValoremP
+        }))
+      })),
+      tarifaTotalExtraProveedor: tarifaTotalExtraProveedor,
+      tarifaTotalExtraItem: tarifaTotalExtraItem,
+      tarifa: selectedTarifa.value,
+    }
+    //send to service
+    const response = await CalculadoraImportacionService.saveCotizacion(saveCotizacionRequest)
+    console.log(response)
+  }
   const nextStep = () => {
+    switch (currentStep.value) {
+      case 1:
+        handleChangeToStep2()
+        break
+      case 2:
+
+        break
+      case 3:
+        handleEndFormulario()
+        break
+      default:
+
+    }
     if (currentStep.value < totalSteps) {
       currentStep.value++
     }
@@ -92,20 +215,40 @@ export const useCalculadoraImportacion = () => {
   }
 
   const addProveedor = () => {
+    if (proveedores.value.length >= MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA) {
+      return
+    }
     const newId = (proveedores.value.length + 1).toString()
+    const isExtra = proveedores.value.length + 1 > MAX_PROVEEDORES
     proveedores.value.push({
       id: newId,
-      cbm: 0,
-      peso: 0,
-      qtyCaja: 0,
+      cbm: ISDEBUG ? 1.2 : 0,
+      peso: ISDEBUG ? 100 : 0,
+      qtyCaja: ISDEBUG ? 10 : 0,
       productos: [
         {
           id: `${newId}-1`,
-          nombre: '',
-          precio: 0,
-          cantidad: 0
+          nombre: `Producto ${newId}`,
+          precio: ISDEBUG ? 10 : 0,
+          cantidad: ISDEBUG ? 100 : 0,
+          antidumpingCU: 0,
+          antidumping: 0,
+          adValorem: 0,
+          adValoremP: 0,
+          igv: 0,
+          ipm: 0,
+          percepcion: 0,
+          total: 0,
+          costoDestino: 0,
+          costoTotal: 0,
+          costoUnitarioUSD: 0,
+          costoUnitarioPEN: 0,
+          valoracion: 0,
+          showValoracion: false,
+          extraItem: 0
         }
-      ]
+      ],
+      extraProveedor: isExtra ? TARIFA_EXTRA_PROVEEDOR : 0
     })
     clienteInfo.value.qtyProveedores = proveedores.value.length
   }
@@ -124,16 +267,38 @@ export const useCalculadoraImportacion = () => {
       })
     }
   }
-
+  const getExtraItem = (cbm: number) => {
+    const tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(tarifa => {
+      return cbm >= tarifa.limit_inf && cbm <= tarifa.limit_sup
+    })
+    return tarifa
+  }
   const addProducto = (proveedorId: string) => {
     const proveedor = proveedores.value.find(p => p.id === proveedorId)
     if (proveedor) {
       const newId = `${proveedorId}-${proveedor.productos.length + 1}`
+      const tarifaExtra = getExtraItem(proveedor.cbm)
+      const isExtra = proveedor.productos.length + 1 > tarifaExtra?.item_base
       proveedor.productos.push({
         id: newId,
-        nombre: '',
-        precio: 0,
-        cantidad: 0
+        nombre: `Producto ${newId}`,  
+        precio: ISDEBUG ? 10 : 0,
+        cantidad: ISDEBUG ? 100 : 0,
+        antidumpingCU: 0,
+        antidumping: 0,
+        adValorem: 0,
+        adValoremP: 0,
+        igv: 0,
+        ipm: 0,
+        percepcion: 0,
+        total: 0,
+        costoDestino: 0,
+        costoTotal: 0,
+        costoUnitarioUSD: 0,
+        costoUnitarioPEN: 0,
+        valoracion: 0,
+        showValoracion: false,
+        extraItem: isExtra ? tarifaExtra?.tarifa || 0 : 0
       })
     }
   }
@@ -152,49 +317,11 @@ export const useCalculadoraImportacion = () => {
     }
   }
 
-  const calcularTotales = () => {
-    let totalCbm = 0
-    let totalItems = 0
-    let valorFOB = 0
-
-    proveedores.value.forEach(proveedor => {
-      totalCbm += proveedor.cbm
-      proveedor.productos.forEach(producto => {
-        totalItems += producto.cantidad
-        valorFOB += producto.precio * producto.cantidad
-      })
-    })
-
-    calculosFinales.value.totalCbm = totalCbm
-    calculosFinales.value.totalItems = totalItems
-    calculosFinales.value.valorFOB = valorFOB
-    calculosFinales.value.flete = valorFOB
-    calculosFinales.value.valorCFR = valorFOB + calculosFinales.value.flete
-    calculosFinales.value.seguro = 50.00
-    calculosFinales.value.valorCIF = calculosFinales.value.valorCFR + calculosFinales.value.seguro
-    
-    // Cálculos de impuestos
-    calculosFinales.value.antidumping = valorFOB * 0.01
-    calculosFinales.value.adValorem = 0
-    calculosFinales.value.igv = calculosFinales.value.valorCIF * 0.16
-    calculosFinales.value.ipm = 0
-    calculosFinales.value.percepcion = 0
-    
-    calculosFinales.value.total = calculosFinales.value.valorCIF + 
-      calculosFinales.value.antidumping + 
-      calculosFinales.value.adValorem + 
-      calculosFinales.value.igv + 
-      calculosFinales.value.ipm + 
-      calculosFinales.value.percepcion
-  }
 
   const isStepValid = (step: number): boolean => {
     switch (step) {
       case 1:
-        return clienteInfo.value.nombre.trim() !== '' &&
-               clienteInfo.value.dni.trim() !== '' &&
-               clienteInfo.value.whatsapp.trim() !== '' &&
-               clienteInfo.value.correo.trim() !== ''
+        return clienteInfo.value.nombre.trim() !== '' && clienteInfo.value.whatsapp !== null
       case 2:
         return proveedores.value.every(proveedor =>
           proveedor.cbm > 0 &&
@@ -223,18 +350,38 @@ export const useCalculadoraImportacion = () => {
   const getTarifas = async () => {
     try {
       const response = await CalculadoraImportacionService.getTarifas()
-      tarifas.value = response
+      tarifas.value = response.data
     } catch (error) {
       console.error('Error al obtener tarifas:', error)
       throw new Error('No se pudieron obtener las tarifas')
     }
+  }
+  const getCotizaciones = async () => {
+    try {
+      const response = await CalculadoraImportacionService.getCotizaciones()
+      cotizaciones.value = response.data
+    } catch (error) {
+      console.error('Error al obtener cotizaciones:', error)
+      throw new Error('No se pudieron obtener las cotizaciones')
+    }
+  }
+  const handleSearch = (value: string) => {
+    search.value = value
+  }
+  const handlePageChange = (page: number) => {
+    pagination.value.current_page = page
+  }
+  const handleItemsPerPageChange = (itemsPerPage: number) => {
+    pagination.value.per_page = itemsPerPage
+  }
+  const handleFilterChange = (filters: any) => {
+    filters.value = filters
   }
   return {
     currentStep,
     totalSteps,
     clienteInfo,
     proveedores,
-    calculosFinales,
     nextStep,
     prevStep,
     goToStep,
@@ -242,13 +389,38 @@ export const useCalculadoraImportacion = () => {
     removeProveedor,
     addProducto,
     removeProducto,
-    calcularTotales,
     isStepValid,
     canGoNext,
     canGoPrev,
     getClientesByWhatsapp,
     getTarifas,
     clientes,
-    tarifas
+    tarifas,
+    tipoClientes,
+    tarifasSelect,
+    totalItems,
+    totalCbm,
+    selectedTarifa,
+    MAX_PROVEEDORES,
+    MAX_PROVEEDORES_EXTRA,
+    TARIFA_EXTRA_PROVEEDOR,
+    TARIFAS_EXTRA_ITEM_PER_CBM,
+    handleEndFormulario,
+    getCotizaciones,
+    cotizaciones,
+    loading,
+    error,
+    pagination,
+    headers,
+    search,
+    itemsPerPage,
+    totalPages,
+    totalRecords,
+    currentPage,
+    filters,
+    handleSearch,
+    handlePageChange,
+    handleItemsPerPageChange,
+    handleFilterChange
   }
 }
