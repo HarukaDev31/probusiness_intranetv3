@@ -34,10 +34,10 @@ export interface Header {
 export interface DataTableProps {
   // Basic props
   title: string
-  subtitle: string
   icon?: string
   showTitle?: boolean
   showTopSection?: boolean
+  showPagination?: boolean
 
   // Data props
   data: any[]

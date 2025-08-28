@@ -103,6 +103,7 @@
             :loading="loading"
             :show-primary-search="false"
             :show-top-section="true"
+            :show-pagination="false"
           />
         </div>
       </div>

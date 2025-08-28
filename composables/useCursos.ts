@@ -99,6 +99,15 @@ export const useCursos = () => {
         }
     }
 
+    const fetchCursosData = async (params: {
+        page?: number
+        limit?: number
+        search?: string
+        filters?: CursosFilters
+    } = {}) => {
+        return loadCursos(params)
+    }
+
 
 
     // Handlers

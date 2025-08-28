@@ -2,6 +2,7 @@ export const DATA_TABLE_DEFAULTS = {
   icon: 'i-heroicons-document-text',
   loading: false,
   searchPlaceholder: 'Buscar por...',
+  showPagination: true,
   showPrimarySearch: true,
   primarySearchLabel: 'Buscar por',
   primarySearchPlaceholder: 'Filtro específico...',
