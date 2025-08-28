@@ -341,8 +341,10 @@ const cursosColumns: TableColumn<any>[] = [
     accessorKey: 'pagos_detalle',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
-      const adelantos = row.getValue('pagos_detalle')
-      //for each adelanto, create a span with the status and the amount
+      const adelantos = row.getValue('pagos_detalle') ?? []
+      if (!Array.isArray(adelantos) || adelantos.length === 0) {
+        return h('div', { class: 'text-sm text-gray-500' }, '-')
+      }
       return h('div', { class: 'flex flex-wrap gap-1' },
         adelantos.map((adelanto: any) =>
           h('span', {
