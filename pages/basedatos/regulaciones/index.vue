@@ -503,7 +503,7 @@
                                 <span class="w-20 text-right">Acción</span>
                             </div>
                             <div
-                                v-for="(rubro, idx) in documentosData"
+                                v-for="rubro in documentosData"
                                 :key="rubro.id"
                                 @click="selectedRubroId = rubro.id"
                                 :class="[
@@ -512,7 +512,7 @@
                                 'hover:border-orange-300 hover:shadow'
                                 ]"
                             >
-                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ rubro.id }}</span>
                                 <div class="flex-1">
                                     <template v-if="editingRubroId === rubro.id">
                                         <input
