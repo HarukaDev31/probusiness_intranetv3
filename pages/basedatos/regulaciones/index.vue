@@ -503,7 +503,7 @@
                                 <span class="w-20 text-right">Acción</span>
                             </div>
                             <div
-                                v-for="rubro in documentosData"
+                                v-for="(rubro, idx) in documentosData"
                                 :key="rubro.id"
                                 @click="selectedRubroId = rubro.id"
                                 :class="[
@@ -512,7 +512,7 @@
                                 'hover:border-orange-300 hover:shadow'
                                 ]"
                             >
-                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ rubro.id }}</span>
+                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
                                 <div class="flex-1">
                                     <template v-if="editingRubroId === rubro.id">
                                         <input
@@ -1517,15 +1517,24 @@ const saveRubro = async () => {
 const editingRubroId = ref<number | null>(null)
 const editingNombre = ref('')
 
+// Flag para indicar que la selección siguiente viene por el botón "editar"
+// y por lo tanto no debe cancelar la edición.
+const suppressCancelOnSelect = ref(false)
+
 const startEdit = (item: ProductRubro | PermisoEntidad | EtiquetadoEntidad | DocumentoEntidad | { id: number; nombre?: string }) => {
     const id = (item && (item as any).id) ?? null
     if (!id) return
+
+    // Marcar que la siguiente selección es intencional (desde el botón editar)
+    suppressCancelOnSelect.value = true
+    selectedRubroId.value = id
 
     if (activeTab.value === 'permisos') {
         // Editing an entity
         const entidad = permisosData.value.find(e => e.id === id)
         if (!entidad) {
             showError('Edición', 'Entidad no encontrada para editar')
+            suppressCancelOnSelect.value = false
             return
         }
         editingRubroId.value = entidad.id
@@ -1537,6 +1546,7 @@ const startEdit = (item: ProductRubro | PermisoEntidad | EtiquetadoEntidad | Doc
         const rub = etiquetadoData.value.find(r => r.id === id)
         if (!rub) {
             showError('Edición', 'Rubro no encontrado para editar')
+            suppressCancelOnSelect.value = false
             return
         }
         editingRubroId.value = rub.id
@@ -1548,6 +1558,7 @@ const startEdit = (item: ProductRubro | PermisoEntidad | EtiquetadoEntidad | Doc
         const rub = documentosData.value.find(r => r.id === id)
         if (!rub) {
             showError('Edición', 'Rubro no encontrado para editar')
+            suppressCancelOnSelect.value = false
             return
         }
         editingRubroId.value = rub.id
@@ -1559,6 +1570,7 @@ const startEdit = (item: ProductRubro | PermisoEntidad | EtiquetadoEntidad | Doc
     const rubro = antidumpingData.value.find(r => r.id === id)
     if (!rubro) {
         showError('Edición', 'Rubro no encontrado para editar')
+        suppressCancelOnSelect.value = false
         return
     }
     editingRubroId.value = rubro.id
@@ -1739,15 +1751,22 @@ const deleteEtiquetado = (id: number) => {
 // Hide detail panels when the selected product (rubro) changes.
 // This ensures any opened detail table is closed when user selects another product.
 watch(selectedRubroId, (newVal, oldVal) => {
-    if (newVal !== oldVal) {
-        regulationDetail.value = null
-        permisoDetail.value = null
-        // also close image preview if open
-        showImageModal.value = false
-        selectedImage.value = ''
+    if (newVal === oldVal) return
+
+    regulationDetail.value = null
+    permisoDetail.value = null
+    // also close image preview if open
+    showImageModal.value = false
+    selectedImage.value = ''
+
+    // Si la selección fue provocada por startEdit, no cancelar la edición.
+    if (suppressCancelOnSelect.value) {
+        suppressCancelOnSelect.value = false
+        return
+    }
+
     // cancel any inline edit in progress
     cancelEdit()
-    }
 })
 
 watch(activeTab, (newTab) => {
