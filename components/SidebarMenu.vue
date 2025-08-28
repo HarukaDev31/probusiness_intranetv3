@@ -173,7 +173,7 @@
   </div>
 
   <!-- Overlay -->
-  <div v-if="visible" class="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden" @click="toggleSidebar" />
+  <div v-if="visible" class="fixed inset-0 z-40  bg-opacity-50 lg:hidden" @click="toggleSidebar" />
 </template>
 
 <script setup lang="ts">
