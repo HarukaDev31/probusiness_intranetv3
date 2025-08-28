@@ -36,6 +36,8 @@ export interface DataTableProps {
   title: string
   icon?: string
   showTitle?: boolean
+  showTopSection?: boolean
+  showPagination?: boolean
 
   // Data props
   data: any[]

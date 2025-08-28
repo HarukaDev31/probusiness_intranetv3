@@ -2,7 +2,7 @@
   <div class="space-y-6">
     
     <!-- Sticky Top Section -->
-    <div class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-800">
+    <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-800">
       <slot name="filters ">
         <div class="flex flex-wrap items-center justify-end gap-4 p-4">
           <div class="flex items-center">
@@ -144,7 +144,7 @@
     </UCard>
 
     <!-- Sticky Bottom Section - Pagination -->
-    <div class="sticky bottom-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-sm">
+    <div v-if="showPagination" class="sticky bottom-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="flex items-center justify-between p-4">
         <div class="text-sm text-gray-700 dark:text-gray-300">
           Mostrando {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} a {{ Math.min((currentPage || 1) *

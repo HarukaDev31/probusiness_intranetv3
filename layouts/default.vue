@@ -24,7 +24,7 @@
       <!-- Page Content -->
       <main class="flex-1 pt-6 px-6 bg-[#f0f4f9] dark:bg-gray-900">
         <div class="mb-3">
-          <Breadcrumbs />
+          <!-- <Breadcrumbs /> -->
         </div>
         <slot />
       </main>
@@ -156,66 +156,98 @@ const { user, logout, initializeAuth, menu } = useAuth()
 
 // Convertir menús del login al formato del sidebar
 const sidebarCategories = computed(() => {
-  const categories: SidebarCategory[] = []
+  const backend = menu.value ?? []
 
-  for (const menuItem of menu.value) {
-    if (menuItem.ID_Padre === 0) { // Solo menús padre
-      const category: SidebarCategory = {
-        id: menuItem.ID_Menu.toString(),
-        name: menuItem.No_Menu,
-        icon: convertIconToHeroicons(menuItem.Txt_Css_Icons),
-        color: 'gray',
-        order: menuItem.Nu_Orden,
+  // Mapear padres -> módulos (cada padre tiene children: Hijos -> SubHijos)
+  const modules = (backend as any[]).map((p: any) => {
+    const parentId = String(p.ID_Menu ?? p.id ?? '')
+    const parentName = p.No_Menu ?? p.Nombre ?? p.name ?? 'Sin nombre'
+    const parentIcon = convertIconToHeroicons(p.Txt_Css_Icons)
+    const parentRouteRaw = p.No_Menu_Url ?? p.Ruta ?? p.route ?? ''
+    const parentRoute = (parentRouteRaw === '#' || parentRouteRaw === '') ? '' : convertUrlToRoute(parentRouteRaw, p.url_intranet_v2)
+
+    const children = (p.Hijos ?? []).map((h: any) => {
+      const childId = String(h.ID_Menu ?? h.id ?? '')
+      const childName = h.No_Menu ?? h.Nombre ?? h.name ?? 'Sin nombre'
+      const childIcon = convertIconToHeroicons(h.Txt_Css_Icons)
+      const childRouteRaw = h.No_Menu_Url ?? h.Ruta ?? h.route ?? ''
+      const childRoute = (childRouteRaw === '#' || childRouteRaw === '') ? '' : convertUrlToRoute(childRouteRaw, h.url_intranet_v2)
+
+      const subChildren = (h.SubHijos ?? []).map((s: any) => {
+        const sId = String(s.ID_Menu ?? s.id ?? '')
+        const sName = s.No_Menu ?? s.Nombre ?? s.name ?? 'Sin nombre'
+        const sIcon = convertIconToHeroicons(s.Txt_Css_Icons)
+        const sRouteRaw = s.No_Menu_Url ?? s.Ruta ?? s.route ?? ''
+        const sRoute = (sRouteRaw === '#' || sRouteRaw === '') ? '' : convertUrlToRoute(sRouteRaw, s.url_intranet_v2)
+        return {
+          id: sId,
+          name: sName,
+          icon: sIcon,
+          route: sRoute || '',
+          // propiedades extra requeridas por SidebarModule
+          category: parentName,
+          categoryId: parentId,
+          order: s.Nu_Orden ?? 0,
+          isVisible: true,
+          hasNotifications: false,
+          notificationCount: 0,
+          permissions: ['view'],
+          children: []
+        }
+      })
+
+      return {
+        id: childId,
+        name: childName,
+        icon: childIcon,
+        route: childRoute || '',
+        category: parentName,
+        categoryId: parentId,
+        order: h.Nu_Orden ?? 0,
         isVisible: true,
-        modules: []
+        hasNotifications: false,
+        notificationCount: 0,
+        permissions: ['view'],
+        children: subChildren
       }
+    })
 
-      // Agregar el menú padre como módulo principal
-      if (menuItem.No_Menu_Url !== '#' && menuItem.url_intranet_v2 !== null) {
-        category.modules.push({
-          id: menuItem.ID_Menu.toString(),
-          name: menuItem.No_Menu,
-          icon: convertIconToHeroicons(menuItem.Txt_Css_Icons),
-          route: convertUrlToRoute(menuItem.No_Menu_Url, menuItem.url_intranet_v2),
-          category: menuItem.No_Menu,
-          categoryId: menuItem.ID_Menu.toString(),
-          order: menuItem.Nu_Orden,
-          isVisible: true,
-          hasNotifications: false,
-          notificationCount: 0,
-          permissions: ['view']
-        })
-      }
-
-      // Agregar submenús
-      for (const hijo of menuItem.Hijos) {
-        category.modules.push({
-          id: hijo.ID_Menu.toString(),
-          name: hijo.No_Menu,
-          icon: convertIconToHeroicons(hijo.Txt_Css_Icons),
-          route: convertUrlToRoute(hijo.No_Menu_Url, hijo.url_intranet_v2),
-          category: menuItem.No_Menu,
-          categoryId: menuItem.ID_Menu.toString(),
-          order: hijo.Nu_Orden,
-          isVisible: true,
-          hasNotifications: false,
-          notificationCount: 0,
-          permissions: ['view']
-        })
-      }
-
-      categories.push(category)
+    // Padre como módulo (si no tiene ruta, route = '' => será toggle)
+    return {
+      id: parentId,
+      name: parentName,
+      icon: parentIcon,
+      route: parentRoute || '',
+      category: parentName,
+      categoryId: parentId,
+      order: p.Nu_Orden ?? 0,
+      isVisible: true,
+      hasNotifications: false,
+      notificationCount: 0,
+      permissions: ['view'],
+      children
     }
-  }
+  })
 
-  return categories
+  // Una sola categoría que contiene todos los módulos padre (para que SidebarMenu los muestre como botones)
+  return [
+    {
+      id: 'main',
+      name: 'Menú',
+      icon: null,
+      color: 'gray',
+      order: 0,
+      isVisible: true,
+      modules
+    } as SidebarCategory
+  ]
 })
 
 // Función para convertir iconos de FontAwesome a Heroicons
 const convertIconToHeroicons = (faIcon: string): string => {
   const iconMap: Record<string, string> = {
     'fa fa-home': 'i-heroicons-home',
-    'fas fa-boxes': 'gravity-ui:boxes-3',
+    'fas fa-boxes': 'solar:box-outline',
     'fa fa-list': 'i-heroicons-document-text',
     'fa fa-file-excel': 'vscode-icons:file-type-excel',
     'fa fa-file-pdf' : 'vscode-icons:file-type-pdf',
@@ -234,7 +266,7 @@ const convertIconToHeroicons = (faIcon: string): string => {
     'fa fa-user': 'mdi:account-box-outline'
   }
 
-  return iconMap[faIcon] || 'gravity-ui:boxes-3'
+  return iconMap[faIcon] || ''
 }
 
 // Función para convertir URLs a rutas de Nuxt

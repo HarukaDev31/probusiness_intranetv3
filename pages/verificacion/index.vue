@@ -1,13 +1,10 @@
 <template>
   <div class="p-6">
-    <!-- Header -->
-    <PageHeader title="Verificación" subtitle="Gestión de verificación de pagos"
-      icon="i-heroicons-clipboard-document-check" :hide-back-button="true" />
 
     <!-- Tab Content -->
     <div v-if="activeTab === 'consolidado'">
       <!-- Consolidado Tab -->
-      <DataTable title="" icon="" :data="consolidadoData" :columns="consolidadoColumns" :loading="loadingConsolidado"
+      <DataTable :show-title="true" title="Verificación" subtitle="Gestión de verificación de pagos" icon="i-heroicons-clipboard-document-check" :data="consolidadoData" :columns="consolidadoColumns" :loading="loadingConsolidado"
         :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
         :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false" :show-filters="true"
         :filter-config="filterConfig" :filters-value="filtersConsolidado" :show-export="true"
@@ -19,8 +16,9 @@
           <UTabs size="md" variant="pill" :content="false" :items="tabs" v-model="activeTab" class="w-50 mb-6" />
           <div class="mb-4 flex justify-end">
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total: <span
-                class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
+              Importe total: 
+              <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
+                {{ formatCurrency(totalImporteCursos) }}
               </span>
             </div>
           </div>
@@ -60,6 +58,7 @@ import { ref, computed, onMounted, h, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useConsolidado } from '../composables/usePagosConsolidado'
 import { usePagos } from '../composables/usePagos'
+import { useCursos } from '../composables/useCursos'
 import { ESTADOS_PAGO, CARGAS_DISPONIBLES } from '../constants/consolidado'
 import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS, CAMPANAS } from '../constants/cursos'
 import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '../utils/consolidado'
@@ -342,8 +341,10 @@ const cursosColumns: TableColumn<any>[] = [
     accessorKey: 'pagos_detalle',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
-      const adelantos = row.getValue('pagos_detalle')
-      //for each adelanto, create a span with the status and the amount
+      const adelantos = row.getValue('pagos_detalle') ?? []
+      if (!Array.isArray(adelantos) || adelantos.length === 0) {
+        return h('div', { class: 'text-sm text-gray-500' }, '-')
+      }
       return h('div', { class: 'flex flex-wrap gap-1' },
         adelantos.map((adelanto: any) =>
           h('span', {
@@ -370,6 +371,10 @@ const cursosColumns: TableColumn<any>[] = [
     }
   }
 ]
+
+const totalImporteCursos = computed(() =>
+  consolidadoData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
+)
 
 // Computed para el total del consolidado (asegurar que sea un número)
 const totalAmountConsolidadoComputed = computed(() => {
