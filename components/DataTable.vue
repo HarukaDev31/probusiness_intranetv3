@@ -2,7 +2,7 @@
   <div class="space-y-6">
 
     <!-- Sticky Top Section -->
-    <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-800">
+    <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
       <slot name="filters ">
         <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4 p-4">
           <div class="w-full lg:w-full flex flex-col lg:flex-row justify-between gap-3 items-center">
