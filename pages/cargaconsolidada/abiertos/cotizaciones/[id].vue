@@ -1,21 +1,24 @@
 <template>
-    <div class="p-6">
-        
-        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
+    <div class="py-6 ">
 
-        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
-            :headers="headersCotizaciones" :show-headers="true" :loading="loadingCotizaciones"
-            :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
+        
+
+        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" 
+        :columns="getProespectosColumns()"
+            :loading="loadingCotizaciones" :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
             :total-records="totalRecordsCotizaciones" :items-per-page="itemsPerPageCotizaciones"
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
             :filter-config="filterConfigProspectos" :show-export="true"
             empty-state-message="No se encontraron registros de prospectos."
-            :previous-page-url="`/cargaconsolidada/abiertos`"
-            @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
-            @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
-            :hide-back-button="false" 
-            >
-            
+            :previous-page-url="`/cargaconsolidada/abiertos`" @update:primary-search="handleSearchProspectos"
+            @page-change="handlePageChangeProspectos" @items-per-page-change="handleItemsPerPageChangeProspectos"
+            @filter-change="handleFilterChangeProspectos" :hide-back-button="false" :show-body-top="true">
+            <template #body-top>
+                <div class="flex flex-column gap-2">
+                    <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones" :loading="loadingHeaders" />
+                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
+                </div>
+            </template>
             <template #actions>
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" variant="outline"
                     label="Crear Prospecto" @click="handleAddProspecto" />
@@ -27,7 +30,15 @@
             :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChange">
+            @filter-change="handleFilterChange"
+             :show-body-top="true" 
+             :previous-page-url="`/cargaconsolidada/abiertos`"
+             :hide-back-button="false"
+             >
+            <template #body-top>
+                <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones" :loading="loadingHeaders" />
+                <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
+            </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
             :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
@@ -35,7 +46,13 @@
             :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChange">
+            @filter-change="handleFilterChange" :show-body-top="true"
+            :hide-back-button="false"
+            :previous-page-url="`/cargaconsolidada/abiertos`">
+            <template #body-top>
+                <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones" :loading="loadingHeaders" />
+                <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
+            </template>
         </DataTable>
     </div>
 </template>
@@ -55,9 +72,10 @@ import MoveCotizacionModal from '~/components/cargaconsolidada/MoveCotizacionMod
 import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
+import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
 const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
-const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones, headersCotizaciones } = useCotizacion()
+const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders } = useCotizacion()
 const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headersPagos } = useCotizacionPagos()
 const { withSpinner } = useSpinner()
 const route = useRoute()
@@ -1103,6 +1121,7 @@ watch(() => tab.value, async (newVal) => {
                 navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=pagos`)
                 await getCotizacionPagos(Number(id))
             }
+            await getHeaders(Number(id))
         } catch (error) {
             console.error('Error en carga inicial:', error)
         }
@@ -1145,9 +1164,9 @@ const updateProveedorData = async (row: any) => {
 }
 onMounted(() => {
     loadTabs();
-   
+
     const tabQuery = route.query.tab
-    
+
     if (tabQuery) {
         tab.value = tabQuery as string
     } else {

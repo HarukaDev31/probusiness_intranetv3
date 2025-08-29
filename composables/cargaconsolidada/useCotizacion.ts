@@ -3,6 +3,7 @@ import type { Header, PaginationInfo } from "../../types/data-table"
 import type { Cotizacion, CotizacionFilters } from "../../types/cargaconsolidada/cotizaciones"
 
 export const useCotizacion = () => {
+    const carga = ref<string | null>(null)
     const cotizaciones = ref<Cotizacion[]>([])
     const loading = ref(false)
     const error = ref<string | null>(null)
@@ -15,7 +16,7 @@ export const useCotizacion = () => {
         to: 0
     })
     const headersCotizaciones = ref<Header[]>([])
-
+    const loadingHeaders = ref(false)
     const search = ref('')
     const itemsPerPage = ref(10)
     const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
@@ -52,7 +53,6 @@ export const useCotizacion = () => {
             const response = await CotizacionService.getCotizaciones(id,params)
             cotizaciones.value = response.data
             pagination.value = response.pagination
-            headersCotizaciones.value = response.headers
         } catch (err) {
             error.value = err as string
         } finally {
@@ -116,6 +116,19 @@ export const useCotizacion = () => {
             throw error
         }
     }
+    const getHeaders = async (id: number) => {
+        loadingHeaders.value = true
+        try {
+            const response = await CotizacionService.getHeaders(id)
+            headersCotizaciones.value = response.data
+            carga.value = response.carga
+            loadingHeaders.value = false
+            return response
+        } catch (error) {
+            console.error('Error en getHeaders:', error)
+            throw error
+        }
+    }
     return {
         cotizaciones,
         loading,
@@ -134,6 +147,9 @@ export const useCotizacion = () => {
         deleteCotizacionFile,
         createProspecto,
         updateCotizacion,
-        updateEstadoCotizacionCotizador
+        updateEstadoCotizacionCotizador,
+        getHeaders,
+        carga,
+        loadingHeaders
     }
 }

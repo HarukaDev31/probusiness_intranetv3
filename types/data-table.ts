@@ -30,6 +30,7 @@ export interface FilterConfig {
 export interface Header {
   label: string
   value: string
+  icon?: string
 }
 export interface DataTableProps {
   // Basic props
@@ -95,4 +96,10 @@ export interface DataTableEmits {
   'filter-change': [filterType: string, value: string]
   'page-change': [page: number]
   'items-per-page-change': [limit: number]
+  'retry': []
 } 
+export interface HeaderResponse {
+  data: Header[]
+  success: boolean,
+  carga?: string
+}

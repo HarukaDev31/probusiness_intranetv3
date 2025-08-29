@@ -1,5 +1,5 @@
+import type { HeaderResponse } from "~/types/data-table"
 import { BaseService } from "../base/BaseService"
-
 export class CotizacionService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor'
     static async getCotizaciones(id: number, filters: any) {
@@ -84,6 +84,18 @@ export class CotizacionService extends BaseService {
         } catch (error) {
             console.error('Error al actualizar el estado de la cotización:', error)
             throw new Error(error.data.message)
+        }
+    }
+    static async getHeaders(id: number): Promise<HeaderResponse> {
+        try {
+            const response = await this.apiCall<HeaderResponse>(`${this.baseUrl}/cotizaciones/${id}/headers`, {
+                method: 'GET'
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error al obtener los headers:', error)
+            throw new Error('No se pudo obtener los headers')
         }
     }
 }
