@@ -1,7 +1,7 @@
 <template>
-    <div class="p-6">
+    <div class="">
         <!-- Navegación superior -->
-        <div class="flex items-center space-x-6 mb-6">
+        <div class="flex items-center space-x-6 ">
             <div class="flex items-center space-x-4">
                 <div class="flex items-center space-x-2">
                     <div class="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -15,7 +15,7 @@
         </div>
 
 
-        <DataTable title="Contenedores" icon="i-heroicons-book-open" :show-title="true" :data="consolidadoData" :columns="getColumns()" :loading="loading"
+        <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData" :columns="getColumns()" :loading="loading"
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
@@ -23,7 +23,8 @@
             })()" :show-export="true" empty-state-message="No se encontraron registros de contenedores."
             @update:search-query="handleSearch" @update:primary-search="handleSearch" @page-change="handlePageChange"
             @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
-            @filter-change="handleFilterChange">
+            @filter-change="handleFilterChange"
+            :hide-back-button="true">
             <template #actions>
                 <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
             </template>
@@ -44,7 +45,9 @@ const { withSpinner } = useSpinner()
 const { hasRole, isCoordinacion, currentRole, currentId } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
 import CreateConsolidadoModal from '~/components/cargaconsolidada/CreateConsolidadoModal.vue'
+import { USelect } from '#components'
 const { showSuccess, showConfirmation } = useModal()
+import { STATUS_BG_CLASSES } from '~/constants/ui'
 const {
     consolidadoData,
     loading,
@@ -186,10 +189,17 @@ const columns: TableColumn<any>[] = [
         cell: ({ row }) => {
             const estado = row.getValue('estado_china') as string
             const color = getColorByEstado(estado)
-            return h(UBadge, {
-                color,
+            return h(USelect as any, {
+                modelValue: estado,
                 variant: 'subtle',
-                label: getEstadoLabel(estado)
+                color: color,
+                disabled: true,
+                class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES],
+                items: [
+                    { label: 'PENDIENTE', value: 'PENDIENTE' },
+                    { label: 'RECIBIENDO', value: 'RECIBIENDO' },
+                    { label: 'COMPLETADO', value: 'COMPLETADO' }
+                ]
             })
         }
     },
@@ -202,7 +212,7 @@ const columns: TableColumn<any>[] = [
                 h(UButton, {
                     size: 'xs',
                     icon: 'i-heroicons-eye',
-                    color: 'primary',
+                    color: 'info',
                     variant: 'ghost',
                     onClick: () => handleViewSteps(row.original.id)
                 }),

@@ -33,12 +33,13 @@ export interface Header {
 }
 export interface DataTableProps {
   // Basic props
-  title: string
-  icon?: string
+  title: string|null
+  subtitle?: string|null
+  icon?: string|null
   showTitle?: boolean
-  showTopSection?: boolean
+  showTopSection?: boolean  
   showPagination?: boolean
-
+  showBodyTop?: boolean | null
   // Data props
   data: any[]
   columns: TableColumn<any>[]
@@ -78,6 +79,10 @@ export interface DataTableProps {
   showNewButton?: boolean
   newButtonLabel?: string
   onNewButtonClick?: () => void  
+
+  //Previous Page URL
+  previousPageUrl?: string|null
+  hideBackButton?: boolean
 }
 
 export interface DataTableEmits {

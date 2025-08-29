@@ -1,7 +1,6 @@
 <template>
     <div class="p-6">
-        <PageHeader title="Cotizaciones" subtitle="Gestión de cotizaciones" icon="i-heroicons-book-open"
-            :hide-back-button="true" />
+        
         <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
 
         <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
@@ -11,9 +10,12 @@
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
             :filter-config="filterConfigProspectos" :show-export="true"
             empty-state-message="No se encontraron registros de prospectos."
+            :previous-page-url="`/cargaconsolidada/abiertos`"
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
-            @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos">
-
+            @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
+            :hide-back-button="false" 
+            >
+            
             <template #actions>
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" variant="outline"
                     label="Crear Prospecto" @click="handleAddProspecto" />

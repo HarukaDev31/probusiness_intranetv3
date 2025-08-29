@@ -4,14 +4,12 @@
     <SidebarMenu v-model="sidebarVisible" :user="user" :menu-categories="sidebarCategories" />
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col transition-all duration-300" :class="sidebarVisible ? 'lg:ml-80' : ''">
+    <div class="flex-1 flex flex-col transition-all duration-300 w-75" :class="sidebarVisible ? 'lg:ml-80' : ''">
       <!-- Top Header -->
-      <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <header 
+      class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 lg:hidden">
         <div class="px-6 py-4">
-          <!-- Breadcrumbs -->
 
-
-          <!-- Title and Actions -->
           <div class="flex items-center justify-between">
             <div class="flex items-center">
               <UButton icon="i-heroicons-bars-3" variant="ghost" @click="toggleSidebar" class="mr-4" />
@@ -22,8 +20,8 @@
       </header>
 
       <!-- Page Content -->
-      <main class="flex-1 pt-6  bg-[#f0f4f9] dark:bg-gray-900">
-        <div class="mb-3">
+      <main class="flex-1 p-3 bg-[#f0f4f9] dark:bg-gray-900">
+        <div class="">
           <!-- <Breadcrumbs /> -->
         </div>
         <slot />

@@ -10,7 +10,8 @@
         :filter-config="filterConfig" :filters-value="filtersConsolidado" :show-export="true"
         empty-state-message="No se encontraron registros de consolidado." @update:search-query="handleSearch"
         @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
-        @filter-change="handleFilterChange">
+        @filter-change="handleFilterChange"
+        :show-body-top="true">
         <!-- Botón de filtros personalizado -->
         <template #body-top>
           <UTabs size="md" variant="pill" :content="false" :items="tabs" v-model="activeTab" class="w-50 mb-6" />

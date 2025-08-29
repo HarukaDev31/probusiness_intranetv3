@@ -5,7 +5,7 @@ export const DATA_TABLE_DEFAULTS = {
   showPagination: true,
   showPrimarySearch: true,
   primarySearchLabel: 'Buscar por',
-  primarySearchPlaceholder: 'Filtro específico...',
+  primarySearchPlaceholder: 'Buscar por',
   showFilters: false,
   filterConfig: () => [],
   showExport: false,
@@ -13,7 +13,9 @@ export const DATA_TABLE_DEFAULTS = {
   totalPages: 1,
   totalRecords: 0,
   itemsPerPage: 10,
-  emptyStateMessage: 'No se encontraron registros que coincidan con los criterios de búsqueda.'
+  emptyStateMessage: 'No se encontraron registros que coincidan con los criterios de búsqueda.',
+  hideBackButton: true,
+  showBodyTop: false
 } as const
 
 export const PAGINATION_OPTIONS = [5, 10, 25, 50, 100] 
