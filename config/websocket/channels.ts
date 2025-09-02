@@ -176,13 +176,7 @@ export const websocketRoles: Record<string, WebSocketRole> = {
         name: `${ROLES.DOCUMENTACION}-notifications`,
         type: 'private',
         handlers: [
-          //event for pusher:subscription_succeeded
-          {
-            event: 'pusher:subscription_succeeded',
-            callback: (data) => {
-              console.log('Suscripción exitosa:', data)
-            }
-          },
+          
           {
             event: WS_EVENTS.DOCUMENT.NEW,
             callback: (data) => {
@@ -201,25 +195,29 @@ export const websocketRoles: Record<string, WebSocketRole> = {
               console.log('Solicitud de documento:', data)
             }
           },
-          {
-            event: WS_EVENTS.DOCUMENT.IMPORT_EXCEL_COMPLETED,
-            callback: (data) => {
-              console.log('Importación Excel completada:', data)
-              // Aquí puedes agregar lógica para mostrar notificaciones
-              // Por ejemplo, usar el sistema de notificaciones global
-              const { showSuccess } = useModal()
-              showSuccess('Importación Completada', data.message || 'La importación se ha completado exitosamente.')
-            }
-          },
-          {
-            event: 'pusher:subscription_succeeded',
-            callback: (data) => {
-              console.log('✅ Suscripción exitosa al canal Documentacion-notifications:', data)
-              // Evento de prueba para verificar que la suscripción funciona
-              const { showSuccess } = useModal()
-              showSuccess('Conexión WebSocket', 'Canal Documentacion-notifications conectado exitosamente')
-            }
-          }
+                     {
+             event: WS_EVENTS.DOCUMENT.IMPORT_EXCEL_COMPLETED,
+             callback: (data) => {
+               console.log('📊 Importación Excel completada:', data)
+               // Mostrar notificación de éxito
+               const { showSuccess } = useModal()
+               showSuccess('Importación Completada', data.message || 'La importación se ha completado exitosamente.')
+               
+               // Log adicional para debugging
+               if (data.estadisticas) {
+                 console.log('📈 Estadísticas de importación:', data.estadisticas)
+               }
+             }
+           },
+           // Evento de prueba para verificar que los eventos personalizados funcionan
+           {
+             event: 'TestEvent',
+             callback: (data) => {
+               console.log('🧪 Evento de prueba recibido:', data)
+               const { showSuccess } = useModal()
+               showSuccess('Evento de Prueba', 'WebSocket funcionando correctamente')
+             }
+           }
         ]
       }
     ]
