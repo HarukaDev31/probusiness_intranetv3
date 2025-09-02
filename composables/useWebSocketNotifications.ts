@@ -5,6 +5,8 @@ export const useWebSocketNotifications = () => {
   const { showSuccess, showError, showWarning, showInfo } = useModal()
 
   const handleWebSocketModal = (event: CustomEvent) => {
+    console.log('🔔 handleWebSocketModal ejecutado')
+    console.log('📨 Evento recibido:', event.detail)
     const { type, title, message, duration } = event.detail
 
     switch (type) {

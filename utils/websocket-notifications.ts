@@ -16,7 +16,9 @@ export interface ImportacionExcelData {
 }
 
 export const handleImportacionExcelCompleted = (data: string | ImportacionExcelData) => {
-  console.log('Importación Excel completada:', data)
+  console.log('🚀 handleImportacionExcelCompleted ejecutado')
+  console.log('📊 Data recibida:', data)
+  console.log('📊 Tipo de data:', typeof data)
   
   // Parsear los datos si vienen como string
   const parsedData: ImportacionExcelData = typeof data === 'string' ? JSON.parse(data) : data
