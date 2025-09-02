@@ -132,6 +132,12 @@ export const useEcho = () => {
       throw new Error('Echo instance not initialized')
     }
 
+    // Verificar si ya estamos suscritos a este canal para evitar duplicados
+    if (activeChannels.value.has(channel.name)) {
+      console.log(`ℹ️ Ya suscrito al canal: ${channel.name}, omitiendo...`)
+      return activeChannels.value.get(channel.name)
+    }
+
     console.log(`📡 Intentando suscribirse al canal: ${channel.name} (${channel.type})`)
     let channelInstance: any
 
