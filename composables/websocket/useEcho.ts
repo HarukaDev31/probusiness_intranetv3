@@ -15,10 +15,10 @@ export const useEcho = () => {
     try {
       if (typeof window !== 'undefined') {
         const PusherJs = await import('pusher-js')
-        window.Pusher = PusherJs.default
+        ;(window as any).Pusher = PusherJs.default
 
         // Habilitar logs de Pusher
-        window.Pusher.logToConsole = true
+        ;(window as any).Pusher.logToConsole = true
       }
       
       console.log('🔄 Iniciando Echo con config:', {
@@ -37,17 +37,17 @@ export const useEcho = () => {
       })
 
       // Agregar listeners globales de Pusher
-      if (echoInstance.connector.pusher) {
-        echoInstance.connector.pusher.connection.bind('connected', () => {
+      if ((echoInstance as any).connector?.pusher) {
+        (echoInstance as any).connector.pusher.connection.bind('connected', () => {
           console.log('🟢 Pusher: Conectado')
           console.log('🔌 Socket ID:', echoInstance?.socketId())
         })
 
-        echoInstance.connector.pusher.connection.bind('disconnected', () => {
+        (echoInstance as any).connector.pusher.connection.bind('disconnected', () => {
           console.log('🔴 Pusher: Desconectado')
         })
 
-        echoInstance.connector.pusher.connection.bind('error', (err: any) => {
+        (echoInstance as any).connector.pusher.connection.bind('error', (err: any) => {
           console.error('❌ Pusher: Error de conexión', err)
         })
       }
@@ -67,7 +67,7 @@ export const useEcho = () => {
     }
 
     console.log(`📡 Intentando suscribirse al canal: ${channel.name} (${channel.type})`)
-    let channelInstance: Channel | PresenceChannel
+    let channelInstance: any
 
     try {
       switch (channel.type) {
@@ -96,18 +96,19 @@ export const useEcho = () => {
       channel.handlers.forEach(({ event, callback }) => {
         console.log(`🎯 Registrando evento '${event}' en canal '${channel.name}'`)
         try {
-          if (typeof (channelInstance as any).listen === 'function') {
-            (channelInstance as any).listen(event, (data: any) => {
-              console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
-              callback(data)
-            })
-          } else if (typeof (channelInstance as any).bind === 'function') {
+          // Para Laravel Echo con Pusher, usar bind
+          if (typeof (channelInstance as any).bind === 'function') {
             (channelInstance as any).bind(event, (data: any) => {
               console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
               callback(data)
             })
+          } else if (typeof (channelInstance as any).listen === 'function') {
+            (channelInstance as any).listen(event, (data: any) => {
+              console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+              callback(data)
+            })
           } else {
-            console.warn(`⚠️ El canal no soporta 'listen' ni 'bind' para el evento: ${event}`)
+            console.warn(`⚠️ El canal no soporta 'bind' ni 'listen' para el evento: ${event}`)
           }
         } catch (err) {
           console.error(`❌ Error registrando evento '${event}':`, err)
@@ -172,7 +173,7 @@ export const useEcho = () => {
       return {
         name: channelName,
         isSubscribed: true,
-        type: channel instanceof PresenceChannel ? 'presence' : 'private'
+        type: (channel as any).members ? 'presence' : 'private'
       }
     }
     return null

@@ -195,6 +195,7 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: WS_EVENTS.IMPORTACION.EXCEL_COMPLETED,
             callback: (data) => {
+              console.log('🎯 Callback ejecutado para ImportacionExcelCompleted:', data)
               handleImportacionExcelCompleted(data)
             }
           }

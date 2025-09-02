@@ -30,6 +30,7 @@ El composable `useModal` (`composables/commons/useModal.ts`):
 ### 4. Componentes de UI
 - `ModalContainer.vue`: Contenedor principal para modales dinámicos
 - `DynamicModal.vue`: Modal dinámico que se adapta al tipo de notificación
+- Sistema `useModal`: Sistema de modales ya establecido en el proyecto
 
 ## Estructura de Datos
 
@@ -106,8 +107,9 @@ window.dispatchEvent(new CustomEvent('websocket-modal', {
 ## Notas Técnicas
 
 - El sistema usa eventos personalizados para evitar dependencias circulares
-- Los modales se muestran a través del `ModalContainer` existente
+- Los modales se muestran a través del `ModalContainer` existente usando `DynamicModal`
 - El auto-close está configurado para 5 segundos
 - Los detalles se incluyen en el mensaje principal separados por saltos de línea
-- Utiliza el sistema `useModal` que ya está establecido en el proyecto
+- Utiliza el sistema `useModal` que ya está establecido y probado en el proyecto
+- No requiere componentes adicionales como `SuccessModal` o `ErrorModal`
 
