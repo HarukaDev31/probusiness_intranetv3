@@ -19,19 +19,34 @@ export default defineNuxtPlugin(async () => {
       return
     }
 
+    // Obtener configuración de Nuxt
+    const config = useRuntimeConfig()
+    
+    // Debug: Mostrar valores de configuración
+    console.log('🔧 Configuración WebSocket:', {
+      pusherWsHost: config.public.pusherWsHost,
+      pusherAppCluster: config.public.pusherAppCluster,
+      pusherAppKey: config.public.pusherAppKey
+    })
+    
     // Configuración de Echo
     const echoConfig = {
-      wsHost: process.env.NUXT_WEBSOCKETS_URL || 'localhost',
+      wsHost: config.public.pusherWsHost || 'localhost',
       wsPort: 6001,
       forceTLS: false,
+      cluster: config.public.pusherAppCluster || 'mt1',
       enabledTransports: ['ws', 'wss'],
+      authEndpoint: `https://${config.public.pusherWsHost || 'localhost'}/api/broadcasting/auth`,
       auth: {
         headers: {
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${authToken}`,
+          'Accept': 'application/json'
         }
       }
     }
+    
+    console.log('🔧 Configuración Echo:', echoConfig)
 
     try {
       // Inicializar Echo
