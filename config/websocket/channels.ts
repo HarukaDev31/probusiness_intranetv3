@@ -195,20 +195,26 @@ export const websocketRoles: Record<string, WebSocketRole> = {
               console.log('Solicitud de documento:', data)
             }
           },
-                     {
-             event: WS_EVENTS.DOCUMENT.IMPORT_EXCEL_COMPLETED,
-             callback: (data) => {
-               console.log('📊 Importación Excel completada:', data)
-               // Mostrar notificación de éxito
-               const { showSuccess } = useModal()
-               showSuccess('Importación Completada', data.message || 'La importación se ha completado exitosamente.')
-               
-               // Log adicional para debugging
-               if (data.estadisticas) {
-                 console.log('📈 Estadísticas de importación:', data.estadisticas)
-               }
-             }
-           },
+                               {
+            event: WS_EVENTS.DOCUMENT.IMPORT_EXCEL_COMPLETED,
+            callback: (data) => {
+              console.log('📊 Importación Excel completada:', data)
+              console.log('🎯 Callback ejecutándose para ImportacionExcelCompleted')
+              
+              try {
+                // Mostrar notificación de éxito
+                const { showSuccess } = useModal()
+                showSuccess('Importación Completada', data.message || 'La importación se ha completado exitosamente.')
+                
+                // Log adicional para debugging
+                if (data.estadisticas) {
+                  console.log('📈 Estadísticas de importación:', data.estadisticas)
+                }
+              } catch (error) {
+                console.error('❌ Error en callback de ImportacionExcelCompleted:', error)
+              }
+            }
+          },
            // Evento de prueba para verificar que los eventos personalizados funcionan
            {
              event: 'TestEvent',

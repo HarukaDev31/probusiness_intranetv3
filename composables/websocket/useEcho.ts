@@ -188,7 +188,7 @@ export const useEcho = () => {
         try {
           // Intentar diferentes métodos para registrar eventos
           if (channelInstance && typeof channelInstance === 'object') {
-            // Método 1: bind (Pusher)
+            // Método 1: bind (Pusher) - PRIORITARIO para eventos de Pusher
             if (typeof channelInstance.bind === 'function') {
               console.log(`✅ Usando método 'bind' para evento '${event}'`)
               channelInstance.bind(event, (data: any) => {
@@ -196,7 +196,15 @@ export const useEcho = () => {
                 callback(data)
               })
             }
-            // Método 2: listen (Laravel Echo)
+            // Método 2: Acceder al objeto pusher del canal para usar bind
+            else if (channelInstance.pusher && typeof channelInstance.pusher.bind === 'function') {
+              console.log(`✅ Usando método 'bind' del objeto pusher para evento '${event}'`)
+              channelInstance.pusher.bind(event, (data: any) => {
+                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                callback(data)
+              })
+            }
+            // Método 3: listen (Laravel Echo) - Para eventos de Laravel
             else if (typeof channelInstance.listen === 'function') {
               console.log(`✅ Usando método 'listen' para evento '${event}'`)
               channelInstance.listen(event, (data: any) => {
@@ -204,7 +212,7 @@ export const useEcho = () => {
                 callback(data)
               })
             }
-            // Método 3: on (alternativa)
+            // Método 4: on (alternativa)
             else if (typeof channelInstance.on === 'function') {
               console.log(`✅ Usando método 'on' para evento '${event}'`)
               channelInstance.on(event, (data: any) => {
@@ -212,7 +220,7 @@ export const useEcho = () => {
                 callback(data)
               })
             }
-            // Método 4: addEventListener (DOM)
+            // Método 5: addEventListener (DOM)
             else if (typeof channelInstance.addEventListener === 'function') {
               console.log(`✅ Usando método 'addEventListener' para evento '${event}'`)
               channelInstance.addEventListener(event, (data: any) => {
@@ -223,6 +231,10 @@ export const useEcho = () => {
             else {
               console.warn(`⚠️ El canal no soporta ningún método conocido para el evento: ${event}`)
               console.warn(`⚠️ Métodos disponibles:`, Object.getOwnPropertyNames(channelInstance))
+              console.warn(`⚠️ Objeto pusher disponible:`, !!channelInstance.pusher)
+              if (channelInstance.pusher) {
+                console.warn(`⚠️ Métodos del objeto pusher:`, Object.getOwnPropertyNames(channelInstance.pusher))
+              }
             }
           } else {
             console.error(`❌ channelInstance no es un objeto válido:`, channelInstance)
