@@ -176,6 +176,13 @@ export const websocketRoles: Record<string, WebSocketRole> = {
         name: `${ROLES.DOCUMENTACION}-notifications`,
         type: 'private',
         handlers: [
+          //event for pusher:subscription_succeeded
+          {
+            event: 'pusher:subscription_succeeded',
+            callback: (data) => {
+              console.log('Suscripción exitosa:', data)
+            }
+          },
           {
             event: WS_EVENTS.DOCUMENT.NEW,
             callback: (data) => {
