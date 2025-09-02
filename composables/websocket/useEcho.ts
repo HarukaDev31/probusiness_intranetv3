@@ -4,6 +4,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import type { EchoConfig, WebSocketRole, WebSocketChannel } from '../../types/websocket/echo'
 
 let echoInstance: Echo | null = null
+let isInitializing = false
+let isInitialized = false
 
 export const useEcho = () => {
   const isConnected = ref(false)
@@ -12,6 +14,19 @@ export const useEcho = () => {
   const config = useRuntimeConfig()
 
   const initializeEcho = async (echoConfig: EchoConfig) => {
+    // Evitar múltiples inicializaciones
+    if (isInitializing) {
+      console.log('🔄 Echo ya está siendo inicializado, esperando...')
+      return
+    }
+    
+    if (isInitialized && echoInstance) {
+      console.log('✅ Echo ya está inicializado, retornando instancia existente')
+      return echoInstance
+    }
+
+    isInitializing = true
+    
     try {
       if (typeof window !== 'undefined') {
         try {
@@ -120,10 +135,13 @@ export const useEcho = () => {
 
       isConnected.value = true
       error.value = null
+      isInitialized = true
       console.log('✅ Echo inicializado correctamente')
     } catch (err) {
       error.value = err as Error
       console.error('❌ Error inicializando Echo:', err)
+    } finally {
+      isInitializing = false
     }
   }
 
@@ -136,6 +154,12 @@ export const useEcho = () => {
     if (activeChannels.value.has(channel.name)) {
       console.log(`ℹ️ Ya suscrito al canal: ${channel.name}, omitiendo...`)
       return activeChannels.value.get(channel.name)
+    }
+
+    // Verificar si el canal ya existe en Echo
+    if (echoInstance && (echoInstance as any).connector?.pusher?.channels?.get(channel.name)) {
+      console.log(`ℹ️ Canal ${channel.name} ya existe en Pusher, omitiendo...`)
+      return (echoInstance as any).connector.pusher.channels.get(channel.name)
     }
 
     console.log(`📡 Intentando suscribirse al canal: ${channel.name} (${channel.type})`)
@@ -186,7 +210,15 @@ export const useEcho = () => {
       }
 
       // Registrar los manejadores de eventos para este canal
+      const registeredEvents = new Set()
       channel.handlers.forEach(({ event, callback }) => {
+        // Evitar registrar el mismo evento múltiples veces
+        const eventKey = `${channel.name}:${event}`
+        if (registeredEvents.has(eventKey)) {
+          console.log(`ℹ️ Evento '${event}' ya registrado en canal '${channel.name}', omitiendo...`)
+          return
+        }
+        registeredEvents.add(eventKey)
         console.log(`🎯 Registrando evento '${event}' en canal '${channel.name}'`)
         console.log(`🔍 Tipo de canalInstance:`, typeof channelInstance)
         console.log(`🔍 Métodos disponibles:`, Object.getOwnPropertyNames(channelInstance))
@@ -292,8 +324,20 @@ export const useEcho = () => {
       echoInstance.disconnect()
       echoInstance = null
       isConnected.value = false
+      isInitialized = false
+      isInitializing = false
       console.log('✅ Desconexión completa')
     }
+  }
+
+  const resetEcho = () => {
+    console.log('🔄 Reseteando estado global de Echo')
+    echoInstance = null
+    isInitialized = false
+    isInitializing = false
+    activeChannels.value.clear()
+    isConnected.value = false
+    error.value = null
   }
 
   const getActiveChannels = () => {
@@ -327,6 +371,7 @@ export const useEcho = () => {
     subscribeToRoleChannels,
     unsubscribeFromChannel,
     disconnect,
+    resetEcho,
     getActiveChannels,
     getChannelStatus
   }
