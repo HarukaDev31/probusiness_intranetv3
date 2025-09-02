@@ -1,16 +1,19 @@
 import { Channel, PresenceChannel } from 'laravel-echo'
 
 export interface EchoConfig {
-  wsHost: string
-  wsPort: number
-  forceTLS: boolean
-  cluster: string
-  enabledTransports: string[]
-  authEndpoint: string
-  auth: {
+  broadcaster?: string
+  key?: string
+  wsHost?: string
+  wsPort?: number
+  forceTLS?: boolean
+  cluster?: string
+  enabledTransports?: string[]
+  authEndpoint?: string
+  auth?: {
     headers: {
-      Authorization: string
-      Accept: string
+      Authorization?: string
+      Accept?: string
+      'X-CSRF-TOKEN'?: string
     }
   }
 }

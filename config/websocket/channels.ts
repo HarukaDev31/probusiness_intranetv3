@@ -208,7 +208,16 @@ export const websocketRoles: Record<string, WebSocketRole> = {
               // Aquí puedes agregar lógica para mostrar notificaciones
               // Por ejemplo, usar el sistema de notificaciones global
               const { showSuccess } = useModal()
-                showSuccess('Importación Completada', data.message || 'La importación se ha completado exitosamente.')
+              showSuccess('Importación Completada', data.message || 'La importación se ha completado exitosamente.')
+            }
+          },
+          {
+            event: 'pusher:subscription_succeeded',
+            callback: (data) => {
+              console.log('✅ Suscripción exitosa al canal Documentacion-notifications:', data)
+              // Evento de prueba para verificar que la suscripción funciona
+              const { showSuccess } = useModal()
+              showSuccess('Conexión WebSocket', 'Canal Documentacion-notifications conectado exitosamente')
             }
           }
         ]

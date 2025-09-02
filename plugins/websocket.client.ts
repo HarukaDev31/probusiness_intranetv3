@@ -5,11 +5,21 @@ export default defineNuxtPlugin(async () => {
   // Solo ejecutar en el cliente
   if (process.server) return
 
+  // Variable para evitar inicialización múltiple
+  let isInitializing = false
+  let isInitialized = false
+
   const { initializeEcho } = useEcho()
   const { setupRoleChannels } = useWebSocketRole()
 
   // Función para inicializar websockets cuando el usuario esté autenticado
   const initializeWebSockets = async () => {
+    // Evitar inicialización múltiple
+    if (isInitializing || isInitialized) {
+      console.log('🔌 WebSocket ya inicializado o en proceso de inicialización')
+      return
+    }
+
     // Verificar si el usuario está autenticado
     const authToken = localStorage.getItem('auth_token')
     const authUser = localStorage.getItem('auth_user')
@@ -18,6 +28,8 @@ export default defineNuxtPlugin(async () => {
       console.log('🔌 Usuario no autenticado, esperando...')
       return
     }
+
+    isInitializing = true
 
     // Obtener configuración de Nuxt
     const config = useRuntimeConfig()
@@ -29,14 +41,16 @@ export default defineNuxtPlugin(async () => {
       pusherAppKey: config.public.pusherAppKey
     })
     
-    // Configuración de Echo
+    // Configuración de Echo para Pusher
     const echoConfig = {
-      wsHost: config.public.pusherWsHost || 'localhost',
-      wsPort: 6001,
-      forceTLS: false,
+      broadcaster: 'pusher',
+      key: config.public.pusherAppKey,
       cluster: config.public.pusherAppCluster || 'mt1',
+      wsHost: config.public.pusherWsHost,
+      wsPort: 443,
+      forceTLS: true,
       enabledTransports: ['ws', 'wss'],
-      authEndpoint: `https://${config.public.pusherWsHost || 'localhost'}/api/broadcasting/auth`,
+      authEndpoint: config.public.pusherWsHost ? `https://${config.public.pusherWsHost}/api/broadcasting/auth` : undefined,
       auth: {
         headers: {
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
@@ -55,9 +69,12 @@ export default defineNuxtPlugin(async () => {
       // Configurar canales según el rol del usuario
       await setupRoleChannels()
 
+      isInitialized = true
       console.log('🔌 Plugin de WebSocket inicializado correctamente')
     } catch (error) {
       console.error('❌ Error inicializando WebSocket:', error)
+    } finally {
+      isInitializing = false
     }
   }
 
