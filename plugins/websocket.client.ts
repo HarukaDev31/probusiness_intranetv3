@@ -1,5 +1,5 @@
 import { useWebSocketRole } from '../composables/websocket/useWebSocketRole'
-import { useEcho } from '../composables/websocket/useEcho'
+import { useEcho, getEchoInstance } from '../composables/websocket/useEcho'
 
 export default defineNuxtPlugin(async () => {
   // Solo ejecutar en el cliente
@@ -72,20 +72,29 @@ export default defineNuxtPlugin(async () => {
     
     console.log('🔧 Configuración Echo:', echoConfig)
 
-    try {
-      // Inicializar Echo
-      await initializeEcho(echoConfig)
+          try {
+        // Inicializar Echo
+        await initializeEcho(echoConfig)
 
-      // Configurar canales según el rol del usuario
-      await setupRoleChannels()
+        // Hacer Echo disponible globalmente
+        if (typeof window !== 'undefined') {
+          const echoInstance = getEchoInstance()
+          if (echoInstance) {
+            ;(window as any).Echo = echoInstance
+            console.log('🌐 Echo disponible globalmente como window.Echo')
+          }
+        }
 
-      isInitialized = true
-      console.log('🔌 Plugin de WebSocket inicializado correctamente')
-    } catch (error) {
-      console.error('❌ Error inicializando WebSocket:', error)
-    } finally {
-      isInitializing = false
-    }
+        // Configurar canales según el rol del usuario
+        await setupRoleChannels()
+
+        isInitialized = true
+        console.log('🔌 Plugin de WebSocket inicializado correctamente')
+      } catch (error) {
+        console.error('❌ Error inicializando WebSocket:', error)
+      } finally {
+        isInitializing = false
+      }
   }
 
   // Intentar inicializar inmediatamente

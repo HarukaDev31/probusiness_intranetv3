@@ -55,13 +55,21 @@
            📻 Verificar Canales
          </UButton>
          
-         <UButton 
-           @click="forceWebSocketInit"
-           :loading="forcing"
-           class="w-full"
-         >
-           🔧 Forzar Inicialización
-         </UButton>
+                   <UButton 
+            @click="forceWebSocketInit"
+            :loading="forcing"
+            class="w-full"
+          >
+            🔧 Forzar Inicialización
+          </UButton>
+          
+          <UButton 
+            @click="checkPluginStatus"
+            :loading="checkingPlugin"
+            class="w-full"
+          >
+            🔍 Verificar Plugin
+          </UButton>
       </div>
     </div>
 
@@ -102,6 +110,7 @@ const sendingTest = ref(false)
 const simulating = ref(false)
 const checking = ref(false)
 const forcing = ref(false)
+const checkingPlugin = ref(false)
 
 // Funciones
 const addLog = (message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') => {
@@ -218,16 +227,81 @@ const forceWebSocketInit = async () => {
       return
     }
     
+    addLog('🔑 Token de autenticación encontrado', 'info')
+    
     // Intentar inicializar manualmente
     if (typeof window !== 'undefined') {
       // Disparar un evento para forzar la inicialización
       window.dispatchEvent(new Event('storage'))
       addLog('✅ Evento de inicialización disparado', 'success')
+      
+      // Esperar un poco y verificar si Echo se inicializó
+      setTimeout(() => {
+        if ((window as any).Echo) {
+          addLog('✅ Echo inicializado después del evento', 'success')
+          const echo = (window as any).Echo
+          if (echo.connector?.pusher?.connection?.state === 'connected') {
+            connectionStatus.value = true
+            socketId.value = echo.socketId() || 'N/A'
+            addLog('✅ WebSocket conectado después del evento', 'success')
+          } else {
+            addLog(`⚠️ WebSocket aún no conectado. Estado: ${echo.connector?.pusher?.connection?.state || 'desconocido'}`, 'warning')
+          }
+        } else {
+          addLog('❌ Echo aún no disponible después del evento', 'error')
+        }
+      }, 2000)
     }
   } catch (error) {
     addLog(`❌ Error forzando inicialización: ${error}`, 'error')
   } finally {
     forcing.value = false
+  }
+}
+
+const checkPluginStatus = async () => {
+  checkingPlugin.value = true
+  addLog('Verificando estado del plugin de WebSocket...', 'info')
+  
+  try {
+    // Verificar si el plugin se ha ejecutado
+    const authToken = localStorage.getItem('auth_token')
+    const authUser = localStorage.getItem('auth_user')
+    
+    addLog(`🔐 Estado de autenticación: ${authToken ? 'Autenticado' : 'No autenticado'}`, authToken ? 'success' : 'warning')
+    
+    if (authToken) {
+      addLog(`🔑 Token encontrado (${authToken.length} caracteres)`, 'info')
+    }
+    
+    // Verificar si Echo está disponible
+    if (typeof window !== 'undefined' && (window as any).Echo) {
+      addLog('✅ Echo está disponible globalmente', 'success')
+      const echo = (window as any).Echo
+      
+      if (echo.connector?.pusher?.connection?.state === 'connected') {
+        connectionStatus.value = true
+        socketId.value = echo.socketId() || 'N/A'
+        addLog('✅ WebSocket conectado', 'success')
+      } else {
+        addLog(`⚠️ WebSocket no conectado. Estado: ${echo.connector?.pusher?.connection?.state || 'desconocido'}`, 'warning')
+      }
+    } else {
+      addLog('❌ Echo no está disponible', 'error')
+      addLog('💡 El plugin de WebSocket no se ha ejecutado correctamente', 'warning')
+    }
+    
+    // Verificar si Pusher está disponible
+    if (typeof window !== 'undefined' && (window as any).Pusher) {
+      addLog('✅ Pusher está disponible', 'success')
+    } else {
+      addLog('❌ Pusher no está disponible', 'error')
+    }
+    
+  } catch (error) {
+    addLog(`❌ Error verificando plugin: ${error}`, 'error')
+  } finally {
+    checkingPlugin.value = false
   }
 }
 
@@ -250,16 +324,18 @@ onMounted(() => {
   // Verificar si Echo está disponible
   if (typeof window !== 'undefined' && (window as any).Echo) {
     const echo = (window as any).Echo
+    addLog('✅ Echo está disponible globalmente', 'success')
+    
     if (echo.connector?.pusher?.connection?.state === 'connected') {
       connectionStatus.value = true
       socketId.value = echo.socketId() || 'N/A'
       addLog('✅ WebSocket conectado al cargar la página', 'success')
     } else {
-      addLog('⚠️ WebSocket no está conectado', 'warning')
+      addLog(`⚠️ WebSocket no está conectado. Estado: ${echo.connector?.pusher?.connection?.state || 'desconocido'}`, 'warning')
     }
   } else {
     addLog('❌ Echo no está disponible', 'error')
-    addLog('💡 Esto puede deberse a que el usuario no está autenticado', 'warning')
+    addLog('💡 Esto puede deberse a que el plugin de WebSocket no se ha ejecutado', 'warning')
   }
   
   // Verificar si Pusher está disponible
@@ -267,6 +343,15 @@ onMounted(() => {
     addLog('✅ Pusher está disponible', 'success')
   } else {
     addLog('❌ Pusher no está disponible', 'error')
+  }
+  
+  // Verificar si el plugin se ha ejecutado
+  addLog('🔍 Verificando estado del plugin de WebSocket...', 'info')
+  const pluginLogs = console.log.toString()
+  if (pluginLogs.includes('🔌 Plugin de WebSocket cargado')) {
+    addLog('✅ Plugin de WebSocket detectado en logs', 'success')
+  } else {
+    addLog('⚠️ Plugin de WebSocket no detectado en logs', 'warning')
   }
 })
 </script>
