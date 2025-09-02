@@ -283,7 +283,7 @@ const validateFile = (file: File): boolean => {
         'application/vnd.ms-excel.sheet.macroEnabled.12'
     ]
 
-    const maxSize = 100 * 1024 * 1024 // 10MB
+    const maxSize = 200 * 1024 * 1024 // 10MB
 
     if (!allowedTypes.includes(file.type)) {
         fileError.value = 'Solo se permiten archivos Excel (.xlsx, .xls) o CSV (.csv)'
@@ -291,7 +291,7 @@ const validateFile = (file: File): boolean => {
     }
 
     if (file.size > maxSize) {
-        fileError.value = 'El archivo no puede ser mayor a 10MB'
+        fileError.value = 'El archivo no puede ser mayor a 200MB'
         return false
     }
 
