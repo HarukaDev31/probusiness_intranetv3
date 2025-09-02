@@ -1,7 +1,6 @@
 import type { WebSocketRole } from '~/types/websocket/echo'
 import { ROLES } from '~/constants/roles'
 import { useModal } from '~/composables/commons/useModal'
-import { handleImportacionExcelCompleted } from '~/utils/websocket-notifications'
 
 // Definir los nombres de eventos como constantes para evitar errores
 export const WS_EVENTS = {

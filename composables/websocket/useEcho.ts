@@ -156,12 +156,6 @@ export const useEcho = () => {
       return activeChannels.value.get(channel.name)
     }
 
-    // Verificar si el canal ya existe en Echo
-    if (echoInstance && (echoInstance as any).connector?.pusher?.channels?.get(channel.name)) {
-      console.log(`ℹ️ Canal ${channel.name} ya existe en Pusher, omitiendo...`)
-      return (echoInstance as any).connector.pusher.channels.get(channel.name)
-    }
-
     console.log(`📡 Intentando suscribirse al canal: ${channel.name} (${channel.type})`)
     let channelInstance: any
 
@@ -294,9 +288,12 @@ export const useEcho = () => {
     console.log(`👥 Configurando canales para rol: ${roleConfig.role}`)
     roleConfig.channels.forEach(channel => {
       try {
+        console.log(`📡 Intentando suscribirse a: ${channel.name}`)
         subscribeToChannel(channel)
+        console.log(`✅ Suscripción exitosa a: ${channel.name}`)
       } catch (err) {
         console.error(`❌ Error configurando canal ${channel.name}:`, err)
+        // Continuar con otros canales aunque uno falle
       }
     })
   }
