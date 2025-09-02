@@ -3,7 +3,7 @@ export default defineNuxtPlugin(() => {
   
   const API_CONFIG = {
     baseURL: config.public.apiBaseUrl,
-    timeout: 60*1000,
+    timeout: 120*1000,
     headers: {
       'Content-Type': 'application/json',
     }
