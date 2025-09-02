@@ -27,7 +27,7 @@
         </p>
         
         <UButton 
-          color="blue" 
+          color="info" 
           @click="simulateCustomNotification"
           class="w-full"
         >
@@ -139,14 +139,11 @@ const simulateImportacionExcel = () => {
   }
 
   // Emitir el evento personalizado
-  window.dispatchEvent(new CustomEvent('websocket-notification', {
+  window.dispatchEvent(new CustomEvent('websocket-modal', {
     detail: {
       type: 'success',
       title: '¡Importación Completada!',
-      subtitle: 'Excel procesado exitosamente',
-      message: mockData.message,
-      details: `Productos importados: ${mockData.estadisticas.productos_importados} de ${mockData.estadisticas.total_productos}`,
-      autoClose: true,
+      message: `${mockData.message}\n\nProductos importados: ${mockData.estadisticas.productos_importados} de ${mockData.estadisticas.total_productos}`,
       duration: 5000
     }
   }))
@@ -156,14 +153,11 @@ const simulateImportacionExcel = () => {
 
 // Simular notificación personalizada
 const simulateCustomNotification = () => {
-  window.dispatchEvent(new CustomEvent('websocket-notification', {
+  window.dispatchEvent(new CustomEvent('websocket-modal', {
     detail: {
       type: 'success',
       title: '¡Notificación de Prueba!',
-      subtitle: 'Sistema funcionando correctamente',
-      message: 'Esta es una notificación de prueba para verificar que el sistema funciona correctamente.',
-      details: 'Notificación generada manualmente para testing',
-      autoClose: true,
+      message: 'Esta es una notificación de prueba para verificar que el sistema funciona correctamente.\n\nNotificación generada manualmente para testing',
       duration: 3000
     }
   }))

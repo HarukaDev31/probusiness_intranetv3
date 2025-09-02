@@ -25,16 +25,13 @@ export const handleImportacionExcelCompleted = (data: string | ImportacionExcelD
   const message = parsedData.message || 'La importación de productos se ha completado correctamente.'
   const details = `Productos importados: ${parsedData.estadisticas?.productos_importados || 0} de ${parsedData.estadisticas?.total_productos || 0}`
   
-  // Emitir un evento personalizado que será capturado por el sistema de notificaciones
+  // Emitir un evento personalizado que será capturado por el sistema de modales
   if (typeof window !== 'undefined') {
-    const notificationEvent = new CustomEvent('websocket-notification', {
+    const notificationEvent = new CustomEvent('websocket-modal', {
       detail: {
         type: 'success',
         title: '¡Importación Completada!',
-        subtitle: 'Excel procesado exitosamente',
-        message,
-        details,
-        autoClose: true,
+        message: `${message}\n\n${details}`,
         duration: 5000
       }
     })

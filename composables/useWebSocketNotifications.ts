@@ -1,45 +1,42 @@
 import { onMounted, onUnmounted } from 'vue'
-import { useNotifications } from './useNotifications'
+import { useModal } from './commons/useModal'
 
 export const useWebSocketNotifications = () => {
-  const { showSuccess, showError } = useNotifications()
+  const { showSuccess, showError, showWarning, showInfo } = useModal()
 
-  const handleWebSocketNotification = (event: CustomEvent) => {
-    const { type, title, subtitle, message, details, autoClose, duration } = event.detail
+  const handleWebSocketModal = (event: CustomEvent) => {
+    const { type, title, message, duration } = event.detail
 
-    if (type === 'success') {
-      showSuccess({
-        title,
-        subtitle,
-        message,
-        details,
-        autoClose,
-        duration
-      })
-    } else if (type === 'error') {
-      showError({
-        title,
-        subtitle,
-        message,
-        details,
-        autoClose,
-        duration
-      })
+    switch (type) {
+      case 'success':
+        showSuccess(title, message, { duration })
+        break
+      case 'error':
+        showError(title, message, { persistent: true })
+        break
+      case 'warning':
+        showWarning(title, message, { duration })
+        break
+      case 'info':
+        showInfo(title, message, { duration })
+        break
+      default:
+        showInfo(title, message, { duration })
     }
   }
 
   onMounted(() => {
-    // Escuchar eventos de notificaciones de WebSocket
-    window.addEventListener('websocket-notification', handleWebSocketNotification as EventListener)
+    // Escuchar eventos de modales de WebSocket
+    window.addEventListener('websocket-modal', handleWebSocketModal as EventListener)
   })
 
   onUnmounted(() => {
     // Limpiar el listener cuando el componente se desmonte
-    window.removeEventListener('websocket-notification', handleWebSocketNotification as EventListener)
+    window.removeEventListener('websocket-modal', handleWebSocketModal as EventListener)
   })
 
   return {
-    handleWebSocketNotification
+    handleWebSocketModal
   }
 }
 

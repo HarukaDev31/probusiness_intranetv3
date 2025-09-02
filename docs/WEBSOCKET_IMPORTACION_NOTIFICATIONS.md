@@ -13,24 +13,23 @@ Cuando se recibe el evento `ImportacionExcelCompleted` en el canal `private-Docu
    - Define el evento `WS_EVENTS.IMPORTACION.EXCEL_COMPLETED`
    - Configura el callback para el rol `DOCUMENTACION`
 
-2. **Helper de Notificaciones** (`utils/websocket-notifications.ts`):
+2. **Helper de Modales** (`utils/websocket-notifications.ts`):
    - Parsea los datos del evento
-   - Emite un evento personalizado `websocket-notification`
+   - Emite un evento personalizado `websocket-modal`
 
-### 2. Manejo de Notificaciones
+### 2. Manejo de Modales
 El composable `useWebSocketNotifications` (`composables/useWebSocketNotifications.ts`):
-- Escucha el evento personalizado
-- Conecta con el sistema de notificaciones global
+- Escucha el evento personalizado `websocket-modal`
+- Conecta con el sistema de modales dinámicos
 
-### 3. Sistema de Notificaciones
-El composable `useNotifications` (`composables/useNotifications.ts`):
-- Maneja el estado de los modales
-- Proporciona métodos para mostrar notificaciones
+### 3. Sistema de Modales
+El composable `useModal` (`composables/commons/useModal.ts`):
+- Maneja el estado de los modales dinámicos
+- Proporciona métodos para mostrar modales de éxito, error, warning e info
 
 ### 4. Componentes de UI
-- `GlobalNotifications.vue`: Contenedor principal
-- `SuccessModal.vue`: Modal de éxito con soporte para detalles
-- `ErrorModal.vue`: Modal de error
+- `ModalContainer.vue`: Contenedor principal para modales dinámicos
+- `DynamicModal.vue`: Modal dinámico que se adapta al tipo de notificación
 
 ## Estructura de Datos
 
@@ -53,11 +52,10 @@ El composable `useNotifications` (`composables/useNotifications.ts`):
 }
 ```
 
-### Notificación Mostrada
+### Modal Mostrado
+- **Tipo**: Success
 - **Título**: "¡Importación Completada!"
-- **Subtítulo**: "Excel procesado exitosamente"
-- **Mensaje**: El mensaje del evento
-- **Detalles**: "Productos importados: X de Y"
+- **Mensaje**: El mensaje del evento + detalles de productos importados
 - **Duración**: 5 segundos (auto-close)
 
 ## Configuración
@@ -87,14 +85,11 @@ El sistema está configurado para el rol `DOCUMENTACION`. Para otros roles, agre
 Puedes simular el evento manualmente:
 ```javascript
 // En la consola del navegador
-window.dispatchEvent(new CustomEvent('websocket-notification', {
+window.dispatchEvent(new CustomEvent('websocket-modal', {
   detail: {
     type: 'success',
     title: '¡Importación Completada!',
-    subtitle: 'Excel procesado exitosamente',
-    message: 'La importación se completó correctamente',
-    details: 'Productos importados: 15 de 15',
-    autoClose: true,
+    message: 'La importación se completó correctamente\n\nProductos importados: 15 de 15',
     duration: 5000
   }
 }))
@@ -103,17 +98,16 @@ window.dispatchEvent(new CustomEvent('websocket-notification', {
 ## Archivos Modificados
 
 1. `config/websocket/channels.ts` - Agregado evento y callback
-2. `utils/websocket-notifications.ts` - Helper para manejar notificaciones
-3. `composables/useWebSocketNotifications.ts` - Composable para conectar eventos
+2. `utils/websocket-notifications.ts` - Helper para manejar modales
+3. `composables/useWebSocketNotifications.ts` - Composable para conectar eventos con useModal
 4. `layouts/default.vue` - Inicialización del sistema
-5. `components/GlobalNotifications.vue` - Agregado soporte para modales
-6. `components/SuccessModal.vue` - Agregado soporte para detalles
-7. `composables/useNotifications.ts` - Ya tenía soporte para detalles
+5. `pages/test-websocket-notifications.vue` - Página de prueba actualizada
 
 ## Notas Técnicas
 
 - El sistema usa eventos personalizados para evitar dependencias circulares
-- Los modales se muestran globalmente desde el layout principal
+- Los modales se muestran a través del `ModalContainer` existente
 - El auto-close está configurado para 5 segundos
-- Los detalles se muestran en texto más pequeño y gris
+- Los detalles se incluyen en el mensaje principal separados por saltos de línea
+- Utiliza el sistema `useModal` que ya está establecido en el proyecto
 
