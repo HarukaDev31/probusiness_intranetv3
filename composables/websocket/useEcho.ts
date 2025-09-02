@@ -72,10 +72,14 @@ export const useEcho = () => {
     try {
       switch (channel.type) {
         case 'private':
+          console.log(`🔧 Creando canal privado: ${channel.name}`)
           channelInstance = echoInstance.private(channel.name)
+          console.log(`🔧 Canal privado creado:`, channelInstance)
           break
         case 'presence':
+          console.log(`🔧 Creando canal de presencia: ${channel.name}`)
           channelInstance = echoInstance.join(channel.name)
+          console.log(`🔧 Canal de presencia creado:`, channelInstance)
           break
         default:
           throw new Error(`Tipo de canal no soportado: ${channel.type}`)
@@ -95,20 +99,50 @@ export const useEcho = () => {
       // Registrar los manejadores de eventos para este canal
       channel.handlers.forEach(({ event, callback }) => {
         console.log(`🎯 Registrando evento '${event}' en canal '${channel.name}'`)
+        console.log(`🔍 Tipo de canalInstance:`, typeof channelInstance)
+        console.log(`🔍 Métodos disponibles:`, Object.getOwnPropertyNames(channelInstance))
+        
         try {
-          // Para Laravel Echo con Pusher, usar bind
-          if (typeof (channelInstance as any).bind === 'function') {
-            (channelInstance as any).bind(event, (data: any) => {
-              console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
-              callback(data)
-            })
-          } else if (typeof (channelInstance as any).listen === 'function') {
-            (channelInstance as any).listen(event, (data: any) => {
-              console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
-              callback(data)
-            })
+          // Intentar diferentes métodos para registrar eventos
+          if (channelInstance && typeof channelInstance === 'object') {
+            // Método 1: bind (Pusher)
+            if (typeof channelInstance.bind === 'function') {
+              console.log(`✅ Usando método 'bind' para evento '${event}'`)
+              channelInstance.bind(event, (data: any) => {
+                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                callback(data)
+              })
+            }
+            // Método 2: listen (Laravel Echo)
+            else if (typeof channelInstance.listen === 'function') {
+              console.log(`✅ Usando método 'listen' para evento '${event}'`)
+              channelInstance.listen(event, (data: any) => {
+                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                callback(data)
+              })
+            }
+            // Método 3: on (alternativa)
+            else if (typeof channelInstance.on === 'function') {
+              console.log(`✅ Usando método 'on' para evento '${event}'`)
+              channelInstance.on(event, (data: any) => {
+                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                callback(data)
+              })
+            }
+            // Método 4: addEventListener (DOM)
+            else if (typeof channelInstance.addEventListener === 'function') {
+              console.log(`✅ Usando método 'addEventListener' para evento '${event}'`)
+              channelInstance.addEventListener(event, (data: any) => {
+                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                callback(data)
+              })
+            }
+            else {
+              console.warn(`⚠️ El canal no soporta ningún método conocido para el evento: ${event}`)
+              console.warn(`⚠️ Métodos disponibles:`, Object.getOwnPropertyNames(channelInstance))
+            }
           } else {
-            console.warn(`⚠️ El canal no soporta 'bind' ni 'listen' para el evento: ${event}`)
+            console.error(`❌ channelInstance no es un objeto válido:`, channelInstance)
           }
         } catch (err) {
           console.error(`❌ Error registrando evento '${event}':`, err)
