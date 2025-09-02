@@ -15,10 +15,10 @@ export const useEcho = () => {
     try {
       if (typeof window !== 'undefined') {
         const PusherJs = await import('pusher-js')
-        window.Pusher = PusherJs.default
+        ;(window as any).Pusher = PusherJs.default
 
         // Habilitar logs de Pusher
-        window.Pusher.logToConsole = true
+        ;(window as any).Pusher.logToConsole = true
       }
       
       console.log('🔄 Iniciando Echo con config:', {
@@ -37,17 +37,17 @@ export const useEcho = () => {
       })
 
       // Agregar listeners globales de Pusher
-      if (echoInstance.connector.pusher) {
-        echoInstance.connector.pusher.connection.bind('connected', () => {
+      if ((echoInstance as any).connector?.pusher) {
+        (echoInstance as any).connector.pusher.connection.bind('connected', () => {
           console.log('🟢 Pusher: Conectado')
           console.log('🔌 Socket ID:', echoInstance?.socketId())
         })
 
-        echoInstance.connector.pusher.connection.bind('disconnected', () => {
+        (echoInstance as any).connector.pusher.connection.bind('disconnected', () => {
           console.log('🔴 Pusher: Desconectado')
         })
 
-        echoInstance.connector.pusher.connection.bind('error', (err: any) => {
+        (echoInstance as any).connector.pusher.connection.bind('error', (err: any) => {
           console.error('❌ Pusher: Error de conexión', err)
         })
       }
@@ -67,15 +67,19 @@ export const useEcho = () => {
     }
 
     console.log(`📡 Intentando suscribirse al canal: ${channel.name} (${channel.type})`)
-    let channelInstance: Channel | PresenceChannel
+    let channelInstance: any
 
     try {
       switch (channel.type) {
         case 'private':
+          console.log(`🔧 Creando canal privado: ${channel.name}`)
           channelInstance = echoInstance.private(channel.name)
+          console.log(`🔧 Canal privado creado:`, channelInstance)
           break
         case 'presence':
+          console.log(`🔧 Creando canal de presencia: ${channel.name}`)
           channelInstance = echoInstance.join(channel.name)
+          console.log(`🔧 Canal de presencia creado:`, channelInstance)
           break
         default:
           throw new Error(`Tipo de canal no soportado: ${channel.type}`)
@@ -83,31 +87,79 @@ export const useEcho = () => {
 
       // Agregar listeners de estado del canal
       if (channelInstance) {
-        (channelInstance as any).bind('pusher:subscription_succeeded', () => {
-          console.log(`✅ Suscripción exitosa al canal: ${channel.name}`)
-        })
+        try {
+          // Intentar diferentes métodos para los eventos de suscripción
+          if (typeof channelInstance.bind === 'function') {
+            channelInstance.bind('pusher:subscription_succeeded', () => {
+              console.log(`✅ Suscripción exitosa al canal: ${channel.name}`)
+            })
 
-        (channelInstance as any).bind('pusher:subscription_error', (err: any) => {
-          console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
-        })
+            channelInstance.bind('pusher:subscription_error', (err: any) => {
+              console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
+            })
+          } else if (typeof channelInstance.listen === 'function') {
+            channelInstance.listen('pusher:subscription_succeeded', () => {
+              console.log(`✅ Suscripción exitosa al canal: ${channel.name}`)
+            })
+
+            channelInstance.listen('pusher:subscription_error', (err: any) => {
+              console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
+            })
+          } else {
+            console.log(`ℹ️ No se pudieron registrar los eventos de suscripción para el canal: ${channel.name}`)
+          }
+        } catch (err) {
+          console.warn(`⚠️ Error registrando eventos de suscripción para ${channel.name}:`, err)
+        }
       }
 
       // Registrar los manejadores de eventos para este canal
       channel.handlers.forEach(({ event, callback }) => {
         console.log(`🎯 Registrando evento '${event}' en canal '${channel.name}'`)
+        console.log(`🔍 Tipo de canalInstance:`, typeof channelInstance)
+        console.log(`🔍 Métodos disponibles:`, Object.getOwnPropertyNames(channelInstance))
+        
         try {
-          if (typeof (channelInstance as any).listen === 'function') {
-            (channelInstance as any).listen(event, (data: any) => {
-              console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
-              callback(data)
-            })
-          } else if (typeof (channelInstance as any).bind === 'function') {
-            (channelInstance as any).bind(event, (data: any) => {
-              console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
-              callback(data)
-            })
+          // Intentar diferentes métodos para registrar eventos
+          if (channelInstance && typeof channelInstance === 'object') {
+            // Método 1: bind (Pusher)
+            if (typeof channelInstance.bind === 'function') {
+              console.log(`✅ Usando método 'bind' para evento '${event}'`)
+              channelInstance.bind(event, (data: any) => {
+                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                callback(data)
+              })
+            }
+            // Método 2: listen (Laravel Echo)
+            else if (typeof channelInstance.listen === 'function') {
+              console.log(`✅ Usando método 'listen' para evento '${event}'`)
+              channelInstance.listen(event, (data: any) => {
+                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                callback(data)
+              })
+            }
+            // Método 3: on (alternativa)
+            else if (typeof channelInstance.on === 'function') {
+              console.log(`✅ Usando método 'on' para evento '${event}'`)
+              channelInstance.on(event, (data: any) => {
+                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                callback(data)
+              })
+            }
+            // Método 4: addEventListener (DOM)
+            else if (typeof channelInstance.addEventListener === 'function') {
+              console.log(`✅ Usando método 'addEventListener' para evento '${event}'`)
+              channelInstance.addEventListener(event, (data: any) => {
+                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                callback(data)
+              })
+            }
+            else {
+              console.warn(`⚠️ El canal no soporta ningún método conocido para el evento: ${event}`)
+              console.warn(`⚠️ Métodos disponibles:`, Object.getOwnPropertyNames(channelInstance))
+            }
           } else {
-            console.warn(`⚠️ El canal no soporta 'listen' ni 'bind' para el evento: ${event}`)
+            console.error(`❌ channelInstance no es un objeto válido:`, channelInstance)
           }
         } catch (err) {
           console.error(`❌ Error registrando evento '${event}':`, err)
@@ -172,7 +224,7 @@ export const useEcho = () => {
       return {
         name: channelName,
         isSubscribed: true,
-        type: channel instanceof PresenceChannel ? 'presence' : 'private'
+        type: (channel as any).members ? 'presence' : 'private'
       }
     }
     return null
