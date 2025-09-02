@@ -23,6 +23,9 @@
         <p class="text-gray-700 dark:text-gray-300">
           {{ message }}
         </p>
+        <p v-if="details" class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          {{ details }}
+        </p>
       </div>
 
       <template #footer>
@@ -52,6 +55,7 @@ interface Props {
   title?: string
   subtitle?: string
   message: string
+  details?: string
   primaryButtonText?: string
   showSecondaryButton?: boolean
   secondaryButtonText?: string

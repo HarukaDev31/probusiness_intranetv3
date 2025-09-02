@@ -1,5 +1,6 @@
 import type { WebSocketRole } from '~/types/websocket/echo'
 import { ROLES } from '~/constants/roles'
+import { handleImportacionExcelCompleted } from '~/utils/websocket-notifications'
 
 // Definir los nombres de eventos como constantes para evitar errores
 export const WS_EVENTS = {
@@ -15,6 +16,9 @@ export const WS_EVENTS = {
     STATUS_CHANGE: 'DocumentStatusChange',
     NEW: 'NewDocument',
     REQUEST: 'DocumentRequest'
+  },
+  IMPORTACION: {
+    EXCEL_COMPLETED: 'ImportacionExcelCompleted'
   },
   SYSTEM: {
     GENERAL: 'GeneralNotification',
@@ -186,6 +190,12 @@ export const websocketRoles: Record<string, WebSocketRole> = {
             event: WS_EVENTS.DOCUMENT.REQUEST,
             callback: (data) => {
               console.log('Solicitud de documento:', data)
+            }
+          },
+          {
+            event: WS_EVENTS.IMPORTACION.EXCEL_COMPLETED,
+            callback: (data) => {
+              handleImportacionExcelCompleted(data)
             }
           }
         ]
