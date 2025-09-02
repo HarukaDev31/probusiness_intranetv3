@@ -87,13 +87,30 @@ export const useEcho = () => {
 
       // Agregar listeners de estado del canal
       if (channelInstance) {
-        (channelInstance as any).bind('pusher:subscription_succeeded', () => {
-          console.log(`✅ Suscripción exitosa al canal: ${channel.name}`)
-        })
+        try {
+          // Intentar diferentes métodos para los eventos de suscripción
+          if (typeof channelInstance.bind === 'function') {
+            channelInstance.bind('pusher:subscription_succeeded', () => {
+              console.log(`✅ Suscripción exitosa al canal: ${channel.name}`)
+            })
 
-        (channelInstance as any).bind('pusher:subscription_error', (err: any) => {
-          console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
-        })
+            channelInstance.bind('pusher:subscription_error', (err: any) => {
+              console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
+            })
+          } else if (typeof channelInstance.listen === 'function') {
+            channelInstance.listen('pusher:subscription_succeeded', () => {
+              console.log(`✅ Suscripción exitosa al canal: ${channel.name}`)
+            })
+
+            channelInstance.listen('pusher:subscription_error', (err: any) => {
+              console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
+            })
+          } else {
+            console.log(`ℹ️ No se pudieron registrar los eventos de suscripción para el canal: ${channel.name}`)
+          }
+        } catch (err) {
+          console.warn(`⚠️ Error registrando eventos de suscripción para ${channel.name}:`, err)
+        }
       }
 
       // Registrar los manejadores de eventos para este canal
