@@ -14,11 +14,17 @@ export const useEcho = () => {
   const initializeEcho = async (echoConfig: EchoConfig) => {
     try {
       if (typeof window !== 'undefined') {
-        const PusherJs = await import('pusher-js')
-        ;(window as any).Pusher = PusherJs.default
+        try {
+          const PusherJs = await import('pusher-js')
+          ;(window as any).Pusher = PusherJs.default
 
-        // Habilitar logs de Pusher
-        ;(window as any).Pusher.logToConsole = true
+          // Habilitar logs de Pusher
+          ;(window as any).Pusher.logToConsole = true
+          console.log('✅ Pusher importado correctamente')
+        } catch (error) {
+          console.error('❌ Error importando Pusher:', error)
+          throw error
+        }
       }
       
       console.log('🔄 Iniciando Echo con config:', {
@@ -27,29 +33,89 @@ export const useEcho = () => {
         cluster: config.public.pusherAppCluster
       })
 
-      echoInstance = new Echo({
+      const finalConfig = {
         broadcaster: 'pusher',
         key: config.public.pusherAppKey,
         cluster: config.public.pusherAppCluster,
         ...echoConfig,
-        enabledTransports: ['ws', 'wss'],
-        forceTLS: false
-      })
+        enabledTransports: ['ws', 'wss']
+        // No sobrescribir forceTLS, usar el valor del echoConfig
+      }
+      
+      console.log('🔧 Configuración final de Echo:', finalConfig)
+      
+      echoInstance = new Echo(finalConfig)
 
       // Agregar listeners globales de Pusher
       if ((echoInstance as any).connector?.pusher) {
-        (echoInstance as any).connector.pusher.connection.bind('connected', () => {
-          console.log('🟢 Pusher: Conectado')
-          console.log('🔌 Socket ID:', echoInstance?.socketId())
+        const pusher = (echoInstance as any).connector.pusher
+        const connection = pusher.connection
+        
+        console.log('🔍 Verificando métodos de conexión Pusher:', {
+          hasConnection: !!connection,
+          connectionType: typeof connection,
+          hasBind: typeof connection?.bind === 'function',
+          hasOn: typeof connection?.on === 'function',
+          hasAddEventListener: typeof connection?.addEventListener === 'function'
         })
+        
+        // Intentar diferentes métodos para registrar eventos de conexión
+        if (connection && typeof connection === 'object') {
+          // Método 1: bind (Pusher tradicional)
+          if (typeof connection.bind === 'function') {
+            console.log('✅ Usando método bind para eventos de conexión')
+            connection.bind('connected', () => {
+              console.log('🟢 Pusher: Conectado')
+              console.log('🔌 Socket ID:', echoInstance?.socketId())
+            })
 
-        (echoInstance as any).connector.pusher.connection.bind('disconnected', () => {
-          console.log('🔴 Pusher: Desconectado')
-        })
+            connection.bind('disconnected', () => {
+              console.log('🔴 Pusher: Desconectado')
+            })
 
-        (echoInstance as any).connector.pusher.connection.bind('error', (err: any) => {
-          console.error('❌ Pusher: Error de conexión', err)
-        })
+            connection.bind('error', (err: any) => {
+              console.error('❌ Pusher: Error de conexión', err)
+            })
+          }
+          // Método 2: on (alternativa)
+          else if (typeof connection.on === 'function') {
+            console.log('✅ Usando método on para eventos de conexión')
+            connection.on('connected', () => {
+              console.log('🟢 Pusher: Conectado')
+              console.log('🔌 Socket ID:', echoInstance?.socketId())
+            })
+
+            connection.on('disconnected', () => {
+              console.log('🔴 Pusher: Desconectado')
+            })
+
+            connection.on('error', (err: any) => {
+              console.error('❌ Pusher: Error de conexión', err)
+            })
+          }
+          // Método 3: addEventListener (DOM)
+          else if (typeof connection.addEventListener === 'function') {
+            console.log('✅ Usando método addEventListener para eventos de conexión')
+            connection.addEventListener('connected', () => {
+              console.log('🟢 Pusher: Conectado')
+              console.log('🔌 Socket ID:', echoInstance?.socketId())
+            })
+
+            connection.addEventListener('disconnected', () => {
+              console.log('🔴 Pusher: Desconectado')
+            })
+
+            connection.addEventListener('error', (err: any) => {
+              console.error('❌ Pusher: Error de conexión', err)
+            })
+          }
+          else {
+            console.warn('⚠️ No se encontraron métodos válidos para eventos de conexión Pusher')
+            console.warn('⚠️ Métodos disponibles:', Object.getOwnPropertyNames(connection))
+          }
+        } else {
+          console.warn('⚠️ Objeto de conexión Pusher no válido')
+        }
       }
 
       isConnected.value = true

@@ -57,8 +57,7 @@ export default defineNuxtPlugin(async () => {
       key: config.public.pusherAppKey,
       cluster: config.public.pusherAppCluster || 'mt1',
       wsHost: config.public.pusherWsHost,
-      wsPort: 443,
-      forceTLS: true,
+      // Si usamos wsHost personalizado, no especificar wsPort ni forceTLS
       enabledTransports: ['ws', 'wss'],
       authEndpoint: config.public.pusherWsHost ? `https://${config.public.pusherWsHost}/api/broadcasting/auth` : undefined,
       auth: {
