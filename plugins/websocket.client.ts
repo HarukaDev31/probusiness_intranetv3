@@ -5,6 +5,8 @@ export default defineNuxtPlugin(async () => {
   // Solo ejecutar en el cliente
   if (process.server) return
 
+  console.log('🔌 Plugin de WebSocket cargado')
+
   // Variable para evitar inicialización múltiple
   let isInitializing = false
   let isInitialized = false
@@ -14,6 +16,8 @@ export default defineNuxtPlugin(async () => {
 
   // Función para inicializar websockets cuando el usuario esté autenticado
   const initializeWebSockets = async () => {
+    console.log('🔌 Intentando inicializar WebSockets...')
+    
     // Evitar inicialización múltiple
     if (isInitializing || isInitialized) {
       console.log('🔌 WebSocket ya inicializado o en proceso de inicialización')
@@ -23,6 +27,12 @@ export default defineNuxtPlugin(async () => {
     // Verificar si el usuario está autenticado
     const authToken = localStorage.getItem('auth_token')
     const authUser = localStorage.getItem('auth_user')
+    
+    console.log('🔌 Verificando autenticación:', {
+      hasToken: !!authToken,
+      hasUser: !!authUser,
+      tokenLength: authToken?.length || 0
+    })
     
     if (!authToken || !authUser) {
       console.log('🔌 Usuario no autenticado, esperando...')
