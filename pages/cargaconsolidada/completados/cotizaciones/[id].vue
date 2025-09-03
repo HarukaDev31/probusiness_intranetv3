@@ -1,23 +1,16 @@
 <template>
-<<<<<<< HEAD
     <div class="p-6">
         <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
 
         <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()" :hide-back-button="false"
             :headers="headersCotizaciones" :show-headers="true" :loading="loadingCotizaciones"
             :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
-=======
-    <div class="py-6 ">
-        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
-            :loading="loadingCotizaciones" :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
->>>>>>> master
             :total-records="totalRecordsCotizaciones" :items-per-page="itemsPerPageCotizaciones"
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
             :filter-config="filterConfigProspectos" :show-export="true"
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
-            :hide-back-button="false"
             :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
             :show-body-top="true">
             <template #body-top>
@@ -107,11 +100,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 
 const tab = ref('')
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
-<<<<<<< HEAD
-const { currentRole } = useUserRole()
-=======
 const { currentRole,currentId} = useUserRole()
->>>>>>> master
 const tabs = ref([
 
 
@@ -463,11 +452,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 placeholder: 'Seleccionar estado',
                 modelValue: estado,
                 color: color,
-<<<<<<< HEAD
                 class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES] || '',
-=======
-                class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES],
->>>>>>> master
                 'onUpdate:modelValue': (value: any) => {
                     if (value && value !== estado) {
                         handleUpdateEstadoCotizacion(row.original.id, value)
@@ -592,11 +577,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
-<<<<<<< HEAD
                          class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
-=======
-                        class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
->>>>>>> master
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
