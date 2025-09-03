@@ -17,7 +17,15 @@ export const useWebSocketRole = () => {
         const roleConfig = Object.values(websocketRoles).find(config => config.role === userRole.value)
 
         if (roleConfig) {
-            subscribeToRoleChannels(roleConfig)
+            console.log('🔧 Configurando canales para rol:', roleConfig.role)
+            try {
+                subscribeToRoleChannels(roleConfig)
+                console.log('✅ Canales configurados exitosamente para rol:', roleConfig.role)
+            } catch (error) {
+                console.error('❌ Error configurando canales para rol:', roleConfig.role, error)
+            }
+        } else {
+            console.warn('⚠️ No se encontró configuración para el rol:', userRole.value)
         }
     }
 
@@ -31,9 +39,7 @@ export const useWebSocketRole = () => {
         currentRole.value = null
     }
 
-    onMounted(() => {
-        setupRoleChannels()
-    })
+    // Removido onMounted para evitar llamadas duplicadas desde el plugin
 
     return {
         currentRole,

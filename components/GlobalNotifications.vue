@@ -7,13 +7,14 @@
     size="xl" 
   />
 
-  <!-- Success Modal -->
- 
+  
 </template>
 
 <script setup lang="ts">
 
 import LoadingSpinner from './LoadingSpinner.vue'
+import SuccessModal from './SuccessModal.vue'
+import ErrorModal from './ErrorModal.vue'
 
 const {
   showSuccessModal,

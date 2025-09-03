@@ -1,5 +1,6 @@
 import type { WebSocketRole } from '~/types/websocket/echo'
 import { ROLES } from '~/constants/roles'
+import { useModal } from '~/composables/commons/useModal'
 
 // Definir los nombres de eventos como constantes para evitar errores
 export const WS_EVENTS = {
@@ -14,7 +15,11 @@ export const WS_EVENTS = {
   DOCUMENT: {
     STATUS_CHANGE: 'DocumentStatusChange',
     NEW: 'NewDocument',
-    REQUEST: 'DocumentRequest'
+    REQUEST: 'DocumentRequest',
+    IMPORT_EXCEL_COMPLETED: 'ImportacionExcelCompleted'
+  },
+  IMPORTACION: {
+    EXCEL_COMPLETED: 'ImportacionExcelCompleted'
   },
   SYSTEM: {
     GENERAL: 'GeneralNotification',
@@ -170,6 +175,7 @@ export const websocketRoles: Record<string, WebSocketRole> = {
         name: `${ROLES.DOCUMENTACION}-notifications`,
         type: 'private',
         handlers: [
+          
           {
             event: WS_EVENTS.DOCUMENT.NEW,
             callback: (data) => {
@@ -187,7 +193,36 @@ export const websocketRoles: Record<string, WebSocketRole> = {
             callback: (data) => {
               console.log('Solicitud de documento:', data)
             }
-          }
+          },
+                               {
+            event: WS_EVENTS.DOCUMENT.IMPORT_EXCEL_COMPLETED,
+            callback: (data) => {
+              console.log('📊 Importación Excel completada:', data)
+              console.log('🎯 Callback ejecutándose para ImportacionExcelCompleted')
+              
+              try {
+                // Mostrar notificación de éxito
+                const { showSuccess } = useModal()
+                showSuccess('Importación Completada', data.message || 'La importación se ha completado exitosamente.')
+                
+                // Log adicional para debugging
+                if (data.estadisticas) {
+                  console.log('📈 Estadísticas de importación:', data.estadisticas)
+                }
+              } catch (error) {
+                console.error('❌ Error en callback de ImportacionExcelCompleted:', error)
+              }
+            }
+          },
+           // Evento de prueba para verificar que los eventos personalizados funcionan
+           {
+             event: 'TestEvent',
+             callback: (data) => {
+               console.log('🧪 Evento de prueba recibido:', data)
+               const { showSuccess } = useModal()
+               showSuccess('Evento de Prueba', 'WebSocket funcionando correctamente')
+             }
+           }
         ]
       }
     ]
