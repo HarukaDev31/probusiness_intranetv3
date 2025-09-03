@@ -1,10 +1,6 @@
 <template>
     <div class="py-6 ">
-
-        
-
-        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" 
-        :columns="getProespectosColumns()"
+        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
             :loading="loadingCotizaciones" :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
             :total-records="totalRecordsCotizaciones" :items-per-page="itemsPerPageCotizaciones"
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
@@ -14,13 +10,15 @@
             @page-change="handlePageChangeProspectos" @items-per-page-change="handleItemsPerPageChangeProspectos"
             @filter-change="handleFilterChangeProspectos" :hide-back-button="false" :show-body-top="true">
             <template #body-top>
-                <div class="flex flex-column gap-2">
-                    <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones" :loading="loadingHeaders" />
-                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
+                <div class="flex flex-col gap-2 w-full">
+                    <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
+                        :loading="loadingHeaders" />
+                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill" class="mb-4 w-60 "
+                        v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" variant="outline"
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" class="py-3"
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
@@ -30,14 +28,19 @@
             :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChange"
-             :show-body-top="true" 
-             :previous-page-url="`/cargaconsolidada/abiertos`"
-             :hide-back-button="false"
-             >
+            @filter-change="handleFilterChange" :show-body-top="true" :previous-page-url="`/cargaconsolidada/abiertos`"
+            :hide-back-button="false">
             <template #body-top>
-                <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones" :loading="loadingHeaders" />
-                <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
+                <div class="flex flex-col gap-2 w-full">
+                    <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
+                        :loading="loadingHeaders" />
+                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill" class="mb-4 w-60"
+                        v-if="tabs.length > 1" />
+                </div>
+            </template>
+            <template #actions>
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" 
+                    label="Crear Prospecto" @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
@@ -46,12 +49,19 @@
             :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChange" :show-body-top="true"
-            :hide-back-button="false"
+            @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
             :previous-page-url="`/cargaconsolidada/abiertos`">
             <template #body-top>
-                <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones" :loading="loadingHeaders" />
-                <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
+                <div class="flex flex-col gap-2 w-full">
+                    <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
+                        :loading="loadingHeaders" />
+                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill" class="mb-4 w-60"
+                        v-if="tabs.length > 1" />
+                </div>
+            </template>
+            <template #actions>
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" 
+                    label="Crear Prospecto" @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
     </div>
@@ -83,7 +93,7 @@ const id = route.params.id
 const { showConfirmation, showSuccess, showError } = useModal()
 
 const tab = ref('')
-
+import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
 const { currentRole } = useUserRole()
 const tabs = ref([
 
@@ -385,12 +395,9 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         handleUpdateCotizacion(row.original.id)
                     }
                 }) : null,
-                row.original.cotizacion_file_url ? h(UButton, {
-                    icon: 'i-heroicons-document-text',
-                    variant: 'ghost',
-                    size: 'xs',
-                    //add tooltip
-                    tooltip: 'Ver Documentacion',
+                row.original.cotizacion_file_url ? h('div', {
+                    innerHTML: CUSTOMIZED_ICONS.EXCEL,
+                    class: 'cursor-pointer',
                     onClick: () => {
                         downloadFile(row.original.cotizacion_file_url)
                     }
@@ -399,6 +406,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     icon: 'i-heroicons-arrow-path',
                     variant: 'ghost',
                     size: 'xs',
+                    color: 'secondary',
                     onClick: () => {
                         handleRefresh(row.original.id)
                     }
@@ -407,6 +415,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
                     size: 'xs',
+                    color: 'secondary',
                     onClick: () => {
                         handleDeleteFile(row.original.id)
                     }
@@ -415,6 +424,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     icon: 'i-heroicons-arrow-right',
                     variant: 'ghost',
                     size: 'xs',
+                    color: 'info',
                     onClick: () => {
                         handleMoveCotizacion(row.original.id)
                     }
@@ -426,14 +436,17 @@ const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'estado_cotizador',
         header: 'Estado',
+
         cell: ({ row }: { row: any }) => {
             const estado = row.getValue('estado_cotizador')
             const color = getEstadoColor(estado)
+
             return h(USelect as any, {
                 items: filterConfigProspectos.value.find((filter: any) => filter.key === 'estado')?.options.filter((option: any) => option.inrow),
                 placeholder: 'Seleccionar estado',
                 modelValue: estado,
-                class: 'w-full',
+                color: color,
+                class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES],
                 'onUpdate:modelValue': (value: any) => {
                     if (value && value !== estado) {
                         handleUpdateEstadoCotizacion(row.original.id, value)
@@ -592,7 +605,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
-                        class: 'w-full',
+                        class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
@@ -896,6 +909,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     h(UButton, {
                         icon: 'i-heroicons-eye',
                         variant: 'ghost',
+                        color: 'neutral',
                         size: 'xs',
                         onClick: () => {
                             navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion/${proveedor.id}`)
@@ -904,6 +918,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     h(UButton, {
                         icon: 'i-heroicons-document-arrow-down',
                         variant: 'ghost',
+                        color: 'neutral',
                         size: 'xs',
                         onClick: () => {
                             updateProveedorData(proveedor)

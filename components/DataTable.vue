@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="">
 
     <!-- Sticky Top Section -->
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-800">
@@ -93,7 +93,7 @@
       </div>
 
       <!-- Body Top Slot -->
-      <div class="flex flex-row justify-between px-4 py-2" v-if="showBodyTop" >
+      <div class="flex flex-row justify-between px-4 " v-if="showBodyTop" >
         <slot name="body-top" />
       </div>
     </div>

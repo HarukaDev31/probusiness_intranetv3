@@ -8,6 +8,7 @@ export const ROLES = {
     COTIZADOR: 'Cotizador',
     DOCUMENTACION: 'Documentacion',
 } as const
+export const ID_JEFEVENTAS = 28791
 
 // Tipos de roles
 export type UserRole = typeof ROLES[keyof typeof ROLES]
