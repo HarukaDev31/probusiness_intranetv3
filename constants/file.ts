@@ -13,4 +13,5 @@ export const FILE_ICONS_MAP = {
     gif: 'i-heroicons-photo',
     zip: 'i-heroicons-archive',
     rar: 'i-heroicons-archive',
+    mp4: 'i-heroicons-video-camera',
 } as const

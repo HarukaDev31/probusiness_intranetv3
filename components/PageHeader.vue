@@ -1,5 +1,5 @@
 <template>
-  <div class="">
+  <div class="mb-2">
     <div class="flex items-center justify-between">
       <div class="flex items-center justify-between w-full">
         

@@ -1,35 +1,56 @@
     <!--3 tabs:general,variacion,pagos and 3 tables-->
     <template>
         <div class="p-6">
-            <PageHeader title="Clientes" subtitle="Gestión de clientes" icon="i-heroicons-user"
-                :hide-back-button="true" />
-            <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
+            <PageHeader title="" subtitle="" icon=""
+                :hide-back-button="false"
+                @back="$router.back()"
+                />
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
                 :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="true"
                 :filter-config="filterConfig" :show-export="true"
+                :show-body-top="true"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral">
+            <template #body-top>
+                <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60"
+                color="secondary"
+                />
+
+            </template>
             </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
                 :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
                 :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="true"
                 :filter-config="filterConfigVariacion" :show-export="true"
+                :show-body-top="true"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
+            <template #body-top>
+                <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60"
+                color="secondary"
+                />
+            </template>
             </DataTable>
             <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
                 :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
                 :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="true"
                 :filter-config="filterConfigVariacion" :show-export="true"
+                :show-body-top="true"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
+            <template #body-top>
+                <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60"
+                color="secondary"
+                />
+
+            </template>
             </DataTable>
         </div>
     </template>
@@ -40,11 +61,11 @@ import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { UButton, UBadge, USelect } from '#components'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES } from '~/constants/roles'
+import { ROLES ,ID_JEFEVENTAS} from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
-const { currentRole } = useUserRole()
+const { currentRole, currentId } = useUserRole()
 import type { TableColumn } from '@nuxt/ui'
 
 const route = useRoute()
@@ -541,7 +562,7 @@ onMounted(() => {
             }
         ]
     }
-    else if (currentRole.value === ROLES.COORDINACION) {
+    else if (currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS)) {
         tabs.value = [
             {
                 label: 'General',

@@ -23,9 +23,12 @@ export default defineNuxtConfig({
         'success',
         'info',
         'warning',
-        'error'
-      ]
+        'error',
+        'transparent'
+      ],
+     
     }
+   
   },
  
   // Configuración de variables de entorno

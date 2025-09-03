@@ -75,11 +75,14 @@
   --ui-color-error-900: #7f1d1d;
   --ui-color-error-950: #450a0a;
 
+  --ui-color-transparent: #29292900;
+
   /* Variables principales para el tema */
   --ui-primary: var(--ui-color-primary-600);
   --ui-secondary: var(--ui-color-secondary-600);
   --ui-success: var(--ui-color-success-600);
-  --ui-info: var(--ui-color-info-600);
+  --ui-info: var(--ui-color-info-500);
   --ui-warning: var(--ui-color-warning-600);
   --ui-error: var(--ui-color-error-600);
+  --ui-transparent: var(--ui-color-transparent);
 }

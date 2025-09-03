@@ -2,9 +2,10 @@
   <UCard>
     <template #header>
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-          <UIcon name="i-heroicons-folder-open" class="mr-2" />
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           Documentación
+          <UIcon name="i-heroicons-folder-open" class="mr-2" />
+
         </h2>
       </div>
     </template>
@@ -16,7 +17,7 @@
     :disabled="disabled"
     :immediate="false"
     :multiple="true" @files-selected="handleFilesSelected"
-      :initial-files="files" @file-removed="handleFileRemoved" />
+      :initial-files="files" @file-removed="handleFileRemoved" :show-remove-button="showRemoveButton" />
 
   </UCard>
 </template>
@@ -37,6 +38,7 @@ const props = defineProps<{
   selectedFiles: File[]
   loading: boolean
   disabled: boolean
+  showRemoveButton: boolean
 }>()
 
 const emit = defineEmits<Emits>()
