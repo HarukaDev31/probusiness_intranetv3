@@ -31,7 +31,7 @@
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
-            :hide-back-button="false">
+            >
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
