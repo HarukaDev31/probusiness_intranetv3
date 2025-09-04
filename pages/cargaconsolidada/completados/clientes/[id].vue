@@ -1,59 +1,332 @@
     <!--3 tabs:general,variacion,pagos and 3 tables-->
     <template>
         <div class="p-6">
-            <PageHeader title="Clientes" subtitle="Gestión de clientes" icon="i-heroicons-user"
-                :hide-back-button="false" />
-            <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
+
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
-                :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="true"
-                :filter-config="filterConfig" :show-export="true"
-                empty-state-message="No se encontraron registros de clientes." @update:primary-search="handleSearchGeneral"
-                @page-change="handlePageGeneralChange" @items-per-page-change="handleItemsPerPageChangeGeneral"
-                @filter-change="handleFilterChangeGeneral">
+                :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="false"
+                :filter-config="filterConfig" :show-export="true" :show-body-top="true"
+                empty-state-message="No se encontraron registros de clientes."
+                @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
+                @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
+                :hide-back-button="false"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+                <template #body-top>
+                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
+
+                </template>
             </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
                 :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
                 :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
-                :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="true"
-                :filter-config="filterConfigVariacion" :show-export="true"
+                :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
+                :filter-config="filterConfigVariacion" :show-export="true" :show-body-top="true"
+                :hide-back-button="false"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
+                <template #body-top>
+                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
+                </template>
+            </DataTable>
+            <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
+                :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
+                :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
+                :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
+                :filter-config="filterConfigVariacion" :show-export="true" :hide-back-button="false"
+                :show-body-top="true"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                empty-state-message="No se encontraron registros de clientes."
+                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
+                @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
+                <template #body-top>
+                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
+
+                </template>
             </DataTable>
         </div>
     </template>
 <script setup lang="ts">
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
 import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
+import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { UButton, UBadge, USelect } from '#components'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES } from '~/constants/roles'
+import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import type { TableColumn } from '@nuxt/ui'
+import PagoGrid from '~/components/PagoGrid.vue'
+import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
-const { currentRole } = useUserRole()
-import type { TableColumn } from '@nuxt/ui'
+const { currentRole, currentId } = useUserRole()
 
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
-const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig,handlePageGeneralChange,handleItemsPerPageChangeGeneral,handleFilterChangeGeneral,handleSearchGeneral} = useGeneral()
-const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion,  paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion } = useVariacion()
+const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handlePageGeneralChange, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, handleSearchGeneral } = useGeneral()
+const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion, paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion } = useVariacion()
+const { getClientesPagos, clientesPagos, totalRecordsPagos, loadingPagos, paginationPagos, searchPagos, itemsPerPagePagos, totalPagesPagos, currentPagePagos, filtersPagos, filterConfigPagos, handlePagePagosChange, handleItemsPerPageChangePagos, handleFilterChangePagos, handleSearchPagos, registrarPago, deletePago } = usePagos()
 const tabs = ref()
 const handleTabChange = (value: string) => {
     //set tab to value
-    console.log(value)
     if (tab.value === 'general') {
         getClientes(Number(id))
     } else if (tab.value === 'variacion') {
         getClientesVariacion(Number(id))
+    } else if (tab.value === 'pagos') {
+        getClientesPagos(Number(id))
     }
 }
+//N.	Nombre	DNI/RUC	Whatsapp	T. Cliente	Estado	Conceptop	Importe	Pagado	Adelantos
+const columnsPagos = ref<TableColumn<any>[]>([
+    {
+        accessorKey: 'index',
+        header: 'N°',
+        cell: ({ row }: { row: any }) => {
+            return row.index + 1
+        }
+    },
+    {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('nombre')
+        }
+    },
+    {
+        accessorKey: 'documento',
+        header: 'DNI/RUC',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('documento')
+        }
+    },
+    {
+        accessorKey: 'telefono',
+        header: 'Whatsapp',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('telefono')
+        }
+    },
+    {
+        accessorKey: 'name',
+        header: 'T. Cliente',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('name')
+        }
+    },
+    {
+        accessorKey: 'estado',
+        header: 'Estado',
+        cell: ({ row }: { row: any }) => {
+            return h(USelect as any, {
+                modelValue: row.original.estado_pago,
+                disabled: true,
+                items: [
+                    { label: 'PENDIENTE', value: 'PENDIENTE' },
+                    { label: 'PAGADO', value: 'PAGADO' },
+                    { label: 'ADELANTO', value: 'ADELANTO' },
+                    { label: 'SOBREPAGO', value: 'SOBREPAGO' },
+                ],
+                class: STATUS_BG_PAGOS_CLASSES[row.original.estado_pago as keyof typeof STATUS_BG_PAGOS_CLASSES],
+
+            })
+        }
+    },
+    {
+        accessorKey: 'concepto',
+        header: 'Concepto',
+        cell: ({ row }: { row: any }) => {
+            return 'Logistica'
+        }
+    },
+    {
+        accessorKey: 'importe',
+        header: 'Importe',
+        cell: ({ row }: { row: any }) => {
+            return formatCurrency(row.original.monto)
+        }
+    },
+    {
+        accessorKey: 'pagado',
+        header: 'Pagado',
+        cell: ({ row }: { row: any }) => {
+            return formatCurrency(row.original.total_pagos)
+        }
+    },
+    {
+        accessorKey: 'adelantos',
+        header: 'Adelantos',
+        cell: ({ row }: { row: any }) => {
+            return h(PagoGrid, {
+                pagoDetails: JSON.parse(row.original.pagos_details ?? '[]'),
+                currency: 'USD',
+                numberOfPagos: 4,
+                clienteNombre: row.original.nombre,
+                onSave: (data) => {
+                    const formData = new FormData();
+                    for (const key in data) {
+                        if (data[key] !== undefined && data[key] !== null) {
+                            formData.append(key, data[key]);
+                        }
+                    }
+                    formData.append('idPedido', row.original.id_cotizacion)
+                    formData.append('idContenedor', row.original.id_contenedor)
+                    formData.append('idCotizacion', row.original.id_cotizacion)
+                    withSpinner(async () => {
+                        const response = await registrarPago(formData)
+                        if (response.success) {
+                            showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
+                            getClientesPagos(Number(id))
+                        } else {
+                            showError('Error al registrar pago', response.error, { persistent: true })
+                        }
+                    }, 'registrarPago')
+
+                },
+                onDelete: (pagoId: number) => {
+                    showConfirmation(
+                        'Confirmar eliminación',
+                        '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
+                        async () => {
+                            try {
+                                await withSpinner(async () => {
+                                    const response = await deletePago(pagoId)
+                                    if (response.success) {
+                                        await getClientesPagos(Number(id))
+                                        showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                                    }
+                                }, 'Eliminando pago...')
+                            } catch (error) {
+                                console.error('Error al eliminar el pago:', error)
+                                showError('Error de Eliminación', 'Error al eliminar el pago')
+                            }
+                        }
+                    )
+                }
+            })
+        }
+    }
+])
 //N° Fecha	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Volumen	Qty Item	Fob	Logistica	Impuesto	Tarifa	Estados	Status	Acciones
-const columns:TableColumn<any>[] = [
+const columns: TableColumn<any>[] = [
+    {
+        accessorKey: 'index',
+        header: 'N°',
+        cell: ({ row }: { row: any }) => {
+            return row.index + 1
+        }
+    },
+
+    {
+        accessorKey: 'fecha',
+        header: 'Fecha',
+        cell: ({ row }: { row: any }) => {
+            return formatDateTimeToDmy(row.getValue('fecha'))
+        }
+    },
+    {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('nombre')
+        }
+    },
+    {
+        accessorKey: 'documento',
+        header: 'DNI/RUC',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('documento')
+        }
+    },
+
+    {
+        accessorKey: 'correo',
+        header: 'Correo',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('correo')
+        }
+    },
+    {
+        accessorKey: 'telefono',
+        header: 'Whatsapp',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('telefono')
+        }
+    },
+    {
+        accessorKey: 'name',
+        header: 'T. Cliente',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('name')
+        }
+    },
+    {
+        accessorKey: 'volumen',
+        header: 'Volumen',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('volumen')
+        }
+    },
+
+    {
+        accessorKey: 'qty_item',
+        header: 'Qty Item',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('qty_item')
+        }
+    },
+    {
+        accessorKey: 'fob',
+        header: 'Fob',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('fob')
+        }
+    },
+    {
+        accessorKey: 'monto',
+        header: 'Logistica',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('monto')
+        }
+    },
+    {
+        accessorKey: 'impuestos',
+        header: 'Impuesto',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('impuestos')
+        }
+    },
+    {
+        accessorKey: 'tarifa',
+        header: 'Tarifa',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('tarifa')
+        }
+    },
+
+
+    {
+        accessorKey: 'acciones',
+        header: 'Acciones',
+        cell: ({ row }: { row: any }) => {
+            //button view with more info
+            return h(UButton, {
+                icon: 'i-heroicons-eye',
+                variant: 'ghost',
+                size: 'xs',
+                onClick: () => {
+                    navigateTo(`/cargaconsolidada/abiertos/clientes/documentacion/${row.original.id_cotizacion}`)
+                }
+            },
+            )
+        }
+    }
+]
+const columnsCoordinacion: TableColumn<any>[] = [
     {
         accessorKey: 'index',
         header: 'N°',
@@ -187,7 +460,7 @@ const columns:TableColumn<any>[] = [
                 variant: 'ghost',
                 size: 'xs',
                 onClick: () => {
-                    navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
+                    navigateTo(`/cargaconsolidada/abiertos/clientes/documentacion/${row.original.id_cotizacion}`)
                 }
             },
             )
@@ -195,7 +468,7 @@ const columns:TableColumn<any>[] = [
     }
 ]
 //N°	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Status	Accio
-const columnsDocumentacion:TableColumn<any>[] = [
+const columnsDocumentacion: TableColumn<any>[] = [
     {
         accessorKey: 'index',
         header: 'N°',
@@ -236,8 +509,8 @@ const columnsDocumentacion:TableColumn<any>[] = [
         header: 'T. Cliente',
         cell: ({ row }: { row: any }) => {
             return row.getValue('name')
-        }   
-    },{
+        }
+    }, {
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }: { row: any }) => {
@@ -257,23 +530,25 @@ const columnsDocumentacion:TableColumn<any>[] = [
                 variant: 'ghost',
                 size: 'xs',
                 onClick: () => {
-                    navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
+                    navigateTo(`/cargaconsolidada/abiertos/clientes/documentacion/${row.original.id_cotizacion}`)
                 }
             })
         }
     }
 ]
-const getColumnsGeneral = ()=>{
-    switch(currentRole.value){
+const getColumnsGeneral = () => {
+    switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
             return columnsDocumentacion
+        case ROLES.COORDINACION:
+            return columnsCoordinacion
         default:
             return columns
     }
 }
 const getColorStatusDocumentacion = (status: string) => {
     //Completado,Pendiente,Incompleto
-    switch(status){
+    switch (status) {
         case 'Completado':
             return 'primary'
         case 'Pendiente':
@@ -403,13 +678,7 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         }
     }
 ])
-watch(tab, (newVal, oldVal) => {
-    if (newVal === null) {
-        handleTabChange('general')
-    } else {
-        handleTabChange(newVal)
-    }
-})
+
 const handleUpdateEstadoCliente = async (data: any) => {
     try {
         await withSpinner(async () => {
@@ -456,21 +725,52 @@ onMounted(() => {
             }
         ]
     }
-    else {
+    else if (currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS)) {
         tabs.value = [
             {
                 label: 'General',
                 value: 'general'
             },
-            currentRole.value !== ROLES.DOCUMENTACION ?
-                {
-                    label: 'Variación',
-                    value: 'variacion'
-                } : null,
-           
+            {
+                label: 'Variación',
+                value: 'variacion'
+            },
+            {
+                label: 'Pagos',
+                value: 'pagos'
+            }
+        ]
+    } else {
+        tabs.value = [
+            {
+                label: 'General',
+                value: 'general'
+            },
+            {
+                label: 'Variación',
+                value: 'variacion'
+            }
         ]
     }
     handleTabChange(tab.value)
 })
-
+watch(() => tab.value, async (newVal) => {
+    if (newVal && newVal !== '') {
+        try {
+            if (newVal === 'general') {
+                navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=general`)
+                await getClientes(Number(id))
+            } else if (newVal === 'variacion') {
+                navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=variacion`)
+                await getClientesVariacion(Number(id))
+            } else if (newVal === 'pagos') {
+                navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=pagos`)
+                await getClientesPagos(Number(id))
+            }
+            //implements getHeaders
+        } catch (error) {
+            console.error('Error en carga inicial:', error)
+        }
+    }
+}, { immediate: true })
 </script>

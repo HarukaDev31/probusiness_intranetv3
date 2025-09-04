@@ -287,8 +287,8 @@ const convertUrlToRoute = (menuUrl: string, intranetUrl?: string | null): string
     'InicioController': '/',
     'BaseDatos/ProductosController/index': '/basedatos/productos',
     'BaseDatos/RegulacionesController/index': '/basedatos/regulaciones',
-    'CargaConsolidada/ContenedorConsolidado/listar': '/carga-consolidada',
-    'CargaConsolidada/ContenedorConsolidado/listarCompletados': '/carga-consolidada/completados'
+    'CargaConsolidada/ContenedorConsolidado/listar': '/cargaconsolidada',
+    'CargaConsolidada/ContenedorConsolidado/listarCompletados': '/cargaconsolidada/completados'
   }
 
   return urlMap[menuUrl] || '/'

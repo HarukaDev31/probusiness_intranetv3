@@ -6,18 +6,17 @@
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
             :filter-config="filterConfigProspectos" :show-export="true"
             empty-state-message="No se encontraron registros de prospectos."
-            @update:primary-search="handleSearchProspectos"
-            @page-change="handlePageChangeProspectos" @items-per-page-change="handleItemsPerPageChangeProspectos"
-            @filter-change="handleFilterChangeProspectos" :hide-back-button="false"
-            :previous-page-url="(currentRole !== ROLES.COORDINACION || currentId !== ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
-            :show-body-top="true"
-            >
+            @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
+            @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
+            :hide-back-button="false"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+            :show-body-top="true">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill" class="mb-4 w-60 "
-                        v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
+                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
@@ -31,19 +30,19 @@
             :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChange" :show-body-top="true" :previous-page-url="`/cargaconsolidada/abiertos`"
+            @filter-change="handleFilterChange" :show-body-top="true" :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill" class="mb-4 w-60"
-                        v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
+                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" 
-                    label="Crear Prospecto" @click="handleAddProspecto" class="py-3" />
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
+                    @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
@@ -53,18 +52,18 @@
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
-            :previous-page-url="`/cargaconsolidada/abiertos`">
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill" class="mb-4 w-60"
-                        v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
+                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" 
-                    label="Crear Prospecto" @click="handleAddProspecto" class="py-3" />
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
+                    @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
     </div>
@@ -75,7 +74,7 @@ import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotiza
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES } from '~/constants/roles'
+import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
@@ -87,17 +86,19 @@ import ModalPreview from '~/components/commons/ModalPreview.vue'
 import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
+import PagoGrid from '~/components/PagoGrid.vue'
 const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
 const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders } = useCotizacion()
 const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headersPagos } = useCotizacionPagos()
 const { withSpinner } = useSpinner()
+import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 const route = useRoute()
 const id = route.params.id
 const { showConfirmation, showSuccess, showError } = useModal()
 
 const tab = ref('')
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
-const { currentRole } = useUserRole()
+const { currentRole,currentId} = useUserRole()
 const tabs = ref([
 
 
@@ -495,11 +496,19 @@ const getPagosColumns = () => {
             accessorKey: 'estado_pago',
             header: 'Estado',
             cell: ({ row }: { row: any }) => {
-                const estado = row.original.estado_pago
-                const color = getEstadoPago(estado)
-                return h('span', {
-                    class: `px-2 py-1 rounded-md text-xs font-medium ${color}`
-                }, estado)
+                return h(USelect as any, {
+                    modelValue: row.original.estado_pago,
+                    disabled: true,
+                    items: [
+                        { label: 'PENDIENTE', value: 'PENDIENTE' },
+                        { label: 'PAGADO', value: 'PAGADO' },
+                        { label: 'ADELANTO', value: 'ADELANTO' },
+                        { label: 'SOBREPAGO', value: 'SOBREPAGO' },
+                    ],
+                    class: STATUS_BG_PAGOS_CLASSES[row.original.estado_pago as keyof typeof STATUS_BG_PAGOS_CLASSES],
+
+                })
+
             }
         },
 
@@ -534,54 +543,12 @@ const getPagosColumns = () => {
             header: 'Adelantos',
             cell: ({ row }: { row: any }) => {
                 const pagos = row.original.pagos || []
-
-                return h('div', {
-                    class: 'flex flex-row gap-2 items-center flex-wrap'
-                }, [
-                    ...pagos.map((pago: any) =>
-                        h('div', {
-                            class: 'flex items-center bg-gray-100 rounded-lg p-2 cursor-pointer hover:bg-gray-200',
-                            onClick: () => {
-                                const modal = overlay.create(AdelantoPreviewModal)
-                                modal.open({
-                                    modelValue: true,
-                                    pago,
-                                    onOnDelete: async () => {
-                                        try {
-
-                                            showSuccess('Voucher eliminado correctamente', 'El voucher se ha eliminado correctamente')
-                                            await getCotizaciones(Number(id))
-                                            modal.close()
-                                        } catch (error) {
-                                            showError('Error al eliminar el voucher', error)
-                                        }
-                                    }
-                                })
-                            }
-                        }, [
-                            h(UBadge, {
-                                color: pago.is_confirmed ? 'success' : 'neutral',
-                                variant: 'subtle',
-                                size: 'xs',
-                                label: formatCurrency(pago.monto, 'USD')
-                            })
-
-                        ])
-                    ),
-                    h(UButton, {
-                        icon: 'i-heroicons-plus',
-                        variant: 'ghost',
-                        size: 'xs',
-                        onClick: () => {
-                            const modal = overlay.create(CreatePagoModal)
-                            modal.open({
-                                onSuccess: () => {
-                                    getCotizaciones(Number(id))
-                                }
-                            })
-                        }
-                    })
-                ])
+                return h(PagoGrid, {
+                    numberOfPagos: 4,
+                    pagoDetails: pagos,
+                    clienteNombre: row.original.nombre,
+                    currency: 'PEN'
+                }) as any
             }
         }
     ]

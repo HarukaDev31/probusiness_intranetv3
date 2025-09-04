@@ -223,7 +223,7 @@ const { withSpinner } = useSpinner()
 const { showError } = useModal()
 interface Props {
     isOpen: boolean
-    file?: FileItem | null
+    file?: FileItem | File | null
 }
 
 interface Emits {

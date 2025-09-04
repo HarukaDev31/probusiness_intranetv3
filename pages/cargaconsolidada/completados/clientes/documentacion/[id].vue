@@ -1,8 +1,13 @@
 <template>
     <div class="p-6">
-        <PageHeader title="Documentación del Cliente" subtitle="Gestión de documentos y cotizaciones"
-            icon="i-heroicons-folder" :hide-back-button="false"
-            @back="navigateTo(`/cargaconsolidada/completados/clientes/${cliente?.id_contenedor}`)" />
+        <PageHeader title="" subtitle="" icon="" :hide-back-button="false"
+            @back="navigateTo(`/cargaconsolidada/abiertos/clientes/${cliente?.id_contenedor}`)">
+            <template #actions>
+                <!--button save-->
+                <UButton label="Guardar cambios" color="primary" variant="solid" icon="i-heroicons-arrow-down-tray"
+                    size="sm" @click="handleSaveChanges" />
+            </template>
+        </PageHeader>
 
         <!-- Loading state -->
         <div v-if="loading" class="mt-6">
@@ -167,27 +172,20 @@
         </div>
 
         <!-- Main content -->
-        <div v-else-if="hasData" class="mt-6">
-            <UCard class="mb-6 ">
+        <div v-else-if="hasData" class="mt-6 ">
+            <div class="mb-6  border-gray-200 rounded-lg p-6 border-b-2 border-gray-200">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-medium ">Cliente</label>
                         <span class=" font-semibold">{{ cliente?.nombre }}</span>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium ">Documento</label>
-                        <span class="">{{ cliente?.documento }}</span>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium ">Estado</label>
-                        <span class="">{{ cliente?.estado }}</span>
-                    </div>
+
+
                 </div>
-            </UCard>
+            </div>
             <!-- Tabs de proveedores -->
             <div v-if="hasProveedores" class="mb-6">
                 <UTabs v-model="activeTab" :items="tabs" size="md" variant="pill" class="w-50"
-                    @change="handleTabChange" />
+                    @update:model-value="handleTabChange" />
             </div>
 
             <!-- Información del cliente -->
@@ -196,7 +194,7 @@
             <!-- Contenido por proveedor -->
             <div v-if="proveedorActivo" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Sección de Documentación -->
-                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md col-span-2">
                     <template #header>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
@@ -209,10 +207,10 @@
                                 </UBadge>
                             </div>
                             <div class="flex gap-2">
-                                <UButton v-if="hasUnsavedChanges" label="Guardar cambios" color="primary"
-                                    variant="solid" icon="i-heroicons-check" size="sm" @click="handleSaveChanges" />
+
                                 <UButton label="Nuevo Documento" color="warning" variant="solid" icon="i-heroicons-plus"
-                                    size="sm" v-if="currentRole === ROLES.COORDINACION" @click="handleNuevoDocumento" />
+                                    size="sm" v-if="currentRole === ROLES.COORDINACION || currentId === ID_JEFEVENTAS"
+                                    @click="handleNuevoDocumento" />
                             </div>
                         </div>
                     </template>
@@ -280,7 +278,6 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Excel Confirmación
                             </label>
-                            {{ proveedorActivo.value }}
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
                                 :show-remove-button="currentRole === ROLES.COORDINACION"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="proveedorActivo.excel_confirmacion ? [{
@@ -294,9 +291,21 @@
                                 }] : []" @files-selected="handleExcelConfirmacion"
                                 @file-removed="handleRemoveExcelConfirmacion" />
                         </div>
+                        <div v-for="file in files.filter(f => f.id_proveedor === proveedorActivo.id)" :key="file.id">
+                            <span>{{ file.folder_name||file.file_name }}</span>
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
+                                :show-remove-button="false" :initial-files="[{
+                                    id: file.id,
+                                    file_name: file.folder_name||file.file_name,
+                                    file_url: file.file_url,
+                                    type: file.file_ext,
+                                    size: 0,
+                                    lastModified: 0,
+                                    file_ext: file.file_ext
+                                }]" />
+                        </div>
                     </div>
                 </UCard>
-                <!--add files_almacen_documentacion show fileuploader foreach file in merge of  files_almacen_inspection and files_almacen_documentacion with id_proveedor same proveedorActivo.id-->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
                     v-if="currentRole === ROLES.DOCUMENTACION">
                     <template #header>
@@ -313,12 +322,13 @@
                             <div class="flex gap-2">
                                 <UButton v-if="hasUnsavedChanges" label="Guardar cambios" color="primary"
                                     variant="solid" icon="i-heroicons-check" size="sm" @click="handleSaveChanges" />
-                                
+
                             </div>
                         </div>
                     </template>
                     <div class="space-y-4">
-                        <div v-for="file in filesAlmacenDocumentacion.filter(f => f.id_proveedor === proveedorActivo.id)" :key="file.id">
+                        <div v-for="file in filesAlmacenDocumentacion.filter(f => f.id_proveedor === proveedorActivo.id)"
+                            :key="file.id">
 
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
                                 :show-remove-button="false" :initial-files="[{
@@ -331,7 +341,7 @@
                                     file_ext: file.file_ext
                                 }]" />
                         </div>
-                       
+
                     </div>
 
                 </UCard>
@@ -351,12 +361,13 @@
                             <div class="flex gap-2">
                                 <UButton v-if="hasUnsavedChanges" label="Guardar cambios" color="primary"
                                     variant="solid" icon="i-heroicons-check" size="sm" @click="handleSaveChanges" />
-                                
+
                             </div>
                         </div>
                     </template>
                     <div class="space-y-4">
-                        <div v-for="file in filesAlmacenInspection.filter(f => f.id_proveedor === proveedorActivo.id)" :key="file.id">
+                        <div v-for="file in filesAlmacenInspection.filter(f => f.id_proveedor === proveedorActivo.id)"
+                            :key="file.id">
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
                                 :show-remove-button="false" :initial-files="[{
                                     id: file.id,
@@ -368,14 +379,14 @@
                                     file_ext: file.file_ext
                                 }]" />
                         </div>
-                       
+
                     </div>
 
                 </UCard>
-               
+
                 <!-- Sección de Cotizaciones -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg h-40 shadow-md"
-                    v-if="currentRole === ROLES.COORDINACION">
+                    v-if="currentRole === ROLES.COORDINACION || currentId === ID_JEFEVENTAS">
 
                     <div class="space-y-4">
 
@@ -407,10 +418,10 @@ import { useVariacionCliente } from '~/composables/cargaconsolidada/useVariacion
 import FileUploader from '~/components/commons/FileUploader.vue'
 import type { FileItem } from '~/types/commons/file'
 import type { id } from '@nuxt/ui/runtime/locale/index.js'
-import { ROLES } from '~/constants/roles'
+import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { currentRole } = useUserRole()
-
+const { currentRole, currentId } = useUserRole()
+import SimpleUploadFile from '~/components/commons/SimpleUploadFile.vue'
 // Composables
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
@@ -428,6 +439,7 @@ const {
     hasProveedores,
     filesAlmacenDocumentacion,
     filesAlmacenInspection,
+    files,
     getClienteDocumentacion,
 
     cambiarProveedor,
@@ -437,9 +449,12 @@ const {
     deleteArchivo,
     deleteFacturaComercial,
     deletePackingList,
-    deleteExcelConfirmacion
+    deleteExcelConfirmacion,
+    createProveedorDocumentacion
 } = useVariacionCliente()
-
+import { useOverlay } from '#imports'
+const overlay = useOverlay()
+const simpleUploadFile = overlay.create(SimpleUploadFile)
 // Estado local para cambios pendientes
 const pendingChanges = ref({
     volumen_doc: null as number | null,
@@ -668,8 +683,36 @@ const handleDownloadCotizacionFinal = async () => {
 
 // Manejador del botón nuevo documento
 const handleNuevoDocumento = () => {
-    console.log('Crear nuevo documento')
-    showSuccess('Éxito', 'Funcionalidad de nuevo documento implementada')
+    simpleUploadFile.open({
+        title: 'Nuevo Documento',
+        withNameField: true,
+        onSave: (data: { file: File, name?: string | null }) => {
+            /**
+             * name
+ 12
+ file
+ (binary)
+ id_cotizacion
+ 1031
+ id_proveedor
+ 1429
+             */
+            const formData = new FormData()
+            formData.append('name', data.name)
+            formData.append('file', data.file)
+            formData.append('id_cotizacion', clienteId.toString())
+            formData.append('id_proveedor', proveedorActivo.value.id.toString())
+            withSpinner(async () => {
+                const result = await createProveedorDocumentacion(formData)
+                if (result.success) {
+                    showSuccess('Éxito', 'Documento subido correctamente')
+                    await getClienteDocumentacion(clienteId)
+                } else {
+                    showError('Error', 'Error al subir el documento')
+                }
+            }, 'Subiendo documento...')
+        }
+    })
 }
 
 // Descargar archivo

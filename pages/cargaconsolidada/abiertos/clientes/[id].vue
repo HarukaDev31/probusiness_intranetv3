@@ -11,7 +11,7 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole !== ROLES.COORDINACION || currentId !== ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
                 <template #body-top>
                     <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
 
@@ -22,7 +22,9 @@
                 :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfigVariacion" :show-export="true" :show-body-top="true"
-                :hide-back-button="false" empty-state-message="No se encontraron registros de clientes."
+                :hide-back-button="false"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
@@ -34,7 +36,9 @@
                 :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfigVariacion" :show-export="true" :hide-back-button="false"
-                :show-body-top="true" empty-state-message="No se encontraron registros de clientes."
+                :show-body-top="true"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
@@ -120,7 +124,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             return h(USelect as any, {
                 modelValue: row.original.estado_pago,
-                disabled:true,
+                disabled: true,
                 items: [
                     { label: 'PENDIENTE', value: 'PENDIENTE' },
                     { label: 'PAGADO', value: 'PAGADO' },
@@ -128,9 +132,9 @@ const columnsPagos = ref<TableColumn<any>[]>([
                     { label: 'SOBREPAGO', value: 'SOBREPAGO' },
                 ],
                 class: STATUS_BG_PAGOS_CLASSES[row.original.estado_pago as keyof typeof STATUS_BG_PAGOS_CLASSES],
-                
-            }   )
-        }   
+
+            })
+        }
     },
     {
         accessorKey: 'concepto',
@@ -753,7 +757,7 @@ onMounted(() => {
 watch(() => tab.value, async (newVal) => {
     if (newVal && newVal !== '') {
         try {
-                if (newVal === 'general') {
+            if (newVal === 'general') {
                 navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=general`)
                 await getClientes(Number(id))
             } else if (newVal === 'variacion') {
