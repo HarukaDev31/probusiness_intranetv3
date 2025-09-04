@@ -13,6 +13,13 @@ export const STATUS_BG_CLASSES = {
     C:'bg-yellow-500',
     
 } as const
+export const STATUS_BG_PAGOS_CLASSES = {
+    PENDIENTE: 'bg-gray-500',
+    ADELANTO: 'bg-yellow-500',
+    PAGADO: 'bg-green-500',
+    SOBREPAGO: 'bg-red-500',
+    
+} as const
 
 export const CUSTOMIZED_ICONS = {
     EXCEL: `<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="32" viewBox="0 0 48 48">

@@ -55,6 +55,7 @@ import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import type { TableColumn } from '@nuxt/ui'
 import PagoGrid from '~/components/PagoGrid.vue'
+import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId } = useUserRole()
@@ -117,8 +118,19 @@ const columnsPagos = ref<TableColumn<any>[]>([
         accessorKey: 'estado',
         header: 'Estado',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('estado')
-        }
+            return h(USelect as any, {
+                modelValue: row.original.estado_pago,
+                disabled:true,
+                items: [
+                    { label: 'PENDIENTE', value: 'PENDIENTE' },
+                    { label: 'PAGADO', value: 'PAGADO' },
+                    { label: 'ADELANTO', value: 'ADELANTO' },
+                    { label: 'SOBREPAGO', value: 'SOBREPAGO' },
+                ],
+                class: STATUS_BG_PAGOS_CLASSES[row.original.estado_pago as keyof typeof STATUS_BG_PAGOS_CLASSES],
+                
+            }   )
+        }   
     },
     {
         accessorKey: 'concepto',
@@ -662,13 +674,7 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         }
     }
 ])
-watch(tab, (newVal, oldVal) => {
-    if (newVal === null) {
-        handleTabChange('general')
-    } else {
-        handleTabChange(newVal)
-    }
-})
+
 const handleUpdateEstadoCliente = async (data: any) => {
     try {
         await withSpinner(async () => {
@@ -744,5 +750,23 @@ onMounted(() => {
     }
     handleTabChange(tab.value)
 })
-
+watch(() => tab.value, async (newVal) => {
+    if (newVal && newVal !== '') {
+        try {
+                if (newVal === 'general') {
+                navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=general`)
+                await getClientes(Number(id))
+            } else if (newVal === 'variacion') {
+                navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=variacion`)
+                await getClientesVariacion(Number(id))
+            } else if (newVal === 'pagos') {
+                navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=pagos`)
+                await getClientesPagos(Number(id))
+            }
+            //implements getHeaders
+        } catch (error) {
+            console.error('Error en carga inicial:', error)
+        }
+    }
+}, { immediate: true })
 </script>

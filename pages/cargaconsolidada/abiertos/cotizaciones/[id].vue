@@ -6,9 +6,12 @@
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
             :filter-config="filterConfigProspectos" :show-export="true"
             empty-state-message="No se encontraron registros de prospectos."
-            :previous-page-url="`/cargaconsolidada/abiertos`" @update:primary-search="handleSearchProspectos"
+            @update:primary-search="handleSearchProspectos"
             @page-change="handlePageChangeProspectos" @items-per-page-change="handleItemsPerPageChangeProspectos"
-            @filter-change="handleFilterChangeProspectos" :hide-back-button="false" :show-body-top="true">
+            @filter-change="handleFilterChangeProspectos" :hide-back-button="false"
+            :previous-page-url="(currentRole !== ROLES.COORDINACION || currentId !== ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+            :show-body-top="true"
+            >
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
