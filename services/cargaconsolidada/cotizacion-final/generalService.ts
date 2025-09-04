@@ -4,9 +4,18 @@ import { BaseService } from "~/services/base/BaseService"
 export class GeneralService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor/cotizacion-final/general'
 
-    static async getGeneral(id: number): Promise<GeneralResponse> {
+    static async getGeneral(id: number, params: any): Promise<GeneralResponse> {
         try {
-            const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/${id}`)
+            const queryParams = new URLSearchParams()
+            if (params.page) queryParams.append('page', params.page.toString())
+            if (params.per_page) queryParams.append('per_page', params.per_page.toString())
+            if (params.search) queryParams.append('search', params.search)
+            if (params.filters) {
+                Object.entries(params.filters).forEach(([key, value]) => {
+                    if (value) queryParams.append(key, value.toString())
+                })
+            }
+            const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/${id}?${queryParams.toString()}`)
             return response
         } catch (error) {
             console.error('Error al obtener la cotización final:', error)
@@ -25,7 +34,7 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
-    static async uploadPlantillaFinal( data: any): Promise<GeneralResponse> {
+    static async uploadPlantillaFinal(data: any): Promise<GeneralResponse> {
         try {
             const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/upload-plantilla-final`, {
                 method: 'POST',

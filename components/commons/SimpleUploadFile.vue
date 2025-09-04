@@ -5,15 +5,18 @@
         </template>
         <template #body>
             <div class="p-6 space-y-6">
-
-
                 <div class="space-y-4">
 
-
-                    <!-- Uploader -->
                     <div>
+                        <div v-if="props.withNameField">
+                            <UInput v-model="name" placeholder="Nombre del documento"  class="mb-2 w-full"/>
+                        </div>
                         <FileUploader ref="fileUploaderRef" :multiple="false" @file-added="handleFileAdded"
-                            @file-removed="handleFileRemoved" />
+                            @file-removed="handleFileRemoved" 
+                            :show-save-button="false"
+                            :show-remove-button="false"
+                            />
+                        
                     </div>
                 </div>
             </div>
@@ -40,15 +43,16 @@ import FileUploader from '~/components/commons/FileUploader.vue'
 
 const emit = defineEmits<{
     (e: 'close'): void
-    (e: 'save', data: { file: File }): void
+    (e: 'save', data: { file: File, name?: string | null }): void
 }>()
 
 const props = defineProps<{
     title: string
+    withNameField?: boolean
 }>()
 const selectedFile = ref<File | null>(null)
 const fileUploaderRef = ref<InstanceType<typeof FileUploader> | null>(null)
-
+const name = ref<string>('')
 // Validación
 const isValid = computed(() => {
     return selectedFile.value !== null
@@ -66,9 +70,14 @@ const handleFileRemoved = () => {
 const handleSave = () => {
     if (!isValid.value || !selectedFile.value) return
 
-    emit('save', {
-        file: selectedFile.value
-    })
+    if (props.withNameField) {
+        emit('save', {
+            file: selectedFile.value,
+            name: name.value
+        })
+    } else {
+        emit('save', { file: selectedFile.value })
+    }
     emit('close')
 }
 </script>

@@ -65,6 +65,7 @@ export interface ProveedorVariacion {
   volumen_doc: number
   packing_list: string | null
   code_supplier: string
+  files: string | null
   factura_comercial: string | null
   excel_confirmacion: string | null
   files_almacen_documentacion: string | null
@@ -76,7 +77,7 @@ export interface ArchivoVariacion {
   file_ext: string
   file_url: string
   file_name: string
-  folder_name: string
+  folder_name?: string
   id_proveedor: number
 }
 

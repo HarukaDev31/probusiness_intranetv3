@@ -245,7 +245,7 @@ const columns: TableColumn<any>[] = [
                 h(UButton, {
                     size: 'xs',
                     icon: 'i-heroicons-eye',
-                    color: 'primary',
+                    color: 'info',
                     variant: 'ghost',
                     onClick: () => handleViewSteps(row.original.id)
                 })
@@ -305,7 +305,7 @@ const documentacionColumns: TableColumn<any>[] = [
                 h(UButton, {
                     size: 'xs',
                     icon: 'i-heroicons-eye',
-                    color: 'primary',
+                    color: 'info',
                     variant: 'ghost',
                     onClick: () => handleViewSteps(row.original.id)
                 })

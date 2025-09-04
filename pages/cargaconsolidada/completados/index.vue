@@ -1,7 +1,7 @@
 <template>
-    <div class="p-6">
+    <div class="">
         <!-- Navegación superior -->
-        <div class="flex items-center space-x-6 mb-6">
+        <div class="flex items-center space-x-6 ">
             <div class="flex items-center space-x-4">
                 <div class="flex items-center space-x-2">
                     <div class="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -15,7 +15,11 @@
         </div>
 
 
+<<<<<<< HEAD
         <DataTable title="Contenedores" icon="i-heroicons-book-open" :data="consolidadoData" :columns="getColumns()" :loading="loading"
+=======
+        <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData" :columns="getColumns()" :loading="loading"
+>>>>>>> master
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
@@ -23,7 +27,8 @@
             })()" :show-export="true" empty-state-message="No se encontraron registros de contenedores."
             @update:search-query="handleSearch" @update:primary-search="handleSearch" @page-change="handlePageChange"
             @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
-            @filter-change="handleFilterChange">
+            @filter-change="handleFilterChange"
+            :hide-back-button="true">
             <template #actions>
                 <template v-if="!isAlmacen">
                     <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
@@ -34,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, h, resolveComponent, onMounted, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
@@ -42,13 +48,12 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 const { withSpinner } = useSpinner()
-const { hasRole, isCoordinacion,currentRole } = useUserRole()
+const { hasRole, isCoordinacion, currentRole, currentId } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
 import CreateConsolidadoModal from '~/components/cargaconsolidada/CreateConsolidadoModal.vue'
-import TextModal  from '~/components/commons/TextModal.vue'
-
+import { USelect } from '#components'
 const { showSuccess, showConfirmation } = useModal()
-
+import { STATUS_BG_CLASSES } from '~/constants/ui'
 const {
     consolidadoData,
     loading,
@@ -70,12 +75,12 @@ const {
 } = useConsolidado()
 const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
-const textModal = overlay.create(TextModal)
 const currentConsolidado = ref<number | null>(null)
 
 // Components
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
+
 // Configuración de filtros según el rol
 const filterConfig = computed<FilterConfig[]>(() => {
     const baseConfig: FilterConfig[] = [
@@ -190,10 +195,17 @@ const columns: TableColumn<any>[] = [
         cell: ({ row }) => {
             const estado = row.getValue('estado_china') as string
             const color = getColorByEstado(estado)
-            return h(UBadge, {
-                color,
+            return h(USelect as any, {
+                modelValue: estado,
                 variant: 'subtle',
-                label: getEstadoLabel(estado)
+                color: color,
+                disabled: true,
+                class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES],
+                items: [
+                    { label: 'PENDIENTE', value: 'PENDIENTE' },
+                    { label: 'RECIBIENDO', value: 'RECIBIENDO' },
+                    { label: 'COMPLETADO', value: 'COMPLETADO' }
+                ]
             })
         }
     },
@@ -206,7 +218,7 @@ const columns: TableColumn<any>[] = [
                 h(UButton, {
                     size: 'xs',
                     icon: 'i-heroicons-eye',
-                    color: 'primary',
+                    color: 'info',
                     variant: 'ghost',
                     onClick: () => handleViewSteps(row.original.id)
                 }),
@@ -237,7 +249,7 @@ const columns: TableColumn<any>[] = [
                 h(UButton, {
                     size: 'xs',
                     icon: 'i-heroicons-eye',
-                    color: 'primary',
+                    color: 'info',
                     variant: 'ghost',
                     onClick: () => handleViewSteps(row.original.id)
                 })
@@ -245,127 +257,68 @@ const columns: TableColumn<any>[] = [
         }
     }
 ]
-/*Mes	Empresa	Carga	T. Ctn	Canal	F. Cierre	F. Arribo	F. Declaración	F. Levante	Días de levante	N. Dua	Ajuste	Multa	FOB	Flete	C. Destino	Acciones
-*/
+//documentacion columns Carga	Mes	Pais	F. Cierre	Empresa	Estado	Accione
 const documentacionColumns: TableColumn<any>[] = [
-    {
-        accessorKey: 'mes',
-        header: 'Mes',
-        cell: ({ row }) => row.getValue('mes')
-    },
-    {
-        accessorKey: 'empresa',
-        header: 'Empresa',
-        cell: ({ row }) => row.getValue('empresa')
-    },
     {
         accessorKey: 'carga',
         header: 'Carga',
         cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}`
     },
     {
-        accessorKey: 'tipo_contenedor',
-        header: 'T. Ctn',
-        cell: ({ row }) => row.getValue('tipo_contenedor')
+        accessorKey: 'mes',
+        header: 'Mes',
+        cell: ({ row }) => row.getValue('mes')
     },
+
     {
-        accessorKey: 'canal_control',
-        header: 'Canal',
-        cell: ({ row }) => {
-            const canal = row.getValue('canal_control')
-            return h(UBadge, {
-                color: canal === 'Verde' ? 'success' : canal === 'Naranja' ? 'warning' : 'error',
-                variant: 'subtle',
-                label: canal
-            })
-        }
+        accessorKey: 'pais',
+        header: 'País',
+        cell: ({ row }) => row.original.pais?.No_Pais || 'N/A'
     },
+
     {
         accessorKey: 'f_cierre',
         header: 'F. Cierre',
         cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre'))
     },
+
     {
-        accessorKey: 'fecha_arribo',
-        header: 'F. Arribo',
-        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_arribo'))
+        accessorKey: 'empresa',
+        header: 'Empresa',
+        cell: ({ row }) => row.getValue('empresa')
+    },
+
+    {
+        accessorKey: 'estado',
+        header: 'Estado',
+        cell: ({ row }) => {
+            const estado = row.original.estado_documentacion as string
+            const color = getColorByEstado(estado)
+            return h(UBadge, {
+                color,
+                variant: 'subtle',
+                label: getEstadoLabel(estado)
+            })
+        }
     },
     {
-        accessorKey: 'fecha_declaracion',
-        header: 'F. Declaración',
-        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_declaracion'))
-    },
-    {
-        accessorKey: 'fecha_levante',
-        header: 'F. Levante',
-        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_levante'))
-    },
-    {
-        accessorKey: 'dias_levante',
-        header: 'Días de levante',
-        cell: ({ row }) => 0   
-    },
-    {
-        accessorKey: 'numero_dua',
-        header: 'N. Dua',
-        cell: ({ row }) => row.getValue('numero_dua')
-    },
-    {
-        accessorKey: 'ajuste_valor',
-        header: 'Ajuste',
-        cell: ({ row }) => row.getValue('ajuste_valor')
-    },
-    {
-        accessorKey: 'multa',
-        header: 'Multa',
-        cell: ({ row }) => row.getValue('multa')
-    },
-    {
-        accessorKey: 'valor_fob',
-        header: 'FOB',
-        cell: ({ row }) => row.getValue('valor_fob')
-    },
-    {
-        accessorKey: 'valor_flete',
-        header: 'Flete',
-        cell: ({ row }) => row.getValue('valor_flete')
-    },
-    {
-        accessorKey: 'costo_destino',
-        header: 'C. Destino',
-        cell: ({ row }) => row.getValue('costo_destino')
-    },
-    {
-        accessorKey: 'acciones',
+        accessorKey: 'actions',
         header: 'Acciones',
         cell: ({ row }) => {
             return h('div', { class: 'flex space-x-2' }, [
                 h(UButton, {
                     size: 'xs',
                     icon: 'i-heroicons-eye',
-                    color: 'primary',
+                    color: 'info',
                     variant: 'ghost',
                     onClick: () => handleViewSteps(row.original.id)
-                }),
-                row.original.observaciones ?
-                h(UButton, {
-                    size: 'xs',
-                    //icon  mail
-                    icon: 'i-heroicons-envelope',
-                    color: 'primary',
-                    variant: 'ghost',
-                    onClick: () => {
-                        textModal.open({
-                            content: row.original.observaciones,
-                            title: 'Observaciones'
-                        })
-                    }
-                }) : null
+                })
             ])
         }
     }
-    
+
 ]
+<<<<<<< HEAD
 /**
  * Columnas para almacen
  */
@@ -427,6 +380,10 @@ const almacenColumns: TableColumn<any>[] = [
 
 const getColumns = ()=>{
     switch(currentRole.value){
+=======
+const getColumns = () => {
+    switch (currentRole.value) {
+>>>>>>> master
         case ROLES.DOCUMENTACION:
             return documentacionColumns
         case ROLES.CONTENEDOR_ALMACEN:
@@ -478,12 +435,14 @@ const getColorByEstado = (estado: string) => {
 
     return 'neutral'
 }
-
+const IDGINO = 28791
 const handleViewSteps = (id: number) => {
     if (hasRole('ContenedorAlmacen')) {
-        navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}`)
+        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=embarque`)
+    } else if (currentId.value !== IDGINO && currentRole.value === ROLES.COTIZADOR) {
+        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`)
     } else {
-        navigateTo(`/cargaconsolidada/completados/pasos/${id}`)
+        navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
     }
 }
 
@@ -493,9 +452,9 @@ const handleEditCarga = (id: number) => {
 
 const handleDeleteCarga = async (id: number) => {
     try {
-        showConfirmation('¿Estás seguro de querer eliminar esta carga consolidada?', 'Esta acción no se puede deshacer.',async () => {
+        showConfirmation('¿Estás seguro de querer eliminar esta carga consolidada?', 'Esta acción no se puede deshacer.', async () => {
             await withSpinner(async () => {
-                const response=await deleteConsolidado(id)
+                const response = await deleteConsolidado(id)
                 if (response.success) {
                     showSuccess('Carga consolidada eliminada correctamente', 'La carga consolidada se ha eliminado correctamente.')
                 }

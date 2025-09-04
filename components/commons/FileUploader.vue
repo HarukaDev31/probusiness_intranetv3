@@ -31,7 +31,7 @@
             <div v-for="(file, index) in selectedFiles" :key="getFileKey(file, index)"
                 class="flex items-center justify-between p-3 rounded-lg border border-gray-200">
                 <div class="flex items-center gap-3">
-                    <UIcon name="i-heroicons-document" class="text-xl text-green-600" />
+                    <FileIcon :file="file" class="w-8 h-8" @click="openFile(file as File)" />
                     <div>
                         <p class="text-sm font-medium">{{ file.name }}</p>
                         <p class="text-xs text-gray-500">{{ formatFileSize(file.size) }}</p>
@@ -219,7 +219,11 @@ const getFileKey = (file: File, index: number): string => {
     return `file-${file.name}-${file.size}-${index}`
 }
 
+<<<<<<< HEAD
 const openFile = (file: FileItem) => {
+=======
+const openFile = (file: FileItem|File) => {
+>>>>>>> master
     modalPreview.open({
         file: file,
         isOpen: true

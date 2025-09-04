@@ -2,7 +2,7 @@
   <div class="p-6">
     <!-- Header -->
     <PageHeader title="Detalles del Cliente" subtitle="Información completa del cliente" icon="i-heroicons-user"
-      :loading="loading" @back="navigateBack" />
+      :loading="loading" @back="navigateBack" :hideBackButton="false" />
 
     <!-- Loading state -->
     <div v-if="loading" class="space-y-6">

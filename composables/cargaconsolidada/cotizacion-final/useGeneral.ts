@@ -15,11 +15,11 @@ export const useGeneral = () => {
         to: 0
     })
     const searchGeneral = ref('')
-    const itemsPerPageGeneral = ref(10)
+    const itemsPerPageGeneral = ref(100)
     const totalPagesGeneral = computed(() => Math.ceil(paginationGeneral.value.total / itemsPerPageGeneral.value))
     const totalRecordsGeneral = computed(() => paginationGeneral.value.total)
     const currentPageGeneral = computed(() => paginationGeneral.value.current_page)
-    const filtersGeneral = ref<any>({})
+    const filtersGeneral = ref<any>()
     const filterConfigGeneral = ref<any>([
 
         {
@@ -39,7 +39,13 @@ export const useGeneral = () => {
     const getGeneral = async (id: number) => {
         try {
             loadingGeneral.value = true
-            const response = await GeneralService.getGeneral(id)
+            const params = {
+                page: filtersGeneral.value.page,
+                per_page: itemsPerPageGeneral.value,
+                search: searchGeneral.value,
+                filters: filtersGeneral.value
+            }   
+            const response = await GeneralService.getGeneral(id,params)
             general.value = response.data
             paginationGeneral.value = response.pagination
         } catch (err) {

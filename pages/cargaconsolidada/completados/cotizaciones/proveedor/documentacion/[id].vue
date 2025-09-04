@@ -1,10 +1,12 @@
 <template>
     <div class="p-6">
         <!-- Header con botones de navegación -->
-        <PageHeader title="Documentación" subtitle="Gestión de documentos e inspección"
-            icon="i-heroicons-document-text" :show-back-button="true" @back="navigateBack">
+        <PageHeader title="" subtitle="" 
+            icon="" :hide-back-button="false" @back="navigateBack">
             <template #actions>
-                <UButton label="Guardar" icon="i-heroicons-save" color="warning" @click="saveAll" :loading="saving" />
+                <UButton
+                v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
+                label="Guardar" icon="i-heroicons-save" color="primary" @click="saveAll" :loading="saving" />
             </template>
         </PageHeader>
 
@@ -18,7 +20,9 @@
             <div class="xl:col-span-4">
                 <DocumentacionSection :disabled="currentRole !== ROLES.CONTENEDOR_ALMACEN" :loading="loadingDocumentacion" :files="documentosChina"
                     :selected-files="selectedDocumentacionFiles" @files-selected="handleDocumentacionFiles" :disabled-delete="currentRole !== ROLES.CONTENEDOR_ALMACEN"
-                    @download-file="downloadFile" @delete-file="deleteFileDocumentacion" />
+                    @download-file="downloadFile" @delete-file="deleteFileDocumentacion" 
+                    :show-remove-button="currentRole === ROLES.CONTENEDOR_ALMACEN"
+                    />
             </div>
 
             <!-- Sección de Inspección -->
@@ -26,7 +30,9 @@
                 <InspeccionSection :disabled="currentRole !== ROLES.CONTENEDOR_ALMACEN" :loading="loadingInspeccion" :files="inspeccionChina"
                     :selected-files="selectedInspeccionFiles" @files-selected="handleInspeccionFiles" :disabled-delete="currentRole !== ROLES.CONTENEDOR_ALMACEN"
                     @download-file="downloadFile" @delete-file="deleteFileInspeccion"
-                    @file-removed="deleteFileInspeccion" />
+                    @file-removed="deleteFileInspeccion"
+                    :show-remove-button="currentRole === ROLES.CONTENEDOR_ALMACEN"
+                    />
             </div>
 
             <!-- Sección de Notas -->

@@ -71,7 +71,7 @@ const pasosMap = {
   'COTIZACION': `/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`,
   'CLIENTES': `/cargaconsolidada/abiertos/clientes/${id}`,
   'DOCUMENTACION': `/cargaconsolidada/abiertos/documentacion/${id}`,
-  'COTIZACION FINAL': `/cargaconsolidada/abiertos/cotizacion-final/${id}`,
+  'COTIZACION FINAL': `/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`,
   'FACTURA Y GUIA': `/cargaconsolidada/abiertos/factura-guia/${id}`,
   'ADUANA': `/cargaconsolidada/abiertos/aduana/${id}`
 }
