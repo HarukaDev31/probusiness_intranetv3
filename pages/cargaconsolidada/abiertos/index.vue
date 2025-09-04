@@ -26,7 +26,9 @@
             @filter-change="handleFilterChange"
             :hide-back-button="true">
             <template #actions>
-                <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
+                <template v-if="!isAlmacen">
+                    <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
+                </template>
             </template>
         </DataTable>
     </div>

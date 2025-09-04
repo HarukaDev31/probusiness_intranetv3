@@ -8,7 +8,7 @@ export default defineAppConfig({
           list: 'relative flex p-1 group',
           indicator: 'absolute transition-[translate,width] duration-200',
           trigger: [
-            'group relative inline-flex items-center min-w-0 data-[state=inactive]:text-muted hover:data-[state=inactive]:not-disabled:text-default font-medium rounded-md disabled:cursor-not-allowed disabled:opacity-75',
+            'group relative inline-flex items-center min-w-0 data-[state=inactive]:text-muted data-[state=inactive]:border-2 data-[state=inactive]:border-gray-300 dark:data-[state=inactive]:border-gray-700 hover:data-[state=inactive]:not-disabled:text-default font-medium rounded-md disabled:cursor-not-allowed disabled:opacity-75',
             'transition-colors'
           ],
           leadingIcon: 'shrink-0',
@@ -17,7 +17,7 @@ export default defineAppConfig({
           label: 'truncate',
           trailingBadge: 'shrink-0',
           trailingBadgeSize: 'sm',
-          content: 'focus:outline-none w-full ',
+          content: 'focus:outline w-full ',
         },
         variants: {
           color: {
@@ -31,7 +31,7 @@ export default defineAppConfig({
           },
           variant: {
             pill: {
-              list: 'bg-elevated rounded-lg',
+              list: 'bg-transparent rounded-lg',
               trigger: 'grow',
               indicator: 'rounded-md shadow-xs'
             },
@@ -124,8 +124,16 @@ export default defineAppConfig({
             color: 'neutral',
             variant: 'pill',
             class: {
-              indicator: 'bg-inverted',
-              trigger: 'data-[state=active]:text-inverted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-inverted'
+              indicator: 'bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-300 py-0',
+              trigger: 'data-[state=active]:text-gray-600 focus-visible:outline-2 hover:dark:text-gray-300 focus-visible:outline-offset-2 focus-visible:outline-inverted py-0'
+            }
+          },
+          {
+            color: 'transparent',
+            variant: 'pill',
+            class: {
+              indicator: 'bg-transparent',
+              trigger: 'data-[state=active]:text-highlighted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighted'
             }
           },
           {
