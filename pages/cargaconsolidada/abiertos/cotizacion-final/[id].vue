@@ -3,11 +3,7 @@
     <!-- Header Section -->
     <PageHeader title="" subtitle="Gestión de cotizaciones" icon="" :hide-back-button="false"
       @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
-    <!-- add 3 buttons 
- Subir Factura
- Plantilla General
- Plantilla Final
--->
+
     <div class="flex justify-end gap-3 mb-4">
       <UButton label="Subir Factura" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
         @click="handleUploadFactura" />
@@ -22,7 +18,7 @@
       :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigGeneral" :show-export="true"
       empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
-      @filter-change="handleFilterChangeGeneral" :show-body-top="true">
+       :show-body-top="true">
       <template #body-top>
         <UTabs v-model="activeTab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
 
@@ -59,7 +55,7 @@ import PagoGrid from '~/components/PagoGrid.vue'
 import type { TableColumn } from '@nuxt/ui'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
-const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral } = useGeneral()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral,handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 
 const route = useRoute()
@@ -290,6 +286,7 @@ watch(activeTab, async (newVal, oldVal) => {
     return
   }
   if (newVal === 'general') {
+    console.log('general')
     navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`)
     await getGeneral(Number(id))
   }
@@ -306,7 +303,7 @@ onMounted(async () => {
   } else {
     activeTab.value = tabs[0].value
   }
-  await getGeneral(Number(id))
+  
 })
 </script>
 
