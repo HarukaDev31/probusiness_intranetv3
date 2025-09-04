@@ -14,6 +14,8 @@ export const useGeneral = () => {
         from: 0,
         to: 0
     })
+    const route = useRoute()
+    const id = route.params.id as number
     const searchGeneral = ref('')
     const itemsPerPageGeneral = ref(100)
     const totalPagesGeneral = computed(() => Math.ceil(paginationGeneral.value.total / itemsPerPageGeneral.value))
@@ -40,19 +42,26 @@ export const useGeneral = () => {
         try {
             loadingGeneral.value = true
             const params = {
-                page: filtersGeneral.value.page,
+                page: currentPageGeneral.value,
                 per_page: itemsPerPageGeneral.value,
                 search: searchGeneral.value,
                 filters: filtersGeneral.value
             }   
+            console.log('Params:', params)
             const response = await GeneralService.getGeneral(id,params)
             general.value = response.data
             paginationGeneral.value = response.pagination
         } catch (err) {
             error.value = err as string
+            console.log('Error al obtener general:', err)
         } finally {
             loadingGeneral.value = false
         }
+    }
+    const handleSearchGeneral = async (search: string) => {
+        searchGeneral.value = search
+        await getGeneral(id)
+       
     }
     const updateEstadoCotizacionFinal = async (idCotizacion: number, estado: string) => {
         try {
@@ -95,6 +104,14 @@ export const useGeneral = () => {
             error.value = err as string
         }
     }
+    const handlePageChangeGeneral = async (page: number) => {
+        filtersGeneral.value.page = page
+        await getGeneral(id)
+    }
+    const handleItemsPerPageChangeGeneral = async (itemsPerPage: number) => {
+        itemsPerPageGeneral.value = itemsPerPage
+        await getGeneral(id)
+    }
     return {
         general,
         loadingGeneral,
@@ -111,6 +128,9 @@ export const useGeneral = () => {
         updateEstadoCotizacionFinal,
         uploadFacturaComercial,
         uploadPlantillaFinal,
-        downloadPlantillaGeneral    
+        handleSearchGeneral,
+        downloadPlantillaGeneral,
+        handlePageChangeGeneral,
+        handleItemsPerPageChangeGeneral
     }
 }   
