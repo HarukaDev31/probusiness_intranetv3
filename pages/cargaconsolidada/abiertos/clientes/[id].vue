@@ -125,7 +125,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             return h(USelect as any, {
                 modelValue: row.original.estado_pago,
-                disabled: true,
+                disabled:true,
                 items: [
                     { label: 'PENDIENTE', value: 'PENDIENTE' },
                     { label: 'PAGADO', value: 'PAGADO' },
