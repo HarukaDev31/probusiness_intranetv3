@@ -204,4 +204,17 @@ export class VariacionService extends BaseService {
             throw error
         }
     }
+    static async createProveedorDocumentacion(data: FormData) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/documentacion/proveedor/${data.get('id_proveedor')}/create`, {
+                method: 'POST',
+                body: data
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error al crear documento:', error)
+            throw error
+        }
+    }
 }

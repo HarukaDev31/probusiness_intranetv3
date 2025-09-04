@@ -14,7 +14,8 @@
             :on-new-button-click="goToArchivos"
             @update:search-query="handleSearch" @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
-            @filter-change="handleFilterChange">
+            @filter-change="handleFilterChange"
+            >
             
 
             <template #error-state>

@@ -1,8 +1,6 @@
 export default defineAppConfig({
     ui: {
       tabs: {
-        //add borders to items
-      
         slots: {
           root: 'flex items-center gap-2',
           list: 'relative flex p-1 group',
