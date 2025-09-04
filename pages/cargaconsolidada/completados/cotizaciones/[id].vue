@@ -645,7 +645,6 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
 
 
             ]
-            console.log(proveedores)
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
