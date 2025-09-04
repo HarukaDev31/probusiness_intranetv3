@@ -373,8 +373,8 @@ const almacenColumns: TableColumn<any>[] = [
     }
 ]
 
-const getColumns = () => {
-    switch (currentRole.value) {
+const getColumns = ()=>{
+    switch(currentRole.value){
         case ROLES.DOCUMENTACION:
             return documentacionColumns
         case ROLES.CONTENEDOR_ALMACEN:

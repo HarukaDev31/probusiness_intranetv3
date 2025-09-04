@@ -30,7 +30,7 @@
             :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChange" :show-body-top="true" :previous-page-url="`/cargaconsolidada/abiertos`"
+            @filter-change="handleFilterChange" :show-body-top="true" :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -41,8 +41,8 @@
                 </div>
             </template>
             <template #actions>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" 
-                    label="Crear Prospecto" @click="handleAddProspecto" class="py-3" />
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
+                    @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
@@ -52,18 +52,18 @@
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
-            :previous-page-url="`/cargaconsolidada/abiertos`">
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill" class="mb-4 w-60"
-                        v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
+                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" 
-                    label="Crear Prospecto" @click="handleAddProspecto" class="py-3" />
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
+                    @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
     </div>
@@ -98,7 +98,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 
 const tab = ref('')
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
-const { currentRole } = useUserRole()
+const { currentRole,currentId} = useUserRole()
 const tabs = ref([
 
 

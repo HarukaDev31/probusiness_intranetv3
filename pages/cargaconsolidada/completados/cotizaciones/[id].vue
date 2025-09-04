@@ -1,16 +1,14 @@
 <template>
-    <div class="p-6">
-        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" v-if="tabs.length > 1" />
-
-        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()" :hide-back-button="false"
-            :headers="headersCotizaciones" :show-headers="true" :loading="loadingCotizaciones"
-            :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
+    <div class="py-6 ">
+        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
+            :loading="loadingCotizaciones" :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
             :total-records="totalRecordsCotizaciones" :items-per-page="itemsPerPageCotizaciones"
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
             :filter-config="filterConfigProspectos" :show-export="true"
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
+            :hide-back-button="false"
             :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
             :show-body-top="true">
             <template #body-top>
@@ -33,7 +31,7 @@
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
-            >
+            :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
@@ -452,7 +450,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 placeholder: 'Seleccionar estado',
                 modelValue: estado,
                 color: color,
-                class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES] || '',
+                class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES],
                 'onUpdate:modelValue': (value: any) => {
                     if (value && value !== estado) {
                         handleUpdateEstadoCotizacion(row.original.id, value)
@@ -577,7 +575,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
-                         class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
+                        class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
@@ -645,6 +643,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
 
 
             ]
+            console.log(proveedores)
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
@@ -1162,12 +1161,13 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         variant: 'ghost',
                         size: 'xs',
                         onClick: () => {
-                            navigateTo(`/cargaconsolidada/completados/cotizaciones/proveedor/documentacion/${proveedor.id}`)
+                            navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion/${proveedor.id}`)
                         }
                     }),
                     h(UButton, {
                         icon: 'i-heroicons-document-arrow-down',
                         variant: 'ghost',
+                        color: 'neutral',
                         size: 'xs',
                         onClick: () => {
                             updateProveedorData(proveedor)

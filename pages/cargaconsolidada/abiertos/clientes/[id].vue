@@ -41,7 +41,9 @@
                 :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfigVariacion" :show-export="true" :hide-back-button="false"
-                :show-body-top="true" empty-state-message="No se encontraron registros de clientes."
+                :show-body-top="true"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
@@ -125,7 +127,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             return h(USelect as any, {
                 modelValue: row.original.estado_pago,
-                disabled:true,
+                disabled: true,
                 items: [
                     { label: 'PENDIENTE', value: 'PENDIENTE' },
                     { label: 'PAGADO', value: 'PAGADO' },
