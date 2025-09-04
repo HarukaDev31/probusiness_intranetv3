@@ -54,16 +54,21 @@
             <div v-for="file in initialFiles" :key="file.id" 
                 class="flex items-center justify-between p-3 border border-gray-200 rounded-lg transition-colors">
                 <div class="flex items-center gap-3">
-                    <FileIcon :file="file" class="w-8 h-8" />
+                    <FileIcon :file="file" class="w-8 h-8" 
+                    @click="openFile(file)"
+                    />
                     <div>
                         <p class="text-sm font-medium" style="word-break: break-all;">{{ file.file_name }}</p>
                         <p class="text-xs">{{ formatFileSize(file.size || 0) }}</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <UButton color="primary" variant="ghost" class="p-2" @click="downloadFileExisting(file.file_url)"
-                        title="Descargar archivo">
-                        <UIcon name="i-heroicons-arrow-down-tray" />
+                    <UButton variant="ghost" class="p-2" @click="downloadFileExisting(file.file_url)"
+                        title="Descargar archivo" color="secondary">
+                       
+                        <UIcon name="i-heroicons-arrow-down-tray"  
+                   
+                        />
                     </UButton>
                     <UButton v-if="showRemoveButton" color="error" variant="ghost" class="p-2" @click="removeFile(file.id)"
                         title="Eliminar archivo">
@@ -81,7 +86,10 @@ import { UIcon } from '#components'
 import type { FileItem } from '@/types/commons/file'
 import FileIcon from './FileIcon.vue'
 import { useSpinner } from '@/composables/commons/useSpinner'
-
+import { useOverlay } from '#imports'
+import ModalPreview from './ModalPreview.vue'
+const overlay = useOverlay()
+const modalPreview = overlay.create(ModalPreview)
 interface Props {
     multiple?: boolean
     maxFileSize?: number
@@ -209,6 +217,13 @@ const isValidFileType = (file: File): boolean => {
 
 const getFileKey = (file: File, index: number): string => {
     return `file-${file.name}-${file.size}-${index}`
+}
+
+const openFile = (file: FileItem) => {
+    modalPreview.open({
+        file: file,
+        isOpen: true
+    })
 }
 
 const downloadFileExisting = async (file_url: string | null) => {

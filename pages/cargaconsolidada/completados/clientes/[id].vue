@@ -2,7 +2,7 @@
     <template>
         <div class="p-6">
             <PageHeader title="Clientes" subtitle="Gestión de clientes" icon="i-heroicons-user"
-                :hide-back-button="true" />
+                :hide-back-button="false" />
             <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"

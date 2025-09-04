@@ -10,12 +10,12 @@
       </div>
     </template>
 
-          <div class="h-64">
+          <div class="h-64 w-full">
         <UTextarea
           :disabled="disabled"
           :model-value="modelValue"
           placeholder="Escribe tus notas aquí..."
-          class="h-full resize-none"
+          class="h-full resize-none w-full"
           :rows="10"
           @input="$emit('update:modelValue', $event.target.value)"
         />
