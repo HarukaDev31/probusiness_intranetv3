@@ -57,6 +57,7 @@ export interface CursosResponse {
   success: boolean
   data: CursoItem[]
   pagination: PaginationInfo
+  campanas_disponibles: { id: number; nombre: string }[]
 }
 
 export interface CursosDetalleResponse {

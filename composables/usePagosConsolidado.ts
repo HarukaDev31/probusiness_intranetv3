@@ -4,6 +4,7 @@ import type { ConsolidadoItem, ConsolidadoFilters, PaginationInfo, PagoDetalleRe
 
 export const useConsolidado = () => {
   // State
+  const cargasDisponibles = ref<{ value: string; label: string }[]>([])
   const consolidadoData = ref<ConsolidadoItem[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -12,9 +13,11 @@ export const useConsolidado = () => {
     last_page: 1,
     per_page: 10,
     total: 0,
-    from: 1,
-    to: 10
+    from: 0,
+    to: 0
   })
+  const search = ref('')
+  const itemsPerPage = ref(10)
   const filters = ref<ConsolidadoFilters>({
     fecha_inicio: '',
     fecha_fin: '',
@@ -68,15 +71,45 @@ export const useConsolidado = () => {
     error.value = null
 
     try {
+      // Normalize filters: allow UI to send 'cargas' (plural) and map it to 'carga'
+      const effectiveFilters: any = { ...(customFilters || filters.value) }
+
+      // If the UI uses 'cargas' key, normalize to 'carga'
+      if (effectiveFilters.cargas !== undefined) {
+        const val = effectiveFilters.cargas
+        if (val === 'todos' || val === '' || val == null) {
+          delete effectiveFilters.carga
+        } else {
+          effectiveFilters.carga = val
+        }
+        delete effectiveFilters.cargas
+      }
+
+      if (effectiveFilters.carga === 'todos' || effectiveFilters.carga === '0') {
+        delete effectiveFilters.carga
+      }
+
+      if (effectiveFilters.estado === 'todos' || effectiveFilters.estado === '0') {
+        delete effectiveFilters.estado
+      }
+
+      // attach pagination params expected by service
       const filtersWithPagination = {
-        ...(customFilters || filters.value),
+        ...effectiveFilters,
         page,
         per_page: perPage
       }
-      
+
       const response = await ConsolidadoService.getConsolidadoPagos(filtersWithPagination)
       consolidadoData.value = response.data
       pagination.value = response.pagination
+
+      // Populate cargasDisponibles from response when available (fallback to response.filters.cargas)
+      const apiCargas = (response as any)?.cargas_disponibles ?? (response as any)?.filters?.cargas ?? []
+      cargasDisponibles.value = [
+        { value: 'todos', label: 'Todas las cargas' },
+        ...apiCargas.map((c: any) => ({ value: String(c.carga ?? c.value ?? c.ID), label: `#${String(c.carga ?? c.value ?? c.ID)}` }))
+      ]
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Error desconocido'
       console.error('Error fetching consolidado data:', err)
@@ -94,10 +127,30 @@ export const useConsolidado = () => {
       if (item) {
         item.estado_pago = estado
       }
-      
+
+      //Actualizar el estado y mandar a la api
+      await ConsolidadoService.updateEstadoPago(id, estado)
+
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Error al actualizar estado'
+      return { success: false, error: error.value }
+    }
+  }
+
+  const updateNota = async (id: number, nota: string) => {
+    try {
+      await ConsolidadoService.updateNota(id, nota)
+      
+      // Actualizar la nota local
+      const item = consolidadoData.value.find(item => item.id === id)
+      if (item) {
+        item.note_administracion = nota
+      }
+
+      return { success: true }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Error al actualizar nota'
       return { success: false, error: error.value }
     }
   }
@@ -134,7 +187,19 @@ export const useConsolidado = () => {
   }
 
   const updateFilters = (newFilters: Partial<ConsolidadoFilters>) => {
-    filters.value = { ...filters.value, ...newFilters }
+    // Normalize incoming filter keys (support UI sending 'cargas')
+    const nf: any = { ...newFilters }
+    if (nf.cargas !== undefined) {
+      const val = nf.cargas
+      if (val === 'todos' || val === '' || val == null) {
+        delete nf.carga
+      } else {
+        nf.carga = val
+      }
+      delete nf.cargas
+    }
+
+    filters.value = { ...filters.value, ...nf }
   }
 
   const clearFilters = () => {
@@ -154,6 +219,7 @@ export const useConsolidado = () => {
     error,
     pagination,
     filters,
+    cargasDisponibles,
     
     // Computed
     totalAmount,
@@ -163,6 +229,7 @@ export const useConsolidado = () => {
     // Methods
     fetchConsolidadoData,
     updateEstadoPago,
+    updateNota,
     getPagoDetalle,
     exportData,
     updateFilters,

@@ -1,136 +1,37 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-3">
-    <!-- Título y barra de acciones -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-      <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">
-        Historial de productos importados
-      </h1>
-      <div class="flex gap-2 items-center">
-        <UInput
-          v-model="searchQuery"
-          icon="i-heroicons-magnifying-glass"
-          placeholder="Buscar por"
-          class="w-56"
-        />
-        <UButton
-          icon="i-heroicons-adjustments-horizontal"
-          color="neutral"
-          variant="outline"
-          label="Filtros"
-          @click="showFilters = !showFilters"
-        />
-        <UButton
-          label="Ver Excel de productos"
-          icon="i-heroicons-eye"
-          color="neutral"
-          variant="outline"
-          @click="goToArchivos"
-        />
-      </div>
-    </div>
-
-    <!-- Filtros -->
-    <div v-if="showFilters" class="mb-4">
-      <div class="flex flex-wrap gap-4">
-        <USelect
-          v-for="filter in filterConfig"
-          :key="`uselect-${filter.key}-${filter.options.length}-${filter.options.map(o => o.value).join(',')}`"
-          v-model="filters[filter.key]"
-          :items="filter.options.map(o => ({ label: o.label ,value: o.value }))"
-          :placeholder="filter.placeholder"
-          class="w-48"
-          @change="handleFilterChange(filter.key, filters[filter.key])"
-        />
-      </div>
-    </div>
-
-    <!-- Headers -->
-     <!--bg-white dark:bg-gray-800 rounded-xl shadow-sm flex items-center px-6 py-4 gap-10-->
-    <div class="hidden md:flex rounded-xl px-6 py-4 gap-10 font-semibold text-gray-600 dark:text-gray-300 text-sm ">
-      <div class="w-8 text-center">N°</div>
-      <div class="w-32 text-center">Foto</div>
-      <div class="w-64">Nombre comercial</div>
-      <div class="w-32 text-center">Rubro</div>
-      <div class="w-32 text-center">T. Producto</div>
-      <div class="w-32 text-center">Unidad Com.</div>
-      <div class="w-32 text-center">Subpartida</div>
-      <div class="w-24 text-center">Campaña</div>
-      <div class="w-32 text-center">Acciones</div>
-    </div>
-
-    <!-- Tabla de productos -->
+  <div class="min-h-screen bg-[#eff3f8] dark:bg-gray-900 p-3">
+    <!-- Tabla de productos usando DataTable -->
     <div class="space-y-4">
-      <template v-if="filteredProducts.length">
-        <div
-          v-for="(product, idx) in filteredProducts"
-          :key="product.id"
-          class="bg-white dark:bg-gray-800 rounded-xl shadow-sm flex items-center px-6 py-6 gap-10"
-        >
-          <!-- N° -->
-          <div class="w-8 text-center text-gray-500 dark:text-gray-400 font-medium">{{ idx + 1 }}</div>
-          <!-- Foto -->
-          <div>
-            <img
-              v-if="product.foto"
-              :src="product.foto"
-              :alt="product.nombreComercial"
-              class="w-32 h-32 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
-              @click="openImageModal(product.foto, product.nombreComercial)"
-            />
-            <span v-else class="text-gray-400 dark:text-gray-500">Sin foto</span>
-          </div>
-          <!-- Nombre comercial -->
-          <div class="flex w-64">
-            <div class="font-semibold text-gray-800 dark:text-gray-100">{{ product.nombreComercial }}</div>
-          </div>
-          <!-- Rubro -->
-          <div class="w-32 text-center text-gray-700 dark:text-gray-300">{{ product.rubro }}</div>
-          <!-- Tipo Producto -->
-          <div class="w-32 text-center text-gray-700 dark:text-gray-300">{{ product.tipoProducto }}</div>
-          <!-- Unidad Comercial -->
-          <div class="w-32 text-center text-gray-700 dark:text-gray-300">{{ product.unidadComercial }}</div>
-          <!-- Subpartida -->
-          <div class="w-32 text-center text-gray-700 dark:text-gray-300">{{ product.subpartida }}</div>
-          <!-- Campaña -->
-          <div class="w-24 text-center text-gray-700 dark:text-gray-300">#{{ product.cargaContenedor }}</div>
-          <!-- Acciones -->
-          <div class="w-32 flex gap-2 items-center justify-center">
-            <UButton
-              icon="i-heroicons-eye"
-              size="xs"
-              color="neutral"
-              variant="soft"
-              @click="viewProduct(product)"
-              aria-label="Ver"
-            />
-            <UButton
-              icon="i-heroicons-trash"
-              size="xs"
-              color="error"
-              variant="soft"
-              @click="deleteProduct(product)"
-              aria-label="Eliminar"
-            />
-            <div class="relative inline-block" @click="showObservations(product)" :disabled="!product.tiene_observaciones">
-              <UButton
-                v-if="isDocumentacion"
-                icon="i-heroicons-bell"
-                size="xs"
-                :color="product.tiene_observaciones ? 'warning' : 'neutral'"
-                variant="soft"       
-                aria-label="Observaciones"
-              />
-              <span
-                v-if="product.tiene_observaciones"
-                class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full z-10"
-              ></span>
-            </div>
-          </div>
-        </div>
-      </template>
-      <div v-else class="text-center py-12 text-gray-400 dark:text-gray-500">
-        No se encontraron productos que coincidan con los criterios de búsqueda.
-      </div>
+    <DataTable
+        :title="'Historial de productos importados'"
+        :icon="''"
+        :showTitle="true"
+  :data="tableRows"
+  :columns="tableColumns"
+  :loading="loading"
+        :showPrimarySearch="true"
+        :primarySearchPlaceholder="'Buscar producto'"
+  :primarySearchValue="searchQuery"
+  @update:primarySearch="onPrimarySearchUpdate"
+  :filterConfig="filterConfig"
+  :showFilters="true"
+  :filtersValue="filters"
+  @update:filters="onFiltersUpdate"
+  @filter-change="handleFilterChange"
+        :showPagination="true"
+  :currentPage="currentPage"
+  :itemsPerPage="itemsPerPage"
+  :totalRecords="totalRecords"
+  @update:currentPage="onPageChange"
+  @update:itemsPerPage="onItemsPerPageChange"
+  :showExport="false"
+  :showNewButton="false"
+        :headers="headers"
+      >
+        <template #actions>
+          <UButton label="Importar productos" icon="i-heroicons-plus" color="primary" variant="solid" class="h-11 font-normal" @click="goToArchivos" />
+        </template>
+      </DataTable>
     </div>
 
     <!-- Paginación -->
@@ -165,6 +66,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, h, resolveComponent } from 'vue'
+import DataTable from '~/components/DataTable.vue'
 import type { ProductMapped } from '~/types/product'
 import DynamicModal from '~/components/DynamicModal.vue'
 import ImageModal from '~/components/ImageModal.vue'
@@ -273,6 +175,39 @@ const filteredProducts = computed(() => {
   return filtered
 })
 
+// DataTable columns and rows mapping
+const tableColumns = computed(() => [
+  { header: 'N°', accessorKey: 'index' },
+  {
+    header: 'Foto',
+    accessorKey: 'foto',
+    cell: ({ row }: any) => row.original.foto ? h('img', { src: row.original.foto, class: 'w-20 h-20 object-cover rounded cursor-pointer', onClick: () => openImageModal(row.original.foto, row.original.nombreComercial) }) : 'Sin foto'
+  },
+  { header: 'Nombre comercial', accessorKey: 'nombreComercial' },
+  { header: 'Rubro', accessorKey: 'rubro' },
+  { header: 'T. Producto', accessorKey: 'tipoProducto' },
+  { header: 'Unidad Com.', accessorKey: 'unidadComercial' },
+  { header: 'Subpartida', accessorKey: 'subpartida' },
+  { header: 'Campaña', accessorKey: 'cargaContenedor', cell: ({ row }: any) => `#${row.original.cargaContenedor}` },
+  {
+    header: 'Acciones',
+    accessorKey: 'acciones',
+    cell: ({ row }: any) => h('div', { class: 'flex gap-2 items-center justify-center' }, [
+      h(UButton, { icon: 'i-heroicons-eye', size: 'xs', color: 'neutral', variant: 'soft', onClick: () => viewProduct(row.original) }),
+      h(UButton, { icon: 'i-heroicons-trash', size: 'xs', color: 'error', variant: 'soft', onClick: () => deleteProduct(row.original) }),
+      isDocumentacion ? h(UButton, { icon: 'i-heroicons-bell', size: 'xs', color: row.original.tiene_observaciones ? 'warning' : 'neutral', variant: 'soft', onClick: () => showObservations(row.original) }) : null
+    ])
+  }
+])
+
+const tableRows = computed(() => filteredProducts.value.map((p, idx) => ({ ...p, index: idx + 1 })))
+
+const onPrimarySearchUpdate = (val: string) => {
+  searchQuery.value = val
+  // handleSearch expects the query string
+  handleSearch && handleSearch(val)
+}
+
 // Watchers
 watch(searchQuery, () => {
   searchProducts()
@@ -310,6 +245,18 @@ const onPageChange = (page: number) => {
   localCurrentPage.value = page
 
   loadProducts({ page })
+}
+
+const onFiltersUpdate = (newFilters: Record<string, any>) => {
+  // sincronizar con el composable y aplicar
+  Object.keys(newFilters || {}).forEach(k => {
+    ;(filters.value as any)[k] = newFilters[k]
+  })
+  // eliminar keys que vienen como undefined
+  Object.keys(filters.value).forEach(k => {
+    if ((filters.value as any)[k] === undefined) delete (filters.value as any)[k]
+  })
+  applyFilters()
 }
 
 const formatPrice = (price: number): string => {

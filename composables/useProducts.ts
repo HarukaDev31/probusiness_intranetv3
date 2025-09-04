@@ -97,7 +97,15 @@ export const useProducts = () => {
           itemsPerPage.value = response.data.length
         }
         console.log('Headers:', response.headers)
-        headers.value = response.headers
+        // Asegurar que headers.value sea un arreglo de Header[] requerido por DataTable
+        if (Array.isArray(response.headers)) {
+          headers.value = response.headers as Header[]
+        } else if (response.headers && typeof response.headers === 'object') {
+          // Mapear objeto de headers a arreglo [{ label, value }]
+          headers.value = Object.keys(response.headers).map((k) => ({ label: k, value: String((response.headers as any)[k]) }))
+        } else {
+          headers.value = []
+        }
       } else {
         error.value = response.error || 'Error al cargar productos'
         products.value = []

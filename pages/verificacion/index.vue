@@ -1,25 +1,48 @@
 <template>
-  <div class="p-6">
+  <div class="p-2">
 
     <!-- Tab Content -->
     <div v-if="activeTab === 'consolidado'">
       <!-- Consolidado Tab -->
       <DataTable :show-title="true" title="Verificación" subtitle="Gestión de verificación de pagos" icon="i-heroicons-clipboard-document-check" :data="consolidadoData" :columns="consolidadoColumns" :loading="loadingConsolidado"
         :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-        :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false" :show-filters="true"
-        :filter-config="filterConfig" :filters-value="filtersConsolidado" :show-export="true"
-        empty-state-message="No se encontraron registros de consolidado." @update:search-query="handleSearch"
+  :items-per-page="itemsPerPage" :primary-search-value="search" :show-secondary-search="false" :show-filters="true"
+  :filter-config="filterConfigConsolidado" :filters-value="filtersConsolidado" :show-export="false"
+        empty-state-message="No se encontraron registros de consolidado." @update:primary-search="handleSearch"
         @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
         @filter-change="handleFilterChange"
         :show-body-top="true">
         <!-- Botón de filtros personalizado -->
         <template #body-top>
-          <UTabs size="md" variant="pill" :content="false" :items="tabs" v-model="activeTab" class="w-50 mb-6" />
-          <div class="mb-4 flex justify-end">
+          <div class="w-50 my-3 flex items-center">
+            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
+              <button
+                type="button"
+                @click="activeTab = 'consolidado'"
+                :class="[
+                  'px-4 py-2 rounded-md text-sm font-medium transition',
+                  isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+                ]"
+              >
+                Consolidado
+              </button>
+              <button
+                type="button"
+                @click="activeTab = 'cursos'"
+                :class="[
+                  'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                  isCursos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
+                ]"
+              >
+                Cursos
+              </button>
+            </div>
+          </div>
+          <div class="my-3 flex justify-end">
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
               Importe total: 
               <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
-                {{ formatCurrency(totalImporteCursos) }}
+                {{ formatCurrency(totalImporteConsolidado) }}
               </span>
             </div>
           </div>
@@ -34,16 +57,47 @@
 
     <div v-else-if="activeTab === 'cursos'">
       <!-- Cursos Tab -->
-      <DataTable title="" icon="" :data="cursosData" :columns="cursosColumns" :loading="loadingCursos"
+      <DataTable title="Cursos" icon="i-heroicons-clipboard-document-check" :data="cursosData" :columns="cursosColumns" :loading="loadingCursos"
         :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-        :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false" :show-filters="true"
-        :filter-config="filterConfig" :filters-value="filtersCursos" :show-export="true"
-        empty-state-message="No se encontraron registros de cursos." @update:search-query="handleSearch"
+  :items-per-page="itemsPerPage" :primary-search-value="search" :show-secondary-search="false" :show-filters="true"
+  :filter-config="filterConfigCursos" :filters-value="filtersCursos" :show-export="false"
+  empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
         @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
-        @filter-change="handleFilterChange">
+        @filter-change="handleFilterChange" :show-body-top="true">
 
         <template #body-top>
-          <UTabs size="md" variant="pill" :content="false" :items="tabs" v-model="activeTab" class="w-50   mb-6" />
+          <div class="w-50 mb-6 flex items-center">
+            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
+              <button
+                type="button"
+                @click="activeTab = 'consolidado'"
+                :class="[
+                  'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                  isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+                ]"
+              >
+                Consolidado
+              </button>
+              <button
+                type="button"
+                @click="activeTab = 'cursos'"
+                :class="[
+                  'px-4 py-2 rounded-md text-sm font-medium transition',
+                  isCursos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+                ]"
+              >
+                Cursos
+              </button>
+            </div>
+          </div>
+          <div class="mb-4 flex justify-end">
+            <div class="text-lg font-semibold text-gray-900 dark:text-white">
+              Importe total: 
+              <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
+                {{ formatCurrency(totalImporteCursos) }}
+              </span>
+            </div>
+          </div>
         </template>
         <!-- Estado de error -->
         <template #error-state>
@@ -52,19 +106,22 @@
       </DataTable>
     </div>
   </div>
+
+  <DynamicModal :visible="modalVisible" :modal="modalMessage" @close="modalVisible = false" />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, h, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { useConsolidado } from '../composables/usePagosConsolidado'
-import { usePagos } from '../composables/usePagos'
-import { useCursos } from '../composables/useCursos'
-import { ESTADOS_PAGO, CARGAS_DISPONIBLES } from '../constants/consolidado'
-import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS, CAMPANAS } from '../constants/cursos'
-import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '../utils/consolidado'
-import { getEstadoColor as getEstadoColorCursos, formatCurrency as formatCurrencyCursos, formatPhoneNumber as formatPhoneNumberCursos } from '../utils/cursos'
+import { useConsolidado } from '~/composables/usePagosConsolidado'
+import { usePagos } from '~/composables/usePagos'
+import { ESTADOS_PAGO, CARGAS_DISPONIBLES } from '~/constants/consolidado'
+import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS } from '~/constants/cursos'
+import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '~/utils/consolidado'
+import { getEstadoColor as getEstadoColorCursos, formatCurrency as formatCurrencyCursos, formatPhoneNumber as formatPhoneNumberCursos } from '~/utils/cursos'
 import { UButton } from '#components'
+import DynamicModal from '~/components/DynamicModal.vue'
+import type { ModalData } from '~/composables/commons/useModal'
 
 // Tabs
 const tabs = [
@@ -74,6 +131,27 @@ const tabs = [
 
 const activeTab = ref('consolidado')
 
+const isConsolidado = computed(() => activeTab.value === 'consolidado')
+const isCursos = computed(() => activeTab.value === 'cursos')
+
+const modalVisible = ref(false)
+const modalMessage = ref<ModalData | null>(null)
+
+// Agregar función para mostrar el modal
+const showModal = (message: ModalData | string) => {
+  if (typeof message === 'string') {
+    modalMessage.value = {
+      id: Date.now().toString(),
+      type: 'info',
+      title: 'Observaciones',
+      message
+    }
+  } else {
+    modalMessage.value = message
+  }
+  modalVisible.value = true
+}
+
 // Composable de consolidado
 const {
   consolidadoData,
@@ -81,6 +159,7 @@ const {
   error: errorConsolidado,
   pagination: paginationConsolidado,
   filters: filtersConsolidado,
+  cargasDisponibles,
   totalAmount: totalAmountConsolidado,
   totalPaid: totalPaidConsolidado,
   filteredData: filteredDataConsolidado,
@@ -99,6 +178,7 @@ const {
   error: errorCursos,
   pagination: paginationCursos,
   filters: filtersCursos,
+  campanasDisponibles,
   totalAmount: totalAmountCursos,
   totalPaid: totalPaidCursos,
   filteredData: filteredDataCursos,
@@ -108,18 +188,36 @@ const {
   exportData: exportCursosData,
   updateFilters: updateFiltersCursos,
   clearFilters: clearFiltersCursos
-} = useCursos()
+} = usePagos()
 
 // State para paginación
 const search = ref('')
 const currentPage = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.current_page : paginationCursos.value.current_page)
 const totalPages = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.last_page : paginationCursos.value.last_page)
 const totalRecords = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.total : paginationCursos.value.total)
-const itemsPerPage = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.per_page : paginationCursos.value.per_page)
+const itemsPerPage = computed(() => {
+  const per = activeTab.value === 'consolidado' ? paginationConsolidado.value.per_page : paginationCursos.value.per_page
+  const n = Number(per)
+  return Number.isFinite(n) && n > 0 ? n : 10
+})
 
 
 // Configuración de filtros para consolidado
-const filterConfig = computed(() => [
+// Opciones de cargas derivadas de los datos (únicas y ordenadas de menor a mayor)
+const cargasOptions = computed(() => {
+  const values = (consolidadoData.value || []).map((it: any) => it.carga).filter((v: any) => v !== undefined && v !== null && String(v).trim() !== '')
+  const unique = Array.from(new Set(values.map((v: any) => String(v))))
+  unique.sort((a: string, b: string) => {
+    const na = Number(a)
+    const nb = Number(b)
+    if (!isNaN(na) && !isNaN(nb)) return na - nb
+    return a.localeCompare(b, undefined, { numeric: true })
+  })
+  return [{ value: 'todos', label: 'Todas las cargas' }, ...unique.map((v: string) => ({ value: String(v), label: `#${v}` }))]
+})
+
+
+const filterConfigConsolidado = computed(() => [
   {
     key: 'estado',
     label: 'Estado',
@@ -132,7 +230,7 @@ const filterConfig = computed(() => [
     label: 'Carga',
     type: 'select',
     placeholder: 'Seleccionar carga',
-    options: CARGAS_DISPONIBLES
+  options: (cargasDisponibles && cargasDisponibles.value && cargasDisponibles.value.length) ? cargasDisponibles.value : cargasOptions.value
   },
   {
     key: 'fecha_inicio',
@@ -143,6 +241,37 @@ const filterConfig = computed(() => [
   },
   {
     key: 'fecha_fin',
+    label: 'Fecha Fin',
+    type: 'date',
+    placeholder: 'DD/MM/YYYY',
+    options: []
+  }
+])
+
+const filterConfigCursos = computed(() => [
+  {
+    key: 'estado_pago',
+    label: 'Estado de pago',
+    type: 'select',
+    placeholder: 'Seleccionar estado de pago',
+    options: ESTADOS_PAGO_CURSOS
+  },
+  {
+    key: 'campanas',
+    label: 'Campaña',
+    type: 'select',
+    placeholder: 'Seleccionar campaña',
+    options: campanasDisponibles.value
+  },
+  {
+    key: 'Filtro_Fe_Inicio',
+    label: 'Fecha Inicio',
+    type: 'date',
+    placeholder: 'DD/MM/YYYY',
+    options: []
+  },
+  {
+    key: 'Filtro_Fe_Fin',
     label: 'Fecha Fin',
     type: 'date',
     placeholder: 'DD/MM/YYYY',
@@ -203,12 +332,18 @@ const consolidadoColumns: TableColumn<any>[] = [
     header: 'Estado',
     cell: ({ row }: { row: any }) => {
       const estado = row.getValue('estado_pago')
-      const color = getEstadoColor(estado)
-      console.log('Estado:', estado, 'Color:', color)
-      return h('div', { class: 'flex items-center space-x-2' }, [
-        h('span', {
-          class: `px-2 py-1 rounded-full text-xs font-medium border ${getEstadoColor(estado)}`
-        }, estado),
+
+      return h('div', [
+        h('select', {
+          class: `py-1 text-xs font-medium border ${getEstadoColor(estado)}`,
+          value: estado,
+          disabled: true
+        },
+        // generar opciones desde ESTADOS_PAGO (value,label)
+        (ESTADOS_PAGO || []).map((opt: any) =>
+          h('option', { value: opt.value }, opt.label)
+        )
+        ),
         h('UIcon', {
           name: 'i-heroicons-chevron-down',
           class: 'w-4 h-4 text-gray-400 cursor-pointer'
@@ -270,6 +405,17 @@ const consolidadoColumns: TableColumn<any>[] = [
           variant: 'ghost',
           onClick: () => navigateTo(`/verificacion/consolidado/${row.original.id}`)
         }),
+        //agregar boton en caso tenga "note_administracion" y que se habra un modal mostrando el mensaje
+        row.original.note_administracion && h(UButton as any, {
+          size: 'xs',
+          icon: 'i-heroicons-document-text',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => {
+            // Mostrar modal con el mensaje de "note_administracion"
+            showModal(row.original.note_administracion)
+          }
+        })
 
       ])
     }
@@ -321,10 +467,16 @@ const cursosColumns: TableColumn<any>[] = [
       const estado = row.getValue('estado_pago')
       //get the color of the state
       const color = getEstadoColor(estado)
-      return h('div', { class: 'flex items-center space-x-2' }, [
-        h('span', {
-          class: `px-2 py-1 rounded-full text-xs font-medium border ${color}`
-        }, estado),
+      return h('div', [
+        h('select', {
+          class: `py-1 text-xs font-medium border ${getEstadoColor(estado)}`,
+          value: estado,
+          disabled: true
+        }, [
+          (ESTADOS_PAGO || []).map((opt: any) =>
+            h('option', { value: opt.value }, opt.label)
+          )
+        ])
       ])
     }
   },
@@ -367,14 +519,28 @@ const cursosColumns: TableColumn<any>[] = [
           variant: 'ghost',
           onClick: () => navigateTo(`/verificacion/curso/${row.original.id}`)
         }),
+        //agregar boton en caso tenga "note_administracion" y que se habra un modal mostrando el mensaje
+        row.original.note_administracion && h(UButton as any, {
+          size: 'xs',
+          icon: 'i-heroicons-document-text',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => {
+            // Mostrar modal con el mensaje de "note_administracion"
+            showModal(row.original.note_administracion)
+          }
+        })
 
       ])
     }
   }
 ]
 
-const totalImporteCursos = computed(() =>
+const totalImporteConsolidado = computed(() =>
   consolidadoData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
+)
+const totalImporteCursos = computed(() =>
+  cursosData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
 )
 
 // Computed para el total del consolidado (asegurar que sea un número)

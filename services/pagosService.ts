@@ -8,6 +8,22 @@ export class PagosService extends BaseService {
   }
 
   /**
+   * Actualiza la nota administrativa de un curso
+   */
+  static async updateNota(id: number, nota: string): Promise<any> {
+    try {
+      const response = await this.apiCall<any>(`${this.baseUrl}/updateNota/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ note_administracion: nota })
+      })
+      return response
+    } catch (error) {
+      console.error(`Error al actualizar nota del curso ${id}:`, error)
+      throw new Error('No se pudo actualizar la nota del curso')
+    }
+  }
+
+  /**
    * Obtiene la lista de pagos de cursos con filtros y paginación
    */
   static async getCursosPagos(filters?: CursosFilters & { page?: number; limit?: number }): Promise<CursosResponse> {
@@ -21,6 +37,9 @@ export class PagosService extends BaseService {
       // Filtros de fecha
       if (filters?.Filtro_Fe_Inicio) queryParams.append('Filtro_Fe_Inicio', filters.Filtro_Fe_Inicio)
       if (filters?.Filtro_Fe_Fin) queryParams.append('Filtro_Fe_Fin', filters.Filtro_Fe_Fin)
+
+      //filtro de busqueda
+      if (filters?.search) queryParams.append('search', filters.search)
 
       // Filtros adicionales
       if (filters?.campana) queryParams.append('campana', filters.campana.toString())
@@ -60,16 +79,31 @@ export class PagosService extends BaseService {
   /**
    * Actualiza el estado de pago de un curso
    */
-  static async updateEstadoPago(id: number, estado: string): Promise<any> {
+  static async updateEstadoPago(id: number, status: string): Promise<{success: boolean}> {
     try {
-      const response = await this.apiCall<any>(`${this.baseUrl}/${id}/estado`, {
-        method: 'PUT',
-        body: JSON.stringify({ estado_pago: estado })
-      })
+      // send both keys: `status` is expected by the backend validation,
+      const response = await this.actualizarPagoCurso(id, status)
       return response
     } catch (error) {
       console.error(`Error al actualizar estado del curso ${id}:`, error)
       throw new Error('No se pudo actualizar el estado del curso')
+    }
+  }
+
+  /**
+   * Llama al endpoint de cursos para actualizar un pago y devolver datos actualizados
+   */
+  static async actualizarPagoCurso(idPago: number, status: string,): Promise<any> {
+    try {
+      const payload: any = { status }
+      const response = await this.apiCall<any>(`${this.baseUrl}/saveStatus/${idPago}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      })
+      return response
+    } catch (error) {
+      console.error(`Error al actualizar pago del curso ${idPago}:`, error)
+      throw new Error('No se pudo actualizar el pago del curso')
     }
   }
 
