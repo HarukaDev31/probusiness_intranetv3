@@ -15,11 +15,7 @@
         </div>
 
 
-<<<<<<< HEAD
-        <DataTable title="Contenedores" icon="i-heroicons-book-open" :data="consolidadoData" :columns="getColumns()" :loading="loading"
-=======
         <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData" :columns="getColumns()" :loading="loading"
->>>>>>> master
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
@@ -318,7 +314,6 @@ const documentacionColumns: TableColumn<any>[] = [
     }
 
 ]
-<<<<<<< HEAD
 /**
  * Columnas para almacen
  */
@@ -378,12 +373,8 @@ const almacenColumns: TableColumn<any>[] = [
     }
 ]
 
-const getColumns = ()=>{
-    switch(currentRole.value){
-=======
 const getColumns = () => {
     switch (currentRole.value) {
->>>>>>> master
         case ROLES.DOCUMENTACION:
             return documentacionColumns
         case ROLES.CONTENEDOR_ALMACEN:

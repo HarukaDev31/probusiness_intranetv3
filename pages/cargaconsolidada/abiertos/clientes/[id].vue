@@ -1,31 +1,11 @@
     <!--3 tabs:general,variacion,pagos and 3 tables-->
     <template>
         <div class="p-6">
-<<<<<<< HEAD
-<<<<<<< HEAD
+
             <PageHeader title="" subtitle="" icon=""
                 :hide-back-button="false"
                 @back="$router.back()"
                 />
-=======
-
->>>>>>> 51856a7 (fix)
-            <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
-                :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
-                :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
-                :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="false"
-                :filter-config="filterConfig" :show-export="true" :show-body-top="true"
-                empty-state-message="No se encontraron registros de clientes."
-                @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
-                @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
-                :hide-back-button="false"
-                :previous-page-url="(currentRole !== ROLES.COORDINACION || currentId !== ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
-                <template #body-top>
-                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
-
-<<<<<<< HEAD
-            </template>
-=======
 
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
@@ -41,28 +21,10 @@
                     <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
 
                 </template>
->>>>>>> master
-=======
-                </template>
->>>>>>> 51856a7 (fix)
             </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
                 :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
                 :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
-<<<<<<< HEAD
-<<<<<<< HEAD
-                :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="true"
-                :filter-config="filterConfigVariacion" :show-export="true"
-                :show-body-top="true"
-                empty-state-message="No se encontraron registros de clientes."
-                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
-                @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
-            <template #body-top>
-                <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60"
-                color="secondary"
-                />
-            </template>
-=======
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfigVariacion" :show-export="true" :show-body-top="true"
                 :hide-back-button="false"
@@ -73,55 +35,18 @@
                 <template #body-top>
                     <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
                 </template>
->>>>>>> master
-=======
-                :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
-                :filter-config="filterConfigVariacion" :show-export="true" :show-body-top="true"
-                :hide-back-button="false" empty-state-message="No se encontraron registros de clientes."
-                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
-                @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
-                <template #body-top>
-                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
-                </template>
->>>>>>> 51856a7 (fix)
             </DataTable>
             <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
                 :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
                 :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
-<<<<<<< HEAD
-<<<<<<< HEAD
-                :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="true"
-                :filter-config="filterConfigVariacion" :show-export="true"
-                :show-body-top="true"
-                empty-state-message="No se encontraron registros de clientes."
-=======
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfigVariacion" :show-export="true" :hide-back-button="false"
                 :show-body-top="true" empty-state-message="No se encontraron registros de clientes."
->>>>>>> 51856a7 (fix)
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
                     <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
-
-<<<<<<< HEAD
-            </template>
-=======
-                :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
-                :filter-config="filterConfigVariacion" :show-export="true" :hide-back-button="false"
-                :show-body-top="true"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
-                empty-state-message="No se encontraron registros de clientes."
-                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
-                @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
-                <template #body-top>
-                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
-
                 </template>
->>>>>>> master
-=======
-                </template>
->>>>>>> 51856a7 (fix)
             </DataTable>
         </div>
     </template>
@@ -132,12 +57,7 @@ import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { UButton, UBadge, USelect } from '#components'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-<<<<<<< HEAD
-<<<<<<< HEAD
-import { ROLES ,ID_JEFEVENTAS} from '~/constants/roles'
-=======
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
->>>>>>> master
 import { useUserRole } from '~/composables/auth/useUserRole'
 import type { TableColumn } from '@nuxt/ui'
 import PagoGrid from '~/components/PagoGrid.vue'
@@ -145,20 +65,6 @@ import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId } = useUserRole()
-<<<<<<< HEAD
-import type { TableColumn } from '@nuxt/ui'
-=======
->>>>>>> master
-=======
-import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
-import { useUserRole } from '~/composables/auth/useUserRole'
-import type { TableColumn } from '@nuxt/ui'
-import PagoGrid from '~/components/PagoGrid.vue'
-const { withSpinner } = useSpinner()
-const { showConfirmation, showSuccess, showError } = useModal()
-const { currentRole, currentId } = useUserRole()
->>>>>>> 51856a7 (fix)
-
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')

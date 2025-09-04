@@ -12,8 +12,6 @@ export const STATUS_BG_CLASSES = {
     NC:'bg-blue-300',
     C:'bg-yellow-500',
     
-<<<<<<< HEAD
-=======
 } as const
 export const STATUS_BG_PAGOS_CLASSES = {
     PENDIENTE: 'bg-gray-500',
@@ -21,7 +19,6 @@ export const STATUS_BG_PAGOS_CLASSES = {
     PAGADO: 'bg-green-500',
     SOBREPAGO: 'bg-red-500',
     
->>>>>>> master
 } as const
 
 export const CUSTOMIZED_ICONS = {

@@ -219,11 +219,7 @@ const getFileKey = (file: File, index: number): string => {
     return `file-${file.name}-${file.size}-${index}`
 }
 
-<<<<<<< HEAD
-const openFile = (file: FileItem) => {
-=======
 const openFile = (file: FileItem|File) => {
->>>>>>> master
     modalPreview.open({
         file: file,
         isOpen: true
