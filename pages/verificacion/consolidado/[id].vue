@@ -14,15 +14,16 @@
       <UButton
         icon="i-heroicons-lock-closed"
         color="primary"
-        @click="handleSave"
+        @click="handleSaveNota"
+        class="dark:text-white"
       >
         Guardar
       </UButton>
     </div>
 
          <!-- Resumen financiero -->
-     <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-       <div class="text-lg font-semibold text-gray-900">
+     <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+       <div class="text-lg font-semibold text-gray-900 dark:text-white">
          Importe: <span class="text-primary-600">{{ formatCurrency(totalAPagar) }}</span>
          Pagado: <span class="text-primary-600">{{ formatCurrency(adelantosPagados) }}</span>
        </div>
@@ -52,39 +53,39 @@
             :key="pago.id"
             class="rounded-lg border p-4 transition-colors duration-200"
             :class="{
-              'bg-green-50 border-green-200': pago.status === 'CONFIRMADO',
-              'bg-yellow-50 border-yellow-200': pago.status === 'PENDIENTE',
-              'bg-red-50 border-red-200': pago.status === 'OBSERVADO',
-              'bg-white border-gray-200': !['CONFIRMADO', 'PENDIENTE', 'OBSERVADO'].includes(pago.status)
+              'bg-green-50 border-green-200 dark:bg-green-800 dark:border-green-700': pago.status === 'CONFIRMADO',
+              'bg-yellow-50 border-yellow-200 dark:bg-yellow-800 dark:border-yellow-700': pago.status === 'PENDIENTE',
+              'bg-red-50 border-red-200 dark:bg-red-800 dark:border-red-700': pago.status === 'OBSERVADO',
+              'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700': !['CONFIRMADO', 'PENDIENTE', 'OBSERVADO'].includes(pago.status)
             }"
           >
             <div class="mb-3">
-              <h4 class="font-medium text-gray-900">{{ pago.concepto.name }}</h4>
+              <h4 class="font-medium text-gray-900 dark:text-white">{{ pago.concepto.name }}</h4>
             </div>
             
             <div class="space-y-2 text-sm">
               <div class="flex justify-between">
-                <span class="text-gray-600">Monto:</span>
-                <span class="font-medium">${{ formatCurrency(parseFloat(pago.monto)) }}</span>
+                <span class="text-gray-600 dark:text-gray-200">Monto:</span>
+                <span class="font-medium">{{ formatCurrency(parseFloat(pago.monto)) }}</span>
               </div>
               
               <div class="flex justify-between">
-                <span class="text-gray-600">Fecha:</span>
+                <span class="text-gray-600 dark:text-gray-200">Fecha:</span>
                 <span class="font-medium">{{ formatDate(pago.payment_date) }}</span>
               </div>
               
               <div class="flex justify-between">
-                <span class="text-gray-600">Banco:</span>
+                <span class="text-gray-600 dark:text-gray-200">Banco:</span>
                 <span class="font-medium">{{ pago.banco }}</span>
               </div>
-              
-                    <div class="flex justify-between items-center">
-                  <span class="text-gray-600">Voucher:</span>
+
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600 dark:text-gray-200">Voucher:</span>
                   <div class="flex items-center space-x-2">
-                    <UIcon name="i-heroicons-photo" class="w-4 h-4 text-gray-400" />
+                    <UIcon name="i-heroicons-photo" class="w-4 h-4 text-gray-400 dark:text-gray-200" />
                     <button 
                       @click="openImageModal(pago.voucher_url)"
-                      class="text-xs text-blue-600 hover:text-blue-800 truncate max-w-24 cursor-pointer hover:underline"
+                      class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 truncate max-w-24 cursor-pointer hover:underline"
                     >
                       {{ generateVoucherName(pago.voucher_url) }}
                     </button>
@@ -99,6 +100,7 @@
                  :items="estadosOptions"
                  placeholder="Seleccionar estado"
                  size="sm"
+                 :disabled="pago._loading"
                  @update:model-value="(value) => handleStatusChange(pago.id, value)"
                />
              </div>
@@ -109,10 +111,10 @@
     <!-- Sección inferior con cotizaciones y notas -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Cotizaciones -->
-      <div class="bg-white rounded-lg border p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg border p-4">
         <div class="flex items-center space-x-2 mb-4">
           <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
-          <h3 class="text-lg font-semibold text-gray-900">Cotizaciones</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Cotizaciones</h3>
         </div>
         
         <!-- Skeleton loading para cotizaciones -->
@@ -135,9 +137,9 @@
 
         <!-- Contenido real de cotizaciones -->
         <div v-else class="space-y-3">
-          <div class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+          <div class="flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer">
             <UIcon name="i-heroicons-document-text" class="w-8 h-8 text-green-600" />
-            <span class="flex-1 text-sm text-gray-700">Cotización Inicial.xlsx</span>
+            <span class="flex-1 text-sm text-gray-700 dark:text-gray-200">Cotización Inicial.xlsx</span>
             <UButton
               icon="i-heroicons-arrow-down-tray"
               size="xs"
@@ -146,10 +148,10 @@
               @click="downloadFile('cotizacion-inicial')"
             />
           </div>
-          
-          <div class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+
+          <div class="flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer">
             <UIcon name="i-heroicons-document-text" class="w-8 h-8 text-green-600" />
-            <span class="flex-1 text-sm text-gray-700">Cotización Final.xlsx</span>
+            <span class="flex-1 text-sm text-gray-700 dark:text-gray-200">Cotización Final.xlsx</span>
             <UButton
               icon="i-heroicons-arrow-down-tray"
               size="xs"
@@ -162,11 +164,11 @@
       </div>
 
       <!-- Nota -->
-      <div class="bg-white rounded-lg border p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg border p-4">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center space-x-2">
             <UIcon name="i-heroicons-pencil" class="w-5 h-5 text-gray-500" />
-            <h3 class="text-lg font-semibold text-gray-900">Nota</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Nota</h3>
           </div>
           <UButton
             icon="i-heroicons-chevron-up"
@@ -205,8 +207,8 @@
   </template>
 
 <script setup lang="ts">
-import { toast } from '#build/ui'
 import { ref, computed, onMounted } from 'vue'
+import { useModal } from '~/composables/commons/useModal'
 import { useRoute } from 'vue-router'
 import { useConsolidado } from '../composables/usePagosConsolidado'
 import { formatCurrency } from '../utils/consolidado'
@@ -216,7 +218,8 @@ const route = useRoute()
 const pagoId = route.params.id as string
 
 // Composable
-const { getPagoDetalle } = useConsolidado()
+const { getPagoDetalle, updateEstadoPago, updateNota } = useConsolidado()
+const { showSuccess, showError } = useModal()
 
 // State
 const loading = ref(true)
@@ -242,14 +245,13 @@ const estadosOptions = [
 
 
 // Methods
-const handleSave = async () => {
+const handleSaveNota = async () => {
   try {
-    // Aquí implementar la lógica de guardado
-    console.log('Guardando cambios...', { pagoId, nota: nota.value })
-    // Mostrar notificación de éxito
+  await updateNota(pagoId, nota.value)
+  showSuccess('Nota guardada', `Nota para consolidado guardada correctamente`, { duration: 3000 })
   } catch (error) {
-    console.error('Error al guardar:', error)
-    // Mostrar notificación de error
+    console.error('handleSaveNota error:', error)
+  showError('Error al guardar', `No se pudo guardar la nota para consolidado ${pagoId}`, { persistent: true })
   }
 }
 
@@ -312,17 +314,31 @@ const toggleNoteSection = () => {
 }
 
 // Métodos para manejo de estados
-const handleStatusChange = (pagoId: number, newStatus: string) => {
-  console.log(`Cambiando estado del pago ${pagoId} a: ${newStatus}`)
-  
-  // Actualizar el estado local inmediatamente
+const handleStatusChange = async (pagoId: number, newStatus: string) => {
   const pago = pagoDetalle.value.find((p: any) => p.id === pagoId)
-  if (pago) {
-    pago.status = newStatus
+  if (!pago) return
+
+  // optimistic UI
+  const previous = pago.status
+  pago.status = newStatus
+  pago._loading = true
+
+  try {
+    const res = await updateEstadoPago(pagoId, newStatus)
+    if (res && (res as any).success) {
+      showSuccess('Estado actualizado', `Pago actualizado a ${newStatus}`, { duration: 3000 })
+    } else {
+      // rollback
+      pago.status = previous
+      showError('Error', `No se pudo actualizar el estado para pago ${pagoId}`, { persistent: true })
+    }
+  } catch (err) {
+    console.error('handleStatusChange error:', err)
+  pago.status = previous
+  showError('Error', `Error al actualizar estado del pago ${pagoId}`, { persistent: true })
+  } finally {
+    pago._loading = false
   }
-  
-  // Aquí se puede implementar la llamada al API para persistir el cambio
-  // updatePagoStatus(pagoId, newStatus)
 }
 
 // Métodos para el modal de voucher
@@ -347,17 +363,19 @@ const loadPagoDetalle = async () => {
   try {
     loading.value = true
     const response = await getPagoDetalle(parseInt(pagoId))
-    
+
     // Actualizar el estado con los datos de la respuesta
-    pagoDetalle.value = response.data
+    // Inicializar flag _loading para cada pago
+    pagoDetalle.value = response.data.map((p: any) => ({ ...p, _loading: false }))
     nota.value = response.nota || ''
     totalAPagar.value = response.total_a_pagar
     adelantosPagados.value = response.total_pagado
     cotizacionInicialUrl.value = response.cotizacion_inicial_url || ''
     cotizacionFinalUrl.value = response.cotizacion_final_url || ''
-    
+
   } catch (error) {
     console.error('Error al cargar detalles del pago:', error)
+  showError('Error', `Error al cargar detalles del pago ${pagoId}`, { persistent: true })
   } finally {
     loading.value = false
   }

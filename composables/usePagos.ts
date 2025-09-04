@@ -4,6 +4,7 @@ import type { CursoItem, CursosFilters, PaginationInfo, CursosDetalleResponse } 
 
 export const usePagos = () => {
   // State
+  const campanasDisponibles = ref<{ value: string; label: string }[]>([])
   const cursosData = ref<CursoItem[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -43,11 +44,34 @@ export const usePagos = () => {
     error.value = null
     
     try {
-      const mergedFilters = { ...filters.value, ...customFilters, page, limit: perPage }
+      // Merge filters and ensure pagination params are present
+      const mergedFilters: any = { ...filters.value, ...customFilters, page, limit: perPage }
+
+      // If the UI uses the 'campanas' key (select options), normalize to 'campana'
+      if (mergedFilters.campanas !== undefined) {
+        const val = mergedFilters.campanas
+        if (val === 'todos' || val === '' || val == null) {
+          delete mergedFilters.campana
+        } else {
+          mergedFilters.campana = val
+        }
+        delete mergedFilters.campanas
+      }
+
+      // If campana is the sentinel 'todos' or empty, remove it so backend doesn't receive it
+      if (mergedFilters.campana === 'todos' || mergedFilters.campana === '' || mergedFilters.campana == null) {
+        delete mergedFilters.campana
+      }
+
       const response = await PagosService.getCursosPagos(mergedFilters)
       
       cursosData.value = response.data
       pagination.value = response.pagination
+      const apiCampanas = (response as any)?.campanas_disponibles ?? (response as any)?.filters?.campanas ?? []
+      campanasDisponibles.value = [
+        { value: '0', label: 'Todas las campañas' },
+        ...apiCampanas.map((c: any) => ({ value: String(c.id ?? c.value ?? c.ID), label: String(c.nombre ?? c.label ?? c.nombre_campana ?? c.value) }))
+      ]
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Error al obtener datos de cursos'
       console.error('Error fetching cursos data:', err)
@@ -73,15 +97,31 @@ export const usePagos = () => {
 
   const updateEstadoPago = async (id: number, estado: string) => {
     try {
-      await PagosService.updateEstadoPago(id, estado)
       // Actualizar el estado local
       const curso = cursosData.value.find(c => c.id === id)
       if (curso) {
         curso.estado_pago = estado
       }
+      await PagosService.updateEstadoPago(id, estado)
+
+      return {success: true}
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Error al actualizar estado'
       console.error('Error updating estado:', err)
+      throw err
+    }
+  }
+  const updateNota = async (id: number, nota: string) => {
+    try {
+      await PagosService.updateNota(id, nota)
+      // Actualizar la nota local
+      const curso = cursosData.value.find(c => c.id === id)
+      if (curso) {
+        curso.note_administracion = nota
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Error al actualizar nota'
+      console.error('Error updating nota:', err)
       throw err
     }
   }
@@ -104,7 +144,21 @@ export const usePagos = () => {
   }
 
   const updateFilters = (newFilters: Partial<CursosFilters>) => {
-    filters.value = { ...filters.value, ...newFilters }
+    // Normalize incoming filter keys from the UI to what's expected by the API
+    const nf: any = { ...newFilters }
+    if (nf.campanas !== undefined) {
+      const val = nf.campanas
+      if (val === 'todos' || val === '' || val == null) {
+        // remove campana filter
+        delete nf.campana
+      } else {
+        nf.campana = val
+      }
+      delete nf.campanas
+    }
+
+    // Assign normalized filters
+    filters.value = { ...filters.value, ...nf }
   }
 
   const clearFilters = () => {
@@ -118,6 +172,7 @@ export const usePagos = () => {
     error,
     pagination,
     filters,
+    campanasDisponibles,
 
     // Computed
     totalAmount,
@@ -128,6 +183,7 @@ export const usePagos = () => {
     fetchCursosData,
     getCursoDetalle,
     updateEstadoPago,
+    updateNota,
     exportData,
     updateFilters,
     clearFilters
