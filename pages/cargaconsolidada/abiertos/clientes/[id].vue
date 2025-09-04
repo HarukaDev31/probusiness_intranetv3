@@ -2,6 +2,11 @@
     <template>
         <div class="p-6">
 
+            <PageHeader title="" subtitle="" icon=""
+                :hide-back-button="false"
+                @back="$router.back()"
+                />
+
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
@@ -43,7 +48,6 @@
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
                     <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
-
                 </template>
             </DataTable>
         </div>
@@ -63,7 +67,6 @@ import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId } = useUserRole()
-
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')

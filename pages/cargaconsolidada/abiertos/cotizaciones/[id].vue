@@ -15,8 +15,8 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
-                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="xl" variant="pill" class="mb-4 w-80 h-15"
+                        v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
@@ -36,8 +36,8 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
-                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="xl" variant="pill" class="mb-4 w-80 h-15"
+                        v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
@@ -214,11 +214,11 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => row.getValue('qty_item') || '0'
     },
     {
-        accessorKey: 'monto',
+        accessorKey: 'fob',
         header: 'Fob',
         cell: ({ row }: { row: any }) => {
-            const monto = parseFloat(row.getValue('monto'))
-            return formatCurrency(monto, 'USD')
+            const fob = parseFloat(row.original.fob)
+            return formatCurrency(fob, 'USD')
         }
     },
     {
@@ -351,11 +351,11 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => row.getValue('qty_item') || '0'
     },
     {
-        accessorKey: 'monto',
+        accessorKey: 'fob',
         header: 'Fob',
         cell: ({ row }: { row: any }) => {
-            const monto = parseFloat(row.getValue('monto'))
-            return formatCurrency(monto, 'USD')
+            const fob = parseFloat(row.original.fob)
+            return formatCurrency(fob, 'USD')
         }
     },
     {
@@ -899,6 +899,260 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         }
     }
 ])
+const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
+    //	Status	N.	Buyer	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
+    {
+        accessorKey: 'n',
+        header: 'N.',
+        cell: ({ row }: { row: any }) => {
+            //return index + 1
+            return row.index + 1
+        }
+    },
+    {
+        accessorKey: 'buyer',
+        header: 'Buyer',
+        cell: ({ row }: { row: any }) => {
+            return row.original.nombre
+        }
+    },
+    {
+        accessorKey: 'productos',
+        header: 'Productos',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.products,
+                    class: 'w-full',
+                    disabled: currentRole.value !== ROLES.COTIZADOR,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.products = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'qty_box',
+        header: 'Qty Box',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.qty_box,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.qty_box = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'cbm_total',
+        header: 'CBM t.',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.cbm_total,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.cbm_total = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'peso',
+        header: 'Weight',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.peso,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.peso = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'supplier',
+        header: 'Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.supplier,
+                    class: 'w-full',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.supplier = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'code_supplier',
+        header: 'Code Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.code_supplier,
+                    class: 'w-full',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.code_supplier = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'supplier_phone',
+        header: 'Supplier Phone',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.supplier_phone,
+                    class: 'w-full',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.supplier_phone = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'qty_box_supplier',
+        header: 'Qty Box Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.qty_box_china,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.qty_box_china = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'cbm_total_supplier',
+        header: 'CBM Total Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.cbm_total_china,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.cbm_total_china = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+
+    {
+        accessorKey: 'arrive_date',
+        header: 'Arrive Date',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.arrive_date_china,
+                    class: 'w-full',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.arrive_date_china = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'actions',
+        header: 'Actions',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+
+            return h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h('div', {
+                    class: 'flex flex-row gap-2'
+                }, [
+                    h(UButton, {
+                        icon: 'i-heroicons-eye',
+                        variant: 'ghost',
+                        color: 'neutral',
+                        size: 'xs',
+                        onClick: () => {
+                            navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion/${proveedor.id}`)
+                        }
+                    }),
+                    h(UButton, {
+                        icon: 'i-heroicons-document-arrow-down',
+                        variant: 'ghost',
+                        color: 'neutral',
+                        size: 'xs',
+                        onClick: () => {
+                            updateProveedorData(proveedor)
+                        }
+                    })
+                ])
+            }))
+        }
+    }
+])
+
 const overlay = useOverlay()
 const handleAddProspecto = async () => {
     const modal = overlay.create(CreateProspectoModal)
@@ -1014,6 +1268,8 @@ const getProespectosColumns = () => {
 }
 const getEmbarqueColumns = () => {
     switch (currentRole.value) {
+        case ROLES.CONTENEDOR_ALMACEN:
+            return embarqueCotizadorColumnsAlmacen.value
         default:
             return embarqueCotizadorColumns.value
     }
@@ -1155,7 +1411,8 @@ onMounted(() => {
     if (tabQuery) {
         tab.value = tabQuery as string
     } else {
-        tab.value = tabs[0].value // Cambiar a 'prospectos' como tab inicial
+    // Ensure we access the inner array on the ref and guard empty state
+    tab.value = (tabs.value && tabs.value.length > 0) ? tabs.value[0].value : '' // Cambiar a 'prospectos' como tab inicial
     }
 })
 </script>

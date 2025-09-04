@@ -11,7 +11,7 @@
             <div class="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full lg:w-auto">
               <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
                 <label v-if="showPrimarySearchLabel"
-                  class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ primarySearchLabel }}:</label>
+                  class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
                 <UInput :model-value="primarySearchValue || ''" :placeholder="primarySearchPlaceholder"
                   class="flex-1 h-10 min-w-0" :ui="{ base: 'h-11' }"
                   @update:model-value="(value) => emit('update:primarySearch', value)">
@@ -20,12 +20,12 @@
                   </template>
                 </UInput>
               </div>
-              <UButton v-if="showExport" label="Exportar" icon="i-heroicons-arrow-up-tray"
+              <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
                 class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
                 @click="handleExport" />
               <div class="flex items-center gap-2 relative w-full lg:w-auto">
                 <div ref="filtersButtonRef" class="w-full lg:w-auto">
-                  <UButton v-if="showFilters" label="Filtros" icon="i-heroicons-funnel"
+                  <UButton v-if="showFilters" :label="translations.filters" icon="i-heroicons-funnel"
                     class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
                     @click="showFiltersPanel = !showFiltersPanel" />
                 </div>
@@ -35,7 +35,7 @@
                   class="absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
                   @click.stop>
                   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div v-for="filter in filterConfig" :key="filter.key" class="field">
+                    <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field">
                       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ filter.label }}
                       </label>
@@ -58,7 +58,7 @@
                   </div>
                   <!-- Botón para cerrar filtros -->
                   <div class="flex justify-end mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <UButton label="Cerrar" color="gray" variant="outline" size="sm" @click="showFiltersPanel = false"
+                    <UButton :label="translations.close" color="gray" variant="outline" size="sm" @click="showFiltersPanel = false"
                       @click.stop />
                   </div>
                 </div>
@@ -116,16 +116,16 @@
           <template #loading>
             <div class="flex items-center justify-center py-8">
               <UIcon name="i-heroicons-arrow-path" class="animate-spin w-6 h-6 mr-2" />
-              <span>Cargando...</span>
+              <span>{{ translations.loading }}</span>
             </div>
           </template>
 
           <template #empty>
             <div class="text-center py-8">
               <UIcon name="i-heroicons-inbox" class="mx-auto h-12 w-12 text-gray-400" />
-              <h3 class="mt-2 text-sm font-semibold text-gray-900">No hay registros</h3>
+              <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ translations.emptyTitle }}</h3>
               <p class="mt-1 text-sm text-gray-500">
-                {{ emptyStateMessage }}
+                {{ translations.emptyMessage || emptyStateMessage }}
               </p>
             </div>
           </template>
@@ -142,16 +142,16 @@
       class="sticky bottom-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
-          Mostrando {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} a {{ Math.min((currentPage || 1) *
+          {{ translations.showing }} {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} {{translations.a}} {{ Math.min((currentPage || 1) *
             (itemsPerPage || 100), totalRecords) }}
-          de {{ totalRecords }} resultados
+          {{ translations.de }} {{ totalRecords }} {{ translations.resultados }}
         </div>
         <div class="flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto">
           <div class="flex items-center gap-2 justify-center lg:justify-start">
-            <label class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">Mostrar:</label>
+            <label class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.perPage }}</label>
             <USelect :model-value="itemsPerPage" :items="PAGINATION_OPTIONS" placeholder="10" class="w-20"
               @update:model-value="(value: any) => onItemsPerPageChange(Number(value))" />
-            <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">registros</span>
+            <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.resultados }}</span>
           </div>
           <UPagination v-if="totalRecords > 0" v-model:page="currentPageModel" :total="totalRecords"
             :items-per-page="itemsPerPage" class="flex justify-center lg:justify-end" />
@@ -166,6 +166,10 @@ import { h, resolveComponent, computed } from 'vue'
 import type { DataTableProps, DataTableEmits } from '../types/data-table'
 import { useDataTable } from '../composables/useDataTable'
 import { DATA_TABLE_DEFAULTS, PAGINATION_OPTIONS } from '../constants/data-table'
+import { ROLES } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
+const { hasRole, isCoordinacion,currentRole } = useUserRole()
+const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
 import { formatDateForInput } from '../utils/data-table'
 import { navigateTo, useRouter } from '#imports'
 const UButton = resolveComponent('UButton')
@@ -206,6 +210,69 @@ const goBack = () => {
     router.back()
   }
 }
+
+// Simple translations for 'almacen' role
+const translations = computed(() => {
+  if (isAlmacen.value) {
+    return {
+      export: 'Export',
+      filters: 'Filters',
+      close: 'Close',
+      loading: 'Loading...',
+      emptyTitle: 'No records',
+      emptyMessage: 'There are no records to show',
+      showing: 'Showing',
+      results: 'results',
+      perPage: 'Showing per page',
+      viewExcel: 'View products Excel',
+      showing: 'Showing',
+      a: 'to',
+      resultados: 'results',
+      de: 'of',
+      primarySearchLabel: 'Search for'
+    }
+  }
+  return {
+    export: 'Exportar',
+    filters: 'Filtros',
+    close: 'Cerrar',
+    loading: 'Cargando...',
+    emptyTitle: 'No hay registros',
+    emptyMessage: 'No hay registros',
+    showing: 'Mostrando',
+    results: 'resultados',
+    perPage: 'Mostrar:',
+    viewExcel: 'Ver Excel de productos',
+    showing: 'Mostrando',
+    a: 'a',
+    resultados: 'resultados',
+    de: 'de',
+    primarySearchLabel: 'Buscar por'
+  }
+})
+
+// Translate filter labels/options for almacen role
+const displayedFilterConfig = computed(() => {
+  const dict: Record<string, string> = {
+    'Rubro': 'Category',
+    'Tipo Producto': 'Product Type',
+    'Campaña': 'Campaign',
+    'Todos': 'All',
+    'Seleccionar rubro': 'Select category',
+    'Seleccionar tipo': 'Select type',
+    'Seleccionar campaña': 'Select campaign'
+  }
+
+  const raw = props.filterConfig || []
+  if (!isAlmacen.value) return raw
+
+  return raw.map(f => ({
+    ...f,
+    label: dict[f.label] || f.label,
+    placeholder: dict[f.placeholder] || f.placeholder,
+    options: (f.options || []).map(o => ({ ...o, label: (dict[o.label] || o.label) }))
+  }))
+})
 </script>
 <style scoped>
 tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {

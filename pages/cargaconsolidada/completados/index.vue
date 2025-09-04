@@ -26,7 +26,9 @@
             @filter-change="handleFilterChange"
             :hide-back-button="true">
             <template #actions>
-                <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
+                <template v-if="!isAlmacen">
+                    <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
+                </template>
             </template>
         </DataTable>
     </div>
@@ -312,10 +314,71 @@ const documentacionColumns: TableColumn<any>[] = [
     }
 
 ]
-const getColumns = () => {
-    switch (currentRole.value) {
+/**
+ * Columnas para almacen
+ */
+const almacenColumns: TableColumn<any>[] = [
+    {
+        accessorKey: 'carga',
+        header: 'Burden',
+        cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}`
+    },
+    {
+        accessorKey: 'mes',
+        header: 'Month',
+        cell: ({ row }) => row.getValue('mes')
+    },
+    {
+        accessorKey: 'pais',
+        header: 'Country',
+        cell: ({ row }) => row.original.pais?.No_Pais || 'N/A'
+    },
+    {
+        accessorKey: 'f_cierre',
+        header: 'Cut off',
+        cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre'))
+    },
+    {
+        accessorKey: 'empresa',
+        header: 'Company',
+        cell: ({ row }) => row.getValue('empresa')
+    },
+    {
+        accessorKey: 'estado_china',
+        header: 'Status',
+        cell: ({ row }) => {
+            const estado = row.getValue('estado_china') as string
+            const color = getColorByEstado(estado)
+            return h(UBadge, {
+                color,
+                variant: 'subtle',
+                label: getEstadoLabel(estado)
+            })
+        }
+    },
+    {
+        id: 'actions',
+        header: 'Check',
+        cell: ({ row }) => {
+            return h('div', { class: 'flex space-x-2' }, [
+                h(UButton, {
+                    size: 'xs',
+                    icon: 'i-heroicons-eye',
+                    color: 'primary',
+                    variant: 'ghost',
+                    onClick: () => handleViewSteps(row.original.id)
+                })
+            ])
+        }
+    }
+]
+
+const getColumns = ()=>{
+    switch(currentRole.value){
         case ROLES.DOCUMENTACION:
             return documentacionColumns
+        case ROLES.CONTENEDOR_ALMACEN:
+            return almacenColumns
         default:
             return columns
     }

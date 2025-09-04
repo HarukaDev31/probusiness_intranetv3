@@ -1,7 +1,6 @@
     <!--3 tabs:general,variacion,pagos and 3 tables-->
     <template>
         <div class="p-6">
-
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
