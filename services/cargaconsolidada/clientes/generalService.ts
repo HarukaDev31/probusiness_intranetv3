@@ -1,4 +1,5 @@
 import { BaseService } from "~/services/base/BaseService"
+import type { HeaderResponse } from "~/types/data-table"
 
 export class GeneralService extends BaseService {
     static baseUrl = 'api/carga-consolidada/contenedor/clientes/general'
@@ -28,6 +29,15 @@ export class GeneralService extends BaseService {
         }
         catch (error) {
             console.error('Error al actualizar el estado del cliente:', error)
+            throw error
+        }
+    }
+    static async getHeaders(id: number) {
+        try {
+            const response = await this.apiCall<HeaderResponse>(`${this.baseUrl}/${id}/headers`)
+            return response
+        } catch (error) {
+            console.error('Error al obtener los headers:', error)
             throw error
         }
     }

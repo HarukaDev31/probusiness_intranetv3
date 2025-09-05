@@ -15,24 +15,33 @@
     <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
       :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
-      :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigGeneral" :show-export="true"
+      :show-secondary-search="false" :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"
+      :show-primary-search="false"
       empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
-       :show-body-top="true">
+      :show-body-top="true">
       <template #body-top>
-        <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+        <div class="flex flex-col gap-2 w-full">
+          <SectionHeader :title="`Cotización Final #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+        </div>
 
       </template>
     </DataTable>
     <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos" title=""
       :icon="''" :current-page="currentPagePagos" :total-pages="totalPagesPagos" :total-records="totalRecordsPagos"
       :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos" :show-secondary-search="false"
-      :show-filters="true" :filter-config="filterConfigPagos" :show-export="true"
+      :show-primary-search="false"
+      :show-filters="false" :filter-config="filterConfigPagos" :show-export="false"
+
       empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
       @filter-change="handleFilterChangePagos" :show-body-top="true">
       <template #body-top>
-        <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+        <div class="flex flex-col gap-2 w-full">
+          <SectionHeader :title="`Cotización Final #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+        </div>
 
       </template>
     </DataTable>
@@ -54,10 +63,11 @@ import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-fina
 import PagoGrid from '~/components/PagoGrid.vue'
 import type { TableColumn } from '@nuxt/ui'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
+import SectionHeader from '~/components/commons/SectionHeader.vue'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
-const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral,handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral } = useGeneral()
-const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, headers, carga, loadingHeaders,getHeaders } = useGeneral()
+const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos, } = usePagos()
 
 const route = useRoute()
 const id = Number(route.params.id)
@@ -67,7 +77,7 @@ const showCreatePagoModal = ref(false)
 const selectedCliente = ref('')
 
 // Tab state
-const activeTab = ref('') 
+const activeTab = ref('')
 
 // Tab configuration
 const tabs = [
@@ -182,7 +192,7 @@ const generalColumns = ref<TableColumn<any>[]>([
       //RETURN USELECT WITH OPTION SELECTED FROM FILTERCONFIGGENERAL WITH KEY 'estado_cotizacion_final'
       return h(USelect as any, {
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
-        class :[STATUS_BG_CLASSES[row.original.estado_cotizacion_final as keyof typeof STATUS_BG_CLASSES]],
+        class: [STATUS_BG_CLASSES[row.original.estado_cotizacion_final as keyof typeof STATUS_BG_CLASSES]],
         modelValue: row.original.estado_cotizacion_final,
         'onUpdate:modelValue': async (value: any) => {
           if (value && value !== row.original.estado_cliente) {
@@ -251,7 +261,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
       return h(PagoGrid,
         {
           numberOfPagos: 4,
-          pagoDetails: JSON.parse(row.original.pagos   || '[]'),
+          pagoDetails: JSON.parse(row.original.pagos || '[]'),
           clienteNombre: row.original.nombre,
           currency: 'USD'
         }
@@ -297,6 +307,7 @@ watch(activeTab, async (newVal: string, oldVal: string) => {
     navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=pagos`)
     await getPagos(Number(id))
   }
+  await getHeaders(Number(id))
 })
 
 onMounted(async () => {
@@ -306,7 +317,7 @@ onMounted(async () => {
   } else {
     activeTab.value = tabs[0].value
   }
-  
+
 })
 </script>
 

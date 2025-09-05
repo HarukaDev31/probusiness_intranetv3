@@ -15,7 +15,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill"
                         class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -36,12 +36,12 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill"
                         class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto" color="neutral"
                     @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>

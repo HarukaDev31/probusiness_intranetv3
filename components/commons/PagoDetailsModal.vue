@@ -52,7 +52,7 @@
                         }" 
                         @click="handleDownload(pagoDetails.voucher_url)"
                         />
-                        <span class="">{{ pagoDetails.voucher_url.split('/').pop() }}</span>
+                        <span class="w-full overflow-hidden text-ellipsis whitespace-nowrap">{{ pagoDetails.voucher_url.split('/').pop() }}</span>
                     </div>
                 </div>
             </div>
@@ -120,7 +120,9 @@ const handleDownload = (url: string) => {
     const link = document.createElement('a')
     link.href = url
     link.download = 'voucher.pdf'
+    link.target = '_blank'
     document.body.appendChild(link)
+
     link.click()
     document.body.removeChild(link)
 }

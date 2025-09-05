@@ -12,7 +12,7 @@
                 :hide-back-button="false"
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
                 <template #body-top>
-                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
+                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="neutral" />
 
                 </template>
             </DataTable>
@@ -27,7 +27,7 @@
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
-                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
+                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="neutral" />
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"

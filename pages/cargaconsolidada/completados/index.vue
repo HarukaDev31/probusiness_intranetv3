@@ -429,11 +429,11 @@ const getColorByEstado = (estado: string) => {
 const IDGINO = 28791
 const handleViewSteps = (id: number) => {
     if (hasRole('ContenedorAlmacen')) {
-        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=embarque`)
+        navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=embarque`)
     } else if (currentId.value !== IDGINO && currentRole.value === ROLES.COTIZADOR) {
-        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`)
+        navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos`)
     } else {
-        navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
+        navigateTo(`/cargaconsolidada/completados/pasos/${id}`)
     }
 }
 

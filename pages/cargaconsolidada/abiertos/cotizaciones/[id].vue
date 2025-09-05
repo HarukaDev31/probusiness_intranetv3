@@ -15,7 +15,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="xl" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs"  variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -36,7 +36,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="xl" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs"  variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -57,8 +57,8 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
-                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill"
+                        class="mb-4 w-80 h-15" v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>

@@ -82,7 +82,17 @@ export const useGeneral = () => {
     const uploadPlantillaFinal = async (data: any) => {
         try {
             const response = await GeneralService.uploadPlantillaFinal(data)
-            return response
+            //this zip download and return success
+            const blob = new Blob([response], { type: 'application/zip' })
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `plantilla_final_${data.idContenedor}.zip`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            window.URL.revokeObjectURL(url)
+            return { success: true }
         } catch (err) {
             error.value = err as string
         }
@@ -112,6 +122,37 @@ export const useGeneral = () => {
         itemsPerPageGeneral.value = itemsPerPage
         await getGeneral(id)
     }
+    const handleDownloadCotizacionFinalPDF = async (idCotizacion: number) => {
+        try {
+            const response = await GeneralService.downloadCotizacionFinalPDF(idCotizacion)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
+    const handleDeleteCotizacionFinal = async (idCotizacion: number) => {
+        try {
+            const response = await GeneralService.deleteCotizacionFinal(idCotizacion)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
+    const getHeaders = async (id: number) => {
+        try {
+            loadingHeaders.value = true
+            const response = await GeneralService.getHeaders(id)
+            headers.value = response.data
+            carga.value = response.carga
+            loadingHeaders.value = false
+        } catch (err) {
+            loadingHeaders.value = false
+            error.value = err as string
+        }
+    }
+    const headers = ref<any[]>([])
+    const carga = ref<string | null>(null)
+    const loadingHeaders = ref(false)
     return {
         general,
         loadingGeneral,
@@ -131,6 +172,10 @@ export const useGeneral = () => {
         handleSearchGeneral,
         downloadPlantillaGeneral,
         handlePageChangeGeneral,
-        handleItemsPerPageChangeGeneral
+        handleItemsPerPageChangeGeneral,
+        getHeaders,
+        headers,
+        carga,
+        loadingHeaders
     }
 }   
