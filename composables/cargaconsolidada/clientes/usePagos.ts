@@ -1,11 +1,11 @@
 import { ref } from 'vue'
 import type { PaginationInfo } from '~/types/data-table'
 import { PagosService } from '~/services/cargaconsolidada/clientes/pagosService'
-
+import type { Pagos } from '~/types/cargaconsolidada/clientes/pagos'
 export const usePagos = () => {
     const route = useRoute()
     const id = route.params.id
-    const clientesPagos = ref<any[]>([])
+    const clientesPagos = ref<Pagos[]>([])
     const loadingPagos = ref(false)
     const error = ref<string | null>(null)
     const paginationPagos = ref<PaginationInfo>({
@@ -57,7 +57,24 @@ export const usePagos = () => {
             loadingPagos.value = false
         }
     }
- 
+    const registrarPago = async (formData: FormData) => {
+        try{
+            const response = await PagosService.registrarPago(formData)
+            return response
+        }catch(err){
+            error.value = err as string
+        }finally{
+            loadingPagos.value = false
+        }
+    }
+    const deletePago = async (pagoId: number) => {
+        try{
+            const response = await PagosService.deletePago(pagoId)
+            return response
+        }catch(err){
+            error.value = err as string
+        }
+    }
     return {
         clientesPagos,
         loadingPagos,
@@ -74,6 +91,8 @@ export const usePagos = () => {
         handlePagePagosChange,
         handleItemsPerPageChangePagos,
         handleFilterChangePagos,
-        handleSearchPagos
+        handleSearchPagos,
+        registrarPago,
+        deletePago
     }
 }   

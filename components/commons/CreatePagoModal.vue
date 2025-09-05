@@ -1,5 +1,5 @@
 <template>
-    <UModal v-model="isOpen" class="max-w-2xl ">
+    <UModal class="max-w-2xl">
         <template #header>
             <div class="text-center">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -8,77 +8,63 @@
             </div>
         </template>
         <template #body>
-            <div class="space-y-6">
+            <div class="space-y-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Monto Field -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Monto
-                    </label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                            S/
-                        </span>
-                        <UInput v-model="formData.monto" type="number" placeholder="0.00" class="pl-8" step="0.01"
-                            min="0" />
-                    </div>
+                    <UFormField label="Monto" name="monto">
+                        <UInput v-model="formData.monto" type="number" placeholder="0.00" step="0.01" min="0"
+                            class="w-full">
+                            <template #leading>
+                                <span class="text-gray-500">S/</span>
+                            </template>
+                        </UInput>
+                    </UFormField>
                 </div>
 
                 <!-- Banco Field -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                        Banco
-                    </label>
-                    <div class="flex space-x-6">
-                        <label v-for="banco in bancos" :key="banco.id"
-                            class="flex items-center space-x-2 cursor-pointer">
-                            <input type="radio" :value="banco.id" v-model="formData.banco"
-                                class="text-primary focus:ring-primary" />
-                            <div class="flex items-center space-x-2">
-                                <div class="w-8 h-8 rounded flex items-center justify-center text-white text-xs font-bold"
-                                    :class="banco.colorClass">
-                                    {{ banco.logo }}
+                    <UFormField label="Banco" name="banco">
+                        <URadioGroup v-model="formData.banco" :items="bancoOptions" :multiple="false" variant="list"
+                            orientation="horizontal" class="flex flex-row align-middle">
+                            <template #label="{ item }">
+                                <div class="">
+                                    <img :src="item.icon" alt="Banco" class="w-12 h-12 ">
                                 </div>
-                                <span class="text-sm text-gray-700 dark:text-gray-300">
-                                    {{ banco.nombre }}
-                                </span>
-                            </div>
-                        </label>
-                    </div>
+                            </template>
+                        </URadioGroup>
+                    </UFormField>
                 </div>
 
                 <!-- Fecha Field -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Fecha
-                    </label>
-                    <div class="relative">
-                        <UInput v-model="formData.fecha" type="date" class="pr-10" />
-                        <UIcon name="i-heroicons-calendar-days"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    </div>
+
+                    <UFormField label="Fecha" name="fecha">
+                        <UInput v-model="formData.fecha" type="date" class="w-full" />
+                    </UFormField>
                 </div>
 
                 <!-- Voucher Upload Section -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                        Voucher
-                    </label>
-                    <FileUploader :multiple="false" :max-file-size="10 * 1024 * 1024"
-                        :accepted-types="acceptedFileTypes" 
-                        :immediate="false"
-                        :initial-file="formData.voucher"
-                         @file-removed="handleFileRemoved" />
+                <div class="col-span-2">
+                    <UFormField label="Voucher" name="voucher">
+                        <FileUploader ref="fileUploaderRef"
+                        :show-remove-button="true"
+                        :multiple="false" @file-added="handleFileAdded"
+                            @file-removed="handleFileRemoved" :show-save-button="false"  />
+
+                    </UFormField>
                 </div>
             </div>
         </template>
+
         <!-- Footer Actions -->
-        <template #footer>
-                <div class="flex justify-end space-x-3">
-                    <UButton label="Cancelar" color="neutral" variant="ghost" @click="closeModal" />
-                <UButton label="Guardar" color="warning" @click="handleSave" />
+        <template #footer="{ close }">
+            <div class="flex justify-end space-x-3">
+                <UButton label="Cancelar" color="neutral" variant="ghost" @click="close" />
+                <UButton label="Guardar" color="warning" @click="() => {
+                    handleSave()
+                }" />
             </div>
         </template>
-
     </UModal>
 </template>
 
@@ -87,94 +73,89 @@ import { ref, computed } from 'vue'
 import FileUploader from './FileUploader.vue'
 // Props
 interface Props {
-    modelValue: boolean
     clienteNombre: string
-    
+
 }
 const selectedFile = ref<File | null>(null)
-const handleFileSelected = (files: File[]) => {
-    console.log(files)
-    if (files.length > 0) {
-        selectedFile.value = files[0]
-    }
+const handleFileAdded = (file: File) => {
+    selectedFile.value = file
 }
+
 const props = defineProps<Props>()
 
 // Emits
 const emit = defineEmits<{
-    'update:modelValue': [value: boolean]
     'save': [data: any]
+    'close': []
 }>()
 
 // Computed
-const isOpen = computed({
-    get: () => props.modelValue,
-    set: (value) => emit('update:modelValue', value)
-})
+
 
 // Form data
 const formData = ref({
     monto: '',
-    banco: '',
+    banco: [] as string[],
     fecha: new Date().toISOString().split('T')[0], // Today's date as default
     voucher: null as File | null
 })
 
-// Bank options
-const bancos = [
+// Bank options for UCheckboxGroup
+const bancoOptions = [
     {
-        id: 'bcp',
-        nombre: 'Banco de Crédito BCP',
-        logo: 'BCP',
-        colorClass: 'bg-blue-600'
+        label: 'BCP',
+        value: 'BCP',
+        icon: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Logo_credito.gif'
     },
     {
-        id: 'interbank',
-        nombre: 'Interbank',
-        logo: 'I',
-        colorClass: 'bg-blue-500'
+        label: 'INTERBANK',
+        value: 'INTERBANK',
+        icon: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Interbank_logo.svg'
     },
     {
-        id: 'otro',
-        nombre: 'Otro Banco',
-        logo: 'OB',
-        colorClass: 'bg-purple-500'
+        label: 'YAPE',
+        value: 'YAPE',
+        icon: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Icono_de_la_aplicaci%C3%B3n_Yape.png'
     }
 ]
 
 // Accepted file types
-const acceptedFileTypes = ['image/*', 'application/pdf','image/jpeg','image/png']
+const acceptedFileTypes = ['image/*', 'application/pdf', 'image/jpeg', 'image/png']
 
 // Methods
 const closeModal = () => {
-    emit('update:modelValue', false)
     resetForm()
 }
 
 const resetForm = () => {
     formData.value = {
         monto: '',
-        banco: '',
+        banco: [],
         fecha: new Date().toISOString().split('T')[0],
-        voucher: null
-    }
+        voucher: null as File | null
+    } as any
 }
 
 
 
 const handleFileRemoved = (index: number) => {
-    formData.value.voucher = null
+    formData.value.voucher = null as File | null
 }
 
 const handleSave = () => {
     // Validación básica
-    if (!formData.value.monto || !formData.value.banco || !formData.value.fecha) {
+    if (!formData.value.monto || formData.value.banco.length === 0 || !formData.value.fecha) {
         // Aquí podrías mostrar un mensaje de error
         return
     }
 
-    emit('save', { ...formData.value })
-    closeModal()
+    const pagoData = {
+        ...formData.value,
+        voucher: selectedFile.value
+    }
+
+    emit('save', pagoData)
+    emit('close')
 }
 </script>
 

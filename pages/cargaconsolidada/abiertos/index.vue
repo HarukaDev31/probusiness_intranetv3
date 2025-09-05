@@ -26,7 +26,9 @@
             @filter-change="handleFilterChange"
             :hide-back-button="true">
             <template #actions>
-                <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
+                <template v-if="!isAlmacen">
+                    <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
+                </template>
             </template>
         </DataTable>
     </div>
@@ -243,7 +245,7 @@ const columns: TableColumn<any>[] = [
                 h(UButton, {
                     size: 'xs',
                     icon: 'i-heroicons-eye',
-                    color: 'primary',
+                    color: 'info',
                     variant: 'ghost',
                     onClick: () => handleViewSteps(row.original.id)
                 })
@@ -303,7 +305,7 @@ const documentacionColumns: TableColumn<any>[] = [
                 h(UButton, {
                     size: 'xs',
                     icon: 'i-heroicons-eye',
-                    color: 'primary',
+                    color: 'info',
                     variant: 'ghost',
                     onClick: () => handleViewSteps(row.original.id)
                 })

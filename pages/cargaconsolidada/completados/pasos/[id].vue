@@ -68,17 +68,18 @@ const getPasos = async () => {
   const pasos = await getConsolidadoPasos(id)
 }
 const pasosMap = {
-  'COTIZACION': `/cargaconsolidada/completados/cotizaciones/${id}`,
-  'CLIENTES': `/cargaconsolidada/completados/clientes/${id}`,
-  'DOCUMENTACION': `/cargaconsolidada/completados/documentacion/${id}`,
-  'COTIZACION FINAL': `/cargaconsolidada/completados/cotizacion-final/${id}`,
-  'FACTURA Y GUIA': `/cargaconsolidada/completados/factura-guia/${id}`
+  'COTIZACION': `/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`,
+  'CLIENTES': `/cargaconsolidada/abiertos/clientes/${id}`,
+  'DOCUMENTACION': `/cargaconsolidada/abiertos/documentacion/${id}`,
+  'COTIZACION FINAL': `/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`,
+  'FACTURA Y GUIA': `/cargaconsolidada/abiertos/factura-guia/${id}`,
+  'ADUANA': `/cargaconsolidada/abiertos/aduana/${id}`
 }
 const handleNavigateToStep = (step: string) => {
   navigateTo(pasosMap[step as keyof typeof pasosMap])
 }
 const goBack = () => {
-  navigateTo('/cargaconsolidada/completados')
+  navigateTo('/cargaconsolidada/abiertos')
 }
 </script>
 

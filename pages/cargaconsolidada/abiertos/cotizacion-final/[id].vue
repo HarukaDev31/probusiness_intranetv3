@@ -1,13 +1,9 @@
 <template>
   <div class="p-6">
     <!-- Header Section -->
-    <PageHeader title="Cotizaciones finales" subtitle="Gestión de cotizaciones" icon="i-heroicons-book-open"
-      :hide-back-button="false" @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
-    <!-- add 3 buttons 
- Subir Factura
- Plantilla General
- Plantilla Final
--->
+    <PageHeader title="" subtitle="Gestión de cotizaciones" icon="" :hide-back-button="false"
+      @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
+
     <div class="flex justify-end gap-3 mb-4">
       <UButton label="Subir Factura" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
         @click="handleUploadFactura" />
@@ -16,21 +12,30 @@
       <UButton label="Plantilla Final" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
         @click="handleUploadPlantillaFinal" />
     </div>
-    <UTabs v-model="activeTab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
-    <DataTable title="General" v-if="activeTab === 'general'" :data="general" :columns="generalColumns"
+    <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
       :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
       :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigGeneral" :show-export="true"
       empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
-      @filter-change="handleFilterChangeGeneral" />
-    <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos" title="Pagos"
-      :current-page="currentPagePagos" :total-pages="totalPagesPagos" :total-records="totalRecordsPagos"
+       :show-body-top="true">
+      <template #body-top>
+        <UTabs v-model="activeTab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
+
+      </template>
+    </DataTable>
+    <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos" title=""
+      :icon="''" :current-page="currentPagePagos" :total-pages="totalPagesPagos" :total-records="totalRecordsPagos"
       :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos" :show-secondary-search="false"
       :show-filters="true" :filter-config="filterConfigPagos" :show-export="true"
       empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
-      @filter-change="handleFilterChangePagos" />
+      @filter-change="handleFilterChangePagos" :show-body-top="true">
+      <template #body-top>
+        <UTabs v-model="activeTab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
+
+      </template>
+    </DataTable>
 
     <!-- CreatePagoModal -->
     <CreatePagoModal v-model="showCreatePagoModal" :cliente-nombre="selectedCliente" @save="handleSavePago" />
@@ -46,9 +51,11 @@ import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/SimpleUploadFile.vue'
+import PagoGrid from '~/components/PagoGrid.vue'
+import type { TableColumn } from '@nuxt/ui'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
-const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral } = useGeneral()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral,handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 
 const route = useRoute()
@@ -59,7 +66,7 @@ const showCreatePagoModal = ref(false)
 const selectedCliente = ref('')
 
 // Tab state
-const activeTab = ref('general') as Ref<string>
+const activeTab = ref('') as Ref<string>
 
 // Tab configuration
 const tabs = [
@@ -95,7 +102,7 @@ const handleUploadPlantillaFinal = () => {
     title: 'Subir Plantilla Final',
     onClose: () => simpleUploadFileModal.close(),
     onSave: async (data: { file: File }) => {
-     
+
       await withSpinner(async () => {
         const formData = new FormData()
         formData.append('file', data.file)
@@ -239,46 +246,14 @@ const pagosColumns = ref<TableColumn<any>[]>([
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
       // Parse pagos JSON and validate count
-      const pagos = row.original.pagos ? JSON.parse(row.original.pagos) : []
-      const validPagos = Array.isArray(pagos) ? pagos : []
-
-      // Always show 4 elements: existing pagos + plus buttons for missing ones
-      const elements = []
-
-      // Add existing pagos
-      for (let i = 0; i < Math.min(validPagos.length, 4); i++) {
-        const pago = validPagos[i]
-        elements.push(
-          h(UBadge as any, {
-            label: formatCurrency(pago.monto),
-            color: 'primary',
-            variant: 'outline',
-            class: 'cursor-pointer',
-            onClick: () => {
-              // Show pago details or edit modal
-              console.log('Pago clicked:', pago)
-            }
-          })
-        )
-      }
-
-      // Add plus buttons for missing pagos to complete 4
-      for (let i = validPagos.length; i < 4; i++) {
-        elements.push(
-          h('div', {
-            class: 'w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors',
-            onClick: () => {
-              // Open CreatePagoModal
-              showCreatePagoModal.value = true
-              selectedCliente.value = row.original.cliente_nombre || 'Cliente'
-            }
-          }, [
-            h('i-heroicons-plus', { class: 'w-4 h-4 text-gray-500' })
-          ])
-        )
-      }
-
-      return h('div', { class: 'flex items-center space-x-2' }, elements)
+      return h(PagoGrid,
+        {
+          numberOfPagos: 4,
+          pagoDetails: JSON.parse(row.original.pagos   || '[]'),
+          clienteNombre: row.original.nombre,
+          currency: 'USD'
+        }
+      )
     }
   }
 ])
@@ -311,15 +286,24 @@ watch(activeTab, async (newVal, oldVal) => {
     return
   }
   if (newVal === 'general') {
+    console.log('general')
+    navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`)
     await getGeneral(Number(id))
   }
   if (newVal === 'pagos') {
+    navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=pagos`)
     await getPagos(Number(id))
   }
 })
 
 onMounted(async () => {
-  await getGeneral(Number(id))
+  const tabQuery = route.query.tab
+  if (tabQuery) {
+    activeTab.value = tabQuery as string
+  } else {
+    activeTab.value = tabs[0].value
+  }
+  
 })
 </script>
 

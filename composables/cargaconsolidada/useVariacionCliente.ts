@@ -16,7 +16,7 @@ export const useVariacionCliente = () => {
   
   // Estado de tabs
   const activeTab = ref<string>('')
-  const tabs = ref<{ id: string; label: string; code: string }[]>([])
+    const tabs = ref<{ id: string; label: string; value: string }[]>([])
   
   // Estado de proveedores
   const proveedores = ref<ProveedorVariacion[]>([])
@@ -35,7 +35,7 @@ export const useVariacionCliente = () => {
   })
   const filesAlmacenDocumentacion = ref<ArchivoVariacion[]>([])
   const filesAlmacenInspection = ref<ArchivoVariacion[]>([])
-
+  const files = ref<ArchivoVariacion[]>([])
   /**
    * Obtiene la documentación del cliente
    */
@@ -55,12 +55,13 @@ export const useVariacionCliente = () => {
         await procesarProveedores(response.data)
         
         // Establecer el primer tab como activo
-        if (tabs.value.length > 0) {
-          activeTab.value = tabs.value[0].id
-          await cambiarProveedor(tabs.value[0].id)
+        if (tabs.value.length ) {
+          activeTab.value = activeTab.value || tabs.value[0].id
+          await cambiarProveedor(activeTab.value)
         }
         filesAlmacenDocumentacion.value = response.data.files_almacen_documentacion
         filesAlmacenInspection.value = response.data.files_almacen_inspection
+        files.value = response.data.files
       } else {
         error.value = 'Error al obtener la documentación'
       }
@@ -91,7 +92,7 @@ export const useVariacionCliente = () => {
       tabs.value = providersData.map(provider => ({
         id: provider.id.toString(),
         label: `${provider.code_supplier}`,
-        code: provider.code_supplier
+        value: provider.code_supplier
       }))
 
       // Establecer el primer proveedor como activo
@@ -110,7 +111,8 @@ export const useVariacionCliente = () => {
   const cambiarProveedor = async (tabId: string) => {
     try {
       activeTab.value = tabId
-      const proveedor = proveedores.value.find(p => p.id.toString() === tabId)
+      console.log(tabId,proveedores.value)
+      const proveedor = proveedores.value.find(p => p.code_supplier.toString() === tabId)
       
       if (proveedor) {
         proveedorActivo.value = proveedor
@@ -298,7 +300,15 @@ export const useVariacionCliente = () => {
     archivosDocumentacion.value = []
     archivosInspeccion.value = []
   }
-
+  const createProveedorDocumentacion = async (data: FormData) => {
+    try {
+      const response = await VariacionService.createProveedorDocumentacion(data)
+      return response
+    } catch (err: any) {
+      console.error('Error al crear documento:', err)
+      return { success: false, error: err.message || 'Error al crear el documento' }
+    }
+  } 
   return {
     // Estado
     cliente,
@@ -328,6 +338,8 @@ export const useVariacionCliente = () => {
     deleteArchivo,
     clearState,
     filesAlmacenDocumentacion,
-    filesAlmacenInspection
+    filesAlmacenInspection,
+    files,
+    createProveedorDocumentacion
   }
 }

@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import { PagosService } from '../services/cargaconsolidada/cotizacion-final/pagosService'
-import type { PaginationInfo } from '../types/data-table'
+import { PagosService } from '~/services/cargaconsolidada/cotizacion-final/pagosService'
+import type { PaginationInfo } from '~/types/data-table'
 
 export const usePagos = () => {
     const pagos = ref<any[]>([])
@@ -15,7 +15,7 @@ export const usePagos = () => {
         to: 0
     })
     const searchPagos = ref('')
-    const itemsPerPagePagos = ref(10)
+    const itemsPerPagePagos = ref(100)
     const totalPagesPagos = computed(() => Math.ceil(paginationPagos.value.total / itemsPerPagePagos.value))
     const totalRecordsPagos = computed(() => paginationPagos.value.total)
     const currentPagePagos = computed(() => paginationPagos.value.current_page)
@@ -39,7 +39,12 @@ export const usePagos = () => {
     const getPagos = async (id: number) => {
         try {
             loadingPagos.value = true
-            const response = await PagosService.getPagos(id)
+            const params = {
+                page: currentPagePagos.value,
+                per_page: itemsPerPagePagos.value,
+                ...filtersPagos.value
+            }
+            const response = await PagosService.getPagos(id, params)
             pagos.value = response.data
             paginationPagos.value = response.pagination
         } catch (err) {
