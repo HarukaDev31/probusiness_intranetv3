@@ -27,7 +27,9 @@
             :hide-back-button="true">
             <template #actions>
                 <template v-if="!isAlmacen">
-                    <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
+                    <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" 
+                    v-if="currentRole === ROLES.COORDINACION"
+                    />
                 </template>
             </template>
         </DataTable>
@@ -48,6 +50,7 @@ const { hasRole, isCoordinacion, currentRole, currentId } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
 import CreateConsolidadoModal from '~/components/cargaconsolidada/CreateConsolidadoModal.vue'
 import { USelect } from '#components'
+import  TextModal  from '~/components/commons/TextModal.vue' 
 const { showSuccess, showConfirmation } = useModal()
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 const {
@@ -72,6 +75,7 @@ const {
 const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
 const currentConsolidado = ref<number | null>(null)
+const textModal = overlay.create(TextModal)
 
 // Components
 const UButton = resolveComponent('UButton')
@@ -253,23 +257,40 @@ const columns: TableColumn<any>[] = [
         }
     }
 ]
-//documentacion columns Carga	Mes	Pais	F. Cierre	Empresa	Estado	Accione
+//Mes	Empresa	Carga	T. Ctn	Canal	Naviera	T. Transito	Días de levante	Ajuste	Multa	FOB	Flete	C. Destino	Acciones
 const documentacionColumns: TableColumn<any>[] = [
+    {
+        accessorKey: 'mes',
+        header: 'Mes',
+        cell: ({ row }) => row.getValue('mes')
+    },
+    {
+        accessorKey: 'empresa',
+        header: 'Empresa',
+        cell: ({ row }) => row.getValue('empresa')
+    },
     {
         accessorKey: 'carga',
         header: 'Carga',
         cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}`
     },
     {
-        accessorKey: 'mes',
-        header: 'Mes',
-        cell: ({ row }) => row.getValue('mes')
+        accessorKey: 'tipo_contenedor',
+        header: 'T. Ctn',
+        cell: ({ row }) => row.getValue('tipo_contenedor')
     },
 
     {
-        accessorKey: 'pais',
-        header: 'País',
-        cell: ({ row }) => row.original.pais?.No_Pais || 'N/A'
+        accessorKey: 'canal_control',
+        header: 'Canal',
+        cell: ({ row }) => {
+            const canal = row.getValue('canal_control')
+            return h(UBadge, {
+                color: canal === 'Verde' ? 'success' : canal === 'Naranja' ? 'warning' : 'error',
+                variant: 'subtle',
+                label: canal
+            })
+        }
     },
 
     {
@@ -279,40 +300,87 @@ const documentacionColumns: TableColumn<any>[] = [
     },
 
     {
-        accessorKey: 'empresa',
-        header: 'Empresa',
-        cell: ({ row }) => row.getValue('empresa')
+        accessorKey: 'fecha_arribo',
+        header: 'F. Arribo',
+        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_arribo'))
+    },
+    {
+        accessorKey: 'fecha_declaracion',
+        header: 'F. Declaración',
+        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_declaracion'))
+    },
+    {
+        accessorKey: 'fecha_levante',
+        header: 'F. Levante',
+        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_levante'))
+    },
+    {
+        accessorKey: 'dias_levante',
+        header: 'Días de levante',
+        cell: ({ row }) => 0   
+    },
+    {
+        accessorKey: 'numero_dua',
+        header: 'N. Dua',
+        cell: ({ row }) => row.getValue('numero_dua')
+    },
+    {
+        accessorKey: 'ajuste_valor',
+        header: 'Ajuste',
+        cell: ({ row }) => formatCurrency(row.getValue('ajuste_valor'))
+    },
+    {
+        accessorKey: 'multa',
+        header: 'Multa',
+        cell: ({ row }) => formatCurrency(row.getValue('multa'))
+    },
+    {
+        accessorKey: 'valor_fob',
+        header: 'FOB',
+        cell: ({ row }) => formatCurrency(row.getValue('valor_fob'))
+    },
+    {
+        accessorKey: 'valor_flete',
+        header: 'Flete',
+        cell: ({ row }) => formatCurrency(row.getValue('valor_flete'))
     },
 
     {
-        accessorKey: 'estado',
-        header: 'Estado',
-        cell: ({ row }) => {
-            const estado = row.original.estado_documentacion as string
-            const color = getColorByEstado(estado)
-            return h(UBadge, {
-                color,
-                variant: 'subtle',
-                label: getEstadoLabel(estado)
-            })
-        }
+        accessorKey: 'costo_destino',
+        header: 'C. Destino',
+        cell: ({ row }) => formatCurrency(row.getValue('costo_destino'))
+
     },
     {
-        accessorKey: 'actions',
+        accessorKey: 'acciones',
         header: 'Acciones',
         cell: ({ row }) => {
             return h('div', { class: 'flex space-x-2' }, [
                 h(UButton, {
                     size: 'xs',
                     icon: 'i-heroicons-eye',
-                    color: 'info',
+                    color: 'primary',
                     variant: 'ghost',
                     onClick: () => handleViewSteps(row.original.id)
-                })
+                }),
+                row.original.observaciones ?
+                h(UButton, {
+                    size: 'xs',
+                    //icon  mail
+                    icon: 'i-heroicons-envelope',
+                    color: 'primary',
+                    variant: 'ghost',
+                    onClick: () => {
+                        textModal.open({
+                            content: row.original.observaciones,
+                            title: 'Observaciones'
+                        })
+                    }
+                }) : null
             ])
         }
     }
-
+    
 ]
 /**
  * Columnas para almacen

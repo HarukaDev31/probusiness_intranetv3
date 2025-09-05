@@ -2,7 +2,7 @@
   <div class="p-6">
     <!-- Header Section -->
     <PageHeader title="" subtitle="Gestión de cotizaciones" icon="" :hide-back-button="false"
-      @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
+      @back="navigateTo(`/cargaconsolidada/completados/pasos/${id}`)" />
     <!-- add 3 buttons 
  Subir Factura
  Plantilla General
@@ -335,7 +335,7 @@ const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: s
   })
 }
 const goBack = () => {
-  navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
+  navigateTo(`/cargaconsolidada/completados/pasos/${id}`)
 }
 
 // Handle save pago
@@ -349,11 +349,11 @@ watch(activeTab, async (newVal, oldVal) => {
     return
   }
   if (newVal === 'general') {
-    navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`)
+    navigateTo(`/cargaconsolidada/completados/cotizacion-final/${id}?tab=general`)
     await getGeneral(Number(id))
   }
   if (newVal === 'pagos') {
-    navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=pagos`)
+    navigateTo(`/cargaconsolidada/completados/cotizacion-final/${id}?tab=pagos`)
     await getPagos(Number(id))
   }
 })

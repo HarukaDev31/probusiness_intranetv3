@@ -1,7 +1,7 @@
 <template>
     <div class="mx-6 p-6 ">
         <PageHeader title="" subtitle="" icon="" :hide-back-button="false" @back="
-            navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
+            navigateTo(`/cargaconsolidada/completados/pasos/${id}`)
             " />
 
         <!-- Form -->

@@ -3,7 +3,11 @@
     <!-- Header Section -->
     <PageHeader title="" subtitle="Gestión de cotizaciones" icon="" :hide-back-button="false"
       @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
-
+    <!-- add 3 buttons 
+ Subir Factura
+ Plantilla General
+ Plantilla Final
+-->
     <div class="flex justify-end gap-3 mb-4">
       <UButton label="Subir Factura" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
         @click="handleUploadFactura" />
@@ -15,33 +19,25 @@
     <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
       :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
-      :show-secondary-search="false" :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"
       :show-primary-search="false"
-      empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
+      :show-secondary-search="false" :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"
+        empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
-      :show-body-top="true">
+      @filter-change="handleFilterChangeGeneral" :show-body-top="true">
       <template #body-top>
-        <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Cotización Final #${carga}`" :headers="headers" :loading="loadingHeaders" />
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
-        </div>
+        <UTabs v-model="activeTab" :items="tabs"  color="neutral" variant="pill" class="mb-4 w-80 h-15" />
 
       </template>
     </DataTable>
     <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos" title=""
       :icon="''" :current-page="currentPagePagos" :total-pages="totalPagesPagos" :total-records="totalRecordsPagos"
       :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos" :show-secondary-search="false"
-      :show-primary-search="false"
       :show-filters="false" :filter-config="filterConfigPagos" :show-export="false"
-
       empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
       @filter-change="handleFilterChangePagos" :show-body-top="true">
       <template #body-top>
-        <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Cotización Final #${carga}`" :headers="headers" :loading="loadingHeaders" />
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
-        </div>
+        <UTabs v-model="activeTab" :items="tabs"  color="neutral" variant="pill" class="mb-4 w-80 h-15" />
 
       </template>
     </DataTable>
@@ -55,7 +51,7 @@
 import { ref } from 'vue'
 import { useGeneral } from '~/composables/cargaconsolidada/cotizacion-final/useGeneral'
 import { usePagos } from '~/composables/cargaconsolidada/cotizacion-final/usePagos'
-import { USelect, UBadge } from '#components'
+import { USelect, UBadge, UButton } from '#components'
 import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -63,11 +59,10 @@ import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-fina
 import PagoGrid from '~/components/PagoGrid.vue'
 import type { TableColumn } from '@nuxt/ui'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
-import SectionHeader from '~/components/commons/SectionHeader.vue'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
-const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, headers, carga, loadingHeaders,getHeaders } = useGeneral()
-const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos, } = usePagos()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal } = useGeneral()
+const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 
 const route = useRoute()
 const id = Number(route.params.id)
@@ -77,7 +72,7 @@ const showCreatePagoModal = ref(false)
 const selectedCliente = ref('')
 
 // Tab state
-const activeTab = ref('')
+const activeTab = ref('') as Ref<string>
 
 // Tab configuration
 const tabs = [
@@ -119,7 +114,7 @@ const handleUploadPlantillaFinal = () => {
         formData.append('file', data.file)
         formData.append('idContenedor', id.toString())
         const result = await uploadPlantillaFinal(formData)
-        if (result.success) {
+        if (result) {
           showSuccess('Éxito', 'Plantilla final subida correctamente')
         } else {
           showError('Error', 'Error al subir la plantilla final')
@@ -168,22 +163,34 @@ const generalColumns = ref<TableColumn<any>[]>([
 
   {
     accessorKey: 'fob_final',
-    header: 'Fob'
+    header: 'Fob',
+    cell: ({ row }: { row: any }) => {
+      return `$${row.original.fob_final}`
+    }
   },
 
   {
     accessorKey: 'logistica_final',
-    header: 'Logística'
+    header: 'Logística',
+    cell: ({ row }: { row: any }) => {
+      return formatCurrency(row.original.logistica_final)
+    }
   },
 
   {
     accessorKey: 'impuestos_final',
-    header: 'Impuesto'
+    header: 'Impuesto',
+    cell: ({ row }: { row: any }) => {
+      return formatCurrency(row.original.impuestos_final)
+    }
   },
 
   {
     accessorKey: 'tarifa_final',
-    header: 'Tarifa'
+    header: 'Tarifa',
+    cell: ({ row }: { row: any }) => {
+      return `$${row.original.tarifa_final}`
+    }
   },
   {
     accessorKey: 'estado_cotizacion_final',
@@ -192,7 +199,7 @@ const generalColumns = ref<TableColumn<any>[]>([
       //RETURN USELECT WITH OPTION SELECTED FROM FILTERCONFIGGENERAL WITH KEY 'estado_cotizacion_final'
       return h(USelect as any, {
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
-        class: [STATUS_BG_CLASSES[row.original.estado_cotizacion_final as keyof typeof STATUS_BG_CLASSES]],
+        class :[STATUS_BG_CLASSES[row.original.estado_cotizacion_final as keyof typeof STATUS_BG_CLASSES]],
         modelValue: row.original.estado_cotizacion_final,
         'onUpdate:modelValue': async (value: any) => {
           if (value && value !== row.original.estado_cliente) {
@@ -201,10 +208,54 @@ const generalColumns = ref<TableColumn<any>[]>([
         }
       })
     }
-  },
+  },  
   {
     accessorKey: 'c_final',
-    header: 'C Final'
+    header: 'C Final',
+    cell: ({ row }: { row: any }) => {
+      //if cotizacion_final_url exists show excel button to download else upload button
+      if (row.original.cotizacion_final_url) {
+        //div with button excel ,pdf and delete button
+        return h('div', {
+          class: 'flex flex-row gap-2'
+        }, [
+          h(UButton, {
+            icon: 'vscode-icons:file-type-excel',
+            color: 'primary',
+            variant: 'ghost',
+            onClick: () => {
+              window.open(row.original.cotizacion_final_url, '_blank')
+            }
+          }),
+          h(UButton, {
+            icon: 'vscode-icons:file-type-pdf2',
+            color: 'primary',
+            variant: 'ghost',
+            onClick: () => {
+              handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)  
+            }
+          }),
+          h(UButton, {
+            icon: 'i-heroicons-trash',
+            color: 'error',
+            variant: 'ghost',
+            onClick: () => {
+              handleDeleteCotizacionFinal(row.original.id_cotizacion)
+            }
+          })
+        ])
+   
+      } else {
+        return h(UButton, {
+          icon: 'i-heroicons-arrow-up-tray',
+          color: 'primary',
+          variant: 'outline',
+          onClick: () => {
+            handleUploadPlantillaFinal()
+          }
+        })
+      } 
+    }
   }
 ])
 //pagos columns N.	Nombre	DNI/RUC	Whatsapp	T. Cliente	Importe	Pagado	Adelantos
@@ -261,7 +312,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
       return h(PagoGrid,
         {
           numberOfPagos: 4,
-          pagoDetails: JSON.parse(row.original.pagos || '[]'),
+          pagoDetails: JSON.parse(row.original.pagos   || '[]'),
           clienteNombre: row.original.nombre,
           currency: 'USD'
         }
@@ -293,13 +344,11 @@ const handleSavePago = (pagoData: any) => {
   // Aquí puedes implementar la lógica para guardar el pago
   // Por ejemplo, llamar a un servicio o actualizar el estado
 }
-watch(activeTab, async (newVal: string, oldVal: string) => {
-
-  if (!newVal) {
+watch(activeTab, async (newVal, oldVal) => {
+  if (oldVal === '' || !newVal) {
     return
   }
   if (newVal === 'general') {
-    console.log('general')
     navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`)
     await getGeneral(Number(id))
   }
@@ -307,7 +356,6 @@ watch(activeTab, async (newVal: string, oldVal: string) => {
     navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=pagos`)
     await getPagos(Number(id))
   }
-  await getHeaders(Number(id))
 })
 
 onMounted(async () => {
@@ -317,7 +365,7 @@ onMounted(async () => {
   } else {
     activeTab.value = tabs[0].value
   }
-
+  await getGeneral(Number(id))
 })
 </script>
 

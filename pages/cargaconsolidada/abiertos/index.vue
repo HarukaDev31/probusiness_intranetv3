@@ -15,19 +15,20 @@
         </div>
 
 
-        <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData" :columns="getColumns()" :loading="loading"
-            :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-            :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
-            :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
+        <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData"
+            :columns="getColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
+            :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
+            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
                 return filters
             })()" :show-export="true" empty-state-message="No se encontraron registros de contenedores."
             @update:search-query="handleSearch" @update:primary-search="handleSearch" @page-change="handlePageChange"
             @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
-            @filter-change="handleFilterChange"
-            :hide-back-button="true">
+            @filter-change="handleFilterChange" :hide-back-button="true">
             <template #actions>
-                <template v-if="!isAlmacen">
-                    <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
+                <template v-if="currentRole === ROLES.COORDINACION">
+                    <CreateConsolidadoModal 
+                    
+                    @submit="handleCreateConsolidado" :id="currentConsolidado" />
                 </template>
             </template>
         </DataTable>
@@ -48,7 +49,7 @@ const { hasRole, isCoordinacion, currentRole, currentId } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
 import CreateConsolidadoModal from '~/components/cargaconsolidada/CreateConsolidadoModal.vue'
 import { USelect } from '#components'
-const { showSuccess, showConfirmation } = useModal()
+const { showSuccess, showConfirmation, showError } = useModal()
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 const {
     consolidadoData,
@@ -67,7 +68,8 @@ const {
     clearFilters,
     resetSearch,
     createConsolidado,
-    deleteConsolidado
+    deleteConsolidado,
+    updateEstadoDocumentacion
 } = useConsolidado()
 const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
@@ -102,6 +104,7 @@ const filterConfig = computed<FilterConfig[]>(() => {
             label: 'Estado',
             key: 'estado_china',
             type: 'select',
+
             options: [
                 { label: 'Todos', value: 'todos' },
                 { label: 'WAITING', value: 'WAITING' },
@@ -290,10 +293,36 @@ const documentacionColumns: TableColumn<any>[] = [
         cell: ({ row }) => {
             const estado = row.original.estado_documentacion as string
             const color = getColorByEstado(estado)
-            return h(UBadge, {
-                color,
+            return h(USelect as any, {
+                modelValue: row.original.estado_documentacion,
                 variant: 'subtle',
-                label: getEstadoLabel(estado)
+                color: color,
+                class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES],
+                items: [
+                    { label: 'PENDIENTE', value: 'PENDIENTE' },
+                    { label: 'DOCUMENTACION', value: 'DOCUMENTACION' },
+                    { label: 'COMPLETADO', value: 'COMPLETADO' }
+                ],
+                'onUpdate:modelValue': async (value: any) => {
+                    row.original.estado_documentacion = value
+                    await withSpinner(async () => {
+                        try {
+                            const data = {
+                                id: row.original.id,
+                                estado_documentacion: value
+                            }
+                            const response = await updateEstadoDocumentacion(data)
+                            if (response.success) {
+                                showSuccess('Estado de documentación actualizado correctamente', 'El estado de documentación se ha actualizado correctamente.')
+                                await getConsolidadoData()
+                            } else {
+                                showError('Error al actualizar el estado de documentación', response.error)
+                            }
+                        } catch (error) {
+                            showError('Error al actualizar el estado de documentación', error as string)
+                        }
+                    })
+                }
             })
         }
     },

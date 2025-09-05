@@ -41,4 +41,16 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+    static async updateStatusClienteDoc(data: any) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/status-cliente-doc`, {
+                method: 'POST',
+                body: data
+            })
+            return response
+        } catch (error) {
+            console.error('Error al actualizar el estado de la documentación del cliente:', error)
+            throw error
+        }
+    }
 }

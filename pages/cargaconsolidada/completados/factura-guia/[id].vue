@@ -1,31 +1,39 @@
 <template>
   <div class="p-6">
     <!-- Header Section -->
-    <PageHeader title="Factura y Guía" subtitle="Gestión de factura y guía" icon="i-heroicons-book-open"
-      :hide-back-button="false" @back="navigateTo(`/cargaconsolidada/completados/pasos/${id}`)" />
 
-    <DataTable title="General" :data="general" :columns="generalColumns" :loading="loadingGeneral"
+
+    <DataTable title="" :data="general" :columns="generalColumns" :loading="loadingGeneral" icon=""
       :current-page="currentPageGeneral" :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
       :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
-      :show-filters="true" :filter-config="filterConfigGeneral" :show-export="true"
+      :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"
       empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
-      @filter-change="handleFilterChangeGeneral" />
-
-
-    <!-- CreatePagoModal -->
+      @filter-change="handleFilterChangeGeneral" :hide-back-button="false"
+      :show-primary-search="false"
+      :show-body-top="true"
+      :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
+      <template #body-top>
+        <div class="flex flex-col gap-2 w-full">
+          <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headers" :loading="loadingHeaders" />
+        </div>
+      </template>
+    </DataTable>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useGeneral } from '../composables/cargaconsolidada/factura-guia/useGeneral'
+import { useGeneral } from '~/composables/cargaconsolidada/factura-guia/useGeneral'
 import { USelect, UBadge, UButton } from '#components'
 import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/SimpleUploadFile.vue'
-
-const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, uploadFacturaComercial, uploadGuiaRemision } = useGeneral()
+import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
+import type { TableColumn } from '@nuxt/ui'
+import { useUserRole } from '~/composables/auth/useUserRole'
+const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, uploadFacturaComercial, uploadGuiaRemision, headers, carga, loadingHeaders, getHeaders } = useGeneral()
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import SectionHeader from '~/components/commons/SectionHeader.vue'  
 const { withSpinner } = useSpinner()
 const { showSuccess, showError } = useModal()
 const route = useRoute()
@@ -33,7 +41,7 @@ const id = Number(route.params.id)
 const overlay = useOverlay()
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 // Modal state for creating pagos
-
+const { currentRole, currentId } = useUserRole()
 const selectedCliente = ref('')
 
 // Tab state
@@ -98,9 +106,9 @@ const generalColumns = ref<TableColumn<any>[]>([
       // cotizacion_final_url SHOW DOWNLOAD ICON 
       if (row.original.cotizacion_final_url) {
         return h(UButton, {
-          icon: 'i-heroicons-arrow-down-tray',
+          icon: 'vscode-icons:file-type-excel',
           color: 'primary',
-          variant: 'outline',
+          variant: 'ghost',
           onClick: () => {
             window.open(row.original.cotizacion_final_url, '_blank')
           }
@@ -219,6 +227,7 @@ const handleUploadGuiaRemision = async (data: { file: File }, idCotizacion: numb
 
 onMounted(async () => {
   await getGeneral(Number(id))
+  await getHeaders(Number(id))
 })
 </script>
 

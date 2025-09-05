@@ -95,7 +95,7 @@
                         <!-- Child simple -->
                         <div v-else>
                           <UButton
-                            :label="child.name"
+                            :label="getCustomMenuName(item.name, child.name)"
                             :icon="child.icon"
                             variant="ghost"
                             class="w-full justify-start text-sm gap-2 py-2 px-2 rounded-md"
@@ -126,7 +126,9 @@
         </template>
 
         <!-- Preferencias -->
-        <div class="py-5 border-t border-b border-gray-100 dark:border-gray-700">
+        <div class="py-5 border-t border-b border-gray-100 dark:border-gray-700"
+        v-if="currentRole !== ROLES.CONTENEDOR_ALMACEN"
+        >
           <div class="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preferencias</div>
           <div class="mt-2 space-y-1 px-2">
             <div class="py-2">
@@ -179,8 +181,10 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import type { SidebarCategory } from '../types/module'
+import { ROLES } from '~/constants/roles'
 import { useUserRole } from '../composables/auth/useUserRole'
 import { useAuth } from '../composables/auth/useAuth'
+
 interface AuthUser {
   id: number | string
   email: string
@@ -213,7 +217,7 @@ const {
   userEmail,
   fetchCurrentUser
 } = useUserRole()
-
+import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar' 
 // Dark mode
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
@@ -306,4 +310,11 @@ onMounted(() => {
     }
   }
 })
+const getCustomMenuName = (itemName: string, childName: string) => {
+  //if object contains key
+  if (Object.keys(CUSTOM_MENUS_PER_ROLE).includes(itemName) && Object.keys(CUSTOM_MENUS_PER_ROLE[itemName]).includes(currentRole.value) && Object.keys(CUSTOM_MENUS_PER_ROLE[itemName][currentRole.value]).includes(childName)) {
+    return CUSTOM_MENUS_PER_ROLE[itemName][currentRole.value][childName]
+  }
+  return childName
+}
 </script>

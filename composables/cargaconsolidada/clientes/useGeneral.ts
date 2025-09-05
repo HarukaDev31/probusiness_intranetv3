@@ -80,6 +80,14 @@ export const useGeneral = () => {
             loadingHeaders.value = false
             }
     }
+    const handleUpdateStatusClienteDoc = async (data: any) => {
+        try {
+            const response = await GeneralService.updateStatusClienteDoc(data)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
     return {
         clientes,
         loadingGeneral,
@@ -101,6 +109,7 @@ export const useGeneral = () => {
         getHeaders,
         headers,
         carga,
-        loadingHeaders
+        loadingHeaders,
+        handleUpdateStatusClienteDoc
     }
 }   

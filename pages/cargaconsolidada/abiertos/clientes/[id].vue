@@ -12,7 +12,7 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
                 <template #body-top>
                     <div class="flex flex-col gap-2 w-full">
                         <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
@@ -28,18 +28,17 @@
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfigVariacion" :show-export="true" :show-body-top="true"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
                     <div class="flex flex-col gap-2 w-full">
-                        <SectionHeader :title="`Clientes #${carga}`" :headers="headers"
-                            :loading="loadingHeaders" />
-                            <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                        <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
                             color="neutral" />
                     </div>
-                
+
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
@@ -54,9 +53,8 @@
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
                     <div class="flex flex-col gap-2 w-full">
-                        <SectionHeader :title="`Contenedor #${carga}`" :headers="headers"
-                            :loading="loadingHeaders" />
-                            <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                        <SectionHeader :title="`Contenedor #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
                             color="neutral" />
                     </div>
                 </template>
@@ -82,12 +80,11 @@ const { currentRole, currentId } = useUserRole()
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
-const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handlePageGeneralChange, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, handleSearchGeneral, getHeaders, headers, carga, loadingHeaders } = useGeneral()
+const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handlePageGeneralChange, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, handleSearchGeneral, getHeaders, headers, carga, loadingHeaders, handleUpdateStatusClienteDoc } = useGeneral()
 const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion, paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion } = useVariacion()
 const { getClientesPagos, clientesPagos, totalRecordsPagos, loadingPagos, paginationPagos, searchPagos, itemsPerPagePagos, totalPagesPagos, currentPagePagos, filtersPagos, handlePagePagosChange, handleItemsPerPageChangePagos, handleFilterChangePagos, handleSearchPagos, registrarPago, deletePago } = usePagos()
 const tabs = ref()
 const handleTabChange = (value: string) => {
-    //set tab to value
     if (tab.value === 'general') {
         getClientes(Number(id))
     } else if (tab.value === 'variacion') {
@@ -529,10 +526,32 @@ const columnsDocumentacion: TableColumn<any>[] = [
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }: { row: any }) => {
-            return h(UBadge, {
+            return h(USelect as any, {
                 label: row.original.status_cliente_doc,
-                color: getColorStatusDocumentacion(row.original.status_cliente_doc),
-                variant: 'soft'
+                class: STATUS_BG_CLASSES[row.original.status_cliente_doc as keyof typeof STATUS_BG_CLASSES],
+                variant: 'soft',
+                modelValue: row.original.status_cliente_doc,
+                items: [
+                    { label: 'COMPLETADO', value: 'Completado' },
+                    { label: 'PENDIENTE', value: 'Pendiente' },
+                    { label: 'INCOMPLETO', value: 'Incompleto' }
+                ],
+                'onUpdate:modelValue': async (value: any) => {
+                    if (value && value !== row.original.status_cliente_doc) {
+                        await withSpinner(async () => {
+                            const data = {
+                                id_cotizacion: row.original.id_cotizacion,
+                                status_cliente_doc: value
+
+                            }
+                            const response = await handleUpdateStatusClienteDoc(data)
+                            if (response.success) {
+                                await getClientes(Number(id))
+                                showSuccess('Actualización Exitosa', 'El estado de la documentación del cliente se ha actualizado correctamente.')
+                            }
+                        }, 'Actualizando estado de la documentación del cliente...')
+                    }
+                }
             })
         }
     },

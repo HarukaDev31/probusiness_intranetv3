@@ -156,6 +156,19 @@ export class ConsolidadoService extends BaseService {
             throw error
         }
     }
+    static async updateEstadoDocumentacion(data: any): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/estado-documentacion`, {
+                method: 'POST',
+                body: data
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error en ConsolidadoService.updateEstadoDocumentacion:', error)
+            throw error
+        }
+    }
 }
 
 export default ConsolidadoService 
