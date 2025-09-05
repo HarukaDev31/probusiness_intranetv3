@@ -20,7 +20,7 @@
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
        :show-body-top="true">
       <template #body-top>
-        <UTabs v-model="activeTab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
+        <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
 
       </template>
     </DataTable>
@@ -32,7 +32,7 @@
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
       @filter-change="handleFilterChangePagos" :show-body-top="true">
       <template #body-top>
-        <UTabs v-model="activeTab" :items="tabs" size="sm" variant="pill" class="mb-4 w-50" />
+        <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
 
       </template>
     </DataTable>
@@ -53,6 +53,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/SimpleUploadFile.vue'
 import PagoGrid from '~/components/PagoGrid.vue'
 import type { TableColumn } from '@nuxt/ui'
+import { STATUS_BG_CLASSES } from '~/constants/ui'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral,handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral } = useGeneral()
@@ -66,7 +67,7 @@ const showCreatePagoModal = ref(false)
 const selectedCliente = ref('')
 
 // Tab state
-const activeTab = ref('') as Ref<string>
+const activeTab = ref('') 
 
 // Tab configuration
 const tabs = [
@@ -181,6 +182,7 @@ const generalColumns = ref<TableColumn<any>[]>([
       //RETURN USELECT WITH OPTION SELECTED FROM FILTERCONFIGGENERAL WITH KEY 'estado_cotizacion_final'
       return h(USelect as any, {
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
+        class :[STATUS_BG_CLASSES[row.original.estado_cotizacion_final as keyof typeof STATUS_BG_CLASSES]],
         modelValue: row.original.estado_cotizacion_final,
         'onUpdate:modelValue': async (value: any) => {
           if (value && value !== row.original.estado_cliente) {
@@ -281,8 +283,9 @@ const handleSavePago = (pagoData: any) => {
   // Aquí puedes implementar la lógica para guardar el pago
   // Por ejemplo, llamar a un servicio o actualizar el estado
 }
-watch(activeTab, async (newVal, oldVal) => {
-  if (oldVal === '' || !newVal) {
+watch(activeTab, async (newVal: string, oldVal: string) => {
+
+  if (!newVal) {
     return
   }
   if (newVal === 'general') {

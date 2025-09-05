@@ -11,6 +11,9 @@ export const STATUS_BG_CLASSES = {
     INSPECTION:'bg-blue-500',
     NC:'bg-blue-300',
     C:'bg-yellow-500',
+    PAGADO: 'bg-green-500',
+    SOBREPAGO: 'bg-red-500',
+    AJUSTADO: 'bg-yellow-500',
     
 } as const
 export const STATUS_BG_PAGOS_CLASSES = {
