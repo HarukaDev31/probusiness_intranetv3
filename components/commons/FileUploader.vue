@@ -30,8 +30,8 @@
         <div v-if="selectedFiles.length > 0" class="space-y-2">
             <div v-for="(file, index) in selectedFiles" :key="getFileKey(file, index)"
                 class="flex items-center justify-between p-3 rounded-lg border border-gray-200">
-                <div class="flex items-center gap-3">
-                    <FileIcon :file="file" class="w-8 h-8" @click="openFile(file as File)" />
+                <div class="flex items-center gap-3" @click="openFile(file as File)">
+                    <FileIcon :file="file" class="w-8 h-8"/>
                     <div>
                         <p class="text-sm font-medium">{{ file.name }}</p>
                         <p class="text-xs text-gray-500">{{ formatFileSize(file.size) }}</p>
@@ -53,13 +53,11 @@
         <div v-if="initialFiles && initialFiles.length > 0" class="space-y-2">
             <div v-for="file in initialFiles" :key="file.id" 
                 class="flex items-center justify-between p-3 border border-gray-200 rounded-lg transition-colors">
-                <div class="flex items-center gap-3">
-                    <FileIcon :file="file" class="w-8 h-8" 
-                    @click="openFile(file)"
-                    />
+                <div class="flex items-center gap-3" @click="openFile(file)">
+                    <FileIcon :file="file" class="w-8 h-8" />
                     <div>
-                        <p class="text-sm font-medium" style="word-break: break-all;">{{ file.file_name }}</p>
-                        <p class="text-xs">{{ formatFileSize(file.size || 0) }}</p>
+                        <p class="text-sm font-medium select-none cursor-default" style="word-break: break-all;">{{ file.file_name }}</p>
+                        <p class="text-xs select-none cursor-default">{{ formatFileSize(file.size || 0) }}</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">

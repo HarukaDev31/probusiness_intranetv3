@@ -1037,7 +1037,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.products,
-                    class: 'w-full',
+                    class: 'w-full w-40',
                     disabled: currentRole.value !== ROLES.COTIZADOR,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.products = value
@@ -1133,7 +1133,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 w-25'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
@@ -1244,18 +1244,18 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     h(UButton, {
                         icon: 'i-heroicons-eye',
                         variant: 'ghost',
-                        color: 'neutral',
-                        size: 'xs',
+                        color: 'info',
+                        size: 'md',
                         onClick: () => {
                             navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion/${proveedor.id}`)
                         }
                     }),
                     h(UButton, {
                         //save icon
-                        icon: 'material-symbols-light:save-outline',
+                        icon: 'material-symbols:save-sharp',
                         variant: 'ghost',
-                        color: 'neutral',
-                        size: 'xs',
+                        color: 'primary',
+                        size: 'md',
                         onClick: () => {
                             updateProveedorData(proveedor)
                         }

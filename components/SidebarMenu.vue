@@ -1,7 +1,7 @@
 <template>
   <!-- Sidebar -->
   <div
-    class="fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out flex flex-col"
+    class="fixed inset-y-0 left-0 z-50 w-70 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out flex flex-col"
     :class="visible ? 'translate-x-0' : '-translate-x-full'">
     <!-- Top: centered logo -->
     <div class="py-6 px-4 flex items-center justify-center">

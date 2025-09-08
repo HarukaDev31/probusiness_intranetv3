@@ -25,7 +25,7 @@
                     <img :src="header.icon" alt="icon" class="w-5 h-4" />
                 </div>
                 <div v-else>
-                    <UIcon :name="header.icon" class="w-4 h-4" />
+                    <UIcon :name="header.icon" class="w-5 h-4 mt-1" />
                 </div>
                     <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
                         {{ header.label }}:

@@ -182,7 +182,7 @@
                 </div>
 
                 <!-- Información del archivo -->
-                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                <!-- <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                     <div class="grid grid-cols-2 gap-4 text-sm">
                         <div>
                             <span class="font-medium text-gray-700 dark:text-gray-300">Nombre:</span>
@@ -198,7 +198,7 @@
                             <p class="text-gray-600 dark:text-gray-400">{{ formatFileSize(file.size || 0) }}</p>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
         </template>
         <template #footer="{ close }">
