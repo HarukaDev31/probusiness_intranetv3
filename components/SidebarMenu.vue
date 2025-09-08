@@ -7,7 +7,7 @@
     <div class="py-6 px-4 flex items-center justify-center">
       <NuxtLink to="/" class="flex items-center">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">probusiness</h1>  
-        <img src="https://intranet.probusiness.pe/dist_v2/img/logos/probusiness.png?ver=2.0.0"
+        <img src="https://intranet.probusiness.pe/assets/img/logos/probusiness.png"
              alt="Probusiness" class="w-14 h-auto" />
       </NuxtLink>
     </div>
