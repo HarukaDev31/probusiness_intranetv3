@@ -451,7 +451,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 placeholder: 'Seleccionar estado',
                 modelValue: estado,
                 color: color,
-                class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES],
+                class: ['min-w-36', STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES]].join(' '),
                 'onUpdate:modelValue': (value: any) => {
                     if (value && value !== estado) {
                         handleUpdateEstadoCotizacion(row.original.id, value)
