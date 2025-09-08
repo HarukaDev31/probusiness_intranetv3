@@ -895,7 +895,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     h(UButton, {
                         icon: 'i-heroicons-eye',
                         variant: 'ghost',
-                        color: 'neutral',
+                        color: 'info',
                         size: 'md',
                         onClick: () => {
                             navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion/${proveedor.id}`)
@@ -904,7 +904,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     h(UButton, {
                         icon: 'material-symbols:save-sharp',
                         variant: 'ghost',
-                        color: 'neutral',
+                        color: 'primary',
                         size: 'md',
                         onClick: () => {
                             updateProveedorData(proveedor)
