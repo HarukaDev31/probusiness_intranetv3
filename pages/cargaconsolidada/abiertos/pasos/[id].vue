@@ -17,7 +17,7 @@
           <div 
             v-for="i in 5" 
             :key="`skeleton-${i}`"
-            class="bg-white  min-w-40 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6 text-center animate-pulse"
+            class="bg-white min-w-40 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6 text-center animate-pulse"
           >
             <div class="flex flex-col items-center space-y-4">
               <!-- Icono skeleton -->

@@ -154,7 +154,9 @@
             <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.resultados }}</span>
           </div>
           <UPagination v-if="totalRecords > 0" v-model:page="currentPageModel" :total="totalRecords"
-            :items-per-page="itemsPerPage" class="flex justify-center lg:justify-end" />
+            :items-per-page="itemsPerPage" class="flex justify-center lg:justify-end"
+            
+            />
         </div>
       </div>
     </div>
