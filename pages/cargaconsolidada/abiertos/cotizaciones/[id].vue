@@ -559,7 +559,12 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'asesor',
         header: 'Asesor',
-        cell: ({ row }: { row: any }) => row.original.No_Nombres_Apellidos
+        cell: ({ row }: { row: any }) => {
+            const asesor = row.original.No_Nombres_Apellidos
+            return h('div', {
+                class: 'max-w-25 whitespace-normal',
+            }, asesor)
+        }
     },
     {
         accessorKey: 'status',
@@ -662,7 +667,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     items: estados,
                     placeholder: 'Seleccionar estado',
                     modelValue: proveedor.estados,
-                    class: 'w-full',
+                    class: 'w-full w-30',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.estados = value
@@ -684,7 +689,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.products,
-                    class: 'w-full w-20',
+                    class: 'w-full w-40',
                     disabled: currentRole.value !== ROLES.COTIZADOR,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.products = value
@@ -744,7 +749,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.peso,
-                    class: 'w-full',
+                    class: 'w-full w-15',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.peso = value
@@ -891,16 +896,16 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         icon: 'i-heroicons-eye',
                         variant: 'ghost',
                         color: 'neutral',
-                        size: 'xs',
+                        size: 'md',
                         onClick: () => {
                             navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion/${proveedor.id}`)
                         }
                     }),
                     h(UButton, {
-                        icon: 'i-heroicons-document-arrow-down',
+                        icon: 'material-symbols:save-sharp',
                         variant: 'ghost',
                         color: 'neutral',
-                        size: 'xs',
+                        size: 'md',
                         onClick: () => {
                             updateProveedorData(proveedor)
                         }
