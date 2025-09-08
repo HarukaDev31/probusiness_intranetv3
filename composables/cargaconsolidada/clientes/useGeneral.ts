@@ -1,8 +1,10 @@
 import { ref } from 'vue'
 import { GeneralService } from '~/services/cargaconsolidada/clientes/generalService'
-import type { PaginationInfo } from '~/types/data-table'
+import type { Header, PaginationInfo } from '~/types/data-table'
 
 export const useGeneral = () => {
+    const headers = ref<Header[]>([])
+    const carga = ref<string | null>(null)
     const route = useRoute()
     const id = route.params.id
     const clientes = ref<any[]>([])
@@ -16,6 +18,7 @@ export const useGeneral = () => {
         from: 0,
         to: 0
     })
+    const loadingHeaders = ref(false)
     const searchGeneral = ref('')
     const itemsPerPageGeneral = ref(100)
     const totalPagesGeneral = computed(() => Math.ceil(paginationGeneral.value.total / itemsPerPageGeneral.value))
@@ -65,6 +68,26 @@ export const useGeneral = () => {
             error.value = err as string
         }
     }
+    const getHeaders = async (id: number) => {
+        try {
+            loadingHeaders.value = true
+            const response = await GeneralService.getHeaders(id)
+            headers.value = response.data
+            carga.value = response.carga
+        } catch (err) {
+            error.value = err as string
+        } finally {
+            loadingHeaders.value = false
+            }
+    }
+    const handleUpdateStatusClienteDoc = async (data: any) => {
+        try {
+            const response = await GeneralService.updateStatusClienteDoc(data)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
     return {
         clientes,
         loadingGeneral,
@@ -82,6 +105,11 @@ export const useGeneral = () => {
         handlePageGeneralChange,
         handleItemsPerPageChangeGeneral,
         handleFilterChangeGeneral,
-        handleSearchGeneral
+        handleSearchGeneral,
+        getHeaders,
+        headers,
+        carga,
+        loadingHeaders,
+        handleUpdateStatusClienteDoc
     }
 }   

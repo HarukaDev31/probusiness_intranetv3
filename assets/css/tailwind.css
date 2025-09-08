@@ -75,7 +75,7 @@
   --ui-color-error-900: #7f1d1d;
   --ui-color-error-950: #450a0a;
 
-  --ui-color-transparent: #29292900;
+  --ui-color-transparent: #adabab;
 
   /* Variables principales para el tema */
   --ui-primary: var(--ui-color-primary-600);

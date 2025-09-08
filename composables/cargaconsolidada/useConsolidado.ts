@@ -165,6 +165,14 @@ export const useConsolidado = () => {
             console.error('Error en deleteConsolidado:', error)
         }
     }
+    const updateEstadoDocumentacion = async (data: any) => {
+        try {
+            const response = await ConsolidadoService.updateEstadoDocumentacion(data)
+            return response
+        } catch (error) {
+            console.error('Error en updateEstadoDocumentacion:', error)
+        }
+    }
     return {
         consolidadoData,
         loading,
@@ -190,6 +198,7 @@ export const useConsolidado = () => {
         validContainers,
         createConsolidado,
         getConsolidadoById,
-        deleteConsolidado
+        deleteConsolidado,
+        updateEstadoDocumentacion
     }
 }

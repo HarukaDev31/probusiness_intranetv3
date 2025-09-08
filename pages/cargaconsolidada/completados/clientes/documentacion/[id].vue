@@ -1,7 +1,7 @@
 <template>
     <div class="p-6">
         <PageHeader title="" subtitle="" icon="" :hide-back-button="false"
-            @back="navigateTo(`/cargaconsolidada/abiertos/clientes/${cliente?.id_contenedor}`)">
+            @back="navigateTo(`/cargaconsolidada/completados/clientes/${cliente?.id_contenedor}`)">
             <template #actions>
                 <!--button save-->
                 <UButton label="Guardar cambios" color="primary" variant="solid" icon="i-heroicons-arrow-down-tray"
@@ -40,7 +40,7 @@
 
             <!-- Skeleton para el contenido principal -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Skeleton para la sección de Documentación -->
+                <!-- Skeleton para la sección de completados -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                     <div class="space-y-6">
                         <!-- Header skeleton -->
@@ -178,13 +178,14 @@
                     <div>
                         <span class=" font-semibold">{{ cliente?.nombre }}</span>
                     </div>
-
-
                 </div>
             </div>
             <!-- Tabs de proveedores -->
             <div v-if="hasProveedores" class="mb-6">
-                <UTabs v-model="activeTab" :items="tabs" size="md" variant="pill" class="w-50"
+                <UTabs v-model="activeTab" :items="tabs" size="md" variant="pill" 
+                :class="{ 'w-100': tabs.length >=3, 'w-50': tabs.length <3 }"
+            
+                color="neutral"
                     @update:model-value="handleTabChange" />
             </div>
 
@@ -193,15 +194,17 @@
 
             <!-- Contenido por proveedor -->
             <div v-if="proveedorActivo" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Sección de Documentación -->
-                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md col-span-2">
+                <!-- Sección de completados -->
+                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md " :class="{ 'col-span-2': currentRole === ROLES.COORDINACION }">
                     <template #header>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
+                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
+
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Documentación {{ currentRole === ROLES.DOCUMENTACION ? 'Perú' : '' }}
+                                    completados {{ currentRole === ROLES.DOCUMENTACION ? 'Perú' : '' }}
                                 </h3>
+                                <img  v-if="currentRole === ROLES.DOCUMENTACION" :src="CUSTOMIZED_ICONS_URL['PERU']" alt="Flag" class="w-5 h-5" />
                                 <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
                                     Cambios sin guardar
                                 </UBadge>
@@ -301,7 +304,7 @@
                                     type: file.file_ext,
                                     size: 0,
                                     lastModified: 0,
-                                    file_ext: file.file_ext
+                                    file_ext: file.file_url
                                 }]" />
                         </div>
                     </div>
@@ -311,10 +314,12 @@
                     <template #header>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
+                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Documentación China
+                                    completados China
                                 </h3>
+                                <img  v-if="currentRole === ROLES.DOCUMENTACION" :src="CUSTOMIZED_ICONS_URL['CHINA']" alt="Flag" class="w-5 h-5" />
+
                                 <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
                                     Cambios sin guardar
                                 </UBadge>
@@ -419,6 +424,7 @@ import FileUploader from '~/components/commons/FileUploader.vue'
 import type { FileItem } from '~/types/commons/file'
 import type { id } from '@nuxt/ui/runtime/locale/index.js'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
+import { CUSTOMIZED_ICONS_URL } from '~/constants/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
 const { currentRole, currentId } = useUserRole()
 import SimpleUploadFile from '~/components/commons/SimpleUploadFile.vue'

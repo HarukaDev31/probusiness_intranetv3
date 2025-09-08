@@ -4,7 +4,7 @@
     <SidebarMenu v-model="sidebarVisible" :user="user" :menu-categories="sidebarCategories" />
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col transition-all duration-300 w-75" :class="sidebarVisible ? 'lg:ml-80' : ''">
+    <div class="flex-1 flex flex-col transition-all duration-300 w-70" :class="sidebarVisible ? 'lg:ml-80' : ''">
       <!-- Top Header -->
       <header 
       class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 lg:hidden">

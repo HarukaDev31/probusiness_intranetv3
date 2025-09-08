@@ -4,7 +4,7 @@
         <div class="flex items-center justify-between mb-6 p-6 border-b border-gray-200 dark:border-gray-700">
             <PageHeader :title="''" :subtitle="''" :icon="''" :hide-back-button="false" @back="goBack" />
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3" v-if="currentRole === ROLES.COORDINACION">
                 <UButton label="Factura General" variant="outline" icon="i-heroicons-arrow-down-tray" color="neutral"
                     :loading="downloadingFactura" @click="handleDownloadFactura" />
                 <UButton label="Descargar todo" variant="outline" icon="i-heroicons-arrow-down-tray" color="neutral"
@@ -52,35 +52,35 @@
                 </div>
             </UCard>
         </div>
+        <div v-else-if="hasData" class="flex flex-col gap-4  bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <span class="text-lg font-semibold text-gray-900 dark:text-white px-3 py-1 rounded">Documentación</span>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div v-for="folder in foldersByCategoria" :key="folder.id"
+                    class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md ">
+                    <!-- Header del folder -->
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white px-3 py-1 rounded">
+                            {{ folder.folder_name }}
+                        </h3>
 
-        <!-- Main content - Grid de folders con FileUploader -->
-        <div v-else-if="hasData" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Iterar sobre cada folder y crear un FileUploader -->
-            <div v-for="folder in foldersByCategoria" :key="folder.id"
-                class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md ">
-                <!-- Header del folder -->
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white px-3 py-1 rounded">
-                        {{ folder.folder_name }}
-                    </h3>
 
+                    </div>
+
+                    <!-- FileUploader para este folder -->
+                    <FileUploader :accepted-types="acceptedFileTypes" :custom-message="uploadMessage" :immediate="false"
+                        :showSaveButton="true" :initial-files="folder.file_url ? [{
+                            id: typeof folder.id === 'number' ? folder.id : 0, // debe ser número
+                            file_name: folder.folder_name,
+                            file_url: folder.file_url,
+                            type: folder.type || '', // tipo MIME si está disponible, si no dejar vacío
+                            size: 0, // tamaño en bytes si está disponible, si no dejar en 0
+                            lastModified: 0, // timestamp si está disponible, si no dejar en 0
+                            file_ext: folder.type || '' // extensión si está disponible, si no dejar vacío
+                        }] : []" :loading="isFolderLoading(folder.id)"
+                        @file-removed="(index) => handleFileRemove(folder.id_file)"
+                        @save-file="(file) => handleSaveFile(file, folder.id)" />
 
                 </div>
-
-                <!-- FileUploader para este folder -->
-                <FileUploader :accepted-types="acceptedFileTypes" :custom-message="uploadMessage" :immediate="false"
-                    :showSaveButton="true" :initial-files="folder.file_url ? [{
-                        id: typeof folder.id === 'number' ? folder.id : 0, // debe ser número
-                        file_name: folder.folder_name,
-                        file_url: folder.file_url,
-                        type: folder.type || '', // tipo MIME si está disponible, si no dejar vacío
-                        size: 0, // tamaño en bytes si está disponible, si no dejar en 0
-                        lastModified: 0, // timestamp si está disponible, si no dejar en 0
-                        file_ext: folder.type || '' // extensión si está disponible, si no dejar vacío
-                    }] : []" :loading="isFolderLoading(folder.id)"
-                    @file-removed="(index) => handleFileRemove(folder.id_file)"
-                    @save-file="(file) => handleSaveFile(file, folder.id)" />
-
             </div>
         </div>
 
@@ -109,7 +109,9 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useDocumentacion } from '~/composables/cargaconsolidada/useDocumentacion'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import CreateDocumentModal from '~/components/CreateDocumentModal.vue'
-
+import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
+const { currentRole, currentId } = useUserRole()
 // Estado local
 const downloadingFactura = ref(false)
 
@@ -257,7 +259,7 @@ const handleDownloadFactura = async () => {
     downloadingFactura.value = true
     try {
         await withSpinner(async () => {
-            const response=await downloadFacturaComercial(contenedorId)
+            const response = await downloadFacturaComercial(contenedorId)
             if (response.success) {
                 showSuccess('Éxito', 'Factura comercial descargada correctamente')
             } else {

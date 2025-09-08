@@ -1,4 +1,5 @@
 import type { GeneralResponse } from "../../../types/cargaconsolidada/cotizacion-final/general"
+import type { HeaderResponse } from "~/types/data-table"
 import { BaseService } from "~/services/base/BaseService"
 
 export class GeneralService extends BaseService {
@@ -36,7 +37,7 @@ export class GeneralService extends BaseService {
     }
     static async uploadPlantillaFinal(data: any): Promise<GeneralResponse> {
         try {
-            const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/upload-plantilla-final`, {
+            const response = await this.apiCall<any>(`${this.baseUrl}/upload-plantilla-final`, {
                 method: 'POST',
                 body: data
             })
@@ -66,6 +67,37 @@ export class GeneralService extends BaseService {
             return response
         } catch (error) {
             console.error('Error al descargar la plantilla general:', error)
+            throw error
+        }
+    }
+    static async downloadCotizacionFinalPDF(id: number): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/download-cotizacion-final-pdf/${id}`, {
+                method: 'GET',
+            })
+            return response
+        } catch (error) {
+            console.error('Error al descargar la cotización final:', error)
+            throw error
+        }
+    }
+    static async deleteCotizacionFinal(id: number): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/delete-cotizacion-final/${id}`, {
+                method: 'DELETE',
+            })
+            return response
+        } catch (error) {
+            console.error('Error al eliminar la cotización final:', error)
+            throw error
+        }
+    }
+    static async getHeaders(id: number): Promise<HeaderResponse> {
+        try {
+            const response = await this.apiCall<HeaderResponse>(`${this.baseUrl}/${id}/headers`)
+            return response
+        } catch (error) {
+            console.error('Error al obtener los headers:', error)
             throw error
         }
     }

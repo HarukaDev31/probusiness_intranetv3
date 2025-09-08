@@ -1,39 +1,23 @@
 <template>
-    <div class="p-6">
+    <div class="">
         <!-- Header con botones de acción -->
-        <div class="flex items-center justify-between mb-6">
-            <UButton label="Regresar" icon="i-heroicons-arrow-left" @click="goBack" />
+        <div class="flex items-center justify-between mb-6 p-6 border-b border-gray-200 dark:border-gray-700">
+            <PageHeader :title="''" :subtitle="''" :icon="''" :hide-back-button="false" @back="goBack" />
 
-            <div class="flex items-center gap-3">
-                <UButton 
-                    label="Factura General" 
-                    variant="outline" 
-                    icon="i-heroicons-document" 
-                    color="neutral"
-                    :loading="downloadingFactura"
-                    @click="handleDownloadFactura" 
-                />
-                <UButton 
-                    label="Descargar todo" 
-                    variant="outline" 
-                    icon="i-heroicons-arrow-down-tray" 
-                    color="neutral"
-                    @click="handleDownloadAll" 
-                />
-                <UButton 
-                    label="Nuevo documento" 
-                    variant="solid" 
-                    icon="i-heroicons-plus" 
-                    color="warning"
-                    @click="handleNuevoDocumento" 
-                />
+            <div class="flex items-center gap-3" v-if="currentRole === ROLES.COORDINACION">
+                <UButton label="Factura General" variant="outline" icon="i-heroicons-arrow-down-tray" color="neutral"
+                    :loading="downloadingFactura" @click="handleDownloadFactura" />
+                <UButton label="Descargar todo" variant="outline" icon="i-heroicons-arrow-down-tray" color="neutral"
+                    @click="handleDownloadAll" />
+                <UButton label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning"
+                    @click="handleNuevoDocumento" />
             </div>
         </div>
 
         <!-- Loading state -->
         <div v-if="loading" class="mt-6">
             <!-- Skeleton para el grid de folders -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Skeleton para cada folder -->
                 <div v-for="i in 6" :key="i" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate-pulse">
                     <!-- Header del folder skeleton -->
@@ -68,36 +52,39 @@
                 </div>
             </UCard>
         </div>
+        <div v-else-if="hasData" class="flex flex-col gap-4  bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <span class="text-lg font-semibold text-gray-900 dark:text-white px-3 py-1 rounded">Documentación</span>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div v-for="folder in foldersByCategoria" :key="folder.id"
+                    class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md ">
+                    <!-- Header del folder -->
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white px-3 py-1 rounded">
+                            {{ folder.folder_name }}
+                        </h3>
 
-        <!-- Main content - Grid de folders con FileUploader -->
-        <div v-else-if="hasData" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Iterar sobre cada folder y crear un FileUploader -->
-            <div v-for="folder in foldersByCategoria" :key="folder.id"
-                class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md ">
-                <!-- Header del folder -->
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white px-3 py-1 rounded">
-                        {{ folder.folder_name }}
-                    </h3>
 
+                    </div>
+
+                    <!-- FileUploader para este folder -->
+                    <FileUploader 
+
+                    :accepted-types="acceptedFileTypes" :custom-message="uploadMessage" :immediate="false"
+                        :showSaveButton="true" :initial-files="folder.file_url ? [{
+                            id: typeof folder.id === 'number' ? folder.id : 0, // debe ser número
+                            file_name: folder.folder_name,
+                            file_url: folder.file_url,
+                            type: folder.type || '', // tipo MIME si está disponible, si no dejar vacío
+                            size: 0, // tamaño en bytes si está disponible, si no dejar en 0
+                            lastModified: 0, // timestamp si está disponible, si no dejar en 0
+                            file_ext: folder.type || '' // extensión si está disponible, si no dejar vacío
+                        }] : []" :loading="isFolderLoading(folder.id)"
+                        @file-removed="(index) => handleFileRemove(folder.id_file)"
+                        @save-file="(file) => handleSaveFile(file, folder.id)"
+                        :show-remove-button="false"
+                        />
 
                 </div>
-
-                <!-- FileUploader para este folder -->
-                <FileUploader :accepted-types="acceptedFileTypes" :custom-message="uploadMessage" :immediate="false"
-                    :showSaveButton="true" :initial-files="folder.file_url ? [{
-                        id: typeof folder.id === 'number' ? folder.id : 0, // debe ser número
-                        file_name: folder.folder_name,
-                        file_url: folder.file_url,
-                        type: folder.type || '', // tipo MIME si está disponible, si no dejar vacío
-                        size: 0, // tamaño en bytes si está disponible, si no dejar en 0
-                        lastModified: 0, // timestamp si está disponible, si no dejar en 0
-                        file_ext: folder.type || '' // extensión si está disponible, si no dejar vacío
-                    }] : []" :loading="isFolderLoading(folder.id)"
-                    @file-removed="(index) => handleFileRemove(folder.id_file)"
-                    @save-file="(file) => handleSaveFile(file, folder.id)"
-                    />
-                
             </div>
         </div>
 
@@ -126,7 +113,9 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useDocumentacion } from '~/composables/cargaconsolidada/useDocumentacion'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import CreateDocumentModal from '~/components/CreateDocumentModal.vue'
-
+import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
+const { currentRole, currentId } = useUserRole()
 // Estado local
 const downloadingFactura = ref(false)
 
@@ -141,7 +130,6 @@ const {
     hasData,
     foldersByCategoria,
     getFolders,
-    uploadFile,
     deleteFile,
     getFolderFiles,
     isFolderLoading,
@@ -165,16 +153,16 @@ const uploadMessage = 'Selecciona o arrastra tu archivo aquí'
 const handleSaveFile = async (file: File, folderId: string) => {
     await withSpinner(async () => {
         try {
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('idFolder', folderId)
-        formData.append('idContenedor', contenedorId)
-        const result = await uploadFileDocumentation(formData)
-        if (result.success) {
-            showSuccess('Éxito', 'Archivo subido correctamente')
-        } else {
-            showError('Error', result.error || 'Error al subir el archivo')
-        }
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('idFolder', folderId)
+            formData.append('idContenedor', contenedorId)
+            const result = await uploadFileDocumentation(formData)
+            if (result.success) {
+                showSuccess('Éxito', 'Archivo subido correctamente')
+            } else {
+                showError('Error', result.error || 'Error al subir el archivo')
+            }
         }
         catch (error) {
             showError('Error', 'Error al subir el archivo')
@@ -183,7 +171,7 @@ const handleSaveFile = async (file: File, folderId: string) => {
 
 }
 
-const handleFileRemove = (idFile:number) => {
+const handleFileRemove = (idFile: number) => {
     if (!idFile) {
         showError('Error', 'ID de archivo no válido')
         return
@@ -239,30 +227,30 @@ const overlay = useOverlay()
 const createDocumentModal = overlay.create(CreateDocumentModal)
 const handleNuevoDocumento = () => {
     createDocumentModal.open({
-     
-            onClose: () => createDocumentModal.close(),
-            onSave: async ({ name, file }) => {
-                try {
-                    const formData = new FormData()
-                    formData.append('idContenedor', contenedorId)
-                    formData.append('file', file)
-                    formData.append('folder_name', name)
 
-                    await withSpinner(async () => {
-                        const result = await createNewFolder(formData)
-                        if (result.success) {
-                            showSuccess('Éxito', 'Folder creado correctamente')
-                            await getFolders(contenedorId)
-                            createDocumentModal.close()
-                        } else {
-                            showError('Error', result.error || 'Error al crear el folder')
-                        }
-                    }, 'Creando folder...')
-                } catch (error: any) {
-                    showError('Error', error.message || 'Error al crear el folder')
-                }
+        onClose: () => createDocumentModal.close(),
+        onSave: async ({ name, file }) => {
+            try {
+                const formData = new FormData()
+                formData.append('idContenedor', contenedorId)
+                formData.append('file', file)
+                formData.append('folder_name', name)
+
+                await withSpinner(async () => {
+                    const result = await createNewFolder(formData)
+                    if (result.success) {
+                        showSuccess('Éxito', 'Folder creado correctamente')
+                        await getFolders(contenedorId)
+                        createDocumentModal.close()
+                    } else {
+                        showError('Error', result.error || 'Error al crear el folder')
+                    }
+                }, 'Creando folder...')
+            } catch (error: any) {
+                showError('Error', error.message || 'Error al crear el folder')
             }
-        
+        }
+
     })
 }
 
@@ -274,8 +262,14 @@ const handleDownloadFactura = async () => {
 
     downloadingFactura.value = true
     try {
-        await downloadFacturaComercial(contenedorId)
-        showSuccess('Éxito', 'Factura comercial descargada correctamente')
+        await withSpinner(async () => {
+            const response = await downloadFacturaComercial(contenedorId)
+            if (response.success) {
+                showSuccess('Éxito', 'Factura comercial descargada correctamente')
+            } else {
+                showError('Error', response.error || 'Error al descargar la factura comercial')
+            }
+        }, 'Descargando factura comercial...')
     } catch (error: any) {
         showError('Error', error.message || 'Error al descargar la factura comercial')
     } finally {

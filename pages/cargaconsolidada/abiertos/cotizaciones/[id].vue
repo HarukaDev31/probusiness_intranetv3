@@ -15,7 +15,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="xl" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs"  variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -36,7 +36,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="xl" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs"  variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -57,8 +57,8 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
-                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill"
+                        class="mb-4 w-80 h-15" v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
@@ -814,7 +814,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
                     class: 'w-full',
-                    disabled: true,
+                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
                     }
@@ -834,7 +834,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
                     class: 'w-full',
-                    disabled: true,
+                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
                     }
@@ -855,7 +855,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.arrive_date_china,
                     class: 'w-full',
-                    disabled: true,
+                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
                     }
@@ -1067,7 +1067,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
                     class: 'w-full',
-                    disabled: true,
+                    disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
                     }
@@ -1087,7 +1087,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
                     class: 'w-full',
-                    disabled: true,
+                    disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
                     }
@@ -1108,7 +1108,8 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.arrive_date_china,
                     class: 'w-full',
-                    disabled: true,
+                    type: 'date',
+                    disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
                     }
@@ -1139,7 +1140,8 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         }
                     }),
                     h(UButton, {
-                        icon: 'i-heroicons-document-arrow-down',
+                        //save icon
+                        icon: 'material-symbols-light:save-outline',
                         variant: 'ghost',
                         color: 'neutral',
                         size: 'xs',
@@ -1389,15 +1391,25 @@ const updateProveedorData = async (row: any) => {
         formData.append('code_supplier', data.code_supplier)
         formData.append('supplier_phone', data.supplier_phone)
     }
+    if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
+        data.qty_box_china = row.qty_box_china ?? []
+        data.cbm_total_china = row.cbm_total_china ?? []
+        data.arrive_date = row.arrive_date_china ?? []
+        formData.append('qty_box_china', data.qty_box_china)
+        formData.append('cbm_total_china', data.cbm_total_china)
+        formData.append('arrive_date_china', data.arrive_date)
+    }
     formData.append('id', data.id)
 
     try {
         await withSpinner(async () => {
-            await updateProveedor(formData)
+            const response = await updateProveedor(formData)
+            if (response?.success) {
             showSuccess('Proveedor actualizado correctamente', 'El proveedor se ha actualizado correctamente.')
-            await getCotizaciones(Number(id))
+                await getCotizacionProveedor(Number(id))
+            }
         }, 'Actualizando proveedor...')
-        await getCotizaciones(Number(id))
+      
     } catch (error) {
         showError('Error al actualizar el proveedor', error)
     }

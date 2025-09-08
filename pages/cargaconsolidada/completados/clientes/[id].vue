@@ -1,6 +1,8 @@
     <!--3 tabs:general,variacion,pagos and 3 tables-->
     <template>
         <div class="p-6">
+
+
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
@@ -10,9 +12,13 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
                 <template #body-top>
-                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
+                    <div class="flex flex-col gap-2 w-full">
+                        <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                            color="neutral" />
+                    </div>
 
                 </template>
             </DataTable>
@@ -22,12 +28,17 @@
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfigVariacion" :show-export="true" :show-body-top="true"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
-                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
+                    <div class="flex flex-col gap-2 w-full">
+                        <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                            color="neutral" />
+                    </div>
+
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
@@ -36,13 +47,16 @@
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfigVariacion" :show-export="true" :hide-back-button="false"
                 :show-body-top="true"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
-                    <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-60" color="secondary" />
-
+                    <div class="flex flex-col gap-2 w-full">
+                        <SectionHeader :title="`Contenedor #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                            color="neutral" />
+                    </div>
                 </template>
             </DataTable>
         </div>
@@ -59,19 +73,18 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import type { TableColumn } from '@nuxt/ui'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
+import SectionHeader from '~/components/commons/SectionHeader.vue'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId } = useUserRole()
-
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
-const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handlePageGeneralChange, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, handleSearchGeneral } = useGeneral()
+const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handlePageGeneralChange, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, handleSearchGeneral, getHeaders, headers, carga, loadingHeaders, handleUpdateStatusClienteDoc } = useGeneral()
 const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion, paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion } = useVariacion()
-const { getClientesPagos, clientesPagos, totalRecordsPagos, loadingPagos, paginationPagos, searchPagos, itemsPerPagePagos, totalPagesPagos, currentPagePagos, filtersPagos, filterConfigPagos, handlePagePagosChange, handleItemsPerPageChangePagos, handleFilterChangePagos, handleSearchPagos, registrarPago, deletePago } = usePagos()
+const { getClientesPagos, clientesPagos, totalRecordsPagos, loadingPagos, paginationPagos, searchPagos, itemsPerPagePagos, totalPagesPagos, currentPagePagos, filtersPagos, handlePagePagosChange, handleItemsPerPageChangePagos, handleFilterChangePagos, handleSearchPagos, registrarPago, deletePago } = usePagos()
 const tabs = ref()
 const handleTabChange = (value: string) => {
-    //set tab to value
     if (tab.value === 'general') {
         getClientes(Number(id))
     } else if (tab.value === 'variacion') {
@@ -282,28 +295,28 @@ const columns: TableColumn<any>[] = [
         accessorKey: 'fob',
         header: 'Fob',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('fob')
+            return formatCurrency(row.getValue('fob'))
         }
     },
     {
         accessorKey: 'monto',
         header: 'Logistica',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('monto')
+            return formatCurrency(row.getValue('monto'))
         }
     },
     {
         accessorKey: 'impuestos',
         header: 'Impuesto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('impuestos')
+            return formatCurrency(row.getValue('impuestos'))
         }
     },
     {
         accessorKey: 'tarifa',
         header: 'Tarifa',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('tarifa')
+            return formatCurrency(row.getValue('tarifa'))
         }
     },
 
@@ -318,7 +331,7 @@ const columns: TableColumn<any>[] = [
                 variant: 'ghost',
                 size: 'xs',
                 onClick: () => {
-                    navigateTo(`/cargaconsolidada/abiertos/clientes/documentacion/${row.original.id_cotizacion}`)
+                    navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
                 }
             },
             )
@@ -459,7 +472,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
                 variant: 'ghost',
                 size: 'xs',
                 onClick: () => {
-                    navigateTo(`/cargaconsolidada/abiertos/clientes/documentacion/${row.original.id_cotizacion}`)
+                    navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
                 }
             },
             )
@@ -513,10 +526,32 @@ const columnsDocumentacion: TableColumn<any>[] = [
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }: { row: any }) => {
-            return h(UBadge, {
+            return h(USelect as any, {
                 label: row.original.status_cliente_doc,
-                color: getColorStatusDocumentacion(row.original.status_cliente_doc),
-                variant: 'soft'
+                class: STATUS_BG_CLASSES[row.original.status_cliente_doc as keyof typeof STATUS_BG_CLASSES],
+                variant: 'soft',
+                modelValue: row.original.status_cliente_doc,
+                items: [
+                    { label: 'COMPLETADO', value: 'Completado' },
+                    { label: 'PENDIENTE', value: 'Pendiente' },
+                    { label: 'INCOMPLETO', value: 'Incompleto' }
+                ],
+                'onUpdate:modelValue': async (value: any) => {
+                    if (value && value !== row.original.status_cliente_doc) {
+                        await withSpinner(async () => {
+                            const data = {
+                                id_cotizacion: row.original.id_cotizacion,
+                                status_cliente_doc: value
+
+                            }
+                            const response = await handleUpdateStatusClienteDoc(data)
+                            if (response.success) {
+                                await getClientes(Number(id))
+                                showSuccess('Actualización Exitosa', 'El estado de la documentación del cliente se ha actualizado correctamente.')
+                            }
+                        }, 'Actualizando estado de la documentación del cliente...')
+                    }
+                }
             })
         }
     },
@@ -529,7 +564,7 @@ const columnsDocumentacion: TableColumn<any>[] = [
                 variant: 'ghost',
                 size: 'xs',
                 onClick: () => {
-                    navigateTo(`/cargaconsolidada/abiertos/clientes/documentacion/${row.original.id_cotizacion}`)
+                    navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
                 }
             })
         }
@@ -606,8 +641,9 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             //RETURN UBADGET WITH COLOR PRIMARY WHERE vol_selected is = accessorKey
             return h(UBadge, {
-                color: row.original.vol_selected === 'volumen' ? 'primary' : 'neutral',
-                variant: 'soft',
+                color: row.original.vol_selected === 'volumen' ? 'primary' : 'transparent',
+                variant: 'solid',
+                class: 'cursor-pointer text-black dark:text-white p-4',
                 label: row.getValue('volumen'),
                 onClick: () => {
                     updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen' })
@@ -620,8 +656,9 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         header: 'Vol. China',
         cell: ({ row }: { row: any }) => {
             return h(UBadge, {
-                color: row.original.vol_selected === 'volumen_china' ? 'primary' : 'neutral',
-                variant: 'soft',
+                color: row.original.vol_selected === 'volumen_china' ? 'primary' : 'transparent',
+                variant: 'solid',
+                class: 'cursor-pointer text-black dark:text-white p-4',
                 label: row.getValue('volumen_china'),
                 onClick: () => {
                     updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen_china' })
@@ -634,9 +671,10 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         header: 'Vol. Doc',
         cell: ({ row }: { row: any }) => {
             return h(UBadge, {
-                color: row.original.vol_selected === 'volumen_doc' ? 'primary' : 'neutral',
-                variant: 'soft',
+                color: row.original.vol_selected === 'volumen_doc' ? 'primary' : 'transparent',
+                variant: 'solid',
                 label: row.getValue('volumen_doc'),
+                class: 'cursor-pointer text-black dark:text-white p-4',
                 onClick: () => {
                     updateVolSelected({ id_cotizacion: row.original.id_cotizacion, volumen: 'volumen_doc' })
                 }
@@ -757,15 +795,16 @@ watch(() => tab.value, async (newVal) => {
     if (newVal && newVal !== '') {
         try {
             if (newVal === 'general') {
-                navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=general`)
+                navigateTo(`/cargaconsolidada/completados/clientes/${id}?tab=general`)
                 await getClientes(Number(id))
             } else if (newVal === 'variacion') {
-                navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=variacion`)
+                navigateTo(`/cargaconsolidada/completados/clientes/${id}?tab=variacion`)
                 await getClientesVariacion(Number(id))
             } else if (newVal === 'pagos') {
-                navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=pagos`)
+                navigateTo(`/cargaconsolidada/completados/clientes/${id}?tab=pagos`)
                 await getClientesPagos(Number(id))
             }
+            await getHeaders(Number(id))
             //implements getHeaders
         } catch (error) {
             console.error('Error en carga inicial:', error)
