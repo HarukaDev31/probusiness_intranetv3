@@ -178,7 +178,15 @@ const columns: TableColumn<any>[] = [
     {
         accessorKey: 'fecha_arribo',
         header: 'F. Arribo',
-        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_arribo'))
+        cell: ({ row }) => {
+            const fa =
+            row.getValue('fecha_arribo') ||
+            row.original?.fecha_arribo || // por si viene en original
+            row.getValue('f_puerto') ||
+            row.original?.f_puerto
+
+            return fa ? formatDateTimeToDmy(fa) : 'N/A'
+        }
     },
     {
         accessorKey: 'f_entrega',

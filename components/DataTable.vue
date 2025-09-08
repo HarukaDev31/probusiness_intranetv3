@@ -138,8 +138,8 @@
     </div>
 
     <!-- Sticky Bottom Section - Pagination -->
-    <div 
-      class="sticky bottom-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-sm">
+    <div v-if="showPagination"
+      class="sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
       <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
           {{ translations.showing }} {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} {{translations.a}} {{ Math.min((currentPage || 1) *

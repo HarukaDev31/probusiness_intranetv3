@@ -33,7 +33,7 @@
         <!-- Cards reales cuando no está cargando -->
         <div
           v-else
-          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6 text-center"
+          class="rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6 text-center"
           v-for="paso in pasos" 
           @click="handleNavigateToStep(paso.name)" 
           :key="paso.id"
@@ -43,7 +43,7 @@
               <!--load image from url-->
               <img :src="paso.iconURL" class="w-12 h-12" />
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ paso.name }}</h3>
+            <h3 class="text-md font-semibold text-gray-900 dark:text-white">{{ formatNombre(paso.name) }}</h3>
           </div>
         </div>
       </div>
@@ -66,6 +66,11 @@ onMounted(async () => {
 })
 const getPasos = async () => {
   const pasos = await getConsolidadoPasos(id)
+}
+const formatNombre = (s: string) => {
+  if (!s) return ''
+  const lower = s.toLocaleLowerCase('es-PE')
+  return lower.charAt(0).toLocaleUpperCase('es-PE') + lower.slice(1)
 }
 const pasosMap = {
   'COTIZACION': `/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos`,

@@ -73,9 +73,47 @@ export const formatDate = (
  * @param date - Fecha y hora a formatear
  * @returns String formateado de fecha y hora
  */
-export const formatDateTimeToDmy = (date: string): string => {
+
+/**
+ * Parsea una fecha ignorando zona horaria (evita desplazamiento de día)
+ */
+const parseDateNoTZ = (input: string | Date | number): Date => {
+  if (input instanceof Date) return input
+  if (typeof input === 'number') return new Date(input)
+
+  const s = String(input).trim()
+  // Si viene con tiempo, usar solo la parte de fecha
+  const base = s.includes('T') ? s.split('T')[0] : s
+
+  // Formato ISO YYYY-MM-DD
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(base)
+  if (iso) {
+    const [, y, m, d] = iso
+    return new Date(Number(y), Number(m) - 1, Number(d))
+  }
+
+  // Formato DD/MM/YYYY
+  const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(base)
+  if (dmy) {
+    const [, d, m, y] = dmy
+    return new Date(Number(y), Number(m) - 1, Number(d))
+  }
+
+  // Fallback (puede aplicar TZ del sistema)
+  return new Date(s)
+}
+/**
+ * Formatea una fecha y hora en formato DD/MM/YYYY (sin desfase de zona)
+ */
+export const formatDateTimeToDmy = (date: string | Date | number): string => {
   if (!date) return ''
-  return new Date(date).toLocaleDateString('es-PE', { year: 'numeric', month: 'numeric', day: 'numeric' })
+  const d = parseDateNoTZ(date)
+  if (isNaN(d.getTime())) return ''
+  return new Intl.DateTimeFormat('es-PE', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  }).format(d)
 }
 
 /**

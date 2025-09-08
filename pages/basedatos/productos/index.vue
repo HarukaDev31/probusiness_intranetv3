@@ -34,18 +34,6 @@
       </DataTable>
     </div>
 
-    <!-- Paginación -->
-    <div class="flex justify-end mt-8">
-      <UPagination
-        v-model="localCurrentPage"
-        :page-count="totalPages"
-        :total="totalRecords"
-        :page="localCurrentPage"
-        :items-per-page="itemsPerPage"
-        @update:page="onPageChange"
-        @update:items-per-page="onItemsPerPageChange"
-      />
-    </div>
 
     <!-- Modal de imagen -->
     <ImageModal
