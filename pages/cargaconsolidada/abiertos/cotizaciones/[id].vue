@@ -88,7 +88,8 @@ import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
 import PagoGrid from '~/components/PagoGrid.vue'
 const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
-const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders } = useCotizacion()
+const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones,
+    filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders } = useCotizacion()
 const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headersPagos } = useCotizacionPagos()
 const { withSpinner } = useSpinner()
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
@@ -599,13 +600,23 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            return row.original.nombre
+            const nombre = row.original.nombre
+            const div = h('div', {
+                //que tenga un max width y si es muy largo que lo haga doble linea
+                class: 'max-w-45 whitespace-normal',
+            }, nombre)
+            return div
         }
     },
     {
         accessorKey: 'whatsapp',
         header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => row.original.telefono
+        cell: ({ row }: { row: any }) => {
+            const telefono = row.original.telefono
+            return h('div', {
+                class: 'max-w-20 whitespace-normal',
+            }, telefono)
+        }
     },
     {
         accessorKey: 'estado',
@@ -673,7 +684,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.products,
-                    class: 'w-full',
+                    class: 'w-full w-20',
                     disabled: currentRole.value !== ROLES.COTIZADOR,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.products = value
@@ -693,7 +704,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box,
-                    class: 'w-full',
+                    class: 'w-full w-10',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box = value
@@ -713,7 +724,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total,
-                    class: 'w-full',
+                    class: 'w-full w-12',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -753,7 +764,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
-                    class: 'w-full',
+                    class: 'w-full w-25',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier = value
@@ -773,7 +784,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
-                    class: 'w-full',
+                    class: 'w-full w-25',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
@@ -793,7 +804,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
-                    class: 'w-full',
+                    class: 'w-full w-30',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
@@ -854,7 +865,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.arrive_date_china,
-                    class: 'w-full',
+                    class: 'w-full w-25',
                     disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
@@ -902,6 +913,33 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
 const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
     //	Status	N.	Buyer	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
     {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+
+            const div = h('div',
+                {
+                    class: 'flex flex-col gap-2'
+                },
+                proveedores.map((proveedor: any) => {
+                    return h(USelect as any, {
+                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
+                        placeholder: 'Seleccionar estado',
+                        value: proveedor.estados_proveedor,
+                        class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
+                        disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
+                        modelValue: proveedor.estados_proveedor,
+                        'onUpdate:modelValue': (value: any) => {
+                            proveedor.estados_proveedor = value
+                        }
+                    })
+                }))
+            return div
+
+        }
+    },
+    {
         accessorKey: 'n',
         header: 'N.',
         cell: ({ row }: { row: any }) => {
@@ -913,7 +951,10 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            return row.original.nombre
+            const nombre = row.original.nombre
+            return h('div', {
+                class: 'max-w-45 whitespace-normal',
+            }, nombre)
         }
     },
     {

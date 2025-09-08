@@ -599,7 +599,10 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            return row.original.nombre
+            const nombre = row.original.nombre
+            return h('div', {
+                class: 'max-w-45 whitespace-normal'
+            }, nombre)
         }
     },
     {
@@ -940,7 +943,10 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            return row.original.nombre
+            const nombre = row.original.nombre
+            return h('div', {
+                class: 'max-w-45 whitespace-normal'
+            }, nombre)
         }
     },
     {

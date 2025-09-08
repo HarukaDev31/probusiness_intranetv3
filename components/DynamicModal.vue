@@ -51,7 +51,7 @@
 
           <!-- Content -->
           <div class="px-6 pb-6">
-            <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+              <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">
               {{ modal.message }}
             </p>
           </div>
