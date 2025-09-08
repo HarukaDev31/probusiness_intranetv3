@@ -12,12 +12,12 @@
     </div>
 
     <!-- Stats Section -->
-    <div class="container px-4">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-1 h-full min-h-50">
+    <div class="container w-full max-w-full flex align-middle justify-center mb-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-1 h-full min-h-50 max-w-7xl">
         <!-- Dollar Stats -->
         <div class="col-span-1 h-full px-1">
-          <div class="card stat-card bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 h-full">
-            <div class="card-body flex justify-between items-center px-0 h-full">
+          <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 h-40">
+            <div class="card-body flex justify-between items-center px-4 h-full">
               <div class="icon-container px-2">
                 <i class="fa fa-dollar text-6xl text-orange-500 "></i>
               </div>
@@ -31,8 +31,8 @@
 
         <!-- Users Stats -->
         <div class="col-span-1 h-full px-1">
-          <div class="card stat-card bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 h-full">
-            <div class="card-body flex justify-between items-center px-0 h-full">
+          <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 h-40">
+            <div class="card-body flex justify-between items-center px-4 h-full">
               <div class="icon-container px-2">
                 <i class="fa fa-users text-6xl text-orange-500 "></i>
               </div>
@@ -46,8 +46,8 @@
 
         <!-- Package Stats -->
         <div class="col-span-1 h-full px-1">
-          <div class="card stat-card bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 h-full">
-            <div class="card-body flex justify-between items-center px-0 h-full">
+          <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 h-40">
+            <div class="card-body flex justify-between items-center px-4 h-full">
               <div class="icon-container px-2">
                 <i class="fas fa-box-open stat-icon text-6xl text-orange-500 "></i>
               </div>
@@ -61,8 +61,8 @@
 
         <!-- Container Stats -->
         <div class="col-span-1 h-full px-1">
-          <div class="card stat-card bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 h-full">
-            <div class="card-body flex justify-between items-center px-0 h-full">
+          <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 h-40">
+            <div class="card-body flex justify-between items-center px-4 h-full">
               <div class="icon-container px-2">
                 <i class="fas fa-ship stat-icon text-6xl text-orange-500 "></i>
               </div>
