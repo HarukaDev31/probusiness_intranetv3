@@ -19,7 +19,7 @@ export const useCursos = () => {
         to: 0
     })
     const searchQuery = ref('')
-    const itemsPerPage = ref(10)
+    const itemsPerPage = ref(100)
     const currentPage = ref(1)
     const filterConfig = ref<FilterConfig[]>([
         {

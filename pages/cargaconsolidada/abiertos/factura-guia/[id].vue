@@ -4,6 +4,8 @@
 
 
     <DataTable title="" :data="general" :columns="generalColumns" :loading="loadingGeneral" icon=""
+    :show-pagination="false"
+
       :current-page="currentPageGeneral" :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
       :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
       :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"

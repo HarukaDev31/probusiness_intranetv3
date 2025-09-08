@@ -1,6 +1,6 @@
 <template>
     <div class="py-6 ">
-        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
+        <DataTable v-if="tab === 'prospectos'"  :show-pagination="false"   title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
             :loading="loadingCotizaciones" :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
             :total-records="totalRecordsCotizaciones" :items-per-page="itemsPerPageCotizaciones"
             :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
@@ -24,7 +24,7 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :hide-back-button="false"
+        <DataTable v-if="tab === 'embarque'"  :show-pagination="false"  title="" icon="" :data="cotizacionProveedor" :hide-back-button="false"
             :columns="getEmbarqueColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
@@ -45,7 +45,7 @@
                     @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'pagos'" title="Pagos" icon="i-heroicons-book-open" :data="cotizacionPagos" :columns="getPagosColumns()"
+        <DataTable v-if="tab === 'pagos'"  :show-pagination="false"   title="Pagos" icon="i-heroicons-book-open" :data="cotizacionPagos" :columns="getPagosColumns()"
             :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="true" :filter-config="filterConfig" :show-export="true"

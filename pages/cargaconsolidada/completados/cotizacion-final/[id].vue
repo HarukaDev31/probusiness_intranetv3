@@ -16,7 +16,7 @@
       <UButton label="Plantilla Final" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
         @click="handleUploadPlantillaFinal" />
     </div>
-    <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
+    <DataTable title=""  :show-pagination="false"   v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
       :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
       :show-primary-search="false"
@@ -29,7 +29,7 @@
 
       </template>
     </DataTable>
-    <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos" title=""
+    <DataTable v-if="activeTab === 'pagos'"  :show-pagination="false"   :data="pagos" :columns="pagosColumns" :loading="loadingPagos" title=""
       :icon="''" :current-page="currentPagePagos" :total-pages="totalPagesPagos" :total-records="totalRecordsPagos"
       :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos" :show-secondary-search="false"
       :show-filters="false" :filter-config="filterConfigPagos" :show-export="false"

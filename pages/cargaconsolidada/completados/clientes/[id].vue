@@ -3,7 +3,7 @@
         <div class="p-6">
 
 
-            <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
+            <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes"   :show-pagination="false"   :columns="getColumnsGeneral()"
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
                 :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="false"
@@ -22,7 +22,7 @@
 
                 </template>
             </DataTable>
-            <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
+            <DataTable v-if="tab === 'variacion'"  :show-pagination="false"   title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
                 :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
                 :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
@@ -41,7 +41,7 @@
 
                 </template>
             </DataTable>
-            <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
+            <DataTable v-if="tab === 'pagos'"  :show-pagination="false"  title="" icon="" :data="clientesPagos" :columns="columnsPagos"
                 :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
                 :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"

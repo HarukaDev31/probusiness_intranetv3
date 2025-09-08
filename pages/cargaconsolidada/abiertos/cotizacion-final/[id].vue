@@ -20,6 +20,8 @@
       :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
       :show-primary-search="false"
+      :show-pagination="false"
+
       :show-secondary-search="false" :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"
         empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
@@ -35,6 +37,8 @@
       :show-filters="false" :filter-config="filterConfigPagos" :show-export="false"
       empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
+      :show-pagination="false"
+
       @filter-change="handleFilterChangePagos" :show-body-top="true">
       <template #body-top>
         <UTabs v-model="activeTab" :items="tabs"  color="neutral" variant="pill" class="mb-4 w-80 h-15" />

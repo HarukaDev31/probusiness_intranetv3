@@ -15,7 +15,7 @@
         </div>
 
 
-        <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData" :columns="getColumns()" :loading="loading"
+        <DataTable title="Carga Consolidada Completada"  :show-pagination="false"   icon="" :show-title="true" :data="consolidadoData" :columns="getColumns()" :loading="loading"
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {

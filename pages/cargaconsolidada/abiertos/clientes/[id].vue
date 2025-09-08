@@ -8,6 +8,7 @@
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
                 :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfig" :show-export="true" :show-body-top="true"
+                :show-pagination="false"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
@@ -28,6 +29,8 @@
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfigVariacion" :show-export="true" :show-body-top="true"
                 :hide-back-button="false"
+                :show-pagination="false"
+
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
@@ -47,6 +50,8 @@
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filterConfigVariacion" :show-export="true" :hide-back-button="false"
                 :show-body-top="true"
+                :show-pagination="false"
+
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"

@@ -8,13 +8,13 @@ export const useCotizacionPagos = () => {
     const pagination = ref<PaginationInfo>({
         current_page: 1,
         last_page: 1,
-        per_page: 10,
+        per_page: 100,
         total: 0,
         from: 0,
         to: 0
     })
     const search = ref('')
-    const itemsPerPage = ref(10)
+    const itemsPerPage = ref(100)
     const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
     const totalRecords = computed(() => pagination.value.total)
     const currentPage = computed(() => pagination.value.current_page)

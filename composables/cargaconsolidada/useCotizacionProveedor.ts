@@ -42,7 +42,7 @@ export const useCotizacionProveedor = () => {
     const pagination = ref<PaginationInfo>({
         current_page: 1,
         last_page: 1,
-        per_page: 10,
+        per_page: 100,
         total: 0,
         from: 0,
         to: 0
@@ -51,7 +51,7 @@ export const useCotizacionProveedor = () => {
     // Filtros y búsqueda
     const filters = ref<Filters>({ estado_china: 'todos' })
     const search = ref('')
-    const itemsPerPage = ref(10)
+    const itemsPerPage = ref(100)
 
     // Datos específicos de China
     const documentosChina = ref<FileItem[]>([])

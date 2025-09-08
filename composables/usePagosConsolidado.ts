@@ -17,7 +17,7 @@ export const useConsolidado = () => {
     to: 0
   })
   const search = ref('')
-  const itemsPerPage = ref(10)
+  const itemsPerPage = ref(100)
   const filters = ref<ConsolidadoFilters>({
     fecha_inicio: '',
     fecha_fin: '',

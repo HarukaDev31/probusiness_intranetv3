@@ -1,11 +1,11 @@
 <template>
     <div class="py-6 ">
         <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
-            :loading="loadingCotizaciones" :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
-            :total-records="totalRecordsCotizaciones" :items-per-page="itemsPerPageCotizaciones"
-            :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
-            :filter-config="filterConfigProspectos" :show-export="true"
-            empty-state-message="No se encontraron registros de prospectos."
+            :show-pagination="false" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
+            :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
+            :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
+            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigProspectos"
+            :show-export="true" empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             :hide-back-button="false"
@@ -15,7 +15,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs"  variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -24,19 +24,20 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor"
+        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
             :columns="getEmbarqueColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChange" :show-body-top="true" :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+            @filter-change="handleFilterChange" :show-body-top="true"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs"  variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -46,9 +47,9 @@
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
-            :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-            :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
-            :show-filters="true" :filter-config="filterConfig" :show-export="true"
+            :show-pagination="false" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
+            :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
+            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
@@ -57,8 +58,8 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill"
-                        class="mb-4 w-80 h-15" v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                        v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
@@ -98,7 +99,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 
 const tab = ref('')
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
-const { currentRole,currentId} = useUserRole()
+const { currentRole, currentId } = useUserRole()
 const tabs = ref([
 
 
@@ -1405,11 +1406,11 @@ const updateProveedorData = async (row: any) => {
         await withSpinner(async () => {
             const response = await updateProveedor(formData)
             if (response?.success) {
-            showSuccess('Proveedor actualizado correctamente', 'El proveedor se ha actualizado correctamente.')
+                showSuccess('Proveedor actualizado correctamente', 'El proveedor se ha actualizado correctamente.')
                 await getCotizacionProveedor(Number(id))
             }
         }, 'Actualizando proveedor...')
-      
+
     } catch (error) {
         showError('Error al actualizar el proveedor', error)
     }
@@ -1423,8 +1424,8 @@ onMounted(() => {
     if (tabQuery) {
         tab.value = tabQuery as string
     } else {
-    // Ensure we access the inner array on the ref and guard empty state
-    tab.value = (tabs.value && tabs.value.length > 0) ? tabs.value[0].value : '' // Cambiar a 'prospectos' como tab inicial
+        // Ensure we access the inner array on the ref and guard empty state
+        tab.value = (tabs.value && tabs.value.length > 0) ? tabs.value[0].value : '' // Cambiar a 'prospectos' como tab inicial
     }
 })
 </script>

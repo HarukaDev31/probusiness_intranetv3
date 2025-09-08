@@ -3,7 +3,7 @@
     <!-- Header Section -->
 
 
-    <DataTable title="" :data="general" :columns="generalColumns" :loading="loadingGeneral" icon=""
+    <DataTable title=""  :show-pagination="false"   :data="general" :columns="generalColumns" :loading="loadingGeneral" icon=""
       :current-page="currentPageGeneral" :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
       :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
       :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"

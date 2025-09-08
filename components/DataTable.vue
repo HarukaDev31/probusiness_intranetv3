@@ -138,7 +138,7 @@
     </div>
 
     <!-- Sticky Bottom Section - Pagination -->
-    <div v-if="showPagination"
+    <div 
       class="sticky bottom-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
@@ -146,7 +146,7 @@
             (itemsPerPage || 100), totalRecords) }}
           {{ translations.de }} {{ totalRecords }} {{ translations.resultados }}
         </div>
-        <div class="flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto">
+        <div class="flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto" v-if="showPagination">
           <div class="flex items-center gap-2 justify-center lg:justify-start">
             <label class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.perPage }}</label>
             <USelect :model-value="itemsPerPage" :items="PAGINATION_OPTIONS" placeholder="10" class="w-20"

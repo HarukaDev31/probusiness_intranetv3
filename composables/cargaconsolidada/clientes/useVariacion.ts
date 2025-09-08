@@ -15,7 +15,7 @@ export const useVariacion = () => {
         to: 0
     })
     const searchVariacion = ref('')
-    const itemsPerPageVariacion = ref(10)
+    const itemsPerPageVariacion = ref(100)
     const totalPagesVariacion = computed(() => Math.ceil(paginationVariacion.value.total / itemsPerPageVariacion.value))
     const totalRecordsVariacion = computed(() => paginationVariacion.value.total)
     const currentPageVariacion = computed(() => paginationVariacion.value.current_page)
