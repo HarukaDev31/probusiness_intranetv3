@@ -1,13 +1,13 @@
 <template>
     <div class="space-y-4">
         <!-- Zona de subida solo visible si no hay archivos iniciales o si es multiple -->
-        <div v-if="!disabled && (multiple || (!multiple && (!initialFiles || initialFiles.length === 0) && selectedFiles.length === 0))">
+        <div v-if=" (multiple || (!multiple && (!initialFiles || initialFiles.length === 0) && selectedFiles.length === 0))">
             <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                 <div>
                     <p class="text-sm">{{ customMessage || 'Selecciona o arrastra tu archivo aquí' }}</p>
                     <p class="text-xs">Formatos: {{ acceptedTypesText }}</p>
                 </div>
-                <UButton color="neutral" variant="soft" class="whitespace-nowrap" @click.stop="handleSelectFiles">
+                <UButton  v-if="!disabled" color="neutral" variant="soft" class="whitespace-nowrap" @click.stop="handleSelectFiles">
                     Subir archivo
                 </UButton>
             </div>

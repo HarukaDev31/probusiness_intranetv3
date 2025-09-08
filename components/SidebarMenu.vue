@@ -43,7 +43,7 @@
                       :class="isParentActive(item) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                       @click="navigateOrToggle(item)">
                       <UIcon :name="item.icon || 'i-heroicons-archive-box'" class="w-5 h-5 text-gray-400" />
-                      <span class="truncate">{{ item.name }}</span>
+                      <span class="truncate">{{ item.name }}  </span>
                     </button>
 
                     <!-- Right: chevron toggle (stop propagation para no navegar) -->
@@ -61,6 +61,7 @@
                         <!-- Child con sub-hijos -->
                         <div v-if="child.children && child.children.length">
                           <div class="flex items-center justify-between">
+                            
                             <button
                               type="button"
                               class="flex-1 flex items-center gap-2 py-2 px-2 rounded-md text-sm text-left focus:outline-none"

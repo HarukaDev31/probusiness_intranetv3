@@ -177,6 +177,7 @@ export const useGeneral = () => {
         headers,
         carga,
         loadingHeaders,
-        handleDownloadCotizacionFinalPDF
+        handleDownloadCotizacionFinalPDF,
+        handleDeleteCotizacionFinal
     }
 }   

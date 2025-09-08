@@ -67,7 +67,9 @@
                     </div>
 
                     <!-- FileUploader para este folder -->
-                    <FileUploader :accepted-types="acceptedFileTypes" :custom-message="uploadMessage" :immediate="false"
+                    <FileUploader 
+                    :disabled="currentRole!=ROLES.DOCUMENTACION"
+                    :accepted-types="acceptedFileTypes" :custom-message="uploadMessage" :immediate="false"
                         :showSaveButton="true" :initial-files="folder.file_url ? [{
                             id: typeof folder.id === 'number' ? folder.id : 0, // debe ser número
                             file_name: folder.folder_name,

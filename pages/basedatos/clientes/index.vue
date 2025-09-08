@@ -9,7 +9,7 @@
             :filter-config="filterConfig" :filters-value="filters" :show-export="true"
             :show-headers="true" :headers="headers"
             empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
-            :show-new-button="true"
+            :show-new-button="currentRole===ROLES.DOCUMENTACION"
             new-button-label="Cargar Cliente"
             :on-new-button-click="goToArchivos"
             @update:search-query="handleSearch" @update:primary-search="handleSearch"
@@ -30,7 +30,9 @@ import type { TableColumn } from '@nuxt/ui'
 
 // Components
 const UButton = resolveComponent('UButton')
-
+import { ROLES } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
+const { hasRole, isCoordinacion,currentRole } = useUserRole()
 // Composables
 const {
     clientes,

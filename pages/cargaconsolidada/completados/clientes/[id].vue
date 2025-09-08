@@ -193,6 +193,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
                         if (response.success) {
                             showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
                             getClientesPagos(Number(id))
+                            getHeaders(Number(id))
                         } else {
                             showError('Error al registrar pago', response.error, { persistent: true })
                         }

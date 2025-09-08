@@ -15,7 +15,7 @@
                         <UInput v-model="formData.monto" type="number" placeholder="0.00" step="0.01" min="0"
                             class="w-full">
                             <template #leading>
-                                <span class="text-gray-500">S/</span>
+                                <span class="text-gray-500">{{ props.currency=='USD'?'$':'S/' }}</span>
                             </template>
                         </UInput>
                     </UFormField>
@@ -35,13 +35,19 @@
                     </UFormField>
                 </div>
 
-                <!-- Fecha Field -->
-                <div>
+                <UFormField label="Fecha Cierre" required >
+                    <UPopover>
+                        <UButton color="neutral" variant="outline" icon="i-lucide-calendar" class="w-full">
+                            {{ fecha ? df.format(fecha.toDate(getLocalTimeZone())) : 'Seleccione una fecha'
+                            }}
+                        </UButton>
 
-                    <UFormField label="Fecha" name="fecha">
-                        <UInput v-model="formData.fecha" type="date" class="w-full" />
-                    </UFormField>
-                </div>
+                        <template #content>
+                            <UCalendar v-model="fecha" class="p-2" />
+                        </template>
+                    </UPopover>
+                </UFormField>
+              
 
                 <!-- Voucher Upload Section -->
                 <div class="col-span-2">
@@ -71,17 +77,25 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import FileUploader from './FileUploader.vue'
-// Props
+import { CalendarDate } from '@internationalized/date'
+import { getLocalTimeZone, DateFormatter, } from '@internationalized/date'
 interface Props {
     clienteNombre: string
-
+    currency:string
 }
 const selectedFile = ref<File | null>(null)
 const handleFileAdded = (file: File) => {
     selectedFile.value = file
 }
+const df = new DateFormatter('en-US', {
+    dateStyle: 'medium'
+})
+const hoy = new Date();
 
-const props = defineProps<Props>()
+const props =withDefaults( defineProps<Props>(),{
+    currency:'USD'
+})
+const fecha = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
 
 // Emits
 const emit = defineEmits<{
@@ -96,7 +110,7 @@ const emit = defineEmits<{
 const formData = ref({
     monto: '',
     banco: [] as string[],
-    fecha: new Date().toISOString().split('T')[0], // Today's date as default
+    fecha: null,
     voucher: null as File | null
 })
 
@@ -144,14 +158,15 @@ const handleFileRemoved = (index: number) => {
 
 const handleSave = () => {
     // Validación básica
-    if (!formData.value.monto || formData.value.banco.length === 0 || !formData.value.fecha) {
+    if (!formData.value.monto || formData.value.banco.length === 0 || !fecha.value) {
         // Aquí podrías mostrar un mensaje de error
         return
     }
 
     const pagoData = {
         ...formData.value,
-        voucher: selectedFile.value
+        voucher: selectedFile.value,
+        fecha:fecha.value
     }
 
     emit('save', pagoData)
