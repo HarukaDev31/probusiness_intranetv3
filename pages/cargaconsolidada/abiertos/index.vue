@@ -16,13 +16,13 @@
 
 
         <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData"
-        :show-pagination="false"
+        :show-pagination="false" :show-export="false"
 
             :columns="getColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
                 return filters
-            })()" :show-export="true" empty-state-message="No se encontraron registros de contenedores."
+            })()" empty-state-message="No se encontraron registros de contenedores."
             @update:search-query="handleSearch" @update:primary-search="handleSearch" @page-change="handlePageChange"
             @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
             @filter-change="handleFilterChange" :hide-back-button="true">

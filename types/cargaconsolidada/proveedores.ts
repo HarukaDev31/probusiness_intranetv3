@@ -20,6 +20,12 @@ export interface Proveedor {
     arrive_date_china: string
     totales?: ProveedorTotales[]
     contenedor?: Contenedor
+    cotizacion?: Cotizacion
+    cliente_nombre?: string
+}
+export interface Cotizacion {
+    id: number
+    nombre: string
 }
 
 export interface CotizacionProveedor {

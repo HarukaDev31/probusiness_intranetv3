@@ -211,7 +211,7 @@ onMounted(async () => {
         loadingNotas.value = false
         await getProveedorById(id)
         codigoProveedor.value = proveedor.value.code_supplier
-        clienteInfo.value.nombre = proveedor.value.supplier
+        clienteInfo.value.nombre = proveedor.value.cliente_nombre
         consolidadoInfo.value.numero = `#${proveedor.value?.contenedor?.carga}`
         loadingInfo.value = false
     } catch (error) {

@@ -41,6 +41,7 @@ export interface DataTableProps {
   showTopSection?: boolean  
   showPagination?: boolean
   showBodyTop?: boolean | null
+  showBottomSection?: boolean
   // Data props
   data: any[]
   columns: TableColumn<any>[]
