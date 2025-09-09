@@ -9,7 +9,7 @@
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             :hide-back-button="false"
-            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
             :show-body-top="true">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -32,7 +32,7 @@
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true"
-            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -51,7 +51,7 @@
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
-            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
@@ -1101,7 +1101,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         color: 'info',
                         size: 'md',
                         onClick: () => {
-                            navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion/${proveedor.id}`)
+                            navigateTo(`/cargaconsolidada/completados/cotizaciones/proveedor/documentacion/${proveedor.id}`)
                         }
                     }),
                     h(UButton, {
@@ -1386,7 +1386,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         color: 'info',
                         size: 'md',
                         onClick: () => {
-                            navigateTo(`/cargaconsolidada/abiertos/cotizaciones/proveedor/documentacion/${proveedor.id}`)
+                            navigateTo(`/cargaconsolidada/completados/cotizaciones/proveedor/documentacion/${proveedor.id}`)
                         }
                     }),
                     h(UButton, {
@@ -1606,13 +1606,13 @@ watch(() => tab.value, async (newVal) => {
         try {
             resetFilters()
             if (newVal === 'prospectos') {
-                navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`)
+                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos`)
                 await getCotizaciones(Number(id))
             } else if (newVal === 'embarque') {
-                navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=embarque`)
+                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=embarque`)
                 await getCotizacionProveedor(Number(id))
             } else if (newVal === 'pagos') {
-                navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=pagos`)
+                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=pagos`)
                 await getCotizacionPagos(Number(id))
             }
             await getHeaders(Number(id))
