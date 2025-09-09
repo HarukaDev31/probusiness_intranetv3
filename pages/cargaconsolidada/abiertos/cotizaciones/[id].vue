@@ -722,6 +722,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
                             proveedor.estados_proveedor = value
+                            handleUpdateProveedorEstado(proveedor.id, value)
                         }
                     })
                 }))
@@ -1073,6 +1074,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
                             proveedor.estados_proveedor = value
+                            handleUpdateProveedorEstado(proveedor.id, value)
                         }
                     })
                 }))

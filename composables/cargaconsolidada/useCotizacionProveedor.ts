@@ -89,15 +89,24 @@ export const useCotizacionProveedor = () => {
 
         loading.value = true
         error.value = null
-        if (filters.value.estado && filters.value.estado == 'todos') {
+        if(!filters.value.fecha_inicio || filters.value.fecha_inicio == '') {
+            //remove fecha_inicio and fecha_fin
+            delete filters.value.fecha_inicio
+        }
+        if(!filters.value.fecha_fin || filters.value.fecha_fin == '') {
+            //remove fecha_inicio and fecha_fin
+            delete filters.value.fecha_fin
+        }
+   
+        if (!filters.value.estado || filters.value.estado == 'todos') {
             //remove estado
             delete filters.value.estado
         }
-        if (filters.value.estado_coordinacion && filters.value.estado_coordinacion == 'todos') {
+            if (!filters.value.estado_coordinacion || filters.value.estado_coordinacion == 'todos') {
             //remove estado_coordinacion
             delete filters.value.estado_coordinacion
         }
-        if (filters.value.estado_china && filters.value.estado_china == 'todos') {
+        if (!filters.value.estado_china ) {
             //remove estado_china
             delete filters.value.estado_china
         }

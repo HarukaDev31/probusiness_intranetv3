@@ -54,4 +54,26 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+    static async deleteFacturaComercial(id: number): Promise<GeneralResponse> {
+        try {
+            const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/delete-factura-comercial/${id}`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error) {
+            console.error('Error al eliminar la factura comercial:', error)
+            throw error
+        }
+    }
+    static async deleteGuiaRemision(id: number): Promise<GeneralResponse> {
+        try {
+            const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/delete-guia-remision/${id}`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error) {
+            console.error('Error al eliminar la guía remisión:', error)
+            throw error
+        }
+    }
 }

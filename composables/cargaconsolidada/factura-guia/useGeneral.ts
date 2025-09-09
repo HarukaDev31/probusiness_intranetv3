@@ -47,7 +47,6 @@ export const useGeneral  = () => {
                 page: currentPageGeneral.value,
                 per_page: itemsPerPageGeneral.value,
                 search: searchGeneral.value,
-                filters: filtersGeneral.value
             }
             const response = await GeneralService.getGeneral(id, params)
             general.value = response.data
@@ -92,7 +91,22 @@ export const useGeneral  = () => {
             error.value = err as string
         }
     }
-
+    const deleteFacturaComercial = async (id: number) => {
+        try {
+            const response = await GeneralService.deleteFacturaComercial(id)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
+    const deleteGuiaRemision = async (id: number) => {
+        try {
+            const response = await GeneralService.deleteGuiaRemision(id)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
     return {
         general,
         loadingGeneral,
@@ -111,6 +125,8 @@ export const useGeneral  = () => {
         headers,
         carga,
         loadingHeaders,
-        getHeaders
+        getHeaders,
+        deleteFacturaComercial,
+        deleteGuiaRemision
     }
 }   
