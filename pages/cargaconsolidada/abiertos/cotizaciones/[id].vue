@@ -4,8 +4,8 @@
             :show-pagination="false" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
-            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
-            :show-export="false" empty-state-message="No se encontraron registros de prospectos."
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
+            empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             :hide-back-button="false"
@@ -20,6 +20,7 @@
                 </div>
             </template>
             <template #actions>
+
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" class="py-3"
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
@@ -42,6 +43,31 @@
                 </div>
             </template>
             <template #actions>
+                <div class="flex items-center gap-2 relative w-full lg:w-auto">
+
+                    <div ref="filtersButtonRef" class="w-full lg:w-auto">
+                        <UButton label="Upload" icon="i-heroicons-arrow-up-tray" v-if="ROLES.CONTENEDOR_ALMACEN"
+                            class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
+                            @click="showUploadPanel = !showUploadPanel" />
+                    </div>
+                    <div ref="filtersPanelRef" v-if="showUploadPanel && ROLES.CONTENEDOR_ALMACEN"
+                        class="absolute top-full right-0 mt-2 w-full lg:w-80 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
+                        @click.stop>
+                        <div class="flex flex-row gap-2 w-full">
+                            <UButton label="Packing List" variant="ghost" class="w-full" v-if="!packingList"
+                                icon="i-heroicons-arrow-up-tray" color="secondary" @click="uploadPackingList" />
+                            <div v-else class="flex flex-row gap-2 w-full">
+                                <!--buttton download and button delete  -->
+                                <label @click="downloadPackingList" class="w-full">Packing List</label>
+                                <UButton label="" variant="ghost" icon="i-heroicons-trash" color="error"
+                                    @click="deletePackingList" />
+                            </div>
+
+
+                        </div>
+
+                    </div>
+                </div>
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3" />
             </template>
@@ -91,9 +117,9 @@ import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import PagoGrid from '~/components/PagoGrid.vue'
 const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, resetFiltersProveedor } = useCotizacionProveedor()
 const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones,
-    filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders, resetFiltersCotizacion } = useCotizacion()
+    filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders, resetFiltersCotizacion, packingList } = useCotizacion()
 const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headers: headersPagos } = useCotizacionPagos()
-
+const showUploadPanel = ref(false)
 
 const { withSpinner } = useSpinner()
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
@@ -108,6 +134,7 @@ const tabs = ref([
 
 
 ])
+import SimpleUploadFileModal from '~/components/commons/SimpleUploadFile.vue'
 const loadTabs = () => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
@@ -149,6 +176,9 @@ const loadTabs = () => {
             break
     }
 }
+const overlay = useOverlay()
+const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
+import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 
 const filterConfigProspectosCoordinacion = ref([
     {
@@ -178,7 +208,7 @@ const filterConfigProspectosCoordinacion = ref([
             { label: 'DATOS PROVEEDOR', value: 'DATOS PROVEEDOR', inrow: true },
             { label: 'INSPECCIONADO', value: 'INSPECCIONADO', inrow: true },
             { label: 'COBRANDO', value: 'COBRANDO', inrow: true },
-    
+
         ]
     },
     {
@@ -197,7 +227,7 @@ const filterConfigProspectosCoordinacion = ref([
         ]
     }
 ])
-const filterConfigProspectos= ref([
+const filterConfigProspectos = ref([
     {
         label: 'Fecha Inicio',
         key: 'fecha_inicio',
@@ -236,7 +266,45 @@ const getFilterPerRole = () => {
     }
 }
 
+const uploadPackingList = () => {
+    showUploadPanel.value = false
+    simpleUploadFileModal.open({
+        title: 'Subir Packing List',
+        onClose: () => simpleUploadFileModal.close(),
+        onSave: async (data: { file: File }) => {
+            const formData = new FormData()
+            formData.append('file', data.file)
+            formData.append('idContenedor', id)
+            const result = await ConsolidadoService.uploadPackingList(formData)
+            await withSpinner(async () => {
+                if (result.success) {
+                    showSuccess('Packing List subido correctamente', 'success')
+                } else {
+                    showError('Error', result.error || 'Error al subir el packing list')
+                }
+            })
+            await getHeaders(Number(id))
 
+        }
+    })
+}
+
+const downloadPackingList = () => {
+    window.open(packingList.value, '_blank')
+}
+
+const deletePackingList = () => {
+    showUploadPanel.value = false
+    showConfirmation('Confirmar eliminación', '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.', async () => {
+        await withSpinner(async () => {
+            const result = await ConsolidadoService.deletePackingList(Number(id))
+            if (result.success) {
+                showSuccess('Packing List eliminado correctamente', 'success')
+            }
+        }, 'Eliminando packing list...')
+        await getHeaders(Number(id))
+    })
+}
 
 const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
     {
@@ -1339,7 +1407,6 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
     }
 ])
 
-const overlay = useOverlay()
 const handleAddProspecto = async () => {
     const modal = overlay.create(CreateProspectoModal)
     console.log(id)
@@ -1357,6 +1424,7 @@ const handleMoveCotizacion = async (idCotizacion: number) => {
     modal.open({
         cotizacionId: idCotizacion,
         idConsolidado: id,
+
     })
 }
 const handleRefresh = async (idCotizacion: number) => {
