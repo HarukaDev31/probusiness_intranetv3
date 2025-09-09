@@ -4,8 +4,8 @@
             :show-pagination="false" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
-            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
-            :show-export="false" empty-state-message="No se encontraron registros de prospectos."
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
+            empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             :hide-back-button="false"
@@ -20,6 +20,7 @@
                 </div>
             </template>
             <template #actions>
+
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" class="py-3"
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
@@ -41,10 +42,7 @@
                         v-if="tabs.length > 1" />
                 </div>
             </template>
-            <template #actions>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
-                    @click="handleAddProspecto" class="py-3" />
-            </template>
+            
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
             :show-pagination="false" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
@@ -89,11 +87,12 @@ import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import PagoGrid from '~/components/PagoGrid.vue'
+const {registrarPago, deletePago} = usePagos()
 const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, resetFiltersProveedor } = useCotizacionProveedor()
 const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones,
-    filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders, resetFiltersCotizacion } = useCotizacion()
+    filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders, resetFiltersCotizacion, packingList } = useCotizacion()
 const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headers: headersPagos } = useCotizacionPagos()
-const { getClientesPagos, registrarPago, deletePago } = usePagos()
+const showUploadPanel = ref(false)
 
 const { withSpinner } = useSpinner()
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
@@ -108,6 +107,7 @@ const tabs = ref([
 
 
 ])
+import SimpleUploadFileModal from '~/components/commons/SimpleUploadFile.vue'
 const loadTabs = () => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
@@ -149,6 +149,9 @@ const loadTabs = () => {
             break
     }
 }
+const overlay = useOverlay()
+const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
+import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 
 const filterConfigProspectosCoordinacion = ref([
     {
@@ -178,7 +181,7 @@ const filterConfigProspectosCoordinacion = ref([
             { label: 'DATOS PROVEEDOR', value: 'DATOS PROVEEDOR', inrow: true },
             { label: 'INSPECCIONADO', value: 'INSPECCIONADO', inrow: true },
             { label: 'COBRANDO', value: 'COBRANDO', inrow: true },
-    
+
         ]
     },
     {
@@ -197,40 +200,7 @@ const filterConfigProspectosCoordinacion = ref([
         ]
     }
 ])
-const filterConfigProspectosChina = ref([
-    {
-        label: 'Fecha Inicio',
-        key: 'fecha_inicio',
-        type: 'date',
-        placeholder: 'Selecciona una fecha',
-        options: []
-    },
-
-    {
-        label: 'Fecha Fin',
-        key: 'fecha_fin',
-        type: 'date',
-        placeholder: 'Selecciona una fecha',
-        options: []
-    },
-    {
-        key: 'estado_china',
-        label: 'Estado',
-        type: 'select',
-        placeholder: 'Seleccionar estado',
-        options: [
-            { label: 'Todos', value: 'todos', inrow: false },
-            { label: 'NC', value: 'NC', inrow: true },
-            { label: 'C', value: 'C', inrow: true },
-            { label: 'R', value: 'R', inrow: true },
-            { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
-            { label: 'LOADED', value: 'LOADED', inrow: true },
-            { label: 'NO LOADED', value: 'NO LOADED', inrow: true }
-        ]
-    }
-   
-])
-const filterConfigProspectos= ref([
+const filterConfigProspectos = ref([
     {
         label: 'Fecha Inicio',
         key: 'fecha_inicio',
@@ -262,17 +232,52 @@ const filterConfigProspectos= ref([
 
 ])
 const getFilterPerRole = () => {
-    switch (currentRole.value) {
-        case ROLES.COORDINACION:
-            return filterConfigProspectosCoordinacion.value
-        case ROLES.CONTENEDOR_ALMACEN:
-            return filterConfigProspectosChina.value
-        default:
-            return filterConfigProspectos.value
+    if (currentRole.value === ROLES.COORDINACION) {
+        return filterConfigProspectosCoordinacion.value
+    } else {
+        return filterConfigProspectos.value
     }
 }
 
+const uploadPackingList = () => {
+    showUploadPanel.value = false
+    simpleUploadFileModal.open({
+        title: 'Subir Packing List',
+        onClose: () => simpleUploadFileModal.close(),
+        onSave: async (data: { file: File }) => {
+            const formData = new FormData()
+            formData.append('file', data.file)
+            formData.append('idContenedor', id)
+            const result = await ConsolidadoService.uploadPackingList(formData)
+            await withSpinner(async () => {
+                if (result.success) {
+                    showSuccess('Packing List subido correctamente', 'success')
+                } else {
+                    showError('Error', result.error || 'Error al subir el packing list')
+                }
+            })
+            await getHeaders(Number(id))
 
+        }
+    })
+}
+
+const downloadPackingList = () => {
+    window.open(packingList.value, '_blank')
+}
+
+const deletePackingList = () => {
+    showUploadPanel.value = false
+    showConfirmation('Confirmar eliminación', '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.', async () => {
+        await withSpinner(async () => {
+            const result = await ConsolidadoService.deletePackingList(Number(id))
+            if (result.success) {
+                showSuccess('Packing List eliminado correctamente', 'success')
+            }
+        }, 'Eliminando packing list...')
+        await getHeaders(Number(id))
+    })
+}
 
 const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
     {
@@ -316,10 +321,10 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'correo',
         header: 'Correo',
         cell: ({ row }: { row: any }) => {
-            const correo = row.getValue('correo') || 'Sin correo'
+            const correo = row.getValue('correo')
             return h('div',{
-                class: 'max-w-55 overflow-hidden text-ellipsis whitespace-nowrap',
-            }, correo
+                class: 'max-w-55 whitespace-normal',
+            }, correo || 'Sin correo'
             )
         }
     },
@@ -361,7 +366,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'logistica',
         header: 'Logistica',
         cell: ({ row }: { row: any }) => {
-            const logistica = parseFloat(row.getValue('monto'))
+            const logistica = parseFloat(row.original.monto)
             return formatCurrency(logistica, 'USD')
         }
     },
@@ -740,6 +745,7 @@ const getPagosColumns = () => {
                                         if (response.success) {
                                             await getCotizacionPagos(Number(id))
                                             showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                                            await getHeaders(Number(id))
                                         }
                                     }, 'Eliminando pago...')
                                 } catch (error) {
@@ -786,6 +792,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
                             proveedor.estados_proveedor = value
+                            handleUpdateProveedorEstado(proveedor.id, value)
                         }
                     })
                 }))
@@ -1137,6 +1144,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
                             proveedor.estados_proveedor = value
+                            handleUpdateProveedorEstado(proveedor.id, value)
                         }
                     })
                 }))
@@ -1401,7 +1409,6 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
     }
 ])
 
-const overlay = useOverlay()
 const handleAddProspecto = async () => {
     const modal = overlay.create(CreateProspectoModal)
     console.log(id)
@@ -1419,6 +1426,7 @@ const handleMoveCotizacion = async (idCotizacion: number) => {
     modal.open({
         cotizacionId: idCotizacion,
         idConsolidado: id,
+
     })
 }
 const handleRefresh = async (idCotizacion: number) => {

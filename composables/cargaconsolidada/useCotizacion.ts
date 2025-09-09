@@ -15,6 +15,7 @@ export const useCotizacion = () => {
         from: 0,
         to: 0
     })
+    const packingList = ref<any>(null)
     const headersCotizaciones = ref<Header[]>([])
     const loadingHeaders = ref(false)
     const search = ref('')
@@ -129,6 +130,7 @@ export const useCotizacion = () => {
             headersCotizaciones.value = response.data
             carga.value = response.carga
             loadingHeaders.value = false
+            packingList.value = response.lista_embarque_url
             return response
         } catch (error) {
             console.error('Error en getHeaders:', error)
@@ -166,6 +168,7 @@ export const useCotizacion = () => {
         getHeaders,
         carga,
         loadingHeaders,
-        resetFiltersCotizacion
+        resetFiltersCotizacion,
+        packingList
     }
 }

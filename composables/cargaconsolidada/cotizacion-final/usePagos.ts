@@ -15,6 +15,8 @@ export const usePagos = () => {
         to: 0
     })
     const searchPagos = ref('')
+    const route = useRoute()
+    const id = route.params.id
     const itemsPerPagePagos = ref(100)
     const totalPagesPagos = computed(() => Math.ceil(paginationPagos.value.total / itemsPerPagePagos.value))
     const totalRecordsPagos = computed(() => paginationPagos.value.total)
@@ -42,7 +44,11 @@ export const usePagos = () => {
             const params = {
                 page: currentPagePagos.value,
                 per_page: itemsPerPagePagos.value,
-                ...filtersPagos.value
+                ...filtersPagos.value,
+
+            }
+            if (searchPagos.value) {
+                params.search = searchPagos.value
             }
             const response = await PagosService.getPagos(id, params)
             pagos.value = response.data
@@ -52,6 +58,10 @@ export const usePagos = () => {
         } finally {
             loadingPagos.value = false
         }
+    }
+    const handleSearchPagos = (search: string) => {
+        searchPagos.value = search
+        getPagos(Number(id))
     }
     return {
         pagos,
@@ -65,6 +75,7 @@ export const usePagos = () => {
         filtersPagos,
         filterConfigPagos,
         getPagos,
-        totalRecordsPagos
+        totalRecordsPagos,
+        handleSearchPagos
     }
 }   

@@ -52,7 +52,7 @@
                         }" 
                         @click="handleDownload(pagoDetails.voucher_url)"
                         />
-                        <span class="w-full overflow-hidden text-ellipsis whitespace-nowrap">{{ pagoDetails.voucher_url.split('/').pop() }}</span>
+                        <span class="w-60" style="word-break: break-all;">{{ pagoDetails.voucher_url.split('/').pop() }}</span>
                     </div>
                 </div>
             </div>

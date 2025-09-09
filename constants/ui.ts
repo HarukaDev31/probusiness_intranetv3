@@ -30,7 +30,7 @@ export const STATUS_BG_PAGOS_CLASSES = {
     PAGADO: 'bg-green-400',
     SOBREPAGO: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
     CONFIRMADO: 'bg-green-600 text-white dark:bg-green-600 dark:text-white',
-
+    OBSERVADO: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
 } as const
 
 export const CUSTOMIZED_ICONS = {
