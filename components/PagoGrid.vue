@@ -25,6 +25,8 @@ import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import PagoDetailsModal from '~/components/commons/PagoDetailsModal.vue'
 import type { PagosDetails } from '~/types/cargaconsolidada/clientes/pagos'
 import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
+import { useUserRole } from '~/composables/auth/useUserRole'
+const { currentRole, currentId, isCoordinacion } = useUserRole()
 const overlay = useOverlay()
 const modalPagos = overlay.create(CreatePagoModal)
 const modalPagoDetails = overlay.create(PagoDetailsModal)
@@ -51,35 +53,39 @@ const emit = defineEmits<{
 }>()
 
 const openCreatePagoModal = (pagoIndex: number) => {
-  modalPagos.open({
-    clienteNombre: props.clienteNombre,
-    currency: props.currency,
-    onClose: () => {
-      emit('close')
-    },
-    onSave: (data: any) => {
-      emit('save', data)
-    }
-  })
+  if (isCoordinacion.value) {
+    modalPagos.open({
+      clienteNombre: props.clienteNombre,
+      currency: props.currency,
+      onClose: () => {
+        emit('close')
+      },
+      onSave: (data: any) => {
+        emit('save', data)
+      }
+    })
+  }
 }
 
 
 
 const openPagoDetailsModal = (pago: PagosDetails) => {
-  modalPagoDetails.open({
-    pagoDetails: pago,
-    currency: props.currency,
-    showDelete: props.showDelete,
-    onDelete: (pagoId: number) => {
-      if (props.showDelete) {
-        console.log(pagoId,'xd')
-        emit('delete', pagoId)
+  if (isCoordinacion.value) {
+    modalPagoDetails.open({
+      pagoDetails: pago,
+      currency: props.currency,
+      showDelete: props.showDelete,
+      onDelete: (pagoId: number) => {
+        if (props.showDelete) {
+          console.log(pagoId,'xd')
+          emit('delete', pagoId)
+        }
+      },
+      onClose: () => {
+        emit('close')
       }
-    },
-    onClose: () => {
-      emit('close')
-    }
-  })
+    })
+  }
 }
 </script>
 
@@ -93,8 +99,6 @@ const openPagoDetailsModal = (pago: PagosDetails) => {
   flex-direction: row;
   padding: 1rem;
 }
-
-.pago-item {}
 
 .pago-item:hover {
 

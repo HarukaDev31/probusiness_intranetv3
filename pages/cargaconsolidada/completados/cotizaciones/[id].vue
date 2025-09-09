@@ -515,16 +515,17 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         accessorKey: 'fob',
         header: 'Fob',
         cell: ({ row }: { row: any }) => {
-            const fob = parseFloat(row.original.fob)
+            const fob = parseFloat(row.original.fob) || row.getValue('fob')
             return formatCurrency(fob, 'USD')
         }
     },
     {
-        accessorKey: 'logistica',
+        accessorKey: 'monto',
         header: 'Logistica',
         cell: ({ row }: { row: any }) => {
             // Campo calculado o por defecto
-            return row.original.monto
+            const logistica = parseFloat(row.original.monto) || row.getValue('monto')
+            return formatCurrency(logistica, 'USD')
         }
     },
     {
@@ -532,14 +533,16 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         header: 'Impuesto',
         cell: ({ row }: { row: any }) => {
             // Campo calculado o por defecto
-            return row.original.impuestos
+            const impuestos = parseFloat(row.original.impuestos) || row.getValue('impuestos')
+            return formatCurrency(impuestos, 'USD')
         }
     },
     {
         accessorKey: 'tarifa',
         header: 'Tarifa',
         cell: ({ row }: { row: any }) => {
-            return row.original.tarifa
+            const tarifa = parseFloat(row.original.tarifa) || row.getValue('tarifa')
+            return formatCurrency(tarifa, 'USD')
         }
     },
     {
@@ -607,7 +610,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             const color = getEstadoColor(estado)
 
             return h(USelect as any, {
-                items: filterConfigProspectos.value.find((filter: any) => filter.key === 'estado')?.options.filter((option: any) => option.inrow),
+                items: filterConfigProspectos.value.find((filter: any) => filter.key === 'estado_cotizador')?.options.filter((option: any) => option.inrow),
                 placeholder: 'Seleccionar estado',
                 modelValue: estado,
                 color: color,

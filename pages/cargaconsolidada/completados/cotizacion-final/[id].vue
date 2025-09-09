@@ -149,12 +149,18 @@ const generalColumns = ref<TableColumn<any>[]>([
 
   {
     accessorKey: 'correo',
-    header: 'Correo'
+    header: 'Correo',
+    cell: ({ row }: { row: any }) => {
+      return row.original.correo || 'Sin correo'
+    }
   },
 
   {
     accessorKey: 'telefono',
-    header: 'Whatsapp'
+    header: 'Whatsapp',
+    cell: ({ row }: { row: any }) => {
+      return row.original.telefono || 'Sin Whatsapp'
+    }
   },
 
   {
@@ -164,7 +170,10 @@ const generalColumns = ref<TableColumn<any>[]>([
 
   {
     accessorKey: 'volumen_final',
-    header: 'Volumen'
+    header: 'Volumen',
+    cell: ({ row }: { row: any }) => {
+      return row.original.volumen_final || 'N/A'
+    }
   },
 
   {
@@ -195,7 +204,7 @@ const generalColumns = ref<TableColumn<any>[]>([
     accessorKey: 'tarifa_final',
     header: 'Tarifa',
     cell: ({ row }: { row: any }) => {
-      return `$${row.original.tarifa_final}`
+      return formatCurrency(row.original.tarifa_final)
     }
   },
   {

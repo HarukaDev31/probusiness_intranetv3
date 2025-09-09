@@ -120,7 +120,12 @@ const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizaci
 const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones,
     filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders, resetFiltersCotizacion, packingList } = useCotizacion()
 const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headers: headersPagos } = useCotizacionPagos()
+
+// Registrar/eliminar pagos para el grid de adelantos
+const { registrarPago, deletePago } = usePagos()
+
 const showUploadPanel = ref(false)
+
 
 const { withSpinner } = useSpinner()
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
@@ -552,7 +557,8 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         header: 'Logistica',
         cell: ({ row }: { row: any }) => {
             // Campo calculado o por defecto
-            return row.original.monto
+            const monto = parseFloat(row.original.monto)
+            return formatCurrency(monto, 'USD')
         }
     },
     {
@@ -560,14 +566,15 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         header: 'Impuesto',
         cell: ({ row }: { row: any }) => {
             // Campo calculado o por defecto
-            return row.original.impuestos
+            const impuestos = parseFloat(row.original.impuestos)
+            return formatCurrency(impuestos, 'USD')
         }
     },
     {
         accessorKey: 'tarifa',
         header: 'Tarifa',
         cell: ({ row }: { row: any }) => {
-            return row.original.tarifa
+            return formatCurrency(parseFloat(row.original.tarifa), 'USD')
         }
     },
     {
@@ -631,11 +638,13 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         header: 'Estado',
 
         cell: ({ row }: { row: any }) => {
-            const estado = row.getValue('estado_cotizador')
+            const estado = row.getValue('estado_cotizador') || row.original.estado
             const color = getEstadoColor(estado)
 
             return h(USelect as any, {
-                items: filterConfigProspectos.value.find((filter: any) => filter.key === 'estado')?.options.filter((option: any) => option.inrow),
+                items: filterConfigProspectos.value
+                    .find((filter: any) => filter.key === 'estado_cotizador')?.options
+                    .filter((option: any) => option.inrow) || [],
                 placeholder: 'Seleccionar estado',
                 modelValue: estado,
                 color: color,
@@ -1449,6 +1458,7 @@ const handleAddProspecto = async () => {
 const handleMoveCotizacion = async (idCotizacion: number) => {
     const modal = overlay.create(MoveCotizacionModal)
     modal.open({
+        show: true,
         cotizacionId: idCotizacion,
         idConsolidado: id,
 

@@ -5,7 +5,7 @@
             <template #actions>
                 <!--button save-->
                 <UButton label="Guardar cambios" color="primary" variant="solid" icon="i-heroicons-arrow-down-tray"
-                    size="sm" @click="handleSaveChanges" />
+                    size="sm" @click="handleSaveChanges" v-if="isCoordinacion" />
             </template>
         </PageHeader>
 
@@ -185,8 +185,8 @@
             <!-- Tabs de proveedores -->
             <div v-if="hasProveedores" class="mb-6">
                 <UTabs v-model="activeTab" :items="tabs" size="md" variant="pill" 
-                :class="{ 'w-100': tabs.length >=3, 'w-50': tabs.length <3 }"
-            
+                :class="{ 'w-200': tabs.length >=3, 'w-50': tabs.length <3, 'w-300': tabs.length >= 5 }"
+
                 color="neutral"
                     @update:model-value="handleTabChange" />
             </div>
@@ -214,7 +214,7 @@
                             <div class="flex gap-2">
 
                                 <UButton label="Nuevo Documento" color="warning" variant="solid" icon="i-heroicons-plus"
-                                    size="sm" v-if="currentRole === ROLES.COORDINACION || currentId === ID_JEFEVENTAS"
+                                    size="sm" v-if="currentRole === ROLES.COORDINACION"
                                     @click="handleNuevoDocumento" />
                             </div>
                         </div>
@@ -229,7 +229,7 @@
                                 </label>
                                 <UInput v-model="proveedorActivo.volumen_doc" type="number" placeholder="0"
                                     class="w-full" @update:model-value="handleVolumenChange"
-                                    :disabled="currentRole === ROLES.DOCUMENTACION" />
+                                    :disabled="!isCoordinacion" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -237,7 +237,7 @@
                                 </label>
                                 <UInput v-model="proveedorActivo.valor_doc" type="number" placeholder="$ 0"
                                     class="w-full" @update:model-value="handleValorChange"
-                                    :disabled="currentRole === ROLES.DOCUMENTACION" />
+                                    :disabled="!isCoordinacion" />
                             </div>
                         </div>
 
@@ -246,7 +246,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Factura Comercial
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false" :disabled="!isCoordinacion"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'"
                                 :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.factura_comercial ? [{
                                     id: proveedorActivo.id, // debe ser número
@@ -266,7 +266,7 @@
                                 Packing List
                             </label>
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']"
-                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :immediate="false"
+                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :immediate="false" :disabled="!isCoordinacion"
                                 :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.packing_list ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Packing List',
@@ -283,7 +283,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Excel Confirmación
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false" :disabled="!isCoordinacion"
                                 :show-remove-button="currentRole === ROLES.COORDINACION"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="proveedorActivo.excel_confirmacion ? [{
                                     id: proveedorActivo.id, // debe ser número
@@ -393,7 +393,7 @@
 
                 <!-- Sección de Cotizaciones -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg h-40 shadow-md"
-                    v-if="currentRole === ROLES.COORDINACION || currentId === ID_JEFEVENTAS">
+                    v-if="currentRole === ROLES.COORDINACION">
 
                     <div class="space-y-4">
 
@@ -428,7 +428,7 @@ import type { id } from '@nuxt/ui/runtime/locale/index.js'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import { CUSTOMIZED_ICONS_URL } from '~/constants/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { currentRole, currentId } = useUserRole()
+const { currentRole, currentId, isCoordinacion } = useUserRole()
 import SimpleUploadFile from '~/components/commons/SimpleUploadFile.vue'
 // Composables
 const { showSuccess, showError, showConfirmation } = useModal()
