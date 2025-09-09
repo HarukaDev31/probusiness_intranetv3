@@ -185,7 +185,7 @@
             <!-- Tabs de proveedores -->
             <div v-if="hasProveedores" class="mb-6">
                 <UTabs v-model="activeTab" :items="tabs" size="md" variant="pill" 
-                :class="{ 'w-100': tabs.length >=3, 'w-50': tabs.length <3 }"
+                :class="{ 'w-200': tabs.length >=3, 'w-50': tabs.length <3, 'w-300': tabs.length >= 5 }"
             
                 color="neutral"
                     @update:model-value="handleTabChange" />

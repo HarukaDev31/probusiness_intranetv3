@@ -81,7 +81,7 @@ import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
-const { currentRole, currentId } = useUserRole()
+const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
