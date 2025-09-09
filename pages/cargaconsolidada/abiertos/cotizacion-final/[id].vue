@@ -354,6 +354,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
                     if (response.success) {
                       await getPagos(Number(id))
                       showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                      getHeaders(Number(id))
                     }
                   }, 'Eliminando pago...')
                 } catch (error) {
@@ -413,6 +414,7 @@ const handleSavePago = (pagoData: any) => {
   // Por ejemplo, llamar a un servicio o actualizar el estado
 }
 watch(activeTab, async (newVal, oldVal) => {
+
   if (oldVal === '' || !newVal) {
     return
   }
@@ -436,7 +438,13 @@ onMounted(async () => {
   } else {
     activeTab.value = tabs[0].value
   }
-  await getGeneral(Number(id))
+  if (activeTab.value === 'general') {
+    await getGeneral(Number(id))
+  }
+  if (activeTab.value === 'pagos') {
+    console.log('getPagos')
+    await getPagos(Number(id))
+  }
   await getHeaders(Number(id))
 })
 </script>

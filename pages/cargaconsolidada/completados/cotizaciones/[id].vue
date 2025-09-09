@@ -742,6 +742,7 @@ const getPagosColumns = () => {
                                         if (response.success) {
                                             await getCotizacionPagos(Number(id))
                                             showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                                            await getHeaders(Number(id))
                                         }
                                     }, 'Eliminando pago...')
                                 } catch (error) {
