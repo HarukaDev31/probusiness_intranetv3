@@ -10,9 +10,9 @@
 
     <!-- Cards Container -->
     <div class="flex justify-center mb-8">
-      <div class="flex flex-wrap flex-row gap-6 max-w-6xl">
+      <div class="flex flex-wrap flex-row gap-3 max-w-6xl">
         <!-- Loading state -->
-        <div v-if="loading" class="flex flex-wrap flex-row gap-6 max-w-6xl">
+        <div v-if="loading" class="flex flex-wrap flex-row gap-3 max-w-6xl">
           <!-- Skeleton para cada paso -->
           <div 
             v-for="i in 5" 
@@ -33,7 +33,7 @@
         <!-- Cards reales cuando no está cargando -->
         <div
           v-else
-          class="rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-6 text-center"
+          class="rounded-2xl border border-gray-300 dark:border-gray-700 hover:bg-gray-50 hover:dark:bg-gray-800 hover:shadow-md transition-shadow cursor-pointer p-3 text-center"
           v-for="paso in pasos" 
           @click="handleNavigateToStep(paso.name)" 
           :key="paso.id"
@@ -41,9 +41,9 @@
           <div class="flex flex-col items-center space-y-4 min-w-40">
             <div class="w-14 h-14 rounded-full flex items-center justify-center">
               <!--load image from url-->
-              <img :src="paso.iconURL" class="w-12 h-12" />
+              <img :src="paso.iconURL"/>
             </div>
-            <h3 class="text-md font-semibold text-gray-900 dark:text-white">{{ formatNombre(paso.name) }}</h3>
+            <h3 class="text-md text-gray-900 dark:text-white">{{ formatNombre(paso.name) }}</h3>
           </div>
         </div>
       </div>
@@ -51,7 +51,7 @@
 
     <!-- Regresar Button -->
     <div class="flex justify-center">
-      <UButton label="Regresar" color="neutral" variant="outline" size="lg" class="px-8 py-3" @click="goBack" />
+      <UButton label="Regresar" color="neutral" variant="outline" size="lg" class="w-4xl justify-center px-8 py-3" @click="goBack" />
     </div>
   </div>
 </template>

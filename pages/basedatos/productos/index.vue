@@ -18,7 +18,6 @@
   :filtersValue="filters"
   @update:filters="onFiltersUpdate"
   @filter-change="handleFilterChange"
-        :showPagination="true"
   :currentPage="currentPage"
   :itemsPerPage="itemsPerPage"
   :totalRecords="totalRecords"
@@ -28,7 +27,7 @@
   :showNewButton="false"
         :headers="headers"
       >
-        <template #actions>
+        <template #actions v-if="isDocumentacion">
           <UButton label="Importar productos" icon="i-heroicons-plus" color="primary" variant="solid" class="h-11 font-normal" @click="goToArchivos" />
         </template>
       </DataTable>

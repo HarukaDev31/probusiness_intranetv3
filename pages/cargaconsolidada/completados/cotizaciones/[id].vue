@@ -293,22 +293,46 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'nombre',
         header: 'Nombre',
-        cell: ({ row }: { row: any }) => row.getValue('nombre')
+        cell: ({ row }: { row: any }) => {
+            const nombre = row.getValue('nombre')
+            return h('div',{
+                class: 'max-w-30 whitespace-normal',
+            }, nombre
+            )
+        }
     },
     {
         accessorKey: 'documento',
         header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => row.getValue('documento')
+        cell: ({ row }: { row: any }) => {
+            const documento = row.getValue('documento')
+            return h('div',{
+                class: 'max-w-18 whitespace-normal',
+            }, documento
+            )
+        }
     },
     {
         accessorKey: 'correo',
         header: 'Correo',
-        cell: ({ row }: { row: any }) => row.getValue('correo') || 'Sin correo'
+        cell: ({ row }: { row: any }) => {
+            const correo = row.getValue('correo') || 'Sin correo'
+            return h('div',{
+                class: 'max-w-55 overflow-hidden text-ellipsis whitespace-nowrap',
+            }, correo
+            )
+        }
     },
     {
         accessorKey: 'telefono',
         header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => row.getValue('telefono')
+        cell: ({ row }: { row: any }) => {
+            const telefono = row.getValue('telefono')
+            return h('div',{
+                class: 'max-w-20 whitespace-normal',
+            }, telefono
+            )
+        }
     },
     {
         accessorKey: 'estado_cliente',
@@ -337,23 +361,24 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'logistica',
         header: 'Logistica',
         cell: ({ row }: { row: any }) => {
-            // Campo calculado o por defecto
-            return row.original.monto
+            const logistica = parseFloat(row.getValue('monto'))
+            return formatCurrency(logistica, 'USD')
         }
     },
     {
         accessorKey: 'impuestos',
         header: 'Impuesto',
         cell: ({ row }: { row: any }) => {
-            // Campo calculado o por defecto
-            return row.original.impuestos
+            const impuestos = parseFloat(row.getValue('impuestos'))
+            return formatCurrency(impuestos, 'USD')
         }
     },
     {
         accessorKey: 'tarifa',
         header: 'Tarifa',
         cell: ({ row }: { row: any }) => {
-            return row.original.tarifa
+            const tarifa = parseFloat(row.getValue('tarifa'))
+            return formatCurrency(tarifa, 'USD')
         }
     },
     {

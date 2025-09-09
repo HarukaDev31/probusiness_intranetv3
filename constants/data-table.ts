@@ -24,6 +24,7 @@ export const DATA_TABLE_DEFAULTS = {
   loading: false,
   searchPlaceholder: translations.value.searchPlaceholder,
   showPagination: true,
+  showBottomSection: true,
   showPrimarySearch: true,
   primarySearchLabel: translations.value.search,
   primarySearchPlaceholder: translations.value.searchPlaceholder,
