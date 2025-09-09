@@ -5,7 +5,7 @@
             <template #actions>
                 <!--button save-->
                 <UButton label="Guardar cambios" color="primary" variant="solid" icon="i-heroicons-arrow-down-tray"
-                    size="sm" @click="handleSaveChanges" />
+                    size="sm" @click="handleSaveChanges" v-if="currentRole === ROLES.COORDINACION" />
             </template>
         </PageHeader>
 
@@ -214,7 +214,7 @@
                             <div class="flex gap-2">
 
                                 <UButton label="Nuevo Documento" color="warning" variant="solid" icon="i-heroicons-plus"
-                                    size="sm" v-if="currentRole === ROLES.COORDINACION || currentId === ID_JEFEVENTAS"
+                                    size="sm" v-if="currentRole === ROLES.COORDINACION"
                                     @click="handleNuevoDocumento" />
                             </div>
                         </div>
@@ -229,7 +229,7 @@
                                 </label>
                                 <UInput v-model="proveedorActivo.volumen_doc" type="number" placeholder="0"
                                     class="w-full" @update:model-value="handleVolumenChange"
-                                    :disabled="currentRole === ROLES.DOCUMENTACION" />
+                                    :disabled="!isCoordinacion" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -237,7 +237,7 @@
                                 </label>
                                 <UInput v-model="proveedorActivo.valor_doc" type="number" placeholder="$ 0"
                                     class="w-full" @update:model-value="handleValorChange"
-                                    :disabled="currentRole === ROLES.DOCUMENTACION" />
+                                    :disabled="!isCoordinacion" />
                             </div>
                         </div>
 
@@ -246,18 +246,20 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Factura Comercial
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
-                                :custom-message="'Selecciona o arrastra tu archivo aquí'"
-                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.factura_comercial ? [{
-                                    id: proveedorActivo.id, // debe ser número
-                                    file_name: 'Factura Comercial',
-                                    file_url: proveedorActivo.factura_comercial,
-                                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // tipo MIME si está disponible, si no dejar vacío
-                                    size: 0, // tamaño en bytes si está disponible, si no dejar en 0
-                                    lastModified: 0, // timestamp si está disponible, si no dejar en 0
-                                    file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
-                                }] : []" @files-selected="handleFacturaComercial"
-                                @file-removed="handleRemoveFacturaComercial" />
+                            <div class="relative">
+                                <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
+                                    :custom-message="'Selecciona o arrastra tu archivo aquí'"
+                                    :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.factura_comercial ? [{
+                                        id: proveedorActivo.id, // debe ser número
+                                        file_name: 'Factura Comercial',
+                                        file_url: proveedorActivo.factura_comercial,
+                                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // tipo MIME si está disponible, si no dejar vacío
+                                        size: 0, // tamaño en bytes si está disponible, si no dejar en 0
+                                        lastModified: 0, // timestamp si está disponible, si no dejar en 0
+                                        file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
+                                    }] : []" @files-selected="handleFacturaComercial"
+                                    @file-removed="handleRemoveFacturaComercial" />
+                            </div>
                         </div>
 
                         <!-- Área de carga de Packing List -->
@@ -266,7 +268,7 @@
                                 Packing List
                             </label>
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']"
-                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :immediate="false"
+                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
                                 :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.packing_list ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Packing List',
@@ -283,7 +285,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Excel Confirmación
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
                                 :show-remove-button="currentRole === ROLES.COORDINACION"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="proveedorActivo.excel_confirmacion ? [{
                                     id: proveedorActivo.id, // debe ser número
@@ -428,7 +430,7 @@ import type { id } from '@nuxt/ui/runtime/locale/index.js'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import { CUSTOMIZED_ICONS_URL } from '~/constants/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { currentRole, currentId } = useUserRole()
+const { currentRole, currentId, isCoordinacion } = useUserRole()
 import SimpleUploadFile from '~/components/commons/SimpleUploadFile.vue'
 // Composables
 const { showSuccess, showError, showConfirmation } = useModal()
@@ -621,7 +623,10 @@ const handleSaveChanges = async () => {
             const result = await updateProveedorDocumentacion(proveedorActivo.value.id, formData)
 
             if (!result.success) {
-                throw new Error(result.error || 'Error al guardar los cambios')
+                const msg = (typeof result === 'object' && result && 'error' in result)
+                    ? (result as any).error
+                    : 'Error al guardar los cambios'
+                throw new Error(msg as string)
             }
 
             // Limpiar cambios pendientes

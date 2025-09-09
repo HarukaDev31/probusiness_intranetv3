@@ -53,7 +53,7 @@ const emit = defineEmits<{
 }>()
 
 const openCreatePagoModal = (pagoIndex: number) => {
-  if(isCoordinacion){
+  if (isCoordinacion.value) {
     modalPagos.open({
       clienteNombre: props.clienteNombre,
       currency: props.currency,
@@ -70,7 +70,7 @@ const openCreatePagoModal = (pagoIndex: number) => {
 
 
 const openPagoDetailsModal = (pago: PagosDetails) => {
-  if(isCoordinacion){
+  if (isCoordinacion.value) {
     modalPagoDetails.open({
       pagoDetails: pago,
       currency: props.currency,
@@ -99,8 +99,6 @@ const openPagoDetailsModal = (pago: PagosDetails) => {
   flex-direction: row;
   padding: 1rem;
 }
-
-.pago-item {}
 
 .pago-item:hover {
 
