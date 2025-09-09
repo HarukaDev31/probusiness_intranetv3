@@ -3,7 +3,7 @@
     <div class="grid-container">
       <div v-for="pago in props.pagoDetails" :key="pago.id_pago">
         <div class="pago-item" @click="openPagoDetailsModal(pago)">
-          <div class="pago-content" :class="STATUS_BG_CLASSES[pago.status as keyof typeof STATUS_BG_CLASSES]"> 
+          <div class="pago-content" :class="STATUS_BG_PAGOS_CLASSES[pago.status as keyof typeof STATUS_BG_PAGOS_CLASSES]"> 
             {{ formatCurrency(parseFloat(pago.monto),props.currency) }} 
           </div>
         </div>
@@ -24,7 +24,7 @@ import { useOverlay } from '#imports'
 import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import PagoDetailsModal from '~/components/commons/PagoDetailsModal.vue'
 import type { PagosDetails } from '~/types/cargaconsolidada/clientes/pagos'
-import { STATUS_BG_CLASSES } from '~/constants/ui'
+import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 const overlay = useOverlay()
 const modalPagos = overlay.create(CreatePagoModal)
 const modalPagoDetails = overlay.create(PagoDetailsModal)
@@ -33,12 +33,14 @@ interface Props {
   pagoDetails: PagosDetails[]
   clienteNombre:string  
   currency:string
+  showDelete?: boolean
 }
 const computedCountPagosDetails = computed(() => {
   return props.pagoDetails.length
 })
 const props = withDefaults(defineProps<Props>(), {
-  currency: 'PEN'
+  currency: 'PEN',
+  showDelete: true
 })
 
 const emit = defineEmits<{
@@ -51,7 +53,7 @@ const emit = defineEmits<{
 const openCreatePagoModal = (pagoIndex: number) => {
   modalPagos.open({
     clienteNombre: props.clienteNombre,
-    
+    currency: props.currency,
     onClose: () => {
       emit('close')
     },
@@ -67,9 +69,12 @@ const openPagoDetailsModal = (pago: PagosDetails) => {
   modalPagoDetails.open({
     pagoDetails: pago,
     currency: props.currency,
-    
+    showDelete: props.showDelete,
     onDelete: (pagoId: number) => {
-      emit('delete', pagoId)
+      if (props.showDelete) {
+        console.log(pagoId,'xd')
+        emit('delete', pagoId)
+      }
     },
     onClose: () => {
       emit('close')

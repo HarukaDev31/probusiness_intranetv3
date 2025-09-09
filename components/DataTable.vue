@@ -34,8 +34,8 @@
                 <div ref="filtersPanelRef" v-if="showFiltersPanel && showFilters"
                   class="absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
                   @click.stop>
-                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field">
+                  <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
+                    <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ filter.label }}
                       </label>

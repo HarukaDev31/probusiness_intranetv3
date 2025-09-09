@@ -60,7 +60,7 @@
 
         <template #footer="{ close }">
             <div class="flex justify-end">
-                <UButton 
+                <UButton v-if="showDelete"
                     icon="i-heroicons-trash"
                     color="error"
                     variant="solid"
@@ -77,10 +77,12 @@ import FileIcon from './FileIcon.vue'
 interface Props {
     pagoDetails : PagosDetails
     currency:string
+    showDelete: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    currency: 'PEN'
+    currency: 'PEN',
+    showDelete: true
 })
 
 const emit = defineEmits<{

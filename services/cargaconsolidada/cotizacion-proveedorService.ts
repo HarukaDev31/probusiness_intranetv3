@@ -4,7 +4,7 @@ import type {
     DocumentosChinaResponse,
     InspeccionChinaResponse,
     NotasChinaResponse,
-    Filters,
+    CotizacionProveedorFilters,
     CotizacionProveedorResponse,
     Proveedor,
     SaveDocumentosChina
@@ -19,7 +19,7 @@ export class CotizacionProveedorService extends BaseService {
      */
     static async getCotizacionesProveedores(
         id: number,
-        filters: Filters,
+        filters: CotizacionProveedorFilters,
         search: string,
         itemsPerPage: number,
         currentPage: number

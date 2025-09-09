@@ -73,8 +73,12 @@ export interface DocumentosChinaResponse {
     data: FileItem[]
 }
 
-export interface Filters {
+export interface CotizacionProveedorFilters {
     estado_china: string
+    estado_coordinacion: string
+    estado: string
+    fecha_inicio: string
+    fecha_fin: string
 }
 export interface CotizacionProveedorResponse {
     success: boolean

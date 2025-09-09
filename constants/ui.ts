@@ -25,10 +25,11 @@ export const STATUS_BG_CLASSES = {
 
 } as const
 export const STATUS_BG_PAGOS_CLASSES = {
-    PENDIENTE: 'bg-gray-500',
-    ADELANTO: 'bg-yellow-500',
+    PENDIENTE: 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white',
+    ADELANTO: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white',
     PAGADO: 'bg-green-400',
-    SOBREPAGO: 'bg-red-500',
+    SOBREPAGO: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
+    CONFIRMADO: 'bg-green-600 text-white dark:bg-green-600 dark:text-white',
 
 } as const
 

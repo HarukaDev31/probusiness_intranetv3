@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { CotizacionProveedorService } from '../../services/cargaconsolidada/cotizacion-proveedorService'
 import type {
     CotizacionProveedor,
-    Filters,
+    CotizacionProveedorFilters,
     Proveedor,
     ProveedoresResponse
 } from '../../types/cargaconsolidada/proveedores'
@@ -49,7 +49,7 @@ export const useCotizacionProveedor = () => {
     })
 
     // Filtros y búsqueda
-    const filters = ref<Filters>({ estado_china: 'todos' })
+    const filters = ref<CotizacionProveedorFilters>({ estado_china: 'todos', estado_coordinacion: 'todos', estado: 'todos', fecha_inicio: '', fecha_fin: '' })
     const search = ref('')
     const itemsPerPage = ref(100)
 
@@ -89,7 +89,18 @@ export const useCotizacionProveedor = () => {
 
         loading.value = true
         error.value = null
-
+        if (filters.value.estado && filters.value.estado == 'todos') {
+            //remove estado
+            delete filters.value.estado
+        }
+        if (filters.value.estado_coordinacion && filters.value.estado_coordinacion == 'todos') {
+            //remove estado_coordinacion
+            delete filters.value.estado_coordinacion
+        }
+        if (filters.value.estado_china && filters.value.estado_china == 'todos') {
+            //remove estado_china
+            delete filters.value.estado_china
+        }
         try {
             const response = await CotizacionProveedorService.getCotizacionesProveedores(
                 id,
@@ -336,7 +347,15 @@ export const useCotizacionProveedor = () => {
             loading.value = false
         }
     }
-
+    const resetFiltersProveedor = () => {
+        filters.value = {
+            fecha_inicio: '',
+            fecha_fin: '',
+            estado: 'todos',
+            estado_coordinacion: 'todos',
+            estado_china: 'todos'
+        }
+    }
     return {
         // Estado principal
         cotizacionProveedor,
@@ -386,6 +405,7 @@ export const useCotizacionProveedor = () => {
         saveNotasChina,
         deleteCotizacion,
         updateProveedor,
-        updateProveedorEstado
+        updateProveedorEstado,
+        resetFiltersProveedor
     }
 }

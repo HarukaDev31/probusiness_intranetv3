@@ -132,7 +132,7 @@
         >
           <div class="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preferencias</div>
           <div class="mt-2 space-y-1 px-2">
-            <div class="py-2">
+            <!-- <div class="py-2">
               <UButton
                 variant="ghost"
                 class="w-full justify-start rounded-md text-sm text-gray-700 dark:text-gray-300"
@@ -140,7 +140,7 @@
                 label="Notificaciones"
                 @click="openNotifications"
               />
-            </div>
+            </div> -->
 
             <div class="flex items-center justify-between py-4">
               <div class="flex items-center gap-3">

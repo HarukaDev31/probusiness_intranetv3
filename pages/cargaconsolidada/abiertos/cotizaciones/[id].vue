@@ -4,7 +4,7 @@
             :show-pagination="false" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
-            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigProspectos"
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
             :show-export="false" empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
@@ -27,7 +27,7 @@
         <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
             :columns="getEmbarqueColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="false"
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true"
@@ -49,7 +49,7 @@
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
             :show-pagination="false" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="false"
+            :show-secondary-search="false" :show-filters="false" :filter-config="filterConfig" :show-export="false"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
@@ -89,16 +89,16 @@ import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import PagoGrid from '~/components/PagoGrid.vue'
-const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
+const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, resetFiltersProveedor } = useCotizacionProveedor()
 const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones,
-    filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders } = useCotizacion()
-const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headersPagos } = useCotizacionPagos()
-const { getClientesPagos, registrarPago, deletePago } = usePagos()
+    filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders, resetFiltersCotizacion } = useCotizacion()
+const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headers: headersPagos } = useCotizacionPagos()
+
 
 const { withSpinner } = useSpinner()
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 const route = useRoute()
-const id = route.params.id
+const id = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
 const { showConfirmation, showSuccess, showError } = useModal()
 
 const tab = ref('')
@@ -150,12 +150,73 @@ const loadTabs = () => {
     }
 }
 
-
-
-const filterConfigProspectos = ref([
+const filterConfigProspectosCoordinacion = ref([
     {
-        key: 'estado',
+        label: 'Fecha Inicio',
+        key: 'fecha_inicio',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+    {
+        label: 'Fecha Fin',
+        key: 'fecha_fin',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+    {
+        key: 'estado_coordinacion',
         label: 'Estado',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'ROTULADO', value: 'ROTULADO', inrow: true },
+            { label: 'DATOS PROVEEDOR', value: 'DATOS PROVEEDOR', inrow: true },
+            { label: 'INSPECCIONADO', value: 'INSPECCIONADO', inrow: true },
+            { label: 'COBRANDO', value: 'COBRANDO', inrow: true },
+    
+        ]
+    },
+    {
+        key: 'estado_china',
+        label: 'Estado Proveedor',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'NC', value: 'NC', inrow: true },
+            { label: 'C', value: 'C', inrow: true },
+            { label: 'R', value: 'R', inrow: true },
+            { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
+            { label: 'LOADED', value: 'LOADED', inrow: true },
+            { label: 'NO LOADED', value: 'NO LOADED', inrow: true }
+        ]
+    }
+])
+const filterConfigProspectos= ref([
+    {
+        label: 'Fecha Inicio',
+        key: 'fecha_inicio',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+    {
+        label: 'Fecha Fin',
+        key: 'fecha_fin',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+    {
+        key: 'estado_cotizador',
+        label: 'Estado',
+        type: 'select',
         placeholder: 'Seleccionar estado',
         options: [
             { label: 'Todos', value: 'todos', inrow: false },
@@ -164,8 +225,18 @@ const filterConfigProspectos = ref([
             { label: 'CONTACTADO', value: 'CONTACTADO', inrow: false },
             { label: 'CONFIRMADO', value: 'CONFIRMADO', inrow: true }
         ]
-    }
+    },
+
 ])
+const getFilterPerRole = () => {
+    if (currentRole.value === ROLES.COORDINACION) {
+        return filterConfigProspectosCoordinacion.value
+    } else {
+        return filterConfigProspectos.value
+    }
+}
+
+
 
 const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
     {
@@ -256,7 +327,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             // div with 3 button with icons file ,refresh an delete
             return h('div', {
                 class: 'flex flex-row gap-2'
-            },  [
+            }, [
                 !row.original.cotizacion_file_url ? h(UButton, {
                     icon: 'i-heroicons-arrow-up-tray',
                     variant: 'ghost',
@@ -313,7 +384,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             return h(UButton, {
                 icon: 'i-heroicons-trash',
                 variant: 'ghost',
-                activeColor:'error',
+                activeColor: 'error',
                 size: 'xs',
                 onClick: () => {
                     handleDelete(row.original.id)
@@ -573,47 +644,47 @@ const getPagosColumns = () => {
                     clienteNombre: row.original.nombre,
                     currency: 'USD',
                     onSave: (data) => {
-                    const formData = new FormData();
-                    for (const key in data) {
-                        if (data[key] !== undefined && data[key] !== null) {
-                            formData.append(key, data[key]);
-                        }
-                    }
-                    formData.append('idPedido', row.original.id_cotizacion)
-                    formData.append('idContenedor', row.original.id_contenedor)
-                    formData.append('idCotizacion', row.original.id_cotizacion)
-                    withSpinner(async () => {
-                        const response = await registrarPago(formData)
-                        if (response.success) {
-                            showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
-                            getCotizacionPagos(Number(id))
-                            getHeaders(Number(id))
-                        } else {
-                            showError('Error al registrar pago', response.error, { persistent: true })
-                        }
-                    }, 'registrarPago')
-
-                },
-                onDelete: (pagoId: number) => {
-                    showConfirmation(
-                        'Confirmar eliminación',
-                        '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
-                        async () => {
-                            try {
-                                await withSpinner(async () => {
-                                    const response = await deletePago(pagoId)
-                                    if (response.success) {
-                                        await getCotizacionPagos(Number(id))
-                                        showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
-                                    }
-                                }, 'Eliminando pago...')
-                            } catch (error) {
-                                console.error('Error al eliminar el pago:', error)
-                                showError('Error de Eliminación', 'Error al eliminar el pago')
+                        const formData = new FormData();
+                        for (const key in data) {
+                            if (data[key] !== undefined && data[key] !== null) {
+                                formData.append(key, data[key]);
                             }
                         }
-                    )
-                }
+                        formData.append('idPedido', row.original.id_cotizacion)
+                        formData.append('idContenedor', row.original.id_contenedor)
+                        formData.append('idCotizacion', row.original.id_cotizacion)
+                        withSpinner(async () => {
+                            const response = await registrarPago(formData)
+                            if (response.success) {
+                                showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
+                                getCotizacionPagos(Number(id))
+                                getHeaders(Number(id))
+                            } else {
+                                showError('Error al registrar pago', response.error, { persistent: true })
+                            }
+                        }, 'registrarPago')
+
+                    },
+                    onDelete: (pagoId: number) => {
+                        showConfirmation(
+                            'Confirmar eliminación',
+                            '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
+                            async () => {
+                                try {
+                                    await withSpinner(async () => {
+                                        const response = await deletePago(pagoId)
+                                        if (response.success) {
+                                            await getCotizacionPagos(Number(id))
+                                            showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                                        }
+                                    }, 'Eliminando pago...')
+                                } catch (error) {
+                                    console.error('Error al eliminar el pago:', error)
+                                    showError('Error de Eliminación', 'Error al eliminar el pago')
+                                }
+                            }
+                        )
+                    }
                 }) as any
             }
         }
@@ -1465,6 +1536,7 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
 watch(() => tab.value, async (newVal) => {
     if (newVal && newVal !== '') {
         try {
+            resetFilters()
             if (newVal === 'prospectos') {
                 navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`)
                 await getCotizaciones(Number(id))
@@ -1525,6 +1597,10 @@ const updateProveedorData = async (row: any) => {
         showError('Error al actualizar el proveedor', error)
     }
 
+}
+const resetFilters = () => {
+    resetFiltersCotizacion()
+    resetFiltersProveedor()
 }
 onMounted(() => {
     loadTabs();
