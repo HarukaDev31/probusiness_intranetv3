@@ -2,7 +2,7 @@
   <div class="p-6">
     <!-- Header Section -->
     <PageHeader title="" subtitle="Gestión de cotizaciones" icon="" :hide-back-button="false"
-      @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
+      @back="navigateTo(`/cargaconsolidada/completados/pasos/${id}`)" />
     <!-- add 3 buttons 
  Subir Factura
  Plantilla General
@@ -19,16 +19,16 @@
     <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
       :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
-      :show-primary-search="false"
-      :show-pagination="false"
-
-      :show-secondary-search="false" :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"
-        empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
+      :show-primary-search="false" :show-pagination="false" :show-secondary-search="false" :show-filters="false"
+      :filter-config="filterConfigGeneral" :show-export="false"
+      empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
       @filter-change="handleFilterChangeGeneral" :show-body-top="true">
       <template #body-top>
-        <UTabs v-model="activeTab" :items="tabs"  color="neutral" variant="pill" class="mb-4 w-80 h-15" />
-
+        <div class="flex flex-col gap-2 w-full">
+          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+        </div>
       </template>
     </DataTable>
     <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos" title=""
@@ -37,17 +37,17 @@
       :show-filters="false" :filter-config="filterConfigPagos" :show-export="false"
       empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
-      :show-pagination="false"
-
-      @filter-change="handleFilterChangePagos" :show-body-top="true">
+      :show-pagination="false" @filter-change="handleFilterChangePagos" :show-body-top="true">
       <template #body-top>
-        <UTabs v-model="activeTab" :items="tabs"  color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+        <div class="flex flex-col gap-2 w-full">
+          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+        </div>
 
       </template>
     </DataTable>
 
     <!-- CreatePagoModal -->
-    <CreatePagoModal v-model="showCreatePagoModal" :cliente-nombre="selectedCliente" @save="handleSavePago" />
   </div>
 </template>
 
@@ -62,12 +62,14 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/SimpleUploadFile.vue'
 import PagoGrid from '~/components/PagoGrid.vue'
 import type { TableColumn } from '@nuxt/ui'
+import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
-const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal } = useGeneral()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
-
+import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
+const { registrarPago, deletePago } = usePagosClientes()
 const route = useRoute()
 const id = Number(route.params.id)
 
@@ -203,7 +205,7 @@ const generalColumns = ref<TableColumn<any>[]>([
       //RETURN USELECT WITH OPTION SELECTED FROM FILTERCONFIGGENERAL WITH KEY 'estado_cotizacion_final'
       return h(USelect as any, {
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
-        class :[STATUS_BG_CLASSES[row.original.estado_cotizacion_final as keyof typeof STATUS_BG_CLASSES]],
+        class: [STATUS_BG_CLASSES[row.original.estado_cotizacion_final as keyof typeof STATUS_BG_CLASSES]],
         modelValue: row.original.estado_cotizacion_final,
         'onUpdate:modelValue': async (value: any) => {
           if (value && value !== row.original.estado_cliente) {
@@ -212,7 +214,7 @@ const generalColumns = ref<TableColumn<any>[]>([
         }
       })
     }
-  },  
+  },
   {
     accessorKey: 'c_final',
     header: 'C Final',
@@ -236,7 +238,7 @@ const generalColumns = ref<TableColumn<any>[]>([
             color: 'primary',
             variant: 'ghost',
             onClick: () => {
-              handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)  
+              handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)
             }
           }),
           h(UButton, {
@@ -244,11 +246,11 @@ const generalColumns = ref<TableColumn<any>[]>([
             color: 'error',
             variant: 'ghost',
             onClick: () => {
-              handleDeleteCotizacionFinal(row.original.id_cotizacion)
+              deleteCotizacionFinal(row.original.id_cotizacion)
             }
           })
         ])
-   
+
       } else {
         return h(UButton, {
           icon: 'i-heroicons-arrow-up-tray',
@@ -258,11 +260,10 @@ const generalColumns = ref<TableColumn<any>[]>([
             handleUploadPlantillaFinal()
           }
         })
-      } 
+      }
     }
   }
 ])
-//pagos columns N.	Nombre	DNI/RUC	Whatsapp	T. Cliente	Importe	Pagado	Adelantos
 const pagosColumns = ref<TableColumn<any>[]>([
   {
     accessorKey: 'nro',
@@ -316,9 +317,52 @@ const pagosColumns = ref<TableColumn<any>[]>([
       return h(PagoGrid,
         {
           numberOfPagos: 4,
-          pagoDetails: JSON.parse(row.original.pagos   || '[]'),
+          pagoDetails: JSON.parse(row.original.pagos || '[]'),
           clienteNombre: row.original.nombre,
-          currency: 'USD'
+          currency: 'USD',
+          showDelete: true,
+          onSave: (data) => {
+            const formData = new FormData();
+            for (const key in data) {
+              if (data[key] !== undefined && data[key] !== null) {
+                formData.append(key, data[key]);
+              }
+            }
+            formData.append('idPedido', row.original.id_cotizacion)
+            formData.append('idContenedor', row.original.id_contenedor)
+            formData.append('idCotizacion', row.original.id_cotizacion)
+            withSpinner(async () => {
+              const response = await registrarPago(formData)
+              if (response.success) {
+                showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
+                getPagos(Number(id))
+                getHeaders(Number(id))
+              } else {
+                showError('Error al registrar pago', response.error, { persistent: true })
+              }
+            }, 'registrarPago')
+
+          },
+          onDelete: (pagoId: number) => {
+            showConfirmation(
+              'Confirmar eliminación',
+              '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
+              async () => {
+                try {
+                  await withSpinner(async () => {
+                    const response = await deletePago(pagoId)
+                    if (response.success) {
+                      await getPagos(Number(id))
+                      showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                    }
+                  }, 'Eliminando pago...')
+                } catch (error) {
+                  console.error('Error al eliminar el pago:', error)
+                  showError('Error de Eliminación', 'Error al eliminar el pago')
+                }
+              }
+            )
+          }
         }
       )
     }
@@ -326,6 +370,26 @@ const pagosColumns = ref<TableColumn<any>[]>([
 ])
 const overlay = useOverlay()
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
+const deleteCotizacionFinal = async (idCotizacion: number) => {
+  showConfirmation(
+    'Confirmar eliminación',
+    '¿Está seguro de que desea eliminar la cotización final? Esta acción no se puede deshacer.',
+    async () => {
+      try {
+        await withSpinner(async () => {
+          const response = await handleDeleteCotizacionFinal(idCotizacion)
+          if (response.success) {
+            await getGeneral(Number(id))
+            showSuccess('Eliminación Exitosa', 'La cotización final se ha eliminado correctamente.')
+          }
+        }, 'Eliminando cotización final...')
+      } catch (error) {
+        console.error('Error al eliminar el pago:', error)
+        showError('Error de Eliminación', 'Error al eliminar la cotización final')
+      }
+    }
+  )
+}
 // Navigation
 const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: string) => {
   withSpinner(async () => {
@@ -339,7 +403,7 @@ const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: s
   })
 }
 const goBack = () => {
-  navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
+  navigateTo(`/cargaconsolidada/completados/pasos/${id}`)
 }
 
 // Handle save pago
@@ -352,14 +416,17 @@ watch(activeTab, async (newVal, oldVal) => {
   if (oldVal === '' || !newVal) {
     return
   }
+
   if (newVal === 'general') {
-    navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`)
+    navigateTo(`/cargaconsolidada/completados/cotizacion-final/${id}?tab=general`)
     await getGeneral(Number(id))
   }
   if (newVal === 'pagos') {
-    navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=pagos`)
+    navigateTo(`/cargaconsolidada/completados/cotizacion-final/${id}?tab=pagos`)
     await getPagos(Number(id))
   }
+  await getHeaders(Number(id))
+
 })
 
 onMounted(async () => {
@@ -370,6 +437,7 @@ onMounted(async () => {
     activeTab.value = tabs[0].value
   }
   await getGeneral(Number(id))
+  await getHeaders(Number(id))
 })
 </script>
 

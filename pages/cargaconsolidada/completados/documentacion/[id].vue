@@ -17,7 +17,7 @@
         <!-- Loading state -->
         <div v-if="loading" class="mt-6">
             <!-- Skeleton para el grid de folders -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Skeleton para cada folder -->
                 <div v-for="i in 6" :key="i" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate-pulse">
                     <!-- Header del folder skeleton -->
@@ -54,7 +54,7 @@
         </div>
         <div v-else-if="hasData" class="flex flex-col gap-4  bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
             <span class="text-lg font-semibold text-gray-900 dark:text-white px-3 py-1 rounded">Documentación</span>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div v-for="folder in foldersByCategoria" :key="folder.id"
                     class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md ">
                     <!-- Header del folder -->
@@ -68,7 +68,7 @@
 
                     <!-- FileUploader para este folder -->
                     <FileUploader 
-
+                    :disabled="currentRole!=ROLES.DOCUMENTACION"
                     :accepted-types="acceptedFileTypes" :custom-message="uploadMessage" :immediate="false"
                         :showSaveButton="true" :initial-files="folder.file_url ? [{
                             id: typeof folder.id === 'number' ? folder.id : 0, // debe ser número
@@ -80,9 +80,7 @@
                             file_ext: folder.type || '' // extensión si está disponible, si no dejar vacío
                         }] : []" :loading="isFolderLoading(folder.id)"
                         @file-removed="(index) => handleFileRemove(folder.id_file)"
-                        @save-file="(file) => handleSaveFile(file, folder.id)"
-                        :show-remove-button="false"
-                        />
+                        @save-file="(file) => handleSaveFile(file, folder.id)" />
 
                 </div>
             </div>

@@ -1,11 +1,11 @@
 <template>
     <div class="py-6 ">
-        <DataTable v-if="tab === 'prospectos'"  :show-pagination="false"   title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
-            :loading="loadingCotizaciones" :current-page="currentPageCotizaciones" :total-pages="totalPagesCotizaciones"
-            :total-records="totalRecordsCotizaciones" :items-per-page="itemsPerPageCotizaciones"
-            :search-query-value="searchCotizaciones" :show-secondary-search="false" :show-filters="true"
-            :filter-config="filterConfigProspectos" :show-export="true"
-            empty-state-message="No se encontraron registros de prospectos."
+        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
+            :show-pagination="false" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
+            :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
+            :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
+            :show-export="false" empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             :hide-back-button="false"
@@ -15,8 +15,8 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill"
-                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="neutral" :items="tabs" variant="pill" class="mb-4 w-80 h-15"
+                        v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
@@ -24,31 +24,32 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'embarque'"  :show-pagination="false"  title="" icon="" :data="cotizacionProveedor" :hide-back-button="false"
+        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
             :columns="getEmbarqueColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-            :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="true"
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChange" :show-body-top="true" :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
-            >
+            @filter-change="handleFilterChange" :show-body-top="true"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
+            :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill"
-                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="neutral" :items="tabs" variant="pill" class="mb-4 w-80 h-15"
+                        v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto" color="neutral"
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'pagos'"  :show-pagination="false"   title="Pagos" icon="i-heroicons-book-open" :data="cotizacionPagos" :columns="getPagosColumns()"
-            :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-            :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
-            :show-filters="true" :filter-config="filterConfig" :show-export="true"
+        <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
+            :show-pagination="false" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
+            :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
+            :show-secondary-search="false" :show-filters="false" :filter-config="filterConfig" :show-export="false"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
@@ -57,8 +58,8 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="secondary" :items="tabs" size="sm" variant="pill"
-                        class="mb-4 w-auto max-w-80 min-w-40 " v-if="tabs.length > 1" />
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                        v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
@@ -86,19 +87,23 @@ import ModalPreview from '~/components/commons/ModalPreview.vue'
 import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
+import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import PagoGrid from '~/components/PagoGrid.vue'
-const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange } = useCotizacionProveedor()
-const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones, filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders } = useCotizacion()
-const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headersPagos } = useCotizacionPagos()
+const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, resetFiltersProveedor } = useCotizacionProveedor()
+const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones,
+    filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders, resetFiltersCotizacion } = useCotizacion()
+const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headers: headersPagos } = useCotizacionPagos()
+const { getClientesPagos, registrarPago, deletePago } = usePagos()
+
 const { withSpinner } = useSpinner()
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 const route = useRoute()
-const id = route.params.id
+const id = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
 const { showConfirmation, showSuccess, showError } = useModal()
 
 const tab = ref('')
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
-const { currentRole,currentId} = useUserRole()
+const { currentRole, currentId } = useUserRole()
 const tabs = ref([
 
 
@@ -145,12 +150,106 @@ const loadTabs = () => {
     }
 }
 
-
-
-const filterConfigProspectos = ref([
+const filterConfigProspectosCoordinacion = ref([
     {
-        key: 'estado',
+        label: 'Fecha Inicio',
+        key: 'fecha_inicio',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+    {
+        label: 'Fecha Fin',
+        key: 'fecha_fin',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+    {
+        key: 'estado_coordinacion',
         label: 'Estado',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'ROTULADO', value: 'ROTULADO', inrow: true },
+            { label: 'DATOS PROVEEDOR', value: 'DATOS PROVEEDOR', inrow: true },
+            { label: 'INSPECCIONADO', value: 'INSPECCIONADO', inrow: true },
+            { label: 'COBRANDO', value: 'COBRANDO', inrow: true },
+    
+        ]
+    },
+    {
+        key: 'estado_china',
+        label: 'Estado Proveedor',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'NC', value: 'NC', inrow: true },
+            { label: 'C', value: 'C', inrow: true },
+            { label: 'R', value: 'R', inrow: true },
+            { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
+            { label: 'LOADED', value: 'LOADED', inrow: true },
+            { label: 'NO LOADED', value: 'NO LOADED', inrow: true }
+        ]
+    }
+])
+const filterConfigProspectosChina = ref([
+    {
+        label: 'Fecha Inicio',
+        key: 'fecha_inicio',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+    {
+        label: 'Fecha Fin',
+        key: 'fecha_fin',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+    {
+        key: 'estado_china',
+        label: 'Estado',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'NC', value: 'NC', inrow: true },
+            { label: 'C', value: 'C', inrow: true },
+            { label: 'R', value: 'R', inrow: true },
+            { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
+            { label: 'LOADED', value: 'LOADED', inrow: true },
+            { label: 'NO LOADED', value: 'NO LOADED', inrow: true }
+        ]
+    }
+   
+])
+const filterConfigProspectos= ref([
+    {
+        label: 'Fecha Inicio',
+        key: 'fecha_inicio',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+    {
+        label: 'Fecha Fin',
+        key: 'fecha_fin',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+    {
+        key: 'estado_cotizador',
+        label: 'Estado',
+        type: 'select',
         placeholder: 'Seleccionar estado',
         options: [
             { label: 'Todos', value: 'todos', inrow: false },
@@ -159,8 +258,21 @@ const filterConfigProspectos = ref([
             { label: 'CONTACTADO', value: 'CONTACTADO', inrow: false },
             { label: 'CONFIRMADO', value: 'CONFIRMADO', inrow: true }
         ]
-    }
+    },
+
 ])
+const getFilterPerRole = () => {
+    switch (currentRole.value) {
+        case ROLES.COORDINACION:
+            return filterConfigProspectosCoordinacion.value
+        case ROLES.CONTENEDOR_ALMACEN:
+            return filterConfigProspectosChina.value
+        default:
+            return filterConfigProspectos.value
+    }
+}
+
+
 
 const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
     {
@@ -238,11 +350,11 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => row.getValue('qty_item') || '0'
     },
     {
-        accessorKey: 'monto',
+        accessorKey: 'fob',
         header: 'Fob',
         cell: ({ row }: { row: any }) => {
-            const monto = parseFloat(row.original.fob)
-            return formatCurrency(monto, 'USD')
+            const fob = parseFloat(row.original.fob)
+            return formatCurrency(fob, 'USD')
         }
     },
     {
@@ -277,30 +389,48 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             return h('div', {
                 class: 'flex flex-row gap-2'
             }, [
-                row.original.cotizacion_file_url ? h(UButton, {
-                    icon: 'i-heroicons-document-text',
+                !row.original.cotizacion_file_url ? h(UButton, {
+                    icon: 'i-heroicons-arrow-up-tray',
                     variant: 'ghost',
                     size: 'xs',
                     //add tooltip
-                    tooltip: 'Ver Documentacion',
+                    tooltip: 'Subir Cotizacion',
+                    onClick: () => {
+                        handleUpdateCotizacion(row.original.id)
+                    }
+                }) : null,
+                row.original.cotizacion_file_url ? h('div', {
+                    innerHTML: CUSTOMIZED_ICONS.EXCEL,
+                    class: 'cursor-pointer',
                     onClick: () => {
                         downloadFile(row.original.cotizacion_file_url)
                     }
                 }) : null,
-                h(UButton, {
+                row.original.cotizacion_file_url ? h(UButton, {
                     icon: 'i-heroicons-arrow-path',
                     variant: 'ghost',
                     size: 'xs',
+                    color: 'secondary',
                     onClick: () => {
                         handleRefresh(row.original.id)
                     }
-                }),
-                h(UButton, {
+                }) : null,
+                row.original.cotizacion_file_url ? h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
                     size: 'xs',
+                    color: 'secondary',
                     onClick: () => {
                         handleDeleteFile(row.original.id)
+                    }
+                }) : null,
+                h(UButton, {
+                    icon: 'i-heroicons-arrow-right',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'info',
+                    onClick: () => {
+                        handleMoveCotizacion(row.original.id)
                     }
                 })
             ])
@@ -315,6 +445,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             return h(UButton, {
                 icon: 'i-heroicons-trash',
                 variant: 'ghost',
+                activeColor: 'error',
                 size: 'xs',
                 onClick: () => {
                     handleDelete(row.original.id)
@@ -376,11 +507,11 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => row.getValue('qty_item') || '0'
     },
     {
-        accessorKey: 'monto',
+        accessorKey: 'fob',
         header: 'Fob',
         cell: ({ row }: { row: any }) => {
-            const monto = parseFloat(row.getValue('monto'))
-            return formatCurrency(monto, 'USD')
+            const fob = parseFloat(row.original.fob)
+            return formatCurrency(fob, 'USD')
         }
     },
     {
@@ -475,7 +606,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 placeholder: 'Seleccionar estado',
                 modelValue: estado,
                 color: color,
-                class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES],
+                class: ['min-w-36', STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES]].join(' '),
                 'onUpdate:modelValue': (value: any) => {
                     if (value && value !== estado) {
                         handleUpdateEstadoCotizacion(row.original.id, value)
@@ -572,7 +703,49 @@ const getPagosColumns = () => {
                     numberOfPagos: 4,
                     pagoDetails: pagos,
                     clienteNombre: row.original.nombre,
-                    currency: 'PEN'
+                    currency: 'USD',
+                    onSave: (data) => {
+                        const formData = new FormData();
+                        for (const key in data) {
+                            if (data[key] !== undefined && data[key] !== null) {
+                                formData.append(key, data[key]);
+                            }
+                        }
+                        formData.append('idPedido', row.original.id_cotizacion)
+                        formData.append('idContenedor', row.original.id_contenedor)
+                        formData.append('idCotizacion', row.original.id_cotizacion)
+                        withSpinner(async () => {
+                            const response = await registrarPago(formData)
+                            if (response.success) {
+                                showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
+                                getCotizacionPagos(Number(id))
+                                getHeaders(Number(id))
+                            } else {
+                                showError('Error al registrar pago', response.error, { persistent: true })
+                            }
+                        }, 'registrarPago')
+
+                    },
+                    onDelete: (pagoId: number) => {
+                        showConfirmation(
+                            'Confirmar eliminación',
+                            '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
+                            async () => {
+                                try {
+                                    await withSpinner(async () => {
+                                        const response = await deletePago(pagoId)
+                                        if (response.success) {
+                                            await getCotizacionPagos(Number(id))
+                                            showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                                        }
+                                    }, 'Eliminando pago...')
+                                } catch (error) {
+                                    console.error('Error al eliminar el pago:', error)
+                                    showError('Error de Eliminación', 'Error al eliminar el pago')
+                                }
+                            }
+                        )
+                    }
                 }) as any
             }
         }
@@ -583,7 +756,12 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'asesor',
         header: 'Asesor',
-        cell: ({ row }: { row: any }) => row.original.No_Nombres_Apellidos
+        cell: ({ row }: { row: any }) => {
+            const asesor = row.original.No_Nombres_Apellidos
+            return h('div', {
+                class: 'max-w-25 whitespace-normal',
+            }, asesor)
+        }
     },
     {
         accessorKey: 'status',
@@ -625,15 +803,22 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
             const nombre = row.original.nombre
-            return h('div', {
-                class: 'max-w-45 whitespace-normal'
+            const div = h('div', {
+                //que tenga un max width y si es muy largo que lo haga doble linea
+                class: 'max-w-45 whitespace-normal',
             }, nombre)
+            return div
         }
     },
     {
         accessorKey: 'whatsapp',
         header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => row.original.telefono
+        cell: ({ row }: { row: any }) => {
+            const telefono = row.original.telefono
+            return h('div', {
+                class: 'max-w-20 whitespace-normal',
+            }, telefono)
+        }
     },
     {
         accessorKey: 'estado',
@@ -679,7 +864,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     items: estados,
                     placeholder: 'Seleccionar estado',
                     modelValue: proveedor.estados,
-                    class: 'w-full',
+                    class: 'w-full w-30',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.estados = value
@@ -701,7 +886,290 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.products,
+                    class: 'w-full w-40',
+                    disabled: currentRole.value !== ROLES.COTIZADOR,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.products = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'qty_box',
+        header: 'Qty Box',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.qty_box,
+                    class: 'w-full w-10',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.qty_box = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'cbm_total',
+        header: 'CBM t.',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.cbm_total,
+                    class: 'w-full w-12',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.cbm_total = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'peso',
+        header: 'Weight',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.peso,
+                    class: 'w-full w-15',
+                    disabled: true,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.peso = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'supplier',
+        header: 'Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.supplier,
+                    class: 'w-full w-25',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.supplier = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'code_supplier',
+        header: 'Code Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.code_supplier,
+                    class: 'w-full w-25',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.code_supplier = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'supplier_phone',
+        header: 'Supplier Phone',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.supplier_phone,
+                    class: 'w-full w-30',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.supplier_phone = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'qty_box_supplier',
+        header: 'Qty Box Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.qty_box_china,
                     class: 'w-full',
+                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.qty_box_china = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'cbm_total_supplier',
+        header: 'CBM Total Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.cbm_total_china,
+                    class: 'w-full',
+                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.cbm_total_china = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+
+    {
+        accessorKey: 'arrive_date',
+        header: 'Arrive Date',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.arrive_date_china,
+                    class: 'w-full w-25',
+                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.arrive_date_china = value
+                    }
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'actions',
+        header: 'Actions',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+
+            return h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h('div', {
+                    class: 'flex flex-row gap-2'
+                }, [
+                    h(UButton, {
+                        icon: 'i-heroicons-eye',
+                        variant: 'ghost',
+                        color: 'info',
+                        size: 'md',
+                        onClick: () => {
+                            navigateTo(`/cargaconsolidada/completados/cotizaciones/proveedor/documentacion/${proveedor.id}`)
+                        }
+                    }),
+                    h(UButton, {
+                        icon: 'material-symbols:save-sharp',
+                        variant: 'ghost',
+                        color: 'primary',
+                        size: 'md',
+                        onClick: () => {
+                            updateProveedorData(proveedor)
+                        }
+                    })
+                ])
+            }))
+        }
+    }
+])
+const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
+    //	Status	N.	Buyer	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
+    {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+
+            const div = h('div',
+                {
+                    class: 'flex flex-col gap-2'
+                },
+                proveedores.map((proveedor: any) => {
+                    return h(USelect as any, {
+                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
+                        placeholder: 'Seleccionar estado',
+                        value: proveedor.estados_proveedor,
+                        class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
+                        disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
+                        modelValue: proveedor.estados_proveedor,
+                        'onUpdate:modelValue': (value: any) => {
+                            proveedor.estados_proveedor = value
+                        }
+                    })
+                }))
+            return div
+
+        }
+    },
+    {
+        accessorKey: 'n',
+        header: 'N.',
+        cell: ({ row }: { row: any }) => {
+            //return index + 1
+            return row.index + 1
+        }
+    },
+    {
+        accessorKey: 'buyer',
+        header: 'Buyer',
+        cell: ({ row }: { row: any }) => {
+            const nombre = row.original.nombre
+            return h('div', {
+                class: 'max-w-45 whitespace-normal',
+            }, nombre)
+        }
+    },
+    {
+        accessorKey: 'productos',
+        header: 'Productos',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.products,
+                    class: 'w-full w-40',
                     disabled: currentRole.value !== ROLES.COTIZADOR,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.products = value
@@ -797,7 +1265,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 w-25'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
@@ -842,7 +1310,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
                     class: 'w-full',
-                    disabled: true,
+                    disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
                     }
@@ -862,7 +1330,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
                     class: 'w-full',
-                    disabled: true,
+                    disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
                     }
@@ -883,7 +1351,8 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.arrive_date_china,
                     class: 'w-full',
-                    disabled: true,
+                    type: 'date',
+                    disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
                     }
@@ -907,299 +1376,18 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     h(UButton, {
                         icon: 'i-heroicons-eye',
                         variant: 'ghost',
-                        color: 'neutral',
-                        size: 'xs',
+                        color: 'info',
+                        size: 'md',
                         onClick: () => {
                             navigateTo(`/cargaconsolidada/completados/cotizaciones/proveedor/documentacion/${proveedor.id}`)
                         }
                     }),
                     h(UButton, {
-                        icon: 'i-heroicons-document-arrow-down',
+                        //save icon
+                        icon: 'material-symbols:save-sharp',
                         variant: 'ghost',
-                        color: 'neutral',
-                        size: 'xs',
-                        onClick: () => {
-                            updateProveedorData(proveedor)
-                        }
-                    })
-                ])
-            }))
-        }
-    }
-])
-const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
-    //Status	N.	Buyer	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
-    {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-
-            const div = h('div',
-                {
-                    class: 'flex flex-col gap-2'
-                },
-                proveedores.map((proveedor: any) => {
-                    return h(USelect as any, {
-                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
-                        placeholder: 'Seleccionar estado',
-                        value: proveedor.estados_proveedor,
-                         class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
-                        disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
-                        modelValue: proveedor.estados_proveedor,
-                        'onUpdate:modelValue': (value: any) => {
-                            proveedor.estados_proveedor = value
-                        }
-                    })
-                }))
-            return div
-
-        }
-    },
-    {
-        accessorKey: 'n',
-        header: 'N.',
-        cell: ({ row }: { row: any }) => {
-            //return index + 1
-            return row.index + 1
-        }
-    },
-    {
-        accessorKey: 'buyer',
-        header: 'Buyer',
-        cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre
-            return h('div', {
-                class: 'max-w-45 whitespace-normal'
-            }, nombre)
-        }
-    },
-    {
-        accessorKey: 'productos',
-        header: 'Productos',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2 w-40'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.products,
-                    class: 'w-full',
-                    disabled: true,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.products = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'qty_box',
-        header: 'Qty Box',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2 w-10'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.qty_box,
-                    class: 'w-full',
-                    disabled: true,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.qty_box = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'cbm_total',
-        header: 'CBM t.',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2 w-15'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.cbm_total,
-                    class: 'w-full',
-                    disabled: true,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.cbm_total = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'peso',
-        header: 'Weight',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.peso,
-                    class: 'w-full',
-                    disabled: true,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.peso = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'supplier',
-        header: 'Supplier',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2 '
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.supplier,
-                    class: 'w-full',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.supplier = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'code_supplier',
-        header: 'Code Supplier',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2 w-20'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.code_supplier,
-                    class: 'w-full',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.code_supplier = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'supplier_phone',
-        header: 'Supplier Phone',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.supplier_phone,
-                    class: 'w-full',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.supplier_phone = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'qty_box_supplier',
-        header: 'Qty Box Supplier',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.qty_box_china,
-                    class: 'w-full',
-                    disabled: true,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.qty_box_china = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'cbm_total_supplier',
-        header: 'CBM Total Supplier',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.cbm_total_china,
-                    class: 'w-full',
-                    disabled: true,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.cbm_total_china = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-
-    {
-        accessorKey: 'arrive_date',
-        header: 'Arrive Date',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2 w-24    '
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.arrive_date_china,
-                    class: 'w-full',
-                    disabled: true,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.arrive_date_china = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'actions',
-        header: 'Actions',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-
-            return h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h('div', {
-                    class: 'flex flex-row gap-2'
-                }, [
-                    h(UButton, {
-                        icon: 'i-heroicons-eye',
-                        variant: 'ghost',
-                        size: 'xs',
-                        onClick: () => {
-                            navigateTo(`/cargaconsolidada/completados/cotizaciones/proveedor/documentacion/${proveedor.id}`)
-                        }
-                    }),
-                    h(UButton, {
-                        icon: 'i-heroicons-document-arrow-down',
-                        variant: 'ghost',
-                        color: 'neutral',
-                        size: 'xs',
+                        color: 'primary',
+                        size: 'md',
                         onClick: () => {
                             updateProveedorData(proveedor)
                         }
@@ -1409,6 +1597,7 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
 watch(() => tab.value, async (newVal) => {
     if (newVal && newVal !== '') {
         try {
+            resetFilters()
             if (newVal === 'prospectos') {
                 navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos`)
                 await getCotizaciones(Number(id))
@@ -1446,19 +1635,33 @@ const updateProveedorData = async (row: any) => {
         formData.append('code_supplier', data.code_supplier)
         formData.append('supplier_phone', data.supplier_phone)
     }
+    if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
+        data.qty_box_china = row.qty_box_china ?? []
+        data.cbm_total_china = row.cbm_total_china ?? []
+        data.arrive_date = row.arrive_date_china ?? []
+        formData.append('qty_box_china', data.qty_box_china)
+        formData.append('cbm_total_china', data.cbm_total_china)
+        formData.append('arrive_date_china', data.arrive_date)
+    }
     formData.append('id', data.id)
 
     try {
         await withSpinner(async () => {
-            await updateProveedor(formData)
-            showSuccess('Proveedor actualizado correctamente', 'El proveedor se ha actualizado correctamente.')
-            await getCotizaciones(Number(id))
+            const response = await updateProveedor(formData)
+            if (response?.success) {
+                showSuccess('Proveedor actualizado correctamente', 'El proveedor se ha actualizado correctamente.')
+                await getCotizacionProveedor(Number(id))
+            }
         }, 'Actualizando proveedor...')
-        await getCotizaciones(Number(id))
+
     } catch (error) {
         showError('Error al actualizar el proveedor', error)
     }
 
+}
+const resetFilters = () => {
+    resetFiltersCotizacion()
+    resetFiltersProveedor()
 }
 onMounted(() => {
     loadTabs();
@@ -1468,8 +1671,8 @@ onMounted(() => {
     if (tabQuery) {
         tab.value = tabQuery as string
     } else {
-    // Ensure we access the inner array on the ref and guard empty state
-    tab.value = (tabs.value && tabs.value.length > 0) ? tabs.value[0].value : '' // Cambiar a 'prospectos' como tab inicial
+        // Ensure we access the inner array on the ref and guard empty state
+        tab.value = (tabs.value && tabs.value.length > 0) ? tabs.value[0].value : '' // Cambiar a 'prospectos' como tab inicial
     }
 })
 </script>

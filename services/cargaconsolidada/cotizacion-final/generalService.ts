@@ -74,6 +74,8 @@ export class GeneralService extends BaseService {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/download-cotizacion-final-pdf/${id}`, {
                 method: 'GET',
+                responseType: 'blob'
+
             })
             return response
         } catch (error) {
@@ -81,9 +83,9 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
-    static async deleteCotizacionFinal(id: number): Promise<any> {
+    static async deleteCotizacionFinalFile(id: number): Promise<any> {
         try {
-            const response = await this.apiCall<any>(`${this.baseUrl}/delete-cotizacion-final/${id}`, {
+            const response = await this.apiCall<any>(`${this.baseUrl}/delete-cotizacion-final-file/${id}`, {
                 method: 'DELETE',
             })
             return response

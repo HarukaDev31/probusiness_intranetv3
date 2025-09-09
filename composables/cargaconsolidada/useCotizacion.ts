@@ -26,7 +26,9 @@ export const useCotizacion = () => {
         fecha_inicio: '',
         fecha_fin: '',
         estado: 'todos', // Inicializar con 'todos' para consistencia
-        completado: false
+        estado_coordinacion: 'todos',
+        estado_china: 'todos',
+    
     })
     
     const getCotizaciones = async (id: number) => {
@@ -47,9 +49,13 @@ export const useCotizacion = () => {
             if (filters.value.estado && filters.value.estado !== 'todos') {
                 params.estado = filters.value.estado
             }
-            if (filters.value.completado) {
-                params.completado = filters.value.completado
+            if (filters.value.estado_coordinacion && filters.value.estado_coordinacion !== 'todos') {
+                params.estado_coordinacion = filters.value.estado_coordinacion
             }
+            if (filters.value.estado_china && filters.value.estado_china !== 'todos') {
+                params.estado_china = filters.value.estado_china
+            }
+          
             const response = await CotizacionService.getCotizaciones(id,params)
             cotizaciones.value = response.data
             pagination.value = response.pagination
@@ -129,6 +135,15 @@ export const useCotizacion = () => {
             throw error
         }
     }
+    const resetFiltersCotizacion = () => {
+        filters.value = {
+            fecha_inicio: '',
+            fecha_fin: '',
+            estado: 'todos',
+            estado_coordinacion: 'todos',
+            estado_china: 'todos'
+        }
+    }
     return {
         cotizaciones,
         loading,
@@ -150,6 +165,7 @@ export const useCotizacion = () => {
         updateEstadoCotizacionCotizador,
         getHeaders,
         carga,
-        loadingHeaders
+        loadingHeaders,
+        resetFiltersCotizacion
     }
 }

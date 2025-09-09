@@ -46,9 +46,9 @@ export const useGeneral = () => {
                 per_page: itemsPerPageGeneral.value,
                 search: searchGeneral.value,
                 filters: filtersGeneral.value
-            }   
+            }
             console.log('Params:', params)
-            const response = await GeneralService.getGeneral(id,params)
+            const response = await GeneralService.getGeneral(id, params)
             general.value = response.data
             paginationGeneral.value = response.pagination
         } catch (err) {
@@ -61,7 +61,7 @@ export const useGeneral = () => {
     const handleSearchGeneral = async (search: string) => {
         searchGeneral.value = search
         await getGeneral(id)
-       
+
     }
     const updateEstadoCotizacionFinal = async (idCotizacion: number, estado: string) => {
         try {
@@ -124,15 +124,27 @@ export const useGeneral = () => {
     }
     const handleDownloadCotizacionFinalPDF = async (idCotizacion: number) => {
         try {
-            const response = await GeneralService.downloadCotizacionFinalPDF(idCotizacion)
-            return response
+            const blob = await GeneralService.downloadCotizacionFinalPDF(idCotizacion)
+
+            // Crear y descargar el archivo
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `cotizacion_final_${idCotizacion}.pdf`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+            return {
+                success: true
+            }
         } catch (err) {
             error.value = err as string
         }
     }
     const handleDeleteCotizacionFinal = async (idCotizacion: number) => {
         try {
-            const response = await GeneralService.deleteCotizacionFinal(idCotizacion)
+            const response = await GeneralService.deleteCotizacionFinalFile(idCotizacion)
             return response
         } catch (err) {
             error.value = err as string

@@ -122,6 +122,7 @@ import { getEstadoColor as getEstadoColorCursos, formatCurrency as formatCurrenc
 import { UButton } from '#components'
 import DynamicModal from '~/components/DynamicModal.vue'
 import type { ModalData } from '~/composables/commons/useModal'
+import PagoGrid from '~/components/PagoGrid.vue'
 
 // Tabs
 const tabs = [
@@ -383,14 +384,18 @@ const consolidadoColumns: TableColumn<any>[] = [
     accessorKey: 'pagos_detalle',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
-      const pagos = row.getValue('pagos_detalle')
-      return h('div', { class: 'flex flex-wrap gap-1' },
-        pagos.map((pago: any) =>
-          h('span', {
-            class: `px-2 py-1 rounded-full text-xs font-medium border ${getEstadoBg(pago.status)}`
-          }, formatCurrency(pago.monto))
-        )
-      )
+      const pagos = row.getValue('pagos_detalle')??[]
+      return h(PagoGrid,
+        {
+          numberOfPagos: pagos.length,
+          pagoDetails: pagos,
+          showDelete: false,
+          clienteNombre: row.original.nombre,
+          currency: 'USD',
+          
+        }
+      ) 
+      
     }
   },
   {
@@ -495,6 +500,16 @@ const cursosColumns: TableColumn<any>[] = [
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
       const adelantos = row.getValue('pagos_detalle') ?? []
+      return h(PagoGrid,
+        {
+          numberOfPagos: adelantos.length,
+          pagoDetails: adelantos,
+          showDelete: false,
+          clienteNombre: row.original.nombre,
+          currency: 'USD',
+          
+        }
+      ) 
       if (!Array.isArray(adelantos) || adelantos.length === 0) {
         return h('div', { class: 'text-sm text-gray-500' }, '-')
       }

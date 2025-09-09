@@ -40,7 +40,7 @@
 
             <!-- Skeleton para el contenido principal -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Skeleton para la sección de completados -->
+                <!-- Skeleton para la sección de Documentación -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                     <div class="space-y-6">
                         <!-- Header skeleton -->
@@ -178,6 +178,8 @@
                     <div>
                         <span class=" font-semibold">{{ cliente?.nombre }}</span>
                     </div>
+
+
                 </div>
             </div>
             <!-- Tabs de proveedores -->
@@ -194,7 +196,7 @@
 
             <!-- Contenido por proveedor -->
             <div v-if="proveedorActivo" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Sección de completados -->
+                <!-- Sección de Documentación -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md " :class="{ 'col-span-2': currentRole === ROLES.COORDINACION }">
                     <template #header>
                         <div class="flex items-center justify-between">
@@ -202,7 +204,7 @@
                                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
 
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                    completados {{ currentRole === ROLES.DOCUMENTACION ? 'Perú' : '' }}
+                                    Documentación {{ currentRole === ROLES.DOCUMENTACION ? 'Perú' : '' }}
                                 </h3>
                                 <img  v-if="currentRole === ROLES.DOCUMENTACION" :src="CUSTOMIZED_ICONS_URL['PERU']" alt="Flag" class="w-5 h-5" />
                                 <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
@@ -304,7 +306,7 @@
                                     type: file.file_ext,
                                     size: 0,
                                     lastModified: 0,
-                                    file_ext: file.file_url
+                                    file_ext: file.file_ext
                                 }]" />
                         </div>
                     </div>
@@ -316,7 +318,7 @@
                             <div class="flex items-center gap-2">
                                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                    completados China
+                                    Documentación China
                                 </h3>
                                 <img  v-if="currentRole === ROLES.DOCUMENTACION" :src="CUSTOMIZED_ICONS_URL['CHINA']" alt="Flag" class="w-5 h-5" />
 

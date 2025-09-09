@@ -20,7 +20,8 @@ export interface CotizacionFilters {
     fecha_inicio: string
     fecha_fin: string
     estado: string
-    completado: boolean|false
+    estado_coordinacion: string
+    estado_china: string
 }
 
 export interface CotizacionResponse {

@@ -3,14 +3,13 @@
     <!-- Header Section -->
 
 
-    <DataTable title=""  :show-pagination="false"   :data="general" :columns="generalColumns" :loading="loadingGeneral" icon=""
-      :current-page="currentPageGeneral" :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
+    <DataTable title="" :show-pagination="false" :data="general" :columns="generalColumns" :loading="loadingGeneral"
+      icon="" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
       :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
       :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"
       empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
-      @filter-change="handleFilterChangeGeneral" :hide-back-button="false"
-      :show-primary-search="false"
+      @filter-change="handleFilterChangeGeneral" :hide-back-button="false" :show-primary-search="false"
       :show-body-top="true"
       :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
       <template #body-top>
@@ -30,12 +29,12 @@ import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-fina
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import type { TableColumn } from '@nuxt/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, uploadFacturaComercial, uploadGuiaRemision, headers, carga, loadingHeaders, getHeaders } = useGeneral()
+const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, uploadFacturaComercial, uploadGuiaRemision, headers, carga, loadingHeaders, getHeaders, deleteFacturaComercial, deleteGuiaRemision } = useGeneral()
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import SectionHeader from '~/components/commons/SectionHeader.vue'  
+import SectionHeader from '~/components/commons/SectionHeader.vue'
 const { withSpinner } = useSpinner()
-const { showSuccess, showError } = useModal()
+const { showSuccess, showError, showConfirmation } = useModal()
 const route = useRoute()
 const id = Number(route.params.id)
 const overlay = useOverlay()
@@ -122,16 +121,26 @@ const generalColumns = ref<TableColumn<any>[]>([
     accessorKey: 'factura_c_',
     header: 'Factura C. ',
     cell: ({ row }: { row: any }) => {
-      // if factura_comercial exist show download icon else show button to open modal to upload
+      // if factura_comercial exist show download icon else show button to open modal to upload and button delete
       if (row.original.factura_comercial) {
-        return h(UButton, {
-          icon: 'i-heroicons-arrow-down-tray',
-          color: 'primary',
-          variant: 'outline',
-          onClick: () => {
-            window.open(row.original.factura_comercial, '_blank')
-          }
-        })
+        return h('div', { class: 'flex space-x-2' }, [
+          h(UButton, {
+            icon: 'i-heroicons-arrow-down-tray',
+            color: 'primary',
+            variant: 'outline',
+            onClick: () => {
+              window.open(row.original.factura_comercial, '_blank')
+            }
+          }),
+          h(UButton, {
+            icon: 'i-heroicons-trash',
+            color: 'error',
+            variant: 'outline',
+            onClick: () => {
+              handleDeleteFacturaComercial(row.original.id_cotizacion)
+            }
+          })
+        ])
       } else {
         return h(UButton, {
           icon: 'i-heroicons-arrow-up-tray',
@@ -158,15 +167,25 @@ const generalColumns = ref<TableColumn<any>[]>([
     cell: ({ row }: { row: any }) => {
       // if guia_r exist show download icon else show button to open modal to upload
       if (row.original.guia_remision_url) {
-        return h(UButton, {
-          icon: 'i-heroicons-arrow-down-tray',
-          color: 'primary',
-          variant: 'outline',
+        return h('div', { class: 'flex space-x-2' }, [
+          h(UButton, {
+            icon: 'i-heroicons-arrow-down-tray',
+            color: 'primary',
+            variant: 'outline',
 
-          onClick: () => {
-            window.open(row.original.guia_remision_url, '_blank')
-          }
-        })
+            onClick: () => {
+              window.open(row.original.guia_remision_url, '_blank')
+            }
+          }),
+          h(UButton, {
+            icon: 'i-heroicons-trash',
+            color: 'error',
+            variant: 'outline',
+            onClick: () => {
+              handleDeleteGuiaRemision(row.original.id_cotizacion)
+            }
+          })
+        ])
       } else {
         return h(UButton, {
           icon: 'i-heroicons-arrow-up-tray',
@@ -205,6 +224,46 @@ const handleUploadFacturaComercial = async (data: { file: File }, idCotizacion: 
       showError('Error al subir la factura comercial', 'error')
     }
   })
+}
+const handleDeleteFacturaComercial = async (idCotizacion: number) => {
+  showConfirmation(
+    'Confirmar eliminación',
+    '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+    async () => {
+      try {
+        await withSpinner(async () => {
+          const response = await deleteFacturaComercial(idCotizacion)
+          if (response.success) {
+            await getGeneral(Number(id))
+            showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+          }
+        }, 'Eliminando archivo...')
+      } catch (error) {
+        console.error('Error al eliminar archivo:', error)
+        showError('Error de Eliminación', 'Error al eliminar el archivo')
+      }
+    }
+  )
+}
+const handleDeleteGuiaRemision = async (idCotizacion: number) => {
+  showConfirmation(
+    'Confirmar eliminación',
+    '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+    async () => {
+      try {
+        await withSpinner(async () => {
+          const response = await deleteGuiaRemision(idCotizacion)
+          if (response.success) {
+            await getGeneral(Number(id))
+            showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+          }
+        }, 'Eliminando archivo...')
+      } catch (error) {
+        console.error('Error al eliminar archivo:', error)
+        showError('Error de Eliminación', 'Error al eliminar el archivo')
+      }
+    }
+  )
 }
 const handleUploadGuiaRemision = async (data: { file: File }, idCotizacion: number) => {
   await withSpinner(async () => {
