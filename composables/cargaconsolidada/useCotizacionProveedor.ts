@@ -71,7 +71,8 @@ export const useCotizacionProveedor = () => {
         qty_box_china: 0,
         supplier_phone: '',
         cbm_total_china: 0,
-        arrive_date_china: ''
+        arrive_date_china: '',
+        cliente_nombre: '',
     })
 
     const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
