@@ -45,7 +45,7 @@
         <div v-for="(pago, index) in pagoDetalle || []" :key="pago.id"
           class="rounded-lg border p-4 transition-colors duration-200" :class="{
             'bg-green-50 border-green-200 dark:bg-green-800 dark:border-green-700': pago.status === 'CONFIRMADO',
-            'bg-yellow-50 border-yellow-200 dark:bg-yellow-800 dark:border-yellow-700': pago.status === 'PENDIENTE',
+            'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700': pago.status === 'PENDIENTE',
             'bg-red-50 border-red-200 dark:bg-red-800 dark:border-red-700': pago.status === 'OBSERVADO',
             'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700': !['CONFIRMADO', 'PENDIENTE', 'OBSERVADO'].includes(pago.status)
           }">

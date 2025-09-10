@@ -215,6 +215,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
                                     if (response.success) {
                                         await getClientesPagos(Number(id))
                                         showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                                        await getHeaders(Number(id))
                                     }
                                 }, 'Eliminando pago...')
                             } catch (error) {

@@ -20,6 +20,7 @@
                   </template>
                 </UInput>
               </div>
+              
               <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
                 class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
                 @click="handleExport" />

@@ -169,6 +169,32 @@ export class ConsolidadoService extends BaseService {
             throw error
         }
     }
+    static async uploadPackingList(data: any): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/packing-list`, {
+                method: 'POST',
+                
+                body: data
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error en ConsolidadoService.uploadPackingList:', error)
+            throw error
+        }
+    }
+    static async deletePackingList(id: number): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/packing-list/${id}`, {
+                method: 'DELETE'
+            })
+            return response
+        }
+        catch (error) {
+            console.error('Error en ConsolidadoService.deletePackingList:', error)
+            throw error
+        }
+    }
 }
 
 export default ConsolidadoService 
