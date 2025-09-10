@@ -115,7 +115,6 @@ import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import PagoGrid from '~/components/PagoGrid.vue'
-const {registrarPago, deletePago} = usePagos()
 const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, resetFiltersProveedor } = useCotizacionProveedor()
 const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones,
     filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders, resetFiltersCotizacion, packingList } = useCotizacion()
