@@ -64,8 +64,8 @@ export const useCursos = () => {
             label: 'Tipo de curso',
             placeholder: 'Seleccionar tipo de curso',
             options: [
-                { label: 'Virtual', value: 0 },
-                { label: 'En vivo', value: 1 }
+                { label: 'Virtual', value: "0" },
+                { label: 'En vivo', value: "1" }
             ]
         },
     ])
