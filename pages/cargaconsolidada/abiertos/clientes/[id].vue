@@ -414,28 +414,28 @@ const columnsCoordinacion: TableColumn<any>[] = [
         accessorKey: 'fob',
         header: 'Fob',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('fob')
+            return formatCurrency(row.getValue('fob'))
         }
     },
     {
         accessorKey: 'monto',
         header: 'Logistica',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('monto')
+            return formatCurrency(row.getValue('monto'))
         }
     },
     {
         accessorKey: 'impuestos',
         header: 'Impuesto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('impuestos')
+            return formatCurrency(row.getValue('impuestos'))
         }
     },
     {
         accessorKey: 'tarifa',
         header: 'Tarifa',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('tarifa')
+            return formatCurrency(row.getValue('tarifa'))
         }
     },
     {
