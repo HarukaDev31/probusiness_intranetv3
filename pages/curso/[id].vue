@@ -72,7 +72,7 @@
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Contraseña:</span>
-            <input class="bg-gray-200 rounded px-3 py-1 w-full" value="*********" readonly />
+            <input class="bg-gray-200 rounded px-3 py-1 w-full" v-model="form.password_moodle" :readonly="!editMode" />
           </div>
         </div>
       </div>
