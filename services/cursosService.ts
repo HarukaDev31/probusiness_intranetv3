@@ -1,10 +1,10 @@
-import type { CursoItem, CursosDetalleResponse,FiltrosResponse, CursosFilters, CursosResponse, DatosClientePorPedido } from '~/types/cursos/cursos'
+import type { CursoItem, CursosDetalleResponse, FiltrosResponse, CursosFilters, CursosResponse, DatosClientePorPedido } from '~/types/cursos/cursos'
 
 import { BaseService } from "~/services/base/BaseService"
 
 export class CursosService extends BaseService {
   private static baseUrl = 'api/cursos'
-  constructor(){
+  constructor() {
     super()
   }
   static async getCursos(filters: CursosFilters): Promise<CursosResponse> {
@@ -65,7 +65,7 @@ export class CursosService extends BaseService {
       throw new Error('No se pudo exportar los cursos')
     }
   }
-  static async getFiltros(): Promise<FiltrosResponse> {   
+  static async getFiltros(): Promise<FiltrosResponse> {
     try {
       const response = await this.apiCall<FiltrosResponse>(`${this.baseUrl}/filters/options`, {
         method: 'GET'
@@ -88,15 +88,67 @@ export class CursosService extends BaseService {
     }
   }
   static async actualizarDatosCliente(id: number, datos: Partial<DatosClientePorPedido>): Promise<{ success: boolean; error?: string }> {
-  try {
-    const response = await this.apiCall<{ success: boolean; error?: string }>(`${this.baseUrl}/cliente/${id}`, {
-      method: 'PUT',
-      body: datos
-    })
-    return response 
-  } catch (error) {
-    console.error('Error al actualizar datos del cliente:', error)
-    throw new Error('No se pudo actualizar los datos del cliente')
+    try {
+      const response = await this.apiCall<{ success: boolean; error?: string }>(`${this.baseUrl}/cliente/${id}`, {
+        method: 'PUT',
+        body: datos
+      })
+      return response
+    } catch (error) {
+      console.error('Error al actualizar datos del cliente:', error)
+      throw new Error('No se pudo actualizar los datos del cliente')
+    }
+
   }
-}
+  static async changeTipoCurso(data: { id_pedido: number, id_tipo_curso: number }): Promise<CursosResponse> {
+    try {
+      const response = await this.apiCall<CursosResponse>(`${this.baseUrl}/change-tipo-curso`, {
+        method: 'POST',
+        body: data
+      })
+      return response
+
+    } catch (error) {
+      console.error('Error al cambiar el tipo de curso:', error)
+      throw new Error('No se pudo cambiar el tipo de curso')
+    }
+  }
+  //change-estado-pedido
+  static async changeEstadoPedido(data: { id_pedido: number, estado_pedido: number }): Promise<CursosResponse> {
+    try {
+      const response = await this.apiCall<CursosResponse>(`${this.baseUrl}/change-estado-pedido`, {
+        method: 'POST',
+        body: data
+      })
+      return response
+
+    } catch (error) {
+      console.error('Error al cambiar el estado de pedido:', error)
+      throw new Error('No se pudo cambiar el estado de pedido')
+    }
+  }
+  static async changeImportePedido(data: { id_pedido: number, importe: number }): Promise<CursosResponse> {
+    try {
+      const response = await this.apiCall<CursosResponse>(`${this.baseUrl}/change-importe-pedido`, {
+        method: 'POST',
+        body: data
+      })
+      return response
+    } catch (error) {
+      console.error('Error al cambiar el importe de pedido:', error)
+      throw new Error('No se pudo cambiar el importe de pedido')
+    }
+  }
+  static async deleteCurso(data: { id_pedido: number }): Promise<CursosResponse> {
+    try {
+      const response = await this.apiCall<CursosResponse>(`${this.baseUrl}/${data.id_pedido}`, {
+        method: 'DELETE',
+        body: data
+      })
+      return response
+    } catch (error) {
+      console.error('Error al eliminar el curso:', error)
+      throw new Error('No se pudo eliminar el curso')
+    }
+  }
 }

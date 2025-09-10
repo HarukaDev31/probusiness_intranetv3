@@ -18,6 +18,9 @@ export const useConsolidado = () => {
   })
   const search = ref('')
   const itemsPerPage = ref(100)
+  const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
+  const totalRecords = computed(() => pagination.value.total)
+  const currentPage = computed(() => pagination.value.current_page)
   const filters = ref<ConsolidadoFilters>({
     fecha_inicio: '',
     fecha_fin: '',
@@ -220,12 +223,15 @@ export const useConsolidado = () => {
     pagination,
     filters,
     cargasDisponibles,
-    
+    totalPages,
+    totalRecords,
+    currentPage,
+    search,
     // Computed
     totalAmount,
     totalPaid,
     filteredData,
-    
+    itemsPerPage,
     // Methods
     fetchConsolidadoData,
     updateEstadoPago,

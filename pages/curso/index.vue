@@ -1,32 +1,51 @@
 <template>
     <div class="p-6">
-        <PageHeader title="Cursos" subtitle="Gestión de cursos" icon="i-heroicons-book-open" :hide-back-button="true" />
-        <DataTable 
-            title="Base de datos de cursos" 
-            icon="i-heroicons-book-open" 
-            :data="cursosData" 
-            :columns="columns"
-            :loading="loading" 
-            :current-page="currentPage" 
-            :total-pages="totalPages" 
-            :total-records="totalRecords"
-            :items-per-page="itemsPerPage" 
-            :search-query-value="searchQuery"
-            :show-primary-search="true" 
-            :primary-search-label="'Buscar por'"
-            :primary-search-placeholder="'Buscar...'" 
-            :show-filters="true"
-            :filter-config="filterConfig" 
-            :filters-value="filters" 
-            :show-export="true"
+        <PageHeader title="Curso" subtitle="Gestión de cursos" icon="" :hide-back-button="true" />
+        <DataTable title="" icon="" :data="cursosData" :columns="columns" :loading="loading" :current-page="currentPage"
+            v-if="activeTab === 'alumnos'" :total-pages="totalPages" :total-records="totalRecords"
+            :items-per-page="itemsPerPage" :search-query-value="searchQuery" :show-primary-search="true"
+            :primary-search-label="'Buscar por'" :primary-search-placeholder="'Buscar...'" :show-filters="true"
+            :filter-config="filterConfig" :filters-value="filters" :show-export="false"
             empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
-            @update:primarySearch="handleSearch"
-            @page-change="handlePageChange" 
-            @items-per-page-change="handleItemsPerPageChange" 
-            @export="exportData"
-            @filter-change="handleFilterChange">
+            @update:primarySearch="handleSearch" @page-change="handlePageChange"
+            @items-per-page-change="handleItemsPerPageChange" @export="exportData" @filter-change="handleFilterChange"
+            :show-body-top="true">
+            <template #body-top>
+                <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-4 w-80 h-15" />
+                <div class="mb-4 flex justify-end">
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                        Importe total:
+                        <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
+                            {{ formatCurrency(totalAmountCursos,'PEN') }}
+                        </span>
+                    </div>
+                </div>
+            </template>
+        </DataTable>
+        <DataTable title="" icon="" :data="pagosData" :columns="columnsPagos" :loading="loadingPagos"
+            :current-page="currentPagePagos" v-else-if="activeTab === 'pagos'" :total-pages="totalPagesPagos"
+            :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
+            :search-query-value="searchQueryPagos" :show-primary-search="true" :primary-search-label="'Buscar por'"
+            :primary-search-placeholder="'Buscar...'" :show-filters="false" :filter-config="filterConfigPagos"
+            :filters-value="filtersPagos" :show-export="false"
+            empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
+            @update:primarySearch="handleSearchPagos" @page-change="handlePageChangePagos"
+            @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos"
+            :show-body-top="true">
+            <template #body-top>
+                <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-4 w-80 h-15" />
+                <div class="mb-4 flex justify-end">
+                    <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                        Importe total:
+                        <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
+                            {{ formatCurrency(totalAmountPagos,'PEN') }}
+                        </span>
+                    </div>
+                </div>
+            </template>
         </DataTable>
     </div>
+
 </template>
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted, watch } from 'vue'
@@ -35,26 +54,65 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 import type { CursoItem } from '~/types/cursos/cursos'
 import type { TableColumn } from '@nuxt/ui'
-const { 
-    cursosData, 
-    loading, 
-    currentPage, 
-    totalPages,getFiltros, 
-    loadCursos, 
-    totalRecords, 
-    itemsPerPage, 
-    searchQuery, 
-    filterConfig, 
-    filters, 
-    handleSearch, 
-    handlePageChange, 
-    handleItemsPerPageChange, 
-    handleFilterChange, 
-    exportData 
+import { useRoute } from 'vue-router'
+import { usePagos } from '~/composables/curso/usePagos'
+import type { FilterConfig } from '~/types/data-table'
+import PagoGrid from '~/components/PagoGrid.vue'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
+const { withSpinner } = useSpinner()
+const { showConfirmation, showSuccess, showError } = useModal()
+const {
+    cursosData,
+    loading,
+    currentPage,
+    totalPages, getFiltros,
+    loadCursos,
+    totalRecords,
+    itemsPerPage,
+    searchQuery,
+    filterConfig,
+    filters,
+    handleSearch,
+    handlePageChange,
+    handleItemsPerPageChange,
+    handleFilterChange,
+    exportData,
+    clearFilters,
+    changeTipoCurso,
+    changeEstadoPedido,
+    changeImportePedido,
+    deleteCurso,
+    totalAmountCursos
 } = useCursos()
+const {
+    pagosData,
+    loadingPagos,
+    currentPagePagos,
+    totalPagesPagos,
+    loadPagos,
+    totalRecordsPagos,
+    itemsPerPagePagos,
+    searchQueryPagos,
+    filterConfigPagos,
+    filtersPagos,
+    handleSearchPagos,
+    handlePageChangePagos,
+    handleItemsPerPageChangePagos,
+    handleFilterChangePagos,
+    totalAmountPagos,
+    deletePago,
+    registrarPago,
+} = usePagos()
+const activeTab = ref('')
 
-
-import { UButton, USelect } from '#components'
+const tabs = [
+    { label: 'Alumnos', value: 'alumnos' },
+    { label: 'Pagos', value: 'pagos' }
+]
+import { UButton, USelect, UInput } from '#components'
 const estadoClasses: Record<string, string> = {
     pendiente: 'bg-gray-100 text-gray-800',
     adelanto: 'bg-yellow-100 text-yellow-800',
@@ -63,7 +121,7 @@ const estadoClasses: Record<string, string> = {
 }
 
 const onItemsPerPageChange = (newLimit: number) => {
-  loadCursos({ page: 1, limit: newLimit })
+    loadCursos({ page: 1, limit: newLimit })
 }
 
 const columns = ref<TableColumn<CursoItem>[]>([
@@ -99,16 +157,17 @@ const columns = ref<TableColumn<CursoItem>[]>([
         cell: ({ row }: { row: any }) => {
             const value = row.original.tipo_curso
             const items = [
-                { label: 'Virtual', value:0, icon: 'i-heroicons-video-camera' },
-                { label: 'En vivo', value:1, icon: 'i-heroicons-computer-desktop' }
+                { label: 'Virtual', value: 0, icon: 'i-heroicons-video-camera' },
+                { label: 'En vivo', value: 1, icon: 'i-heroicons-computer-desktop' }
             ]
             const icon = items.find(item => item.value === value)?.icon
             return h(USelect as any, {
                 modelValue: value,
                 'onUpdate:modelValue': (value: any) => {
                     row.original.tipo_curso = value
+                    handleChangeTipoCurso(value, row.original.ID_Pedido_Curso)
                 },
-                placeholder: 'Seleccionar tipo',    
+                placeholder: 'Seleccionar tipo',
                 variant: 'outline',
                 size: 'sm',
                 items,
@@ -130,10 +189,11 @@ const columns = ref<TableColumn<CursoItem>[]>([
                 modelValue: row.original.ID_Campana,
                 'onUpdate:modelValue': (value: any) => {
                     row.original.ID_Campana = value
+                    handleChangeEstadoPedido(value, row.original.ID_Pedido_Curso)
                 },
                 placeholder: 'Seleccionar campaña',
-                items: filterConfig.value.find((filter: any ) => filter.key === 'campanas')?.options || []
-            })  
+                items: filterConfig.value.find((filter: any) => filter.key === 'campanas')?.options || []
+            })
         }
     },
     {
@@ -141,12 +201,12 @@ const columns = ref<TableColumn<CursoItem>[]>([
         header: 'Usuario',
         cell: ({ row }: { row: any }) => {
             const items = [
-                { label: 'Pendiente', value:1, icon: 'ic:outline-access-time' },
-                { label: 'Creado', value:2, icon: 'ic:outline-person' }
+                { label: 'Pendiente', value: 1, icon: 'ic:outline-access-time' },
+                { label: 'Creado', value: 2, icon: 'ic:outline-person' }
             ]
             // Solo mostrar la opción de constancia si puede_constancia es verdadero
             if (row.original.puede_constancia) {
-                items.push({ label: 'Constancia', value:3, icon: 'solar:diploma-outline' })
+                items.push({ label: 'Constancia', value: 3, icon: 'solar:diploma-outline' })
             }
             const icon = items.find(item => item.value === row.original.Nu_Estado_Usuario_Externo)?.icon
             // Valor por defecto: pendiente (1) si no está definido
@@ -169,7 +229,18 @@ const columns = ref<TableColumn<CursoItem>[]>([
     {
         accessorKey: 'importe',
         header: 'Importe',
-        cell: ({ row }: { row: any }) => formatCurrency(row.original.Ss_Total,'PEN'),
+        cell: ({ row }: { row: any }) => {
+            return h(UInput as any, {
+                modelValue: row.original.Ss_Total,
+                type: 'number',
+                variant: 'outline',
+                size: 'sm',
+                class: 'w-full',
+                'onUpdate:modelValue': (value: any) => {
+                    row.original.Ss_Total = value
+                }
+            })
+        }
     },
     {
         accessorKey: 'estado',
@@ -185,12 +256,13 @@ const columns = ref<TableColumn<CursoItem>[]>([
             const icon = items.find(item => item.value === value)?.icon
             return h(USelect as any, {
                 modelValue: value,
+                disabled: true,
                 'onUpdate:modelValue': (val: any) => {
                     row.original.estado_pago = val
                 },
                 placeholder: 'Seleccionar estado',
                 items,
-                option: (option: any) => h('div', { 
+                option: (option: any) => h('div', {
                     class: estadoClasses[option.value] + ' rounded px-2 py-1 flex items-center gap-2'
                 }, [
                     h('span', { class: option.icon }),
@@ -198,7 +270,7 @@ const columns = ref<TableColumn<CursoItem>[]>([
                 ]),
                 icon,
                 class: estadoClasses[value] + ' rounded px-2 py-1',
-                
+
             })
         },
     },
@@ -217,36 +289,232 @@ const columns = ref<TableColumn<CursoItem>[]>([
                     icon: 'i-heroicons-trash',
                     variant: 'outline',
                     onClick: () => {
-                        console.log('borrar')
+                        handleDeleteCurso(row.original.ID_Pedido_Curso)
                     }
                 }),
                 h(UButton, {
                     icon: 'ic:outline-save',
                     variant: 'outline',
                     onClick: () => {
-                        console.log('guardar')
+                        handleChangeImporte(row.original.ID_Pedido_Curso, row.original.Ss_Total)
                     }
                 })
             ])
         }
     }
 ])
+const columnsPagos = ref<TableColumn<CursoItem>[]>([
+    //N.	Fecha	Nombre	DNI/RUC	WhatsApp	Precio	Pagado	Adelanto
+    {
+        accessorKey: 'index',
+        header: 'N.',
+        cell: ({ row }) => {
+            return row.index + 1
+        }
+    },
+    {
+        accessorKey: 'fecha',
+        header: 'Fecha',
+        cell: ({ row }) => {
+            return row.original.Fe_Registro
+        }
+    },
+    {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        cell: ({ row }) => {
+            return row.original.No_Entidad
+        }
+    },
+    {
+        accessorKey: 'dni',
+        header: 'DNI/RUC',
+        cell: ({ row }) => {
+            return row.original.Nu_Documento_Identidad
+        }
+    },
+    {
+        accessorKey: 'whatsapp',
+        header: 'WhatsApp',
+        cell: ({ row }) => {
+            return row.original.Nu_Celular_Entidad
+        }
+    },
+    {
+        accessorKey: 'precio',
+        header: 'Precio',
+        cell: ({ row }) => {
+            return formatCurrency(Number(row.original.Ss_Total), 'PEN')
+        }
+    },
+    {
+        accessorKey: 'pagado',
+        header: 'Pagado',
+        cell: ({ row }) => {
+            return formatCurrency(Number(row.original.total_pagos), 'PEN')
+        }
+    },
+    {
+        accessorKey: 'adelanto',
+        header: 'Adelanto',
+        cell: ({ row }) => {
+            const pagos = row.original.pagos_details || []
+            return h(PagoGrid, {
+                pagoDetails: pagos,
+                numberOfPagos: 4,
+                clienteNombre: row.original.No_Entidad,
+                currency: 'PEN',
+                onSave: (data) => {
+                    const formData = new FormData();
+                    for (const key in data) {
+                        if (data[key] !== undefined && data[key] !== null) {
+                            formData.append(key, data[key]);
+                        }
+                    }
+                    formData.append('idPedido', row.original.ID_Pedido_Curso)
 
-// Computed para productos filtrados
+                    withSpinner(async () => {
+                        const response = await registrarPago(formData)
+                        if (response.success) {
+                            showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
+                            loadPagos()
+                        } else {
+                            showError('Error al registrar pago', response.error, { persistent: true })
+                        }
+                    }, 'registrarPago')
 
-
+                },
+                onDelete: (pagoId: number) => {
+                    showConfirmation(
+                        'Confirmar eliminación',
+                        '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
+                        async () => {
+                            try {
+                                await withSpinner(async () => {
+                                    const response = await deletePago(pagoId)
+                                    if (response.success) {
+                                        showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                                        await loadPagos()
+                                    }
+                                }, 'Eliminando pago...')
+                            } catch (error) {
+                                console.error('Error al eliminar el pago:', error)
+                                showError('Error de Eliminación', 'Error al eliminar el pago')
+                            }
+                        }
+                    )
+                },
+            })
+        }
+    }
+])
+const handleChangeEstadoPedido = async (value: number, idPedido: number) => {
+    const data = {
+        id_pedido: idPedido,
+        estado_pedido: value
+    }
+    try {
+        await withSpinner(async () => {
+            const response = await changeEstadoPedido(data)
+            if (response.success) {
+                showSuccess('Estado de pedido cambiado', 'Estado de pedido cambiado correctamente')
+            } else {
+                showError('Error al cambiar el estado de pedido', response.error)
+            }
+        })
+    } catch (error) {
+        showError('Error al cambiar el estado de pedido', error as string)
+    }
+}
+const handleDeleteCurso = async (idPedido: number) => {
+    const data = {
+        id_pedido: idPedido
+    }
+    try {
+        showConfirmation(
+            'Confirmar eliminación',
+            '¿Está seguro de que desea eliminar el curso? Esta acción no se puede deshacer.',
+            async () => {
+                await withSpinner(async () => {
+                    const response = await deleteCurso(data)
+                    if (response.success) {
+                        showSuccess('Curso eliminado', 'Curso eliminado correctamente')
+                        loadCursos()
+                    } else {
+                        showError('Error al eliminar el curso', response.error)
+                    }
+                })
+            }
+        )
+    } catch (error) {
+        showError('Error al eliminar el curso', error as string)
+    }
+}
+const handleChangeImporte = async (idPedido: number, importe: string) => {
+    const data = {
+        id_pedido: idPedido,
+        importe: Number(importe)
+    }
+    try {
+        await withSpinner(async () => {
+            const response = await changeImportePedido(data)
+            if (response.success) {
+                showSuccess('Importe cambiado', 'Importe cambiado correctamente')
+                loadCursos()
+            } else {
+                showError('Error al cambiar el importe', response.error)
+            }
+        })
+    } catch (error) {
+        showError('Error al cambiar el importe', error as string)
+    }
+}
+const handleChangeTipoCurso = async (value: number, idPedido: number) => {
+    const data = {
+        id_pedido: idPedido,
+        id_tipo_curso: value
+    }
+    try {
+        await withSpinner(async () => {
+            const response = await changeTipoCurso(data)
+            if (response.success) {
+                showSuccess('Tipo de curso cambiado', 'Tipo de curso cambiado correctamente')
+            } else {
+                showError('Error al cambiar el tipo de curso', response.error)
+            }
+        })
+    } catch (error) {
+        showError('Error al cambiar el tipo de curso', error as string)
+    }
+}
 const fillFilters = async () => {
     const response = await getFiltros()
     console.log(response)
-    filterConfig.value=response.data
-    
+    filterConfig.value = response.data as FilterConfig[]
+
 }
+watch(activeTab, (newTab, oldTab) => {
+    if (newTab === 'alumnos') {
+        navigateTo(`/curso?tab=alumnos`)
+
+        loadCursos()
+    } else if (newTab === 'pagos') {
+        navigateTo(`/curso?tab=pagos`)
+        loadPagos()
+    }
+})
 onMounted(() => {
+    const query = useRoute().query
+    if (query.tab) {
+        activeTab.value = query.tab as string
+    } else {
+        activeTab.value = tabs[0].value || 'alumnos'
+    }
     loadCursos()
     fillFilters()
 })
 
 const viewCurso = (curso: CursoItem) => {
-  navigateTo(`/curso/${curso.ID_Pedido_Curso}`)
+    navigateTo(`/curso/${curso.ID_Pedido_Curso}`)
 }
 </script>

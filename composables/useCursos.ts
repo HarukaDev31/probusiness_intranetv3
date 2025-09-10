@@ -21,6 +21,7 @@ export const useCursos = () => {
     const searchQuery = ref('')
     const itemsPerPage = ref(100)
     const currentPage = ref(1)
+    const totalAmountCursos = ref(0)
     const filterConfig = ref<FilterConfig[]>([
         {
             key: 'estados_pago',
@@ -43,6 +44,7 @@ export const useCursos = () => {
         {
             key: 'fecha_inicio',
             label: 'Fecha de inicio',
+            type: 'date',
             placeholder: 'Seleccionar fecha de inicio',
             options: [
                 { label: 'Todos', value: 'todos' }
@@ -51,6 +53,7 @@ export const useCursos = () => {
         {
             key: 'fecha_fin',
             label: 'Fecha de fin',
+            type: 'date',
             placeholder: 'Seleccionar fecha de fin',
             options: [
                 { label: 'Todos', value: 'todos' }
@@ -91,6 +94,7 @@ export const useCursos = () => {
             const response = await CursosService.getCursos(mergedFilters)
             cursosData.value = response.data
             pagination.value = response.pagination
+            totalAmountCursos.value = response.importe_total
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Error al obtener datos de cursos'
             // showError(`Error al obtener datos de cursos ${err}`) // Si tienes showError, descomenta
@@ -219,7 +223,42 @@ export const useCursos = () => {
     const hasData = computed(() => cursosData.value.length > 0)
     const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
     const totalRecords = computed(() => pagination.value.total)
-
+    const changeTipoCurso = async (data: { id_pedido: number, id_tipo_curso: number }) => {
+        try {
+            const response = await CursosService.changeTipoCurso(data)
+            return response
+        } catch (error) {
+            error.value = error as string
+            throw error
+        }
+    }
+    const changeEstadoPedido = async (data: { id_pedido: number, estado_pedido: number }) => {
+        try {
+            const response = await CursosService.changeEstadoPedido(data)
+            return response
+        } catch (error) {
+            error.value = error as string
+            throw error
+        }
+    }
+    const changeImportePedido = async (data: { id_pedido: number, importe: number }) => {
+        try {
+            const response = await CursosService.changeImportePedido(data)
+            return response
+        } catch (error) {
+            error.value = error as string
+            throw error
+        }
+    }
+    const deleteCurso = async (data: { id_pedido: number }) => {
+        try {
+            const response = await CursosService.deleteCurso(data)
+            return response
+        } catch (error) {
+            error.value = error as string
+            throw error
+        }
+    }
     return {
         cursosData,
         loading,
@@ -246,6 +285,11 @@ export const useCursos = () => {
         getFiltros,
         hasData,
         totalPages,
-        totalRecords
+        totalRecords,
+        changeTipoCurso,
+        changeEstadoPedido,
+        changeImportePedido,
+        deleteCurso,
+        totalAmountCursos
     }
 }
