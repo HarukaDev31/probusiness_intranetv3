@@ -7,6 +7,7 @@ export const ROLES = {
     USER: 'User',
     COTIZADOR: 'Cotizador',
     DOCUMENTACION: 'Documentacion',
+    ADMINISTRACION: 'Administracion',
 } as const
 export const ID_JEFEVENTAS = 28791
 

@@ -6,7 +6,7 @@
             :items-per-page="itemsPerPage" :search-query-value="search" :primary-search-value="primarySearch"
             :show-primary-search="true" :showPrimarySearchLabel="false"
             :primary-search-placeholder="'Buscar por'" :show-filters="true"
-            :filter-config="filterConfig" :filters-value="filters" :show-export="true"
+            :filter-config="filterConfig" :filters-value="filters" :show-export="currentRole===ROLES.ADMINISTRACION"
             :show-headers="true" :headers="headers"
             empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
             :show-new-button="currentRole===ROLES.DOCUMENTACION"
