@@ -9,7 +9,7 @@
             :filter-config="filterConfig" :filters-value="filters" :show-export="currentRole===ROLES.ADMINISTRACION"
             :show-headers="true" :headers="headers"
             empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
-            :show-new-button="currentRole===ROLES.DOCUMENTACION"
+            :show-new-button="currentRole===ROLES.ADMINISTRACION"
             new-button-label="Cargar Cliente"
             :on-new-button-click="goToArchivos"
             @update:search-query="handleSearch" @update:primary-search="handleSearch"
