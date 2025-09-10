@@ -181,8 +181,8 @@ const tableColumns = computed(() => [
     accessorKey: 'acciones',
     cell: ({ row }: any) => h('div', { class: 'flex gap-2 items-center justify-center' }, [
       h(UButton, { icon: 'i-heroicons-eye', size: 'xs', color: 'neutral', variant: 'soft', onClick: () => viewProduct(row.original) }),
-      isDocumentacion ? h(UButton, { icon: 'i-heroicons-trash', size: 'xs', color: 'error', variant: 'soft', onClick: () => deleteProduct(row.original) }) : null,
-      isDocumentacion ? h(UButton, { icon: 'i-heroicons-bell', size: 'xs', color: row.original.tiene_observaciones ? 'warning' : 'neutral', variant: 'soft', onClick: () => showObservations(row.original) }) : null
+      hasRole('Documentacion') ? h(UButton, { icon: 'i-heroicons-trash', size: 'xs', color: 'error', variant: 'soft', onClick: () => deleteProduct(row.original) }) : null,
+      hasRole('Documentacion') ? h(UButton, { icon: 'i-heroicons-bell', size: 'xs', color: row.original.tiene_observaciones ? 'warning' : 'neutral', variant: 'soft', onClick: () => showObservations(row.original) }) : null
     ])
   }
 ])
