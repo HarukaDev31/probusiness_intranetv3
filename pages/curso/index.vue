@@ -157,8 +157,8 @@ const columns = ref<TableColumn<CursoItem>[]>([
         cell: ({ row }: { row: any }) => {
             const value = row.original.tipo_curso
             const items = [
-                { label: 'Virtual', value: 0, icon: 'i-heroicons-video-camera' },
-                { label: 'En vivo', value: 1, icon: 'i-heroicons-computer-desktop' }
+                { label: 'Virtual', value: "0", icon: 'i-heroicons-video-camera' },
+                { label: 'En vivo', value: "1", icon: 'i-heroicons-computer-desktop' }
             ]
             const icon = items.find(item => item.value === value)?.icon
             return h(USelect as any, {
