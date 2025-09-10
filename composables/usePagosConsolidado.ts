@@ -11,7 +11,7 @@ export const useConsolidado = () => {
   const pagination = ref<PaginationInfo>({
     current_page: 1,
     last_page: 1,
-    per_page: 10,
+    per_page: 100,
     total: 0,
     from: 0,
     to: 0
