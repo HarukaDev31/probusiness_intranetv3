@@ -79,6 +79,7 @@ import type { TableColumn } from '@nuxt/ui'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
+import { form } from '#build/ui'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
@@ -415,28 +416,28 @@ const columnsCoordinacion: TableColumn<any>[] = [
         accessorKey: 'fob',
         header: 'Fob',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('fob')
+            return formatCurrency(row.getValue('fob'))
         }
     },
     {
         accessorKey: 'monto',
         header: 'Logistica',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('monto')
+            return formatCurrency(row.getValue('monto'))
         }
     },
     {
         accessorKey: 'impuestos',
         header: 'Impuesto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('impuestos')
+            return formatCurrency(row.getValue('impuestos'))
         }
     },
     {
         accessorKey: 'tarifa',
         header: 'Tarifa',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('tarifa')
+            return formatCurrency(row.getValue('tarifa'))
         }
     },
     {
