@@ -1,23 +1,24 @@
   <template>
-  <div class="pago-grid">
-    <div class="grid-container">
-      <div v-for="pago in props.pagoDetails" :key="pago.id_pago">
-        <div class="pago-item" @click="openPagoDetailsModal(pago)">
-          <div class="pago-content" :class="STATUS_BG_PAGOS_CLASSES[pago.status as keyof typeof STATUS_BG_PAGOS_CLASSES]"> 
-            {{ formatCurrency(parseFloat(pago.monto),props.currency) }} 
+    <div class="pago-grid">
+      <div class="grid-container">
+        <div v-for="pago in props.pagoDetails" :key="pago.id_pago">
+          <div class="pago-item" @click="openPagoDetailsModal(pago)">
+            <div class="pago-content"
+              :class="STATUS_BG_PAGOS_CLASSES[pago.status as keyof typeof STATUS_BG_PAGOS_CLASSES]">
+              {{ formatCurrency(parseFloat(pago.monto), props.currency) }}
+            </div>
+          </div>
+        </div>
+        <div v-for="index in numberOfPagos - computedCountPagosDetails" :key="index" class="pago-item"
+          @click="openCreatePagoModal(index)">
+          <div class="pago-content">
+            <UIcon name="i-heroicons-plus" class="w-6 h-6" />
+
           </div>
         </div>
       </div>
-      <div v-for="index in numberOfPagos - computedCountPagosDetails" :key="index" class="pago-item"
-        @click="openCreatePagoModal(index)">
-        <div class="pago-content">
-          <UIcon name="i-heroicons-plus" class="w-6 h-6" />
-
-        </div>
-      </div>
     </div>
-  </div>
-</template>
+  </template>
 
 <script setup lang="ts">
 import { useOverlay } from '#imports'
@@ -33,8 +34,8 @@ const modalPagoDetails = overlay.create(PagoDetailsModal)
 interface Props {
   numberOfPagos: number
   pagoDetails: PagosDetails[]
-  clienteNombre:string  
-  currency:string
+  clienteNombre: string
+  currency: string
   showDelete?: boolean
 }
 const computedCountPagosDetails = computed(() => {
@@ -53,39 +54,39 @@ const emit = defineEmits<{
 }>()
 
 const openCreatePagoModal = (pagoIndex: number) => {
-  if (isCoordinacion.value) {
-    modalPagos.open({
-      clienteNombre: props.clienteNombre,
-      currency: props.currency,
-      onClose: () => {
-        emit('close')
-      },
-      onSave: (data: any) => {
-        emit('save', data)
-      }
-    })
-  }
+
+  modalPagos.open({
+    clienteNombre: props.clienteNombre,
+    currency: props.currency,
+    onClose: () => {
+      emit('close')
+    },
+    onSave: (data: any) => {
+      emit('save', data)
+    }
+  })
+
 }
 
 
 
 const openPagoDetailsModal = (pago: PagosDetails) => {
-  if (isCoordinacion.value) {
-    modalPagoDetails.open({
-      pagoDetails: pago,
-      currency: props.currency,
-      showDelete: props.showDelete,
-      onDelete: (pagoId: number) => {
-        if (props.showDelete) {
-          console.log(pagoId,'xd')
-          emit('delete', pagoId)
-        }
-      },
-      onClose: () => {
-        emit('close')
+
+  modalPagoDetails.open({
+    pagoDetails: pago,
+    currency: props.currency,
+    showDelete: props.showDelete,
+    onDelete: (pagoId: number) => {
+      if (props.showDelete) {
+        console.log(pagoId, 'xd')
+        emit('delete', pagoId)
       }
-    })
-  }
+    },
+    onClose: () => {
+      emit('close')
+    }
+  })
+
 }
 </script>
 

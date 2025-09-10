@@ -178,10 +178,11 @@ const columnsPagos = ref<TableColumn<any>[]>([
         accessorKey: 'adelantos',
         header: 'Adelantos',
         cell: ({ row }: { row: any }) => {
+            const pagos = JSON.parse(row.original.pagos_details ?? '[]');
             return h(PagoGrid, {
-                pagoDetails: JSON.parse(row.original.pagos_details ?? '[]'),
+                pagoDetails: pagos,
                 currency: 'USD',
-                numberOfPagos: 4,
+                numberOfPagos: currentRole.value == ROLES.COORDINACION ? 4 :pagos.length,
                 clienteNombre: row.original.nombre,
                 onSave: (data) => {
                     const formData = new FormData();
@@ -224,7 +225,8 @@ const columnsPagos = ref<TableColumn<any>[]>([
                             }
                         }
                     )
-                }
+                },
+                showDelete: currentRole.value == ROLES.COORDINACION,
             })
         }
     }
