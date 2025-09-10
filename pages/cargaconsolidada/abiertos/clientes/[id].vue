@@ -181,7 +181,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
             return h(PagoGrid, {
                 pagoDetails: JSON.parse(row.original.pagos_details ?? '[]'),
                 currency: 'USD',
-                numberOfPagos: currentRole.value === ROLES.COORDINACION ? 4 : JSON.parse(row.original.pagos_details ?? '[]').length,
+                numberOfPagos: 4,
                 clienteNombre: row.original.nombre,
                 onSave: (data) => {
                     const formData = new FormData();
