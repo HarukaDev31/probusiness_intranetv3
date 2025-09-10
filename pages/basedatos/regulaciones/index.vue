@@ -41,7 +41,7 @@
         </div>
         <!-- Modal de crear rubro-->
         <UModal v-model="showCreateModal" :title="getCreateTitle(activeTab)" :triger="true">
-            <UButton v-if="!['etiquetado','documentos'].includes(activeTab)" label="Regulación" icon="i-heroicons-plus" variant="outline"
+            <UButton v-if="!['etiquetado','documentos'].includes(activeTab) && hasRole('Documentacion')" label="Regulación" icon="i-heroicons-plus" variant="outline"
                 @click="showCreateModal = true"
                 :loading="getLoading(activeTab)" loading-icon="i-heroicons-plus" />
             <template #body>
@@ -89,7 +89,7 @@
                             <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
                                 <span class="w-14 mr-10 text-center">N°</span>
                                 <span class="flex-1">{{ listLabel }}</span>
-                                <span class="w-20 text-right">Acción</span>
+                                <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
                             </div>
                             <div
                             v-for="(rubro, idx) in antidumpingData"
@@ -115,7 +115,7 @@
                                     <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
                                 </template>
                             </div>
-                            <div class="flex gap-2 items-center">
+                            <div v-if="hasRole('Documentacion')" class="flex gap-2 items-center">
                                 <!-- Inline edit controls: only show buttons here; input is rendered in the name column -->
                                 <template v-if="editingRubroId === rubro.id">
                                     <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
@@ -167,22 +167,22 @@
                                     onClick: () => viewRegulationDetail(row.original.id),
                                     title: 'Ver detalle'
                                     }),
-                                    h(UButton, {
+                                    hasRole('Documentacion') ? h(UButton, {
                                     icon: 'i-heroicons-pencil-square',
                                     variant: 'ghost',
                                     size: 'xs',
                                     color: 'primary',
                                     onClick: () => editRegulation(row.original.id),
                                     title: 'Editar'
-                                    }),
-                                    h(UButton, {
+                                    }) : null,
+                                    hasRole('Documentacion') ? h(UButton, {
                                     icon: 'i-heroicons-trash',
                                     variant: 'ghost',
                                     size: 'xs',
                                     color: 'red',
                                     onClick: () => deleteRegulation(row.original.id),
                                     title: 'Eliminar'
-                                    })
+                                    }) : null
                                 ])
                                 }
                             ]"
@@ -232,7 +232,7 @@
                         <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
                         <span class="w-14 mr-10 text-center">N°</span>
                         <span class="flex-1">Entidad</span>
-                        <span class="w-20 text-right">Acción</span>
+                        <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
                         </div>
                         <div
                         v-for="(entidad, idx) in permisosData"
@@ -258,7 +258,7 @@
                                 <span class="font-semibold text-gray-800 dark:text-gray-200">{{ entidad.nombre }}</span>
                             </template>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2" v-if="hasRole('Documentacion')">
                             <template v-if="editingRubroId === entidad.id">
                                 <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
                                 <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
@@ -304,22 +304,22 @@
                                 onClick: () => viewPermisoDetail(row.original.id),
                                 title: 'Ver detalle'
                                 }),
-                                h(UButton, {
+                                hasRole('Documentacion') ? h(UButton, {
                                 icon: 'i-heroicons-pencil-square',
                                 variant: 'ghost',
                                 size: 'xs',
                                 color: 'primary',
                                 onClick: () => editPermiso(row.original.id),
                                 title: 'Editar'
-                                }),
-                                h(UButton, {
+                                }): null,
+                                hasRole('Documentacion') ? h(UButton, {
                                 icon: 'i-heroicons-trash',
                                 variant: 'ghost',
                                 size: 'xs',
                                 color: 'red',
                                 onClick: () => deletePermiso(row.original.id),
                                 title: 'Eliminar'
-                                })
+                                }): null
                             ])
                             }
                         ]"
@@ -380,7 +380,7 @@
                             <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
                                 <span class="w-14 mr-10 text-center">N°</span>
                                 <span class="flex-1">Producto</span>
-                                <span class="w-20 text-right">Acción</span>
+                                <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
                             </div>
                             <div
                                 v-for="(rubro, idx) in etiquetadoData"
@@ -412,7 +412,7 @@
                                         <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
                                     </template>
                                     <template v-else>
-                                        <UButton
+                                        <UButton v-if="hasRole('Documentacion')"
                                             icon="i-heroicons-pencil-square"
                                             variant="ghost"
                                             size="xs"
@@ -429,59 +429,59 @@
                                 v-if="selectedEtiquetado"
                                 :data="selectedEtiquetado.regulaciones"
                                 :columns="[
-                                { accessorKey: 'imagenes', header: 'Imágenes', cell: ({ row }) => {
-                                    const imagenes = row.getValue('imagenes') || []
-                                    if (imagenes.length === 0) {
-                                    return h('span', { class: 'text-gray-400 text-sm' }, 'Sin imágenes')
+                                    { accessorKey: 'imagenes', header: 'Imágenes', cell: ({ row }) => {
+                                        const imagenes = row.getValue('imagenes') || []
+                                        if (imagenes.length === 0) {
+                                        return h('span', { class: 'text-gray-400 text-sm' }, 'Sin imágenes')
+                                        }
+                                        return h('div', { class: 'flex flex-wrap gap-1' },
+                                        imagenes.slice(0, 3).map((imagen, index) =>
+                                            h('img', {
+                                            src: getImageUrl(imagen),
+                                            alt: `Imagen ${index + 1}`,
+                                            class: 'w-30 h-30 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity border border-gray-200',
+                                            onClick: () => openImageModal(imagen)
+                                            })
+                                        ).concat(
+                                            imagenes.length > 3 ? [
+                                            h('div', {
+                                                class: 'w-30 h-30 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors',
+                                                onClick: () => openImageModal(imagenes[3])
+                                            }, `+${imagenes.length - 3}`)
+                                            ] : []
+                                        )
+                                        )}
+                                    },
+                                    {
+                                        accessorKey: 'observaciones',
+                                        header: () => h('div', { class: 'flex items-center justify-between' }, [
+                                            h('span', { class: 'font-semibold' }, 'Descripciones mínimas'),
+                                            hasRole('Documentacion') ? h('div', { class: 'flex gap-2' }, [
+                                                h(UButton, {
+                                                    icon: 'i-heroicons-pencil-square',
+                                                    variant: 'ghost',
+                                                    size: 'xs',
+                                                    color: 'primary',
+                                                    onClick: () => {editEtiquetado(selectedEtiquetado.regulaciones[0]?.id)},
+                                                    title: 'Editar'
+                                                }),
+                                                h(UButton, {
+                                                    icon: 'i-heroicons-trash',
+                                                    variant: 'ghost',
+                                                    size: 'xs',
+                                                    color: 'red',
+                                                    onClick: () => {deleteEtiquetado(selectedEtiquetado.regulaciones[0]?.id)},
+                                                    title: 'Eliminar'
+                                                })
+                                            ]) : null
+                                        ]),
+                                        cell: ({ row }) => {
+                                            const observaciones = row.getValue('observaciones')
+                                            return h('div', {
+                                            class: 'whitespace-pre-line break-words max-w-[400px]'
+                                            }, observaciones)
+                                        }
                                     }
-                                    return h('div', { class: 'flex flex-wrap gap-1' },
-                                    imagenes.slice(0, 3).map((imagen, index) =>
-                                        h('img', {
-                                        src: getImageUrl(imagen),
-                                        alt: `Imagen ${index + 1}`,
-                                        class: 'w-30 h-30 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity border border-gray-200',
-                                        onClick: () => openImageModal(imagen)
-                                        })
-                                    ).concat(
-                                        imagenes.length > 3 ? [
-                                        h('div', {
-                                            class: 'w-30 h-30 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors',
-                                            onClick: () => openImageModal(imagenes[3])
-                                        }, `+${imagenes.length - 3}`)
-                                        ] : []
-                                    )
-                                    )
-                                } },
-                                {
-                                    accessorKey: 'observaciones',
-                                    header: () => h('div', { class: 'flex items-center justify-between' }, [
-                                        h('span', { class: 'font-semibold' }, 'Descripciones mínimas'),
-                                        h('div', { class: 'flex gap-2' }, [
-                                        h(UButton, {
-                                            icon: 'i-heroicons-pencil-square',
-                                            variant: 'ghost',
-                                            size: 'xs',
-                                            color: 'primary',
-                                            onClick: () => {editEtiquetado(selectedEtiquetado.regulaciones[0]?.id)},
-                                            title: 'Editar'
-                                        }),
-                                        h(UButton, {
-                                            icon: 'i-heroicons-trash',
-                                            variant: 'ghost',
-                                            size: 'xs',
-                                            color: 'red',
-                                            onClick: () => {deleteEtiquetado(selectedEtiquetado.regulaciones[0]?.id)},
-                                            title: 'Eliminar'
-                                        })
-                                        ])
-                                    ]),
-                                    cell: ({ row }) => {
-                                        const observaciones = row.getValue('observaciones')
-                                        return h('div', {
-                                        class: 'whitespace-pre-line break-words max-w-[400px]'
-                                        }, observaciones)
-                                    }
-                                }
                                 ]"
                                 :ui="{ root: 'w-full table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
                             />
@@ -500,7 +500,7 @@
                             <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
                                 <span class="w-14 mr-10 text-center">N°</span>
                                 <span class="flex-1">Producto</span>
-                                <span class="w-20 text-right">Acción</span>
+                                <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
                             </div>
                             <div
                                 v-for="(rubro, idx) in documentosData"
@@ -532,7 +532,7 @@
                                         <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
                                     </template>
                                     <template v-else>
-                                        <UButton
+                                        <UButton v-if="hasRole('Documentacion')"
                                             icon="i-heroicons-pencil-square"
                                             variant="ghost"
                                             size="xs"
@@ -594,7 +594,7 @@
                             <div class="w-1/2 pl-6 flex flex-col justify-start">
                                 <div class="flex items-center justify-between mb-4">
                                 <h4 class="font-semibold">Comentarios</h4>
-                                <div class="flex gap-1">
+                                <div v-if="hasRole('Documentacion')" class="flex gap-1">
                                     <UButton
                                     icon="i-heroicons-pencil-square"
                                     variant="outline"

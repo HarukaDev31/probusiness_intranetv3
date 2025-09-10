@@ -38,10 +38,10 @@
               </button>
             </div>
           </div>
-          <div class="my-3 flex justify-end">
+          <div class="my-3 mr-20 flex justify-end items-center">
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
               Importe total: 
-              <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
+              <span class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
                 {{ formatCurrency(totalImporteConsolidado) }}
               </span>
             </div>
@@ -90,11 +90,11 @@
               </button>
             </div>
           </div>
-          <div class="mb-4 flex justify-end">
+          <div class="my-3 mr-20 flex justify-end items-center">
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
               Importe total: 
-              <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
-                {{ formatCurrency(totalImporteCursos) }}
+              <span class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
+                {{ formatCurrency(totalImporteCursos, 'PEN') }}
               </span>
             </div>
           </div>
@@ -310,7 +310,7 @@ const consolidadoColumns: TableColumn<any>[] = [
   },
   {
     accessorKey: 'documento',
-    header: 'DNI/RUC',
+    header: 'DNI',
     cell: ({ row }: { row: any }) => formatDocument(row.getValue('documento'))
   },
   {

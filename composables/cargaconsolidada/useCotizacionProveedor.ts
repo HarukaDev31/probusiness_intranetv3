@@ -366,6 +366,21 @@ export const useCotizacionProveedor = () => {
             estado_china: 'todos'
         }
     }
+    const exportData = async () => {
+        loading.value = true
+        try {
+            const blob = await CotizacionProveedorService.exportCotizacionProveedor(Number(route.params.id), filters.value)
+            const url = window.URL.createObjectURL(new Blob([blob]))
+            const link = document.createElement('a')
+            link.href = url
+            link.setAttribute('download', `cotizacion_proveedor_${route.params.id}.xlsx`)
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+        } catch (error) {
+            console.error('Error al exportar datos:', error)
+        }
+    }
     return {
         // Estado principal
         cotizacionProveedor,
@@ -416,6 +431,7 @@ export const useCotizacionProveedor = () => {
         deleteCotizacion,
         updateProveedor,
         updateProveedorEstado,
-        resetFiltersProveedor
+        resetFiltersProveedor,
+        exportData
     }
 }
