@@ -32,7 +32,7 @@
                     </span>
                     <template v-if="header.por_usuario">
                         <button type="button"
-                            class="inline-flex items-center rounded-md border border-gray-200 bg-gray-50 text-gray-700 px-2 py-[2px] text-[11px] font-medium hover:bg-gray-100"
+                            class="inline-flex items-center rounded-md border border-gray-200 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-400 px-2 py-[2px] text-[11px] font-medium hover:bg-gray-100 dark:hover:bg-gray-700"
                             @click="openPerUsuarioModal(header)">
                             {{ header.value || 'N/A' }}
                         </button>

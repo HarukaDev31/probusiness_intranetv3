@@ -1,10 +1,11 @@
 import type { HeaderResponse } from "~/types/data-table"
 import { BaseService } from "../base/BaseService"
+import type { CotizacionFilters , Cotizacion, CotizacionResponse } from "~/types/cargaconsolidada/cotizaciones"
 export class CotizacionService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor'
-    static async getCotizaciones(id: number, filters: any) {
+    static async getCotizaciones(id: number, filters: CotizacionFilters) {
         try {
-            const response = await this.apiCall<any>(`${this.baseUrl}/cotizaciones/${id}`, {
+            const response = await this.apiCall<CotizacionResponse>(`${this.baseUrl}/cotizaciones/${id}`, {
                 method: 'GET',
                 params: filters
             })
@@ -96,6 +97,24 @@ export class CotizacionService extends BaseService {
         catch (error) {
             console.error('Error al obtener los headers:', error)
             throw new Error('No se pudo obtener los headers')
+        }
+    }
+    static async exportCotizaciones(): Promise<Blob> {
+        try {
+            // Construir la URL base con los parámetros normales
+            let url = `${this.baseUrl}/cotizaciones/exportar`
+            // Realizar la llamada a la API para obtener el archivo
+            const response = await this.apiCall<Blob>(url, {
+                method: 'GET',
+                responseType: 'blob',
+                headers: {
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                }
+            })
+            return response
+        } catch (error) {
+            console.error('Error al exportar las cotizaciones:', error)
+            throw new Error(error?.data?.message || 'Error al exportar clientes')
         }
     }
 }

@@ -1,6 +1,11 @@
 import { CotizacionService } from "../../services/cargaconsolidada/cotizacionService"
 import type { Header, PaginationInfo } from "../../types/data-table"
 import type { Cotizacion, CotizacionFilters } from "../../types/cargaconsolidada/cotizaciones"
+import { ref, computed } from 'vue'
+import { useSpinner } from '../composables/commons/useSpinner'
+import { fi } from "@nuxt/ui/runtime/locale/index.js"
+const { withSpinner } = useSpinner()
+
 
 export const useCotizacion = () => {
     const carga = ref<string | null>(null)
@@ -146,6 +151,30 @@ export const useCotizacion = () => {
             estado_china: 'todos'
         }
     }
+    const exportData = async (id: number) => {
+        loading.value = true
+        error.value = null
+        try {
+            await withSpinner(async () => {
+                const blob = await CotizacionService.exportCotizaciones()
+                //crear archivo y descargarlo
+                const url = window.URL.createObjectURL(blob)
+                const link = document.createElement('a')
+                link.href = url
+                link.download = `cotizaciones_${new Date().toISOString().split('T')[0]}.xlsx`
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+                window.URL.revokeObjectURL(url)
+            }, 'Exportando cotizaciones...')
+            return { success: true }
+        } catch (error: any) {
+            error.value = error.message || 'Error al exportar cotizaciones'
+            return { success: false, error: error.message }
+        } finally {
+            loading.value = false
+        }
+    }
     return {
         cotizaciones,
         loading,
@@ -169,6 +198,7 @@ export const useCotizacion = () => {
         carga,
         loadingHeaders,
         resetFiltersCotizacion,
-        packingList
+        packingList,
+        exportData
     }
 }

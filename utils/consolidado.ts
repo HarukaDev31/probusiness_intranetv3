@@ -107,12 +107,12 @@ export const formatDocument = (document: string): string => {
   
   // Si es DNI (8 dígitos)
   if (document.length === 8) {
-    return `${document.slice(0, 2)}.${document.slice(2, 5)}.${document.slice(5)}`
+    return `${document}`
   }
   
   // Si es RUC (11 dígitos)
   if (document.length === 11) {
-    return `${document.slice(0, 2)}.${document.slice(2, 5)}.${document.slice(5, 8)}.${document.slice(8)}`
+    return `-`
   }
   
   return document
