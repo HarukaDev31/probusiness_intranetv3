@@ -4,43 +4,36 @@
     <!-- Tab Content -->
     <div v-if="activeTab === 'consolidado'">
       <!-- Consolidado Tab -->
-      <DataTable :show-title="true" title="Verificación" subtitle="Gestión de verificación de pagos" icon="i-heroicons-clipboard-document-check" :data="consolidadoData" :columns="consolidadoColumns" :loading="loadingConsolidado"
-        :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-  :items-per-page="itemsPerPage" :primary-search-value="search" :show-secondary-search="false" :show-filters="true"
-  :filter-config="filterConfigConsolidado" :filters-value="filtersConsolidado" :show-export="false"
+      <DataTable :show-title="true" title="Verificación" subtitle="Gestión de verificación de pagos"
+        icon="i-heroicons-clipboard-document-check" :data="consolidadoData" :columns="consolidadoColumns"
+        :loading="loadingConsolidado" :current-page="currentPage" :total-pages="totalPages"
+        :total-records="totalRecords" :items-per-page="itemsPerPage" :primary-search-value="search"
+        :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigConsolidado"
+        :filters-value="filtersConsolidado" :show-export="false"
         empty-state-message="No se encontraron registros de consolidado." @update:primary-search="handleSearch"
         @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
-        @filter-change="handleFilterChange"
-        :show-body-top="true">
+        @filter-change="handleFilterChange" :show-body-top="true">
         <!-- Botón de filtros personalizado -->
         <template #body-top>
           <div class="w-50 my-3 flex items-center">
             <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
-              <button
-                type="button"
-                @click="activeTab = 'consolidado'"
-                :class="[
-                  'px-4 py-2 rounded-md text-sm font-medium transition',
-                  isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-                ]"
-              >
+              <button type="button" @click="activeTab = 'consolidado'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition',
+                isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
                 Consolidado
               </button>
-              <button
-                type="button"
-                @click="activeTab = 'cursos'"
-                :class="[
-                  'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                  isCursos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
-                ]"
-              >
+              <button type="button" @click="activeTab = 'cursos'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isCursos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
+              ]">
                 Cursos
               </button>
             </div>
           </div>
           <div class="my-3 flex justify-end">
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total: 
+              Importe total:
               <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
                 {{ formatCurrency(totalImporteConsolidado) }}
               </span>
@@ -57,42 +50,34 @@
 
     <div v-else-if="activeTab === 'cursos'">
       <!-- Cursos Tab -->
-      <DataTable title="Cursos" icon="i-heroicons-clipboard-document-check" :data="cursosData" :columns="cursosColumns" :loading="loadingCursos"
-        :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
-  :items-per-page="itemsPerPage" :primary-search-value="search" :show-secondary-search="false" :show-filters="true"
-  :filter-config="filterConfigCursos" :filters-value="filtersCursos" :show-export="false"
-  empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
-        @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
+      <DataTable title="Cursos" icon="i-heroicons-clipboard-document-check" :data="cursosData" :columns="cursosColumns"
+        :loading="loadingCursos" :current-page="currentPageCursos" :total-pages="totalPagesCursos" :total-records="totalRecordsCursos"
+        :items-per-page="itemsPerPageCursos" :primary-search-value="searchCursos" :show-secondary-search="false"
+        :show-filters="true" :filter-config="filterConfigCursos" :filters-value="filtersCursos" :show-export="false"
+        empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
+        @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportCursosData"
         @filter-change="handleFilterChange" :show-body-top="true">
 
         <template #body-top>
           <div class="w-50 mb-6 flex items-center">
             <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
-              <button
-                type="button"
-                @click="activeTab = 'consolidado'"
-                :class="[
-                  'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
-                  isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-                ]"
-              >
+              <button type="button" @click="activeTab = 'consolidado'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
                 Consolidado
               </button>
-              <button
-                type="button"
-                @click="activeTab = 'cursos'"
-                :class="[
-                  'px-4 py-2 rounded-md text-sm font-medium transition',
-                  isCursos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
-                ]"
-              >
+              <button type="button" @click="activeTab = 'cursos'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition',
+                isCursos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
                 Cursos
               </button>
             </div>
           </div>
           <div class="mb-4 flex justify-end">
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total: 
+              Importe total:
               <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
                 {{ formatCurrency(totalImporteCursos) }}
               </span>
@@ -169,7 +154,12 @@ const {
   getPagoDetalle,
   exportData: exportConsolidadoData,
   updateFilters: updateFiltersConsolidado,
-  clearFilters: clearFiltersConsolidado
+  clearFilters: clearFiltersConsolidado,
+  totalPages,
+  totalRecords,
+  currentPage,
+  itemsPerPage,
+  search
 } = useConsolidado()
 
 // Composable de cursos
@@ -188,19 +178,14 @@ const {
   getCursoDetalle,
   exportData: exportCursosData,
   updateFilters: updateFiltersCursos,
-  clearFilters: clearFiltersCursos
+  clearFilters: clearFiltersCursos,
+  totalPagesCursos,
+  totalRecordsCursos,
+  currentPageCursos,
+  itemsPerPageCursos,
+  searchCursos  
 } = usePagos()
 
-// State para paginación
-const search = ref('')
-const currentPage = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.current_page : paginationCursos.value.current_page)
-const totalPages = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.last_page : paginationCursos.value.last_page)
-const totalRecords = computed(() => activeTab.value === 'consolidado' ? paginationConsolidado.value.total : paginationCursos.value.total)
-const itemsPerPage = computed(() => {
-  const per = activeTab.value === 'consolidado' ? paginationConsolidado.value.per_page : paginationCursos.value.per_page
-  const n = Number(per)
-  return Number.isFinite(n) && n > 0 ? n : 10
-})
 
 
 // Configuración de filtros para consolidado
@@ -231,7 +216,7 @@ const filterConfigConsolidado = computed(() => [
     label: 'Carga',
     type: 'select',
     placeholder: 'Seleccionar carga',
-  options: (cargasDisponibles && cargasDisponibles.value && cargasDisponibles.value.length) ? cargasDisponibles.value : cargasOptions.value
+    options: (cargasDisponibles && cargasDisponibles.value && cargasDisponibles.value.length) ? cargasDisponibles.value : cargasOptions.value
   },
   {
     key: 'fecha_inicio',
@@ -340,10 +325,10 @@ const consolidadoColumns: TableColumn<any>[] = [
           value: estado,
           disabled: true
         },
-        // generar opciones desde ESTADOS_PAGO (value,label)
-        (ESTADOS_PAGO || []).map((opt: any) =>
-          h('option', { value: opt.value }, opt.label)
-        )
+          // generar opciones desde ESTADOS_PAGO (value,label)
+          (ESTADOS_PAGO || []).map((opt: any) =>
+            h('option', { value: opt.value }, opt.label)
+          )
         ),
         h('UIcon', {
           name: 'i-heroicons-chevron-down',
@@ -384,7 +369,7 @@ const consolidadoColumns: TableColumn<any>[] = [
     accessorKey: 'pagos_detalle',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
-      const pagos = row.getValue('pagos_detalle')??[]
+      const pagos = row.getValue('pagos_detalle') ?? []
       return h(PagoGrid,
         {
           numberOfPagos: pagos.length,
@@ -392,10 +377,10 @@ const consolidadoColumns: TableColumn<any>[] = [
           showDelete: false,
           clienteNombre: row.original.nombre,
           currency: 'USD',
-          
+
         }
-      ) 
-      
+      )
+
     }
   },
   {
@@ -507,9 +492,9 @@ const cursosColumns: TableColumn<any>[] = [
           showDelete: false,
           clienteNombre: row.original.nombre,
           currency: 'USD',
-          
+
         }
-      ) 
+      )
       if (!Array.isArray(adelantos) || adelantos.length === 0) {
         return h('div', { class: 'text-sm text-gray-500' }, '-')
       }
@@ -632,17 +617,35 @@ const handleViewDocument = (id: number) => {
 }
 
 // Watchers
-watch(activeTab, (newTab) => {
-  if (newTab === 'consolidado') {
-    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
-  } else if (newTab === 'cursos') {
-    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value)
-  }
-})
+
 
 // Initialize
 onMounted(() => {
-  // Cargar datos iniciales de consolidado
-  fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
+  const route = useRoute()
+  const tabQuery = route.query.tab
+  if (tabQuery) {
+    activeTab.value = tabQuery as string
+  } else {
+    activeTab.value = (tabs && tabs.length > 0) ? tabs[0].value : 'consolidado' // Cambiar a 'consolidado' como tab inicial
+  }
+  console.log('activeTab:', activeTab.value)
+  
+  // Cargar datos iniciales según el tab activo
+  if (activeTab.value === 'consolidado') {
+    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
+  } else if (activeTab.value === 'cursos') {
+    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value)
+  }
+})
+watch(activeTab, (newTab, oldTab) => {
+  console.log('newTab:', newTab)
+  console.log('oldTab:', oldTab)
+  if (newTab === 'consolidado') {
+    navigateTo(`/verificacion?tab=consolidado`)
+    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
+  } else if (newTab === 'cursos') {
+    navigateTo(`/verificacion?tab=cursos`)
+    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value)
+  }
 })
 </script>

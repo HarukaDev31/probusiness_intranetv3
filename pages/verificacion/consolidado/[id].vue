@@ -2,7 +2,7 @@
   <div class="p-6">
     <!-- Header con botones de navegación y guardar -->
     <div class="flex justify-between items-center mb-6">
-      <UButton icon="i-heroicons-arrow-left" color="neutral" variant="ghost" @click="navigateTo('/verificacion')">
+      <UButton icon="i-heroicons-arrow-left" color="neutral" variant="ghost" @click="navigateTo('/verificacion?tab=consolidado')">
         Regresar
       </UButton>
 
@@ -341,6 +341,7 @@ const loadPagoDetalle = async () => {
 
 // Initialize
 onMounted(() => {
+  
   loadPagoDetalle()
 })
 </script>

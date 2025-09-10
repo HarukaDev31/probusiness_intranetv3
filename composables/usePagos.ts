@@ -37,7 +37,11 @@ export const usePagos = () => {
       item.campana.toLowerCase().includes(searchTerm)
     )
   })
-
+  const totalPagesCursos = computed(() => Math.ceil(pagination.value.total / itemsPerPageCursos.value))
+  const totalRecordsCursos = computed(() => pagination.value.total)
+  const currentPageCursos = computed(() => pagination.value.current_page)
+  const itemsPerPageCursos = ref(100)
+  const searchCursos = ref('')
   // Methods
   const fetchCursosData = async (customFilters?: CursosFilters, page: number = 1, perPage: number = 10) => {
     loading.value = true
@@ -173,12 +177,15 @@ export const usePagos = () => {
     pagination,
     filters,
     campanasDisponibles,
-
+    totalPagesCursos,
+    totalRecordsCursos,
+    currentPageCursos,
+    itemsPerPageCursos,
     // Computed
     totalAmount,
     totalPaid,
     filteredData,
-
+    searchCursos,
     // Methods
     fetchCursosData,
     getCursoDetalle,
