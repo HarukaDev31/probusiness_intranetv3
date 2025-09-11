@@ -1212,7 +1212,18 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         }
     }
 ])
-const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
+const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
+    //Asesor	Status	N.	Buyer	Whatsapp	Estado	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
+    {
+        accessorKey: 'asesor',
+        header: 'Asesor',
+        cell: ({ row }: { row: any }) => {
+            const asesor = row.original.No_Nombres_Apellidos
+            return h('div', {
+                class: 'max-w-25 whitespace-normal',
+            }, asesor)
+        }
+    },
     {
         accessorKey: 'status',
         header: 'Status',
@@ -1254,9 +1265,77 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
             const nombre = row.original.nombre
-            return h('div', {
+            const div = h('div', {
+                //que tenga un max width y si es muy largo que lo haga doble linea
                 class: 'max-w-45 whitespace-normal',
             }, nombre)
+            return div
+        }
+    },
+    {
+        accessorKey: 'whatsapp',
+        header: 'Whatsapp',
+        cell: ({ row }: { row: any }) => {
+            const telefono = row.original.telefono
+            return h('div', {
+                class: 'max-w-20 whitespace-normal',
+            }, telefono)
+        }
+    },
+    {
+        accessorKey: 'estado',
+        header: 'Estado',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const estados = [
+                {
+                    label: 'Seleccionar',
+                    value: 'PENDIENTE',
+                    disabled: true
+                },
+                {
+                    label: 'ROTULADO',
+                    value: 'ROTULADO',
+                },
+                {
+                    label: 'DATOS PROVEEDOR',
+                    value: 'DATOS PROVEEDOR',
+                    disabled: true
+                },
+                {
+                    label: 'INSPECCIONADO',
+                    value: 'INSPECCIONADO',
+                    disabled: true
+                },
+                {
+                    label: 'COBRANDO',
+                    value: 'COBRANDO',
+                },
+                {
+                    label: 'RESERVADO',
+                    value: 'RESERVADO',
+                },
+
+
+            ]
+            console.log(proveedores)
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(USelect as any, {
+                    items: estados,
+                    placeholder: 'Seleccionar estado',
+                    modelValue: proveedor.estados,
+                    class: 'w-full w-30',
+                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    'onUpdate:modelValue': (value: any) => {
+                        proveedor.estados = value
+                        handleUpdateProveedorEstado(proveedor.id, value)
+                    }
+                })
+            }))
+            return div
+
         }
     },
     {
@@ -1289,7 +1368,7 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box,
-                    class: 'w-full',
+                    class: 'w-full w-10',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box = value
@@ -1309,7 +1388,7 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total,
-                    class: 'w-full',
+                    class: 'w-full w-12',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -1329,7 +1408,7 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.peso,
-                    class: 'w-full',
+                    class: 'w-full w-15',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.peso = value
@@ -1349,7 +1428,7 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
-                    class: 'w-full',
+                    class: 'w-full w-25',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier = value
@@ -1365,11 +1444,11 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2 w-25'
+                class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
-                    class: 'w-full',
+                    class: 'w-full w-25',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
@@ -1389,7 +1468,7 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
-                    class: 'w-full',
+                    class: 'w-full w-30',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
@@ -1410,7 +1489,7 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
                     class: 'w-full',
-                    disabled: false,
+                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
                     }
@@ -1430,7 +1509,7 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
                     class: 'w-full',
-                    disabled: false,
+                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
                     }
@@ -1450,9 +1529,8 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.arrive_date_china,
-                    class: 'w-full',
-                    type: 'date',
-                    disabled: false,
+                    class: 'w-full w-25',
+                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
                     }
@@ -1483,7 +1561,6 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
                         }
                     }),
                     h(UButton, {
-                        //save icon
                         icon: 'material-symbols:save-sharp',
                         variant: 'ghost',
                         color: 'primary',
@@ -1492,11 +1569,10 @@ const embarqueCotizadorColumnsCoordinacion = ref<TableColumn<any>[]>([
                             updateProveedorData(proveedor)
                         }
                     }),
-                    //refresh icon use send_rotulado_status color green if true else red
                     h(UButton, {
                         icon: 'i-heroicons-arrow-path-rounded-square',
                         variant: 'ghost',
-                        color: proveedor.send_rotulado_status=="SENDED" ? 'primary' : 'secondary',
+                        color: proveedor.send_rotulado_status ? 'primary' : 'secondary',
                         size: 'md',
                         onClick: () => {
                             if(proveedor.send_rotulado_status=="SENDED"){
@@ -1795,7 +1871,17 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         }
     }
 ])
-
+const handleRefreshRotuladoStatus = async (proveedor: any) => {
+    try {
+        showConfirmation('¿Estás seguro de querer actualizar el estado del proveedor?', 'Esta acción no se puede deshacer.', async () => {
+        await withSpinner(async () => {
+                await refreshRotuladoStatus(proveedor.id_proveedor)
+            }, 'Actualizando estado del proveedor...')
+        })
+    } catch (error) {
+        showError('Error al actualizar el estado del proveedor', error)
+    }
+}
 const handleAddProspecto = async () => {
     const modal = overlay.create(CreateProspectoModal)
     console.log(id)
@@ -1816,22 +1902,6 @@ const handleMoveCotizacion = async (idCotizacion: number) => {
         idConsolidado: id,
 
     })
-}
-const handleRefreshRotuladoStatus = async (proveedor: any) => {
-    try {
-        showConfirmation('¿Estás seguro de querer actualizar el estado del proveedor?', 'Esta acción no se puede deshacer.', async () => {
-        await withSpinner(async () => {
-            const response = await refreshRotuladoStatus(proveedor.id_proveedor)
-            if (response?.success) {
-                showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
-                await getCotizacionProveedor(Number(id))
-            }
-        }, 'Actualizando estado del proveedor...')
-        })
-    }
-    catch (error) {
-        showError('Error al actualizar el estado del proveedor', error)
-    }
 }
 const handleRefresh = async (idCotizacion: number) => {
     try {
@@ -1930,8 +2000,6 @@ const getEmbarqueColumns = () => {
     switch (currentRole.value) {
         case ROLES.CONTENEDOR_ALMACEN:
             return embarqueCotizadorColumnsAlmacen.value
-        case ROLES.COORDINACION:
-            return embarqueCotizadorColumnsCoordinacion.value
         default:
             return embarqueCotizadorColumns.value
     }
