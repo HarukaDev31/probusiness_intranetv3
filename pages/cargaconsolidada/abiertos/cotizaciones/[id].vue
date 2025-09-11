@@ -2000,6 +2000,8 @@ const getEmbarqueColumns = () => {
     switch (currentRole.value) {
         case ROLES.CONTENEDOR_ALMACEN:
             return embarqueCotizadorColumnsAlmacen.value
+        case ROLES.COORDINACION:
+            return embarqueCoordinacionColumns.value
         default:
             return embarqueCotizadorColumns.value
     }
