@@ -9,7 +9,7 @@ import type {
 import type { FileItem } from '../../types/commons/file'
 import type { FilterConfig, PaginationInfo } from '../../types/data-table'
 
-export const useCotizacionProveedor = () => {
+export const    useCotizacionProveedor = () => {
     // Estado principal
     const cotizacionProveedor = ref<CotizacionProveedor[]>([])
     const loading = ref(false)
@@ -90,24 +90,24 @@ export const useCotizacionProveedor = () => {
 
         loading.value = true
         error.value = null
-        if(!filters.value.fecha_inicio || filters.value.fecha_inicio == '') {
+        if (!filters.value.fecha_inicio || filters.value.fecha_inicio == '') {
             //remove fecha_inicio and fecha_fin
             delete filters.value.fecha_inicio
         }
-        if(!filters.value.fecha_fin || filters.value.fecha_fin == '') {
+        if (!filters.value.fecha_fin || filters.value.fecha_fin == '') {
             //remove fecha_inicio and fecha_fin
             delete filters.value.fecha_fin
         }
-   
+
         if (!filters.value.estado || filters.value.estado == 'todos') {
             //remove estado
             delete filters.value.estado
         }
-            if (!filters.value.estado_coordinacion || filters.value.estado_coordinacion == 'todos') {
+        if (!filters.value.estado_coordinacion || filters.value.estado_coordinacion == 'todos') {
             //remove estado_coordinacion
             delete filters.value.estado_coordinacion
         }
-        if (!filters.value.estado_china ) {
+        if (!filters.value.estado_china) {
             //remove estado_china
             delete filters.value.estado_china
         }
@@ -381,6 +381,21 @@ export const useCotizacionProveedor = () => {
             console.error('Error al exportar datos:', error)
         }
     }
+    const refreshRotuladoStatus = async (id: number) => {
+        if (!id) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.refreshRotuladoStatus(id)
+            return response
+        }
+        catch (error) {
+            error.value = error.message || 'Error al actualizar el estado del proveedor'
+            console.error('Error en refreshRotuladoStatus:', error)
+        } finally {
+            loading.value = false
+        }
+    }
     return {
         // Estado principal
         cotizacionProveedor,
@@ -432,6 +447,7 @@ export const useCotizacionProveedor = () => {
         updateProveedor,
         updateProveedorEstado,
         resetFiltersProveedor,
-        exportData
+        exportData,
+        refreshRotuladoStatus
     }
 }
