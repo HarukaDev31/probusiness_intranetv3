@@ -491,7 +491,7 @@ const cursosColumns: TableColumn<any>[] = [
           pagoDetails: adelantos,
           showDelete: false,
           clienteNombre: row.original.nombre,
-          currency: 'USD',
+          currency: 'PEN',
 
         }
       )

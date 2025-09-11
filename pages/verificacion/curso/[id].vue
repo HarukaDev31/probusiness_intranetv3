@@ -17,8 +17,8 @@
       <div class="text-lg font-semibold text-gray-900 dark:text-white flex flex-row justify-between">
         <span class="">{{ cliente }}</span>
         <div>
-          Importe: <span class="text-primary-600">{{ formatCurrency(totalAPagar) }}</span>
-          Pagado: <span class="text-primary-600">{{ formatCurrency(adelantosPagados) }}</span>
+          Importe: <span class="text-primary-600">{{ formatCurrency(totalAPagar,'PEN') }}</span>
+          Pagado: <span class="text-primary-600">{{ formatCurrency(adelantosPagados,'PEN') }}</span>
         </div>
 
       </div>
