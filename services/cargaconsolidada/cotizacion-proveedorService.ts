@@ -211,4 +211,16 @@ export class CotizacionProveedorService extends BaseService {
             throw new Error('No se pudo actualizar el proveedor')
         }
     }
+    static async refreshRotuladoStatus(id: number): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(
+                `${this.baseUrl}/proveedor/refresh-rotulado-status/${id}`,
+                { method: 'POST' }
+            )
+            return response
+        } catch (error) {
+            console.error('Error al actualizar el estado del proveedor:', error)
+            throw new Error('No se pudo actualizar el estado del proveedor')
+        }
+    }
 }

@@ -3,7 +3,7 @@
     <UButton icon="i-heroicons-arrow-left" @click="volver" class="mb-4">Regresar</UButton>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Información del alumno -->
-      <div class="bg-white rounded-lg shadow p-6">
+      <div class=" rounded-lg shadow p-6">
         <div class="flex items-center mb-4">
           <span class="i-heroicons-user mr-2" />
           <h2 class="font-semibold text-lg">Información del alumno</h2>
@@ -15,52 +15,52 @@
         <div class="space-y-3">
           <div class="flex items-center">
             <span class="w-48 font-medium">Nombre y apellidos:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.nombres" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.nombres" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Dni / ID:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.dni" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.dni" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Correo:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.correo" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.correo" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">WhatsApp:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.whatsapp" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.whatsapp" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Fecha de nacimiento:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.nacimiento" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.nacimiento" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Sexo:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.sexo" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.sexo" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Red social:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.red_social" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.red_social" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">País:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.pais" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.pais" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Departamento:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.departamento" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.departamento" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Provincia:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.provincia" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.provincia" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Distrito:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.distrito" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.distrito" :readonly="!editMode" />
           </div>
         </div>
       </div>
       <!-- Acceso aula virtual -->
-      <div v-if="datosCliente?.Nu_Estado_Usuario_Externo == 2" class="bg-white rounded-lg shadow p-6">
+      <div v-if="datosCliente?.Nu_Estado_Usuario_Externo == 2" class=" rounded-lg shadow p-6">
         <div class="flex items-center mb-4">
           <span class="i-heroicons-academic-cap mr-2" />
           <h2 class="font-semibold text-lg">ACCESO AULA VIRTUAL</h2>
@@ -68,11 +68,11 @@
         <div class="space-y-3">
           <div class="flex items-center">
             <span class="w-48 font-medium">Usuario:</span>
-            <input :class="[editMode ? 'bg-gray-100' : 'bg-gray-200', 'rounded px-3 py-1 w-full']" v-model="form.usuario_moodle" :readonly="!editMode" />
+            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.usuario_moodle" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Contraseña:</span>
-            <input class="bg-gray-200 rounded px-3 py-1 w-full" v-model="form.password_moodle" :readonly="!editMode" />
+            <input class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full" v-model="form.password_moodle" :readonly="!editMode" />
           </div>
         </div>
       </div>
@@ -132,7 +132,7 @@ const sexoLabel = computed(() => {
     case 1: return 'Masculino'
     case 2: return 'Femenino'
     default: return 'Otros'
-  }
+  }     
 })
 
 function getRedSocialText(num?: number, otros?: string) {
