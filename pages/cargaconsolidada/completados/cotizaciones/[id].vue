@@ -4,10 +4,10 @@
             :show-pagination="false" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
-            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="(currentId == ID_JEFEVENTAS) ? true : false"
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
-            @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
+            @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos" @export="exportData"
             :hide-back-button="false"
             :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
             :show-body-top="true">
@@ -30,7 +30,7 @@
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
-            @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
+            @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
             :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
             :hide-back-button="false">
@@ -88,9 +88,9 @@ import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacion
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import PagoGrid from '~/components/PagoGrid.vue'
 const {registrarPago, deletePago} = usePagos()
-const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, resetFiltersProveedor } = useCotizacionProveedor()
+const { getCotizacionProveedor, updateProveedorEstado, updateProveedor, cotizacionProveedor, loading, currentPage, totalPages, totalRecords, itemsPerPage, search, filterConfig, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, resetFiltersProveedor, exportData: exportProveedorData } = useCotizacionProveedor()
 const { cotizaciones, refreshCotizacionFile, deleteCotizacion, deleteCotizacionFile, updateEstadoCotizacionCotizador, loading: loadingCotizaciones, error: errorCotizaciones, pagination: paginationCotizaciones, search: searchCotizaciones, itemsPerPage: itemsPerPageCotizaciones, totalPages: totalPagesCotizaciones, totalRecords: totalRecordsCotizaciones, currentPage: currentPageCotizaciones,
-    filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders, resetFiltersCotizacion, packingList } = useCotizacion()
+    filters: filtersCotizaciones, getCotizaciones, headersCotizaciones, getHeaders, carga, loadingHeaders, resetFiltersCotizacion, packingList, exportData: exportProspectosData } = useCotizacion()
 const { cotizacionPagos, loading: loadingPagos, error: errorPagos, pagination: paginationPagos, search: searchPagos, itemsPerPage: itemsPerPagePagos, totalPages: totalPagesPagos, totalRecords: totalRecordsPagos, currentPage: currentPagePagos, filters: filtersPagos, getCotizacionPagos, headers: headersPagos } = useCotizacionPagos()
 const showUploadPanel = ref(false)
 
@@ -152,6 +152,14 @@ const loadTabs = () => {
 const overlay = useOverlay()
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
+
+const exportData = async () => {
+  if (tab.value === 'prospectos') {
+    await exportProspectosData()
+  } if (tab.value === 'embarque') {
+    await exportEmbarqueData()
+  }
+}
 
 const filterConfigProspectosCoordinacion = ref([
     {

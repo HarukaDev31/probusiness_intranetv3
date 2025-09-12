@@ -53,4 +53,19 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+    static async exportClientes(id: number): Promise<Blob> {
+        try {
+            const response = await this.apiCall<Blob>(`${this.baseUrl}/${id}/export`, {
+                method: 'GET',
+                responseType: 'blob', // Asegura que la respuesta sea tratada como un Blob
+                headers: {
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            })
+            return response
+        } catch (error) {
+            console.error('Error al exportar los clientes:', error)
+            throw new Error(error?.data?.message || 'Error al exportar clientes')
+        }
+    }
 }
