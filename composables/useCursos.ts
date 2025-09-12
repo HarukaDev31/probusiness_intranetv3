@@ -259,6 +259,15 @@ export const useCursos = () => {
             throw error
         }
     }
+    const changeEstadoUsuarioExterno = async (data: { id_usuario: number, id_pedido: number }) => {
+        try {
+            const response = await CursosService.changeEstadoUsuarioExterno(data)
+            return response
+        } catch (error) {
+            error.value = error as string
+            throw error
+        }
+    }
     return {
         cursosData,
         loading,
@@ -290,6 +299,7 @@ export const useCursos = () => {
         changeEstadoPedido,
         changeImportePedido,
         deleteCurso,
-        totalAmountCursos
+        totalAmountCursos,
+        changeEstadoUsuarioExterno
     }
 }

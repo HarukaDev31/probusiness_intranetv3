@@ -10,6 +10,10 @@
             @update:primarySearch="handleSearch" @page-change="handlePageChange"
             @items-per-page-change="handleItemsPerPageChange" @export="exportData" @filter-change="handleFilterChange"
             :show-body-top="true">
+            <template #actions>
+                <!--button to navigate to /curso/campañas-->
+                <UButton icon="i-heroicons-plus" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
+            </template>
             <template #body-top>
                 <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-4 w-80 h-15" />
                 <div class="mb-4 flex justify-end">
@@ -85,7 +89,8 @@ const {
     changeEstadoPedido,
     changeImportePedido,
     deleteCurso,
-    totalAmountCursos
+    totalAmountCursos,
+    changeEstadoUsuarioExterno
 } = useCursos()
 const {
     pagosData,
@@ -215,6 +220,7 @@ const columns = ref<TableColumn<CursoItem>[]>([
                 modelValue,
                 'onUpdate:modelValue': (value: any) => {
                     row.original.Nu_Estado_Usuario_Externo = value
+                    handleChangeEstadoUsuarioExterno( row.original.ID_Usuario, row.original.ID_Pedido_Curso)
                 },
                 placeholder: 'Seleccionar usuario',
                 items,
@@ -424,6 +430,25 @@ const handleChangeEstadoPedido = async (value: number, idPedido: number) => {
         })
     } catch (error) {
         showError('Error al cambiar el estado de pedido', error as string)
+    }
+}
+const handleChangeEstadoUsuarioExterno = async (idUsuario: number, idPedido: number) => {
+    const data = {
+        id_usuario: idUsuario,
+        id_pedido: idPedido
+    }
+    try {   
+        await withSpinner(async () => {
+            const response = await changeEstadoUsuarioExterno(data)
+            if (response.success) {
+                showSuccess('Estado de usuario externo cambiado', 'Estado de usuario externo cambiado correctamente')
+                loadCursos()
+            } else {
+                showError('Error al cambiar el estado de usuario externo', response.error)
+            }
+        })
+    } catch (error) {
+        showError('Error al cambiar el estado de usuario externo', error as string)
     }
 }
 const handleDeleteCurso = async (idPedido: number) => {
