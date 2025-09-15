@@ -99,10 +99,10 @@ export class CotizacionService extends BaseService {
             throw new Error('No se pudo obtener los headers')
         }
     }
-    static async exportCotizaciones(): Promise<Blob> {
+    static async exportCotizaciones(id: number): Promise<Blob> {
         try {
             // Construir la URL base con los parámetros normales
-            let url = `${this.baseUrl}/cotizaciones/exportar`
+            let url = `${this.baseUrl}/cotizaciones/${id}/exportar`
             // Realizar la llamada a la API para obtener el archivo
             const response = await this.apiCall<Blob>(url, {
                 method: 'GET',

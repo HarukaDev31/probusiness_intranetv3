@@ -269,7 +269,8 @@ const convertIconToHeroicons = (faIcon: string): string => {
     'fa fa-folder': 'i-heroicons-folder',
     'fa fa-database': 'i-heroicons-circle-stack',
     'bi bi-clipboard': 'i-heroicons-clipboard',
-    'fa fa-user': 'mdi:account-box-outline'
+    'fa fa-user': 'mdi:account-box-outline',
+    'fas fa-graduation-cap': 'i-heroicons-academic-cap',
   }
 
   return iconMap[faIcon] || ''

@@ -2,6 +2,9 @@ import { ref } from 'vue'
 import type { PaginationInfo } from '~/types/data-table'
 import { PagosService } from '~/services/cargaconsolidada/clientes/pagosService'
 import type { Pagos } from '~/types/cargaconsolidada/clientes/pagos'
+import { useRoute } from '#app'
+import { useSpinner } from '../composables/commons/useSpinner'
+const { withSpinner } = useSpinner()
 export const usePagos = () => {
     const route = useRoute()
     const id = route.params.id
@@ -75,6 +78,27 @@ export const usePagos = () => {
             error.value = err as string
         }
     }
+
+    const exportData = async () => {
+        error.value = null
+        try {
+            await withSpinner(async () => {
+                const pagosId = id ?? Number(route.params.id)
+                if (!pagosId) throw new Error('ID de pagos inválido para exportar')
+                const blob = await PagosService.exportPagosClientes(pagosId)
+                const url = window.URL.createObjectURL(blob)
+                const link = document.createElement('a')
+                link.href = url
+                link.download = `clientes_pagos_${new Date().toISOString().split('T')[0]}.xlsx`
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+            })
+        } catch (err) {
+            error.value = err as string
+        }
+    }
+
     return {
         clientesPagos,
         loadingPagos,
@@ -93,6 +117,7 @@ export const usePagos = () => {
         handleFilterChangePagos,
         handleSearchPagos,
         registrarPago,
-        deletePago
+        deletePago,
+        exportData
     }
 }   

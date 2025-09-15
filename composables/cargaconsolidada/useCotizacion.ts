@@ -2,6 +2,7 @@ import { CotizacionService } from "../../services/cargaconsolidada/cotizacionSer
 import type { Header, PaginationInfo } from "../../types/data-table"
 import type { Cotizacion, CotizacionFilters } from "../../types/cargaconsolidada/cotizaciones"
 import { ref, computed } from 'vue'
+import { useRoute } from '#app'
 import { useSpinner } from '../composables/commons/useSpinner'
 import { fi } from "@nuxt/ui/runtime/locale/index.js"
 const { withSpinner } = useSpinner()
@@ -151,17 +152,23 @@ export const useCotizacion = () => {
             estado_china: 'todos'
         }
     }
-    const exportData = async (id: number) => {
+    const route = useRoute()
+
+    const exportData = async (id?: number) => {
         loading.value = true
         error.value = null
         try {
             await withSpinner(async () => {
-                const blob = await CotizacionService.exportCotizaciones()
+                const containerId = id ?? Number(route.params.id)
+                if (!containerId) throw new Error('ID de contenedor inválido para exportar')
+                const blob = await CotizacionService.exportCotizaciones(containerId)
+                const cargaid = await CotizacionService.getHeaders(containerId)
+                carga.value = cargaid.carga // Asignar el valor correcto de tipo string
                 //crear archivo y descargarlo
                 const url = window.URL.createObjectURL(blob)
                 const link = document.createElement('a')
                 link.href = url
-                link.download = `cotizaciones_${new Date().toISOString().split('T')[0]}.xlsx`
+                link.download = `cotizaciones_#${carga.value}_${new Date().toISOString().split('T')[0]}.xlsx`
                 document.body.appendChild(link)
                 link.click()
                 document.body.removeChild(link)
