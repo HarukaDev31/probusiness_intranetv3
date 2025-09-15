@@ -73,15 +73,15 @@ const formatNombre = (s: string) => {
   return lower.charAt(0).toLocaleUpperCase('es-PE') + lower.slice(1)
 }
 const pasosMap = {
-  'Cotizacion': `/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos`,
-  'Clientes': `/cargaconsolidada/completados/clientes/${id}`,
-  'Documentacion': `/cargaconsolidada/completados/documentacion/${id}`,
-  'Cotizacion Final': `/cargaconsolidada/completados/cotizacion-final/${id}?tab=general`,
-  'Factura y Guia': `/cargaconsolidada/completados/factura-guia/${id}`,
-  'Aduana': `/cargaconsolidada/completados/aduana/${id}`
+  'COTIZACION': `/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos`,
+  'CLIENTES': `/cargaconsolidada/completados/clientes/${id}`,
+  'DOCUMENTACION': `/cargaconsolidada/completados/documentacion/${id}`,
+  'COTIZACION FINAL': `/cargaconsolidada/completados/cotizacion-final/${id}?tab=general`,
+  'FACTURA Y GUIA': `/cargaconsolidada/completados/factura-guia/${id}`,
+  'ADUANA': `/cargaconsolidada/completados/aduana/${id}`
 }
 const handleNavigateToStep = (step: string) => {
-  navigateTo(pasosMap[step as keyof typeof pasosMap])
+  navigateTo(pasosMap[step.toUpperCase() as keyof typeof pasosMap])
 }
 const goBack = () => {
   navigateTo('/cargaconsolidada/completados')
