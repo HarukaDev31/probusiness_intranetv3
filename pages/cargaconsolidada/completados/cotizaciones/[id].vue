@@ -1900,7 +1900,10 @@ const handleMoveCotizacion = async (idCotizacion: number) => {
         show: true,
         cotizacionId: idCotizacion,
         idConsolidado: id,
-
+        onMoved: () => {
+            getCotizaciones(Number(id))
+            getHeaders(Number(id))
+        }
     })
 }
 const handleRefresh = async (idCotizacion: number) => {

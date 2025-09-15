@@ -12,8 +12,8 @@ export class BaseService {
     }
     return await this.nuxtApp.$api.call<T>(endpoint, options)
     } catch (error) {
-      console.error('Error in apiCall:', error)
-      throw new Error('Error in apiCall')
+      console.error('Error in apiCall:', error.data.message)
+      throw new Error(error.data.message)
     }
   }
-}
+} 

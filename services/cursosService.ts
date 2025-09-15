@@ -4,9 +4,7 @@ import { BaseService } from "~/services/base/BaseService"
 
 export class CursosService extends BaseService {
   private static baseUrl = 'api/cursos'
-  constructor() {
-    super()
-  }
+
   static async getCursos(filters: CursosFilters): Promise<CursosResponse> {
     try {
       const response = await this.apiCall<CursosResponse>(`${this.baseUrl}`, {
@@ -149,6 +147,18 @@ export class CursosService extends BaseService {
     } catch (error) {
       console.error('Error al eliminar el curso:', error)
       throw new Error('No se pudo eliminar el curso')
+    }
+  }
+  static async changeEstadoUsuarioExterno(data: { id_usuario: number, id_pedido: number }): Promise<CursosResponse> {
+    try {
+      const response = await this.apiCall<CursosResponse>(`${this.baseUrl}/change-estado-usuario-externo`, {
+        method: 'POST',
+        body: data
+      })
+      return response
+    } catch (error) {
+      console.error('Error al cambiar el estado de usuario externo:', error)
+      throw new Error('No se pudo cambiar el estado de usuario externo')
     }
   }
 }

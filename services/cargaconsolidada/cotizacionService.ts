@@ -83,8 +83,8 @@ export class CotizacionService extends BaseService {
             })
             return response
         } catch (error) {
-            console.error('Error al actualizar el estado de la cotización:', error)
-            throw new Error(error.data.message)
+
+            throw new Error(error)
         }
     }
     static async getHeaders(id: number): Promise<HeaderResponse> {
