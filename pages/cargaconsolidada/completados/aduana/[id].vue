@@ -6,7 +6,6 @@
 
         <!-- Form -->
         <UCard class="p-8">
-            {{ aduanaImpuestosPagados }}
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h1 class="text-lg flex items-center gap-3">
