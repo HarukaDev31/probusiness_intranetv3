@@ -73,11 +73,11 @@
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
-            :show-pagination="false" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
-            :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
+            :show-pagination="false" :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
+            :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos"
             :show-secondary-search="false" :show-filters="false" :filter-config="filterConfig" :show-export="false"
-            empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
-            @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
+            empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
+            @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
             :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
             <template #body-top>
@@ -160,15 +160,15 @@ const { cotizaciones,
         exportData: exportProspectosData,
     } = useCotizacion()
 const { cotizacionPagos,
-        loading: loadingPagos,
-        error: errorPagos,
-        pagination: paginationPagos,
-        search: searchPagos,
-        itemsPerPage: itemsPerPagePagos,
-        totalPages: totalPagesPagos,
-        totalRecords: totalRecordsPagos,
-        currentPage: currentPagePagos,
-        filters: filtersPagos,
+        loadingPagos,
+            errorPagos,
+        paginationPagos,
+        searchPagos,
+        itemsPerPagePagos,
+        totalPagesPagos,
+        totalRecordsPagos,
+        currentPagePagos,
+        filtersPagos,
         getCotizacionPagos,
         headers: headersPagos
     } = useCotizacionPagos()
