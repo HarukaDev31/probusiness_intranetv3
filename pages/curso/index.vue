@@ -20,7 +20,7 @@
                     <div class="text-lg font-semibold text-gray-900 dark:text-white">
                         Importe total:
                         <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
-                            {{ formatCurrency(totalAmountCursos,'PEN') }}
+                            {{ formatCurrency(totalAmountCursos, 'PEN') }}
                         </span>
                     </div>
                 </div>
@@ -42,7 +42,7 @@
                     <div class="text-lg font-semibold text-gray-900 dark:text-white">
                         Importe total:
                         <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
-                            {{ formatCurrency(totalAmountPagos,'PEN') }}
+                            {{ formatCurrency(totalAmountPagos, 'PEN') }}
                         </span>
                     </div>
                 </div>
@@ -220,7 +220,7 @@ const columns = ref<TableColumn<CursoItem>[]>([
                 modelValue,
                 'onUpdate:modelValue': (value: any) => {
                     row.original.Nu_Estado_Usuario_Externo = value
-                    handleChangeEstadoUsuarioExterno( row.original.ID_Usuario, row.original.ID_Pedido_Curso)
+                    handleChangeEstadoUsuarioExterno(row.original.ID_Usuario, row.original.ID_Pedido_Curso)
                 },
                 placeholder: 'Seleccionar usuario',
                 items,
@@ -437,12 +437,17 @@ const handleChangeEstadoUsuarioExterno = async (idUsuario: number, idPedido: num
         id_usuario: idUsuario,
         id_pedido: idPedido
     }
-    try {   
+    try {
         await withSpinner(async () => {
             const response = await changeEstadoUsuarioExterno(data)
             if (response.success) {
-                showSuccess('Estado de usuario externo cambiado', 'Estado de usuario externo cambiado correctamente')
-                loadCursos()
+                if(response?.data){
+                    //show success with data.No_Usuario Y data.No_Password
+                    showSuccess('El Usuario ha sido creado en Moodle', `Usuario: ${response.data.No_Usuario}, Password: ${response.data.No_Password}`)
+                }else{
+                    showSuccess('Estado de usuario externo cambiado', 'Estado de usuario externo cambiado correctamente')
+                }
+                await loadCursos()  
             } else {
                 showError('Error al cambiar el estado de usuario externo', response.error)
             }
@@ -518,25 +523,25 @@ const fillFilters = async () => {
     filterConfig.value = response.data as FilterConfig[]
 
 }
-watch(activeTab, (newTab, oldTab) => {
+watch(activeTab, async (newTab, oldTab) => {
     if (newTab === 'alumnos') {
         navigateTo(`/curso?tab=alumnos`)
 
-        loadCursos()
+        await loadCursos()
     } else if (newTab === 'pagos') {
         navigateTo(`/curso?tab=pagos`)
-        loadPagos()
+        await loadPagos()
     }
 })
-onMounted(() => {
+onMounted(async () => {
     const query = useRoute().query
     if (query.tab) {
         activeTab.value = query.tab as string
     } else {
         activeTab.value = tabs[0].value || 'alumnos'
     }
-    loadCursos()
-    fillFilters()
+    await loadCursos()
+    await fillFilters()
 })
 
 const viewCurso = (curso: CursoItem) => {
