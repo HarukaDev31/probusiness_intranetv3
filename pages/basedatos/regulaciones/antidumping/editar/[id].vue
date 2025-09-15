@@ -363,8 +363,7 @@ const regulationId = parseInt(route.params.id as string)
 
 
 const getImageUrl = (ruta: string) => {
-    const config = useRuntimeConfig()
-    return `${config.public.apiBaseUrl}/storage/${ruta}`
+    return `${ruta}`
 }
 
 const loadRegulation = async () => {
