@@ -73,12 +73,12 @@ const formatNombre = (s: string) => {
   return lower.charAt(0).toLocaleUpperCase('es-PE') + lower.slice(1)
 }
 const pasosMap = {
-  'COTIZACION': `/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`,
-  'CLIENTES': `/cargaconsolidada/abiertos/clientes/${id}`,
-  'DOCUMENTACION': `/cargaconsolidada/abiertos/documentacion/${id}`,
-  'COTIZACION FINAL': `/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`,
-  'FACTURA Y GUIA': `/cargaconsolidada/abiertos/factura-guia/${id}`,
-  'ADUANA': `/cargaconsolidada/abiertos/aduana/${id}`
+  'Cotizacion': `/cargaconsolidada/abiertos/cotizaciones/${id}?tab=prospectos`,
+  'Clientes': `/cargaconsolidada/abiertos/clientes/${id}`,
+  'Documentacion': `/cargaconsolidada/abiertos/documentacion/${id}`,
+  'Cotización Final': `/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`,
+  'Factura y Guía': `/cargaconsolidada/abiertos/factura-guia/${id}`,
+  'Aduana': `/cargaconsolidada/abiertos/aduana/${id}`
 }
 const handleNavigateToStep = (step: string) => {
   navigateTo(pasosMap[step as keyof typeof pasosMap])
