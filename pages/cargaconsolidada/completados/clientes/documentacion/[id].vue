@@ -247,7 +247,7 @@
                                 Factura Comercial
                             </label>
                             <div class="relative">
-                                <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
+                                <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
                                     :custom-message="'Selecciona o arrastra tu archivo aquí'"
                                     :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.factura_comercial ? [{
                                         id: proveedorActivo.id, // debe ser número
@@ -267,7 +267,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Packing List
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
                                 :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.packing_list ? [{
                                     id: proveedorActivo.id, // debe ser número
@@ -285,7 +285,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Excel Confirmación
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
                                 :show-remove-button="currentRole === ROLES.COORDINACION"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="proveedorActivo.excel_confirmacion ? [{
                                     id: proveedorActivo.id, // debe ser número
@@ -300,7 +300,7 @@
                         </div>
                         <div v-for="file in files.filter(f => f.id_proveedor === proveedorActivo.id)" :key="file.id">
                             <span>{{ file.folder_name||file.file_name }}</span>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']" :immediate="false"
                                 :show-remove-button="false" :initial-files="[{
                                     id: file.id,
                                     file_name: file.folder_name||file.file_name,
@@ -339,7 +339,7 @@
                         <div v-for="file in filesAlmacenDocumentacion.filter(f => f.id_proveedor === proveedorActivo.id)"
                             :key="file.id">
 
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']" :immediate="false"
                                 :show-remove-button="false" :initial-files="[{
                                     id: file.id,
                                     file_name: file.file_name,
@@ -377,7 +377,7 @@
                     <div class="space-y-4">
                         <div v-for="file in filesAlmacenInspection.filter(f => f.id_proveedor === proveedorActivo.id)"
                             :key="file.id">
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg']" :immediate="false"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']" :immediate="false"
                                 :show-remove-button="false" :initial-files="[{
                                     id: file.id,
                                     file_name: file.file_name,
