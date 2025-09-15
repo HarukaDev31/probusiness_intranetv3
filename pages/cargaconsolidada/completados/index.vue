@@ -302,35 +302,42 @@ const documentacionColumns: TableColumn<any>[] = [
     },
 
     {
-        accessorKey: 'f_cierre',
-        header: 'F. Cierre',
-        cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre'))
+        accessorKey: 'naviera',
+        header: 'Naviera',
+        cell: ({ row }) => row.getValue('naviera')
     },
 
     {
-        accessorKey: 'fecha_arribo',
-        header: 'F. Arribo',
-        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_arribo'))
+        //Tiempo de transito (fecha_zarpe-fecha arribo)
+        accessorKey: 't_transito',
+        header: 'T. transito',
+        cell: ({ row }) => {
+            const fechaZarpe = row.original.fecha_zarpe
+            const fechaArribo = row.original.fecha_arribo
+            if (!fechaZarpe || !fechaArribo) return 'N/A'
+            const dateZarpe = new Date(String(fechaZarpe).split(' ')[0])
+            const dateArribo = new Date(String(fechaArribo).split(' ')[0])
+            if (isNaN(dateZarpe.getTime()) || isNaN(dateArribo.getTime())) return 'N/A'
+            const diffMs = dateArribo.getTime() - dateZarpe.getTime() // llegada - zarpe
+            const diffDays = Math.floor(diffMs / 86400000)
+            return diffDays < 0 ? 0 : diffDays
+        }
     },
     {
-        accessorKey: 'fecha_declaracion',
-        header: 'F. Declaración',
-        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_declaracion'))
-    },
-    {
-        accessorKey: 'fecha_levante',
-        header: 'F. Levante',
-        cell: ({ row }) => formatDateTimeToDmy(row.getValue('fecha_levante'))
-    },
-    {
+        //Dias-levante(fecha_levante - fecha_arribo)
         accessorKey: 'dias_levante',
         header: 'Días de levante',
-        cell: ({ row }) => 0   
-    },
-    {
-        accessorKey: 'numero_dua',
-        header: 'N. Dua',
-        cell: ({ row }) => row.getValue('numero_dua')
+        cell: ({ row }) => {
+            const fechaLevante = row.original.fecha_levante
+            const fechaArribo = row.original.fecha_arribo
+            if (!fechaLevante || !fechaArribo) return 'N/A'
+            const dateLevante = new Date(String(fechaLevante).split(' ')[0])
+            const dateArribo = new Date(String(fechaArribo).split(' ')[0])
+            if (isNaN(dateLevante.getTime()) || isNaN(dateArribo.getTime())) return 'N/A'
+            const diffMs = dateLevante.getTime() - dateArribo.getTime()
+            const diffDays = Math.floor(diffMs / 86400000)
+            return diffDays < 0 ? 0 : diffDays
+        }
     },
     {
         accessorKey: 'ajuste_valor',

@@ -27,8 +27,11 @@
                     <!-- Multa -->
                     <div>
                         <UFormField label="Multa">
-                            <UInput class="w-full" v-model="formData.multa" type="number" step="0.01" placeholder="0.00"
-                                prefix="$" />
+                            <UInput class="w-full" v-model="formData.multa" type="number" step="0.01" placeholder="0.00">
+                                <template #leading>
+                                    <span class="text-gray-500">$</span>
+                                </template>
+                            </UInput>
                         </UFormField>
                     </div>
 
@@ -78,7 +81,11 @@
                     <!-- Valor FOB -->
                     <div>
                         <UFormField label="Valor FOB">
-                            <UInput class="w-full" v-model="formData.valor_fob" type="number" step="0.01" prefix="$" />
+                            <UInput class="w-full" v-model="formData.valor_fob" type="number" step="0.01">
+                                <template #leading>
+                                    <span class="text-gray-500">$</span>
+                                </template>
+                            </UInput>
                         </UFormField>
                     </div>
 
@@ -102,8 +109,11 @@
                     <!-- Valor flete -->
                     <div>
                         <UFormField label="Valor flete">
-                            <UInput class="w-full" v-model="formData.valor_flete" type="number" step="0.01"
-                                prefix="$" />
+                            <UInput class="w-full" v-model="formData.valor_flete" type="number" step="0.01">
+                                <template #leading>
+                                    <span class="text-gray-500">$</span>
+                                </template>
+                            </UInput>
                         </UFormField>
                     </div>
 
@@ -120,8 +130,11 @@
                     <!-- Costo destino -->
                     <div>
                         <UFormField label="Costo destino">
-                            <UInput class="w-full" v-model="formData.costo_destino" type="number" step="0.01"
-                                prefix="$" />
+                            <UInput class="w-full" v-model="formData.costo_destino" type="number" step="0.01">
+                                <template #leading>
+                                    <span class="text-gray-500">$</span>
+                                </template>
+                            </UInput>
                         </UFormField>
                     </div>
 
@@ -138,8 +151,11 @@
                     <!-- Ajuste de valor -->
                     <div>
                         <UFormField label="Ajuste de valor">
-                            <UInput class="w-full" v-model="formData.ajuste_valor" type="number" step="0.01"
-                                prefix="$" />
+                            <UInput class="w-full" v-model="formData.ajuste_valor" type="number" step="0.01">
+                                <template #leading>
+                                    <span class="text-gray-500">$</span>
+                                </template>
+                            </UInput>
                         </UFormField>
                     </div>
                 </div>

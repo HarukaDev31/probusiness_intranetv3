@@ -109,10 +109,10 @@ export const useGeneral = () => {
                     link.click()
                     document.body.removeChild(link)
                     window.URL.revokeObjectURL(url)
-                }, 'Exportando cotizaciones...')
+                }, 'Exportando clientes...')
                 return { success: true }
             } catch (error: any) {
-                error.value = error.message || 'Error al exportar cotizaciones'
+                error.value = error.message || 'Error al exportar clientes'
                 return { success: false, error: error.message }
             } finally {
                 loadingGeneral.value = false

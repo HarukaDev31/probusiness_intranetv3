@@ -55,7 +55,9 @@ export class GeneralService extends BaseService {
     }
     static async exportClientes(id: number): Promise<Blob> {
         try {
-            const response = await this.apiCall<Blob>(`${this.baseUrl}/${id}/export`, {
+            // Construir la URL base con los parámetros normales
+            let url = `${this.baseUrl}/${id}/export`
+            const response = await this.apiCall<Blob>(url, {
                 method: 'GET',
                 responseType: 'blob', // Asegura que la respuesta sea tratada como un Blob
                 headers: {

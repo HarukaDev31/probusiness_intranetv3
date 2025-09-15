@@ -242,14 +242,6 @@ const exportData = async () => {
   }
 }
 
-const exportData = async () => {
-  if (tab.value === 'prospectos') {
-    await exportProspectosData()
-  } if (tab.value === 'embarque') {
-    await exportEmbarqueData()
-  }
-}
-
 const filterConfigProspectosCoordinacion = ref([
     {
         label: 'Fecha Inicio',

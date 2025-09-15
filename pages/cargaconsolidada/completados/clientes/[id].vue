@@ -813,6 +813,15 @@ const updateVolSelected = async (data: any) => {
         error.value = err as string
     }
 }
+const exportData = () => {
+    if (tab.value === 'general') {
+        exportGeneralData()
+    } else if (tab.value === 'variacion') {
+        exportVariacionData()
+    } else if (tab.value === 'pagos') {
+        exportPagosData()
+    }
+}
 onMounted(() => {
     if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
