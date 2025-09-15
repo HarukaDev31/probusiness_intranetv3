@@ -28,7 +28,7 @@
         <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
             :columns="getEmbarqueColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="(currentId == ID_JEFEVENTAS) ? true : false"
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"

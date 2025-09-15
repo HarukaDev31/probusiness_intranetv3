@@ -7,8 +7,8 @@
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
                 :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="false"
-                :filter-config="filterConfig" :show-export="true" :show-body-top="true"
-                :show-pagination="false"
+                :filter-config="filtersGeneral" :show-export="(currentId == ID_JEFEVENTAS) ? true : false" :show-body-top="true"
+                :show-pagination="false" @export="exportData"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
@@ -27,9 +27,9 @@
                 :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
                 :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
-                :filter-config="filterConfigVariacion" :show-export="true" :show-body-top="true"
+                :filter-config="filtersVariacion" :show-export="false" :show-body-top="true"
                 :hide-back-button="false"
-                :show-pagination="false"
+                :show-pagination="false" @export="exportData"
 
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
@@ -47,10 +47,10 @@
             <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
                 :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
                 :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
-                :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
-                :filter-config="filterConfigVariacion" :show-export="true" :hide-back-button="false"
+                :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
+                :filter-config="filtersPagos" :show-export="false" :hide-back-button="false"
                 :show-body-top="true"
-                :show-pagination="false"
+                :show-pagination="false" @export="exportData"
 
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
@@ -85,9 +85,61 @@ const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
-const { getClientes, clientes, updateEstadoCliente, totalRecordsGeneral, loadingGeneral, error, paginationGeneral, searchGeneral, itemsPerPageGeneral, totalPagesGeneral, currentPageGeneral, filtersGeneral, filterConfig, handlePageGeneralChange, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, handleSearchGeneral, getHeaders, headers, carga, loadingHeaders, handleUpdateStatusClienteDoc } = useGeneral()
-const { getClientesVariacion, updateVolumenSelected, clientesVariacion, totalRecordsVariacion, loadingVariacion, paginationVariacion, searchVariacion, itemsPerPageVariacion, totalPagesVariacion, currentPageVariacion, filtersVariacion } = useVariacion()
-const { getClientesPagos, clientesPagos, totalRecordsPagos, loadingPagos, paginationPagos, searchPagos, itemsPerPagePagos, totalPagesPagos, currentPagePagos, filtersPagos, handlePagePagosChange, handleItemsPerPageChangePagos, handleFilterChangePagos, handleSearchPagos, registrarPago, deletePago } = usePagos()
+const { getClientes, 
+        clientes, 
+        updateEstadoCliente, 
+        totalRecordsGeneral, 
+        loadingGeneral, 
+        error, 
+        paginationGeneral, 
+        searchGeneral, 
+        itemsPerPageGeneral, 
+        totalPagesGeneral, 
+        currentPageGeneral, 
+        filtersGeneral, 
+        handlePageGeneralChange, 
+        handleItemsPerPageChangeGeneral, 
+        handleFilterChangeGeneral, 
+        handleSearchGeneral, 
+        getHeaders, 
+        headers, 
+        carga, 
+        loadingHeaders, 
+        handleUpdateStatusClienteDoc,
+        exportData: exportGeneralData } = useGeneral()
+const { getClientesVariacion, 
+        updateVolumenSelected, 
+        clientesVariacion, 
+        totalRecordsVariacion, 
+        loadingVariacion, 
+        paginationVariacion, 
+        searchVariacion, 
+        itemsPerPageVariacion, 
+        totalPagesVariacion, 
+        currentPageVariacion, 
+        filtersVariacion, 
+        handlePageVariacionChange, 
+        handleItemsPerPageChangeVariacion, 
+        handleFilterChangeVariacion, 
+        handleSearchVariacion,
+        exportData: exportVariacionData } = useVariacion()
+const { getClientesPagos, 
+        clientesPagos, 
+        totalRecordsPagos, 
+        loadingPagos, 
+        paginationPagos, 
+        searchPagos, 
+        itemsPerPagePagos, 
+        totalPagesPagos, 
+        currentPagePagos, 
+        filtersPagos, 
+        handlePagePagosChange, 
+        handleItemsPerPageChangePagos, 
+        handleFilterChangePagos, 
+        handleSearchPagos, 
+        registrarPago, 
+        deletePago,
+        exportData: exportPagosData } = usePagos()
 const tabs = ref()
 const handleTabChange = (value: string) => {
     if (tab.value === 'general') {
@@ -98,6 +150,18 @@ const handleTabChange = (value: string) => {
         getClientesPagos(Number(id))
     }
 }
+
+const exportData = async () => {
+  if (tab.value === 'general') {
+    await exportGeneralData()
+  } else if (tab.value === 'variacion') {
+    await exportVariacionData()
+  } else if (tab.value === 'pagos') {
+    await exportPagosData()
+  }
+}
+
+
 //N.	Nombre	DNI/RUC	Whatsapp	T. Cliente	Estado	Conceptop	Importe	Pagado	Adelantos
 const columnsPagos = ref<TableColumn<any>[]>([
     {

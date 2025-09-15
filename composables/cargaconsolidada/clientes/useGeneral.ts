@@ -1,6 +1,10 @@
 import { ref } from 'vue'
 import { GeneralService } from '~/services/cargaconsolidada/clientes/generalService'
 import type { Header, PaginationInfo } from '~/types/data-table'
+import { useRoute } from '#app'
+import { useSpinner } from '../composables/commons/useSpinner'
+
+const { withSpinner } = useSpinner()
 
 export const useGeneral = () => {
     const headers = ref<Header[]>([])
@@ -25,8 +29,6 @@ export const useGeneral = () => {
     const totalRecordsGeneral = computed(() => paginationGeneral.value.total)
     const currentPageGeneral = computed(() => paginationGeneral.value.current_page)
     const filtersGeneral = ref<any>({})
-    const filterConfig = ref<any>({
-    })
     const handlePageGeneralChange = (page: number) => {
         paginationGeneral.value.current_page = page
         getClientes(Number(id))
@@ -88,6 +90,34 @@ export const useGeneral = () => {
             error.value = err as string
         }
     }
+    const exportData = async (id?: number) => {
+            loadingGeneral.value = true
+            error.value = null
+            try {
+                await withSpinner(async () => {
+                    const generalId = id ?? Number(route.params.id)
+                    if (!generalId) throw new Error('ID de contenedor inválido para exportar')
+                    const blob = await GeneralService.exportClientes(generalId)
+                    const cargaid = await GeneralService.getHeaders(generalId)
+                    carga.value = cargaid.carga // Asignar el valor correcto de tipo string
+                    //crear archivo y descargarlo
+                    const url = window.URL.createObjectURL(blob)
+                    const link = document.createElement('a')
+                    link.href = url
+                    link.download = `clientes_#${carga.value}_${new Date().toISOString().split('T')[0]}.xlsx`
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                    window.URL.revokeObjectURL(url)
+                }, 'Exportando clientes...')
+                return { success: true }
+            } catch (error: any) {
+                error.value = error.message || 'Error al exportar clientes'
+                return { success: false, error: error.message }
+            } finally {
+                loadingGeneral.value = false
+            }
+        }
     return {
         clientes,
         loadingGeneral,
@@ -98,7 +128,6 @@ export const useGeneral = () => {
         totalPagesGeneral,
         currentPageGeneral,
         filtersGeneral,
-        filterConfig,
         getClientes,
         totalRecordsGeneral,
         updateEstadoCliente,
@@ -110,6 +139,7 @@ export const useGeneral = () => {
         headers,
         carga,
         loadingHeaders,
-        handleUpdateStatusClienteDoc
+        handleUpdateStatusClienteDoc,
+        exportData
     }
 }   
