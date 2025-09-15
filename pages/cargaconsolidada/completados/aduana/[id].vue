@@ -98,7 +98,8 @@
                                 :accepted-types="['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm']"
                                 custom-message="Selecciona o arrastra tu archivo aquí"
                                 :initial-files="aduanaFiles"
-                                :show-remove-button="false"
+                                :show-remove-button="true"
+                                @file-removed="handleFileRemoved"
                                 @files-selected="handleTributosFiles" />
                         </UFormField>
                     </div>
@@ -149,7 +150,8 @@
                                 :accepted-types="['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm']"
                                 custom-message="Selecciona o arrastra tu archivo aquí"
                                 :initial-files="aduanaImpuestosPagados"
-                                :show-remove-button="false"
+                                :show-remove-button="true"
+                                @file-removed="handleFileRemoved"
                                 @files-selected="handleImpuestosFiles" />
                         </UFormField>
                     </div>
@@ -189,6 +191,9 @@ import FileUploader from '~/components/commons/FileUploader.vue'
 import { useAduana } from '~/composables/cargaconsolidada/useAduana'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
+const {showSuccess, showError, showConfirmation} = useModal()
+import type { FileItem } from '~/types/commons/file'
 const route = useRoute()
 const id = route.params.id
 const { withSpinner } = useSpinner()
@@ -202,6 +207,7 @@ const {
     saveAduana,
     handleTributosFiles,
     handleImpuestosFiles,
+    deleteFileAduana,
     resetForm,
     aduanaImpuestosPagados,
     aduanaFiles
@@ -240,6 +246,22 @@ const canalesControl = [
     { label: 'Rojo', value: 'Rojo' }
 ]
 
+const handleFileRemoved = async (id: number) => {
+    console.log('id', id)
+    showConfirmation('Eliminar archivo', '¿Estás seguro de querer eliminar este archivo?', async () => {
+    await withSpinner(async () => {
+        const result = await deleteFileAduana(id.toString())
+        if (result.success) {
+            showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+            await loadAduanaData()
+            } else {
+            showError('Error', result.error || 'Error al eliminar el archivo')
+            }
+        }, 'Eliminando archivo...')
+        }, () => {
+        console.log('Cancelado')
+    })
+}
 // Form submit
 const handleSubmit = async () => {
     await withSpinner(async () => {

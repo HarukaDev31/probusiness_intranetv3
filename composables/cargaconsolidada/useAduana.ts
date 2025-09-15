@@ -233,6 +233,19 @@ export const useAduana = () => {
         }
     }
 
+    const deleteFileAduana = async (fileId: string) => {
+        try {
+            const response = await AduanaService.deleteFileAduana(fileId)
+            return response
+        } catch (error) {
+            console.error('Error al eliminar el archivo de aduana:', error)
+            return { success: false, error: 'Error al eliminar el archivo de aduana' }
+        }
+        finally {
+            loading.value = false
+        }
+    }
+
     return {
         // Estado
         loading: readonly(loading),
@@ -250,6 +263,7 @@ export const useAduana = () => {
         handleImpuestosFiles,
         resetForm,
         aduanaFiles,
-        aduanaImpuestosPagados
+        aduanaImpuestosPagados,
+        deleteFileAduana
     }
 }
