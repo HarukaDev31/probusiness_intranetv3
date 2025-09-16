@@ -1,43 +1,63 @@
 <template>
     <div class="p-6">
-        <!-- Header -->
-        <div class="mb-6">
-            <div class="flex items-center">
-                <UIcon name="i-heroicons-shield-check" class="text-2xl mr-3 text-gray-700 dark:text-gray-300" />
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Regulación aduanera</h1>
+        <!-- Header (normal vs skeleton) -->
+        <template v-if="!isActiveTabLoading">
+            <div class="mb-6">
+                <div class="flex items-center">
+                    <UIcon name="i-heroicons-shield-check" class="text-2xl mr-3 text-gray-700 dark:text-gray-300" />
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Regulación aduanera</h1>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400 mt-2">
+                    Gestiona las regulaciones de antidumping, permisos, etiquetado y documentos especiales
+                </p>
             </div>
-            <p class="text-gray-600 dark:text-gray-400 mt-2">
-                Gestiona las regulaciones de antidumping, permisos, etiquetado y documentos especiales
-            </p>
-        </div>
-        <div class="border-t border-gray-300 my-4"></div>
+            <div class="border-t border-gray-300 my-4"></div>
+        </template>
+        <template v-else>
+            <div class="mb-6">
+                <div class="flex items-center mb-3">
+                    <div class="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mr-3" />
+                    <div class="h-7 w-64 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                </div>
+                <div class="h-4 w-96 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            </div>
+            <div class="border-t border-gray-300 my-4"></div>
+        </template>
 
-        <!-- Navigation Tabs -->
+        <!-- Navigation Tabs / Skeleton -->
         <div class="mb-6 flex items-center justify-between">
             <div class="flex gap-2 p-2 rounded-lg">
-                <button
-                v-for="tab in tabs"
-                :key="tab.id"
-                @click="activeTab = tab.id"
-                :class="[
-                    'px-5 py-2 rounded-md text-sm font-medium transition-colors',
-                    activeTab === tab.id
-                    ? 'bg-white dark:bg-gray-400 text-gray-900 shadow-sm'
-                    : 'bg-transparent text-gray-500 hover:bg-white hover:text-gray-900 dark:hover:bg-gray-400 dark:hover:text-gray-900 outline outline-gray-300'
-                ]"
-                style="border: none;"
-                >
-                {{ tab.label }}
-                </button>
+                <template v-if="!isActiveTabLoading">
+                    <button
+                        v-for="tab in tabs"
+                        :key="tab.id"
+                        @click="activeTab = tab.id"
+                        :class="[
+                            'px-5 py-2 rounded-md text-sm font-medium transition-colors',
+                            activeTab === tab.id
+                            ? 'bg-white dark:bg-gray-400 text-gray-900 shadow-sm'
+                            : 'bg-transparent text-gray-500 hover:bg-white hover:text-gray-900 dark:hover:bg-gray-400 dark:hover:text-gray-900 outline outline-gray-300'
+                        ]"
+                        style="border: none;"
+                    >
+                        {{ tab.label }}
+                    </button>
+                </template>
+                <template v-else>
+                    <div v-for="tab in tabs" :key="'skel-tab-'+tab.id" class="h-9 w-28 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                </template>
             </div>
-            <UButton
-                v-if="hasRole('Documentacion')"
-                label="Crear"
-                icon="i-heroicons-plus"
-                color="primary"
-                class="px-6"
-                @click="navigateToCreate(activeTab)"
-            />
+            <template v-if="hasRole('Documentacion')">
+                <UButton
+                    v-if="!isActiveTabLoading"
+                    label="Crear"
+                    icon="i-heroicons-plus"
+                    color="primary"
+                    class="px-6"
+                    @click="navigateToCreate(activeTab)"
+                />
+                <div v-else class="h-9 w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            </template>
         </div>
         <!-- Modal de crear rubro-->
         <UModal v-model="showCreateModal" :title="getCreateTitle(activeTab)" :triger="true">
@@ -82,42 +102,221 @@
             <!-- Tab Antidumping -->
             <div v-if="activeTab === 'antidumping'">
                 <UCard class="bg-transparent ring-0">
-                    <div class="flex gap-8 max-w-full">
-                        <!-- Lista de rubros/productos -->
-                        <div class="w-100 flex flex-col gap-4">
-                            <!-- Encabezados -->
-                            <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
-                                <span class="w-14 mr-10 text-center">N°</span>
-                                <span class="flex-1">{{ listLabel }}</span>
-                                <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
+                    <template v-if="loadingAntidumping">
+                        <!-- Skeleton Antidumping (solo lista) -->
+                        <div class="flex gap-8 max-w-full">
+                            <div class="w-100 flex flex-col gap-4">
+                                <div class="flex items-center px-4 py-2 gap-4">
+                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                </div>
+                                <div v-for="n in 7" :key="'ant-skel-'+n" class="flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 border border-transparent">
+                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <template v-else>
+                        <div class="flex gap-8 max-w-full">
+                            <!-- Lista de rubros/productos -->
+                            <div class="w-100 flex flex-col gap-4">
+                                <!-- Encabezados -->
+                                <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
+                                    <span class="w-14 mr-10 text-center">N°</span>
+                                    <span class="flex-1">{{ listLabel }}</span>
+                                    <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
+                                </div>
+                                <div
+                                v-for="(rubro, idx) in antidumpingData"
+                                 :key="rubro.id"
+                                 @click="selectedRubroId = rubro.id"
+                                 :class="[
+                                     'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
+                                     selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
+                                     'hover:border-orange-300 hover:shadow'
+                                 ]"
+                                 >
+                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                                <div class="flex-1">
+                                    <template v-if="editingRubroId === rubro.id">
+                                        <input
+                                        v-model="editingNombre"
+                                        class="w-full border rounded px-2 py-1 text-sm"
+                                        @keyup.enter="confirmEdit()"
+                                        @keyup.esc="cancelEdit()"
+                                        />
+                                    </template>
+                                    <template v-else>
+                                        <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
+                                    </template>
+                                </div>
+                                <div v-if="hasRole('Documentacion')" class="flex gap-2 items-center">
+                                    <!-- Inline edit controls: only show buttons here; input is rendered in the name column -->
+                                    <template v-if="editingRubroId === rubro.id">
+                                        <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
+                                        <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
+                                    </template>
+                                    <template v-else>
+                                        <UButton
+                                        icon="i-heroicons-pencil-square"
+                                        variant="ghost"
+                                        size="xs"
+                                        color="primary"
+                                        @click.stop="startEdit(rubro)"
+                                        />
+                                        <UButton
+                                        icon="i-heroicons-trash"
+                                        variant="ghost"
+                                        size="xs"
+                                        color="red"
+                                        @click.stop="deleteRubro(rubro.id)"
+                                        />
+                                    </template>
+                                </div>
+                                </div>
+                            </div>
+                            <!-- Tabla de regulaciones del rubro seleccionado -->
+                            <div v-if="selectedRubro" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                                <!-- use table-fixed and wrapping to prevent horizontal expansion -->
+                                <UTable
+                                v-if="selectedRubro"
+                                :data="selectedRubro.regulaciones"
+                                :columns="[
+                                    { accessorKey: 'id', header: 'N°', cell: ({ row }) => row.index + 1 },
+                                    { accessorKey: 'descripcion', header: 'Descripción', cell: ({ row }) => {
+                                        const val = row.getValue('descripcion')
+                                        return (typeof val === 'string' ? (val.length > 120 ? val.slice(0, 117) + '...' : val) : '')
+                                    } },
+                                    { accessorKey: 'partida', header: 'Partida' },
+                                    { accessorKey: 'precio_declarado', header: 'P. Declaración', cell: ({ row }) => `$${row.getValue('precio_declarado')}` },
+                                    { accessorKey: 'antidumping', header: 'Antidumping', cell: ({ row }) => `$${row.getValue('antidumping')}` },
+                                    {
+                                    id: 'actions',
+                                    header: 'Acciones',
+                                    cell: ({ row }) => h('div', { class: 'flex gap-2 flex-wrap items-center' }, [
+                                        h(UButton, {
+                                        icon: 'i-heroicons-eye',
+                                        variant: 'ghost',
+                                        size: 'xs',
+                                        color: 'blue',
+                                        onClick: () => viewRegulationDetail(row.original.id),
+                                        title: 'Ver detalle'
+                                        }),
+                                        hasRole('Documentacion') ? h(UButton, {
+                                        icon: 'i-heroicons-pencil-square',
+                                        variant: 'ghost',
+                                        size: 'xs',
+                                        color: 'primary',
+                                        onClick: () => editRegulation(row.original.id),
+                                        title: 'Editar'
+                                        }) : null,
+                                        hasRole('Documentacion') ? h(UButton, {
+                                        icon: 'i-heroicons-trash',
+                                        variant: 'ghost',
+                                        size: 'xs',
+                                        color: 'red',
+                                        onClick: () => deleteRegulation(row.original.id),
+                                        title: 'Eliminar'
+                                        }) : null
+                                    ])
+                                    }
+                                ]"
+                                :ui="{ root: 'w-full table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
+                                />
+                            </div>
+                        </div>
+                        <!-- Detalle de regulación debajo de la tabla -->
+                        <div class="flex gap-8">
+                            <div class="w-100">
                             </div>
                             <div
-                            v-for="(rubro, idx) in antidumpingData"
-                             :key="rubro.id"
-                             @click="selectedRubroId = rubro.id"
-                             :class="[
-                                 'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
-                                 selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
-                                 'hover:border-orange-300 hover:shadow'
-                             ]"
-                             >
+                            v-if="regulationDetail"
+                            class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex-1 flex">
+                                <!-- Imágenes -->
+                                <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
+                                    <h4 class="font-semibold mb-4">Imágenes de producto</h4>
+                                    <div v-if="regulationDetail.imagenes && regulationDetail.imagenes.length">
+                                        <div class="grid grid-cols-3 gap-4 mt-2">
+                                            <div v-for="(img, idx) in regulationDetail.imagenes.slice(0,3)" :key="idx" class="w-full h-36 rounded overflow-hidden border bg-white">
+                                                <img :src="getImageUrl(img)" class="w-full h-full object-cover cursor-pointer" @click="openImageModal(img)" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-else class="text-gray-400 text-sm">Sin imagenes</div>
+                                </div>
+                                <!-- Comentarios -->
+                                <div class="w-1/2 pl-6 flex flex-col justify-start">
+                                    <h4 class="font-semibold mb-4">Observaciones:</h4>
+                                    <div class="bg-gray-50 dark:bg-gray-900 rounded p-3 text-gray-800 dark:text-gray-200 min-h-[80px]">
+                                    {{ regulationDetail.observaciones || 'Sin observaciones' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </UCard>
+            </div>
+
+
+            <!-- Tab Permisos -->
+            <div v-if="activeTab === 'permisos'">  
+                <UCard class="bg-transparent ring-0">
+                    <template v-if="loadingPermisos">
+                        <!-- Skeleton Permisos (solo lista) -->
+                        <div class="flex gap-8">
+                            <div class="w-120 flex flex-col gap-4">
+                                <div class="flex items-center px-4 py-2 gap-4">
+                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                </div>
+                                <div v-for="n in 7" :key="'perm-skel-'+n" class="flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800">
+                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <template v-else>
+                        <div class="flex gap-8">
+                        <!-- Lista de entidades/rubros -->
+                        <div class="w-120 flex flex-col gap-4">
+                            <!-- Encabezados -->
+                            <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
+                            <span class="w-14 mr-10 text-center">N°</span>
+                            <span class="flex-1">Entidad</span>
+                            <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
+                            </div>
+                            <div
+                            v-for="(entidad, idx) in permisosData"
+                            :key="entidad.id"
+                            @click="selectedRubroId = entidad.id"
+                            :class="[
+                                'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
+                                selectedRubroId === entidad.id ? 'border border-orange-500 shadow' : 'border border-transparent',
+                                'hover:border-orange-300 hover:shadow'
+                            ]"
+                            >
                             <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
                             <div class="flex-1">
-                                <template v-if="editingRubroId === rubro.id">
+                                <template v-if="editingRubroId === entidad.id">
                                     <input
-                                    v-model="editingNombre"
-                                    class="w-full border rounded px-2 py-1 text-sm"
-                                    @keyup.enter="confirmEdit()"
-                                    @keyup.esc="cancelEdit()"
+                                        v-model="editingNombre"
+                                        class="w-full border rounded px-2 py-1 text-sm"
+                                        @keyup.enter="confirmEdit()"
+                                        @keyup.esc="cancelEdit()"
                                     />
                                 </template>
                                 <template v-else>
-                                    <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200">{{ entidad.nombre }}</span>
                                 </template>
                             </div>
-                            <div v-if="hasRole('Documentacion')" class="flex gap-2 items-center">
-                                <!-- Inline edit controls: only show buttons here; input is rendered in the name column -->
-                                <template v-if="editingRubroId === rubro.id">
+                            <div class="flex gap-2" v-if="hasRole('Documentacion')">
+                                <template v-if="editingRubroId === entidad.id">
                                     <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
                                     <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
                                 </template>
@@ -127,44 +326,39 @@
                                     variant="ghost"
                                     size="xs"
                                     color="primary"
-                                    @click.stop="startEdit(rubro)"
+                                    @click.stop="startEdit(entidad)"
                                     />
                                     <UButton
                                     icon="i-heroicons-trash"
                                     variant="ghost"
                                     size="xs"
                                     color="red"
-                                    @click.stop="deleteRubro(rubro.id)"
+                                    @click.stop="deleteEntidad(entidad.id)"
                                     />
                                 </template>
                             </div>
                             </div>
                         </div>
-                        <!-- Tabla de regulaciones del rubro seleccionado -->
-                        <div v-if="selectedRubro" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                            <!-- use table-fixed and wrapping to prevent horizontal expansion -->
+                        <!-- Tabla de regulaciones de la entidad seleccionada -->
+                        <div v-if="selectedEntidad" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <UTable
-                            v-if="selectedRubro"
-                            :data="selectedRubro.regulaciones"
+                            v-if="selectedEntidad"
+                            :data="selectedEntidad.regulaciones"
                             :columns="[
                                 { accessorKey: 'id', header: 'N°', cell: ({ row }) => row.index + 1 },
-                                { accessorKey: 'descripcion', header: 'Descripción', cell: ({ row }) => {
-                                    const val = row.getValue('descripcion')
-                                    return (typeof val === 'string' ? (val.length > 120 ? val.slice(0, 117) + '...' : val) : '')
-                                } },
-                                { accessorKey: 'partida', header: 'Partida' },
-                                { accessorKey: 'precio_declarado', header: 'P. Declaración', cell: ({ row }) => `$${row.getValue('precio_declarado')}` },
-                                { accessorKey: 'antidumping', header: 'Antidumping', cell: ({ row }) => `$${row.getValue('antidumping')}` },
+                                { accessorKey: 'nombre', header: 'Nombre' },
+                                { accessorKey: 'c_permiso', header: 'C. Permiso', cell: ({ row }) => `S/.${row.getValue('c_permiso')}` },
+                                { accessorKey: 'c_tramitador', header: 'C. Tramitador', cell: ({ row }) => `S/.${row.getValue('c_tramitador')}` },
                                 {
                                 id: 'actions',
                                 header: 'Acciones',
-                                cell: ({ row }) => h('div', { class: 'flex gap-2 flex-wrap items-center' }, [
+                                cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
                                     h(UButton, {
                                     icon: 'i-heroicons-eye',
                                     variant: 'ghost',
                                     size: 'xs',
                                     color: 'blue',
-                                    onClick: () => viewRegulationDetail(row.original.id),
+                                    onClick: () => viewPermisoDetail(row.original.id),
                                     title: 'Ver detalle'
                                     }),
                                     hasRole('Documentacion') ? h(UButton, {
@@ -172,453 +366,354 @@
                                     variant: 'ghost',
                                     size: 'xs',
                                     color: 'primary',
-                                    onClick: () => editRegulation(row.original.id),
+                                    onClick: () => editPermiso(row.original.id),
                                     title: 'Editar'
-                                    }) : null,
+                                    }): null,
                                     hasRole('Documentacion') ? h(UButton, {
                                     icon: 'i-heroicons-trash',
                                     variant: 'ghost',
                                     size: 'xs',
                                     color: 'red',
-                                    onClick: () => deleteRegulation(row.original.id),
+                                    onClick: () => deletePermiso(row.original.id),
                                     title: 'Eliminar'
-                                    }) : null
+                                    }): null
                                 ])
                                 }
                             ]"
                             :ui="{ root: 'w-full table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
                             />
                         </div>
-                    </div>
-                    <!-- Detalle de regulación debajo de la tabla -->
-                    <div class="flex gap-8">
-                        <div class="w-100">
                         </div>
-                        <div
-                        v-if="regulationDetail"
-                        class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex-1 flex">
-                            <!-- Documentos a presentar -->
-                            <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
-                                <h4 class="font-semibold mb-4">Imágenes de producto</h4>
-                                <div v-if="regulationDetail.imagenes && regulationDetail.imagenes.length">
-                                    <div class="grid grid-cols-3 gap-4 mt-2">
-                                        <div v-for="(img, idx) in regulationDetail.imagenes.slice(0,3)" :key="idx" class="w-full h-36 rounded overflow-hidden border bg-white">
-                                            <img :src="getImageUrl(img)" class="w-full h-full object-cover cursor-pointer" @click="openImageModal(img)" />
+                        <!-- Detalle de regulación debajo de la tabla -->
+                        <div class="flex gap-8">
+                            <div class="w-120">
+                            </div>
+                            <div
+                            v-if="permisoDetail"
+                            class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex-1 flex">
+                                <!-- Documentos a presentar -->
+                                <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
+                                    <h4 class="font-semibold mb-4">Documentos a presentar</h4>
+                                    <div v-if="permisoDetail.documentos && permisoDetail.documentos.length">
+                                        <div v-for="(doc, idx) in permisoDetail.documentos" :key="idx" class="flex items-center gap-3 mb-3 p-2 rounded bg-gray-50 dark:bg-gray-900">
+                                            <!-- Icono según tipo de archivo -->
+                                            <FileIcon :file="{ file_ext: getFileExtension(doc), nombre: doc }" />
+                                            <div class="flex-1">
+                                                <div class="font-medium text-gray-800 dark:text-gray-200 text-sm truncate break-all max-w-[250px] overflow-hidden">{{ getFileName(doc) }}</div>
+                                                <div class="text-xs text-gray-500"></div>
+                                            </div>
+                                            <UButton
+                                            icon="i-heroicons-arrow-down-tray"
+                                            size="xs"
+                                            variant="ghost"
+                                            color="primary"
+                                            @click="openDocumentModal(doc)"
+                                            aria-label="Descargar"
+                                            />
                                         </div>
                                     </div>
+                                    <div v-else class="text-gray-400 text-sm">Sin documentos</div>
                                 </div>
-                                <div v-else class="text-gray-400 text-sm">Sin imagenes</div>
-                            </div>
-                                <!-- Comentarios -->
-                            <div class="w-1/2 pl-6 flex flex-col justify-start">
-                                <h4 class="font-semibold mb-4">Observaciones:</h4>
-                                <div class="bg-gray-50 dark:bg-gray-900 rounded p-3 text-gray-800 dark:text-gray-200 min-h-[80px]">
-                                {{ regulationDetail.observaciones || 'Sin observaciones' }}
+                                    <!-- Comentarios -->
+                                <div class="w-1/2 pl-6 flex flex-col justify-start">
+                                    <h4 class="font-semibold mb-4">Comentarios</h4>
+                                    <div class="bg-gray-50 dark:bg-gray-900 rounded p-3 text-gray-800 dark:text-gray-200 min-h-[80px]">
+                                    {{ permisoDetail.observaciones || 'Sin observaciones' }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </template>
                 </UCard>
             </div>
 
-
-            <!-- Tab Permisos -->
-            <div v-if="activeTab === 'permisos'">  
+            <!-- Tab Etiquetado -->
+            <div v-if="activeTab === 'etiquetado'">
                 <UCard class="bg-transparent ring-0">
-                    <div class="flex gap-8">
-                    <!-- Lista de entidades/rubros -->
-                    <div class="w-120 flex flex-col gap-4">
-                        <!-- Encabezados -->
-                        <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
-                        <span class="w-14 mr-10 text-center">N°</span>
-                        <span class="flex-1">Entidad</span>
-                        <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
+                    <template v-if="loadingEtiquetado">
+                        <!-- Skeleton Etiquetado (solo lista) -->
+                        <div class="flex gap-8">
+                            <div class="w-120 flex flex-col gap-4">
+                                <div class="flex items-center px-4 py-2 gap-4">
+                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                </div>
+                                <div v-for="n in 7" :key="'etiq-skel-'+n" class="flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800">
+                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                </div>
+                            </div>
                         </div>
-                        <div
-                        v-for="(entidad, idx) in permisosData"
-                        :key="entidad.id"
-                        @click="selectedRubroId = entidad.id"
-                        :class="[
-                            'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
-                            selectedRubroId === entidad.id ? 'border border-orange-500 shadow' : 'border border-transparent',
-                            'hover:border-orange-300 hover:shadow'
-                        ]"
-                        >
-                        <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
-                        <div class="flex-1">
-                            <template v-if="editingRubroId === entidad.id">
-                                <input
-                                    v-model="editingNombre"
-                                    class="w-full border rounded px-2 py-1 text-sm"
-                                    @keyup.enter="confirmEdit()"
-                                    @keyup.esc="cancelEdit()"
+                    </template>
+                    <template v-else>
+                        <div class="flex gap-8">
+                            <!-- Lista de rubros/productos -->
+                            <div class="w-120 flex flex-col gap-4">
+                                <!-- Encabezados -->
+                                <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
+                                    <span class="w-14 mr-10 text-center">N°</span>
+                                    <span class="flex-1">Producto</span>
+                                    <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
+                                </div>
+                                <div
+                                    v-for="(rubro, idx) in etiquetadoData"
+                                    :key="rubro.id"
+                                    @click="selectedRubroId = rubro.id"
+                                    :class="[
+                                    'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
+                                    selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
+                                    'hover:border-orange-300 hover:shadow'
+                                    ]"
+                                >
+                                    <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                                    <div class="flex-1">
+                                        <template v-if="editingRubroId === rubro.id">
+                                            <input
+                                                v-model="editingNombre"
+                                                class="w-full border rounded px-2 py-1 text-sm"
+                                                @keyup.enter="confirmEdit()"
+                                                @keyup.esc="cancelEdit()"
+                                            />
+                                        </template>
+                                        <template v-else>
+                                            <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
+                                        </template>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <template v-if="editingRubroId === rubro.id">
+                                            <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
+                                            <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
+                                        </template>
+                                        <template v-else>
+                                            <UButton v-if="hasRole('Documentacion')"
+                                                icon="i-heroicons-pencil-square"
+                                                variant="ghost"
+                                                size="xs"
+                                                color="primary"
+                                                @click.stop="startEdit(rubro)"
+                                            />
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Tabla de regulaciones del rubro seleccionado -->
+                            <div v-if="selectedEtiquetado" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                                <UTable
+                                    v-if="selectedEtiquetado"
+                                    :data="selectedEtiquetado.regulaciones"
+                                    :columns="[
+                                        { accessorKey: 'imagenes', header: 'Imágenes', cell: ({ row }) => {
+                                            const imagenes = row.getValue('imagenes') || []
+                                            if (imagenes.length === 0) {
+                                            return h('span', { class: 'text-gray-400 text-sm' }, 'Sin imágenes')
+                                            }
+                                            return h('div', { class: 'flex flex-wrap gap-1' },
+                                            imagenes.slice(0, 3).map((imagen, index) =>
+                                                h('img', {
+                                                src: getImageUrl(imagen),
+                                                alt: `Imagen ${index + 1}`,
+                                                class: 'w-30 h-30 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity border border-gray-200',
+                                                onClick: () => openImageModal(imagen)
+                                                })
+                                            ).concat(
+                                                imagenes.length > 3 ? [
+                                                h('div', {
+                                                    class: 'w-30 h-30 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors',
+                                                    onClick: () => openImageModal(imagenes[3])
+                                                }, `+${imagenes.length - 3}`)
+                                                ] : []
+                                            )
+                                            )}
+                                        },
+                                        {
+                                            accessorKey: 'observaciones',
+                                            header: () => h('div', { class: 'flex items-center justify-between' }, [
+                                                h('span', { class: 'font-semibold' }, 'Descripciones mínimas'),
+                                                hasRole('Documentacion') ? h('div', { class: 'flex gap-2' }, [
+                                                    h(UButton, {
+                                                        icon: 'i-heroicons-pencil-square',
+                                                        variant: 'ghost',
+                                                        size: 'xs',
+                                                        color: 'primary',
+                                                        onClick: () => {editEtiquetado(selectedEtiquetado.regulaciones[0]?.id)},
+                                                        title: 'Editar'
+                                                    }),
+                                                    h(UButton, {
+                                                        icon: 'i-heroicons-trash',
+                                                        variant: 'ghost',
+                                                        size: 'xs',
+                                                        color: 'red',
+                                                        onClick: () => {deleteEtiquetado(selectedEtiquetado.regulaciones[0]?.id)},
+                                                        title: 'Eliminar'
+                                                    })
+                                                ]) : null
+                                            ]),
+                                            cell: ({ row }) => {
+                                                const observaciones = row.getValue('observaciones')
+                                                return h('div', {
+                                                class: 'whitespace-pre-line break-words max-w-[400px]'
+                                                }, observaciones)
+                                            }
+                                        }
+                                    ]"
+                                    :ui="{ root: 'w-full table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
                                 />
-                            </template>
-                            <template v-else>
-                                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ entidad.nombre }}</span>
-                            </template>
+                            </div>
                         </div>
-                        <div class="flex gap-2" v-if="hasRole('Documentacion')">
-                            <template v-if="editingRubroId === entidad.id">
-                                <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
-                                <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
-                            </template>
-                            <template v-else>
-                                <UButton
-                                icon="i-heroicons-pencil-square"
-                                variant="ghost"
-                                size="xs"
-                                color="primary"
-                                @click.stop="startEdit(entidad)"
-                                />
-                                <UButton
-                                icon="i-heroicons-trash"
-                                variant="ghost"
-                                size="xs"
-                                color="red"
-                                @click.stop="deleteEntidad(entidad.id)"
-                                />
-                            </template>
+                    </template>
+                </UCard>
+            </div>
+
+            <!-- Tab Documentos Especiales -->
+            <div v-if="activeTab === 'documentos'">
+                <UCard class="bg-transparent ring-0">
+                    <template v-if="loadingDocumentos">
+                        <!-- Skeleton Documentos (solo lista) -->
+                        <div class="flex gap-8">
+                            <div class="w-120 flex flex-col gap-4">
+                                <div class="flex items-center px-4 py-2 gap-4">
+                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                </div>
+                                <div v-for="n in 7" :key="'doc-skel-'+n" class="flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800">
+                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                </div>
+                            </div>
                         </div>
-                        </div>
-                    </div>
-                    <!-- Tabla de regulaciones de la entidad seleccionada -->
-                    <div v-if="selectedEntidad" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                        <UTable
-                        v-if="selectedEntidad"
-                        :data="selectedEntidad.regulaciones"
-                        :columns="[
-                            { accessorKey: 'id', header: 'N°', cell: ({ row }) => row.index + 1 },
-                            { accessorKey: 'nombre', header: 'Nombre' },
-                            { accessorKey: 'c_permiso', header: 'C. Permiso', cell: ({ row }) => `S/.${row.getValue('c_permiso')}` },
-                            { accessorKey: 'c_tramitador', header: 'C. Tramitador', cell: ({ row }) => `S/.${row.getValue('c_tramitador')}` },
-                            {
-                            id: 'actions',
-                            header: 'Acciones',
-                            cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
-                                h(UButton, {
-                                icon: 'i-heroicons-eye',
-                                variant: 'ghost',
-                                size: 'xs',
-                                color: 'blue',
-                                onClick: () => viewPermisoDetail(row.original.id),
-                                title: 'Ver detalle'
-                                }),
-                                hasRole('Documentacion') ? h(UButton, {
-                                icon: 'i-heroicons-pencil-square',
-                                variant: 'ghost',
-                                size: 'xs',
-                                color: 'primary',
-                                onClick: () => editPermiso(row.original.id),
-                                title: 'Editar'
-                                }): null,
-                                hasRole('Documentacion') ? h(UButton, {
-                                icon: 'i-heroicons-trash',
-                                variant: 'ghost',
-                                size: 'xs',
-                                color: 'red',
-                                onClick: () => deletePermiso(row.original.id),
-                                title: 'Eliminar'
-                                }): null
-                            ])
-                            }
-                        ]"
-                        :ui="{ root: 'w-full table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
-                        />
-                    </div>
-                    </div>
-                    <!-- Detalle de regulación debajo de la tabla -->
-                    <div class="flex gap-8">
-                        <div class="w-120">
-                        </div>
-                        <div
-                        v-if="permisoDetail"
-                        class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex-1 flex">
-                            <!-- Documentos a presentar -->
-                            <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
-                                <h4 class="font-semibold mb-4">Documentos a presentar</h4>
-                                <div v-if="permisoDetail.documentos && permisoDetail.documentos.length">
-                                    <div v-for="(doc, idx) in permisoDetail.documentos" :key="idx" class="flex items-center gap-3 mb-3 p-2 rounded bg-gray-50 dark:bg-gray-900">
-                                        <!-- Icono según tipo de archivo -->
-                                        <FileIcon :file="{ file_ext: getFileExtension(doc), nombre: doc }" />
-                                        <div class="flex-1">
-                                            <div class="font-medium text-gray-800 dark:text-gray-200 text-sm truncate break-all max-w-[250px] overflow-hidden">{{ getFileName(doc) }}</div>
-                                            <div class="text-xs text-gray-500"></div>
+                    </template>
+                    <template v-else>
+                        <div class="flex gap-8">
+                            <!-- lista de rubros/productos-->
+                            <div class="w-120 flex flex-col gap-4">
+                                <!-- Encabezados -->
+                                <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
+                                    <span class="w-14 mr-10 text-center">N°</span>
+                                    <span class="flex-1">Producto</span>
+                                    <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
+                                </div>
+                                <div
+                                    v-for="(rubro, idx) in documentosData"
+                                    :key="rubro.id"
+                                    @click="selectedRubroId = rubro.id"
+                                    :class="[
+                                    'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
+                                    selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
+                                    'hover:border-orange-300 hover:shadow'
+                                    ]"
+                                >
+                                    <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                                    <div class="flex-1">
+                                        <template v-if="editingRubroId === rubro.id">
+                                            <input
+                                                v-model="editingNombre"
+                                                class="w-full border rounded px-2 py-1 text-sm"
+                                                @keyup.enter="confirmEdit()"
+                                                @keyup.esc="cancelEdit()"
+                                            />
+                                        </template>
+                                        <template v-else>
+                                            <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
+                                        </template>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <template v-if="editingRubroId === rubro.id">
+                                            <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
+                                            <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
+                                        </template>
+                                        <template v-else>
+                                            <UButton v-if="hasRole('Documentacion')"
+                                                icon="i-heroicons-pencil-square"
+                                                variant="ghost"
+                                                size="xs"
+                                                color="primary"
+                                                @click.stop="startEdit(rubro)"
+                                            />
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Detalles de Documentos Especiales-->
+                             <div v-if="selectedDocumentos && selectedDocumentos.regulaciones.length" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex gap-8">
+                                <!-- Documentos a presentar -->
+                                <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
+                                    <h4 class="font-semibold mb-4">Documentos a presentar</h4>
+                                    <div v-if="(selectedDocumentos.regulaciones[0].media && selectedDocumentos.regulaciones[0].media.length) || 
+                                        (selectedDocumentos.regulaciones[0].documentos && selectedDocumentos.regulaciones[0].documentos.length)">
+                                <div class="flex flex-col gap-3">
+                                    <!-- Media (archivos con metadatos) -->
+                                    <div v-for="doc in selectedDocumentos.regulaciones[0].media || []" :key="doc.id" class="flex items-center gap-3 p-2 rounded bg-gray-50 dark:bg-gray-900">
+                                    <FileIcon :file="{ file_ext: doc.extension, nombre: doc.nombre_original }" />
+                                    <div class="flex-1">
+                                        <div class="font-medium text-gray-800 dark:text-gray-200 text-sm truncate break-all max-w-[250px] overflow-hidden">
+                                        {{ doc.nombre_original }}
                                         </div>
-                                        <UButton
+                                        <div class="text-xs text-gray-500">{{ (doc.peso / 1024).toFixed(0) }} KB</div>
+                                    </div>
+                                    <UButton
+                                        icon="i-heroicons-arrow-down-tray"
+                                        size="xs"
+                                        variant="ghost"
+                                        color="primary"
+                                        @click="openDocumentModal(doc.ruta)"
+                                        aria-label="Descargar"
+                                    />
+                                    </div>
+                                    <!-- Documentos (solo rutas o nombres) -->
+                                    <div v-for="(doc, idx) in selectedDocumentos.regulaciones[0].documentos || []" :key="`doc-${idx}`" class="flex items-center gap-3 p-2 rounded bg-gray-50 dark:bg-gray-900">
+                                    <FileIcon :file="{ file_ext: getFileExtension(doc), nombre: getFileName(doc) }" />
+                                    <div class="flex-1">
+                                        <div class="font-medium text-gray-800 dark:text-gray-200 text-sm truncate break-all max-w-[250px] overflow-hidden">
+                                        {{ getFileName(doc) }}
+                                        </div>
+                                    </div>
+                                    <UButton
                                         icon="i-heroicons-arrow-down-tray"
                                         size="xs"
                                         variant="ghost"
                                         color="primary"
                                         @click="openDocumentModal(doc)"
                                         aria-label="Descargar"
-                                        />
+                                    />
                                     </div>
+                                </div>
                                 </div>
                                 <div v-else class="text-gray-400 text-sm">Sin documentos</div>
-                            </div>
+                                </div>
                                 <!-- Comentarios -->
-                            <div class="w-1/2 pl-6 flex flex-col justify-start">
-                                <h4 class="font-semibold mb-4">Comentarios</h4>
-                                <div class="bg-gray-50 dark:bg-gray-900 rounded p-3 text-gray-800 dark:text-gray-200 min-h-[80px]">
-                                {{ permisoDetail.observaciones || 'Sin observaciones' }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </UCard>
-            
-            </div>
-
-            <!-- Tab Etiquetado -->
-            <div v-if="activeTab === 'etiquetado'">
-                <UCard class="bg-transparent ring-0">
-                    <div class="flex gap-8">
-                        <!-- Lista de rubros/productos -->
-                        <div class="w-120 flex flex-col gap-4">
-                            <!-- Encabezados -->
-                            <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
-                                <span class="w-14 mr-10 text-center">N°</span>
-                                <span class="flex-1">Producto</span>
-                                <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
-                            </div>
-                            <div
-                                v-for="(rubro, idx) in etiquetadoData"
-                                :key="rubro.id"
-                                @click="selectedRubroId = rubro.id"
-                                :class="[
-                                'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
-                                selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
-                                'hover:border-orange-300 hover:shadow'
-                                ]"
-                            >
-                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
-                                <div class="flex-1">
-                                    <template v-if="editingRubroId === rubro.id">
-                                        <input
-                                            v-model="editingNombre"
-                                            class="w-full border rounded px-2 py-1 text-sm"
-                                            @keyup.enter="confirmEdit()"
-                                            @keyup.esc="cancelEdit()"
+                                <div class="w-1/2 pl-6 flex flex-col justify-start">
+                                    <div class="flex items-center justify-between mb-4">
+                                    <h4 class="font-semibold">Comentarios</h4>
+                                    <div v-if="hasRole('Documentacion')" class="flex gap-1">
+                                        <UButton
+                                        icon="i-heroicons-pencil-square"
+                                        variant="outline"
+                                        size="xs"
+                                        color="primary"
+                                        @click="editDocumento(selectedDocumentos.regulaciones[0]?.id)"
+                                        aria-label="Editar"
                                         />
-                                    </template>
-                                    <template v-else>
-                                        <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
-                                    </template>
-                                </div>
-                                <div class="flex gap-2">
-                                    <template v-if="editingRubroId === rubro.id">
-                                        <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
-                                        <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
-                                    </template>
-                                    <template v-else>
-                                        <UButton v-if="hasRole('Documentacion')"
-                                            icon="i-heroicons-pencil-square"
-                                            variant="ghost"
-                                            size="xs"
-                                            color="primary"
-                                            @click.stop="startEdit(rubro)"
+                                        <UButton
+                                        icon="i-heroicons-trash"
+                                        variant="outline"
+                                        size="xs"
+                                        color="red"
+                                        @click="deleteDocumento(selectedDocumentos.regulaciones[0]?.id)"
+                                        aria-label="Eliminar"
                                         />
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Tabla de regulaciones del rubro seleccionado -->
-                        <div v-if="selectedEtiquetado" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                            <UTable
-                                v-if="selectedEtiquetado"
-                                :data="selectedEtiquetado.regulaciones"
-                                :columns="[
-                                    { accessorKey: 'imagenes', header: 'Imágenes', cell: ({ row }) => {
-                                        const imagenes = row.getValue('imagenes') || []
-                                        if (imagenes.length === 0) {
-                                        return h('span', { class: 'text-gray-400 text-sm' }, 'Sin imágenes')
-                                        }
-                                        return h('div', { class: 'flex flex-wrap gap-1' },
-                                        imagenes.slice(0, 3).map((imagen, index) =>
-                                            h('img', {
-                                            src: getImageUrl(imagen),
-                                            alt: `Imagen ${index + 1}`,
-                                            class: 'w-30 h-30 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity border border-gray-200',
-                                            onClick: () => openImageModal(imagen)
-                                            })
-                                        ).concat(
-                                            imagenes.length > 3 ? [
-                                            h('div', {
-                                                class: 'w-30 h-30 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors',
-                                                onClick: () => openImageModal(imagenes[3])
-                                            }, `+${imagenes.length - 3}`)
-                                            ] : []
-                                        )
-                                        )}
-                                    },
-                                    {
-                                        accessorKey: 'observaciones',
-                                        header: () => h('div', { class: 'flex items-center justify-between' }, [
-                                            h('span', { class: 'font-semibold' }, 'Descripciones mínimas'),
-                                            hasRole('Documentacion') ? h('div', { class: 'flex gap-2' }, [
-                                                h(UButton, {
-                                                    icon: 'i-heroicons-pencil-square',
-                                                    variant: 'ghost',
-                                                    size: 'xs',
-                                                    color: 'primary',
-                                                    onClick: () => {editEtiquetado(selectedEtiquetado.regulaciones[0]?.id)},
-                                                    title: 'Editar'
-                                                }),
-                                                h(UButton, {
-                                                    icon: 'i-heroicons-trash',
-                                                    variant: 'ghost',
-                                                    size: 'xs',
-                                                    color: 'red',
-                                                    onClick: () => {deleteEtiquetado(selectedEtiquetado.regulaciones[0]?.id)},
-                                                    title: 'Eliminar'
-                                                })
-                                            ]) : null
-                                        ]),
-                                        cell: ({ row }) => {
-                                            const observaciones = row.getValue('observaciones')
-                                            return h('div', {
-                                            class: 'whitespace-pre-line break-words max-w-[400px]'
-                                            }, observaciones)
-                                        }
-                                    }
-                                ]"
-                                :ui="{ root: 'w-full table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
-                            />
-                        </div>
-                    </div>
-                    </UCard>
-            </div>
-
-            <!-- Tab Documentos Especiales -->
-            <div v-if="activeTab === 'documentos'">
-                <UCard class="bg-transparent ring-0">
-                    <div class="flex gap-8">
-                        <!-- lista de rubros/productos-->
-                        <div class="w-120 flex flex-col gap-4">
-                            <!-- Encabezados -->
-                            <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
-                                <span class="w-14 mr-10 text-center">N°</span>
-                                <span class="flex-1">Producto</span>
-                                <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
-                            </div>
-                            <div
-                                v-for="(rubro, idx) in documentosData"
-                                :key="rubro.id"
-                                @click="selectedRubroId = rubro.id"
-                                :class="[
-                                'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
-                                selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
-                                'hover:border-orange-300 hover:shadow'
-                                ]"
-                            >
-                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
-                                <div class="flex-1">
-                                    <template v-if="editingRubroId === rubro.id">
-                                        <input
-                                            v-model="editingNombre"
-                                            class="w-full border rounded px-2 py-1 text-sm"
-                                            @keyup.enter="confirmEdit()"
-                                            @keyup.esc="cancelEdit()"
-                                        />
-                                    </template>
-                                    <template v-else>
-                                        <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
-                                    </template>
-                                </div>
-                                <div class="flex gap-2">
-                                    <template v-if="editingRubroId === rubro.id">
-                                        <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
-                                        <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
-                                    </template>
-                                    <template v-else>
-                                        <UButton v-if="hasRole('Documentacion')"
-                                            icon="i-heroicons-pencil-square"
-                                            variant="ghost"
-                                            size="xs"
-                                            color="primary"
-                                            @click.stop="startEdit(rubro)"
-                                        />
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Detalles de Documentos Especiales-->
-                         <div v-if="selectedDocumentos && selectedDocumentos.regulaciones.length" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex gap-8">
-                            <!-- Documentos a presentar -->
-                            <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
-                                <h4 class="font-semibold mb-4">Documentos a presentar</h4>
-                                <div v-if="(selectedDocumentos.regulaciones[0].media && selectedDocumentos.regulaciones[0].media.length) || 
-                                    (selectedDocumentos.regulaciones[0].documentos && selectedDocumentos.regulaciones[0].documentos.length)">
-                            <div class="flex flex-col gap-3">
-                                <!-- Media (archivos con metadatos) -->
-                                <div v-for="doc in selectedDocumentos.regulaciones[0].media || []" :key="doc.id" class="flex items-center gap-3 p-2 rounded bg-gray-50 dark:bg-gray-900">
-                                <FileIcon :file="{ file_ext: doc.extension, nombre: doc.nombre_original }" />
-                                <div class="flex-1">
-                                    <div class="font-medium text-gray-800 dark:text-gray-200 text-sm truncate break-all max-w-[250px] overflow-hidden">
-                                    {{ doc.nombre_original }}
                                     </div>
-                                    <div class="text-xs text-gray-500">{{ (doc.peso / 1024).toFixed(0) }} KB</div>
-                                </div>
-                                <UButton
-                                    icon="i-heroicons-arrow-down-tray"
-                                    size="xs"
-                                    variant="ghost"
-                                    color="primary"
-                                    @click="openDocumentModal(doc.ruta)"
-                                    aria-label="Descargar"
-                                />
-                                </div>
-                                <!-- Documentos (solo rutas o nombres) -->
-                                <div v-for="(doc, idx) in selectedDocumentos.regulaciones[0].documentos || []" :key="`doc-${idx}`" class="flex items-center gap-3 p-2 rounded bg-gray-50 dark:bg-gray-900">
-                                <FileIcon :file="{ file_ext: getFileExtension(doc), nombre: getFileName(doc) }" />
-                                <div class="flex-1">
-                                    <div class="font-medium text-gray-800 dark:text-gray-200 text-sm truncate break-all max-w-[250px] overflow-hidden">
-                                    {{ getFileName(doc) }}
+                                    </div>
+                                    <div class="bg-gray-50 dark:bg-gray-900 rounded p-3 text-gray-800 dark:text-gray-200 min-h-[80px]">
+                                    {{ selectedDocumentos.regulaciones[0]?.observaciones || 'Sin comentarios' }}
                                     </div>
                                 </div>
-                                <UButton
-                                    icon="i-heroicons-arrow-down-tray"
-                                    size="xs"
-                                    variant="ghost"
-                                    color="primary"
-                                    @click="openDocumentModal(doc)"
-                                    aria-label="Descargar"
-                                />
-                                </div>
                             </div>
-                            </div>
-                            <div v-else class="text-gray-400 text-sm">Sin documentos</div>
-                            </div>
-                            <!-- Comentarios -->
-                            <div class="w-1/2 pl-6 flex flex-col justify-start">
-                                <div class="flex items-center justify-between mb-4">
-                                <h4 class="font-semibold">Comentarios</h4>
-                                <div v-if="hasRole('Documentacion')" class="flex gap-1">
-                                    <UButton
-                                    icon="i-heroicons-pencil-square"
-                                    variant="outline"
-                                    size="xs"
-                                    color="primary"
-                                    @click="editDocumento(selectedDocumentos.regulaciones[0]?.id)"
-                                    aria-label="Editar"
-                                    />
-                                    <UButton
-                                    icon="i-heroicons-trash"
-                                    variant="outline"
-                                    size="xs"
-                                    color="red"
-                                    @click="deleteDocumento(selectedDocumentos.regulaciones[0]?.id)"
-                                    aria-label="Eliminar"
-                                    />
-                                </div>
-                                </div>
-                                <div class="bg-gray-50 dark:bg-gray-900 rounded p-3 text-gray-800 dark:text-gray-200 min-h-[80px]">
-                                {{ selectedDocumentos.regulaciones[0]?.observaciones || 'Sin comentarios' }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>        
+                        </div>        
+                    </template>
                 </UCard>              
             </div>
         </div>

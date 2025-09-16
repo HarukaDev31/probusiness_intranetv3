@@ -1,76 +1,44 @@
 <template>
   <section class="content-header px-4 xl:px-4 sm:px-2" style="height: 93vh;">
     <!-- Hero Section -->
-    <div class="hero-section relative h-100 bg-cover bg-center bg-no-repeat  mb-4 rounded-xl" 
+    <div ref="heroRef" class="hero-section relative h-100 bg-cover bg-center bg-no-repeat mb-4 rounded-xl overflow-hidden opacity-0 translate-y-4 transition-all duration-700"
+         :class="{ 'opacity-100 translate-y-0': heroVisible }"
          style="background-image: url('https://intranet.probusiness.pe/assets/img/backgrounds/inicioview.png');">
-      <div class="absolute inset-0 "></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-black/40 to-black/10"></div>
       <div class="container relative flex items-center mx-4 h-full">
         <div class="text-white lg:text-5xl sm:text-4xl text-4xl xl:py-5 main-text font-normal z-10">
-          ¡Hola,<br> bienvenido!
+          <span class="inline-block animate-fade-in-up" style="animation-delay:100ms">¡Hola,</span><br>
+          <span class="inline-block animate-fade-in-up" style="animation-delay:250ms">bienvenido!</span>
         </div>
+      </div>
+      <div class="absolute bottom-4 right-4 flex gap-2 opacity-70">
+        <button class="h-2 w-2 rounded-full bg-white/60 hover:bg-white transition"></button>
+        <button class="h-2 w-2 rounded-full bg-white/30 hover:bg-white transition"></button>
+        <button class="h-2 w-2 rounded-full bg-white/30 hover:bg-white transition"></button>
       </div>
     </div>
 
     <!-- Stats Section -->
-    <div class="container w-full max-w-full flex align-middle justify-center mb-4">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-1 h-full min-h-50 max-w-7xl">
-        <!-- Dollar Stats -->
-        <div class="col-span-1 h-full px-1">
-          <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 h-40">
+    <div class="container w-full max-w-full flex align-middle justify-center mb-4 pt-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 h-full min-h-50 max-w-7xl">
+        <div v-for="stat in stats" :key="stat.id" :data-stat-id="stat.id"
+             class="group col-span-1 h-full px-1 transition-all duration-700"
+             :class="stat.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'">
+          <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 h-40 relative overflow-hidden">
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-orange-500/5 via-transparent to-orange-500/10 pointer-events-none" />
             <div class="card-body flex justify-between items-center px-4 h-full">
-              <div class="icon-container px-2">
-                <i class="fa fa-dollar text-6xl text-orange-500 "></i>
+              <div class="icon-container px-2 relative">
+                <UIcon :name="stat.icon" class="w-16 h-16 text-orange-500 transition-transform duration-500 group-hover:scale-110" aria-hidden="true" />
+                <span class="sr-only">{{ stat.label }}</span>
               </div>
               <div class="text-container text-center">
-                <div class="text-7xl font-bold text-gray-800 dark:text-white" id="Dolars import">15M</div>
-                <p class="text-muted dark:text-gray-400 text-center text-sm">Dólares en importaciones</p>
+                <div class="counter text-5xl md:text-6xl xl:text-7xl font-bold text-gray-800 dark:text-white tabular-nums">
+                  {{ formatNumber(stat.current || 0) }}<span v-if="stat.suffix">{{ stat.suffix }}</span>
+                </div>
+                <p class="text-muted dark:text-gray-400 text-center text-sm tracking-wide font-medium">{{ stat.label }}</p>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Users Stats -->
-        <div class="col-span-1 h-full px-1">
-          <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 h-40">
-            <div class="card-body flex justify-between items-center px-4 h-full">
-              <div class="icon-container px-2">
-                <i class="fa fa-users text-6xl text-orange-500 "></i>
-              </div>
-              <div class="text-container text-center">
-                <div class="text-7xl font-bold text-gray-800 dark:text-white" id="Clients satisfied">5K</div>
-                <p class="text-muted dark:text-gray-400 text-center text-sm">Clientes satisfechos</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Package Stats -->
-        <div class="col-span-1 h-full px-1">
-          <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 h-40">
-            <div class="card-body flex justify-between items-center px-4 h-full">
-              <div class="icon-container px-2">
-                <i class="fas fa-box-open stat-icon text-6xl text-orange-500 "></i>
-              </div>
-              <div class="text-container text-center">
-                <div class="text-7xl font-bold text-gray-800 dark:text-white" id="CBM sells">1100</div>
-                <p class="text-muted dark:text-gray-400 text-center text-sm">CBM vendidos</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Container Stats -->
-        <div class="col-span-1 h-full px-1">
-          <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 h-40">
-            <div class="card-body flex justify-between items-center px-4 h-full">
-              <div class="icon-container px-2">
-                <i class="fas fa-ship stat-icon text-6xl text-orange-500 "></i>
-              </div>
-              <div class="text-container text-center">
-                <div class="text-7xl font-bold text-gray-800 dark:text-white" id="Containers imported">10K</div>
-                <p class="text-muted dark:text-gray-400 text-center text-sm">Contenedores importados</p>
-              </div>
-            </div>
+            <div class="absolute bottom-0 left-0 h-1 bg-orange-500/60 group-hover:w-full w-0 transition-all duration-700" />
           </div>
         </div>
       </div>
@@ -79,9 +47,72 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-  middleware: 'auth'
+import { ref, onMounted } from 'vue'
+
+definePageMeta({ middleware: 'auth' })
+
+interface StatDef { id: string; value: number; label: string; suffix?: string; icon: string; color: string; delay?: number; current?: number; visible?: boolean }
+
+const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+// Sustituimos clases Font Awesome por nombres de UIcon (heroicons) sin tocar nuxt.config.
+// Mapeo elegido usando iconos existentes:
+// - dollars -> presentation-chart-line
+// - clients -> building-office (si luego añades users/user-group puedes cambiarlos)
+// - cbm -> archive-box
+// - containers -> inbox
+const stats = ref<StatDef[]>([
+  { id: 'dollars', value: 15000000, label: 'Dólares en importaciones', suffix: '', icon: 'solar:dollar-linear', color: '#f97316', delay: 0, current: 0, visible: false },
+  { id: 'clients', value: 5000, label: 'Clientes satisfechos', suffix: '', icon: 'flowbite:users-group-solid', color: '#f97316', delay: 120, current: 0, visible: false },
+  { id: 'cbm', value: 1100, label: 'CBM vendidos', suffix: '', icon: 'fluent:box-32-filled', color: '#f97316', delay: 240, current: 0, visible: false },
+  { id: 'containers', value: 10000, label: 'Contenedores importados', suffix: '', icon: 'mingcute:ship-line', color: '#f97316', delay: 360, current: 0, visible: false }
+])
+
+const formatNumber = (n: number) => {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(0) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(0) + 'K'
+  return n.toString()
+}
+
+// Hero animation visibility
+const heroRef = ref<HTMLElement | null>(null)
+const heroVisible = ref(false)
+onMounted(() => {
+  if (!heroRef.value) return
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) heroVisible.value = true })
+  }, { threshold: 0.2 })
+  obs.observe(heroRef.value)
+  // Stats observer
+  const statEls = document.querySelectorAll('[data-stat-id]')
+  const statObs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return
+      const id = entry.target.getAttribute('data-stat-id')
+      const st = stats.value.find(s => s.id === id)
+      if (st && !st.visible) {
+        st.visible = true
+        const animate = () => {
+          if (prefersReducedMotion) { st.current = st.value; return }
+          const duration = 1400
+          const start = performance.now()
+          const from = 0
+            const to = st.value
+          const step = (t: number) => {
+            const progress = Math.min(1, (t - start) / duration)
+            const eased = 1 - Math.pow(1 - progress, 3)
+            st.current = Math.round(from + (to - from) * eased)
+            if (progress < 1) requestAnimationFrame(step)
+          }
+          requestAnimationFrame(step)
+        }
+        setTimeout(animate, st.delay || 0)
+      }
+    })
+  }, { threshold: 0.4 })
+  statEls.forEach(el => statObs.observe(el))
 })
+
 </script>
 
 <style scoped>
@@ -115,9 +146,19 @@ definePageMeta({
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
-.dark .stat-card:hover {
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+.animate-fade-in-up { 
+  animation: fadeInUp 0.9s cubic-bezier(0.22,0.61,0.36,1) both;
 }
+
+@keyframes fadeInUp {
+  0% { opacity:0; transform: translate3d(0, 25px, 0) scale(.97); filter: blur(2px); }
+  60% { opacity:.6; }
+  100% { opacity:1; transform: translate3d(0,0,0) scale(1); filter: blur(0); }
+}
+
+.counter { font-variant-numeric: tabular-nums; }
+
+.dark .stat-card:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); }
 
 .icon-container {
   display: flex;
