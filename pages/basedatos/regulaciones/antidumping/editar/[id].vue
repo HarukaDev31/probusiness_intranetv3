@@ -363,8 +363,7 @@ const regulationId = parseInt(route.params.id as string)
 
 
 const getImageUrl = (ruta: string) => {
-    const config = useRuntimeConfig()
-    return `${config.public.apiBaseUrl}/storage/${ruta}`
+    return `${ruta}`
 }
 
 const loadRegulation = async () => {
@@ -385,14 +384,15 @@ const loadRegulation = async () => {
         media: response.data.media || [],
         estado: 'active',
         created_at: response.data.created_at,
-        updated_at: response.data.updated_at
+        updated_at: response.data.updated_at,
+        precio_declarado: response.data.precio_declarado
       }
       
       // Populate form data
       formData.value = {
         descripcion: regulation.value.descripcion_producto,
         partida: regulation.value.partida,
-        precioDeclarado: regulation.value.antidumping,
+        precioDeclarado: regulation.value.precio_declarado,
         antidumping: regulation.value.antidumping,
         observaciones: regulation.value.observaciones || '',
         producto: regulation.value.id_rubro.toString()

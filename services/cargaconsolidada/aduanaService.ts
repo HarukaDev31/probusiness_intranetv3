@@ -35,7 +35,7 @@ export class AduanaService extends BaseService {
     static async saveAduana(data: AduanaData): Promise<AduanaResponse> {
         try {
             const formData = new FormData()
-            
+
             // Agregar campos básicos
             formData.append('naviera', data.naviera)
             formData.append('multa', data.multa.toString())
@@ -102,7 +102,7 @@ export class AduanaService extends BaseService {
     static async updateAduana(idContainer: number, data: AduanaData): Promise<AduanaResponse> {
         try {
             const formData = new FormData()
-            
+
             // Agregar campos básicos
             formData.append('idContainer', data.idContainer.toString())
             formData.append('naviera', data.naviera)
@@ -141,6 +141,24 @@ export class AduanaService extends BaseService {
             return {
                 success: false,
                 error: error.message || 'Error al actualizar los datos de aduana'
+            }
+        }
+    }
+
+    /**
+     * Elimina un archivo específico
+     */
+    static async deleteFileAduana(fileId: string): Promise<AduanaResponse> {
+        try {
+            const response = await this.apiCall<AduanaResponse>(`${this.baseUrl}/files/${fileId}`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error: any) {
+            console.error('Error al eliminar el archivo de aduana:', error)
+            return {
+                success: false,
+                error: error.message || 'Error al eliminar el archivo de aduana'
             }
         }
     }

@@ -27,7 +27,8 @@
                     <!-- Multa -->
                     <div>
                         <UFormField label="Multa">
-                            <UInput class="w-full" v-model="formData.multa" type="number" step="0.01" placeholder="0.00">
+                            <UInput class="w-full" v-model="formData.multa" type="number" step="0.01"
+                                placeholder="0.00">
                                 <template #leading>
                                     <span class="text-gray-500">$</span>
                                 </template>
@@ -93,8 +94,12 @@
                     <div class="row-span-2">
                         <UFormField label="DOC. TRIBUTOS Y AJUSTES">
                             <FileUploader :multiple="true"
+                            :key="aduanaFiles.length"
                                 :accepted-types="['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm']"
                                 custom-message="Selecciona o arrastra tu archivo aquí"
+                                :initial-files="aduanaFiles"
+                                :show-remove-button="true"
+                                @file-removed="handleFileRemoved"
                                 @files-selected="handleTributosFiles" />
                         </UFormField>
                     </div>
@@ -121,9 +126,8 @@
                     <div>
                         <UFormField label="Canal de Control">
                             <USelect class="w-full" v-model="formData.canal_control" :items="canalesControl"
-                                placeholder="Seleccione canal" 
-                                :class="[STATUS_BG_CLASSES[formData.canal_control as keyof typeof STATUS_BG_CLASSES]]"      
-                                />
+                                placeholder="Seleccione canal"
+                                :class="[STATUS_BG_CLASSES[formData.canal_control as keyof typeof STATUS_BG_CLASSES]]" />
                         </UFormField>
                     </div>
 
@@ -142,8 +146,12 @@
                     <div class="row-span-2">
                         <UFormField label="RESUMEN DE IMPUESTOS PAGADOS">
                             <FileUploader :multiple="true"
+                                :key="aduanaImpuestosPagados.length"
                                 :accepted-types="['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm']"
                                 custom-message="Selecciona o arrastra tu archivo aquí"
+                                :initial-files="aduanaImpuestosPagados"
+                                :show-remove-button="true"
+                                @file-removed="handleFileRemoved"
                                 @files-selected="handleImpuestosFiles" />
                         </UFormField>
                     </div>
@@ -182,8 +190,13 @@ import { useOverlay } from '#imports'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import { useAduana } from '~/composables/cargaconsolidada/useAduana'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
+const {showSuccess, showError, showConfirmation} = useModal()
+import type { FileItem } from '~/types/commons/file'
 const route = useRoute()
 const id = route.params.id
+const { withSpinner } = useSpinner()
 // Usar el composable
 const {
     loading,
@@ -194,7 +207,10 @@ const {
     saveAduana,
     handleTributosFiles,
     handleImpuestosFiles,
-    resetForm
+    deleteFileAduana,
+    resetForm,
+    aduanaImpuestosPagados,
+    aduanaFiles
 } = useAduana()
 
 // Configurar overlay para el modal
@@ -230,12 +246,33 @@ const canalesControl = [
     { label: 'Rojo', value: 'Rojo' }
 ]
 
+const handleFileRemoved = async (id: number) => {
+    console.log('id', id)
+    showConfirmation('Eliminar archivo', '¿Estás seguro de querer eliminar este archivo?', async () => {
+    await withSpinner(async () => {
+        const result = await deleteFileAduana(id.toString())
+        if (result.success) {
+            showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+            await loadAduanaData()
+
+            } else {
+            showError('Error', result.error || 'Error al eliminar el archivo')
+            }
+        }, 'Eliminando archivo...')
+        }, () => {
+        console.log('Cancelado')
+    })
+}
 // Form submit
 const handleSubmit = async () => {
-    const success = await saveAduana()
-    if (success) {
-        // El formulario se resetea automáticamente en el composable
-    }
+    await withSpinner(async () => {
+        const success = await saveAduana()
+        if (success) {
+            await loadAduanaData()
+            // El formulario se resetea automáticamente en el composable
+        }
+    }, 'Guardando datos de aduana...')
+
 }
 
 // Cargar datos al montar el componente

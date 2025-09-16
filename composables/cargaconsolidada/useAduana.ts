@@ -3,12 +3,14 @@ import { useRoute } from 'vue-router'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { AduanaService, type AduanaData, type AduanaResponse } from '~/services/cargaconsolidada/aduanaService'
+import type { FileItem } from '~/types/commons/file'
 
 export const useAduana = () => {
     const route = useRoute()
     const { showSuccess, showError } = useModal()
     const { withSpinner } = useSpinner()
-
+    const aduanaFiles = ref<FileItem[]>([])
+    const aduanaImpuestosPagados = ref<FileItem[]>([])
     // Estado reactivo
     const loading = ref(false)
     const aduanaData = ref<AduanaData | null>(null)
@@ -62,13 +64,15 @@ export const useAduana = () => {
         try {
             loading.value = true
             error.value = null
+            aduanaFiles.value = []
+            aduanaImpuestosPagados.value = []
 
             console.log('Llamando al servicio con containerId:', containerId.value)
             const response = await AduanaService.getAduanaByContainer(containerId.value)
             console.log('Respuesta del servicio:', response)
             
-            if (response.success && response.data && response.data.length > 0) {
-                const apiData = response.data[0] // La API devuelve un array
+            if (response.success && response.data ) {
+                const apiData = response.data // La API devuelve un array
                 console.log('Datos recibidos de la API:', apiData)
                 aduanaData.value = apiData
                
@@ -87,11 +91,23 @@ export const useAduana = () => {
                     canal_control: apiData.canal_control || '',
                     costo_destino: apiData.costo_destino ? parseFloat(apiData.costo_destino) : 0,
                     ajuste_valor: apiData.ajuste_valor ? parseFloat(apiData.ajuste_valor) : 0,
-                    files: [],
-                    impuestos_pagados: []
+                    files: apiData.files,
+                    impuestos_pagados: apiData.files
                 }
                 
                 formData.value = mappedData
+                console.log('apiData.files', apiData.files)
+                aduanaFiles.value = apiData.files.map((file: FileItem) => {
+                    if (file.tipo == "aduana") {
+                        return file
+                    }
+                }).filter((file: FileItem) => file !== undefined)
+                aduanaImpuestosPagados.value = apiData.files.map((file: FileItem) => {
+                    console.log('file', file)
+                    if (file.tipo == "impuestos") {
+                        return file
+                    }
+                }).filter((file: FileItem) => file !== undefined)
                 
                 console.log('Formulario después de mapear:', formData.value)
             }
@@ -217,6 +233,19 @@ export const useAduana = () => {
         }
     }
 
+    const deleteFileAduana = async (fileId: string) => {
+        try {
+            const response = await AduanaService.deleteFileAduana(fileId)
+            return response
+        } catch (error) {
+            console.error('Error al eliminar el archivo de aduana:', error)
+            return { success: false, error: 'Error al eliminar el archivo de aduana' }
+        }
+        finally {
+            loading.value = false
+        }
+    }
+
     return {
         // Estado
         loading: readonly(loading),
@@ -232,6 +261,9 @@ export const useAduana = () => {
         updateAduana,
         handleTributosFiles,
         handleImpuestosFiles,
-        resetForm
+        resetForm,
+        aduanaFiles,
+        aduanaImpuestosPagados,
+        deleteFileAduana
     }
 }
