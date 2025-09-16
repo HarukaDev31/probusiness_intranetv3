@@ -122,6 +122,7 @@ const handleUploadPlantillaFinal = () => {
         const result = await uploadPlantillaFinal(formData)
         if (result) {
           showSuccess('Éxito', 'Plantilla final subida correctamente')
+          getGeneral(Number(id))
         } else {
           showError('Error', 'Error al subir la plantilla final')
         }
