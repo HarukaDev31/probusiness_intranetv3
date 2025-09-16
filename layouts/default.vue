@@ -271,6 +271,8 @@ const convertIconToHeroicons = (faIcon: string): string => {
     'bi bi-clipboard': 'i-heroicons-clipboard',
     'fa fa-user': 'mdi:account-box-outline',
     'fas fa-graduation-cap': 'i-heroicons-academic-cap',
+    'fa fa-dashboard': 'i-heroicons-chart-bar-square',
+    'fa fa-chart-line': 'i-heroicons-chart-bar-square',
   }
 
   return iconMap[faIcon] || ''
@@ -289,7 +291,8 @@ const convertUrlToRoute = (menuUrl: string, intranetUrl?: string | null): string
     'BaseDatos/ProductosController/index': '/basedatos/productos',
     'BaseDatos/RegulacionesController/index': '/basedatos/regulaciones',
     'CargaConsolidada/ContenedorConsolidado/listar': '/cargaconsolidada',
-    'CargaConsolidada/ContenedorConsolidado/listarCompletados': '/cargaconsolidada/completados'
+    'CargaConsolidada/ContenedorConsolidado/listarCompletados': '/cargaconsolidada/completados',
+    'Dashboard/VentasController/index': '/dashboard'
   }
 
   return urlMap[menuUrl] || '/'
