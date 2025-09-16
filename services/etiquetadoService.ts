@@ -136,7 +136,13 @@ export class EtiquetadoService extends BaseService {
       }
     }
   }
+  /**
+   * const response = await this.apiCall<any>('/api/base-datos/regulaciones/etiquetado', {
+        method: 'POST',
+        body: formDataToSend
+      })
 
+   */
   /**
    * Obtener lista jerárquica de regulaciones de etiquetado
    */
@@ -192,26 +198,13 @@ export class EtiquetadoService extends BaseService {
   /**
    * Actualizar una regulación de etiquetado
    */
-  static async updateEtiquetado(id: number, etiquetadoData: Partial<CreateEtiquetadoRequest>): Promise<EtiquetadoResponse> {
+  static async updateEtiquetado(id: number, etiquetadoData: any): Promise<EtiquetadoResponse> {
     try {
-      const formData = new FormData()
       
-      // Agregar solo los campos que se van a actualizar
-      Object.entries(etiquetadoData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (key === 'imagenes' && Array.isArray(value)) {
-            value.forEach((imagen, index) => {
-              formData.append(`imagenes[${index}]`, imagen)
-            })
-          } else {
-            formData.append(key, value.toString())
-          }
-        }
-      })
 
-      const response = await this.apiCall<EtiquetadoResponse>(`/api/base-datos/regulaciones/etiquetado/${id}`, {
-        method: 'PUT',
-        body: formData
+      const response = await this.apiCall<EtiquetadoResponse>(`/api/base-datos/regulaciones/etiquetado`, {
+        method: 'POST',
+        body: etiquetadoData
       })
       return response
     } catch (error) {

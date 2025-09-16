@@ -1,177 +1,210 @@
-import { ref, readonly } from 'vue'
-
-interface NotificationConfig {
-  title?: string
-  subtitle?: string
-  message: string
-  details?: string
-  showRetryButton?: boolean
-  showSecondaryButton?: boolean
-  secondaryButtonText?: string
-  autoClose?: boolean
-  duration?: number
-}
-
-// Estado global para las notificaciones
-const showSuccessModal = ref(false)
-const showErrorModal = ref(false)
-const successConfig = ref<NotificationConfig>({
-  title: '¡Éxito!',
-  subtitle: 'Operación completada',
-  message: '',
-  autoClose: true,
-  duration: 3000
-})
-const errorConfig = ref<NotificationConfig>({
-  title: 'Error',
-  subtitle: 'Algo salió mal',
-  message: '',
-  details: '',
-  showRetryButton: false,
-  autoClose: false
-})
-
-// Callbacks para acciones
-let retryCallback: (() => void) | null = null
-let secondaryActionCallback: (() => void) | null = null
+import { ref, computed, watch } from 'vue'
+import type { 
+  Notification, 
+  NotificationFilters, 
+  NotificationCreateData,
+  LegacyNotification
+} from '~/types/notification'
+import { NotificationService } from '~/services/notificationService'
 
 export const useNotifications = () => {
-  const showSuccess = (config: NotificationConfig) => {
-    successConfig.value = {
-      ...successConfig.value,
-      ...config
+  // Estado reactivo
+  const notifications = ref<Notification[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+  const unreadCount = ref(0)
+
+  // Paginación
+  const currentPage = ref(1)
+  const totalPages = ref(1)
+  const totalItems = ref(0)
+  const itemsPerPage = ref(15)
+
+  // Filtros
+  const filters = ref<NotificationFilters>({
+    per_page: 15,
+    page: 1
+  })
+
+  // Computed properties
+  const hasNotifications = computed(() => notifications.value.length > 0)
+  const hasUnreadNotifications = computed(() => unreadCount.value > 0)
+  
+  const unreadNotifications = computed(() => 
+    notifications.value.filter(n => !n.estado_usuario.leida)
+  )
+
+  const readNotifications = computed(() => 
+    notifications.value.filter(n => n.estado_usuario.leida)
+  )
+
+  // Métodos principales
+  const fetchNotifications = async (newFilters?: Partial<NotificationFilters>) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      if (newFilters) {
+        filters.value = { ...filters.value, ...newFilters }
+      }
+
+      const response = await NotificationService.getNotifications(filters.value)
+      console.log(response)
+      notifications.value = response.data.data
+      currentPage.value = response.data.current_page
+      totalPages.value = response.data.last_page
+      totalItems.value = response.data.total
+      itemsPerPage.value = response.data.per_page
+
+    } catch (err: any) {
+      error.value = err.message || 'Error al cargar notificaciones'
+      console.error('Error fetching notifications:', err)
+    } finally {
+      loading.value = false
     }
-    showSuccessModal.value = true
+  }
 
-    // Auto-close si está habilitado
-    if (config.autoClose !== false) {
-      setTimeout(() => {
-        showSuccessModal.value = false
-      }, config.duration || 3000)
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await NotificationService.getUnreadCount()
+      console.log(response)
+      unreadCount.value = response
+    } catch (err: any) {
+      console.error('Error fetching unread count:', err)
     }
   }
 
-  const showError = (config: NotificationConfig, onRetry?: () => void) => {
-    errorConfig.value = {
-      ...errorConfig.value,
-      ...config
+  const markAsRead = async (id: number) => {
+    try {
+      await NotificationService.markAsRead(id)
+      
+      // Actualizar estado local
+      const notification = notifications.value.find(n => n.id === id)
+      if (notification && !notification.estado_usuario.leida) {
+        notification.estado_usuario.leida = true
+        notification.estado_usuario.fecha_lectura = new Date().toISOString()
+        unreadCount.value = Math.max(0, unreadCount.value - 1)
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Error al marcar como leída'
+      console.error('Error marking as read:', err)
     }
-    showErrorModal.value = true
-    retryCallback = onRetry || null
   }
 
-  const showSuccessWithSecondary = (
-    config: NotificationConfig, 
-    onSecondaryAction?: () => void
-  ) => {
-    successConfig.value = {
-      ...successConfig.value,
-      ...config,
-      showSecondaryButton: true,
-      autoClose: false
+  const markAllAsRead = async () => {
+    try {
+      const unreadIds = unreadNotifications.value.map(n => n.id)
+      if (unreadIds.length === 0) return
+
+      await NotificationService.markMultipleAsRead(unreadIds)
+      
+      // Actualizar estado local
+      notifications.value.forEach(notification => {
+        if (!notification.estado_usuario.leida) {
+          notification.estado_usuario.leida = true
+          notification.estado_usuario.fecha_lectura = new Date().toISOString()
+        }
+      })
+      
+      unreadCount.value = 0
+    } catch (err: any) {
+      error.value = err.message || 'Error al marcar todas como leídas'
+      console.error('Error marking all as read:', err)
     }
-    showSuccessModal.value = true
-    secondaryActionCallback = onSecondaryAction || null
   }
 
-  const closeSuccessModal = () => {
-    showSuccessModal.value = false
-    secondaryActionCallback = null
-  }
-
-  const closeErrorModal = () => {
-    showErrorModal.value = false
-    retryCallback = null
-  }
-
-  const handleRetry = () => {
-    if (retryCallback) {
-      retryCallback()
+  const handleNotificationClick = async (notification: Notification) => {
+    try {
+      await NotificationService.handleNotificationClick(notification)
+      
+      // Actualizar estado local si no estaba leída
+      if (!notification.estado_usuario.leida) {
+        notification.estado_usuario.leida = true
+        notification.estado_usuario.fecha_lectura = new Date().toISOString()
+        unreadCount.value = Math.max(0, unreadCount.value - 1)
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Error al procesar notificación'
+      console.error('Error handling notification click:', err)
     }
-    closeErrorModal()
   }
 
-  const handleSecondaryAction = () => {
-    if (secondaryActionCallback) {
-      secondaryActionCallback()
+  const deleteNotification = async (id: number) => {
+    try {
+      const index = notifications.value.findIndex(n => n.id === id)
+      if (index > -1) {
+        const notification = notifications.value[index]
+        
+        if (!notification.estado_usuario.leida) {
+          unreadCount.value = Math.max(0, unreadCount.value - 1)
+        }
+        
+        notifications.value.splice(index, 1)
+        totalItems.value = Math.max(0, totalItems.value - 1)
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Error al eliminar notificación'
+      console.error('Error deleting notification:', err)
     }
-    closeSuccessModal()
   }
 
-  // Funciones de conveniencia para operaciones comunes
-  const showCreateSuccess = (entityName: string) => {
-    showSuccess({
-      title: '¡Creado exitosamente!',
-      subtitle: `${entityName} ha sido creado`,
-      message: `El ${entityName.toLowerCase()} se ha creado correctamente y ya está disponible en el sistema.`
-    })
-  }
+  // Métodos de utilidad
+  const getTypeColor = (tipo: Notification['tipo']) => 
+    NotificationService.getTypeColor(tipo)
 
-  const showUpdateSuccess = (entityName: string) => {
-    showSuccess({
-      title: '¡Actualizado exitosamente!',
-      subtitle: `${entityName} ha sido actualizado`,
-      message: `Los cambios en el ${entityName.toLowerCase()} se han guardado correctamente.`
-    })
-  }
+  const getTypeIcon = (tipo: Notification['tipo']) => 
+    NotificationService.getTypeIcon(tipo)
 
-  const showDeleteSuccess = (entityName: string) => {
-    showSuccess({
-      title: '¡Eliminado exitosamente!',
-      subtitle: `${entityName} ha sido eliminado`,
-      message: `El ${entityName.toLowerCase()} se ha eliminado correctamente del sistema.`
-    })
-  }
+  const formatDate = (dateString: string) => 
+    NotificationService.formatDate(dateString)
 
-  const showNetworkError = (operation: string, onRetry?: () => void) => {
-    showError({
-      title: 'Error de conexión',
-      subtitle: 'No se pudo completar la operación',
-      message: `No se pudo ${operation.toLowerCase()}. Verifica tu conexión a internet e intenta nuevamente.`,
-      showRetryButton: true
-    }, onRetry)
-  }
+  // Compatibilidad con formato legacy
+  const toLegacyFormat = (notification: Notification): LegacyNotification => 
+    NotificationService.toLegacyFormat(notification)
 
-  const showValidationError = (message: string) => {
-    showError({
-      title: 'Error de validación',
-      subtitle: 'Datos incorrectos',
-      message: message
-    })
-  }
+  const legacyNotifications = computed(() => 
+    notifications.value.map(toLegacyFormat)
+  )
 
-  const showServerError = (operation: string, details?: string, onRetry?: () => void) => {
-    showError({
-      title: 'Error del servidor',
-      subtitle: 'Problema interno',
-      message: `No se pudo ${operation.toLowerCase()}. El servidor ha devuelto un error.`,
-      details: details,
-      showRetryButton: true
-    }, onRetry)
+  // Inicialización
+  const initialize = async () => {
+    await Promise.all([
+      fetchNotifications(),
+      fetchUnreadCount()
+    ])
   }
 
   return {
     // Estado
-    showSuccessModal: readonly(showSuccessModal),
-    showErrorModal: readonly(showErrorModal),
-    successConfig: readonly(successConfig),
-    errorConfig: readonly(errorConfig),
-
-    // Métodos principales
-    showSuccess,
-    showError,
-    showSuccessWithSecondary,
-    closeSuccessModal,
-    closeErrorModal,
-    handleRetry,
-    handleSecondaryAction,
-
-    // Métodos de conveniencia
-    showCreateSuccess,
-    showUpdateSuccess,
-    showDeleteSuccess,
-    showNetworkError,
-    showValidationError,
-    showServerError
+    notifications: readonly(notifications),
+    loading: readonly(loading),
+    error: readonly(error),
+    unreadCount: readonly(unreadCount),
+    
+    // Paginación
+    currentPage: readonly(currentPage),
+    totalPages: readonly(totalPages),
+    totalItems: readonly(totalItems),
+    itemsPerPage: readonly(itemsPerPage),
+    
+    // Computed
+    hasNotifications,
+    hasUnreadNotifications,
+    unreadNotifications,
+    readNotifications,
+    legacyNotifications,
+    
+    // Métodos
+    fetchNotifications,
+    fetchUnreadCount,
+    markAsRead,
+    markAllAsRead,
+    handleNotificationClick,
+    deleteNotification,
+    getTypeColor,
+    getTypeIcon,
+    formatDate,
+    toLegacyFormat,
+    initialize
   }
-} 
+}

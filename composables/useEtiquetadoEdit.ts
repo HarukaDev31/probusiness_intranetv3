@@ -134,10 +134,7 @@ export function useEtiquetadoEdit(regulationId: string) {
       }
 
       // Usar el mismo endpoint que crear pero con id_regulacion
-      const response = await apiCall<any>('/api/base-datos/regulaciones/etiquetado', {
-        method: 'POST',
-        body: formDataToSend
-      })
+      const response = await EtiquetadoService.updateEtiquetado(id, formDataToSend)
 
       if (response.success) {
         console.log('Etiquetado actualizado exitosamente:', response.data)
