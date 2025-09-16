@@ -218,6 +218,16 @@ const columns: TableColumn<any>[] = [
         }
     },
     {
+        accessorKey: 'cbm_total_peru',
+        header: 'CBM Perú',
+        cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2)
+    },
+    {
+        accessorKey: 'cbm_total_china',
+        header: 'CBM China',
+        cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2)
+    },
+    {
         id: 'actions',
         header: 'Acciones',
         cell: ({ row }) => {
@@ -365,6 +375,16 @@ const documentacionColumns: TableColumn<any>[] = [
         header: 'C. Destino',
         cell: ({ row }) => formatCurrency(row.getValue('costo_destino'))
 
+    },
+    {
+        accessorKey: 'cbm_total_peru',
+        header: 'CBM Perú',
+        cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2)
+    },
+    {
+        accessorKey: 'cbm_total_china',
+        header: 'CBM China',
+        cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2)
     },
     {
         accessorKey: 'acciones',

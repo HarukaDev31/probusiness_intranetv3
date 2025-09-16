@@ -158,7 +158,7 @@ const columns: TableColumn<any>[] = [
     {
         accessorKey: 'carga',
         header: 'Carga',
-        cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}`
+    cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}`
     },
     {
         accessorKey: 'mes',
@@ -182,7 +182,6 @@ const columns: TableColumn<any>[] = [
             const fa =
             row.getValue('fecha_arribo') ||
             row.original?.fecha_arribo || // por si viene en original
-            row.getValue('f_puerto') ||
             row.original?.f_puerto
 
             return fa ? formatDateTimeToDmy(fa) : 'N/A'
@@ -217,6 +216,16 @@ const columns: TableColumn<any>[] = [
                 ]
             })
         }
+    },
+    {
+        accessorKey: 'cbm_total_peru',
+        header: 'CBM Perú',
+        cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2)
+    },
+    {
+        accessorKey: 'cbm_total_china',
+        header: 'CBM China',
+        cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2)
     },
     {
         id: 'actions',
@@ -335,6 +344,16 @@ const documentacionColumns: TableColumn<any>[] = [
                 }
             })
         }
+    },
+    {
+        accessorKey: 'cbm_total_peru',
+        header: 'CBM Perú',
+        cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2)
+    },
+    {
+        accessorKey: 'cbm_total_china',
+        header: 'CBM China',
+        cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2)
     },
     {
         accessorKey: 'actions',
