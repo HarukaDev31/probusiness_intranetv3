@@ -122,7 +122,19 @@
           <div class="mt-2 space-y-1 px-2">
             <div class="py-2">
               <UButton variant="ghost" class="w-full justify-start rounded-md text-sm text-gray-700 dark:text-gray-300"
-                icon="i-heroicons-bell" label="Notificaciones" @click="openNotifications" />
+                icon="i-heroicons-bell" @click="openNotifications">
+                <template #default>
+                  <span>Notificaciones</span>
+                  <UBadge 
+                    v-if="unreadCount > 0"
+                    :label="unreadCount > 99 ? '99+' : unreadCount.toString()"
+                    color="error"
+                    variant="solid"
+                    size="xs"
+                    class="ml-auto"
+                  />
+                </template>
+              </UButton>
             </div> 
 
             <div class="flex items-center justify-between py-4">
@@ -165,11 +177,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import type { SidebarCategory } from '../types/module'
 import { ROLES } from '~/constants/roles'
 import { useUserRole } from '../composables/auth/useUserRole'
 import { useAuth } from '../composables/auth/useAuth'
+import { useNotifications } from '../composables/useNotifications'
 
 interface AuthUser {
   id: number | string
@@ -203,6 +216,13 @@ const {
   userEmail,
   fetchCurrentUser
 } = useUserRole()
+
+// Notifications composable
+const {
+  unreadCount,
+  fetchUnreadCount
+} = useNotifications()
+
 import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar'
 // Dark mode
 const colorMode = useColorMode()
@@ -246,8 +266,10 @@ const logout = async () => {
   await logout()
 }
 
-const openNotifications = () => {
-  return navigateTo('/notificaciones')
+const openNotifications = async () => {
+  // Refrescar contador antes de navegar
+  await fetchUnreadCount()
+  await navigateTo('/notificaciones')
 }
 
 /**
@@ -270,8 +292,25 @@ const isParentActive = (item: any) => {
   return false
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchCurrentUser()
+  
+  // Cargar contador de notificaciones no leídas
+  await fetchUnreadCount()
+  
+  // Actualizar contador cada 30 segundos
+  const interval = setInterval(async () => {
+    try {
+      await fetchUnreadCount()
+    } catch (error) {
+      console.error('Error actualizando contador de notificaciones:', error)
+    }
+  }, 30000) // 30 segundos
+  
+  // Limpiar intervalo cuando el componente se desmonte
+  onUnmounted(() => {
+    clearInterval(interval)
+  })
 
   // expandir padres que contienen la ruta activa
   const current = useRoute().path
