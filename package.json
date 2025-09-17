@@ -24,6 +24,11 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@iconify-json/fa": "^1.2.2",
+    "@iconify-json/heroicons": "^1.2.2",
+    "@iconify-json/mdi": "^1.2.3",
+    "@iconify-json/tabler": "^1.2.23",
+    "@iconify-json/vscode-icons": "^1.2.30",
     "@nuxt/typescript-build": "^3.0.2",
     "@types/node": "^24.3.0",
     "@types/pusher-js": "^4.2.2",
