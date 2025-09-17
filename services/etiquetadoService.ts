@@ -192,25 +192,27 @@ export class EtiquetadoService extends BaseService {
   /**
    * Actualizar una regulación de etiquetado
    */
-  static async updateEtiquetado(id: number, etiquetadoData: Partial<CreateEtiquetadoRequest>): Promise<EtiquetadoResponse> {
+  static async updateEtiquetado(id: number, etiquetadoData: Partial<CreateEtiquetadoRequest> & { imagenes_eliminar?: number[] }): Promise<EtiquetadoResponse> {
     try {
       const formData = new FormData()
-      
-      // Agregar solo los campos que se van a actualizar
+      // Backend espera POST al mismo endpoint con id_regulacion para actualizar
+      formData.append('id_regulacion', id.toString())
+
       Object.entries(etiquetadoData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (key === 'imagenes' && Array.isArray(value)) {
-            value.forEach((imagen, index) => {
-              formData.append(`imagenes[${index}]`, imagen)
-            })
-          } else {
-            formData.append(key, value.toString())
-          }
+        if (value === undefined || value === null) return
+        if (key === 'imagenes' && Array.isArray(value)) {
+          (value as File[]).forEach((img, index) => formData.append(`imagenes[${index}]`, img))
+          return
         }
+        if (key === 'imagenes_eliminar' && Array.isArray(value)) {
+          (value as number[]).forEach(imgId => formData.append('imagenes_eliminar[]', imgId.toString()))
+          return
+        }
+        formData.append(key, value.toString())
       })
 
-      const response = await this.apiCall<EtiquetadoResponse>(`/api/base-datos/regulaciones/etiquetado/${id}`, {
-        method: 'PUT',
+      const response = await this.apiCall<EtiquetadoResponse>('/api/base-datos/regulaciones/etiquetado', {
+        method: 'POST',
         body: formData
       })
       return response

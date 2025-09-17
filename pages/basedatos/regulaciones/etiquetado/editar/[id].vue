@@ -132,9 +132,8 @@ const goBackToEtiquetado = () => {
   goBack('/basedatos/regulaciones?tab=etiquetado')
 }
 
-// Enhanced loadRegulation to set existing images
+// Enhanced loadRegulation to set existing images (no touch product options yet)
 const enhancedLoadRegulation = async () => {
-  // Set up callback for existing images
   setExistingImagesCallbackFn(setExistingImages)
   await loadRegulation()
 }
@@ -165,7 +164,19 @@ const createProduct = async () => {
 
 // Load regulation and products on mount
 onMounted(async () => {
+  // 1. Cargar regulación (establece formData.producto con {label,value})
   await enhancedLoadRegulation()
-  searchProducts('')
+  // 2. Cargar opciones de productos
+  await searchProducts('')
+  // 3. Alinear la referencia del producto seleccionado con la opción existente para que UInputMenu lo reconozca
+  if (formData.value.producto) {
+    const match = productOptions.value.find(o => o.value === formData.value.producto.value)
+    if (match) {
+      formData.value.producto = match
+    } else {
+      // Si no vino en el listado, lo insertamos manualmente al inicio
+      productOptions.value.unshift({ ...formData.value.producto })
+    }
+  }
 })
 </script> 
