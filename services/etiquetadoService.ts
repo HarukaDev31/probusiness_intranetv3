@@ -136,7 +136,13 @@ export class EtiquetadoService extends BaseService {
       }
     }
   }
+  /**
+   * const response = await this.apiCall<any>('/api/base-datos/regulaciones/etiquetado', {
+        method: 'POST',
+        body: formDataToSend
+      })
 
+   */
   /**
    * Obtener lista jerárquica de regulaciones de etiquetado
    */
