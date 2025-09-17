@@ -95,54 +95,42 @@ export function useEtiquetadoEdit(regulationId: string) {
 
   const saveForm = async (imagesToDeleteBackend: number[], imageSlots: any[]) => {
     isSubmitting.value = true
-    
     try {
       const id = parseInt(regulationId)
 
-      // Crear FormData para manejar archivos
-      const formDataToSend = new FormData()
-
-      // Agregar el ID de la regulación para indicar que es una actualización
-      formDataToSend.append('id_regulacion', id.toString())
-
-      // Agregar campos de texto
-      formDataToSend.append('id_rubro', formData.value.producto?.value || '')
-      formDataToSend.append('observaciones', formData.value.observaciones || '')
-
-      // Agregar IDs de imágenes a eliminar
-      if (imagesToDeleteBackend.length > 0) {
-        imagesToDeleteBackend.forEach(imageId => {
-          formDataToSend.append('imagenes_eliminar[]', imageId.toString())
-        })
-        console.log('Imágenes a eliminar en backend:', imagesToDeleteBackend)
+      // Preparar payload parcial para el servicio update
+      const payload: any = {
+        id_rubro: formData.value.producto?.value ? parseInt(formData.value.producto.value) : undefined,
+        observaciones: formData.value.observaciones || undefined
       }
 
-      // Agregar nuevas imágenes si existen
-      const newImages = imageSlots.filter(slot => slot.file)
+      // Nuevas imágenes
+      const newImages = imageSlots.filter(slot => slot.file).map(slot => slot.file)
       if (newImages.length > 0) {
-        newImages.forEach((slot, index) => {
-          if (slot.file) {
-            formDataToSend.append(`imagenes[${index}]`, slot.file)
-          }
-        })
-        console.log('Nuevas imágenes a agregar:', newImages.length)
+        payload.imagenes = newImages
       }
 
-      console.log('FormData contents for update:')
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(`${key}:`, value)
+      // Realizar actualización principal
+      // Incluir imágenes a eliminar si existen
+      if (imagesToDeleteBackend.length > 0) {
+        payload.imagenes_eliminar = imagesToDeleteBackend
       }
-
-      // Usar el mismo endpoint que crear pero con id_regulacion
-      const response = await EtiquetadoService.updateEtiquetado(id, formDataToSend)
-
-      if (response.success) {
-        console.log('Etiquetado actualizado exitosamente:', response.data)
-        router.push('/basedatos/regulaciones?tab=etiquetado')
-      } else {
-        console.error('Error al actualizar el etiquetado:', response.error)
+      const response = await EtiquetadoService.updateEtiquetado(id, payload)
+      if (!response.success) {
+        console.error('Error al actualizar la regulación de etiquetado (datos principales):', response.error)
         alert('Error al actualizar el etiquetado: ' + (response.error || 'Error desconocido'))
+        return
       }
+
+      // Si hay imágenes por eliminar y el backend lo requiere en un endpoint separado, aquí podríamos hacer otra llamada.
+      // Si tu backend acepta eliminaciones en el mismo update, ajusta el servicio para incluir "imagenes_eliminar".
+      if (imagesToDeleteBackend.length > 0) {
+        // TODO: Implementar si existe endpoint para eliminar imágenes individualmente.
+        console.log('Imágenes marcadas para eliminar (implementa endpoint backend si aplica):', imagesToDeleteBackend)
+      }
+
+      console.log('Etiquetado actualizado exitosamente:', response.data)
+      router.push('/basedatos/regulaciones?tab=etiquetado')
     } catch (err) {
       console.error('Error updating etiquetado:', err)
       alert('Error al actualizar el etiquetado')
