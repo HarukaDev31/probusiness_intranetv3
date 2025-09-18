@@ -69,7 +69,7 @@ export const useConsolidado = () => {
   })
 
   // Methods
-  const fetchConsolidadoData = async (customFilters?: ConsolidadoFilters, page: number = 1, perPage: number = 10) => {
+  const fetchConsolidadoData = async (customFilters?: ConsolidadoFilters, page: number = 1, perPage: number = 10, idCotizacion?: number) => {
     loading.value = true
     error.value = null
 
@@ -101,6 +101,11 @@ export const useConsolidado = () => {
         ...effectiveFilters,
         page,
         per_page: perPage
+      }
+
+      // Agregar idCotizacion si está presente
+      if (idCotizacion) {
+        filtersWithPagination.idCotizacion = idCotizacion
       }
 
       const response = await ConsolidadoService.getConsolidadoPagos(filtersWithPagination)

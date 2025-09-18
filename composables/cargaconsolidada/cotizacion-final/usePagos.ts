@@ -63,6 +63,14 @@ export const usePagos = () => {
         searchPagos.value = search
         getPagos(Number(id))
     }
+    const registrarPago = async (formData: FormData) => {
+        try{
+            const response = await PagosService.registrarPago(formData)
+            return response
+        }catch(err){
+            error.value = err as string
+        }
+    }
     return {
         pagos,
         loadingPagos,
@@ -76,6 +84,7 @@ export const usePagos = () => {
         filterConfigPagos,
         getPagos,
         totalRecordsPagos,
-        handleSearchPagos
+        handleSearchPagos,
+        registrarPago
     }
 }   
