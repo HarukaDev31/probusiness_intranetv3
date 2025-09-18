@@ -23,6 +23,18 @@ export class PagosService  extends BaseService  {
             throw error
         }
     }
+    static async registrarPago(formData: FormData): Promise<PagosResponse> {
+        try {
+            const response = await this.apiCall<PagosResponse>(`${this.baseUrl}`, {
+                method: 'POST',
+                body: formData
+            })
+            return response
+        } catch (error) {
+            console.error('Error al registrar el pago:', error)
+            throw error
+        }
+    }
 }
 
 

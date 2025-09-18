@@ -9,7 +9,7 @@ export class ConsolidadoService extends BaseService {
   /**
    * Obtiene la lista de pagos consolidados
    */
-  static async getConsolidadoPagos(filters?: ConsolidadoFilters & { page?: number; per_page?: number }): Promise<ConsolidadoResponse> {
+  static async getConsolidadoPagos(filters?: ConsolidadoFilters & { page?: number; per_page?: number; idCotizacion?: number }): Promise<ConsolidadoResponse> {
     try {
       const queryParams = new URLSearchParams()
       
@@ -35,6 +35,10 @@ export class ConsolidadoService extends BaseService {
           // send both per_page and limit to support different backend controllers
           queryParams.append('per_page', String(filters.per_page))
           queryParams.append('limit', String(filters.per_page))
+        }
+        // Agregar idCotizacion si está presente
+        if (filters.idCotizacion) {
+          queryParams.append('idCotizacion', String(filters.idCotizacion))
         }
       }
 

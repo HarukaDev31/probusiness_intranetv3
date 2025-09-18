@@ -556,41 +556,64 @@ const totalAmountCursosComputed = computed(() => {
   return typeof amount === 'number' ? amount : 0
 })
 
+// Helper functions to get parameters from route
+const getIdCotizacionFromRoute = () => {
+  const route = useRoute()
+  return route.query.idCotizacion ? Number(route.query.idCotizacion) : undefined
+}
+
+const getIdPedidoFromRoute = () => {
+  const route = useRoute()
+  return route.query.idPedido ? Number(route.query.idPedido) : undefined
+}
+
 // Methods
 const handleSearch = (query: string) => {
   search.value = query
+  const idCotizacion = getIdCotizacionFromRoute()
+  const idPedido = getIdPedidoFromRoute()
+  
   if (activeTab.value === 'consolidado') {
     updateFiltersConsolidado({ search: query })
-    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
+    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
   } else {
     updateFiltersCursos({ search: query })
-    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value)
+    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   }
 }
 
 const handlePageChange = (page: number) => {
+  const idCotizacion = getIdCotizacionFromRoute()
+  const idPedido = getIdPedidoFromRoute()
+  
   if (activeTab.value === 'consolidado') {
-    fetchConsolidadoData(filtersConsolidado.value, page, itemsPerPage.value)
+    fetchConsolidadoData(filtersConsolidado.value, page, itemsPerPage.value, idCotizacion)
   } else {
-    fetchCursosData(filtersCursos.value, page, itemsPerPage.value)
+    fetchCursosData(filtersCursos.value, page, itemsPerPage.value, idPedido)
   }
 }
 
 const handleItemsPerPageChange = (items: number) => {
+  const idCotizacion = getIdCotizacionFromRoute()
+  const idPedido = getIdPedidoFromRoute()
+  
   if (activeTab.value === 'consolidado') {
-    fetchConsolidadoData(filtersConsolidado.value, 1, items)
+    fetchConsolidadoData(filtersConsolidado.value, 1, items, idCotizacion)
   } else {
-    fetchCursosData(filtersCursos.value, 1, items)
+    fetchCursosData(filtersCursos.value, 1, items, idPedido)
   }
 }
 
 const handleFilterChange = (filterType: string, value: string) => {
+  const idCotizacion = getIdCotizacionFromRoute()
+  const idPedido = getIdPedidoFromRoute()
+  
   if (activeTab.value === 'consolidado') {
     updateFiltersConsolidado({ [filterType]: value })
-    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
+    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
   } else {
     updateFiltersCursos({ [filterType]: value })
-    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value)
+    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   }
 }
 
@@ -623,29 +646,38 @@ const handleViewDocument = (id: number) => {
 onMounted(() => {
   const route = useRoute()
   const tabQuery = route.query.tab
+  const idCotizacion = route.query.idCotizacion ? Number(route.query.idCotizacion) : undefined
+  const idPedido = route.query.idPedido ? Number(route.query.idPedido) : undefined
+  
   if (tabQuery) {
     activeTab.value = tabQuery as string
   } else {
     activeTab.value = (tabs && tabs.length > 0) ? tabs[0].value : 'consolidado' // Cambiar a 'consolidado' como tab inicial
   }
   console.log('activeTab:', activeTab.value)
+  console.log('idCotizacion desde query:', idCotizacion)
+  console.log('idPedido desde query:', idPedido)
   
   // Cargar datos iniciales según el tab activo
   if (activeTab.value === 'consolidado') {
-    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
+    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
   } else if (activeTab.value === 'cursos') {
-    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value)
+    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   }
 })
 watch(activeTab, (newTab, oldTab) => {
   console.log('newTab:', newTab)
   console.log('oldTab:', oldTab)
+  const route = useRoute()
+  const idCotizacion = route.query.idCotizacion ? Number(route.query.idCotizacion) : undefined
+  const idPedido = route.query.idPedido ? Number(route.query.idPedido) : undefined
+  
   if (newTab === 'consolidado') {
     navigateTo(`/verificacion?tab=consolidado`)
-    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value)
+    fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
   } else if (newTab === 'cursos') {
     navigateTo(`/verificacion?tab=cursos`)
-    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value)
+    fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   }
 })
 </script>

@@ -26,7 +26,7 @@ export class PagosService extends BaseService {
   /**
    * Obtiene la lista de pagos de cursos con filtros y paginación
    */
-  static async getCursosPagos(filters?: CursosFilters & { page?: number; limit?: number }): Promise<CursosResponse> {
+  static async getCursosPagos(filters?: CursosFilters & { page?: number; limit?: number; idPedido?: number }): Promise<CursosResponse> {
     try {
       const queryParams = new URLSearchParams()
 
@@ -44,6 +44,9 @@ export class PagosService extends BaseService {
       // Filtros adicionales
       if (filters?.campana) queryParams.append('campana', filters.campana.toString())
       if (filters?.estado_pago) queryParams.append('estado_pago', filters.estado_pago)
+      
+      // Agregar idPedido si está presente
+      if (filters?.idPedido) queryParams.append('idPedido', filters.idPedido.toString())
 
       const url = `${this.baseUrl}?${queryParams.toString()}`
 
