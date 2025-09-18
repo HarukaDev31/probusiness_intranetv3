@@ -223,4 +223,17 @@ export class CotizacionProveedorService extends BaseService {
             throw new Error('No se pudo actualizar el estado del proveedor')
         }
     }
+    static async getProveedoresByCotizacion(id: number): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(
+                `${this.baseUrl}/proveedor/cotizacion/${id}`,
+                { method: 'GET' }
+            )
+            return response
+        }
+        catch (error) {
+            console.error('Error al obtener los proveedores por cotización:', error)
+            throw new Error('No se pudieron obtener los proveedores por cotización')
+        }
+    }
 }

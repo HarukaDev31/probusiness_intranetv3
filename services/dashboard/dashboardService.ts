@@ -5,6 +5,7 @@ import type {
     DashboardFiltroContenedorResponse, 
     DashboardFiltroVendedorResponse,
     DashboardEvolucionResponse,
+    DashboardCotizacionesDiariasResponse,
     DashboardFilters 
 } from "~/types/dashboard"
 
@@ -87,6 +88,22 @@ export class DashboardService extends BaseService {
             return response
         } catch (error) {
             console.error('Error al obtener evolución de volúmenes:', error)
+            throw error
+        }
+    }
+
+    /**
+     * Obtener cotizaciones confirmadas por vendedor por día
+     */
+    static async getCotizacionesConfirmadasPorVendedorPorDia(filters: DashboardFilters = {}): Promise<DashboardCotizacionesDiariasResponse> {
+        try {
+            const response = await this.apiCall<DashboardCotizacionesDiariasResponse>(`${this.baseUrl}/cotizaciones-confirmadas-por-vendedor-por-dia`, {
+                method: 'GET',
+                params: filters
+            })
+            return response
+        } catch (error) {
+            console.error('Error al obtener cotizaciones confirmadas por vendedor por día:', error)
             throw error
         }
     }

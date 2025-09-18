@@ -190,6 +190,7 @@ import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
 const { currentRole, currentId } = useUserRole()
 const tabs = ref([])
 import SimpleUploadFileModal from '~/components/commons/SimpleUploadFile.vue'
+import StatusOptionsModal from '~/components/cargaconsolidada/StatusOptionsModal.vue'
 const loadTabs = () => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
@@ -233,7 +234,7 @@ const loadTabs = () => {
 }
 const overlay = useOverlay()
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
-
+const statusOptionsModal = overlay.create(StatusOptionsModal)
 const exportData = async () => {
   if (tab.value === 'prospectos') {
     await exportProspectosData()
@@ -1266,7 +1267,6 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const nombre = row.original.nombre
             const div = h('div', {
-                //que tenga un max width y si es muy largo que lo haga doble linea
                 class: 'max-w-45 whitespace-normal',
             }, nombre)
             return div
@@ -1318,7 +1318,6 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
 
 
             ]
-            console.log(proveedores)
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
@@ -1570,14 +1569,14 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                         }
                     }),
                     h(UButton, {
-                        icon: 'i-heroicons-arrow-path-rounded-square',
+                        icon: 'i-heroicons-ellipsis-vertical',
                         variant: 'ghost',
-                        color: proveedor.send_rotulado_status ? 'primary' : 'secondary',
+                        color: 'success',
                         size: 'md',
                         onClick: () => {
-                            if(proveedor.send_rotulado_status=="SENDED"){
-                                handleRefreshRotuladoStatus(proveedor)
-                            }
+                            statusOptionsModal.open({
+                                idCotizacion: row.original.id
+                            });
                         }
                     })
                 ])

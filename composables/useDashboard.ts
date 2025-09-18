@@ -7,6 +7,7 @@ import type {
     DashboardFiltroVendedor,
     DashboardEvolucionItem,
     DashboardEvolucionData,
+    DashboardCotizacionesDiariasData,
     DashboardFilters,
     DashboardMetricas 
 } from '~/types/dashboard'
@@ -17,6 +18,7 @@ export function useDashboard() {
     const resumenData = ref<DashboardResumenItem[]>([])
     const vendedoresData = ref<DashboardVendedorItem[]>([])
     const evolucionData = ref<DashboardEvolucionData | null>(null)
+    const cotizacionesDiariasData = ref<DashboardCotizacionesDiariasData | null>(null)
     const filtrosContenedores = ref<DashboardFiltroContenedor[]>([])
     const filtrosVendedores = ref<DashboardFiltroVendedor[]>([])
     const totales = ref({
@@ -71,6 +73,11 @@ export function useDashboard() {
             volumenVendido: item.volumenes.vendido,
             volumenPendiente: item.volumenes.pendiente
         }))
+    })
+
+    const datosGraficoProgresoDiario = computed(() => {
+        if (!cotizacionesDiariasData.value) return null
+        return cotizacionesDiariasData.value.chart
     })
 
     // Métodos de carga de datos
@@ -141,6 +148,17 @@ export function useDashboard() {
         }
     }
 
+    const loadCotizacionesDiarias = async () => {
+        try {
+            const response = await DashboardService.getCotizacionesConfirmadasPorVendedorPorDia(filters.value)
+            if (response.success) {
+                cotizacionesDiariasData.value = response.data
+            }
+        } catch (error) {
+            console.error('Error al cargar cotizaciones diarias:', error)
+        }
+    }
+
     // Método para cargar todos los datos
     const loadDashboardData = async () => {
         loading.value = true
@@ -149,6 +167,7 @@ export function useDashboard() {
                 loadResumen(),
                 loadVendedores(),
                 loadEvolucionVolumenes(),
+                loadCotizacionesDiarias(),
                 loadFiltrosContenedores(),
                 loadFiltrosVendedores()
             ])
@@ -211,6 +230,7 @@ export function useDashboard() {
         resumenData,
         vendedoresData,
         evolucionData,
+        cotizacionesDiariasData,
         filtrosContenedores,
         filtrosVendedores,
         totales,
@@ -220,12 +240,14 @@ export function useDashboard() {
         metricas,
         datosGraficoVolumenes,
         datosGraficoVendedores,
+        datosGraficoProgresoDiario,
 
         // Métodos
         loadDashboardData,
         loadResumen,
         loadVendedores,
         loadEvolucionVolumenes,
+        loadCotizacionesDiarias,
         loadFiltrosContenedores,
         loadFiltrosVendedores,
         updateFilters,

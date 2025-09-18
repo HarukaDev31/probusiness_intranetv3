@@ -155,3 +155,68 @@ export interface DashboardEvolucionResponse {
   success: boolean
   data: DashboardEvolucionData
 }
+
+// Tipos para cotizaciones confirmadas por vendedor por día
+export interface DashboardCotizacionesDiariasDataset {
+  label: string
+  data: number[]
+  backgroundColor: string
+  borderColor: string
+  borderWidth: number
+  fill: boolean
+  tension: number
+  yAxisID?: string
+  type?: string
+  borderDash?: number[]
+}
+
+export interface DashboardCotizacionesDiariasChart {
+  labels: string[]
+  datasets: DashboardCotizacionesDiariasDataset[]
+}
+
+export interface DashboardCotizacionesDiariasEstadisticas {
+  total_cotizaciones: number
+  total_volumen: number
+  total_monto_logistica: number
+  total_monto_fob: number
+  total_monto_impuestos: number
+  promedio_diario: number
+  total_vendedores: number
+  periodo: {
+    inicio: string
+    fin: string
+    dias: number
+  }
+}
+
+export interface DashboardCotizacionesDiariasDetalleVendedor {
+  vendedor: string
+  total_cotizaciones: number
+  total_volumen: number
+  total_monto_logistica: number
+  promedio_diario: number
+  dias_activos: number
+}
+
+export interface DashboardCotizacionesDiariasDatoDetalle {
+  fecha: string
+  vendedor: string
+  cotizaciones_confirmadas: number
+  volumen_confirmado: number
+  monto_logistica: number
+  monto_fob: number
+  monto_impuestos: number
+}
+
+export interface DashboardCotizacionesDiariasData {
+  chart: DashboardCotizacionesDiariasChart
+  estadisticas: DashboardCotizacionesDiariasEstadisticas
+  detalle_vendedores: DashboardCotizacionesDiariasDetalleVendedor[]
+  datos_detalle: DashboardCotizacionesDiariasDatoDetalle[]
+}
+
+export interface DashboardCotizacionesDiariasResponse {
+  success: boolean
+  data: DashboardCotizacionesDiariasData
+}

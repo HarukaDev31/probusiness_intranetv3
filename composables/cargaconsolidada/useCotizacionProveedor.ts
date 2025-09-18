@@ -396,6 +396,21 @@ export const    useCotizacionProveedor = () => {
             loading.value = false
         }
     }
+    const getProveedoresByCotizacion = async (id: number) => {
+        if (!id) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.getProveedoresByCotizacion(id)
+            return response
+        }
+        catch (error) {
+            error.value = error.message || 'Error al obtener los proveedores por cotización'
+            console.error('Error en getProveedoresByCotizacion:', error)
+        } finally {
+            loading.value = false
+        }
+    }
     return {
         // Estado principal
         cotizacionProveedor,
@@ -448,6 +463,7 @@ export const    useCotizacionProveedor = () => {
         updateProveedorEstado,
         resetFiltersProveedor,
         exportData,
-        refreshRotuladoStatus
+        refreshRotuladoStatus,
+        getProveedoresByCotizacion
     }
 }
