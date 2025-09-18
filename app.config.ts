@@ -123,7 +123,7 @@ export default defineAppConfig({
             variant: 'pill',
             class: {
               indicator: 'bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-300 py-0',
-              trigger: 'data-[state=active]:text-gray-600 focus-visible:outline-2 hover:dark:text-gray-300 focus-visible:outline-offset-2 focus-visible:outline-inverted py-0'
+              trigger: 'data-[state=active]:text-gray-600 dark:data-[state=active]:text-gray-300 focus-visible:outline-2 hover:dark:text-gray-300 focus-visible:outline-offset-2 focus-visible:outline-inverted py-0'
             }
           },
           {

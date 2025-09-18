@@ -388,9 +388,9 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'nombre',
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre')
+            const nombre = row.getValue('nombre').toUpperCase()
             return h('div',{
-                class: 'max-w-30 whitespace-normal',
+                class: 'max-w-30 whitespace-normal break-words',
             }, nombre
             )
         }
@@ -412,7 +412,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const correo = row.getValue('correo')
             return h('div',{
-                class: 'max-w-55 whitespace-normal',
+                class: 'max-w-40 whitespace-normal break-words',
             }, correo || 'Sin correo'
             )
         }
@@ -568,7 +568,13 @@ const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'nombre',
         header: 'Nombre',
-        cell: ({ row }: { row: any }) => row.getValue('nombre')
+        cell: ({ row }: { row: any }) => {
+            const nombre = row.getValue('nombre').toUpperCase()
+            return h('div',{
+                class: 'max-w-30 whitespace-normal break-words',
+            }, nombre
+            )
+        }
     },
     {
         accessorKey: 'documento',
@@ -578,12 +584,24 @@ const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'correo',
         header: 'Correo',
-        cell: ({ row }: { row: any }) => row.getValue('correo') || 'Sin correo'
+        cell: ({ row }: { row: any }) => {
+            const correo = row.getValue('correo')
+            return h('div',{
+                class: 'max-w-40 whitespace-normal break-words',
+            }, correo || 'Sin correo'
+            )
+        }
     },
     {
         accessorKey: 'telefono',
         header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => row.getValue('telefono')
+        cell: ({ row }: { row: any }) => {
+            const telefono = row.getValue('telefono')
+            return h('div',{
+                class: 'max-w-20 whitespace-normal',
+            }, telefono
+            )
+        }
     },
     {
         accessorKey: 'estado_cliente',
@@ -727,7 +745,7 @@ const getPagosColumns = () => {
         {
             accessorKey: 'nombre',
             header: 'Nombre',
-            cell: ({ row }: { row: any }) => row.original.nombre
+            cell: ({ row }: { row: any }) => row.original.nombre.toUpperCase()
         },
         {
             accessorKey: 'documento',
@@ -902,7 +920,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre
+            const nombre = row.original.nombre.toUpperCase()
             const div = h('div', {
                 //que tenga un max width y si es muy largo que lo haga doble linea
                 class: 'max-w-45 whitespace-normal',
@@ -1264,7 +1282,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre
+            const nombre = row.original.nombre.toUpperCase()
             const div = h('div', {
                 //que tenga un max width y si es muy largo que lo haga doble linea
                 class: 'max-w-45 whitespace-normal',
@@ -1627,7 +1645,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre
+            const nombre = row.original.nombre.toUpperCase()
             return h('div', {
                 class: 'max-w-45 whitespace-normal',
             }, nombre)
