@@ -61,14 +61,17 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { useModal } from '~/composables/commons/useModal'
+import { useCommons } from '~/composables/cargaconsolidada/commons/useCommons'
 const { getContenedoresDisponibles } = useConsolidado()
 const { getProveedoresByCotizacion } = useCotizacionProveedor()
 const proveedores = ref([])
 const selectedProveedor = ref([])
 const { withSpinner } = useSpinner()
-const { showError } = useModal()
+const { showError, showSuccess } = useModal()
+const { forceSendInspection, forceSendRotulado, forceSendCobranza } = useCommons()
 const props = defineProps<{
     idCotizacion: number
+    idContainer: number
 }>()
 const contenedorDestino = ref('TODOS')
 const contenedorPagoDestino = ref('TODOS')
@@ -133,7 +136,7 @@ const isInMoveStatus = computed(() => {
     return selectedStatus.value === 'MOVER' && selectedProveedor.value.length > 0
 })
 const isAbleToMove = computed(() => {
-    return selectedStatus.value === 'MOVER' && contenedorDestino.value !== 'TODOS' && contenedorPagoDestino.value !== 'TODOS'
+    return (selectedStatus.value === 'MOVER' && contenedorDestino.value !== 'TODOS' && contenedorPagoDestino.value !== 'TODOS') || selectedStatus.value !== 'MOVER'
 })
 const handleContinue = async () => {
     //if selectedProveedor.value.length == proveedores.value.length then show alert cannot move
@@ -148,7 +151,35 @@ const handleContinue = async () => {
 }
 const handleSave = async () => {
     await withSpinner(async () => {
-        
+        let response = null
+        switch(selectedStatus.value){
+            case 'INSPECCION':
+                response = await forceSendInspection({
+                    idCotizacion: props.idCotizacion,
+                    idContainer: props.idContainer,
+                    proveedores: selectedProveedor.value,
+                })
+                break
+            case 'ROTULADO':
+                response = await forceSendRotulado({
+                    idCotizacion: props.idCotizacion,
+                    idContainer: props.idContainer,
+                    proveedores: selectedProveedor.value,
+                })
+                break
+            case 'COBRANDO':
+                response = await forceSendCobranza({
+                    idCotizacion: props.idCotizacion,
+                    idContainer: props.idContainer,
+                    proveedores: selectedProveedor.value,
+                })
+                break
+        }
+        if(response){
+            showSuccess('Guardado exitosamente', 'El estado se ha guardado correctamente')
+        }else{
+            showError('Error al guardar', 'Error al guardar el estado')
+        }
     }, 'Guardando...')
 }
 </script>

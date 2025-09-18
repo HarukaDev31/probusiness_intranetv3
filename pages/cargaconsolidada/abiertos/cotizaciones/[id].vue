@@ -1568,17 +1568,19 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                             updateProveedorData(proveedor)
                         }
                     }),
-                    h(UButton, {
+                    
+                    row.original.estado_cotizador === 'CONFIRMADO' ? h(UButton, {
                         icon: 'i-heroicons-ellipsis-vertical',
                         variant: 'ghost',
                         color: 'success',
                         size: 'md',
                         onClick: () => {
                             statusOptionsModal.open({
-                                idCotizacion: row.original.id
+                                idCotizacion: row.original.id,
+                                idContainer: row.original.id_container
                             });
                         }
-                    })
+                    } ): null
                 ])
             }))
         }

@@ -18,6 +18,10 @@ export const CUSTOM_MENUS_PER_ROLE = {
             'Carga Consolidada':'Waiting',
             'Completados':'Finished',
         },
+        [ROLES.ADMINISTRACION]: {
+            'Carga Consolidada':'Abiertos',
+            'Completados':'Embarcados',
+        },
       
     }
 }
