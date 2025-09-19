@@ -16,7 +16,7 @@ export class CommonsService extends BaseService {
         return response
     }
     static async forceSendRotulado(data: forceSendRequest): Promise<{ success: boolean }> {
-        const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/force-send`, {
+        const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/force-send-rotulado`, {
             method: 'POST',
             body: data
         })

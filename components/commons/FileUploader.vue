@@ -112,7 +112,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
     multiple: false,
-    maxFileSize: 100 * 1024 * 1024,
+    maxFileSize: 200 * 1024 * 1024,
     acceptedTypes: () => ['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar'],
     customMessage: undefined,
     disabled: false,
