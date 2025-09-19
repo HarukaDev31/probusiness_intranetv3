@@ -28,7 +28,7 @@
         <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
             :columns="getEmbarqueColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="(currentId == ID_JEFEVENTAS) ? true : false"
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
@@ -73,11 +73,11 @@
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
-            :show-pagination="false" :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
-            :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos"
+            :show-pagination="false" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
+            :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="false" :filter-config="filterConfig" :show-export="false"
-            empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
-            @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
+            empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
+            @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
             :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
             <template #body-top>
@@ -160,15 +160,15 @@ const { cotizaciones,
         exportData: exportProspectosData,
     } = useCotizacion()
 const { cotizacionPagos,
-        loadingPagos,
-            errorPagos,
-        paginationPagos,
-        searchPagos,
-        itemsPerPagePagos,
-        totalPagesPagos,
-        totalRecordsPagos,
-        currentPagePagos,
-        filtersPagos,
+        loading: loadingPagos,
+        error: errorPagos,
+        pagination: paginationPagos,
+        search: searchPagos,
+        itemsPerPage: itemsPerPagePagos,
+        totalPages: totalPagesPagos,
+        totalRecords: totalRecordsPagos,
+        currentPage: currentPagePagos,
+        filters: filtersPagos,
         getCotizacionPagos,
         headers: headersPagos
     } = useCotizacionPagos()
@@ -190,6 +190,7 @@ import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
 const { currentRole, currentId } = useUserRole()
 const tabs = ref([])
 import SimpleUploadFileModal from '~/components/commons/SimpleUploadFile.vue'
+import StatusOptionsModal from '~/components/cargaconsolidada/StatusOptionsModal.vue'
 const loadTabs = () => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
@@ -233,7 +234,7 @@ const loadTabs = () => {
 }
 const overlay = useOverlay()
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
-
+const statusOptionsModal = overlay.create(StatusOptionsModal)
 const exportData = async () => {
   if (tab.value === 'prospectos') {
     await exportProspectosData()
@@ -1266,7 +1267,6 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const nombre = row.original.nombre
             const div = h('div', {
-                //que tenga un max width y si es muy largo que lo haga doble linea
                 class: 'max-w-45 whitespace-normal',
             }, nombre)
             return div
@@ -1318,7 +1318,6 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
 
 
             ]
-            console.log(proveedores)
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
@@ -1569,17 +1568,22 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                             updateProveedorData(proveedor)
                         }
                     }),
-                    h(UButton, {
-                        icon: 'i-heroicons-arrow-path-rounded-square',
+                    
+                    row.original.estado_cotizador === 'CONFIRMADO' ? h(UButton, {
+                        icon: 'i-heroicons-ellipsis-vertical',
                         variant: 'ghost',
-                        color: proveedor.send_rotulado_status ? 'primary' : 'secondary',
+                        color: 'success',
                         size: 'md',
                         onClick: () => {
-                            if(proveedor.send_rotulado_status=="SENDED"){
-                                handleRefreshRotuladoStatus(proveedor)
-                            }
+                            statusOptionsModal.open({
+                                idCotizacion: row.original.id,
+                                idContainer: row.original.id_contenedor ,
+                                onSuccess: () => {
+                                    getCotizacionProveedor(Number(id))
+                                }   
+                            });
                         }
-                    })
+                    } ): null
                 ])
             }))
         }

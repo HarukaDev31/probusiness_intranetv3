@@ -50,7 +50,7 @@
                 <!--improve this button-->
                 <UButton color="primary" variant="outline" @click="handleSave"
                 v-if="showSaveButton"
-                >Guardar</UButton>
+                >Procesar</UButton>
                 <UButton color="error" variant="outline" @click="$emit('close')">Cerrar</UButton>
             </div>
         </template>
@@ -68,7 +68,10 @@ const proveedores = ref([])
 const selectedProveedor = ref([])
 const { withSpinner } = useSpinner()
 const { showError, showSuccess } = useModal()
-const { forceSendInspection, forceSendRotulado, forceSendCobranza } = useCommons()
+const { forceSendInspection, forceSendRotulado, forceSendCobranza ,forceSendMove} = useCommons()
+const emit = defineEmits<{
+    (e: 'success'): void
+}>()
 const props = defineProps<{
     idCotizacion: number
     idContainer: number
@@ -130,7 +133,7 @@ const getContenedores = async () => {
 }
 
 const showSaveButton = computed(() => {
-    return !['TODOS'].includes(selectedStatus.value) && selectedProveedor.value.length > 0 && isAbleToMove.value
+    return !['TODOS'].includes(selectedStatus.value) && ((selectedProveedor.value.length > 0 && isAbleToMove.value) || selectedStatus.value === 'COBRANDO')
 })
 const isInMoveStatus = computed(() => {
     return selectedStatus.value === 'MOVER' && selectedProveedor.value.length > 0
@@ -171,12 +174,21 @@ const handleSave = async () => {
                 response = await forceSendCobranza({
                     idCotizacion: props.idCotizacion,
                     idContainer: props.idContainer,
+                })
+                break
+            case 'MOVER':
+                response = await forceSendMove({
+                    idCotizacion: props.idCotizacion,
+                    idContainer: props.idContainer,
                     proveedores: selectedProveedor.value,
+                    idContainerDestino: Number(contenedorDestino.value),
+                    idContainerPagoDestino: Number(contenedorPagoDestino.value),
                 })
                 break
         }
         if(response){
             showSuccess('Guardado exitosamente', 'El estado se ha guardado correctamente')
+            emit('success') //emit success to parent
         }else{
             showError('Error al guardar', 'Error al guardar el estado')
         }

@@ -1577,7 +1577,10 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                         onClick: () => {
                             statusOptionsModal.open({
                                 idCotizacion: row.original.id,
-                                idContainer: row.original.id_contenedor     
+                                idContainer: row.original.id_contenedor,
+                                onSuccess: () => {
+                                    getCotizacionProveedor(Number(id))
+                                }  
                             });
                         }
                     } ): null

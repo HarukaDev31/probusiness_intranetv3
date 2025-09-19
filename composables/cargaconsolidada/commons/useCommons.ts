@@ -1,4 +1,4 @@
-import type { forceSendRequest } from "~/services/cargaconsolidada/commons/commonsService"
+import type { forceSendRequest, forceMoveRequest } from "~/services/cargaconsolidada/commons/commonsService"
 import { CommonsService } from "~/services/cargaconsolidada/commons/commonsService"
 export const useCommons = () => {
     const forceSendInspection = async (data: forceSendRequest) => {
@@ -13,9 +13,14 @@ export const useCommons = () => {
         const response = await CommonsService.forceSendCobranza(data)
         return response
     }
+    const forceSendMove = async (data: forceMoveRequest) => {
+        const response = await CommonsService.forceSendMove(data)
+        return response
+    }
     return {
         forceSendInspection,
         forceSendRotulado,
-        forceSendCobranza
+        forceSendCobranza,
+        forceSendMove
     }
 }
