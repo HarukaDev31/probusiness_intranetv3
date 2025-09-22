@@ -137,8 +137,17 @@ export const useConsolidado = () => {
         try {
             const response = await ConsolidadoService.getValidContainers()
             validContainers.value = response.data
+            return response
         } catch (error) {
             console.error('Error en getValidContainers:', error)
+        }
+    }
+    const getContenedoresDisponibles = async () => {
+        try {
+            const response = await ConsolidadoService.getContenedoresDisponibles()
+            return response
+        } catch (error) {
+            console.error('Error en getContenedoresDisponibles:', error)
         }
     }
     const createConsolidado = async (payload: any) => {
@@ -199,6 +208,7 @@ export const useConsolidado = () => {
         createConsolidado,
         getConsolidadoById,
         deleteConsolidado,
-        updateEstadoDocumentacion
+        updateEstadoDocumentacion,
+        getContenedoresDisponibles
     }
 }

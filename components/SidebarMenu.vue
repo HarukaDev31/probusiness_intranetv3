@@ -305,7 +305,7 @@ onMounted(async () => {
     } catch (error) {
       console.error('Error actualizando contador de notificaciones:', error)
     }
-  }, 30000) // 30 segundos
+  }, 1000*60*5) // 5 minutos
   
   // Limpiar intervalo cuando el componente se desmonte
   onUnmounted(() => {

@@ -291,6 +291,59 @@
       </UCard>
     </div>
 
+    <!-- Gráfico de Progreso Diario -->
+    <div class="mb-8">
+      <UCard>
+        <template #header>
+          <h3 class="text-lg font-semibold">Progreso Diario de Cotizaciones Confirmadas</h3>
+        </template>
+        
+        <div class="h-96">
+          <template v-if="loading">
+            <!-- Skeleton para gráfico de líneas -->
+            <div class="h-full flex flex-col">
+              <div class="flex-1 p-4">
+                <div class="flex items-end justify-center space-x-1 h-full">
+                  <div v-for="i in 15" :key="i" class="flex flex-col items-center space-y-1">
+                    <USkeleton :class="`w-2 h-${Math.floor(Math.random() * 20) + 10}`" />
+                    <USkeleton class="w-4 h-2" />
+                  </div>
+                </div>
+              </div>
+              <div class="h-10 flex items-center justify-between px-4">
+                <USkeleton class="h-4 w-48" />
+                <div class="flex space-x-4">
+                  <div class="flex items-center space-x-2">
+                    <USkeleton class="h-3 w-3 rounded-full" />
+                    <USkeleton class="h-4 w-20" />
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <USkeleton class="h-3 w-3 rounded-full" />
+                    <USkeleton class="h-4 w-16" />
+                  </div>
+                </div>
+                <USkeleton class="h-4 w-24" />
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <DailyProgressChart 
+              v-if="datosGraficoProgresoDiario"
+              :data="datosGraficoProgresoDiario" 
+              :height="384"
+              :days-per-page="15"
+            />
+            <div v-else class="h-full flex items-center justify-center">
+              <div class="text-center text-gray-500">
+                <UIcon name="i-heroicons-chart-line" class="text-4xl mb-2" />
+                <p>No hay datos para mostrar</p>
+              </div>
+            </div>
+          </template>
+        </div>
+      </UCard>
+    </div>
+
     <!-- Tabla de Detalle de Transacciones -->
     <template v-if="loading">
       <!-- Skeleton para tabla -->
@@ -354,6 +407,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { useDashboard } from '~/composables/useDashboard'
 import VolumeBarChart from '~/components/charts/VolumeBarChart.vue'
 import SalesPieChart from '~/components/charts/SalesPieChart.vue'
+import DailyProgressChart from '~/components/charts/DailyProgressChart.vue'
 
 // Composables
 const {
@@ -364,6 +418,7 @@ const {
   metricas,
   datosGraficoVolumenes,
   datosGraficoVendedores,
+  datosGraficoProgresoDiario,
   loadDashboardData,
   updateFilters,
   formatVolume,
