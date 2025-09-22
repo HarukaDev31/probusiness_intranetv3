@@ -69,8 +69,7 @@ const { withSpinner } = useSpinner()
 const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
-const { deletePago } = usePagosClientes()
-const {registrarPago} = usePagos()
+const { registrarPago, deletePago } = usePagosClientes()
 const route = useRoute()
 const id = Number(route.params.id)
 
@@ -123,7 +122,6 @@ const handleUploadPlantillaFinal = () => {
         const result = await uploadPlantillaFinal(formData)
         if (result) {
           showSuccess('Éxito', 'Plantilla final subida correctamente')
-          getGeneral(Number(id))
         } else {
           showError('Error', 'Error al subir la plantilla final')
         }
@@ -324,13 +322,14 @@ const pagosColumns = ref<TableColumn<any>[]>([
     accessorKey: 'adelantos',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
-      // Parse pagos JSON and validate count
-      return h(PagoGrid,
+      return       !row.original.id_contenedor_pago?
+       h(PagoGrid,
         {
           numberOfPagos: 4,
           pagoDetails: JSON.parse(row.original.pagos || '[]'),
           clienteNombre: row.original.nombre,
           currency: 'USD',
+          showDelete: true,
           onSave: (data) => {
             const formData = new FormData();
             for (const key in data) {
@@ -364,7 +363,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
                     if (response.success) {
                       await getPagos(Number(id))
                       showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
-                      await getHeaders(Number(id))
+                      getHeaders(Number(id))
                     }
                   }, 'Eliminando pago...')
                 } catch (error) {
@@ -375,7 +374,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
             )
           }
         }
-      )
+      ):null
     }
   }
 ])
@@ -424,6 +423,7 @@ const handleSavePago = (pagoData: any) => {
   // Por ejemplo, llamar a un servicio o actualizar el estado
 }
 watch(activeTab, async (newVal, oldVal) => {
+
   if (oldVal === '' || !newVal) {
     return
   }
@@ -451,6 +451,7 @@ onMounted(async () => {
     await getGeneral(Number(id))
   }
   if (activeTab.value === 'pagos') {
+    console.log('getPagos')
     await getPagos(Number(id))
   }
   await getHeaders(Number(id))

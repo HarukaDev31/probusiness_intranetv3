@@ -96,6 +96,7 @@
     </div>
 </template>
 <script setup lang="ts">
+import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
@@ -798,7 +799,7 @@ const getPagosColumns = () => {
             header: 'Adelantos',
             cell: ({ row }: { row: any }) => {
                 const pagos = row.original.pagos || []
-                return h(PagoGrid, {
+                return !row.original.id_contenedor_pago ? h(PagoGrid, {
                     numberOfPagos: 4,
                     pagoDetails: pagos,
                     clienteNombre: row.original.nombre,
@@ -846,7 +847,8 @@ const getPagosColumns = () => {
                             }
                         )
                     }
-                }) as any
+                }) :
+                null
             }
         }
     ]

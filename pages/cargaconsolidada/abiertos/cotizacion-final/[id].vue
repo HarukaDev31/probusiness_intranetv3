@@ -322,8 +322,8 @@ const pagosColumns = ref<TableColumn<any>[]>([
     accessorKey: 'adelantos',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
-      // Parse pagos JSON and validate count
-      return h(PagoGrid,
+      return       !row.original.id_contenedor_pago?
+       h(PagoGrid,
         {
           numberOfPagos: 4,
           pagoDetails: JSON.parse(row.original.pagos || '[]'),
@@ -374,7 +374,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
             )
           }
         }
-      )
+      ):null
     }
   }
 ])

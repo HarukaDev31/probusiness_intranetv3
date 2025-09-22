@@ -243,7 +243,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
         header: 'Adelantos',
         cell: ({ row }: { row: any }) => {
             const pagos = JSON.parse(row.original.pagos_details ?? '[]');
-            return h(PagoGrid, {
+            return !row.original.id_contenedor_pago?h(PagoGrid, {
                 pagoDetails: pagos,
                 currency: 'USD',
                 numberOfPagos: currentRole.value == ROLES.COORDINACION ? 4 :pagos.length,
@@ -291,7 +291,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
                     )
                 },
                 showDelete: currentRole.value == ROLES.COORDINACION,
-            })
+            }):null
         }
     }
 ])
