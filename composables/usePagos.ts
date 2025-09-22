@@ -43,13 +43,18 @@ export const usePagos = () => {
   const itemsPerPageCursos = ref(100)
   const searchCursos = ref('')
   // Methods
-  const fetchCursosData = async (customFilters?: CursosFilters, page: number = 1, perPage: number = 10) => {
+  const fetchCursosData = async (customFilters?: CursosFilters, page: number = 1, perPage: number = 10, idPedido?: number) => {
     loading.value = true
     error.value = null
     
     try {
       // Merge filters and ensure pagination params are present
       const mergedFilters: any = { ...filters.value, ...customFilters, page, limit: perPage }
+      
+      // Agregar idPedido si está presente
+      if (idPedido) {
+        mergedFilters.idPedido = idPedido
+      }
 
       // If the UI uses the 'campanas' key (select options), normalize to 'campana'
       if (mergedFilters.campanas !== undefined) {

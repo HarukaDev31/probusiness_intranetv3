@@ -40,71 +40,13 @@ export default defineNuxtConfig({
         'error',
         'transparent'
       ],
-    },
-    icons: {
-      // Precargar colecciones completas
-      dynamic: true,
-      // O especificar iconos individuales para optimizar el tamaño del bundle
-      families: {
-        // Heroicons (los más usados en tu proyecto)
-        heroicons: [
-          'arrow-path',
-          'archive-box',
-          'chevron-down',
-          'bell',
-          'moon',
-          'arrow-right-on-rectangle',
-          'arrow-up-tray',
-          'trash',
-          'plus',
-          'x-mark',
-          'check-circle',
-          'x-circle',
-          'exclamation-triangle',
-          'information-circle',
-          'question-mark-circle',
-          'magnifying-glass',
-          'funnel',
-          'inbox',
-          'document-text',
-          'document',
-          'minus',
-          'arrow-down-tray',
-          'arrow-top-right-on-square',
-          'presentation-chart-line',
-          'arrow-left',
-          'chat-bubble-left-ellipsis',
-          'photo',
-          'folder-open',
-          'check',
-          'cloud-arrow-up',
-          'home',
-          'chevron-right',
-          'document-check',
-          'eye',
-          'building-office'
-        ],
-        // Font Awesome
-        fa: [
-          'solid-user',
-          'solid-cog',
-          'solid-bell',
-          'solid-home',
-          'solid-search',
-          'solid-download',
-          'solid-upload',
-          'solid-trash'
-        ],
-        // VS Code icons
-        vscode: [
-          'file-code',
-          'file-pdf',
-          'file-word',
-          'file-excel',
-          'file-image'
-        ]
-      }
     }
+  },
+  
+  // Configuración de iconos
+  icon: {
+    // Usar iconos locales instalados
+    collections: ['heroicons', 'fa', 'vscode-icons', 'mdi', 'tabler']
   },
  
   // Configuración de variables de entorno

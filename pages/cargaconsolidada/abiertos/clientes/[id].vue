@@ -175,7 +175,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
         accessorKey: 'nombre',
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
+            return row.getValue('nombre').toUpperCase()
         }
     },
     {
@@ -316,7 +316,10 @@ const columns: TableColumn<any>[] = [
         accessorKey: 'nombre',
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
+            const nombre = row.getValue('nombre').toUpperCase()
+            return h('div', {
+                class: 'max-w-30 whitespace-normal break-words',
+            }, nombre)
         }
     },
     {
@@ -331,7 +334,11 @@ const columns: TableColumn<any>[] = [
         accessorKey: 'correo',
         header: 'Correo',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('correo')
+            const correo = row.getValue('correo')
+            return h('div', {
+                class: 'max-w-40 whitespace-normal break-words',
+            }, correo || 'Sin correo'
+            )
         }
     },
     {
@@ -430,7 +437,8 @@ const columnsCoordinacion: TableColumn<any>[] = [
         accessorKey: 'nombre',
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
+            //todos en mayusculas
+            return row.getValue('nombre').toUpperCase()
         }
     },
     {
@@ -511,6 +519,8 @@ const columnsCoordinacion: TableColumn<any>[] = [
         cell: ({ row }: { row: any }) => {
             //show estado_cliente in USELECT WITH STATUS RESERVADO,NO RESERVADO DOCUMENTACION C FINAL FACTURADO
             return h(USelect as any, {
+                //color status based on estado_cliente
+                class: STATUS_BG_CLASSES[row.original.estado_cliente as keyof typeof STATUS_BG_CLASSES],
                 modelValue: row.original.estado_cliente,
                 items: [
                     { label: 'Reservado', value: 'RESERVADO' },
@@ -520,7 +530,6 @@ const columnsCoordinacion: TableColumn<any>[] = [
                     { label: 'Facturado', value: 'FACTURADO' }
                 ],
                 placeholder: 'Seleccionar estado',
-                class: 'w-full',
                 'onUpdate:modelValue': async (value: any) => {
                     if (value && value !== row.original.estado_cliente) {
                         const data = {
