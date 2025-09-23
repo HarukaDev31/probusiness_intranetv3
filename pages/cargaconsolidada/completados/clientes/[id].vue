@@ -9,7 +9,6 @@
                 :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="false"
                 :filter-config="filtersGeneral" :show-export="(currentId == ID_JEFEVENTAS) ? true : false" :show-body-top="true"
                 :show-pagination="false" @export="exportData"
-
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
@@ -80,7 +79,6 @@ import type { TableColumn } from '@nuxt/ui'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
-import { form } from '#build/ui'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
@@ -119,7 +117,7 @@ const { getClientesVariacion,
         itemsPerPageVariacion, 
         totalPagesVariacion, 
         currentPageVariacion, 
-        filtersVariacion,
+        filtersVariacion, 
         handlePageVariacionChange, 
         handleItemsPerPageChangeVariacion, 
         handleFilterChangeVariacion, 
@@ -152,6 +150,18 @@ const handleTabChange = (value: string) => {
         getClientesPagos(Number(id))
     }
 }
+
+const exportData = async () => {
+  if (tab.value === 'general') {
+    await exportGeneralData()
+  } else if (tab.value === 'variacion') {
+    await exportVariacionData()
+  } else if (tab.value === 'pagos') {
+    await exportPagosData()
+  }
+}
+
+
 //N.	Nombre	DNI/RUC	Whatsapp	T. Cliente	Estado	Conceptop	Importe	Pagado	Adelantos
 const columnsPagos = ref<TableColumn<any>[]>([
     {
@@ -232,10 +242,11 @@ const columnsPagos = ref<TableColumn<any>[]>([
         accessorKey: 'adelantos',
         header: 'Adelantos',
         cell: ({ row }: { row: any }) => {
-            return h(PagoGrid, {
-                pagoDetails: JSON.parse(row.original.pagos_details ?? '[]'),
+            const pagos = JSON.parse(row.original.pagos_details ?? '[]');
+            return !row.original.id_contenedor_pago?h(PagoGrid, {
+                pagoDetails: pagos,
                 currency: 'USD',
-                numberOfPagos: 4,
+                numberOfPagos: currentRole.value == ROLES.COORDINACION ? 4 :pagos.length,
                 clienteNombre: row.original.nombre,
                 onSave: (data) => {
                     const formData = new FormData();
@@ -278,8 +289,9 @@ const columnsPagos = ref<TableColumn<any>[]>([
                             }
                         }
                     )
-                }
-            })
+                },
+                showDelete: currentRole.value == ROLES.COORDINACION,
+            }):null
         }
     }
 ])
@@ -832,15 +844,6 @@ const updateVolSelected = async (data: any) => {
         )
     } catch (err) {
         error.value = err as string
-    }
-}
-const exportData = () => {
-    if (tab.value === 'general') {
-        exportGeneralData()
-    } else if (tab.value === 'variacion') {
-        exportVariacionData()
-    } else if (tab.value === 'pagos') {
-        exportPagosData()
     }
 }
 onMounted(() => {
