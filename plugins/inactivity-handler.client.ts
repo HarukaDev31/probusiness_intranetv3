@@ -3,7 +3,7 @@ export default defineNuxtPlugin(() => {
   const { handleSessionExpired } = useSession()
 
   // Configuración de inactividad (30 minutos)
-  const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutos en milisegundos
+  const INACTIVITY_TIMEOUT = 24*100 * 60 * 1000 // 30 minutos en milisegundos
   let inactivityTimer: NodeJS.Timeout | null = null
 
   // Función para reiniciar el timer de inactividad
