@@ -176,19 +176,39 @@
             <div class="mb-6  border-gray-200 rounded-lg p-6 border-b-2 border-gray-200">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <span class=" font-semibold">{{ cliente?.nombre }}</span>
+                        <div class="group inline-flex items-center">
+                            <span class="font-semibold">{{ cliente?.nombre }}</span>
+                            <button
+                                v-if="cliente && isDocumentacion"
+                                @click="copyName"
+                                class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-gray-400 hover:text-gray-600"
+                                aria-label="Copiar nombre"
+                                title="Copiar nombre">
+                                <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4 hover:text-gray-600 dark:hover:text-gray-300" />
+                            </button>
+                            <span v-if="copied" class="ml-2 text-sm text-green-400">Copiado</span>
+                        </div>
                     </div>
 
 
                 </div>
             </div>
             <!-- Tabs de proveedores -->
-            <div v-if="hasProveedores" class="mb-6">
-                <UTabs v-model="activeTab" :items="tabs" size="md" variant="pill" 
-                :class="{ 'w-200': tabs.length >=3, 'w-50': tabs.length <3, 'w-300': tabs.length >= 5 }"
-
-                color="neutral"
-                    @update:model-value="handleTabChange" />
+                    <div v-if="hasProveedores" class="mb-6">
+                <UTabs v-model="activeTab" :items="tabs" size="md" variant="pill"
+                    :class="{ 'w-200': tabs.length >=3, 'w-50': tabs.length <3, 'w-300': tabs.length >= 5 }"
+                    color="neutral"
+                    @update:model-value="handleTabChange">
+                    <template #default="{ item, index }">
+                        <div class="inline-flex items-center group">
+                            <span>{{ item.label }}</span>
+                            <button v-if="isDocumentacion" @click.prevent="copyTab(item, index)" class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-gray-400 hover:text-gray-600" title="Copiar proveedor">
+                                <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4" />
+                            </button>
+                            <span v-if="copiedTabIndex === index" class="ml-2 text-sm text-green-400">Copiado</span>
+                        </div>
+                    </template>
+                </UTabs>
             </div>
 
             <!-- Información del cliente -->
@@ -417,7 +437,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -463,6 +483,48 @@ const {
 import { useOverlay } from '#imports'
 const overlay = useOverlay()
 const simpleUploadFile = overlay.create(SimpleUploadFile)
+
+// Copiar nombre al portapapeles (aparece el botón al hacer hover)
+const copied = ref(false)
+const copyName = async () => {
+    try {
+        const name = cliente?.value?.nombre ?? ''
+        if (!name) return
+        await navigator.clipboard.writeText(name)
+        copied.value = true
+        setTimeout(() => (copied.value = false), 2000)
+    } catch (e) {
+        const el = document.createElement('textarea')
+        el.value = cliente?.value?.nombre ?? ''
+        document.body.appendChild(el)
+        el.select()
+        try { document.execCommand('copy') } catch (err) { }
+        document.body.removeChild(el)
+    }
+}
+// Indica si el usuario está en el rol de Documentación
+const isDocumentacion = computed(() => {
+    const role = (currentRole && (currentRole as any).value !== undefined) ? (currentRole as any).value : currentRole
+    return role === ROLES.DOCUMENTACION
+})
+// Copiar tab de proveedor
+const copiedTabIndex = ref<number | null>(null)
+const copyTab = async (item: any, index: number) => {
+    try {
+        const text = item?.label ?? item?.value ?? ''
+        if (!text) return
+        await navigator.clipboard.writeText(text)
+        copiedTabIndex.value = index
+        setTimeout(() => (copiedTabIndex.value = null), 2000)
+    } catch (e) {
+        const el = document.createElement('textarea')
+        el.value = item?.label ?? item?.value ?? ''
+        document.body.appendChild(el)
+        el.select()
+        try { document.execCommand('copy') } catch (err) { }
+        document.body.removeChild(el)
+    }
+}
 // Estado local para cambios pendientes
 const pendingChanges = ref({
     volumen_doc: null as number | null,

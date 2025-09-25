@@ -390,7 +390,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'nombre',
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre')
+            const nombre = row.getValue('nombre').toUpperCase()
             return h('div',{
                 class: 'max-w-30 whitespace-normal',
             }, nombre
@@ -570,7 +570,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'nombre',
         header: 'Nombre',
-        cell: ({ row }: { row: any }) => row.getValue('nombre')
+        cell: ({ row }: { row: any }) => row.getValue('nombre').toUpperCase()
     },
     {
         accessorKey: 'documento',
@@ -729,7 +729,7 @@ const getPagosColumns = () => {
         {
             accessorKey: 'nombre',
             header: 'Nombre',
-            cell: ({ row }: { row: any }) => row.original.nombre
+            cell: ({ row }: { row: any }) => row.original.nombre.toUpperCase()
         },
         {
             accessorKey: 'documento',
@@ -905,7 +905,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre
+            const nombre = row.original.nombre.toUpperCase()
             const div = h('div', {
                 //que tenga un max width y si es muy largo que lo haga doble linea
                 class: 'max-w-45 whitespace-normal',
@@ -1267,7 +1267,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre
+            const nombre = row.original.nombre.toUpperCase()
             const div = h('div', {
                 class: 'max-w-45 whitespace-normal',
             }, nombre)
@@ -1633,7 +1633,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre
+            const nombre = row.original.nombre.toUpperCase()
             return h('div', {
                 class: 'max-w-45 whitespace-normal',
             }, nombre)
