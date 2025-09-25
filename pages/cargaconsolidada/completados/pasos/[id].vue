@@ -10,14 +10,14 @@
 
     <!-- Cards Container -->
     <div class="flex justify-center mb-8">
-      <div class="flex flex-wrap flex-row gap-3 max-w-6xl">
+      <div class="flex flex-wrap flex-row gap-3 max-w-7xl">
         <!-- Loading state -->
-        <div v-if="loading" class="flex flex-wrap flex-row gap-3 max-w-6xl">
-          <!-- Skeleton para cada paso -->
-          <div 
-            v-for="i in 5" 
+        <div v-if="loading" class="flex flex-wrap flex-row gap-3 max-w-7xl">
+          <!-- Skeleton genérico basado en el rol -->
+          <div
+            v-for="i in skeletonCount" 
             :key="`skeleton-${i}`"
-            class="bg-white  min-w-40 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6 text-center animate-pulse"
+            class="bg-white min-w-40 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6 text-center animate-pulse"
           >
             <div class="flex flex-col items-center space-y-4">
               <!-- Icono skeleton -->
@@ -58,7 +58,19 @@
 
 <script setup lang="ts">
 import { useConsolidado } from '../../../../composables/cargaconsolidada/useConsolidado'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ID_JEFEVENTAS, ROLES } from '~/constants/roles'
+const { isDocumentacion, isCotizador, currentId, isCoordinacion } = useUserRole()
 const { getConsolidadoPasos, pasos, loading } = useConsolidado()
+// Número de skeleton cards basado en rol principal
+const skeletonCount = computed(() => {
+  if (isCoordinacion.value) return 6 // Coordinación ve todos los pasos (incluye nuevo Entrega)
+  if (isDocumentacion.value) return 3 // Documentación sólo algunos pasos
+  if (currentId.value === ID_JEFEVENTAS) return 2 // Contenedor/Almacén ve algunos pasos
+  if (isCotizador.value) return 1 // Cotizador ve algunos pasos
+
+  return 5 // valor por defecto para otros roles
+})
 const route = useRoute()
 const id = Number(route.params.id)
 onMounted(async () => {
@@ -78,7 +90,8 @@ const pasosMap = {
   'DOCUMENTACION': `/cargaconsolidada/completados/documentacion/${id}`,
   'COTIZACION FINAL': `/cargaconsolidada/completados/cotizacion-final/${id}?tab=general`,
   'FACTURA Y GUIA': `/cargaconsolidada/completados/factura-guia/${id}`,
-  'ADUANA': `/cargaconsolidada/completados/aduana/${id}`
+  'ADUANA': `/cargaconsolidada/completados/aduana/${id}`,
+  'ENTREGA': `/cargaconsolidada/completados/entrega/${id}`
 }
 const handleNavigateToStep = (step: string) => {
   navigateTo(pasosMap[step.toUpperCase() as keyof typeof pasosMap])

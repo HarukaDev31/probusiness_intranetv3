@@ -181,7 +181,6 @@ const columns: TableColumn<any>[] = [
             const fa =
             row.getValue('fecha_arribo') ||
             row.original?.fecha_arribo || // por si viene en original
-            row.getValue('f_puerto') ||
             row.original?.f_puerto
 
             return fa ? formatDateTimeToDmy(fa) : 'N/A'

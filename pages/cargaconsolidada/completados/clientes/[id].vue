@@ -531,7 +531,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
             //show estado_cliente in USELECT WITH STATUS RESERVADO,NO RESERVADO DOCUMENTACION C FINAL FACTURADO
             return h(USelect as any, {
                 //color status based on estado_cliente
-                class: STATUS_BG_CLASSES[row.original.estado_cliente as keyof typeof STATUS_BG_CLASSES],
+                class: [STATUS_BG_CLASSES[row.original.estado_cliente as keyof typeof STATUS_BG_CLASSES], 'w-full'],
                 modelValue: row.original.estado_cliente,
                 items: [
                     { label: 'Reservado', value: 'RESERVADO' },
@@ -541,7 +541,6 @@ const columnsCoordinacion: TableColumn<any>[] = [
                     { label: 'Facturado', value: 'FACTURADO' }
                 ],
                 placeholder: 'Seleccionar estado',
-                class: 'w-full',
                 'onUpdate:modelValue': async (value: any) => {
                     if (value && value !== row.original.estado_cliente) {
                         const data = {
