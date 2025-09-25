@@ -13,10 +13,36 @@ export class EntregaService extends BaseService {
       if (params?.search) queryParams.append('search', params.search)
       if (params?.filters) queryParams.append('filters', JSON.stringify(params.filters))
       const qs = queryParams.toString()
-      const response = await this.apiCall<EntregaResponse>(`${this.baseUrl}/entregas/${id}?${qs ? `?${qs}` : ''}`)
+  const response = await this.apiCall<EntregaResponse>(`${this.baseUrl}/entregas/${id}${qs ? `?${qs}` : ''}`)
       return response
     } catch (error) {
       console.error('Error al obtener entregas:', error)
+      throw error
+    }
+  }
+  static async getEntregasDetalle(id_cotizacion: number): Promise<EntregaResponse> {
+    try {
+      const response = await this.apiCall<EntregaResponse>(`${this.baseUrl}/entregas/detalle/${id_cotizacion}`)
+      return response
+    } catch (error: any) {
+      const msg = error?.message || ''
+      // Si el backend responde 404 devolvemos stub vacío para no romper UI
+      if (/404/.test(msg) || /no encontrada/i.test(msg)) {
+        console.warn('Entrega no encontrada (detalle):', id_cotizacion)
+        return {
+          success: false,
+            data: [],
+            pagination: {
+              current_page: 1,
+              last_page: 1,
+              per_page: 1,
+              total: 0,
+              from: 0,
+              to: 0
+            }
+        }
+      }
+      console.error('Error al obtener detalles de entrega:', error)
       throw error
     }
   }
@@ -96,6 +122,47 @@ export class EntregaService extends BaseService {
       return response
     } catch (error) {
       console.error('Error al marcar entregado:', error)
+      throw error
+    }
+  }
+
+  // --- PAGOS DELIVERY ---
+  static async getDelivery(id: number, params: any): Promise<EntregaResponse> {
+    try {
+      const queryParams = new URLSearchParams()
+      if (params?.page) queryParams.append('page', params.page.toString())
+      if (params?.per_page) queryParams.append('per_page', params.per_page.toString())
+      if (params?.search) queryParams.append('search', params.search)
+      if (params?.filters) queryParams.append('filters', JSON.stringify(params.filters))
+      const qs = queryParams.toString()
+      const response = await this.apiCall<EntregaResponse>(`${this.baseUrl}/delivery/${id}${qs ? `?${qs}` : ''}`)
+      return response
+    } catch (error) {
+      console.error('Error al obtener delivery:', error)
+      throw error
+    }
+  }
+
+  static async registrarPagoDelivery(formData: FormData): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/pagos`, {
+        method: 'POST',
+        body: formData
+      })
+      return response
+    } catch (error) {
+      console.error('Error al registrar pago delivery:', error)
+      throw error
+    }
+  }
+  static async deletePagoDelivery(pagoId: number): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/pagos/${pagoId}`, {
+        method: 'DELETE'
+      })
+      return response
+    } catch (error) {
+      console.error('Error al eliminar pago delivery:', error)
       throw error
     }
   }

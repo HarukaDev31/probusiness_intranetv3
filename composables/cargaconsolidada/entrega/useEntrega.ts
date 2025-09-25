@@ -13,6 +13,26 @@ type Header = {
 export const useEntrega = () => {
   const entregas = ref<Entrega[]>([])
   const clientes = ref<Entrega[]>([])
+  // Detalle cacheado para navegación a página específica
+  const entregaDetalle = ref<any | null>(null)
+  // DELIVERY
+  interface DeliveryRow {
+    id_cotizacion: number
+    nombre: string
+    telefono: string
+    tipo_entrega: string | null
+    ciudad: string | null
+    documento: string | null
+    razon_social: string | null
+    estado: string
+    importe: number
+    pagado: number
+    pagos_details?: any[]
+    id_contenedor?: number
+    id_contenedor_pago?: number | null
+  }
+  const delivery = ref<DeliveryRow[]>([])
+
   const loading = ref(false)
   const error = ref<string | null>(null)
   const pagination = ref<PaginationInfo>({
@@ -78,6 +98,33 @@ export const useEntrega = () => {
       loading.value = false
     }
   }
+  const getEntregasDetalle = async (id_cotizacion: number) => {
+    try {
+      loading.value = true
+      const response = await EntregaService.getEntregasDetalle(id_cotizacion)
+      const raw = Array.isArray(response.data) ? response.data : [response.data]
+      const mapped = raw.map((item: any) => ({
+        ...item,
+        id_cotizacion: item.id_cotizacion ?? item.idCotizacion ?? item.cotizacion_id ?? item.id ?? null
+      }))
+      entregas.value = mapped as any
+      entregaDetalle.value = mapped[0] || null
+      if (response?.pagination) pagination.value = response.pagination
+      return entregaDetalle.value
+    } catch (err: any) {
+      const msg = err?.message || ''
+      if (msg.includes('404') || /no encontrada/i.test(msg)) {
+        console.warn('Detalle de entrega no encontrado para id_cotizacion', id_cotizacion)
+        entregaDetalle.value = null
+        return null
+      } else {
+        error.value = msg || 'Error al cargar detalles de entrega'
+        return null
+      }
+    } finally {
+      loading.value = false
+    }
+  }
 
   // CLIENTES TAB
   const getClientes = async (id: number) => {
@@ -95,6 +142,41 @@ export const useEntrega = () => {
       pagination.value = response.pagination
     } catch (err: any) {
       error.value = err?.message || 'Error al cargar clientes (entrega)'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  //DELIVERY TAB
+  const getDelivery = async (id: number) => {
+    try {
+      loading.value = true
+      contenedorId.value = id
+      const params = {
+        page: currentPage.value,
+        per_page: itemsPerPage.value,
+        search: search.value,
+        filters: filters.value
+      }
+      const response = await EntregaService.getDelivery(id, params)
+      delivery.value = (response.data as Entrega[]).map((item: any) => ({
+        id_cotizacion: item.id_cotizacion,
+        nombre: item.nombre,
+        telefono: item.telefono,
+        tipo_entrega: item.tipo_entrega ?? null,
+        ciudad: item.ciudad ?? null,
+        documento: item.documento ?? null,
+        razon_social: item.razon_social ?? null,
+        estado: item.estado ?? '',
+        importe: item.importe ?? 0,
+        pagado: item.pagado ?? 0,
+        pagos_details: item.pagos_details ?? [],
+        id_contenedor: item.id_contenedor,
+        id_contenedor_pago: item.id_contenedor_pago ?? null
+      }))
+      pagination.value = response.pagination
+    } catch (err: any) {
+      error.value = err?.message || 'Error al cargar delivery'
     } finally {
       loading.value = false
     }
@@ -164,8 +246,37 @@ export const useEntrega = () => {
     if (contenedorId.value) getEntregas(contenedorId.value)
   }
 
+  // ---------------- DELIVERY LOGIC -----------------
+  const calcularEstado = (pagado: number, importe: number) => {
+    if (pagado === 0) return 'Pendiente'
+    if (pagado === importe) return 'Pagado'
+    if (pagado > importe) return 'Sobrepago'
+    return 'Parcial'
+  }
+  const updateImporteDelivery = (row: DeliveryRow, nuevoImporte: number) => {
+    row.importe = nuevoImporte
+    row.estado = calcularEstado(row.pagado, row.importe)
+  }
+  const registrarPagoDelivery = async (row: DeliveryRow, data: any) => {
+    const formData = new FormData()
+    for (const key in data) if (data[key] !== undefined && data[key] !== null) formData.append(key, data[key])
+    formData.append('idPedido', row.id_cotizacion.toString())
+    formData.append('idCotizacion', row.id_cotizacion.toString())
+    if (row.id_contenedor) formData.append('idContenedor', row.id_contenedor.toString())
+    const response = await EntregaService.registrarPagoDelivery(formData)
+    if (response?.success) await getEntregas(contenedorId.value as number)
+    return response
+  }
+  const deletePagoDelivery = async (row: DeliveryRow, pagoId: number) => {
+    const response = await EntregaService.deletePagoDelivery(pagoId)
+    if (response?.success) await getEntregas(contenedorId.value as number)
+    return response
+  }
+
   return {
     entregas,
+    entregaDetalle,
+    delivery,
     loading,
     error,
     pagination,
@@ -176,7 +287,8 @@ export const useEntrega = () => {
     currentPage,
     filters,
     filterConfig,
-    getEntregas,
+  getEntregas,
+  getEntregasDetalle,
   getClientes,
   clientes,
   clientesFilterConfig,
@@ -189,6 +301,11 @@ export const useEntrega = () => {
     headers,
     carga,
     loadingHeaders,
-    getHeaders
+  getHeaders,
+  // delivery
+    getDelivery,
+    updateImporteDelivery,
+    registrarPagoDelivery,
+    deletePagoDelivery
   }
 }

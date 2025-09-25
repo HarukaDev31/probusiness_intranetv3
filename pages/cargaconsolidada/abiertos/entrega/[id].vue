@@ -71,9 +71,9 @@
     <DataTable
       v-if="activeTab==='delivery'"
       title=""
-      :data="[]"
-      :columns="[]"
-      :loading="false"
+      :data="delivery"
+      :columns="deliveryColumns"
+      :loading="loading"
       icon=""
       :show-pagination="false"
       :hide-back-button="false"
@@ -85,7 +85,7 @@
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Delivery #${carga}`" :headers="headers" :loading="loadingHeaders" />
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
-          <div class="text-sm text-gray-500">Contenido pendiente.</div>
+          <div class="text-xs text-gray-500">Gestiona importes y adelantos. Cambia el importe manualmente y registra adelantos con los botones.</div>
         </div>
       </template>
     </DataTable>
@@ -93,20 +93,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h } from 'vue'
+import { ref, onMounted, h, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import SectionHeader from '../../../../components/commons/SectionHeader.vue'
 import { useEntrega } from '../../../../composables/cargaconsolidada/entrega/useEntrega'
 import { useUserRole } from '../../../../composables/auth/useUserRole'
-import { UBadge, UButton, UTabs } from '#components'
+import { UBadge, UButton, UInput, UTabs } from '#components'
+import PagoGrid from '../../../../components/PagoGrid.vue'
+import { useModal } from '../../../../composables/commons/useModal'
+import { useSpinner } from '../../../../composables/commons/useSpinner'
+import { ROLES } from '../../../../constants/roles'
 
 const route = useRoute()
 const id = Number(route.params.id)
 const { currentRole, currentId } = useUserRole()
+const { showConfirmation, showSuccess, showError } = useModal()
+const { withSpinner } = useSpinner()
 
 const { 
   entregas,
   clientes,
+  delivery,
   loading,
   error,
   pagination,
@@ -119,6 +126,7 @@ const {
   filterConfig,
   getEntregas,
   getClientes,
+  getDelivery,
   clientesFilterConfig,
   marcarRegistrado,
   marcarEntregadoCliente,
@@ -129,7 +137,10 @@ const {
   headers,
   carga,
   loadingHeaders,
-  getHeaders
+  getHeaders,
+  updateImporteDelivery,
+  registrarPagoDelivery,
+  deletePagoDelivery
 } = useEntrega()
 
 // Tabs
@@ -145,7 +156,7 @@ const handleTabChange = (value: string) => {
   } else if (value === 'entregas') {
     getEntregas(id)
   } else if (value === 'delivery') {
-    // Acción para la pestaña Delivery si es necesario
+    getDelivery(id)
   }
 }
 
@@ -207,13 +218,6 @@ const clientesColumns = ref<TableColumn<any>[]>([
 ])
 
 // Columnas para Entregas (según especificación del usuario)
-// Campos: N, Nombre, Whatsapp, Cbm, Bultos, Entrega, Ciudad, Ruc o Dni, Razon social o Nombre, Fecha, Hora, Estado, Accion
-// Notas:
-// - Cbm y Bultos: provienen del packing list (placeholder hasta integrar backend real)
-// - Entrega (tipo_entrega) ya existe
-// - Ciudad: usamos row.original.ciudad (placeholder) o '—'
-// - Fecha / Hora: se derivan de fecha_programada (split) si viene en formato 'YYYY-MM-DD HH:mm' u otro similar
-// - Estado: usamos estado_entrega / entregado para mostrar badge
 const entregasColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'nro', header: 'N', cell: ({ row }) => row.index + 1 },
   { accessorKey: 'nombre', header: 'Nombre', cell: ({ row }) => row.original.nombre || '—' },
@@ -244,21 +248,26 @@ const entregasColumns = ref<TableColumn<any>[]>([
       return h(UBadge, { label: estado, color, variant: 'soft' })
     } },
   { id: 'accion', header: 'Accion', cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
-  h(UButton, { size: 'xs', icon: 'i-heroicons-eye', variant: 'ghost', color: 'neutral', title: 'Ver detalle', onClick: async () => { await navigateTo(`/cargaconsolidada/abiertos/entrega/clientes/${row.original.id_cotizacion}`) } }),
-      h(UButton, { size: 'xs', icon: 'i-heroicons-pencil-square', variant: 'ghost', color: 'primary', title: 'Editar / Programar', onClick: () => handleProgramarEntrega(row.original) }),
-      h(UButton, { size: 'xs', icon: 'i-heroicons-trash', variant: 'ghost', color: 'error', title: 'Eliminar registro', onClick: () => handleEliminarRegistro(row.original) })
+      h(UButton, { size: 'xs', icon: 'i-heroicons-eye', variant: 'ghost', color: 'neutral', title: 'Ver detalle', onClick: () => goToClienteDetalle(row.original) }),
+      h(UButton, { size: 'xs', icon: 'i-heroicons-trash', variant: 'ghost', color: 'error', title: 'Eliminar registro', onClick: () => handleEliminarRegistro(row.original.id) })
     ]) }
 ])
 
-const handleProgramarEntrega = async (row: any) => {
-  // TODO: abrir modal para programar fecha/hora
-}
-const handleMarcarEntregado = async (row: any) => {
-  // TODO: consumir service para marcar ENTREGADO
-}
 const handleEliminarRegistro = async (row: any) => {
   // TODO: Confirmación y eliminación lógica (soft delete) si aplica
-  console.log('Eliminar registro entrega', row.id_cotizacion)
+  console.log('Eliminar registro entrega', row.id_entrega)
+}
+const goToClienteDetalle = (data: any) => {
+  // Puede venir el objeto completo (row.original) o sólo el id
+  const cid = typeof data === 'number'
+    ? data
+    : data?.id_cotizacion || data?.id
+  if (!cid) {
+    console.warn('ID cotización no disponible para navegación detalle')
+    return
+  }
+  // Solo navegamos con el id de la cotización; el detalle obtendrá el id_contenedor desde la propia data.
+  navigateTo(`/cargaconsolidada/abiertos/entrega/clientes/${cid}`)
 }
 const handleEnviarMensaje = (row: any) => {
   // TODO: Implementar integración con WhatsApp / generación de link
@@ -276,7 +285,7 @@ watch(activeTab, async (newVal) => {
             } else if (newVal === 'entregas') {
               await getEntregas(id)
             } else if (newVal === 'delivery') {
-              // Acción para la pestaña Delivery si es necesario
+              await getDelivery(id)
             }
             await getHeaders(Number(id))
     } catch (error) {
@@ -284,4 +293,60 @@ watch(activeTab, async (newVal) => {
     }
   }
 }, { immediate: true })
+
+// Lógica wrapper UI para pagos usando funciones del composable
+const handleRegistrarPago = (row: any, data: any) => {
+  withSpinner(async () => {
+    const response = await registrarPagoDelivery(row, data)
+    if (response?.success) {
+      showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
+    } else {
+      showError('Error', response?.error || 'No se pudo registrar el pago')
+    }
+  }, 'registrarPago')
+}
+const handleDeletePago = (row: any, pagoId: number) => {
+  showConfirmation('Confirmar eliminación', '¿Está seguro de eliminar el pago?', () => {
+    withSpinner(async () => {
+      const response = await deletePagoDelivery(row, pagoId)
+      if (response?.success) {
+        showSuccess('Pago eliminado', 'Se eliminó el pago correctamente')
+      } else {
+        showError('Error', response?.error || 'No se pudo eliminar el pago')
+      }
+    }, 'Eliminando pago...')
+  })
+}
+
+// Columnas Delivery
+const deliveryColumns = ref<TableColumn<any>[]>([
+  { accessorKey: 'nro', header: 'N', cell: ({ row }) => row.index + 1 },
+  { accessorKey: 'nombre', header: 'Nombre', cell: ({ row }) => row.original.nombre || '—' },
+  { accessorKey: 'telefono', header: 'Whatsapp', cell: ({ row }) => row.original.telefono || '—' },
+  { accessorKey: 'tipo_entrega', header: 'Entrega', cell: ({ row }) => row.original.tipo_entrega || '—' },
+  { accessorKey: 'ciudad', header: 'Ciudad', cell: ({ row }) => row.original.ciudad || '—' },
+  { accessorKey: 'documento', header: 'Ruc o Dni', cell: ({ row }) => row.original.documento || '—' },
+  { accessorKey: 'razon_social', header: 'Razon Social o Nombre', cell: ({ row }) => row.original.razon_social || row.original.nombre || '—' },
+  { accessorKey: 'estado', header: 'Estado', cell: ({ row }) => {
+      const estado = row.original.estado
+      const color = estado === 'Pagado' ? 'success' : estado === 'Pendiente' ? 'secondary' : estado === 'Sobrepago' ? 'warning' : 'info'
+      return h(UBadge, { label: estado, color, variant: 'soft' })
+    } },
+  { accessorKey: 'importe', header: 'Importe', cell: ({ row }) => h(UInput as any, { modelValue: row.original.importe, size: 'xs', class: 'w-20 text-right', 'onUpdate:modelValue': (v: any) => updateImporteDelivery(row.original, Number(v) || 0) }) },
+  { accessorKey: 'pagado', header: 'Pagado', cell: ({ row }) => `S/.${row.original.pagado}` },
+  { id: 'adelantos', header: 'Adelantos', cell: ({ row }) => {
+      const pagos = row.original.pagos_details || []
+      return !row.original.id_contenedor_pago ? h(PagoGrid as any, {
+        pagoDetails: pagos,
+        currency: 'PEN',
+        numberOfPagos: currentRole.value === ROLES.COORDINACION ? 3 : pagos.length,
+        clienteNombre: row.original.nombre,
+        onSave: (data: any) => handleRegistrarPago(row.original, data),
+        onDelete: (pagoId: number) => handleDeletePago(row.original, pagoId),
+        showDelete: currentRole.value === ROLES.COORDINACION
+      }) : null
+    } }
+])
+
+
 </script>

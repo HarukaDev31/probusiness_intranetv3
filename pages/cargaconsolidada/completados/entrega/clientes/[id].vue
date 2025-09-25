@@ -1,183 +1,200 @@
 <template>
   <div class="p-6">
     <PageHeader
-      :title="`Consolidado #${carga || ''}.`"
+      :title="`Consolidado #${carga || ''} | ${clienteNombre}`"
       :subtitle="clienteNombre || ''"
       icon=""
       :hide-back-button="false"
-      @back="navigateTo(`/cargaconsolidada/completados/entrega/${contenedorId}`)"
-    />
+      @back="navigateTo(`/cargaconsolidada/abiertos/entrega/${contenedorId}`)"
+    >
+      <template #actions>
+        <div class="flex gap-2">
+          <UButton
+            v-if="!editable"
+            size="xs"
+            color="neutral"
+            variant="outline"
+            icon="i-heroicons-pencil-square"
+            @click="toggleEdit"
+          >Editar</UButton>
+          <template v-else>
+            <UButton
+              size="xs"
+              color="primary"
+              icon="i-heroicons-device-floppy"
+              :disabled="!dirty"
+              @click="handleSave"
+            >Guardar</UButton>
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="outline"
+              icon="i-heroicons-x-mark"
+              @click="toggleEdit"
+            >Cancelar</UButton>
+          </template>
+        </div>
+      </template>
+    </PageHeader>
     <div class="border-t mt-2 pt-4" />
 
     <div class="flex flex-col lg:flex-row gap-8">
       <div class="flex-1 space-y-6">
         <!-- Información de entrega -->
         <section>
-          <h3 class="font-semibold mb-2 text-sm uppercase tracking-wide">Información de entrega (Completado):</h3>
-          <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 text-xs opacity-90">
+          <h3 class="font-semibold mb-2 text-sm uppercase tracking-wide">Información de entrega:</h3>
+
+          <!-- Selector de tipo entrega (T.Cliente) -->
+          <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 text-xs mb-4">
             <div class="col-span-2 lg:col-span-1">
-              <Label small>Entrega:</Label>
-              <USelect v-model="form.tipo_entrega" :options="['Lima','Provincia']" size="xs" :disabled="!editable" />
+              <Label small>T. Cliente:</Label>
+              <USelect v-model="form.tipo_cliente" :options="['Lima','Provincia']" size="xs" disabled/>
             </div>
             <div class="col-span-2 lg:col-span-1">
               <Label small>Bultos:</Label>
-              <UInput v-model="form.bultos" size="xs" :disabled="!editable" />
+              <UInput v-model="form.qty_item" size="xs" />
             </div>
             <div class="col-span-2 lg:col-span-1">
               <Label small>Peso:</Label>
-              <UInput v-model="form.peso" size="xs" :disabled="!editable" />
+              <UInput v-model="form.peso" size="xs" />
             </div>
-            <div class="col-span-2 lg:col-span-1">
+            <div v-if="form.tipo_cliente === 'Lima'" class="col-span-2 lg:col-span-1">
               <Label small>Dni / Id:</Label>
-              <UInput v-model="form.documento" size="xs" :disabled="!editable" />
+              <UInput v-model="form.documento" size="xs" />
             </div>
-            <div class="col-span-2 lg:col-span-1">
+            <div v-else class="col-span-2 lg:col-span-1">
+              <Label small>Dni / Ruc:</Label>
+              <UInput v-model="form.documento" size="xs" />
+            </div>
+            <div v-if="form.tipo_cliente === 'Lima'" class="col-span-2 lg:col-span-1">
               <Label small># Licencia (1):</Label>
-              <UInput v-model="form.licencia1" size="xs" :disabled="!editable" />
-            </div>
-            <div class="col-span-2 lg:col-span-1">
-              <Label small># Licencia (2):</Label>
-              <UInput v-model="form.licencia2" size="xs" :disabled="!editable" />
+              <UInput v-model="form.licencia1" size="xs" />
             </div>
           </div>
 
-          <!-- Lima -->
-          <div v-if="form.tipo_entrega === 'Lima'" class="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs">
-            <div class="col-span-1 lg:col-span-1">
-              <Label small>Nombre completo del Chofer :</Label>
-              <UInput v-model="form.nombre_chofer" size="xs" :disabled="!editable" />
+          <!-- Vista para Lima (Chofer) -->
+          <div v-if="form.tipo_cliente === 'Lima'" class="mt-2 grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs">
+            <div class="col-span-1">
+              <Label small>Nombre completo del Chofer:</Label>
+              <UInput v-model="form.nombre_chofer" size="xs" />
             </div>
-            <div class="col-span-1 lg:col-span-1">
+            <div class="col-span-1">
               <Label small>Dirección final de destino:</Label>
-              <UInput v-model="form.direccion_final" size="xs" :disabled="!editable" />
+              <UInput v-model="form.direccion_final" size="xs" />
             </div>
-            <div class="col-span-1 lg:col-span-1">
+            <div class="col-span-1">
               <Label small>Distrito:</Label>
-              <UInput v-model="form.distrito" size="xs" :disabled="!editable" />
+              <UInput v-model="form.distrito_final" size="xs" />
             </div>
           </div>
-          <!-- Provincia -->
-          <div v-else-if="form.tipo_entrega === 'Provincia'" class="mt-5 space-y-3 text-xs">
+
+          <!-- Vista para clientes fuera de Lima (Agencia y Ubicación) -->
+          <div v-else class="mt-2 space-y-3 text-xs">
             <div class="grid grid-cols-2 lg:grid-cols-6 gap-3">
-              <div class="col-span-2 lg:col-span-1">
-                <Label small>Dni/Ruc:</Label>
-                <UInput v-model="form.documento" size="xs" :disabled="!editable" />
-              </div>
               <div class="col-span-2 lg:col-span-2">
                 <Label small>Nombre:</Label>
-                <UInput v-model="form.nombre" size="xs" :disabled="!editable" />
+                <UInput v-model="form.nombre" size="xs" />
               </div>
               <div class="col-span-2 lg:col-span-1">
                 <Label small>Celular:</Label>
-                <UInput v-model="form.celular" size="xs" :disabled="!editable" />
+                <UInput v-model="form.celular" size="xs" />
               </div>
-              <div class="col-span-2 lg:col-span-2">
-                <Label small>Departamento *:</Label>
-                <UInput v-model="form.departamento" size="xs" :disabled="!editable" />
+              <div class="col-span-2 lg:col-span-1">
+                <Label small>Departamento:</Label>
+                <UInput v-model="form.departamento" size="xs" />
               </div>
-              <div class="col-span-2 lg:col-span-2">
-                <Label small>Provincia *:</Label>
-                <UInput v-model="form.provincia" size="xs" :disabled="!editable" />
+              <div class="col-span-2 lg:col-span-1">
+                <Label small>Provincia:</Label>
+                <UInput v-model="form.provincia" size="xs" />
               </div>
-              <div class="col-span-2 lg:col-span-2">
-                <Label small>Distrito *:</Label>
-                <UInput v-model="form.distrito" size="xs" :disabled="!editable" />
+              <div class="col-span-2 lg:col-span-1">
+                <Label small>Distrito:</Label>
+                <UInput v-model="form.distrito" size="xs" />
               </div>
               <div class="col-span-2 lg:col-span-2">
                 <Label small>Agencia:</Label>
-                <UInput v-model="form.agencia" size="xs" :disabled="!editable" />
+                <UInput v-model="form.agencia" size="xs" />
               </div>
               <div class="col-span-2 lg:col-span-2">
                 <Label small>Manifiesto:</Label>
-                <UInput v-model="form.manifiesto" size="xs" :disabled="!editable" />
+                <UInput v-model="form.manifiesto" size="xs" />
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Comprobante -->
+        <!-- Información de comprobante -->
         <section class="pt-2">
           <h3 class="font-semibold mb-2 text-sm">Información de comprobante:</h3>
           <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 text-xs">
             <div class="col-span-2 lg:col-span-1">
               <Label small>Dni / Ruc:</Label>
-              <UInput v-model="form.comp_documento" size="xs" :disabled="!editable" />
+              <UInput v-model="form.documento" size="xs" />
             </div>
             <div class="col-span-2 lg:col-span-2">
               <Label small>Nombre:</Label>
-              <UInput v-model="form.comp_nombre" size="xs" :disabled="!editable" />
+              <UInput v-model="form.nombre" size="xs" />
             </div>
           </div>
         </section>
 
-        <!-- Evidencia -->
+        <!-- Fotos de conformidad -->
         <section class="pt-4">
           <h3 class="font-semibold mb-2 text-sm">Foto de conformidad de entrega:</h3>
           <div class="flex gap-4">
             <div v-for="(f,i) in evidencia" :key="i" class="w-28 h-32 border rounded-lg flex flex-col items-center justify-center text-[10px] gap-2 relative">
               <span>foto {{ i + 1 }}</span>
-              <UButton size="xs" icon="i-heroicons-trash" color="error" variant="ghost" class="absolute top-1 right-1" @click="removeFoto(i)" :disabled="!editable" />
+              <UButton size="xs" icon="i-heroicons-trash" color="error" variant="ghost" class="absolute top-1 right-1" @click="removeFoto(i)" />
             </div>
-            <div class="w-28 h-32 border-dashed border rounded-lg flex flex-col items-center justify-center text-[10px] gap-1 cursor-pointer" @click="addFoto" :class="{ 'opacity-40 pointer-events-none': !editable }">
+            <div class="w-28 h-32 border-dashed border rounded-lg flex flex-col items-center justify-center text-[10px] gap-1 cursor-pointer" @click="addFoto">
               <UIcon name="i-heroicons-plus" class="w-5 h-5" />
               <span>Agregar</span>
             </div>
           </div>
         </section>
       </div>
-
-      <aside class="w-full lg:w-72 text-[11px] leading-relaxed space-y-4">
-        <div>
-          <h4 class="font-semibold mb-1">Estados:</h4>
-          <p>- Pendiente</p>
-          <p>- Entregado: se cambia automáticamente cuando se sube la foto de entrega</p>
-        </div>
-        <div>
-          <h4 class="font-semibold mb-1">Acciones:</h4>
-          <p>Editar: puedes alternar modo lectura / edición</p>
-          <p>Guardar: se habilita con cambios</p>
-          <p>Bultos y peso: desde packing list</p>
-          <p>Información de la entrega: formulario cliente</p>
-          <p>Información del comprobante: formulario cliente</p>
-        </div>
-      </aside>
-    </div>
-
-    <div class="mt-6 flex gap-3">
-      <UButton size="sm" color="primary" icon="i-heroicons-device-floppy" :disabled="!dirty || !editable" @click="handleSave">Guardar</UButton>
-      <UButton size="sm" color="neutral" variant="outline" icon="i-heroicons-pencil-square" @click="toggleEdit">{{ editable ? 'Cancelar' : 'Editar' }}</UButton>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from '#imports'
+import { onMounted, ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useEntrega } from '@/composables/cargaconsolidada/entrega/useEntrega'
 import { UInput, USelect, UButton, UIcon } from '#components'
 import PageHeader from '~/components/PageHeader.vue'
 
+
+// Props/params
 const route = useRoute()
-const id = Number(route.params.id)
-const contenedorId = Number(route.query.contenedor) || 0
+const id = Number(route.params.id) // id de cotizacion
+// El id del contenedor se derivará desde el detalle (entregaDetalle.id_contenedor)
+let contenedorId: number | null = null
+const cotizacionId = ref<number | null>(isNaN(id) ? null : id)
+// Obtener detalle desde composable (cache si se navegó desde listado)
+const { getEntregasDetalle, entregaDetalle, loading, getHeaders, carga } = useEntrega()
+// Nombre del cliente (razon_social si existe, sino nombre)
+const clienteNombre = computed(() => (entregaDetalle.value as any)?.razon_social || entregaDetalle.value?.nombre || '')
 
-const carga = ref<string | null>(null)
-const clienteNombre = ref<string>('')
 
+// Formulario reactivo
 const form = ref<any>({
+  tipo_cliente: 'Lima',
   tipo_entrega: 'Lima',
-  bultos: '',
+  qty_item: '',
   peso: '',
   documento: '',
   licencia1: '',
-  licencia2: '',
   nombre_chofer: '',
   direccion_final: '',
   distrito: '',
+  // Provincia
   nombre: '',
   celular: '',
   departamento: '',
   provincia: '',
   agencia: '',
   manifiesto: '',
+  // Comprobante
   comp_documento: '',
   comp_nombre: ''
 })
@@ -210,8 +227,28 @@ const removeFoto = (i: number) => {
   evidencia.value.splice(i, 1)
 }
 
-onMounted(() => {
-  // TODO: fetch detalle completado
+onMounted(async () => {
+  // Cargar detalle si no está cacheado o corresponde a otro id
+  if (!entregaDetalle.value || entregaDetalle.value.id_cotizacion !== cotizacionId.value) {
+    await getEntregasDetalle(cotizacionId.value as number)
+  }
+  // Derivar contenedor desde el detalle si existe
+  if (entregaDetalle.value?.id_contenedor) {
+    contenedorId = entregaDetalle.value.id_contenedor as any
+  }
+  // Obtener headers/carga sólo si aún no está y tenemos id_contenedor
+  if (contenedorId && !carga.value) {
+    await getHeaders(contenedorId)
+  }
+  if (entregaDetalle.value) {
+    // Inicializar formulario con datos del detalle
+    form.value.qty_item = entregaDetalle.value.qty_item || ''
+    form.value.peso = entregaDetalle.value.peso || ''
+    form.value.documento = entregaDetalle.value.documento || ''
+    form.value.nombre = entregaDetalle.value.nombre || ''
+    form.value.tipo_cliente = (entregaDetalle.value as any).tipo_cliente || form.value.tipo_cliente
+    form.value.tipo_entrega = entregaDetalle.value.tipo_entrega || form.value.tipo_entrega
+  }
   initialSnapshot.value = snapshot()
 })
 </script>
