@@ -27,6 +27,12 @@
       :show-body-top="true"
       :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`"
     >
+    <template #actions>
+      <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3"
+      icon="i-heroicons-calendar"
+      @click="navigateTo(`/cargaconsolidada/completados/entrega/fechas-horarios/${id}`)"
+      />
+    </template>
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
