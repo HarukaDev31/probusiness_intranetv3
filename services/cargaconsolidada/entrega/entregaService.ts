@@ -177,7 +177,7 @@ export class EntregaService extends BaseService {
       return response
     } catch (error) {
       console.error('Error al obtener horarios disponibles:', error)
-      throw error
+      throw error 
     }
   }
 
