@@ -69,6 +69,7 @@
                 v-for="date in calendarDays"
                 :key="date.value"
                 @click="selectDate(date)"
+                @dblclick="openHorarioModalFor(date.value)"
                 @mousedown="startDrag(date)"
                 @mouseenter="handleDrag(date)"
                 @mouseup="endDrag"
@@ -142,6 +143,13 @@
               </div>
               <div class="flex items-center gap-2">
                 <UButton
+                  @click="editSchedule(schedule)"
+                  icon="i-heroicons-pencil-square"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                />
+                <UButton
                   @click="deleteSchedule(schedule.id)"
                   icon="i-heroicons-trash"
                   color="error"
@@ -158,10 +166,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useOverlay } from '#imports'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useOverlay, useRoute } from '#imports'
 import HorarioFormModal from '~/components/admin/HorarioFormModal.vue'
 import { useModal } from '~/composables/commons/useModal'
+import { useHorariosAdmin } from '~/composables/useHorariosAdmin'
 
 // Composables
 const overlay = useOverlay()
@@ -177,33 +186,43 @@ const dragStartDate = ref<Date | null>(null)
 const today = new Date()
 today.setHours(0, 0, 0, 0) // Resetear horas para comparación
 
-// Lista de horarios (simulada - reemplazar con datos reales)
-const scheduleList = ref([
-  {
-    id: '1',
-    date: '2025-09-16',
-    startTime: '09:00',
-    endTime: '10:00',
-    maxBookings: 5,
-    currentBookings: 3
-  },
-  {
-    id: '2',
-    date: '2025-09-16',
-    startTime: '10:30',
-    endTime: '11:30',
-    maxBookings: 3,
-    currentBookings: 1
-  },
-  {
-    id: '3',
-    date: '2025-09-17',
-    startTime: '14:00',
-    endTime: '15:00',
-    maxBookings: 4,
-    currentBookings: 2
+// Composable de horarios (backend)
+const { getActiveSchedules, loadSchedules, createRangoOnDate, createFechaIfNeeded, deleteRangoOnDate, updateRangoOnDate } = useHorariosAdmin()
+
+// Lista de horarios (UI)
+const scheduleList = ref<any[]>([])
+
+// Helper para sumar 30 minutos a HH:mm
+const addMinutes = (hhmm: string, minutes: number) => {
+  const [h, m] = hhmm.split(':').map(Number)
+  const d = new Date(2000, 0, 1, h || 0, m || 0, 0)
+  d.setMinutes(d.getMinutes() + (Number.isFinite(minutes) ? minutes : 30))
+  const hh = d.getHours().toString().padStart(2, '0')
+  const mm = d.getMinutes().toString().padStart(2, '0')
+  return `${hh}:${mm}`
+}
+
+// Mapear schedules del composable a scheduleList plano
+const refreshScheduleListFromComposable = () => {
+  const flattened: any[] = []
+  for (const sch of getActiveSchedules.value) {
+    const date = String(sch.id).replace(/^sch-/, '')
+    for (const slot of sch.timeSlots) {
+      const parsedRangeId = Number(slot.id)
+      flattened.push({
+        id: `${sch.id}-${slot.id}`,
+        date,
+        rangeId: Number.isFinite(parsedRangeId) ? parsedRangeId : undefined,
+        startTime: slot.time,
+        endTime: slot.endTime ? slot.endTime : addMinutes(slot.time, 30),
+        maxBookings: slot.maxCapacity ?? 0,
+        currentBookings: slot.currentBookings ?? 0
+      })
+    }
   }
-])
+  // Orden por fecha + hora
+  scheduleList.value = flattened.sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))
+}
 
 // Días de la semana en español
 const daysOfWeek = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá']
@@ -360,13 +379,13 @@ const clearSelection = () => {
 
 const getDateClass = (date: any) => {
   if (date.isPast) {
-    return 'text-secondary-300'
-  } else if (date.isSelected) {
-    return 'bg-primary-500 text-white'
-  } else if (date.hasSchedule) {
-    return 'bg-green-500 text-white'
-  } else {
     return 'text-secondary-500'
+  } else if (date.isSelected) {
+    return 'bg-primary-400 text-white'
+  } else if (date.hasSchedule) {
+    return 'bg-green-400 text-white'
+  } else {
+    return 'text-secondary-300'
   }
 }
 
@@ -376,74 +395,161 @@ const formatDate = (date: Date) => {
   return `${day} ${month}`
 }
 
+// Abre el modal usando la primera fecha seleccionada (botón "Nuevo Horario")
 const openHorarioModal = () => {
   if (selectedDates.value.length === 0) return
-  
   modalHorario.open({
-    selectedDate: selectedDates.value[0], // Usar la primera fecha seleccionada
+    selectedDate: selectedDates.value[0],
     onSave: (data: any) => {
-      handleSaveHorario(data)
+      handleSaveHorarioForSelectedDates(data)
     }
   })
 }
 
-const handleSaveHorario = (data: any) => {
+// Abre el modal directo al hacer click en un día específico
+const openHorarioModalFor = (date: Date) => {
+  modalHorario.open({
+    selectedDate: date,
+    onSave: (data: any) => {
+      handleSaveHorarioForDate(date, data)
+    }
+  })
+}
+
+// Genera entradas de horarios para un conjunto de fechas según el rango indicado en el modal
+const getContenedorId = (): number | undefined => {
+  const routeAny: any = route
+  const rawId = routeAny?.query?.contenedor ?? routeAny?.params?.id
+  const n = Number(rawId)
+  return Number.isFinite(n) && n > 0 ? n : undefined
+}
+
+const generateSchedulesForDates = async (dates: Date[], data: any) => {
   try {
-    // Función para convertir HH:MM a minutos
-    const timeToMinutes = (time: string) => {
-      const [hours, minutes] = time.split(':').map(Number)
-      return hours * 60 + minutes
+    const contId = getContenedorId()
+    if (!contId) {
+      showError('Falta contenedor', 'No se encontró el ID de contenedor en la ruta.')
+      return
     }
-
-    // Función para convertir minutos a HH:MM
-    const minutesToTime = (minutes: number) => {
-      const hours = Math.floor(minutes / 60)
-      const mins = minutes % 60
-      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+    // Crear un único rango por fecha indicada en backend (sin segmentar)
+    for (const date of dates) {
+      const dateKey = date.toISOString().split('T')[0]
+      await createRangoOnDate(contId, dateKey, {
+        start_time: String(data.startTime),
+        end_time: String(data.endTime),
+        delivery_count: Number(data.maxBookings) || 1
+      })
     }
-
-    // Crear horarios para todas las fechas seleccionadas
-    selectedDates.value.forEach(date => {
-      const startMinutes = timeToMinutes(data.startTime)
-      const endMinutes = timeToMinutes(data.endTime)
-      
-      // Crear horarios cada 30 minutos
-      let currentMinutes = startMinutes
-      while (currentMinutes < endMinutes) {
-        const nextMinutes = Math.min(currentMinutes + 30, endMinutes)
-        
-        const newSchedule = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          date: date.toISOString().split('T')[0],
-          startTime: minutesToTime(currentMinutes),
-          endTime: minutesToTime(nextMinutes),
-          maxBookings: data.maxBookings,
-          currentBookings: 0
-        }
-        
-        scheduleList.value.push(newSchedule)
-        currentMinutes += 30
-      }
-    })
-    console.log(scheduleList.value)
-    showSuccess('Horarios creados', `Se han creado horarios para ${selectedDates.value.length} fecha(s).`)
-    clearSelection()
-    
+    // Recargar desde backend
+    await loadSchedules(contId)
+    refreshScheduleListFromComposable()
+    showSuccess('Horarios creados', `Se han creado horarios para ${dates.length} fecha(s).`)
   } catch (error: any) {
-    showError('Error al crear horarios', error.message || 'No se pudieron crear los horarios')
+    const msg = error?.data?.message || error?.message || 'No se pudieron crear los horarios'
+    showError('No se pudo crear el horario', msg)
   }
+}
+
+// Handler para crear horarios sobre las fechas seleccionadas (botón)
+const handleSaveHorarioForSelectedDates = async (data: any) => {
+  if (selectedDates.value.length === 0) return
+  await generateSchedulesForDates(selectedDates.value, data)
+  clearSelection()
+}
+
+// Handler para crear horarios sobre una fecha específica (click en día)
+const handleSaveHorarioForDate = async (date: Date, data: any) => {
+  await generateSchedulesForDates([date], data)
+}
+
+// Editar un horario existente
+const editSchedule = (schedule: any) => {
+  const contId = getContenedorId()
+  if (!contId) {
+    showError('Falta contenedor', 'No se encontró el ID de contenedor en la ruta.')
+    return
+  }
+  if (!schedule?.rangeId) {
+    showError('Edición no disponible', 'No se encontró el identificador del rango a editar.')
+    return
+  }
+  // Fecha del schedule
+  const [year, month, day] = schedule.date.split('-').map((n: string) => Number(n))
+  const selDate = new Date(year, (month - 1), day)
+
+  modalHorario.open({
+    selectedDate: selDate,
+    initialStartTime: schedule.startTime,
+    initialEndTime: schedule.endTime,
+    initialMaxBookings: schedule.maxBookings,
+    mode: 'edit',
+    submitLabel: 'Guardar Cambios',
+    onSave: async (data: any) => {
+      try {
+        // Asegurar idFecha para esta fecha
+        const idFecha = await createFechaIfNeeded(contId, schedule.date)
+        await updateRangoOnDate(contId, idFecha, Number(schedule.rangeId), {
+          start_time: String(data.startTime),
+          end_time: String(data.endTime),
+          delivery_count: Number(data.maxBookings) || 1
+        })
+        await loadSchedules(contId)
+        refreshScheduleListFromComposable()
+        showSuccess('Horario actualizado', 'Los cambios se guardaron correctamente.')
+      } catch (err: any) {
+        const msg = err?.data?.message || err?.message || 'No se pudo actualizar el horario'
+        showError('Error al actualizar', msg)
+      }
+    }
+  })
 }
 
 
 
 // Cargar datos al montar el componente
-onMounted(() => {
+const route = useRoute()
+
+onMounted(async () => {
   // Configurar fecha inicial (septiembre 2025 como en la imagen)
   currentDate.value = new Date(2025, 8, 1) // Septiembre 2025
-  
+  // Cargar horarios desde backend si se proporciona ?contenedor=ID o /:id
+  const rawId = (route.query && (route.query as any).contenedor) ?? (route.params as any)?.id
+  const contId = Number(rawId)
+  if (Number.isFinite(contId) && contId > 0) {
+    try {
+      loading.value = true
+      await loadSchedules(contId)
+      refreshScheduleListFromComposable()
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Agregar eventos globales para drag & drop
   document.addEventListener('mouseup', endDrag)
 })
+
+// Si cambia la fuente (por ejemplo, recarga), actualizamos la lista plana
+watch(getActiveSchedules, () => refreshScheduleListFromComposable())
+
+// Si cambia el query/param del contenedor, recargar
+watch(
+  () => [(route.query as any)?.contenedor, (route.params as any)?.id],
+  async ([qId, pId]) => {
+    const idNum = Number(qId ?? pId)
+    if (Number.isFinite(idNum) && idNum > 0) {
+      try {
+        loading.value = true
+        await loadSchedules(idNum)
+        refreshScheduleListFromComposable()
+      } finally {
+        loading.value = false
+      }
+    } else {
+      scheduleList.value = []
+    }
+  }
+)
 
 
 
@@ -453,10 +559,22 @@ const deleteSchedule = (scheduleId: string) => {
     '¿Está seguro de que desea eliminar este horario? Esta acción no se puede deshacer.',
     async () => {
       try {
-        // Simular llamada a API
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        scheduleList.value = scheduleList.value.filter(s => s.id !== scheduleId)
+        const contId = getContenedorId()
+        if (!contId) {
+          showError('Falta contenedor', 'No se encontró el ID de contenedor en la ruta.')
+          return
+        }
+        const item = scheduleList.value.find(s => s.id === scheduleId)
+        if (!item || !item.rangeId) {
+          showError('No se puede eliminar', 'No se encontró el identificador del rango en el elemento seleccionado.')
+          return
+        }
+        // Asegurar idFecha (creará o devolverá existente)
+        const idFecha = await createFechaIfNeeded(contId, item.date)
+        await deleteRangoOnDate(contId, idFecha, Number(item.rangeId))
+        // Recargar
+        await loadSchedules(contId)
+        refreshScheduleListFromComposable()
         showSuccess('Horario eliminado', 'El horario ha sido eliminado correctamente.')
       } catch (error: any) {
         showError('Error al eliminar', error.message || 'No se pudo eliminar el horario')

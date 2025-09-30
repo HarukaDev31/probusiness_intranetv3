@@ -1,6 +1,7 @@
 export interface TimeSlot {
   id: string
   time: string
+  endTime?: string
   isAvailable: boolean
   maxCapacity?: number
   currentBookings?: number
