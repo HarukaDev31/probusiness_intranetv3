@@ -278,6 +278,14 @@ export const useEntrega = () => {
     if (response?.success) await getEntregas(contenedorId.value as number)
     return response
   }
+  const sendMessageForCotizacion = async (id_cotizacion: number ) => {
+    try {
+      const response = await EntregaService.sendMessageForCotizacion(id_cotizacion)
+      return response
+    } catch (error) {
+      error.value = error as string
+    }
+  }
 
   return {
     entregas,
@@ -312,6 +320,7 @@ export const useEntrega = () => {
     getDelivery,
     updateImporteDelivery,
     registrarPagoDelivery,
-    deletePagoDelivery
+    deletePagoDelivery,
+    sendMessageForCotizacion
   }
 }
