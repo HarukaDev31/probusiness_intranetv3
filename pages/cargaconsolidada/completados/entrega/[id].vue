@@ -182,23 +182,38 @@ const clientesColumns = ref<TableColumn<any>[]>([
   },
   { accessorKey: 'name', 
     header: 'T. Cliente', 
-    cell: ({ row }) => row.original.name || row.original.tipo_cliente || '—' 
+    cell: ({ row }) => row.original.name || '—' 
   },
-  { accessorKey: 'tipo_entrega', 
+  { accessorKey: 'type_form', 
     header: 'T. Entrega', 
-    cell: ({ row }) => h(UBadge, { label: row.original.tipo_entrega || '—', color: row.original.tipo_entrega === 'Lima' ? 'primary' : (row.original.tipo_entrega ? 'warning' : 'neutral') }) 
+    cell: ({ row }) => {
+      const tf = row.original.type_form
+      const label = (tf === 0 || tf === '0')
+        ? 'Provincia'
+        : (tf === 1 || tf === '1')
+        ? 'Lima'
+        : '-'
+      const color = label === 'Lima' ? 'primary' : label === 'Provincia' ? 'warning' : 'neutral'
+      return h(UBadge, { label, color, variant: 'soft' })
+    }
   },
   { accessorKey: 'registrado', 
     header: 'Registrado', 
-    cell: ({ row }) => h(UBadge, { label: row.original.registrado ? 'Si' : 'No', color: row.original.registrado ? 'success' : 'neutral' }) 
+    cell: ({ row }) => h(UBadge, { label: row.original.delivery_form_registered_at ? 'Si' : 'No', color: row.original.delivery_form_registered_at ? 'success' : 'error' }) 
   },
   { accessorKey: 'entregado', 
     header: 'Entregado', 
-    cell: ({ row }) => h(UBadge, { label: row.original.entregado ? 'Si' : 'No', color: row.original.entregado ? 'success' : 'neutral' }) 
+    cell: ({ row }) => h(UBadge, { label: row.original.voucher_doc ? 'Si' : 'No', color: row.original.voucher_doc ? 'success' : 'error' }) 
   },
-  { accessorKey: 'estado_pago', 
+  { accessorKey: 'estado_cotizacion_final', 
     header: 'Estado', 
-    cell: ({ row }) => h(UBadge, { label: row.original.estado_pago || 'Pendiente', color: (row.original.estado_pago || 'Pendiente') === 'Pagado' ? 'success' : 'warning' }) 
+    cell: ({ row }) => {
+      const raw = row.original.estado_cotizacion_final
+      const isPagado = typeof raw === 'string' && (raw.toUpperCase() === 'COTIZADO' || raw.toUpperCase() === 'AJUSTADO')
+      const label = isPagado ? 'Pagado' : 'Pendiente'
+      const color = isPagado ? 'success' : 'warning'
+      return h(UBadge, { label, color, variant: 'soft' })
+    } 
   },
   { id: 'actions', 
     header: 'Accion', 
@@ -217,22 +232,49 @@ const entregasColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'nro', header: 'N', cell: ({ row }) => row.index + 1 },
   { accessorKey: 'nombre', header: 'Nombre', cell: ({ row }) => row.original.nombre || '—' },
   { accessorKey: 'telefono', header: 'Whatsapp', cell: ({ row }) => row.original.telefono || '—' },
-  { accessorKey: 'cbm', header: 'Cbm', cell: ({ row }) => row.original.cbm ?? '—' },
-  { accessorKey: 'bultos', header: 'Bultos', cell: ({ row }) => row.original.bultos ?? '—' },
-  { accessorKey: 'tipo_entrega', header: 'Entrega', cell: ({ row }) => row.original.tipo_entrega || '—' },
-  { accessorKey: 'ciudad', header: 'Ciudad', cell: ({ row }) => row.original.ciudad || row.original.distrito || '—' },
-  { accessorKey: 'documento', header: 'Ruc o Dni', cell: ({ row }) => row.original.documento || '—' },
-  { accessorKey: 'razon_social', header: 'Razon social o Nombre', cell: ({ row }) => row.original.razon_social || row.original.nombre || '—' },
+  { accessorKey: 'cbm', header: 'Cbm', cell: ({ row }) => row.original.cbm_total_china ?? '—' },
+  { accessorKey: 'bultos', header: 'Bultos', cell: ({ row }) => row.original.qty_box_china ?? '—' },
+  { accessorKey: 'tipo_entrega', header: 'Entrega', cell: ({ row }) => {
+      const tf = row.original.type_form
+      const label = (tf === 0 || tf === '0')
+        ? 'Provincia'
+        : (tf === 1 || tf === '1')
+        ? 'Lima'
+        : '-'
+      const color = label === 'Lima' ? 'success' : label === 'Provincia' ? 'primary' : 'neutral'
+      return h(UBadge, { label, color, variant: 'soft' })
+    } },
+  { accessorKey: 'ciudad', header: 'Ciudad', cell: ({ row }) => row.original.department_name ||  'Lima' },
+  { accessorKey: 'documento', header: 'Ruc o Dni', cell: ({ row }) => row.original.agency_ruc || row.original.pick_doc || '—' },
+  { accessorKey: 'razon_social', header: 'Razon social o Nombre', cell: ({ row }) => row.original.agency_name || row.original.pick_name || '—' },
   { accessorKey: 'fecha_programada', header: 'Fecha', cell: ({ row }) => {
-      const fp = row.original.fecha_programada
+      const fp = formatDateTimeToDmy(row.original.delivery_date)
       if (!fp) return '—'
       const date = fp.includes(' ') ? fp.split(' ')[0] : fp.split('T')[0]
       return date || '—'
     } },
   { id: 'hora_programada', header: 'Hora', cell: ({ row }) => {
+      // Preferir tiempos dedicados en formato HH:MM:SS y formatear a HH:MM
+      const start = row.original.delivery_start_time 
+      const end = row.original.delivery_end_time
+      const fmt = (t: any) => {
+        if (!t || typeof t !== 'string') return null
+        const parts = t.split(':')
+        if (parts.length >= 2) {
+          const hh = (parts[0] ?? '').padStart(2, '0')
+          const mm = (parts[1] ?? '').padStart(2, '0')
+          return `${hh}:${mm}`
+        }
+        return t
+      }
+      const s = fmt(start)
+      const e = fmt(end)
+      if (s && e) return `${s} - ${e}`
+      if (s) return s
+      // Fallback: intentar extraer HH:MM desde fecha_programada
       const fp = row.original.fecha_programada
-      if (!fp) return '—'
-      if (fp.includes(' ')) return fp.split(' ')[1] || '—'
+      if (!fp || typeof fp !== 'string') return '—'
+      if (fp.includes(' ')) return (fp.split(' ')[1] || '').substring(0,5) || '—'
       if (fp.includes('T')) return (fp.split('T')[1] || '').substring(0,5) || '—'
       return '—'
     } },
@@ -257,7 +299,7 @@ const goToClienteDetalle = (data: any) => {
     return
   }
   // Solo navegamos con el id de la cotización; el detalle obtendrá el id_contenedor desde la propia data.
-  navigateTo(`/cargaconsolidada/abiertos/entrega/clientes/${cid}`)
+  navigateTo(`/cargaconsolidada/completados/entrega/clientes/${cid}`)
 }
 const handleEnviarMensaje = (row: any) => { console.log('Enviar mensaje a', row.telefono) }
 const handleEliminarRegistro = (row: any) => { console.log('Eliminar registro completado', row.id_cotizacion) }

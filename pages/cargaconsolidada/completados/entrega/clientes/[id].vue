@@ -5,7 +5,7 @@
       :subtitle="clienteNombre || ''"
       icon=""
       :hide-back-button="false"
-      @back="navigateTo(`/cargaconsolidada/abiertos/entrega/${contenedorId}`)"
+      @back="navigateTo(`/cargaconsolidada/completados/entrega/${contenedorId}`)"
     >
       <template #actions>
         <div class="flex gap-2">
