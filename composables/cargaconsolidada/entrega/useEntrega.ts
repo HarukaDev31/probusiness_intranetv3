@@ -30,6 +30,7 @@ export const useEntrega = () => {
     pagos_details?: any[]
     id_contenedor?: number
     id_contenedor_pago?: number | null
+    entrega: string | null
   }
   const delivery = ref<DeliveryRow[]>([])
 
@@ -160,7 +161,7 @@ export const useEntrega = () => {
       }
       const response = await EntregaService.getDelivery(id, params)
       delivery.value = (response.data as Entrega[]).map((item: any) => ({
-        id_cotizacion: item.id_cotizacion,
+        id_cotizacion: item.id,
         nombre: item.nombre,
         telefono: item.telefono,
         tipo_entrega: item.tipo_entrega ?? null,
@@ -172,7 +173,8 @@ export const useEntrega = () => {
         pagado: item.pagado ?? 0,
         pagos_details: item.pagos_details ?? [],
         id_contenedor: item.id_contenedor,
-        id_contenedor_pago: item.id_contenedor_pago ?? null
+        id_contenedor_pago: item.id_contenedor_pago ?? null,
+        entrega: item.entrega ?? null
       }))
       pagination.value = response.pagination
     } catch (err: any) {
@@ -253,9 +255,13 @@ export const useEntrega = () => {
     if (pagado > importe) return 'Sobrepago'
     return 'Parcial'
   }
-  const updateImporteDelivery = (row: DeliveryRow, nuevoImporte: number) => {
-    row.importe = nuevoImporte
-    row.estado = calcularEstado(row.pagado, row.importe)
+  const updateImporteDelivery = async (data: any) => {
+    try {
+      const response = await EntregaService.updateImporteDelivery(data)
+      return response
+    } catch (err) {
+      error.value = err as string
+    }
   }
   const registrarPagoDelivery = async (row: DeliveryRow, data: any) => {
     const formData = new FormData()
@@ -287,13 +293,13 @@ export const useEntrega = () => {
     currentPage,
     filters,
     filterConfig,
-  getEntregas,
-  getEntregasDetalle,
-  getClientes,
-  clientes,
-  clientesFilterConfig,
-  marcarRegistrado,
-  marcarEntregadoCliente,
+    getEntregas,
+    getEntregasDetalle,
+    getClientes,
+    clientes,
+    clientesFilterConfig,
+    marcarRegistrado,
+    marcarEntregadoCliente,
     handleSearch,
     handlePageChange,
     handleItemsPerPageChange,
@@ -301,8 +307,8 @@ export const useEntrega = () => {
     headers,
     carga,
     loadingHeaders,
-  getHeaders,
-  // delivery
+    getHeaders,
+    // delivery
     getDelivery,
     updateImporteDelivery,
     registrarPagoDelivery,

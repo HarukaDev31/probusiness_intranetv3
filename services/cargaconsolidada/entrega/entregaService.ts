@@ -146,7 +146,7 @@ export class EntregaService extends BaseService {
 
   static async registrarPagoDelivery(formData: FormData): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/pagos`, {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/pagos`, {
         method: 'POST',
         body: formData
       })
@@ -158,7 +158,7 @@ export class EntregaService extends BaseService {
   }
   static async deletePagoDelivery(pagoId: number): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/pagos/${pagoId}`, {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/pagos/${pagoId}`, {
         method: 'DELETE'
       })
       return response
@@ -252,6 +252,19 @@ export class EntregaService extends BaseService {
       })
     } catch (error) {
       console.error('Error al eliminar rango:', error)
+      throw error
+    }
+  }
+
+  static async updateImporteDelivery(data: any): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/importe`, {
+        method: 'POST',
+        body: data
+      })
+      return response
+    } catch (error) {
+      console.error('Error al actualizar importe de delivery:', error)
       throw error
     }
   }
