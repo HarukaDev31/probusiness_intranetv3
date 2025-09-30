@@ -1,6 +1,7 @@
 import type { HeaderResponse } from '~/types/data-table'
 import { BaseService } from '~/services/base/BaseService'
 import type { EntregaResponse } from '../../../types/cargaconsolidada/entrega/entrega'
+import type { TimeSlot } from '~/types/horarios'
 
 export class EntregaService extends BaseService {
   private static baseUrl = 'api/carga-consolidada/contenedor/entrega'
@@ -163,6 +164,94 @@ export class EntregaService extends BaseService {
       return response
     } catch (error) {
       console.error('Error al eliminar pago delivery:', error)
+      throw error
+    }
+  }
+
+  // --- HORARIOS DISPONIBLES (ADMIN/ENTREGA) ---
+  static async getHorariosDisponibles(idContenedor: number): Promise<{ success: boolean; data: Array<Partial<TimeSlot> & Record<string, any>> }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data: Array<Partial<TimeSlot> & Record<string, any>> }>(
+        `${this.baseUrl}/${idContenedor}/horarios-disponibles`
+      )
+      return response
+    } catch (error) {
+      console.error('Error al obtener horarios disponibles:', error)
+      throw error
+    }
+  }
+
+  // --- CRUD FECHAS ---
+  static async createFecha(idContenedor: number, date: string | { day: number; month: number; year: number }): Promise<{
+    success: boolean;
+    data: { id: number; day: number; month: number; year: number; duplicated?: boolean };
+    message?: string;
+  }> {
+    try {
+      const body = typeof date === 'string' ? { date } : date
+      return await this.apiCall(`${this.baseUrl}/${idContenedor}/fechas`, {
+        method: 'POST',
+        body
+      })
+    } catch (error) {
+      console.error('Error al crear/obtener fecha:', error)
+      throw error
+    }
+  }
+
+  static async deleteFecha(idContenedor: number, idFecha: number): Promise<{ success: boolean }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/${idContenedor}/fechas/${idFecha}`, { method: 'DELETE' })
+    } catch (error) {
+      console.error('Error al eliminar fecha:', error)
+      throw error
+    }
+  }
+
+  // --- CRUD RANGOS (HORARIOS) ---
+  static async createRango(
+    idContenedor: number,
+    idFecha: number,
+    payload: { start_time: string; end_time: string; delivery_count: number }
+  ): Promise<{
+    success: boolean;
+    data: { id: number; id_date: number; start_time: string; end_time: string; delivery_count: number };
+  }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/${idContenedor}/fechas/${idFecha}/rangos`, {
+        method: 'POST',
+        body: payload
+      })
+    } catch (error) {
+      console.error('Error al crear rango:', error)
+      throw error
+    }
+  }
+
+  static async updateRango(
+    idContenedor: number,
+    idFecha: number,
+    idRango: number,
+    payload: { start_time: string; end_time: string; delivery_count: number }
+  ): Promise<{ success: boolean }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/${idContenedor}/fechas/${idFecha}/rangos/${idRango}`, {
+        method: 'PUT',
+        body: payload
+      })
+    } catch (error) {
+      console.error('Error al actualizar rango:', error)
+      throw error
+    }
+  }
+
+  static async deleteRango(idContenedor: number, idFecha: number, idRango: number): Promise<{ success: boolean }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/${idContenedor}/fechas/${idFecha}/rangos/${idRango}`, {
+        method: 'DELETE'
+      })
+    } catch (error) {
+      console.error('Error al eliminar rango:', error)
       throw error
     }
   }

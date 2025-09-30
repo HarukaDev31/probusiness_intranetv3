@@ -3,7 +3,9 @@
     <PageHeader 
       title="Administración de Horarios" 
       subtitle="Gestiona los horarios disponibles para las citas de recogida"
-      :show-back-button="false"
+      icon="mdi-calendar-clock"
+      :hide-back-button="false"
+      @back="navigateTo(`/cargaconsolidada/completados/entrega/${id}`)"
     />
     
     <div class="mt-6">
