@@ -406,7 +406,13 @@ export const useEntrega = () => {
   const getAllDeliveryData = async () => {
     try {
       loading.value = true
-      const response = await EntregaService.getAllDeliveryData()
+      const params = {
+        page: currentPage.value,
+        per_page: itemsPerPage.value,
+        search: search.value,
+        filters: filters.value
+      }
+      const response = await EntregaService.getAllDeliveryData(params)
       delivery.value = response.data
       pagination.value = response.pagination  
       return response
@@ -416,6 +422,37 @@ export const useEntrega = () => {
       loading.value = false
     }
   }
+
+  // Función para obtener datos de delivery con paginación (similar a fetchConsolidadoData)
+  const fetchDeliveryData = async (filters: any, page: number, itemsPerPage: number) => {
+    try {
+      loading.value = true
+      const params = {
+        page: page,
+        per_page: itemsPerPage,
+        search: search.value,
+        filters: filters
+      }
+      const response = await EntregaService.getAllDeliveryData(params)
+      
+      if (response.success) {
+        delivery.value = response.data.data || response.data
+        pagination.value = response.data.pagination || {
+          current_page: page,
+          last_page: 1,
+          per_page: itemsPerPage,
+          total: response.data.total || 0,
+          from: 0,
+          to: 0
+        }
+      }
+    } catch (err: any) {
+      error.value = err?.message || 'Error al cargar datos de delivery'
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     entregas,
     entregaDetalle,
@@ -456,5 +493,6 @@ export const useEntrega = () => {
     , deleteConformidad
     , saveClienteDetalle
     , getAllDeliveryData
+    , fetchDeliveryData
   }
 }

@@ -298,4 +298,27 @@ export class DocumentacionService extends BaseService {
             throw error
         }
     }
+    static async downloadAllFilesAdministracion(idContenedor: string) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/download-zip-administracion/${idContenedor}`, {
+                method: 'GET'
+            })
+            const blob = new Blob([response], {
+                type: 'application/zip'
+            })
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `documentacion_${idContenedor}.zip`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            window.URL.revokeObjectURL(url)
+            return { success: true }
+        }
+        catch (error) {
+            console.error('Error al descargar todos los archivos:', error)
+            throw error
+        }
+    }
 }

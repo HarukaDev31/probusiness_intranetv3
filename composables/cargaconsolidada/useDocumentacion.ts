@@ -116,7 +116,7 @@ export const useDocumentacion = () => {
   }
   const createNewFolder = async (data: FormData) => {
     try {
-      const response = await DocumentacionService.createNewFolder( data)
+      const response = await DocumentacionService.createNewFolder(data)
       return response
     }
     catch (error) {
@@ -124,7 +124,16 @@ export const useDocumentacion = () => {
       throw error
     }
   }
-
+  const downloadAllFilesAdministracion = async (idContenedor: string) => {
+    try {
+      const response = await DocumentacionService.downloadAllFilesAdministracion(idContenedor)
+      return response
+    }
+    catch (error) {
+      console.error('Error al descargar todos los archivos:', error)
+      throw error
+    }
+  }
   return {
     folders,
     loading,
@@ -140,6 +149,7 @@ export const useDocumentacion = () => {
     downloadFacturaComercial,
     deleteFileDocumentation,
     downloadAllFiles,
-    createNewFolder
+    createNewFolder,
+    downloadAllFilesAdministracion
   }
 }

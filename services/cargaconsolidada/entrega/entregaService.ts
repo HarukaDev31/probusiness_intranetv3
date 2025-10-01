@@ -341,9 +341,16 @@ export class EntregaService extends BaseService {
       throw error
     }
   }
-  static async getAllDeliveryData(): Promise<{ success: boolean; data: any; error?: string }> {
+  static async getAllDeliveryData(params?: any): Promise<{ success: boolean; data: any; error?: string }> {
     try {
-      return await this.apiCall(`${this.baseUrl}/delivery/all`, {
+      const queryParams = new URLSearchParams()
+      if (params?.page) queryParams.append('page', params.page.toString())
+      if (params?.per_page) queryParams.append('per_page', params.per_page.toString())
+      if (params?.search) queryParams.append('search', params.search)
+      if (params?.filters) queryParams.append('filters', JSON.stringify(params.filters))
+      const qs = queryParams.toString()
+      
+      return await this.apiCall(`${this.baseUrl}/delivery/all${qs ? `?${qs}` : ''}`, {
         method: 'GET'
       })
     } catch (error) {

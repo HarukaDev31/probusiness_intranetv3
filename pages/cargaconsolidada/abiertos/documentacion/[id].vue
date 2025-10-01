@@ -11,6 +11,13 @@
                     @click="handleDownloadAll" />
                 <UButton label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning"
                     @click="handleNuevoDocumento" />
+                <!-- button handleDownloadAllAdministracion -->
+             
+            </div>
+            <div class="flex items-center gap-3" v-if="currentRole === ROLES.ADMINISTRACION">
+                <UButton label="Descargar todo"
+                    variant="outline" icon="i-heroicons-arrow-down-tray" color="neutral"
+                    @click="handleDownloadAllAdministracion" />
             </div>
         </div>
 
@@ -135,7 +142,8 @@ const {
     downloadFacturaComercial,
     deleteFileDocumentation,
     downloadAllFiles,
-    createNewFolder
+    createNewFolder,
+    downloadAllFilesAdministracion
 } = useDocumentacion()
 
 // Route y Router
@@ -220,7 +228,15 @@ const handleDownloadAll = async () => {
         showError('Error', 'Error al preparar la descarga')
     }
 }
-
+const handleDownloadAllAdministracion = async () => {
+    try {
+        await withSpinner(async () => {
+            const result = await downloadAllFilesAdministracion(contenedorId)
+        }, 'Preparando descarga de todos los archivos...')
+    } catch (error) {
+        showError('Error', 'Error al preparar la descarga')
+    }
+}
 const overlay = useOverlay()
 const createDocumentModal = overlay.create(CreateDocumentModal)
 const handleNuevoDocumento = () => {

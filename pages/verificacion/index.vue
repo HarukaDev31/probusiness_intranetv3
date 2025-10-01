@@ -266,7 +266,8 @@ const {
   updateImporteDelivery,
   registrarPagoDelivery,
   deletePagoDelivery,
-  getAllDeliveryData
+  getAllDeliveryData,
+  fetchDeliveryData
 } = useEntrega()
 
 
@@ -659,61 +660,52 @@ const cursosColumns: TableColumn<any>[] = [
   }
 ]
 
-// Columnas para Delivery
+// Columnas para Delivery (usando las mismas que Consolidado)
 const deliveryColumns: TableColumn<any>[] = [
   {
-    accessorKey: 'nro',
-    header: 'N',
-    cell: ({ row }: { row: any }) => row.index + 1
+    accessorKey: 'index',
+    header: 'N.',
+    cell: ({ row }: { row: any }) => row.getValue('index')
+  },
+  {
+    accessorKey: 'fecha',
+    header: 'Fecha',
+    cell: ({ row }: { row: any }) => row.getValue('fecha')
   },
   {
     accessorKey: 'nombre',
     header: 'Nombre',
-    cell: ({ row }: { row: any }) => row.getValue('nombre') || '—'
-  },
-  {
-    accessorKey: 'telefono',
-    header: 'Whatsapp',
-    cell: ({ row }: { row: any }) => row.getValue('telefono') || '—'
-  },
-  {
-    accessorKey: 'entrega',
-    header: 'Entrega',
-    cell: ({ row }: { row: any }) => {
-      const entrega = row.getValue('entrega')
-      const color = entrega === 'LIMA' ? 'success' : entrega === 'PROVINCIA' ? 'primary' : 'neutral'
-      return h('div', { class: 'flex items-center space-x-1' }, [
-        h('span', { class: `px-2 py-1 rounded-full text-xs font-medium border bg-${color}-100 text-${color}-800 border-${color}-200` }, entrega || '—'),
-        h('UIcon', {
-          name: 'i-heroicons-truck',
-          class: 'w-4 h-4 text-gray-400'
-        })
-      ])
-    }
-  },
-  {
-    accessorKey: 'ciudad',
-    header: 'Ciudad',
-    cell: ({ row }: { row: any }) => row.getValue('ciudad') || '—'
+    cell: ({ row }: { row: any }) => row.getValue('nombre')
   },
   {
     accessorKey: 'documento',
-    header: 'Ruc o Dni',
-    cell: ({ row }: { row: any }) => row.getValue('documento') || '—'
+    header: 'DNI',
+    cell: ({ row }: { row: any }) => formatDocument(row.getValue('documento'))
   },
   {
-    accessorKey: 'razon_social',
-    header: 'Razon Social o Nombre',
-    cell: ({ row }: { row: any }) => row.getValue('razon_social') || '—'
+    accessorKey: 'telefono',
+    header: 'WhatsApp',
+    cell: ({ row }: { row: any }) => formatPhoneNumber(row.getValue('telefono'))
   },
   {
-    accessorKey: 'estado',
+    accessorKey: 'tipo',
+    header: 'Servicio',
+    cell: ({ row }: { row: any }) => row.getValue('tipo')
+  },
+  {
+    accessorKey: 'carga',
+    header: 'Carga',
+    cell: ({ row }: { row: any }) => `#${row.getValue('carga')} `
+  },
+  {
+    accessorKey: 'estado_pago',
     header: 'Estado',
     cell: ({ row }: { row: any }) => {
-      const pagado = row.getValue('pagado') || 0
-      const importe = row.getValue('importe') || 0
+      const pagado = row.original.pagado || 0
+      const importe = row.original.importe || 0
       const estado = pagado >= importe && pagado > 0 ? 'Pagado' : 'Pendiente'
       const color = estado === 'Pagado' ? 'success' : 'warning'
+      
       return h('div', { class: 'flex items-center space-x-1' }, [
         h('span', { class: `px-2 py-1 rounded-full text-xs font-medium border bg-${color}-100 text-${color}-800 border-${color}-200` }, estado),
         h('UIcon', {
@@ -724,36 +716,28 @@ const deliveryColumns: TableColumn<any>[] = [
     }
   },
   {
-    accessorKey: 'importe',
+    accessorKey: 'total_pago_delivery',
     header: 'Importe',
     cell: ({ row }: { row: any }) => {
-      const importe = row.getValue('importe')
+      const monto = row.getValue('total_pago_delivery')
       return h('div', { class: 'flex items-center space-x-1' }, [
-        h('input', {
-          type: 'number',
-          value: importe,
-          class: 'w-20 px-2 py-1 text-sm border rounded',
-          onInput: (e: any) => {
-            // Actualizar el valor en el objeto original
-            Object.assign(row.original, { importe: e.target.value })
-          }
-        }),
+        h('span', {}, formatCurrency(monto)),
         h('UIcon', {
-          name: 'i-heroicons-currency-dollar',
+          name: 'i-heroicons-chevron-down',
           class: 'w-4 h-4 text-gray-400'
         })
       ])
     }
   },
   {
-    accessorKey: 'pagado',
+    accessorKey: 'total_pagado',
     header: 'Pagado',
     cell: ({ row }: { row: any }) => {
-      const pagado = row.getValue('pagado')
+      const total = row.original.pagado
       return h('div', { class: 'flex items-center space-x-1' }, [
-        h('span', {}, formatCurrency(pagado, 'PEN')),
+        h('span', {}, formatCurrency(total)),
         h('UIcon', {
-          name: 'i-heroicons-banknotes',
+          name: 'i-heroicons-chevron-up',
           class: 'w-4 h-4 text-gray-400'
         })
       ])
@@ -770,44 +754,14 @@ const deliveryColumns: TableColumn<any>[] = [
           pagoDetails: pagos,
           showDelete: false,
           clienteNombre: row.original.nombre,
-          currency: 'PEN',
+          currency: 'USD',
           onSave: (data: any) => handleRegistrarPagoDelivery(row.original, data),
           onDelete: (pagoId: number) => handleDeletePagoDelivery(row.original, pagoId)
         }
       )
     }
   },
-  {
-    accessorKey: 'acciones',
-    header: 'Acciones',
-    cell: ({ row }: { row: any }) => {
-      return h('div', { class: 'flex items-center gap-2' }, [
-        h(UButton as any, {
-          size: 'xs',
-          icon: 'i-heroicons-eye',
-          color: 'primary',
-          variant: 'ghost',
-          onClick: () => navigateTo(`/verificacion/delivery/${row.original.id}`)
-        }),
-        h(UButton as any, {
-          size: 'xs',
-          icon: 'i-heroicons-pencil-square',
-          color: 'green',
-          variant: 'ghost',
-          onClick: () => handleUpdateImporteDelivery(row.original)
-        }),
-        row.original.note_administracion && h(UButton as any, {
-          size: 'xs',
-          icon: 'i-heroicons-document-text',
-          color: 'primary',
-          variant: 'ghost',
-          onClick: () => {
-            showModal(row.original.note_administracion)
-          }
-        })
-      ])
-    }
-  }
+  
 ]
 
 const totalImporteConsolidado = computed(() =>
@@ -858,8 +812,7 @@ const handleSearch = async (query: string) => {
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
     searchDelivery.value = query
-    // Usar la función para obtener todos los registros de delivery
-    await getAllDeliveryData()
+    await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
   }
 }
 
@@ -872,8 +825,8 @@ const handlePageChange = async (page: number) => {
   } else if (activeTab.value === 'cursos') {
     fetchCursosData(filtersCursos.value, page, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
-    // Usar la función para obtener todos los registros de delivery
-    await getAllDeliveryData()
+    currentPageDelivery.value = page
+    await fetchDeliveryData(filtersDelivery.value, page, itemsPerPageDelivery.value)
   }
 }
 
@@ -886,8 +839,8 @@ const handleItemsPerPageChange = async (items: number) => {
   } else if (activeTab.value === 'cursos') {
     fetchCursosData(filtersCursos.value, 1, items, idPedido)
   } else if (activeTab.value === 'delivery') {
-    // Usar la función para obtener todos los registros de delivery
-    await getAllDeliveryData()
+    itemsPerPageDelivery.value = items
+    await fetchDeliveryData(filtersDelivery.value, 1, items)
   }
 }
 
@@ -903,8 +856,7 @@ const handleFilterChange = async (filterType: string, value: string) => {
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
     filtersDelivery.value = { ...filtersDelivery.value, [filterType]: value }
-    // Usar la función para obtener todos los registros de delivery
-    await getAllDeliveryData()
+    await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
   }
 }
 
@@ -947,7 +899,7 @@ const handleRegistrarPagoDelivery = async (row: any, data: any) => {
     const response = await registrarPagoDelivery(row, data)
     if (response?.success) {
       // Recargar todos los datos de delivery después de registrar pago
-      await getAllDeliveryData()
+      await fetchDeliveryData(filtersDelivery.value, currentPageDelivery.value, itemsPerPageDelivery.value)
     }
   } catch (error) {
     console.error('Error al registrar pago:', error)
@@ -959,7 +911,7 @@ const handleDeletePagoDelivery = async (row: any, pagoId: number) => {
     const response = await deletePagoDelivery(row, pagoId)
     if (response?.success) {
       // Recargar todos los datos de delivery después de eliminar pago
-      await getAllDeliveryData()
+      await fetchDeliveryData(filtersDelivery.value, currentPageDelivery.value, itemsPerPageDelivery.value)
     }
   } catch (error) {
     console.error('Error al eliminar pago:', error)
@@ -975,7 +927,7 @@ const handleUpdateImporteDelivery = async (row: any) => {
     const response = await updateImporteDelivery(data)
     if (response?.success) {
       // Recargar todos los datos de delivery después de actualizar importe
-      await getAllDeliveryData()
+      await fetchDeliveryData(filtersDelivery.value, currentPageDelivery.value, itemsPerPageDelivery.value)
     }
   } catch (error) {
     console.error('Error al actualizar importe:', error)
@@ -1008,7 +960,7 @@ onMounted(async() => {
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
     // Cargar todos los datos de delivery
-    await getAllDeliveryData()
+    await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
   }
 })
 watch(activeTab, async (newTab, oldTab) => {
@@ -1027,7 +979,7 @@ watch(activeTab, async (newTab, oldTab) => {
   } else if (newTab === 'delivery') {
     navigateTo(`/verificacion?tab=delivery`)
     // Cargar todos los datos de delivery
-    await getAllDeliveryData()
+    await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
   }
 })
 </script>
