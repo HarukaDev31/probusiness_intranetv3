@@ -224,6 +224,19 @@ const openFile = (file: FileItem|File) => {
     })
 }
 
+const generateFileName = (url: string): string => {
+    if (!url) return 'archivo'
+    
+    const urlParts = url.split('/')
+    const fileName = urlParts[urlParts.length - 1]
+    
+    try {
+        return decodeURIComponent(fileName)
+    } catch {
+        return fileName
+    }
+}
+
 const downloadFileExisting = async (file_url: string | null) => {
     if (!file_url) return
 
@@ -236,7 +249,7 @@ const downloadFileExisting = async (file_url: string | null) => {
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
-            a.download = 'archivo'
+            a.download = generateFileName(file_url)
             document.body.appendChild(a)
             a.click()
             document.body.removeChild(a)
