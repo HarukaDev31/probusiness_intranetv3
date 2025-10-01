@@ -48,6 +48,34 @@ export class EntregaService extends BaseService {
     }
   }
 
+  // --- AGENCIAS (para selects) ---
+  static async getAgencias(params: { currentPage?: number; itemsPerPage?: number; search?: string; ids?: number[] | string }): Promise<{
+    success: boolean;
+    data: Array<{ id: number; name: string; ruc: string; value: number; label: string }>;
+    pagination?: any;
+  }> {
+    try {
+      const queryParams = new URLSearchParams()
+      if (params?.currentPage) queryParams.append('currentPage', String(params.currentPage))
+      if (params?.itemsPerPage) queryParams.append('itemsPerPage', String(params.itemsPerPage))
+      if (params?.search) queryParams.append('search', params.search)
+      if (params?.ids) {
+        const idsStr = Array.isArray(params.ids) ? params.ids.join(',') : String(params.ids)
+        if (idsStr) queryParams.append('ids', idsStr)
+      }
+      const qs = queryParams.toString()
+      const response = await this.apiCall<{ success: boolean; data: any[]; pagination?: any }>(`${this.baseUrl}/agencias${qs ? `?${qs}` : ''}`)
+      return {
+        success: Boolean((response as any)?.success ?? true),
+        data: (response as any)?.data || [],
+        pagination: (response as any)?.pagination
+      }
+    } catch (error) {
+      console.error('Error al obtener agencias:', error)
+      throw error
+    }
+  }
+
   // Clientes tab (listado base de clientes para gestionar entrega)
   static async getClientes(id: number, params: any): Promise<EntregaResponse> {
     try {
@@ -55,7 +83,7 @@ export class EntregaService extends BaseService {
       if (params?.page) queryParams.append('page', params.page.toString())
       if (params?.per_page) queryParams.append('per_page', params.per_page.toString())
       if (params?.search) queryParams.append('search', params.search)
-      if (params?.filters) queryParams.append('filters', JSON.stringify(params.filters))
+      // No enviamos filtros: el backend no los espera; se filtra en cliente
       const qs = queryParams.toString()
       const response = await this.apiCall<EntregaResponse>(`${this.baseUrl}/clientes/${id}${qs ? `?${qs}` : ''}`)
       return response
