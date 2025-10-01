@@ -280,4 +280,53 @@ export class EntregaService extends BaseService {
       throw error
     }
   }
+
+  // --- DETALLE CLIENTE (guardar formulario) ---
+  static async updateClienteDetalle(id_cotizacion: number, data: any): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/entregas/detalle/${id_cotizacion}/update`, {
+        method: 'POST',
+        body: data
+      })
+    } catch (error) {
+      console.error('Error al actualizar detalle de cliente:', error)
+      throw error
+    }
+  }
+
+  // --- CONFORMIDAD (fotos) ---
+  static async uploadConformidad(formData: FormData): Promise<{ success: boolean; data: { id: number; photo_1: string; photo_2: string } }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/entregas/conformidad`, {
+        method: 'POST',
+        body: formData
+      })
+    } catch (error) {
+      console.error('Error al subir conformidad:', error)
+      throw error
+    }
+  }
+
+  static async updateConformidad(id: number, formData: FormData): Promise<{ success: boolean; data: { id: number; photo_1: string; photo_2: string } }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/entregas/conformidad/${id}/update`, {
+        method: 'POST',
+        body: formData
+      })
+    } catch (error) {
+      console.error('Error al actualizar conformidad:', error)
+      throw error
+    }
+  }
+
+  static async deleteConformidad(id: number): Promise<{ success: boolean }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/entregas/conformidad/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (error) {
+      console.error('Error al eliminar conformidad:', error)
+      throw error
+    }
+  }
 }
