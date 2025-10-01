@@ -4,7 +4,7 @@ import type { EntregaResponse } from '../../../types/cargaconsolidada/entrega/en
 import type { TimeSlot } from '~/types/horarios'
 
 export class EntregaService extends BaseService {
-  private static baseUrl = 'api/carga-consolidada/contenedor/entrega'
+  protected static baseUrl = '/api/carga-consolidada/contenedor/entrega'
 
   static async getEntregas(id: number, params: any): Promise<EntregaResponse> {
     try {
@@ -297,10 +297,22 @@ export class EntregaService extends BaseService {
   // --- CONFORMIDAD (fotos) ---
   static async uploadConformidad(formData: FormData): Promise<{ success: boolean; data: { id: number; photo_1: string; photo_2: string } }> {
     try {
-      return await this.apiCall(`${this.baseUrl}/entregas/conformidad`, {
+      console.log('📤 Iniciando upload de conformidad...')
+      console.log('FormData:', formData)
+      console.log('URL completa:', `${EntregaService.baseUrl}/entregas/conformidad`)
+      
+      //print formData
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value)
+      } 
+      
+      console.log('🚀 Enviando petición...')
+      const response = await this.apiCall(`${this.baseUrl}/entregas/conformidad`, {
         method: 'POST',
         body: formData
       })
+      console.log('✅ Respuesta recibida:', response)
+      return response
     } catch (error) {
       console.error('Error al subir conformidad:', error)
       throw error
@@ -326,6 +338,16 @@ export class EntregaService extends BaseService {
       })
     } catch (error) {
       console.error('Error al eliminar conformidad:', error)
+      throw error
+    }
+  }
+  static async getAllDeliveryData(): Promise<{ success: boolean; data: any; error?: string }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/delivery/all`, {
+        method: 'GET'
+      })
+    } catch (error) {
+      console.error('Error al obtener todos los datos de delivery:', error)
       throw error
     }
   }

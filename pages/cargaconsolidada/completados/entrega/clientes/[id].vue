@@ -316,11 +316,8 @@ const handleSave = async () => {
   const typeFormForPhotos = isLima.value ? 1 : 0
   try {
     if (picked1.value || picked2.value) {
-      if (conformidadId.value) {
-        await updateConformidad(conformidadId.value, { photo_1: picked1.value || undefined, photo_2: picked2.value || undefined })
-      } else {
-  await uploadConformidad({ id_contenedor: id_contenedor as number, id_cotizacion: id_cotizacion as number, type_form: typeFormForPhotos as 0 | 1, photo_1: picked1.value || undefined, photo_2: picked2.value || undefined })
-      }
+      await uploadConformidad({ id_contenedor: id_contenedor as number, id_cotizacion: id_cotizacion as number, type_form: typeFormForPhotos as 0 | 1, photo_1: picked1.value || undefined, photo_2: picked2.value || undefined })
+
       picked1.value = null
       picked2.value = null
       if (uploaderRef.value?.clearSelectedFiles) uploaderRef.value.clearSelectedFiles()

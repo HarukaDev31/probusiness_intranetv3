@@ -29,6 +29,12 @@
               ]">
                 Cursos
               </button>
+              <button type="button" @click="activeTab = 'delivery'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isDelivery ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
+              ]">
+                Delivery
+              </button>
             </div>
           </div>
           <div class="my-3 mr-20 flex justify-end items-center">
@@ -73,6 +79,12 @@
               ]">
                 Cursos
               </button>
+              <button type="button" @click="activeTab = 'delivery'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition',
+                isDelivery ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Delivery
+              </button>
             </div>
           </div>
           <div class="my-3 mr-20 flex justify-end items-center">
@@ -90,6 +102,55 @@
         </template>
       </DataTable>
     </div>
+
+    <div v-else-if="activeTab === 'delivery'">
+      <!-- Delivery Tab -->
+      <DataTable title="Delivery" icon="i-heroicons-truck" :data="deliveryData" :columns="deliveryColumns"
+        :loading="loadingDelivery" :current-page="currentPageDelivery" :total-pages="totalPagesDelivery" :total-records="totalRecordsDelivery"
+        :items-per-page="itemsPerPageDelivery" :primary-search-value="searchDelivery" :show-secondary-search="false"
+        :show-filters="true" :filter-config="filterConfigDelivery" :filters-value="filtersDelivery" :show-export="false"
+        empty-state-message="No se encontraron registros de delivery." @update:primary-search="handleSearch"
+        @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportDeliveryData"
+        @filter-change="handleFilterChange" :show-body-top="true">
+
+        <template #body-top>
+          <div class="w-50 mb-6 flex items-center">
+            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
+              <button type="button" @click="activeTab = 'consolidado'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isConsolidado ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Consolidado
+              </button>
+              <button type="button" @click="activeTab = 'cursos'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isCursos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Cursos
+              </button>
+              <button type="button" @click="activeTab = 'delivery'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition',
+                isDelivery ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Delivery
+              </button>
+            </div>
+          </div>
+          <div class="my-3 mr-20 flex justify-end items-center">
+            <div class="text-lg font-semibold text-gray-900 dark:text-white">
+              Importe total: 
+              <span class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
+                {{ formatCurrency(totalImporteDelivery, 'PEN') }}
+              </span>
+            </div>
+          </div>
+        </template>
+        <!-- Estado de error -->
+        <template #error-state>
+          <ErrorState :message="errorDelivery || 'Error desconocido'" />
+        </template>
+      </DataTable>
+    </div>
   </div>
 
   <DynamicModal :visible="modalVisible" :modal="modalMessage" @close="modalVisible = false" />
@@ -100,6 +161,7 @@ import { ref, computed, onMounted, h, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useConsolidado } from '~/composables/usePagosConsolidado'
 import { usePagos } from '~/composables/usePagos'
+import { useEntrega } from '~/composables/cargaconsolidada/entrega/useEntrega'
 import { ESTADOS_PAGO, CARGAS_DISPONIBLES } from '~/constants/consolidado'
 import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS } from '~/constants/cursos'
 import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '~/utils/consolidado'
@@ -112,13 +174,15 @@ import PagoGrid from '~/components/PagoGrid.vue'
 // Tabs
 const tabs = [
   { value: 'consolidado', label: 'Consolidado' },
-  { value: 'cursos', label: 'Cursos' }
+  { value: 'cursos', label: 'Cursos' },
+  { value: 'delivery', label: 'Delivery' }
 ]
 
 const activeTab = ref('consolidado')
 
 const isConsolidado = computed(() => activeTab.value === 'consolidado')
 const isCursos = computed(() => activeTab.value === 'cursos')
+const isDelivery = computed(() => activeTab.value === 'delivery')
 
 const modalVisible = ref(false)
 const modalMessage = ref<ModalData | null>(null)
@@ -185,6 +249,25 @@ const {
   itemsPerPageCursos,
   searchCursos  
 } = usePagos()
+
+// Composable de entrega para delivery
+const {
+  delivery: deliveryData,
+  loading: loadingDelivery,
+  error: errorDelivery,
+  pagination: paginationDelivery,
+  search: searchDelivery,
+  itemsPerPage: itemsPerPageDelivery,
+  totalPages: totalPagesDelivery,
+  totalRecords: totalRecordsDelivery,
+  currentPage: currentPageDelivery,
+  filters: filtersDelivery,
+  getDelivery,
+  updateImporteDelivery,
+  registrarPagoDelivery,
+  deletePagoDelivery,
+  getAllDeliveryData
+} = useEntrega()
 
 
 
@@ -264,6 +347,46 @@ const filterConfigCursos = computed(() => [
     options: []
   }
 ])
+
+const filterConfigDelivery = computed(() => [
+  {
+    key: 'estado',
+    label: 'Estado',
+    type: 'select',
+    placeholder: 'Seleccionar estado',
+    options: [
+      { value: 'todos', label: 'Todos los estados' },
+      { value: 'PENDIENTE', label: 'Pendiente' },
+      { value: 'PAGADO', label: 'Pagado' }
+    ]
+  },
+  {
+    key: 'entrega',
+    label: 'Tipo de Entrega',
+    type: 'select',
+    placeholder: 'Seleccionar tipo',
+    options: [
+      { value: 'todos', label: 'Todos los tipos' },
+      { value: 'LIMA', label: 'Lima' },
+      { value: 'PROVINCIA', label: 'Provincia' }
+    ]
+  },
+  {
+    key: 'fecha_inicio',
+    label: 'Fecha Inicio',
+    type: 'date',
+    placeholder: 'DD/MM/YYYY',
+    options: []
+  },
+  {
+    key: 'fecha_fin',
+    label: 'Fecha Fin',
+    type: 'date',
+    placeholder: 'DD/MM/YYYY',
+    options: []
+  }
+])
+
 const getEstadoBg = (estado: string) => {
   switch (estado) {
     case 'PENDIENTE':
@@ -536,11 +659,165 @@ const cursosColumns: TableColumn<any>[] = [
   }
 ]
 
+// Columnas para Delivery
+const deliveryColumns: TableColumn<any>[] = [
+  {
+    accessorKey: 'nro',
+    header: 'N',
+    cell: ({ row }: { row: any }) => row.index + 1
+  },
+  {
+    accessorKey: 'nombre',
+    header: 'Nombre',
+    cell: ({ row }: { row: any }) => row.getValue('nombre') || '—'
+  },
+  {
+    accessorKey: 'telefono',
+    header: 'Whatsapp',
+    cell: ({ row }: { row: any }) => row.getValue('telefono') || '—'
+  },
+  {
+    accessorKey: 'entrega',
+    header: 'Entrega',
+    cell: ({ row }: { row: any }) => {
+      const entrega = row.getValue('entrega')
+      const color = entrega === 'LIMA' ? 'success' : entrega === 'PROVINCIA' ? 'primary' : 'neutral'
+      return h('div', { class: 'flex items-center space-x-1' }, [
+        h('span', { class: `px-2 py-1 rounded-full text-xs font-medium border bg-${color}-100 text-${color}-800 border-${color}-200` }, entrega || '—'),
+        h('UIcon', {
+          name: 'i-heroicons-truck',
+          class: 'w-4 h-4 text-gray-400'
+        })
+      ])
+    }
+  },
+  {
+    accessorKey: 'ciudad',
+    header: 'Ciudad',
+    cell: ({ row }: { row: any }) => row.getValue('ciudad') || '—'
+  },
+  {
+    accessorKey: 'documento',
+    header: 'Ruc o Dni',
+    cell: ({ row }: { row: any }) => row.getValue('documento') || '—'
+  },
+  {
+    accessorKey: 'razon_social',
+    header: 'Razon Social o Nombre',
+    cell: ({ row }: { row: any }) => row.getValue('razon_social') || '—'
+  },
+  {
+    accessorKey: 'estado',
+    header: 'Estado',
+    cell: ({ row }: { row: any }) => {
+      const pagado = row.getValue('pagado') || 0
+      const importe = row.getValue('importe') || 0
+      const estado = pagado >= importe && pagado > 0 ? 'Pagado' : 'Pendiente'
+      const color = estado === 'Pagado' ? 'success' : 'warning'
+      return h('div', { class: 'flex items-center space-x-1' }, [
+        h('span', { class: `px-2 py-1 rounded-full text-xs font-medium border bg-${color}-100 text-${color}-800 border-${color}-200` }, estado),
+        h('UIcon', {
+          name: estado === 'Pagado' ? 'i-heroicons-check-circle' : 'i-heroicons-clock',
+          class: 'w-4 h-4 text-gray-400'
+        })
+      ])
+    }
+  },
+  {
+    accessorKey: 'importe',
+    header: 'Importe',
+    cell: ({ row }: { row: any }) => {
+      const importe = row.getValue('importe')
+      return h('div', { class: 'flex items-center space-x-1' }, [
+        h('input', {
+          type: 'number',
+          value: importe,
+          class: 'w-20 px-2 py-1 text-sm border rounded',
+          onInput: (e: any) => {
+            // Actualizar el valor en el objeto original
+            Object.assign(row.original, { importe: e.target.value })
+          }
+        }),
+        h('UIcon', {
+          name: 'i-heroicons-currency-dollar',
+          class: 'w-4 h-4 text-gray-400'
+        })
+      ])
+    }
+  },
+  {
+    accessorKey: 'pagado',
+    header: 'Pagado',
+    cell: ({ row }: { row: any }) => {
+      const pagado = row.getValue('pagado')
+      return h('div', { class: 'flex items-center space-x-1' }, [
+        h('span', {}, formatCurrency(pagado, 'PEN')),
+        h('UIcon', {
+          name: 'i-heroicons-banknotes',
+          class: 'w-4 h-4 text-gray-400'
+        })
+      ])
+    }
+  },
+  {
+    accessorKey: 'pagos_detalle',
+    header: 'Adelantos',
+    cell: ({ row }: { row: any }) => {
+      const pagos = row.getValue('pagos_detalle') ?? []
+      return h(PagoGrid,
+        {
+          numberOfPagos: pagos.length,
+          pagoDetails: pagos,
+          showDelete: false,
+          clienteNombre: row.original.nombre,
+          currency: 'PEN',
+          onSave: (data: any) => handleRegistrarPagoDelivery(row.original, data),
+          onDelete: (pagoId: number) => handleDeletePagoDelivery(row.original, pagoId)
+        }
+      )
+    }
+  },
+  {
+    accessorKey: 'acciones',
+    header: 'Acciones',
+    cell: ({ row }: { row: any }) => {
+      return h('div', { class: 'flex items-center gap-2' }, [
+        h(UButton as any, {
+          size: 'xs',
+          icon: 'i-heroicons-eye',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => navigateTo(`/verificacion/delivery/${row.original.id}`)
+        }),
+        h(UButton as any, {
+          size: 'xs',
+          icon: 'i-heroicons-pencil-square',
+          color: 'green',
+          variant: 'ghost',
+          onClick: () => handleUpdateImporteDelivery(row.original)
+        }),
+        row.original.note_administracion && h(UButton as any, {
+          size: 'xs',
+          icon: 'i-heroicons-document-text',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => {
+            showModal(row.original.note_administracion)
+          }
+        })
+      ])
+    }
+  }
+]
+
 const totalImporteConsolidado = computed(() =>
   consolidadoData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
 )
 const totalImporteCursos = computed(() =>
   cursosData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
+)
+const totalImporteDelivery = computed(() =>
+  deliveryData.value.reduce((sum, item) => sum + (Number(item.importe) || 0), 0)
 )
 
 // Computed para el total del consolidado (asegurar que sea un número)
@@ -568,7 +845,7 @@ const getIdPedidoFromRoute = () => {
 }
 
 // Methods
-const handleSearch = (query: string) => {
+const handleSearch = async (query: string) => {
   search.value = query
   const idCotizacion = getIdCotizacionFromRoute()
   const idPedido = getIdPedidoFromRoute()
@@ -576,52 +853,69 @@ const handleSearch = (query: string) => {
   if (activeTab.value === 'consolidado') {
     updateFiltersConsolidado({ search: query })
     fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
-  } else {
+  } else if (activeTab.value === 'cursos') {
     updateFiltersCursos({ search: query })
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
+  } else if (activeTab.value === 'delivery') {
+    searchDelivery.value = query
+    // Usar la función para obtener todos los registros de delivery
+    await getAllDeliveryData()
   }
 }
 
-const handlePageChange = (page: number) => {
+const handlePageChange = async (page: number) => {
   const idCotizacion = getIdCotizacionFromRoute()
   const idPedido = getIdPedidoFromRoute()
   
   if (activeTab.value === 'consolidado') {
     fetchConsolidadoData(filtersConsolidado.value, page, itemsPerPage.value, idCotizacion)
-  } else {
+  } else if (activeTab.value === 'cursos') {
     fetchCursosData(filtersCursos.value, page, itemsPerPage.value, idPedido)
+  } else if (activeTab.value === 'delivery') {
+    // Usar la función para obtener todos los registros de delivery
+    await getAllDeliveryData()
   }
 }
 
-const handleItemsPerPageChange = (items: number) => {
+const handleItemsPerPageChange = async (items: number) => {
   const idCotizacion = getIdCotizacionFromRoute()
   const idPedido = getIdPedidoFromRoute()
   
   if (activeTab.value === 'consolidado') {
     fetchConsolidadoData(filtersConsolidado.value, 1, items, idCotizacion)
-  } else {
+  } else if (activeTab.value === 'cursos') {
     fetchCursosData(filtersCursos.value, 1, items, idPedido)
+  } else if (activeTab.value === 'delivery') {
+    // Usar la función para obtener todos los registros de delivery
+    await getAllDeliveryData()
   }
 }
 
-const handleFilterChange = (filterType: string, value: string) => {
+const handleFilterChange = async (filterType: string, value: string) => {
   const idCotizacion = getIdCotizacionFromRoute()
   const idPedido = getIdPedidoFromRoute()
   
   if (activeTab.value === 'consolidado') {
     updateFiltersConsolidado({ [filterType]: value })
     fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
-  } else {
+  } else if (activeTab.value === 'cursos') {
     updateFiltersCursos({ [filterType]: value })
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
+  } else if (activeTab.value === 'delivery') {
+    filtersDelivery.value = { ...filtersDelivery.value, [filterType]: value }
+    // Usar la función para obtener todos los registros de delivery
+    await getAllDeliveryData()
   }
 }
 
 const exportData = async () => {
   if (activeTab.value === 'consolidado') {
     await exportConsolidadoData()
-  } else {
+  } else if (activeTab.value === 'cursos') {
     await exportCursosData()
+  } else if (activeTab.value === 'delivery') {
+    // Aquí se implementaría la lógica de exportación para delivery
+    console.log('Exportando datos de delivery')
   }
 }
 
@@ -639,11 +933,60 @@ const handleViewDocument = (id: number) => {
   console.log('Ver documento del registro:', id)
 }
 
+// Función para exportar datos de delivery
+const exportDeliveryData = async () => {
+  console.log('Exportando datos de delivery')
+  // Aquí se implementaría la lógica de exportación específica para delivery
+}
+
+
+
+// Handlers para delivery
+const handleRegistrarPagoDelivery = async (row: any, data: any) => {
+  try {
+    const response = await registrarPagoDelivery(row, data)
+    if (response?.success) {
+      // Recargar todos los datos de delivery después de registrar pago
+      await getAllDeliveryData()
+    }
+  } catch (error) {
+    console.error('Error al registrar pago:', error)
+  }
+}
+
+const handleDeletePagoDelivery = async (row: any, pagoId: number) => {
+  try {
+    const response = await deletePagoDelivery(row, pagoId)
+    if (response?.success) {
+      // Recargar todos los datos de delivery después de eliminar pago
+      await getAllDeliveryData()
+    }
+  } catch (error) {
+    console.error('Error al eliminar pago:', error)
+  }
+}
+
+const handleUpdateImporteDelivery = async (row: any) => {
+  try {
+    const data = {
+      id_cotizacion: row.id_cotizacion,
+      importe: row.importe
+    }
+    const response = await updateImporteDelivery(data)
+    if (response?.success) {
+      // Recargar todos los datos de delivery después de actualizar importe
+      await getAllDeliveryData()
+    }
+  } catch (error) {
+    console.error('Error al actualizar importe:', error)
+  }
+}
+
 // Watchers
 
 
 // Initialize
-onMounted(() => {
+onMounted(async() => {
   const route = useRoute()
   const tabQuery = route.query.tab
   const idCotizacion = route.query.idCotizacion ? Number(route.query.idCotizacion) : undefined
@@ -663,9 +1006,12 @@ onMounted(() => {
     fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
   } else if (activeTab.value === 'cursos') {
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
+  } else if (activeTab.value === 'delivery') {
+    // Cargar todos los datos de delivery
+    await getAllDeliveryData()
   }
 })
-watch(activeTab, (newTab, oldTab) => {
+watch(activeTab, async (newTab, oldTab) => {
   console.log('newTab:', newTab)
   console.log('oldTab:', oldTab)
   const route = useRoute()
@@ -678,6 +1024,10 @@ watch(activeTab, (newTab, oldTab) => {
   } else if (newTab === 'cursos') {
     navigateTo(`/verificacion?tab=cursos`)
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
+  } else if (newTab === 'delivery') {
+    navigateTo(`/verificacion?tab=delivery`)
+    // Cargar todos los datos de delivery
+    await getAllDeliveryData()
   }
 })
 </script>

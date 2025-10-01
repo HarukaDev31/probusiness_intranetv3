@@ -10,12 +10,29 @@ export class BaseService {
       if (!this.nuxtApp) {
         throw new Error('Nuxt app not initialized')
       }
-  const result = await this.nuxtApp.$api.call(endpoint, options)
-  return result as T
+      
+      console.log('🌐 BaseService - Enviando petición:', {
+        endpoint,
+        method: options.method || 'GET',
+        hasBody: !!options.body,
+        headers: options.headers
+      })
+      
+      const result = await this.nuxtApp.$api.call(endpoint, options)
+      
+      console.log('✅ BaseService - Respuesta exitosa:', result)
+      return result as T
     } catch (error: any) {
       const status = error?.status || error?.statusCode
       const backendMessage = error?.data?.message || error?.message || 'Error desconocido'
-      console.error('Error in apiCall:', status, backendMessage)
+      
+      console.error('❌ BaseService - Error en apiCall:', {
+        status,
+        message: backendMessage,
+        endpoint,
+        fullError: error
+      })
+      
       throw new Error(backendMessage)
     }
   }
