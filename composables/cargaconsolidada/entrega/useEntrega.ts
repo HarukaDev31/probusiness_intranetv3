@@ -344,6 +344,14 @@ export const useEntrega = () => {
     if (response?.success) await getEntregas(contenedorId.value as number)
     return response
   }
+  const sendMessageForCotizacion = async (id_cotizacion: number ) => {
+    try {
+      const response = await EntregaService.sendMessageForCotizacion(id_cotizacion)
+      return response
+    } catch (error) {
+      error.value = error as string
+    }
+  }
 
   // --- CONFORMIDAD (fotos) ---
   const uploadConformidad = async (payload: {
@@ -437,7 +445,8 @@ export const useEntrega = () => {
     getDelivery,
     updateImporteDelivery,
     registrarPagoDelivery,
-    deletePagoDelivery
+    deletePagoDelivery,
+    sendMessageForCotizacion
     ,uploadConformidad
     ,updateConformidad
     ,deleteConformidad

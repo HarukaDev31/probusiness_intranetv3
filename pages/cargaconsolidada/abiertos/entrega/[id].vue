@@ -98,7 +98,8 @@ const {
   getDelivery,
   updateImporteDelivery,
   registrarPagoDelivery,
-  deletePagoDelivery
+  deletePagoDelivery,
+  sendMessageForCotizacion
 } = useEntrega()
 
 const activeTab = ref('clientes')
@@ -185,7 +186,7 @@ const clientesColumns = ref<TableColumn<any>[]>([
         variant: 'ghost',
         color: 'info',
         title: 'Enviar Mensaje',
-        onClick: () => handleEnviarMensaje(row.original)
+        onClick: () => handleEnviarMensaje(row.original.id)
       })
     ])
   }
@@ -274,7 +275,21 @@ const goToClienteDetalle = (data: any) => {
   // Solo navegamos con el id de la cotización; el detalle obtendrá el id_contenedor desde la propia data.
   navigateTo(`/cargaconsolidada/completados/entrega/clientes/${cid}`)
 }
-const handleEnviarMensaje = (row: any) => { console.log('Enviar mensaje a', row.telefono) }
+const handleEnviarMensaje = (id_cotizacion: number) => {
+  try {
+    withSpinner(async () => {
+      const response = await sendMessageForCotizacion(id_cotizacion)
+      if (response?.success) {
+        showSuccess('Mensaje enviado', 'Mensaje enviado correctamente')
+      } else {
+        showError('Error', response?.error || 'No se pudo enviar el mensaje')
+      }
+    }, 'Enviando mensaje...')
+  } catch (error) {
+    showError('Error', error as string)
+  }
+
+}
 const handleEliminarRegistro = (row: any) => { console.log('Eliminar registro completado', row.id_cotizacion) }
 
 onMounted(async () => {
@@ -357,10 +372,10 @@ const deliveryColumns = ref<TableColumn<any>[]>([
   {
     id: 'adelantos', header: 'Adelantos', cell: ({ row }) => {
       // Manejar pagos_details que puede ser null o string JSON
-      const pagosDetails = row.original.pagos_details 
-        ? (typeof row.original.pagos_details === 'string' 
-            ? JSON.parse(row.original.pagos_details) 
-            : row.original.pagos_details)
+      const pagosDetails = row.original.pagos_details
+        ? (typeof row.original.pagos_details === 'string'
+          ? JSON.parse(row.original.pagos_details)
+          : row.original.pagos_details)
         : []
 
       return !row.original.id_contenedor_pago ? h(PagoGrid as any, {

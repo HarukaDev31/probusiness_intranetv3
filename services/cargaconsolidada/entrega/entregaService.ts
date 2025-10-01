@@ -14,7 +14,7 @@ export class EntregaService extends BaseService {
       if (params?.search) queryParams.append('search', params.search)
       if (params?.filters) queryParams.append('filters', JSON.stringify(params.filters))
       const qs = queryParams.toString()
-  const response = await this.apiCall<EntregaResponse>(`${this.baseUrl}/entregas/${id}${qs ? `?${qs}` : ''}`)
+      const response = await this.apiCall<EntregaResponse>(`${this.baseUrl}/entregas/${id}${qs ? `?${qs}` : ''}`)
       return response
     } catch (error) {
       console.error('Error al obtener entregas:', error)
@@ -32,15 +32,15 @@ export class EntregaService extends BaseService {
         console.warn('Entrega no encontrada (detalle):', id_cotizacion)
         return {
           success: false,
-            data: [],
-            pagination: {
-              current_page: 1,
-              last_page: 1,
-              per_page: 1,
-              total: 0,
-              from: 0,
-              to: 0
-            }
+          data: [],
+          pagination: {
+            current_page: 1,
+            last_page: 1,
+            per_page: 1,
+            total: 0,
+            from: 0,
+            to: 0
+          }
         }
       }
       console.error('Error al obtener detalles de entrega:', error)
@@ -177,7 +177,7 @@ export class EntregaService extends BaseService {
       return response
     } catch (error) {
       console.error('Error al obtener horarios disponibles:', error)
-      throw error 
+      throw error
     }
   }
 
@@ -265,6 +265,18 @@ export class EntregaService extends BaseService {
       return response
     } catch (error) {
       console.error('Error al actualizar importe de delivery:', error)
+      throw error
+    }
+  }
+  static async sendMessageForCotizacion(id_cotizacion: number): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/send-message/${id_cotizacion}`, {
+        method: 'POST',
+      
+      })
+      return response
+    } catch (error) {
+      console.error('Error al enviar mensaje para cotización:', error)
       throw error
     }
   }
