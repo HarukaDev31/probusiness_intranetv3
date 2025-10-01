@@ -3,10 +3,10 @@
     <DataTable v-if="activeTab === 'clientes'" title="" :data="clientes" :columns="clientesColumns" :loading="loading"
       icon="" :show-pagination="false" :current-page="currentPage" :total-pages="totalPages"
       :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-      :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="false"
-      empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleSearch"
-      @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-      @filter-change="handleFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
+      :show-secondary-search="false" :show-filters="true" :filter-config="clientesFilterConfig" :show-export="false"
+      empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleClientesSearch"
+      @page-change="handleClientesPageChange" @items-per-page-change="handleClientesItemsPerPageChange"
+      @filter-change="handleClientesFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
       :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #actions>
         <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3" icon="i-heroicons-calendar"
@@ -14,7 +14,13 @@
       </template>
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <div class="flex items-center justify-between gap-3">
+            <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
+            <div class="flex gap-2">
+              <UButton size="xs" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
+              <UButton size="xs" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
+            </div>
+          </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
         </div>
       </template>
@@ -29,7 +35,13 @@
       :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <div class="flex items-center justify-between gap-3">
+            <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
+            <div class="flex gap-2">
+              <UButton size="xs" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
+              <UButton size="xs" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
+            </div>
+          </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
         </div>
       </template>
@@ -39,7 +51,13 @@
       :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Delivery #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <div class="flex items-center justify-between gap-3">
+            <SectionHeader :title="`Delivery #${carga}`" :headers="headers" :loading="loadingHeaders" />
+            <div class="flex gap-2">
+              <UButton size="xs" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
+              <UButton size="xs" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
+            </div>
+          </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
           <div class="text-xs text-gray-500">Gestiona importes y adelantos. Cambia el importe manualmente y registra
             adelantos con los botones.</div>
@@ -89,6 +107,10 @@ const {
   handlePageChange,
   handleItemsPerPageChange,
   handleFilterChange,
+  handleClientesSearch,
+  handleClientesFilterChange,
+  handleClientesPageChange,
+  handleClientesItemsPerPageChange,
   headers,
   carga,
   loadingHeaders,
@@ -116,6 +138,12 @@ const handleTabChange = (value: string) => {
   } else if (value === 'delivery') {
     getDelivery(id)
   }
+}
+// Links externos por contenedor (usa el id del contenedor)
+const linkLima = computed(() => `https://clientes.probusiness.pe/formulario-entrega/lima/${id}`)
+const linkProvincia = computed(() => `https://clientes.probusiness.pe/formulario-entrega/provincia/${id}`)
+const openExternal = (url: string) => {
+  if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener')
 }
 const clientesColumns = ref<TableColumn<any>[]>([
   {
@@ -169,8 +197,9 @@ const clientesColumns = ref<TableColumn<any>[]>([
     accessorKey: 'estado_cotizacion_final',
     header: 'Estado',
     cell: ({ row }) => {
-      const raw = row.original.estado_cotizacion_final
-      const isPagado = typeof raw === 'string' && (raw.toUpperCase() === 'COTIZADO' || raw.toUpperCase() === 'AJUSTADO')
+      const totalPagos = Number(row.original.total_pagos ?? 0)
+      const totalLogImp = Number(row.original.total_logistica_impuestos ?? 0)
+      const isPagado = totalPagos >= totalLogImp
       const label = isPagado ? 'Pagado' : 'Pendiente'
       const color = isPagado ? 'success' : 'warning'
       return h(UBadge, { label, color, variant: 'soft' })
@@ -196,7 +225,20 @@ const entregasColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'nro', header: 'N', cell: ({ row }) => row.index + 1 },
   { accessorKey: 'nombre', header: 'Nombre', cell: ({ row }) => row.original.nombre || '—' },
   { accessorKey: 'telefono', header: 'Whatsapp', cell: ({ row }) => row.original.telefono || '—' },
-  { accessorKey: 'cbm', header: 'Cbm', cell: ({ row }) => row.original.cbm_total_china ?? '—' },
+  { accessorKey: 'cbm', header: 'Cbm', cell: ({ row }) => {
+      const toNum = (v: any) => {
+        const n = Number(v)
+        return Number.isFinite(n) ? n : null
+      }
+      const cbmChina = toNum(row.original.sum_cbm_china)
+      const cbmTotal = toNum(row.original.sum_cbm_total)
+      let value: number | string | null = null
+      if (cbmChina !== null && cbmTotal !== null) value = cbmTotal > cbmChina ? cbmTotal : cbmChina
+      else if (cbmChina !== null) value = cbmChina
+      else if (cbmTotal !== null) value = cbmTotal
+      else value = row.original.cbm_total_china ?? row.original.cbm ?? '—'
+      return value ?? '—'
+    } },
   { accessorKey: 'bultos', header: 'Bultos', cell: ({ row }) => row.original.qty_box_china ?? '—' },
   {
     accessorKey: 'tipo_entrega', header: 'Entrega', cell: ({ row }) => {

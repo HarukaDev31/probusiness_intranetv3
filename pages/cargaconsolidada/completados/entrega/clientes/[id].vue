@@ -9,29 +9,10 @@
     >
       <template #actions>
         <div class="flex gap-2">
-          <UButton
-            v-if="!editable"
-            size="xs"
-            color="neutral"
-            variant="outline"
-            icon="i-heroicons-pencil-square"
-            @click="toggleEdit"
-          >Editar</UButton>
+          <UButton v-if="!editable" size="xs" color="neutral" variant="outline" icon="i-heroicons-pencil-square" @click="toggleEdit">Editar</UButton>
           <template v-else>
-            <UButton
-              size="xs"
-              color="primary"
-              icon="i-heroicons-device-floppy"
-              :disabled="!canSave"
-              @click="handleSave"
-            >Guardar</UButton>
-            <UButton
-              size="xs"
-              color="neutral"
-              variant="outline"
-              icon="i-heroicons-x-mark"
-              @click="toggleEdit"
-            >Cancelar</UButton>
+            <UButton size="xs" color="primary" icon="i-heroicons-device-floppy" :disabled="!canSave" @click="handleSave">Guardar</UButton>
+            <UButton size="xs" color="neutral" variant="outline" icon="i-heroicons-x-mark" @click="toggleEdit">Cancelar</UButton>
           </template>
         </div>
       </template>
@@ -42,94 +23,109 @@
       <div class="flex-1 space-y-6">
         <!-- Información de entrega -->
         <section>
-          <h3 class="font-semibold mb-2 text-sm uppercase tracking-wide">Información de entrega:</h3>
+          <h3 class="font-semibold mb-3 text-sm">Información de entrega</h3>
+          <div class="space-y-3 text-xs">
+            <div class="flex items-center gap-2">
+              <label class="text-[11px] font-medium text-gray-500">Tipo de cliente:</label>
+              <UBadge :label="tipoClienteLabel" :color="isLima ? 'primary' : 'warning'" variant="soft" />
+            </div>
 
-          <!-- Cabecera: T. Cliente (derivado de type_form) + métricas -->
-          <div class="grid grid-cols-12 gap-3 text-xs mb-4">
-            <div class="col-span-12 sm:col-span-3">
-              <label class="px-2 inline text-[11px] font-medium text-gray-500">T. Cliente:</label>
-                <UBadge :label="tipoClienteLabel" :color="isLima ? 'primary' : 'warning'" variant="soft" />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Bultos</label>
+                <UInput class="w-full" v-model="form.qty_box_china" size="sm" disabled />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">CBM</label>
+                <UInput class="w-full" v-model="form.cbm_total_china" size="sm" disabled />
+              </div>
+              <div v-if="!isLima">
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Tipo</label>
+                <USelect class="w-full" :items="tipoReceptorOptions" v-model="form.r_type" size="sm" :disabled="!editable" placeholder="Seleccione" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">{{ isLima ? 'DNI / ID' : 'DNI / RUC' }}</label>
+                <UInput class="w-full" v-model="form.documento" size="sm" :disabled="!editable" />
+              </div>
+              <div v-if="isLima">
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Licencia</label>
+                <UInput class="w-full" v-model="form.licencia" size="sm" :disabled="!editable" />
+              </div>
             </div>
-            <div class="col-span-6 sm:col-span-3">
-              <label class="px-2 inline text-[11px] font-medium text-gray-500">Bultos:</label>
-              <UInput v-model="form.qty_box_china" size="xs" :disabled="!editable" />
-            </div>
-            <div class="col-span-6 sm:col-span-3">
-              <label class="px-2 inline text-[11px] font-medium text-gray-500">Peso:</label>
-              <UInput v-model="form.cbm_total_china" size="xs" :disabled="!editable" />
-            </div>
-            <div class="col-span-6 sm:col-span-3">
-              <label class="px-2 inline text-[11px] font-medium text-gray-500">{{ isLima ? 'Dni / Id:' : 'Dni / Ruc:' }}</label>
-              <UInput v-model="form.documento" size="xs" :disabled="!editable" />
-            </div>
-            <div v-if="isLima" class="col-span-6 sm:col-span-3">
-              <label class="px-2 inline text-[11px] font-medium text-gray-500">Licencia:</label>
-              <UInput v-model="form.licencia" size="xs" :disabled="!editable" />
-            </div>
-          </div>
 
-          <!-- Vista para Lima (Chofer) -->
-          <div v-if="isLima" class="mt-2 grid grid-cols-12 gap-3 text-xs">
-            <div class="col-span-12 md:col-span-6 lg:col-span-4">
-              <label class="inline text-[11px] font-medium text-gray-500">Nombre completo del Chofer:</label>
-              <UInput v-model="form.nombre_chofer" size="xs" :disabled="!editable" />
+            <!-- Campos específicos por tipo -->
+            <div v-if="isLima" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Nombre completo del chofer</label>
+                <UInput class="w-full" v-model="form.nombre_chofer" size="sm" :disabled="!editable" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Distrito</label>
+                <UInput class="w-full" v-model="form.distrito" size="sm" :disabled="!editable" />
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Dirección final de destino</label>
+                <UInput class="w-full" v-model="form.direccion_final" size="sm" :disabled="!editable" />
+              </div>
             </div>
-            <div class="col-span-12 md:col-span-6 lg:col-span-4">
-              <label class="inline text-[11px] font-medium text-gray-500">Dirección final de destino:</label>
-              <UInput v-model="form.direccion_final" size="xs" :disabled="!editable" />
-            </div>
-            <div class="col-span-12 md:col-span-6 lg:col-span-4">
-              <label class="inline text-[11px] font-medium text-gray-500">Distrito:</label>
-              <UInput v-model="form.distrito" size="xs" :disabled="!editable" />
-            </div>
-          </div>
 
-          <!-- Vista para clientes fuera de Lima (Agencia y Ubicación) -->
-          <div v-else class="mt-2 space-y-3 text-xs">
-            <div class="grid grid-cols-12 gap-3">
-              <div class="col-span-12 md:col-span-6 lg:col-span-6">
-                <label class="inline text-[11px] font-medium text-gray-500">Nombre:</label>
-                <UInput v-model="form.r_name" size="xs" :disabled="!editable" />
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
+                <UInput class="w-full" v-model="form.r_name" size="sm" :disabled="!editable" />
               </div>
-              <div class="col-span-6 md:col-span-3 lg:col-span-3">
-                <label class="inline text-[11px] font-medium text-gray-500">Celular:</label>
-                <UInput v-model="form.r_phone" size="xs" :disabled="!editable" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Celular</label>
+                <UInput class="w-full" v-model="form.r_phone" size="sm" :disabled="!editable" />
               </div>
-              <div class="col-span-6 md:col-span-3 lg:col-span-3">
-                <label class="inline text-[11px] font-medium text-gray-500">Departamento:</label>
-                <UInput v-model="form.departamento" size="xs" :disabled="!editable" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Departamento</label>
+                <USelect class="w-full" :items="departamentos" v-model="form.departamento_id" :disabled="!editable" placeholder="Seleccione" @update:model-value="onDepartamentoChange" />
               </div>
-              <div class="col-span-6 md:col-span-3 lg:col-span-3">
-                <label class="inline text-[11px] font-medium text-gray-500">Provincia:</label>
-                <UInput v-model="form.province_name" size="xs" :disabled="!editable" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Provincia</label>
+                <USelect class="w-full" :items="provincias" v-model="form.provincia_id" :disabled="!editable || !form.departamento_id" placeholder="Seleccione" @update:model-value="onProvinciaChange" />
               </div>
-              <div class="col-span-6 md:col-span-3 lg:col-span-3">
-                <label class="inline text-[11px] font-medium text-gray-500">Distrito:</label>
-                <UInput v-model="form.district_name" size="xs" :disabled="!editable" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Distrito</label>
+                <USelect class="w-full" :items="distritos" v-model="form.distrito_id" :disabled="!editable || !form.provincia_id" placeholder="Seleccione" />
               </div>
-              <div class="col-span-12 md:col-span-6 lg:col-span-6">
-                <label class="inline text-[11px] font-medium text-gray-500">Agencia:</label>
-                <UInput v-model="form.agency_name" size="xs" :disabled="!editable" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Agencia</label>
+                <USelect class="w-full" :items="agencias" v-model="form.id_agency" :disabled="!editable" placeholder="Seleccione"
+                  @update:model-value="onAgenciaChange" />
               </div>
-              <div class="col-span-12 md:col-span-6 lg:col-span-6">
-                <label class="inline text-[11px] font-medium text-gray-500">Manifiesto:</label>
-                <UInput v-model="form.manifiesto" size="xs" :disabled="!editable" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">RUC de la agencia</label>
+                <UInput class="w-full" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Dirección inicial de entrega</label>
+                <UInput class="w-full" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Dirección final de entrega</label>
+                <UInput class="w-full" v-model="form.agency_address_final_delivery" size="sm" :disabled="!editable" />
               </div>
             </div>
           </div>
         </section>
 
         <!-- Información de comprobante -->
-        <section class="pt-2">
-          <h3 class="font-semibold mb-2 text-sm">Información de comprobante:</h3>
-          <div class="grid grid-cols-12 gap-3 text-xs">
-            <div class="col-span-6 sm:col-span-3">
-              <label class="inline text-[11px] font-medium text-gray-500">Dni / Ruc:</label>
-              <UInput v-model="form.comp_documento" size="xs" :disabled="!editable" />
+        <section class="pt-4">
+          <h3 class="font-semibold mb-3 text-sm">Información de comprobante</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label class="block text-[11px] font-medium text-gray-500 mb-1">DNI / RUC</label>
+              <UInput class="w-full" v-model="form.comp_documento" size="sm" :disabled="!editable" />
             </div>
-            <div class="col-span-12 sm:col-span-6">
-              <label class="inline text-[11px] font-medium text-gray-500">Nombre:</label>
-              <UInput v-model="form.comp_nombre" size="xs" :disabled="!editable" />
+            <div>
+              <label class="block text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
+              <UInput class="w-full" v-model="form.comp_nombre" size="sm" :disabled="!editable" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-medium text-gray-500 mb-1">Correo electrónico</label>
+              <UInput class="w-full" v-model="form.comp_email" size="sm" :disabled="!editable" />
             </div>
           </div>
         </section>
@@ -204,7 +200,9 @@ import { UInput, USelect, UButton, UIcon, UBadge } from '#components'
 import PageHeader from '~/components/PageHeader.vue'
 import FileUploader from '@/components/commons/FileUploader.vue'
 import ImageModal from '~/components/ImageModal.vue'
+import { LocationService } from '@/services/commons/locationService'
 import { useRouter } from 'vue-router'
+import { EntregaService } from '@/services/cargaconsolidada/entrega/entregaService'
 const router = useRouter()
 
 // Props/params
@@ -228,6 +226,12 @@ const typeFormValue = computed<number | null>(() => {
 const isLima = computed(() => typeFormValue.value === 1)
 const tipoClienteLabel = computed(() => (isLima.value ? 'Lima' : 'Provincia'))
 
+// Opciones para tipo de documento del receptor (Provincia)
+const tipoReceptorOptions = [
+  { label: 'PERSONA NATURAL', value: 'PERSONA NATURAL' },
+  { label: 'EMPRESA', value: 'EMPRESA' }
+]
+
 
 // Formulario reactivo
 const form = ref<any>({
@@ -246,18 +250,21 @@ const form = ref<any>({
   // Provincia
   agency_address_final_delivery: '',
   agency_address_initial_delivery: '',
-  departamento: '',
-  district_name: '',
-  province_name: '',
+  departamento_id: undefined,
+  provincia_id: undefined,
+  distrito_id: undefined,
+  id_agency: null,
   agency_ruc: '',
   agency_name: '',
   home_adress_delivery: '',
+  r_type: '',
   r_doc: '',
   r_name: '',
   r_phone: '',
   // Comprobante
   comp_documento: '',
-  comp_nombre: ''
+  comp_nombre: '',
+  comp_email: ''
 })
 
 const initialSnapshot = ref<string>('')
@@ -297,13 +304,19 @@ const handleSave = async () => {
   } else {
     // Provincia
     addIf('import_name', form.value.nombre)
+    addIf('r_type', form.value.r_type)
     addIf('r_doc', form.value.r_doc)
     addIf('r_name', form.value.r_name)
     addIf('r_phone', form.value.r_phone)
+    addIf('id_agency', form.value.id_agency)
     addIf('agency_ruc', form.value.agency_ruc)
     addIf('agency_name', form.value.agency_name)
     addIf('agency_address_initial_delivery', form.value.agency_address_initial_delivery)
     addIf('agency_address_final_delivery', form.value.agency_address_final_delivery)
+    // Ubigeo IDs
+    addIf('id_department', form.value.departamento_id)
+    addIf('id_province', form.value.provincia_id)
+    addIf('id_district', form.value.distrito_id)
     addIf('voucher_doc', form.value.comp_documento)
     addIf('voucher_name', form.value.comp_nombre)
     addIf('voucher_email', form.value.comp_email)
@@ -349,6 +362,69 @@ const picked2 = ref<File | null>(null)
 const uploaderRef = ref<any>(null)
 const canSubmitConformidad = computed(() => !!(picked1.value || picked2.value))
 const canSave = computed(() => dirty.value || !!(picked1.value || picked2.value))
+
+// Ubigeo lists
+// USelect por defecto usa { label, value }
+const departamentos = ref<Array<{ label: string; value: number }>>([])
+const provincias = ref<Array<{ label: string; value: number; id_departamento?: number }>>([])
+const distritos = ref<Array<{ label: string; value: number; id_provincia?: number }>>([])
+// Agencias
+const agencias = ref<Array<{ label: string; value: number; ruc?: string; name?: string }>>([])
+const loadAgencias = async (search?: string) => {
+  const res = await EntregaService.getAgencias({ currentPage: 1, itemsPerPage: 100, search })
+  const list = (res?.data || [])
+  agencias.value = list.map((a: any) => ({ label: a.label ?? `${a.name} - ${a.ruc}`, value: Number(a.value ?? a.id), ruc: a.ruc, name: a.name }))
+}
+const onAgenciaChange = (id: number | string) => {
+  const selected = agencias.value.find(a => a.value === Number(id))
+  if (selected) {
+    form.value.agency_name = selected.name || ''
+    form.value.agency_ruc = selected.ruc || ''
+  }
+}
+// Helper: extract array from various response shapes
+const toArray = (res: any, keyFallback?: string) => {
+  if (!res) return []
+  if (Array.isArray(res)) return res
+  if (Array.isArray(res?.data)) return res.data
+  if (Array.isArray(res?.results)) return res.results
+  if (Array.isArray(res?.rows)) return res.rows
+  if (Array.isArray(res?.items)) return res.items
+  if (keyFallback && Array.isArray(res?.[keyFallback])) return res[keyFallback]
+  if (keyFallback && Array.isArray(res?.data?.[keyFallback])) return res.data[keyFallback]
+  if (Array.isArray(res?.data?.data)) return res.data.data
+  return []
+}
+const onDepartamentoChange = async (id: number | string) => {
+  const depId = Number(id)
+  form.value.provincia_id = undefined
+  form.value.distrito_id = undefined
+  provincias.value = []
+  distritos.value = []
+  if (depId) {
+    const res = await LocationService.getProvincias(depId)
+    const list = toArray(res, 'provincias')
+    provincias.value = list.map((p: any) => ({
+      label: p.nombre ?? p.name ?? String(p.id),
+      value: Number(p.id),
+      id_departamento: Number(p.id_departamento)
+    }))
+  }
+}
+const onProvinciaChange = async (id: number | string) => {
+  const provId = Number(id)
+  form.value.distrito_id = undefined
+  distritos.value = []
+  if (provId) {
+    const res = await LocationService.getDistritos(provId)
+    const list = toArray(res, 'distritos')
+    distritos.value = list.map((d: any) => ({
+      label: d.nombre ?? d.name ?? String(d.id),
+      value: Number(d.id),
+      id_provincia: Number(d.id_provincia)
+    }))
+  }
+}
 
 // Handlers para FileUploader
 const onUploaderFilesSelected = (files: File[]) => {
@@ -483,15 +559,20 @@ onMounted(async () => {
     // Provincia
     form.value.agency_address_final_delivery = d.agency_address_final_delivery || ''
     form.value.agency_address_initial_delivery = d.agency_address_initial_delivery || ''
-    form.value.departamento = d.department_name || d.departamento || ''
-    form.value.province_name = d.province_name || d.provincia || ''
-    form.value.district_name = d.district_name || ''
+  // Usamos sólo los ids estandarizados departamento_id/provincia_id/distrito_id
     form.value.agency_name = d.agency_name || ''
     form.value.agency_ruc = d.agency_ruc || ''
     form.value.home_adress_delivery = d.home_adress_delivery || ''
+    form.value.id_agency = d.id_agency || null
+    form.value.r_type = d.r_type || ''
+    form.value.r_doc = d.r_doc || ''
     form.value.r_name = d.r_name || ''
     form.value.r_phone = d.r_phone || ''
-    
+    // IDs de ubicación (normalizar a número para que coincida con item-value)
+    form.value.departamento_id = d.id_department !== undefined && d.id_department !== null && d.id_department !== '' ? Number(d.id_department) : undefined
+    form.value.provincia_id = d.id_province !== undefined && d.id_province !== null && d.id_province !== '' ? Number(d.id_province) : undefined
+    form.value.distrito_id = d.id_district !== undefined && d.id_district !== null && d.id_district !== '' ? Number(d.id_district) : undefined
+
     // Comprobante
     form.value.comp_documento = d.comp_documento || d.documento || ''
     form.value.comp_nombre = d.comp_nombre || d.nombre || ''
@@ -509,6 +590,23 @@ onMounted(async () => {
     if (form.value.photo_2_url) evidencia.value.push({ url: form.value.photo_2_url, key: 'photo_2_url' })
   }
   initialSnapshot.value = snapshot()
-  
+  // cargar departamentos y, si hay valores, intentar preseleccionar sin resetear ids
+  try {
+  const res = await LocationService.getDepartamentos()
+  const list = toArray(res, 'departamentos')
+  departamentos.value = list.map((d: any) => ({ label: d.nombre ?? d.name ?? String(d.id), value: Number(d.id) }))
+  // Cargar agencias y preseleccionar si viene id_agency del backend
+  await loadAgencias()
+    if (form.value.departamento_id) {
+  const rp = await LocationService.getProvincias(form.value.departamento_id)
+  const listP = toArray(rp, 'provincias')
+      provincias.value = listP.map((p: any) => ({ label: p.nombre ?? p.name ?? String(p.id), value: Number(p.id), id_departamento: Number(p.id_departamento) }))
+    }
+    if (form.value.provincia_id) {
+  const rd = await LocationService.getDistritos(form.value.provincia_id)
+  const listD = toArray(rd, 'distritos')
+      distritos.value = listD.map((d: any) => ({ label: d.nombre ?? d.name ?? String(d.id), value: Number(d.id), id_provincia: Number(d.id_provincia) }))
+    }
+  } catch (e) { /* noop */ }
 })
 </script>

@@ -54,23 +54,30 @@ export const useEntrega = () => {
   const filterConfig = ref<any>([])
   const clientesFilterConfig = ref<any>([
     {
-      key: 'tipo_entrega',
-      label: 'T. Entrega',
+      key: 'registrado',
+      label: 'Registrado',
       options: [
         { label: 'Todos', value: 'todos' },
-        { label: 'Lima', value: 'Lima' },
-        { label: 'Provincia', value: 'Provincia' }
+        { label: 'Si', value: 'Si' },
+        { label: 'No', value: 'No' }
       ]
     },
     {
-      key: 'estado_pago',
+      key: 'entregado',
+      label: 'Entregado',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Si', value: 'Si' },
+        { label: 'No', value: 'No' }
+      ]
+    },
+    {
+      key: 'estado',
       label: 'Estado',
       options: [
         { label: 'Todos', value: 'todos' },
         { label: 'Pagado', value: 'Pagado' },
-        { label: 'Pendiente', value: 'Pendiente' },
-        { label: 'Parcial', value: 'Parcial' },
-        { label: 'Sobrepago', value: 'Sobrepago' }
+        { label: 'Pendiente', value: 'Pendiente' }
       ]
     }
   ])
@@ -137,12 +144,14 @@ export const useEntrega = () => {
           // Provincia
           agency_address_final_delivery: province?.agency_address_final_delivery ?? root.agency_address_final_delivery ?? '',
           agency_address_initial_delivery: province?.agency_address_initial_delivery ?? root.agency_address_initial_delivery ?? '',
-          departamento: province?.department_name ?? root.department_name ?? '',
-          district_name: province?.district_name ?? root.district_name ?? '',
-          province_name: province?.province_name ?? root.province_name ?? '',
+          id_department: province?.id_department ?? root.id_department ?? null,
+          id_province: province?.id_province ?? root.id_province ?? null,
+          id_district: province?.id_district ?? root.id_district ?? null,
+          id_agency: province?.id_agency ?? root.id_agency ?? null,
           agency_name: province?.agency_name ?? root.agency_name ?? '',
           agency_ruc: province?.agency_ruc ?? root.agency_ruc ?? '',
           home_adress_delivery: province?.home_adress_delivery ?? root.home_adress_delivery ?? '',
+          r_type: province?.r_type ?? root.r_type ?? '',
           r_doc: province?.r_doc ?? root.r_doc ?? '',
           r_name: province?.r_name ?? root.r_name ?? '',
           r_phone: province?.r_phone ?? root.r_phone ?? '',
@@ -202,7 +211,43 @@ export const useEntrega = () => {
         filters: clientesFilters.value
       }
       const response = await EntregaService.getClientes(id, params)
-      clientes.value = response.data
+      // Aplicar filtros locales según requerimiento (backend no espera campos de filtros)
+      const rows = (response.data || []) as any[]
+      let filtered = rows
+      // Filtro Registrado (delivery_form_registered_at)
+      const fRegistrado = clientesFilters.value?.registrado
+      if (fRegistrado && fRegistrado !== 'todos') {
+        const want = fRegistrado === 'Si'
+        filtered = filtered.filter(r => Boolean(r?.delivery_form_registered_at) === want)
+      }
+      // Filtro Entregado (voucher_doc)
+      const fEntregado = clientesFilters.value?.entregado
+      if (fEntregado && fEntregado !== 'todos') {
+        const want = fEntregado === 'Si'
+        filtered = filtered.filter(r => Boolean(r?.voucher_doc) === want)
+      }
+      // Filtro Estado (Pagado/Pendiente) por total_pagos vs total_logistica_impuestos
+      const fEstado = clientesFilters.value?.estado
+      if (fEstado && fEstado !== 'todos') {
+        const isPagado = (row: any) => {
+          const totalPagos = Number(row?.total_pagos ?? 0)
+          const totalLogImp = Number(row?.total_logistica_impuestos ?? 0)
+          return totalPagos >= totalLogImp
+        }
+        filtered = filtered.filter(r => {
+          const pago = isPagado(r)
+          return fEstado === 'Pagado' ? pago : !pago
+        })
+      }
+      // Buscador local (por si backend no filtra por search)
+      const term = (search.value || '').toString().trim().toLowerCase()
+      if (term) {
+        filtered = filtered.filter(r => {
+          const fields = [r?.nombre, r?.documento, r?.telefono, r?.razon_social]
+          return fields.some(v => (v ?? '').toString().toLowerCase().includes(term))
+        })
+      }
+      clientes.value = filtered
       pagination.value = response.pagination
     } catch (err: any) {
       error.value = err?.message || 'Error al cargar clientes (entrega)'
@@ -309,6 +354,27 @@ export const useEntrega = () => {
     filters.value[key] = value
     pagination.value.current_page = 1
     if (contenedorId.value) getEntregas(contenedorId.value)
+  }
+
+  // Clientes: handlers específicos para buscador y filtros
+  const handleClientesSearch = (value: string) => {
+    search.value = value
+    pagination.value.current_page = 1
+    if (contenedorId.value) getClientes(contenedorId.value)
+  }
+  const handleClientesFilterChange = (key: string, value: any) => {
+    clientesFilters.value[key] = value
+    pagination.value.current_page = 1
+    if (contenedorId.value) getClientes(contenedorId.value)
+  }
+  const handleClientesPageChange = (value: number) => {
+    pagination.value.current_page = value
+    if (contenedorId.value) getClientes(contenedorId.value)
+  }
+  const handleClientesItemsPerPageChange = (value: number) => {
+    itemsPerPage.value = value
+    pagination.value.current_page = 1
+    if (contenedorId.value) getClientes(contenedorId.value)
   }
 
   // ---------------- DELIVERY LOGIC -----------------
@@ -478,6 +544,10 @@ export const useEntrega = () => {
     handlePageChange,
     handleItemsPerPageChange,
     handleFilterChange,
+  handleClientesSearch,
+  handleClientesFilterChange,
+  handleClientesPageChange,
+  handleClientesItemsPerPageChange,
     headers,
     carga,
     loadingHeaders,
