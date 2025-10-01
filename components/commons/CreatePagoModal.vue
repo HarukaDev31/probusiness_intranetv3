@@ -54,6 +54,7 @@
                     <UFormField label="Voucher" name="voucher">
                         <FileUploader ref="fileUploaderRef"
                         :show-remove-button="true"
+                        :accepted-types="['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar']"
                         :multiple="false" @file-added="handleFileAdded"
                             @file-removed="handleFileRemoved" :show-save-button="false"  />
 
@@ -134,7 +135,6 @@ const bancoOptions = [
 ]
 
 // Accepted file types
-const acceptedFileTypes = ['image/*', 'application/pdf', 'image/jpeg', 'image/png']
 
 // Methods
 const closeModal = () => {

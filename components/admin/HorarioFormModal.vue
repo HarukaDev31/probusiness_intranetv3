@@ -2,7 +2,7 @@
   <UModal>
     <template #header>
       <div class="flex justify-between items-center">
-        <h3 class="text-lg font-semibold">Nuevo Horario</h3>
+        <h3 class="text-lg font-semibold">{{ headerTitle }}</h3>
       </div>
     </template>
     
@@ -60,7 +60,7 @@
           :loading="loading"
           :disabled="loading || !isFormValid"
         >
-          Crear Horario
+          {{ submitText }}
         </UButton>
       </div>
     </template>
@@ -73,6 +73,11 @@ import { ref, computed, watch } from 'vue'
 interface Props {
   selectedDate: Date | null
   loading?: boolean
+  initialStartTime?: string
+  initialEndTime?: string
+  initialMaxBookings?: number
+  mode?: 'create' | 'edit'
+  submitLabel?: string
 }
 
 interface Emits {
@@ -114,6 +119,9 @@ const isOpen = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
+const headerTitle = computed(() => props.mode === 'edit' ? 'Editar Horario' : 'Nuevo Horario')
+const submitText = computed(() => props.submitLabel || (props.mode === 'edit' ? 'Guardar Cambios' : 'Crear Horario'))
+
 const formatSelectedDate = computed(() => {
   if (!props.selectedDate) return ''
   
@@ -145,9 +153,9 @@ const closeModal = () => {
 
 const resetForm = () => {
   formState.value = {
-    startTime: '',
-    endTime: '',
-    maxBookings: 5
+    startTime: props.initialStartTime || '',
+    endTime: props.initialEndTime || '',
+    maxBookings: props.initialMaxBookings ?? 5
   }
 }
 
@@ -178,9 +186,12 @@ const handleSubmit = async () => {
 }
 
 // Watchers
-watch(() => props.selectedDate, () => {
-  if (props.selectedDate) {
-    resetForm()
+watch(
+  () => [props.selectedDate, props.initialStartTime, props.initialEndTime, props.initialMaxBookings, props.mode],
+  () => {
+    if (props.selectedDate) {
+      resetForm()
+    }
   }
-})
+)
 </script>

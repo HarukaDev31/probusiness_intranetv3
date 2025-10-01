@@ -148,7 +148,7 @@ class AuthService {
         No_Password: credentials.password
       })
 
-      if (response.status === 'success' && response.token && response.user) {
+      if (response.success && response.token && response.user) {
         const user: AuthUser = {
           id: response.user.ID_Usuario,
           email: response.user.Txt_Email || response.user.No_Usuario,

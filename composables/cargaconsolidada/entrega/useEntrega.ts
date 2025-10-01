@@ -30,6 +30,7 @@ export const useEntrega = () => {
     pagos_details?: any[]
     id_contenedor?: number
     id_contenedor_pago?: number | null
+    entrega: string | null
   }
   const delivery = ref<DeliveryRow[]>([])
 
@@ -102,14 +103,77 @@ export const useEntrega = () => {
     try {
       loading.value = true
       const response = await EntregaService.getEntregasDetalle(id_cotizacion)
-      const raw = Array.isArray(response.data) ? response.data : [response.data]
+      // Soportar tanto forma antigua (array) como nueva (seccionada)
+      const data = (response && 'data' in response) ? (response as any).data : response
+
+      const hasSections = data && (data.meta || data.resumen || data.delivery || data.form_user || data.lima || data.provincia || data.comprobante)
+      if (hasSections) {
+        const root: any = data
+        const meta = root.meta || root.data || root
+        const resumen = root.resumen || root.data || root
+        const delivery = root.delivery || root.data?.delivery || null
+        const form_user = root.form_user || root.data?.form_user || null
+        const lima = root.lima || null
+        const province = root.province || null
+        const comprobante = root.province || root.lima || null
+        const conformidad = root.conformidad || null
+        const type_form = (meta?.type_form ?? root.type_form)
+        const isLima = (type_form === 1 || type_form === '1')
+
+        const flat: any = {
+          id_cotizacion: meta?.cotizacion_id ?? meta?.id_cotizacion ?? id_cotizacion,
+          id_contenedor: meta?.id_contenedor ?? root.id_contenedor ?? null,
+          type_form: (type_form === '1') ? 1 : (type_form === '0') ? 0 : type_form,
+          // Generales
+          qty_box_china: resumen?.qty_box_china ?? root.qty_box_china ?? '',
+          cbm_total_china: resumen?.cbm_total_china ?? root.cbm_total_china ?? '',
+          documento: lima?.pick_doc ?? province?.r_doc ?? '',
+          import_name: lima?.import_name ?? province.import_name ?? '',
+          // Lima
+          nombre_chofer: lima?.drver_name ?? root.driver_name ?? '',
+          licencia: lima?.driver_license ?? root.driver_license ?? '',
+          direccion_final: lima?.final_destination_place ?? root.final_destination_place ?? '',
+          distrito: lima?.final_destination_district ?? root.final_destination_district ?? province?.distrito ?? root.distrito ?? '',
+          // Provincia
+          agency_address_final_delivery: province?.agency_address_final_delivery ?? root.agency_address_final_delivery ?? '',
+          agency_address_initial_delivery: province?.agency_address_initial_delivery ?? root.agency_address_initial_delivery ?? '',
+          departamento: province?.department_name ?? root.department_name ?? '',
+          district_name: province?.district_name ?? root.district_name ?? '',
+          province_name: province?.province_name ?? root.province_name ?? '',
+          agency_name: province?.agency_name ?? root.agency_name ?? '',
+          agency_ruc: province?.agency_ruc ?? root.agency_ruc ?? '',
+          home_adress_delivery: province?.home_adress_delivery ?? root.home_adress_delivery ?? '',
+          r_doc: province?.r_doc ?? root.r_doc ?? '',
+          r_name: province?.r_name ?? root.r_name ?? '',
+          r_phone: province?.r_phone ?? root.r_phone ?? '',
+          // Comprobante
+          comp_documento: comprobante?.voucher_doc ?? resumen?.documento ?? '',
+          comp_nombre: comprobante?.voucher_name ?? '',
+          comp_email: comprobante?.voucher_email ?? '',
+          // Delivery (si se usa en listados)
+          delivery_date: delivery?.date ?? null,
+          delivery_start_time: delivery?.start_time ?? null,
+          delivery_end_time: delivery?.end_time ?? null,
+          date_id: delivery?.date_id ?? null,
+          range_id: delivery?.range_id ?? null,
+          // Nombre mostrado
+          form_user: form_user?.name ?? root.form_user?.name ?? root.nombre ?? '',
+          //Conformidad
+          conformidad: conformidad ?? [],
+        }
+        entregaDetalle.value = flat
+        return entregaDetalle.value
+      }
+
+      // Caso 2: forma antigua (array de items)
+      const raw = Array.isArray(data) ? data : [data]
       const mapped = raw.map((item: any) => ({
         ...item,
         id_cotizacion: item.id_cotizacion ?? item.idCotizacion ?? item.cotizacion_id ?? item.id ?? null
       }))
       entregas.value = mapped as any
       entregaDetalle.value = mapped[0] || null
-      if (response?.pagination) pagination.value = response.pagination
+      if ((response as any)?.pagination) pagination.value = (response as any).pagination
       return entregaDetalle.value
     } catch (err: any) {
       const msg = err?.message || ''
@@ -160,7 +224,7 @@ export const useEntrega = () => {
       }
       const response = await EntregaService.getDelivery(id, params)
       delivery.value = (response.data as Entrega[]).map((item: any) => ({
-        id_cotizacion: item.id_cotizacion,
+        id_cotizacion: item.id,
         nombre: item.nombre,
         telefono: item.telefono,
         tipo_entrega: item.tipo_entrega ?? null,
@@ -172,7 +236,8 @@ export const useEntrega = () => {
         pagado: item.pagado ?? 0,
         pagos_details: item.pagos_details ?? [],
         id_contenedor: item.id_contenedor,
-        id_contenedor_pago: item.id_contenedor_pago ?? null
+        id_contenedor_pago: item.id_contenedor_pago ?? null,
+        entrega: item.entrega ?? null
       }))
       pagination.value = response.pagination
     } catch (err: any) {
@@ -253,9 +318,13 @@ export const useEntrega = () => {
     if (pagado > importe) return 'Sobrepago'
     return 'Parcial'
   }
-  const updateImporteDelivery = (row: DeliveryRow, nuevoImporte: number) => {
-    row.importe = nuevoImporte
-    row.estado = calcularEstado(row.pagado, row.importe)
+  const updateImporteDelivery = async (data: any) => {
+    try {
+      const response = await EntregaService.updateImporteDelivery(data)
+      return response
+    } catch (err) {
+      error.value = err as string
+    }
   }
   const registrarPagoDelivery = async (row: DeliveryRow, data: any) => {
     const formData = new FormData()
@@ -272,6 +341,66 @@ export const useEntrega = () => {
     if (response?.success) await getEntregas(contenedorId.value as number)
     return response
   }
+  const sendMessageForCotizacion = async (id_cotizacion: number) => {
+    try {
+      const response = await EntregaService.sendMessageForCotizacion(id_cotizacion)
+      return response
+    } catch (error) {
+      error.value = error as string
+    }
+  }
+
+  // --- CONFORMIDAD (fotos) ---
+  const uploadConformidad = async (payload: {
+    id_contenedor: number;
+    id_cotizacion: number;
+    type_form: 0 | 1;
+    photo_1?: File;
+    photo_2?: File;
+    id_form_lima?: number;
+    id_form_province?: number;
+  }) => {
+    const fd = new FormData()
+    fd.append('id_contenedor', String(payload.id_contenedor))
+    fd.append('id_cotizacion', String(payload.id_cotizacion))
+    fd.append('type_form', String(payload.type_form))
+    if (payload.photo_1) fd.append('photo_1', payload.photo_1)
+    if (payload.photo_2) fd.append('photo_2', payload.photo_2)
+    if (payload.id_form_lima) fd.append('id_form_lima', String(payload.id_form_lima))
+    if (payload.id_form_province) fd.append('id_form_province', String(payload.id_form_province))
+    const res = await EntregaService.uploadConformidad(fd)
+    if (res?.success) {
+      // refrescar detalle para tener urls correctas
+      if (entregaDetalle.value?.id_cotizacion) await getEntregasDetalle(entregaDetalle.value.id_cotizacion)
+    }
+    return res
+  }
+
+  const updateConformidad = async (id: number, files: { photo_1?: File; photo_2?: File }) => {
+    const fd = new FormData()
+    if (files.photo_1) fd.append('photo_1', files.photo_1)
+    if (files.photo_2) fd.append('photo_2', files.photo_2)
+    const res = await EntregaService.updateConformidad(id, fd)
+    if (res?.success) {
+      if (entregaDetalle.value?.id_cotizacion) await getEntregasDetalle(entregaDetalle.value.id_cotizacion)
+    }
+    return res
+  }
+
+  const deleteConformidad = async (id: number, typeForm: 0 | 1) => {
+    const res = await EntregaService.deleteConformidad(id, typeForm)
+    
+    return res
+  }
+
+  // Guardar formulario de cliente
+  const saveClienteDetalle = async (id_cotizacion: number, payload: any) => {
+    const res = await EntregaService.updateClienteDetalle(id_cotizacion, payload)
+    if (res?.success) {
+      await getEntregasDetalle(id_cotizacion)
+    }
+    return res
+  }
 
   return {
     entregas,
@@ -287,13 +416,13 @@ export const useEntrega = () => {
     currentPage,
     filters,
     filterConfig,
-  getEntregas,
-  getEntregasDetalle,
-  getClientes,
-  clientes,
-  clientesFilterConfig,
-  marcarRegistrado,
-  marcarEntregadoCliente,
+    getEntregas,
+    getEntregasDetalle,
+    getClientes,
+    clientes,
+    clientesFilterConfig,
+    marcarRegistrado,
+    marcarEntregadoCliente,
     handleSearch,
     handlePageChange,
     handleItemsPerPageChange,
@@ -301,11 +430,16 @@ export const useEntrega = () => {
     headers,
     carga,
     loadingHeaders,
-  getHeaders,
-  // delivery
+    getHeaders,
+    // delivery
     getDelivery,
     updateImporteDelivery,
     registrarPagoDelivery,
-    deletePagoDelivery
+    deletePagoDelivery,
+    sendMessageForCotizacion
+    , uploadConformidad
+    , updateConformidad
+    , deleteConformidad
+    , saveClienteDetalle
   }
 }
