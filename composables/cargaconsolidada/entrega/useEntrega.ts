@@ -106,7 +106,6 @@ export const useEntrega = () => {
       // Soportar tanto forma antigua (array) como nueva (seccionada)
       const data = (response && 'data' in response) ? (response as any).data : response
 
-      // Caso 1: backend nuevo seccionado
       const hasSections = data && (data.meta || data.resumen || data.delivery || data.form_user || data.lima || data.provincia || data.comprobante)
       if (hasSections) {
         const root: any = data
@@ -117,7 +116,7 @@ export const useEntrega = () => {
         const lima = root.lima || null
         const province = root.province || null
         const comprobante = root.province || root.lima || null
-  const conformidad = root.conformidad || null
+        const conformidad = root.conformidad || null
         const type_form = (meta?.type_form ?? root.type_form)
         const isLima = (type_form === 1 || type_form === '1')
 
@@ -160,9 +159,7 @@ export const useEntrega = () => {
           // Nombre mostrado
           form_user: form_user?.name ?? root.form_user?.name ?? root.nombre ?? '',
           //Conformidad
-          conformidad_id: conformidad?.id ?? conformidad?.conformidad_id ?? null,
-          photo_1_url: conformidad?.photo_1_url ?? conformidad?.photo_1 ?? null,
-          photo_2_url: conformidad?.photo_2_url ?? conformidad?.photo_2 ?? null,
+          conformidad: conformidad ?? [],
         }
         entregaDetalle.value = flat
         return entregaDetalle.value
@@ -344,7 +341,7 @@ export const useEntrega = () => {
     if (response?.success) await getEntregas(contenedorId.value as number)
     return response
   }
-  const sendMessageForCotizacion = async (id_cotizacion: number ) => {
+  const sendMessageForCotizacion = async (id_cotizacion: number) => {
     try {
       const response = await EntregaService.sendMessageForCotizacion(id_cotizacion)
       return response
@@ -390,16 +387,9 @@ export const useEntrega = () => {
     return res
   }
 
-  const deleteConformidad = async (id: number) => {
-    const res = await EntregaService.deleteConformidad(id)
-    if (res?.success) {
-      // limpiar campos en cache
-      if (entregaDetalle.value) {
-        (entregaDetalle.value as any).conformidad_id = null
-        ;(entregaDetalle.value as any).photo_1_url = null
-        ;(entregaDetalle.value as any).photo_2_url = null
-      }
-    }
+  const deleteConformidad = async (id: number, typeForm: 0 | 1) => {
+    const res = await EntregaService.deleteConformidad(id, typeForm)
+    
     return res
   }
 
@@ -447,9 +437,9 @@ export const useEntrega = () => {
     registrarPagoDelivery,
     deletePagoDelivery,
     sendMessageForCotizacion
-    ,uploadConformidad
-    ,updateConformidad
-    ,deleteConformidad
-    ,saveClienteDetalle
+    , uploadConformidad
+    , updateConformidad
+    , deleteConformidad
+    , saveClienteDetalle
   }
 }

@@ -5,7 +5,7 @@
       :subtitle="clienteNombre || ''"
       icon=""
       :hide-back-button="false"
-      @back="navigateTo(`/cargaconsolidada/completados/entrega/${contenedorId}`)"
+      @back="router.back()"
     >
       <template #actions>
         <div class="flex gap-2">
@@ -145,11 +145,21 @@
               :acceptedTypes="['.jpg', '.jpeg', '.png', '.gif']"
               :disabled="!editable"
               :showSaveButton="false"
-              :showRemoveButton="true"
+              :showRemoveButton="editable"
               :customMessage="'Selecciona o arrastra hasta 2 fotos'"
               @files-selected="onUploaderFilesSelected"
               @files-cleared="onUploaderCleared"
+              :initial-files="entregaDetalle?.conformidad?.map((item: any) => ({
+                id: item.id,
+                file_name: item.file_original_name,
+                file_url: item.file_url,
+                type: item.file_type,
+                size: item.file_size,
+                lastModified: 0,
+                file_ext: item.file_type
+              }))"
               @error="onUploaderError"
+              @file-removed="(id: number) => onDeleteConformidad(id)"  
             />
           </div>
 
@@ -194,7 +204,8 @@ import { UInput, USelect, UButton, UIcon, UBadge } from '#components'
 import PageHeader from '~/components/PageHeader.vue'
 import FileUploader from '@/components/commons/FileUploader.vue'
 import ImageModal from '~/components/ImageModal.vue'
-
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
 // Props/params
 const route = useRoute()
@@ -356,6 +367,7 @@ const onUploaderFilesSelected = (files: File[]) => {
   }
 }
 const onUploaderCleared = () => {
+  console.log('onUploaderCleared')
   picked1.value = null
   picked2.value = null
 }
@@ -415,10 +427,12 @@ const submitConformidad = async () => {
     console.error('Error al enviar conformidad', err)
   }
 }
-const onDeleteConformidad = async () => {
-  if (!editable.value || !conformidadId.value) return
+const onDeleteConformidad = async (id: number) => {
+  //get type form
+  const typeForm = isLima.value ? 1 : 0
+  if (!editable.value || !id) return
   try {
-    await deleteConformidad(conformidadId.value)
+    await deleteConformidad(id, typeForm)
     picked1.value = null
     picked2.value = null
     await refreshEvidencia()

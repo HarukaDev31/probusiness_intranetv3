@@ -319,9 +319,9 @@ export class EntregaService extends BaseService {
     }
   }
 
-  static async deleteConformidad(id: number): Promise<{ success: boolean }> {
+  static async deleteConformidad(id: number, typeForm: 0 | 1): Promise<{ success: boolean }> {
     try {
-      return await this.apiCall(`${this.baseUrl}/entregas/conformidad/${id}`, {
+      return await this.apiCall(`${this.baseUrl}/entregas/conformidad/${id}?type_form=${typeForm}`, {
         method: 'DELETE'
       })
     } catch (error) {
