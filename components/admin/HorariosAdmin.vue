@@ -701,8 +701,9 @@ const deleteTimeSlotGroup = (timeSlotGroup: any) => {
 const route = useRoute()
 
 onMounted(async () => {
-  // Configurar fecha inicial (septiembre 2025 como en la imagen)
-  currentDate.value = new Date(2025, 8, 1) // Septiembre 2025
+  // Configurar fecha inicial al mes actual
+  const now = new Date()
+  currentDate.value = new Date(now.getFullYear(), now.getMonth(), 1)
   // Cargar horarios desde backend si se proporciona ?contenedor=ID o /:id
   const rawId = (route.query && (route.query as any).contenedor) ?? (route.params as any)?.id
   const contId = Number(rawId)
