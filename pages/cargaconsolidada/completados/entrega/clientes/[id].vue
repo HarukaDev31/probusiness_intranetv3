@@ -26,7 +26,7 @@
           <h3 class="font-semibold mb-3 text-sm">Información de entrega</h3>
           <div class="space-y-3 text-xs">
             <div class="flex items-center gap-2">
-              <label class="text-[11px] font-medium text-gray-500">Tipo de cliente:</label>
+              <label class="text-[11px] font-medium text-gray-500">Tipo de entrega:</label>
               <UBadge :label="tipoClienteLabel" :color="isLima ? 'primary' : 'warning'" variant="soft" />
             </div>
 
