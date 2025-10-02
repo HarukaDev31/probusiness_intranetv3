@@ -9,29 +9,10 @@
     >
       <template #actions>
         <div class="flex gap-2">
-          <UButton
-            v-if="!editable"
-            size="xs"
-            color="neutral"
-            variant="outline"
-            icon="i-heroicons-pencil-square"
-            @click="toggleEdit"
-          >Editar</UButton>
+          <UButton v-if="!editable" size="xs" color="neutral" variant="outline" icon="i-heroicons-pencil-square" @click="toggleEdit">Editar</UButton>
           <template v-else>
-            <UButton
-              size="xs"
-              color="primary"
-              icon="i-heroicons-device-floppy"
-              :disabled="!dirty"
-              @click="handleSave"
-            >Guardar</UButton>
-            <UButton
-              size="xs"
-              color="neutral"
-              variant="outline"
-              icon="i-heroicons-x-mark"
-              @click="toggleEdit"
-            >Cancelar</UButton>
+            <UButton size="xs" color="primary" icon="i-heroicons-device-floppy" :disabled="!canSave" @click="handleSave">Guardar</UButton>
+            <UButton size="xs" color="neutral" variant="outline" icon="i-heroicons-x-mark" @click="toggleEdit">Cancelar</UButton>
           </template>
         </div>
       </template>
@@ -42,98 +23,109 @@
       <div class="flex-1 space-y-6">
         <!-- Información de entrega -->
         <section>
-          <h3 class="font-semibold mb-2 text-sm uppercase tracking-wide">Información de entrega:</h3>
+          <h3 class="font-semibold mb-3 text-sm">Información de entrega</h3>
+          <div class="space-y-3 text-xs">
+            <div class="flex items-center gap-2">
+              <label class="text-[11px] font-medium text-gray-500">Tipo de cliente:</label>
+              <UBadge :label="tipoClienteLabel" :color="isLima ? 'primary' : 'warning'" variant="soft" />
+            </div>
 
-          <!-- Selector de tipo entrega (T.Cliente) -->
-          <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 text-xs mb-4">
-            <div class="col-span-2 lg:col-span-1">
-              <Label small>T. Cliente:</Label>
-              <USelect v-model="form.tipo_cliente" :options="['Lima','Provincia']" size="xs" disabled/>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Bultos</label>
+                <UInput class="w-full" v-model="form.qty_box_china" size="sm" disabled />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">CBM</label>
+                <UInput class="w-full" v-model="form.cbm_total_china" size="sm" disabled />
+              </div>
+              <div v-if="!isLima">
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Tipo</label>
+                <USelect class="w-full" :items="tipoReceptorOptions" v-model="form.r_type" size="sm" :disabled="!editable" placeholder="Seleccione" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">{{ isLima ? 'DNI / ID' : 'DNI / RUC' }}</label>
+                <UInput class="w-full" v-model="form.documento" size="sm" :disabled="!editable" />
+              </div>
+              <div v-if="isLima">
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Licencia</label>
+                <UInput class="w-full" v-model="form.licencia" size="sm" :disabled="!editable" />
+              </div>
             </div>
-            <div class="col-span-2 lg:col-span-1">
-              <Label small>Bultos:</Label>
-              <UInput v-model="form.qty_item" size="xs" />
-            </div>
-            <div class="col-span-2 lg:col-span-1">
-              <Label small>Peso:</Label>
-              <UInput v-model="form.peso" size="xs" />
-            </div>
-            <div v-if="form.tipo_cliente === 'Lima'" class="col-span-2 lg:col-span-1">
-              <Label small>Dni / Id:</Label>
-              <UInput v-model="form.documento" size="xs" />
-            </div>
-            <div v-else class="col-span-2 lg:col-span-1">
-              <Label small>Dni / Ruc:</Label>
-              <UInput v-model="form.documento" size="xs" />
-            </div>
-            <div v-if="form.tipo_cliente === 'Lima'" class="col-span-2 lg:col-span-1">
-              <Label small># Licencia (1):</Label>
-              <UInput v-model="form.licencia1" size="xs" />
-            </div>
-          </div>
 
-          <!-- Vista para Lima (Chofer) -->
-          <div v-if="form.tipo_cliente === 'Lima'" class="mt-2 grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs">
-            <div class="col-span-1">
-              <Label small>Nombre completo del Chofer:</Label>
-              <UInput v-model="form.nombre_chofer" size="xs" />
+            <!-- Campos específicos por tipo -->
+            <div v-if="isLima" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Nombre completo del chofer</label>
+                <UInput class="w-full" v-model="form.nombre_chofer" size="sm" :disabled="!editable" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Distrito</label>
+                <UInput class="w-full" v-model="form.distrito" size="sm" :disabled="!editable" />
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Dirección final de destino</label>
+                <UInput class="w-full" v-model="form.direccion_final" size="sm" :disabled="!editable" />
+              </div>
             </div>
-            <div class="col-span-1">
-              <Label small>Dirección final de destino:</Label>
-              <UInput v-model="form.direccion_final" size="xs" />
-            </div>
-            <div class="col-span-1">
-              <Label small>Distrito:</Label>
-              <UInput v-model="form.distrito_final" size="xs" />
-            </div>
-          </div>
 
-          <!-- Vista para clientes fuera de Lima (Agencia y Ubicación) -->
-          <div v-else class="mt-2 space-y-3 text-xs">
-            <div class="grid grid-cols-2 lg:grid-cols-6 gap-3">
-              <div class="col-span-2 lg:col-span-2">
-                <Label small>Nombre:</Label>
-                <UInput v-model="form.nombre" size="xs" />
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
+                <UInput class="w-full" v-model="form.r_name" size="sm" :disabled="!editable" />
               </div>
-              <div class="col-span-2 lg:col-span-1">
-                <Label small>Celular:</Label>
-                <UInput v-model="form.celular" size="xs" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Celular</label>
+                <UInput class="w-full" v-model="form.r_phone" size="sm" :disabled="!editable" />
               </div>
-              <div class="col-span-2 lg:col-span-1">
-                <Label small>Departamento:</Label>
-                <UInput v-model="form.departamento" size="xs" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Departamento</label>
+                <USelect class="w-full" :items="departamentos" v-model="form.departamento_id" :disabled="!editable" placeholder="Seleccione" @update:model-value="onDepartamentoChange" />
               </div>
-              <div class="col-span-2 lg:col-span-1">
-                <Label small>Provincia:</Label>
-                <UInput v-model="form.provincia" size="xs" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Provincia</label>
+                <USelect class="w-full" :items="provincias" v-model="form.provincia_id" :disabled="!editable || !form.departamento_id" placeholder="Seleccione" @update:model-value="onProvinciaChange" />
               </div>
-              <div class="col-span-2 lg:col-span-1">
-                <Label small>Distrito:</Label>
-                <UInput v-model="form.distrito" size="xs" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Distrito</label>
+                <USelect class="w-full" :items="distritos" v-model="form.distrito_id" :disabled="!editable || !form.provincia_id" placeholder="Seleccione" />
               </div>
-              <div class="col-span-2 lg:col-span-2">
-                <Label small>Agencia:</Label>
-                <UInput v-model="form.agencia" size="xs" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Agencia</label>
+                <USelect class="w-full" :items="agencias" v-model="form.id_agency" :disabled="!editable" placeholder="Seleccione"
+                  @update:model-value="onAgenciaChange" />
               </div>
-              <div class="col-span-2 lg:col-span-2">
-                <Label small>Manifiesto:</Label>
-                <UInput v-model="form.manifiesto" size="xs" />
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">RUC de la agencia</label>
+                <UInput class="w-full" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Dirección inicial de entrega</label>
+                <UInput class="w-full" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Dirección final de entrega</label>
+                <UInput class="w-full" v-model="form.agency_address_final_delivery" size="sm" :disabled="!editable" />
               </div>
             </div>
           </div>
         </section>
 
         <!-- Información de comprobante -->
-        <section class="pt-2">
-          <h3 class="font-semibold mb-2 text-sm">Información de comprobante:</h3>
-          <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 text-xs">
-            <div class="col-span-2 lg:col-span-1">
-              <Label small>Dni / Ruc:</Label>
-              <UInput v-model="form.documento" size="xs" />
+        <section class="pt-4">
+          <h3 class="font-semibold mb-3 text-sm">Información de comprobante</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label class="block text-[11px] font-medium text-gray-500 mb-1">DNI / RUC</label>
+              <UInput class="w-full" v-model="form.comp_documento" size="sm" :disabled="!editable" />
             </div>
-            <div class="col-span-2 lg:col-span-2">
-              <Label small>Nombre:</Label>
-              <UInput v-model="form.nombre" size="xs" />
+            <div>
+              <label class="block text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
+              <UInput class="w-full" v-model="form.comp_nombre" size="sm" :disabled="!editable" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-medium text-gray-500 mb-1">Correo electrónico</label>
+              <UInput class="w-full" v-model="form.comp_email" size="sm" :disabled="!editable" />
             </div>
           </div>
         </section>
@@ -141,29 +133,74 @@
         <!-- Fotos de conformidad -->
         <section class="pt-4">
           <h3 class="font-semibold mb-2 text-sm">Foto de conformidad de entrega:</h3>
-          <div class="flex gap-4">
-            <div v-for="(f,i) in evidencia" :key="i" class="w-28 h-32 border rounded-lg flex flex-col items-center justify-center text-[10px] gap-2 relative">
-              <span>foto {{ i + 1 }}</span>
-              <UButton size="xs" icon="i-heroicons-trash" color="error" variant="ghost" class="absolute top-1 right-1" @click="removeFoto(i)" />
-            </div>
-            <div class="w-28 h-32 border-dashed border rounded-lg flex flex-col items-center justify-center text-[10px] gap-1 cursor-pointer" @click="addFoto">
-              <UIcon name="i-heroicons-plus" class="w-5 h-5" />
-              <span>Agregar</span>
-            </div>
+          <!-- Uploader para subir fotos (usa el componente común) -->
+          <div class="mb-3">
+            <FileUploader
+              ref="uploaderRef"
+              :multiple="true"
+              :acceptedTypes="['.jpg', '.jpeg', '.png', '.gif']"
+              :disabled="!editable"
+              :showSaveButton="false"
+              :showRemoveButton="editable"
+              :customMessage="'Selecciona o arrastra hasta 2 fotos'"
+              @files-selected="onUploaderFilesSelected"
+              @files-cleared="onUploaderCleared"
+              :initial-files="entregaDetalle?.conformidad?.map((item: any) => ({
+                id: item.id,
+                file_name: item.file_original_name,
+                file_url: item.file_url,
+                type: item.file_type,
+                size: item.file_size,
+                lastModified: 0,
+                file_ext: item.file_type
+              }))"
+              @error="onUploaderError"
+              @file-removed="(id: number) => onDeleteConformidad(id)"  
+            />
           </div>
+
+          <div class="flex gap-4 flex-wrap items-start">
+            <!-- Thumbnails reales -->
+            <div
+              v-for="(f, i) in evidencia"
+              :key="i"
+              class="w-28 h-32 border rounded-lg flex items-center justify-center overflow-hidden relative bg-gray-50 cursor-pointer"
+              @click="onClickThumbnail(i)"
+            >
+              <img
+                v-if="getThumbUrl(i, f.url)"
+                :src="getThumbUrl(i, f.url)"
+                class="w-full h-full object-cover select-none"
+                :alt="`Foto de conformidad ${i + 1}`"
+                @dragstart.prevent
+              />
+              <span v-else class="text-[10px] text-gray-500">Sin imagen</span>
+            </div>
+
+            <!-- Inputs ocultos sólo para reemplazar cada foto -->
+            <input ref="fileInputReplace1" type="file" accept="image/*" class="hidden" @change="onPickReplace(1, $event)" />
+            <input ref="fileInputReplace2" type="file" accept="image/*" class="hidden" @change="onPickReplace(2, $event)" />
+
+            <p class="text-[10px] text-gray-500" v-if="editable">Puedes seleccionar 1 o 2 fotos y reemplazar thumbnails. Los cambios se guardan con el botón Guardar.</p>
+          </div>
+
+          <!-- Modal de vista previa -->
+          <ImageModal :isOpen="previewOpen" :imageUrl="previewUrl" @close="previewOpen = false" />
         </section>
       </div>
     </div>
-
-    <!-- Botones movidos al header -->
   </div>
 </template>
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { onMounted, ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useEntrega } from '@/composables/cargaconsolidada/entrega/useEntrega'
-import { useRoute } from '#imports'
-import { UInput, USelect, UButton, UIcon } from '#components'
+import { UInput, USelect, UButton, UIcon, UBadge } from '#components'
 import PageHeader from '~/components/PageHeader.vue'
+import FileUploader from '@/components/commons/FileUploader.vue'
+import ImageModal from '~/components/ImageModal.vue'
+import { LocationService } from '@/services/commons/locationService'
+import { EntregaService } from '@/services/cargaconsolidada/entrega/entregaService'
 
 // Props/params
 const route = useRoute()
@@ -172,36 +209,66 @@ const id = Number(route.params.id) // id de cotizacion
 let contenedorId: number | null = null
 const cotizacionId = ref<number | null>(isNaN(id) ? null : id)
 // Obtener detalle desde composable (cache si se navegó desde listado)
-const { getEntregasDetalle, entregaDetalle, loading, getHeaders, carga } = useEntrega()
+const { getEntregasDetalle, entregaDetalle, loading, getHeaders, carga, uploadConformidad, updateConformidad, deleteConformidad, saveClienteDetalle } = useEntrega()
 // Nombre del cliente (razon_social si existe, sino nombre)
-const clienteNombre = computed(() => (entregaDetalle.value as any)?.razon_social || entregaDetalle.value?.nombre || '')
+const clienteNombre = computed(() => (entregaDetalle.value as any)?.form_user || entregaDetalle.value?.nombre || '')
+
+// Derivar tipo de cliente desde el detalle: type_form (1 = Lima, 0 = Provincia)
+const typeFormValue = computed<number | null>(() => {
+  const tf: any = (entregaDetalle.value as any)?.type_form
+  if (tf === 1 || tf === '1') return 1
+  if (tf === 0 || tf === '0') return 0
+  return null
+})
+const isLima = computed(() => typeFormValue.value === 1)
+const tipoClienteLabel = computed(() => (isLima.value ? 'Lima' : 'Provincia'))
+
+// Opciones para tipo de documento del receptor (Provincia)
+const tipoReceptorOptions = [
+  { label: 'PERSONA NATURAL', value: 'PERSONA NATURAL' },
+  { label: 'EMPRESA', value: 'EMPRESA' }
+]
+
 
 // Formulario reactivo
 const form = ref<any>({
   tipo_cliente: 'Lima',
   tipo_entrega: 'Lima',
-  qty_item: '',
-  peso: '',
+  qty_box_china: '',
+  cbm_total_china: '',
+
+  // Lima
   documento: '',
-  licencia1: '',
+  licencia: '',
   nombre_chofer: '',
   direccion_final: '',
   distrito: '',
+
   // Provincia
-  nombre: '',
-  celular: '',
-  departamento: '',
-  provincia: '',
-  agencia: '',
-  manifiesto: '',
+  agency_address_final_delivery: '',
+  agency_address_initial_delivery: '',
+  departamento_id: undefined,
+  provincia_id: undefined,
+  distrito_id: undefined,
+  id_agency: null,
+  agency_ruc: '',
+  agency_name: '',
+  home_adress_delivery: '',
+  r_type: '',
+  r_doc: '',
+  r_name: '',
+  r_phone: '',
   // Comprobante
   comp_documento: '',
-  comp_nombre: ''
+  comp_nombre: '',
+  comp_email: ''
 })
 
 const initialSnapshot = ref<string>('')
-const evidencia = ref<Array<any>>([{},{ }])
-const editable = ref<boolean>(true)
+type EvidenceItem = { url: string; key?: 'photo_1_url' | 'photo_2_url' }
+const evidencia = ref<EvidenceItem[]>([])
+const conformidadId = computed<number | null>(() => (entregaDetalle.value as any)?.conformidad_id ?? null)
+const editable = ref<boolean>(true) // En abiertos iniciamos en modo edición
 
 const snapshot = () => JSON.stringify(form.value)
 const dirty = computed(() => snapshot() !== initialSnapshot.value)
@@ -209,21 +276,253 @@ const dirty = computed(() => snapshot() !== initialSnapshot.value)
 const toggleEdit = () => {
   editable.value = !editable.value
   if (!editable.value) {
-    // Reset cambios si cancela
     form.value = JSON.parse(initialSnapshot.value)
   }
 }
 
-const handleSave = () => {
+const handleSave = async () => {
+  if (!cotizacionId.value) return
+  // 1) Guardar formulario de cliente conforme contrato backend
+  const typeFormLocal = isLima.value ? 1 : 0
+  const payloadForm: any = { type_form: typeFormLocal }
+  const addIf = (key: string, val: any) => {
+    if (val !== undefined && val !== null && String(val) !== '') payloadForm[key] = val
+  }
+  if (isLima.value) {
+    // Lima
+    addIf('voucher_doc', form.value.comp_documento)
+    addIf('voucher_name', form.value.comp_nombre)
+    addIf('voucher_email', form.value.comp_email)
+    addIf('drver_name', form.value.nombre_chofer)
+    addIf('driver_doc', form.value.documento)
+    addIf('driver_license', form.value.licencia)
+    addIf('final_destination_place', form.value.direccion_final)
+    addIf('final_destination_district', form.value.distrito)
+  } else {
+    // Provincia
+    addIf('import_name', form.value.nombre)
+    addIf('r_type', form.value.r_type)
+    addIf('r_doc', form.value.r_doc)
+    addIf('r_name', form.value.r_name)
+    addIf('r_phone', form.value.r_phone)
+    addIf('id_agency', form.value.id_agency)
+    addIf('agency_ruc', form.value.agency_ruc)
+    addIf('agency_name', form.value.agency_name)
+    addIf('agency_address_initial_delivery', form.value.agency_address_initial_delivery)
+    addIf('agency_address_final_delivery', form.value.agency_address_final_delivery)
+    // Ubigeo IDs
+    addIf('id_department', form.value.departamento_id)
+    addIf('id_province', form.value.provincia_id)
+    addIf('id_district', form.value.distrito_id)
+    addIf('voucher_doc', form.value.comp_documento)
+    addIf('voucher_name', form.value.comp_nombre)
+    addIf('voucher_email', form.value.comp_email)
+  }
+  await saveClienteDetalle(cotizacionId.value, payloadForm)
+
+  // 2) Guardar fotos (create/update si hay picks nuevos)
+  const id_contenedor = contenedorId as number
+  const id_cotizacion = cotizacionId.value as number
+  const typeFormForPhotos = isLima.value ? 1 : 0
+  try {
+    if (picked1.value || picked2.value) {
+      await uploadConformidad({ id_contenedor: id_contenedor as number, id_cotizacion: id_cotizacion as number, type_form: typeFormForPhotos as 0 | 1, photo_1: picked1.value || undefined, photo_2: picked2.value || undefined })
+
+      picked1.value = null
+      picked2.value = null
+      if (uploaderRef.value?.clearSelectedFiles) uploaderRef.value.clearSelectedFiles()
+    }
+  } catch (err) {
+    console.error('Error al guardar fotos de conformidad', err)
+  }
+
+  // Refrescar y cerrar edición
+  await refreshEvidencia()
+  await getEntregasDetalle(cotizacionId.value)
   initialSnapshot.value = snapshot()
-  // TODO: consumir servicio de guardado
+  editable.value = false
 }
 
-const addFoto = () => {
-  evidencia.value.push({})
+// Preview modal state
+const previewOpen = ref(false)
+const previewUrl = ref('')
+const openPreview = (url: string) => {
+  if (!url) return
+  previewUrl.value = url
+  previewOpen.value = true
 }
-const removeFoto = (i: number) => {
-  evidencia.value.splice(i,1)
+
+const fileInputReplace1 = ref<HTMLInputElement | null>(null)
+const fileInputReplace2 = ref<HTMLInputElement | null>(null)
+const picked1 = ref<File | null>(null)
+const picked2 = ref<File | null>(null)
+const uploaderRef = ref<any>(null)
+const canSubmitConformidad = computed(() => !!(picked1.value || picked2.value))
+const canSave = computed(() => dirty.value || !!(picked1.value || picked2.value))
+
+// Ubigeo lists
+// USelect por defecto usa { label, value }
+const departamentos = ref<Array<{ label: string; value: number }>>([])
+const provincias = ref<Array<{ label: string; value: number; id_departamento?: number }>>([])
+const distritos = ref<Array<{ label: string; value: number; id_provincia?: number }>>([])
+// Agencias
+const agencias = ref<Array<{ label: string; value: number; ruc?: string; name?: string }>>([])
+const loadAgencias = async (search?: string) => {
+  const res = await EntregaService.getAgencias({ currentPage: 1, itemsPerPage: 100, search })
+  const list = (res?.data || [])
+  agencias.value = list.map((a: any) => ({ label: a.label ?? `${a.name} - ${a.ruc}`, value: Number(a.value ?? a.id), ruc: a.ruc, name: a.name }))
+}
+const onAgenciaChange = (id: number | string) => {
+  const selected = agencias.value.find(a => a.value === Number(id))
+  if (selected) {
+    form.value.agency_name = selected.name || ''
+    form.value.agency_ruc = selected.ruc || ''
+  }
+}
+// Helper: extract array from various response shapes
+const toArray = (res: any, keyFallback?: string) => {
+  if (!res) return []
+  if (Array.isArray(res)) return res
+  if (Array.isArray(res?.data)) return res.data
+  if (Array.isArray(res?.results)) return res.results
+  if (Array.isArray(res?.rows)) return res.rows
+  if (Array.isArray(res?.items)) return res.items
+  if (keyFallback && Array.isArray(res?.[keyFallback])) return res[keyFallback]
+  if (keyFallback && Array.isArray(res?.data?.[keyFallback])) return res.data[keyFallback]
+  if (Array.isArray(res?.data?.data)) return res.data.data
+  return []
+}
+const onDepartamentoChange = async (id: number | string) => {
+  const depId = Number(id)
+  form.value.provincia_id = undefined
+  form.value.distrito_id = undefined
+  provincias.value = []
+  distritos.value = []
+  if (depId) {
+    const res = await LocationService.getProvincias(depId)
+    const list = toArray(res, 'provincias')
+    provincias.value = list.map((p: any) => ({
+      label: p.nombre ?? p.name ?? String(p.id),
+      value: Number(p.id),
+      id_departamento: Number(p.id_departamento)
+    }))
+  }
+}
+const onProvinciaChange = async (id: number | string) => {
+  const provId = Number(id)
+  form.value.distrito_id = undefined
+  distritos.value = []
+  if (provId) {
+    const res = await LocationService.getDistritos(provId)
+    const list = toArray(res, 'distritos')
+    distritos.value = list.map((d: any) => ({
+      label: d.nombre ?? d.name ?? String(d.id),
+      value: Number(d.id),
+      id_provincia: Number(d.id_provincia)
+    }))
+  }
+}
+
+// Handlers para FileUploader
+const onUploaderFilesSelected = (files: File[]) => {
+  if (!editable.value) return
+  // Limitar a 2 archivos en memoria para crear/actualizar
+  const selected = files.slice(0, 2)
+  picked1.value = selected[0] || null
+  picked2.value = selected[1] || null
+  // Si el usuario seleccionó más de 2, recortar visualmente en el uploader
+  if (files.length > 2 && uploaderRef.value?.clearSelectedFiles && uploaderRef.value?.addFiles) {
+    uploaderRef.value.clearSelectedFiles()
+    uploaderRef.value.addFiles(selected)
+  }
+}
+const onUploaderCleared = () => {
+  picked1.value = null
+  picked2.value = null
+}
+const onUploaderError = (message: string) => {
+  console.error('[FileUploader] error:', message)
+}
+
+const onClickThumbnail = (i: number) => {
+  if (!editable.value) {
+    // vista previa cuando no se edita
+    const url = evidencia.value[i]?.url
+    if (url) openPreview(url)
+    return
+  }
+  // Reemplazar específica (1 o 2)
+  if (i === 0) fileInputReplace1.value?.click()
+  else if (i === 1) fileInputReplace2.value?.click()
+}
+const onPickReplace = async (which: 1 | 2, e: Event) => {
+  if (!editable.value) return
+  const input = e.target as HTMLInputElement
+  const file = input.files && input.files[0]
+  if (!file) return
+  // Si ya existe conformidad, actualizar de inmediato
+  if (conformidadId.value) {
+    const payload = which === 1 ? { photo_1: file } : { photo_2: file }
+    await updateConformidad(conformidadId.value, payload)
+    await refreshEvidencia()
+  } else {
+    // Aún no existe: preparar para subir
+    if (which === 1) picked1.value = file
+    else picked2.value = file
+  }
+}
+const submitConformidad = async () => {
+  if (!editable.value) return
+  const id_contenedor = contenedorId as number
+  const id_cotizacion = cotizacionId.value as number
+  const type_form = isLima.value ? 1 : 0
+  try {
+    if (conformidadId.value) {
+      // actualizar: permite una o ambas; si no hay picks, no hacer nada
+      if (!picked1.value && !picked2.value) return
+      await updateConformidad(conformidadId.value, { photo_1: picked1.value || undefined, photo_2: picked2.value || undefined })
+    } else {
+      // subir nueva: permite 1 o 2 fotos
+      if (!picked1.value && !picked2.value) return
+      await uploadConformidad({ id_contenedor: id_contenedor as number, id_cotizacion: id_cotizacion as number, type_form: type_form as 0 | 1, photo_1: picked1.value || undefined, photo_2: picked2.value || undefined })
+    }
+    // limpiar picks y refrescar UI
+    picked1.value = null
+    picked2.value = null
+    // limpiar selección visual del uploader
+    if (uploaderRef.value?.clearSelectedFiles) uploaderRef.value.clearSelectedFiles()
+    await refreshEvidencia()
+  } catch (err) {
+    console.error('Error al enviar conformidad', err)
+  }
+}
+const onDeleteConformidad = async (id: number) => {
+  // determinar type form
+  const typeForm = isLima.value ? 1 : 0
+  if (!editable.value || !id) return
+  try {
+    await deleteConformidad(id, typeForm)
+    picked1.value = null
+    picked2.value = null
+    await refreshEvidencia()
+  } catch (err) {
+    console.error('Error al borrar conformidad', err)
+  }
+}
+
+// Helpers de UI para evidencia
+const getThumbUrl = (index: number, serverUrl?: string) => {
+  if (index === 0 && picked1.value) return URL.createObjectURL(picked1.value)
+  if (index === 1 && picked2.value) return URL.createObjectURL(picked2.value)
+  return serverUrl || ''
+}
+const refreshEvidencia = async () => {
+  if (!cotizacionId.value) return
+  await getEntregasDetalle(cotizacionId.value)
+  evidencia.value = []
+  const d: any = entregaDetalle.value
+  if (d?.photo_1_url) evidencia.value.push({ url: d.photo_1_url, key: 'photo_1_url' })
+  if (d?.photo_2_url) evidencia.value.push({ url: d.photo_2_url, key: 'photo_2_url' })
 }
 
 onMounted(async () => {
@@ -241,13 +540,68 @@ onMounted(async () => {
   }
   if (entregaDetalle.value) {
     // Inicializar formulario con datos del detalle
-    form.value.qty_item = entregaDetalle.value.qty_item || ''
-    form.value.peso = entregaDetalle.value.peso || ''
-    form.value.documento = entregaDetalle.value.documento || ''
-    form.value.nombre = entregaDetalle.value.nombre || ''
-    form.value.tipo_cliente = (entregaDetalle.value as any).tipo_cliente || form.value.tipo_cliente
-    form.value.tipo_entrega = entregaDetalle.value.tipo_entrega || form.value.tipo_entrega
+    const d: any = entregaDetalle.value
+    form.value.qty_box_china = d.qty_box_china || ''
+    form.value.cbm_total_china = d.cbm_total_china || ''
+    form.value.nombre = d.import_name || ''
+    form.value.documento = d.documento || ''
+
+    // Lima
+    form.value.nombre_chofer = d.nombre_chofer || ''
+    form.value.distrito = d.distrito || ''
+    form.value.licencia = d.licencia || ''
+    form.value.direccion_final = d.direccion_final || ''
+
+    // Provincia
+    form.value.agency_address_final_delivery = d.agency_address_final_delivery || ''
+    form.value.agency_address_initial_delivery = d.agency_address_initial_delivery || ''
+    form.value.agency_name = d.agency_name || ''
+    form.value.agency_ruc = d.agency_ruc || ''
+    form.value.home_adress_delivery = d.home_adress_delivery || ''
+    form.value.id_agency = d.id_agency || null
+    form.value.r_type = d.r_type || ''
+    form.value.r_doc = d.r_doc || ''
+    form.value.r_name = d.r_name || ''
+    form.value.r_phone = d.r_phone || ''
+    // IDs de ubicación (normalizar a número para que coincida con item-value)
+    form.value.departamento_id = d.id_department !== undefined && d.id_department !== null && d.id_department !== '' ? Number(d.id_department) : undefined
+    form.value.provincia_id = d.id_province !== undefined && d.id_province !== null && d.id_province !== '' ? Number(d.id_province) : undefined
+    form.value.distrito_id = d.id_district !== undefined && d.id_district !== null && d.id_district !== '' ? Number(d.id_district) : undefined
+
+    // Comprobante
+    form.value.comp_documento = d.comp_documento || d.documento || ''
+    form.value.comp_nombre = d.comp_nombre || d.nombre || ''
+    form.value.comp_email = d.comp_email || ''
+
+    // T. Cliente derivado
+    form.value.tipo_cliente = isLima.value ? 'Lima' : 'Provincia'
+    form.value.tipo_entrega = d.tipo_entrega || form.value.tipo_entrega
+
+    // Conformidad: inicializar evidencia real a partir de URLs disponibles
+    form.value.photo_1_url = d.photo_1_url || ''
+    form.value.photo_2_url = d.photo_2_url || ''
+    evidencia.value = []
+    if (form.value.photo_1_url) evidencia.value.push({ url: form.value.photo_1_url, key: 'photo_1_url' })
+    if (form.value.photo_2_url) evidencia.value.push({ url: form.value.photo_2_url, key: 'photo_2_url' })
   }
   initialSnapshot.value = snapshot()
+  // cargar departamentos y, si hay valores, intentar preseleccionar sin resetear ids
+  try {
+    const res = await LocationService.getDepartamentos()
+    const list = toArray(res, 'departamentos')
+    departamentos.value = list.map((d: any) => ({ label: d.nombre ?? d.name ?? String(d.id), value: Number(d.id) }))
+    // Cargar agencias y preseleccionar si viene id_agency del backend
+    await loadAgencias()
+    if (form.value.departamento_id) {
+      const rp = await LocationService.getProvincias(form.value.departamento_id)
+      const listP = toArray(rp, 'provincias')
+      provincias.value = listP.map((p: any) => ({ label: p.nombre ?? p.name ?? String(p.id), value: Number(p.id), id_departamento: Number(p.id_departamento) }))
+    }
+    if (form.value.provincia_id) {
+      const rd = await LocationService.getDistritos(form.value.provincia_id)
+      const listD = toArray(rd, 'distritos')
+      distritos.value = listD.map((d: any) => ({ label: d.nombre ?? d.name ?? String(d.id), value: Number(d.id), id_provincia: Number(d.id_provincia) }))
+    }
+  } catch (e) { /* noop */ }
 })
 </script>

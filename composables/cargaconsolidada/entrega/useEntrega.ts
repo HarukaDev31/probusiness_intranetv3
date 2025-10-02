@@ -460,6 +460,14 @@ export const useEntrega = () => {
 
     return res
   }
+  // Eliminar un registro de la lista de entregas por id_cotizacion o id
+  const deleteEntregaRegistro = async (registroId: number) => {
+    const res = await EntregaService.deleteEntregaRegistro(registroId)
+    if (res?.success && contenedorId.value) {
+      await getEntregas(contenedorId.value)
+    }
+    return res
+  }
 
   // Guardar formulario de cliente
   const saveClienteDetalle = async (id_cotizacion: number, payload: any) => {
@@ -479,11 +487,26 @@ export const useEntrega = () => {
         filters: filters.value
       }
       const response = await EntregaService.getAllDeliveryData(params)
-      delivery.value = response.data
-      pagination.value = response.pagination  
+      if (response?.success) {
+        // algunos endpoints devuelven { data: { data, pagination, total } }
+        const dataBlock: any = (response as any).data
+        delivery.value = (dataBlock?.data ?? dataBlock ?? [])
+        if (dataBlock?.pagination) {
+          pagination.value = dataBlock.pagination
+        } else {
+          pagination.value = {
+            current_page: currentPage.value,
+            last_page: 1,
+            per_page: itemsPerPage.value,
+            total: dataBlock?.total ?? (Array.isArray(delivery.value) ? delivery.value.length : 0),
+            from: 0,
+            to: 0
+          }
+        }
+      }
       return response
-    } catch (err) {
-      error.value = err as string
+    } catch (err: any) {
+      error.value = err?.message || String(err)
     } finally {
       loading.value = false
     }
@@ -561,6 +584,7 @@ export const useEntrega = () => {
     , uploadConformidad
     , updateConformidad
     , deleteConformidad
+    , deleteEntregaRegistro
     , saveClienteDetalle
     , getAllDeliveryData
     , fetchDeliveryData
