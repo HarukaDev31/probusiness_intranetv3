@@ -1948,7 +1948,7 @@ const handleUpdateProveedorEstado = async (idProveedor: number, estado: string) 
         await withSpinner(async () => {
             await updateProveedorEstado({ id: idProveedor, estado })
             showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
-            await getCotizaciones(Number(id))
+            await getCotizacionProveedor(Number(id))
         }, 'Actualizando estado del proveedor...')
     } catch (error) {
         showError('Error al actualizar el estado del proveedor', error)
