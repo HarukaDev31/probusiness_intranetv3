@@ -136,6 +136,7 @@ export const useEntrega = () => {
           cbm_total_china: resumen?.cbm_total_china ?? root.cbm_total_china ?? '',
           documento: lima?.pick_doc ?? province?.r_doc ?? '',
           import_name: lima?.import_name ?? province.import_name ?? '',
+          productos: lima?.productos ?? province.productos ?? '',
           // Lima
           nombre_chofer: lima?.drver_name ?? root.driver_name ?? '',
           licencia: lima?.driver_license ?? root.driver_license ?? '',
@@ -377,6 +378,18 @@ export const useEntrega = () => {
     if (contenedorId.value) getClientes(contenedorId.value)
   }
 
+  // Clear filters helpers
+  const clearClientesFilters = () => {
+    clientesFilters.value = {}
+    pagination.value.current_page = 1
+    if (contenedorId.value) getClientes(contenedorId.value)
+  }
+  const clearFilters = () => {
+    filters.value = {}
+    pagination.value.current_page = 1
+    if (contenedorId.value) getEntregas(contenedorId.value)
+  }
+
   // ---------------- DELIVERY LOGIC -----------------
   const calcularEstado = (pagado: number, importe: number) => {
     if (pagado === 0) return 'Pendiente'
@@ -571,6 +584,8 @@ export const useEntrega = () => {
   handleClientesFilterChange,
   handleClientesPageChange,
   handleClientesItemsPerPageChange,
+  clearClientesFilters,
+  clearFilters,
     headers,
     carga,
     loadingHeaders,

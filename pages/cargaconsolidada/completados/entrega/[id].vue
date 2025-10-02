@@ -4,9 +4,10 @@
       icon="" :show-pagination="false" :current-page="currentPage" :total-pages="totalPages"
       :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
       :show-secondary-search="false" :show-filters="true" :filter-config="clientesFilterConfig" :show-export="false"
-      empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleClientesSearch"
-      @page-change="handleClientesPageChange" @items-per-page-change="handleClientesItemsPerPageChange"
-      @filter-change="handleClientesFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
+  empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleClientesSearch"
+  @page-change="handleClientesPageChange" @items-per-page-change="handleClientesItemsPerPageChange"
+  @filter-change="handleClientesFilterChange" @clear-filters="onClearClientesFilters"
+  :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
       :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #actions>
         <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3" icon="i-heroicons-calendar"
@@ -122,7 +123,9 @@ const {
   registrarPagoDelivery,
   deletePagoDelivery,
   sendMessageForCotizacion,
-  deleteEntregaRegistro
+  deleteEntregaRegistro,
+  clearClientesFilters,
+  clearFilters
 } = useEntrega()
 
 const activeTab = ref('clientes')
@@ -192,7 +195,7 @@ const clientesColumns = ref<TableColumn<any>[]>([
   {
     accessorKey: 'entregado',
     header: 'Entregado',
-    cell: ({ row }) => h(UBadge, { label: row.original.voucher_doc ? 'Si' : 'No', color: row.original.voucher_doc ? 'success' : 'error' })
+    cell: ({ row }) => h(UBadge, { label: row.original.conformidad_count ? 'Si' : 'No', color: row.original.conformidad_count ? 'success' : 'error' })
   },
   {
     accessorKey: 'estado_cotizacion_final',
@@ -319,19 +322,25 @@ const goToClienteDetalle = (data: any) => {
   navigateTo(`/cargaconsolidada/completados/entrega/clientes/${cid}`)
 }
 const handleEnviarMensaje = (id_cotizacion: number) => {
-  try {
-    withSpinner(async () => {
-      const response = await sendMessageForCotizacion(id_cotizacion)
-      if (response?.success) {
-        showSuccess('Mensaje enviado', 'Mensaje enviado correctamente')
-      } else {
-        showError('Error', response?.error || 'No se pudo enviar el mensaje')
+  showConfirmation(
+    'Confirmar envío',
+    '¿Deseas enviar el mensaje al cliente ahora?',
+    () => {
+      try {
+        withSpinner(async () => {
+          const response = await sendMessageForCotizacion(id_cotizacion)
+          if (response?.success) {
+            showSuccess('Mensaje enviado', 'Mensaje enviado correctamente')
+          } else {
+            showError('Error', response?.error || 'No se pudo enviar el mensaje')
+          }
+        }, 'Enviando mensaje...')
+      } catch (error) {
+        showError('Error', (error as any)?.message || String(error))
       }
-    }, 'Enviando mensaje...')
-  } catch (error) {
-    showError('Error', error as string)
-  }
-
+    },
+    () => {}
+  )
 }
 const handleEliminarRegistro = (row: any) => {
   const registroId = row?.id_cotizacion || row?.id
@@ -397,6 +406,12 @@ const handleDeletePago = (row: any, pagoId: number) => {
       }
     }, 'Eliminando pago...')
   })
+}
+
+// Clear filters from DataTable panel
+const onClearClientesFilters = () => {
+  // reuse composable helper
+  clearClientesFilters()
 }
 const deliveryColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'nro', header: 'N', cell: ({ row }) => row.index + 1 },
