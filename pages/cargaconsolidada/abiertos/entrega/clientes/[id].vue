@@ -5,7 +5,7 @@
       :subtitle="clienteNombre || ''"
       icon=""
       :hide-back-button="false"
-      @back="router.back()"
+  @back="handleBack"
     >
       <template #actions>
         <div class="flex gap-2">
@@ -36,8 +36,8 @@
                 <UInput class="w-full" v-model="form.qty_box_china" size="sm" disabled />
               </div>
               <div>
-                <label class="block text-[11px] font-medium text-gray-500 mb-1">CBM</label>
-                <UInput class="w-full" v-model="form.cbm_total_china" size="sm" disabled />
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Peso</label>
+                <UInput class="w-full" v-model="form.peso" size="sm" disabled />
               </div>
               <div class="md:col-span-2">
                 <label class="block text-[11px] font-medium text-gray-500 mb-1">Productos</label>
@@ -218,6 +218,14 @@ const cotizacionId = ref<number | null>(isNaN(id) ? null : id)
 const { getEntregasDetalle, entregaDetalle, loading, getHeaders, carga, uploadConformidad, updateConformidad, deleteConformidad, saveClienteDetalle } = useEntrega()
 // Nombre del cliente (razon_social si existe, sino nombre)
 const clienteNombre = computed(() => (entregaDetalle.value as any)?.form_user || entregaDetalle.value?.nombre || '')
+// Back handler: go to parent Entregas tab when possible
+const handleBack = () => {
+  if (contenedorId) {
+    router.push({ path: `/cargaconsolidada/abiertos/entrega/${contenedorId}`, query: { tab: 'entregas' } })
+  } else {
+    router.back()
+  }
+}
 
 // Derivar tipo de cliente desde el detalle: type_form (1 = Lima, 0 = Provincia)
 const typeFormValue = computed<number | null>(() => {
@@ -241,7 +249,7 @@ const form = ref<any>({
   tipo_cliente: 'Lima',
   tipo_entrega: 'Lima',
   qty_box_china: '',
-  cbm_total_china: '',
+  peso: '',
   productos: '',
 
   // Lima
@@ -551,7 +559,7 @@ onMounted(async () => {
     // Inicializar formulario con datos del detalle
     const d: any = entregaDetalle.value
     form.value.qty_box_china = d.qty_box_china || ''
-    form.value.cbm_total_china = d.cbm_total_china || ''
+    form.value.peso = d.peso || ''
     form.value.productos = d.productos || ''
     form.value.nombre = d.import_name || ''
     form.value.documento = d.documento || ''

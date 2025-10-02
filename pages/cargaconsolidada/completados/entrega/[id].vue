@@ -128,7 +128,9 @@ const {
   clearFilters
 } = useEntrega()
 
-const activeTab = ref('clientes')
+const routeQuery = useRoute()
+const initialTab = (routeQuery.query.tab as string) || 'clientes'
+const activeTab = ref(initialTab)
 const tabs = [
   { value: 'clientes', label: 'Clientes' },
   { value: 'entregas', label: 'Entregas' },
