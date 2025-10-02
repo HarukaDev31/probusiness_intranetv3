@@ -1,6 +1,7 @@
 <template>
   <UCard class="space-y-6">
     <!-- Header -->
+   
     <div class="flex justify-between items-center">
       <div>
         <h2 class="text-2xl font-bold ">Administración de Horarios</h2>
@@ -68,11 +69,10 @@
               <button
                 v-for="date in calendarDays"
                 :key="date.value"
-                @click="selectDate(date)"
                 @dblclick="openHorarioModalFor(date.value)"
                 @mousedown="startDrag(date)"
                 @mouseenter="handleDrag(date)"
-                @mouseup="endDrag"
+                @mouseup="handleMouseUp(date)"
                 :class="[
                   'w-10 h-10 rounded-full text-sm font-medium transition-all duration-200',
                   !date.isPast
@@ -118,45 +118,45 @@
             <LoadingSpinner />
           </div>
 
-          <div v-else-if="scheduleList.length === 0" class="text-center py-8 text-gray-500">
+          <div v-else-if="schedulesByDayComposable.length === 0" class="text-center py-8 text-gray-500">
             <UIcon name="i-heroicons-clock" class="w-12 h-12 mx-auto mb-2" />
             <p class="text-sm">No hay horarios configurados</p>
             <p class="text-xs">Selecciona fechas y crea horarios</p>
           </div>
 
-          <div v-else class="space-y-3">
+          <div v-else class="space-y-3 flex flex-col gap-2">
             <div
-              v-for="schedule in scheduleList"
+              v-for="schedule in schedulesByDayComposable"
               :key="schedule.id"
-              class="flex items-center justify-between p-3  rounded-lg"
+              class="flex w-full justify-between p-3  flex-col gap-2 rounded-lg"
             >
-              <div class="flex items-center gap-3">
+              <p class="text-sm font-medium ">{{ schedule.name }}</p>
+               <div class="flex items-center gap-3" v-for="timeSlotGroup in groupTimeSlots(schedule.timeSlots)" :key="timeSlotGroup.id">
                 <div class="w-3 h-3 bg-primary-500 rounded-full"></div>
                 <div>
                   <p class="text-sm font-medium ">
-                    {{ schedule.startTime }} - {{ schedule.endTime }}
+                    {{ timeSlotGroup.startTime }} - {{ timeSlotGroup.endTime }}
                   </p>
-                  <p class="text-xs ">
-                    {{ schedule.date }} - {{ schedule.currentBookings }}/{{ schedule.maxBookings }} reservas
-                  </p>
+                  
                 </div>
-              </div>
-              <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2">
                 <UButton
-                  @click="editSchedule(schedule)"
+                  @click="editTimeSlotGroup(timeSlotGroup)"
                   icon="i-heroicons-pencil-square"
                   color="neutral"
                   variant="ghost"
                   size="sm"
                 />
                 <UButton
-                  @click="deleteSchedule(schedule.id)"
+                  @click="deleteTimeSlotGroup(timeSlotGroup)"
                   icon="i-heroicons-trash"
                   color="error"
                   variant="ghost"
                   size="sm"
                 />
               </div>
+              </div>
+             
             </div>
           </div>
         </UCard>
@@ -171,8 +171,19 @@ import { useOverlay, useRoute } from '#imports'
 import HorarioFormModal from '~/components/admin/HorarioFormModal.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useHorariosAdmin } from '~/composables/useHorariosAdmin'
-
+import { useSpinner } from '~/composables/commons/useSpinner'
+interface dayData{
+  day:string,
+  startTime:string,
+  endTime:string,
+  maxBookings:number
+}
+interface HorariosRequest{
+  dayData:dayData[]
+  idContenedor:number
+}
 // Composables
+const { withSpinner } = useSpinner()
 const overlay = useOverlay()
 const modalHorario = overlay.create(HorarioFormModal)
 const { showSuccess, showError, showConfirmation } = useModal()
@@ -183,11 +194,19 @@ const currentDate = ref(new Date())
 const selectedDates = ref<Date[]>([])
 const isDragging = ref(false)
 const dragStartDate = ref<Date | null>(null)
+const hasDragged = ref(false)
 const today = new Date()
 today.setHours(0, 0, 0, 0) // Resetear horas para comparación
 
 // Composable de horarios (backend)
-const { getActiveSchedules, loadSchedules, createRangoOnDate, createFechaIfNeeded, deleteRangoOnDate, updateRangoOnDate } = useHorariosAdmin()
+const { getActiveSchedules, loadSchedules, createHorarios, createFechaIfNeeded, deleteRangoOnDate, updateRangoOnDate,
+  selectedDaysComposable,
+  selectDaysComposable,
+  schedulesByDayComposable,
+  unselectDaysComposable,
+  editHorarios,
+  deleteHorarios
+ } = useHorariosAdmin()
 
 // Lista de horarios (UI)
 const scheduleList = ref<any[]>([])
@@ -290,6 +309,7 @@ const previousMonth = () => {
     1
   )
   clearSelection()
+  unselectDaysComposable(selectedDaysComposable.value)
 }
 
 const nextMonth = () => {
@@ -299,10 +319,34 @@ const nextMonth = () => {
     1
   )
   clearSelection()
+  unselectDaysComposable(selectedDaysComposable.value)
+}
+
+const handleDateClick = (date: any) => {
+  console.log('handleDateClick called', {
+    date: date.value,
+    isPast: date.isPast,
+    hasDragged: hasDragged.value,
+    isDragging: isDragging.value
+  })
+  
+  if (date.isPast) {
+    console.log('Date is past, returning')
+    return
+  }
+  
+  if (hasDragged.value) {
+    console.log('Has dragged, returning')
+    return
+  }
+  
+  console.log('Calling selectDate')
+  selectDate(date)
 }
 
 const selectDate = (date: any) => {
-  if (date.isPast || isDragging.value) return
+  console.log('selectDate', date)
+  if (date.isPast) return
   
   // Click normal: seleccionar/deseleccionar una fecha
   const existingIndex = selectedDates.value.findIndex(selectedDate => 
@@ -311,29 +355,32 @@ const selectDate = (date: any) => {
   
   if (existingIndex !== -1) {
     selectedDates.value.splice(existingIndex, 1)
+    unselectDaysComposable([date.value])
   } else {
     selectedDates.value.push(new Date(date.value))
+    selectDaysComposable([date.value])
   }
 }
 
 const startDrag = (date: any) => {
+  console.log('startDrag called', date.value)
   if (date.isPast) return
   
   isDragging.value = true
+  hasDragged.value = false
   dragStartDate.value = new Date(date.value)
   
-  // Seleccionar la fecha inicial si no está seleccionada
-  const existingIndex = selectedDates.value.findIndex(selectedDate => 
-    selectedDate.toDateString() === date.value.toDateString()
-  )
-  
-  if (existingIndex === -1) {
-    selectedDates.value.push(new Date(date.value))
-  }
+  // NO seleccionar automáticamente en mousedown para evitar interferencias
 }
 
 const handleDrag = (date: any) => {
   if (!isDragging.value || !dragStartDate.value || date.isPast) return
+  
+  // Solo marcar como drag si hay movimiento real
+  if (date.value.getTime() !== dragStartDate.value.getTime()) {
+    hasDragged.value = true
+    console.log('Real drag detected')
+  }
   
   // Seleccionar todas las fechas entre la fecha inicial y la actual
   let startDate = new Date(dragStartDate.value)
@@ -346,22 +393,104 @@ const handleDrag = (date: any) => {
     endDate = temp
   }
   
-  // Limpiar selección actual
-  selectedDates.value = []
-  
-  // Agregar todas las fechas en el rango
+  // Crear array de fechas del rango de drag
+  const dragRangeDates: Date[] = []
   const currentDate = new Date(startDate)
   while (currentDate <= endDate) {
     if (currentDate >= today) { // Solo fechas futuras
-      selectedDates.value.push(new Date(currentDate))
+      dragRangeDates.push(new Date(currentDate))
     }
     currentDate.setDate(currentDate.getDate() + 1)
   }
+  
+  // Agregar las fechas del rango de drag al composable (sin limpiar selección previa)
+  selectDaysComposable(dragRangeDates)
+  
+  // Sincronizar selectedDates.value con el composable
+  selectedDates.value = [...selectedDaysComposable.value]
 }
 
-const endDrag = () => {
+const handleMouseUp = (date: any) => {
+  console.log('handleMouseUp called', date.value, 'hasDragged:', hasDragged.value)
+  
+  // Si no hubo drag, ejecutar click
+  if (!hasDragged.value && !date.isPast) {
+    console.log('No drag detected, calling selectDate')
+    selectDate(date)
+  }
+  
+  // Reset flags inmediatamente
+  console.log('Resetting flags')
   isDragging.value = false
   dragStartDate.value = null
+  hasDragged.value = false
+}
+
+
+// Función para agrupar timeSlots consecutivos de 30 minutos
+const groupTimeSlots = (timeSlots: any[]) => {
+  if (!timeSlots || timeSlots.length === 0) return []
+  
+  // Ordenar por tiempo de inicio
+  const sortedSlots = [...timeSlots].sort((a, b) => a.time.localeCompare(b.time))
+  
+  const groups: any[] = []
+  let currentGroup: any = null
+  
+  for (const slot of sortedSlots) {
+    if (!currentGroup) {
+      // Crear nuevo grupo
+      currentGroup = {
+        id: `group-${slot.id}`,
+        startTime: slot.time,
+        endTime: slot.endTime || slot.time,
+        totalBookings: slot.currentBookings || 0,
+        totalCapacity: slot.maxCapacity || 0,
+        slots: [slot]
+      }
+    } else {
+      // Verificar si el slot actual es consecutivo (30 min después del último)
+      const lastEndTime = currentGroup.endTime
+      const currentStartTime = slot.time
+      
+      if (isConsecutiveTime(lastEndTime, currentStartTime)) {
+        // Agregar al grupo actual
+        currentGroup.endTime = slot.endTime || slot.time
+        currentGroup.totalBookings += slot.currentBookings || 0
+        currentGroup.totalCapacity += slot.maxCapacity || 0
+        currentGroup.slots.push(slot)
+      } else {
+        // Finalizar grupo actual y crear nuevo
+        groups.push(currentGroup)
+        currentGroup = {
+          id: `group-${slot.id}`,
+          startTime: slot.time,
+          endTime: slot.endTime || slot.time,
+          totalBookings: slot.currentBookings || 0,
+          totalCapacity: slot.maxCapacity || 0,
+          slots: [slot]
+        }
+      }
+    }
+  }
+  
+  // Agregar el último grupo
+  if (currentGroup) {
+    groups.push(currentGroup)
+  }
+  
+  return groups
+}
+
+// Función auxiliar para verificar si dos tiempos son consecutivos (30 min)
+const isConsecutiveTime = (endTime: string, startTime: string): boolean => {
+  const [endHour, endMin] = endTime.split(':').map(Number)
+  const [startHour, startMin] = startTime.split(':').map(Number)
+  
+  const endMinutes = endHour * 60 + endMin
+  const startMinutes = startHour * 60 + startMin
+  
+  return startMinutes === endMinutes
 }
 
 const removeSelectedDate = (date: Date) => {
@@ -370,11 +499,13 @@ const removeSelectedDate = (date: Date) => {
   )
   if (index !== -1) {
     selectedDates.value.splice(index, 1)
+    unselectDaysComposable([date])
   }
 }
 
 const clearSelection = () => {
   selectedDates.value = []
+  unselectDaysComposable([])
 }
 
 const getDateClass = (date: any) => {
@@ -411,8 +542,8 @@ const openHorarioModalFor = (date: Date) => {
   modalHorario.open({
     selectedDate: date,
     onSave: (data: any) => {
-      handleSaveHorarioForDate(date, data)
-    }
+      handleSaveHorarioForSelectedDates(data)
+    } 
   })
 }
 
@@ -431,19 +562,24 @@ const generateSchedulesForDates = async (dates: Date[], data: any) => {
       showError('Falta contenedor', 'No se encontró el ID de contenedor en la ruta.')
       return
     }
-    // Crear un único rango por fecha indicada en backend (sin segmentar)
+    console.log('data', data)
+    console.log('dates', dates)
+    const dataToSend={
+      dayData:[],
+      idContenedor:contId
+    }
     for (const date of dates) {
       const dateKey = date.toISOString().split('T')[0]
-      await createRangoOnDate(contId, dateKey, {
-        start_time: String(data.startTime),
-        end_time: String(data.endTime),
-        delivery_count: Number(data.maxBookings) || 1
-      })
+      
+      const dayData:dayData={
+        day:dateKey,
+        startTime:data.startTime,
+        endTime:data.endTime,
+        maxBookings:data.maxBookings
+      }
+      dataToSend.dayData.push(dayData)
     }
-    // Recargar desde backend
-    await loadSchedules(contId)
-    refreshScheduleListFromComposable()
-    showSuccess('Horarios creados', `Se han creado horarios para ${dates.length} fecha(s).`)
+    return dataToSend
   } catch (error: any) {
     const msg = error?.data?.message || error?.message || 'No se pudieron crear los horarios'
     showError('No se pudo crear el horario', msg)
@@ -453,48 +589,78 @@ const generateSchedulesForDates = async (dates: Date[], data: any) => {
 // Handler para crear horarios sobre las fechas seleccionadas (botón)
 const handleSaveHorarioForSelectedDates = async (data: any) => {
   if (selectedDates.value.length === 0) return
-  await generateSchedulesForDates(selectedDates.value, data)
-  clearSelection()
+  console.log('handleSaveHorarioForSelectedDates', data)
+  const dataToSend = await generateSchedulesForDates(selectedDates.value, data)
+  console.log('dataToSend', dataToSend)
+  if (dataToSend) {
+    await withSpinner(async () => {
+      const response = await createHorarios(dataToSend)
+      if (response.success) {
+        clearSelection()
+        unselectDaysComposable(selectedDaysComposable.value)
+        await loadSchedules(dataToSend.idContenedor)
+        showSuccess('Horarios creados', 'Los horarios se han creado correctamente')
+      }
+    })    
+  }
 }
 
-// Handler para crear horarios sobre una fecha específica (click en día)
-const handleSaveHorarioForDate = async (date: Date, data: any) => {
-  await generateSchedulesForDates([date], data)
-}
 
-// Editar un horario existente
-const editSchedule = (schedule: any) => {
+
+// Editar un grupo de timeSlots
+const editTimeSlotGroup = (timeSlotGroup: any) => {
+  console.log('editTimeSlotGroup', timeSlotGroup)
   const contId = getContenedorId()
   if (!contId) {
     showError('Falta contenedor', 'No se encontró el ID de contenedor en la ruta.')
     return
   }
-  if (!schedule?.rangeId) {
-    showError('Edición no disponible', 'No se encontró el identificador del rango a editar.')
+  
+  // Usar el primer slot para obtener la fecha
+  const firstSlot = timeSlotGroup.slots[0]
+  if (!firstSlot) {
+    showError('Error', 'No se encontró información del horario.')
     return
   }
-  // Fecha del schedule
-  const [year, month, day] = schedule.date.split('-').map((n: string) => Number(n))
+  
+  // Obtener fecha del schedule (asumiendo que está en el contexto del schedule)
+  const schedule = schedulesByDayComposable.value.find(s => 
+    s.timeSlots.some(ts => ts.id === firstSlot.id)
+  )
+  
+  if (!schedule) {
+    showError('Error', 'No se encontró el schedule correspondiente.')
+    return
+  }
+  
+  // Extraer fecha del ID del schedule (formato: sch-YYYY-MM-DD)
+  const dateStr = schedule.id.replace('sch-', '')
+  const [year, month, day] = dateStr.split('-').map((n: string) => Number(n))
   const selDate = new Date(year, (month - 1), day)
 
   modalHorario.open({
     selectedDate: selDate,
-    initialStartTime: schedule.startTime,
-    initialEndTime: schedule.endTime,
-    initialMaxBookings: schedule.maxBookings,
+    initialStartTime: timeSlotGroup.startTime,
+    initialEndTime: timeSlotGroup.endTime,
+    initialMaxBookings: timeSlotGroup.totalCapacity,
     mode: 'edit',
     submitLabel: 'Guardar Cambios',
     onSave: async (data: any) => {
       try {
-        // Asegurar idFecha para esta fecha
-        const idFecha = await createFechaIfNeeded(contId, schedule.date)
-        await updateRangoOnDate(contId, idFecha, Number(schedule.rangeId), {
-          start_time: String(data.startTime),
-          end_time: String(data.endTime),
-          delivery_count: Number(data.maxBookings) || 1
-        })
-        await loadSchedules(contId)
-        refreshScheduleListFromComposable()
+        //send all slots of timeSlotGroup and generate schedules for dates
+        const dataToSend = await generateSchedulesForDates(selectedDates.value, data)
+        console.log('dataToSend', dataToSend)
+        if (dataToSend) {
+          await withSpinner(async () => {
+            const response = await editHorarios(dataToSend,timeSlotGroup.slots)
+            if (response.success) {
+            clearSelection()
+            await loadSchedules(dataToSend.idContenedor)
+            showSuccess('Horarios creados', 'Los horarios se han creado correctamente')
+          }
+          }, 'Guardando...')
+         
+        }
         showSuccess('Horario actualizado', 'Los cambios se guardaron correctamente.')
       } catch (err: any) {
         const msg = err?.data?.message || err?.message || 'No se pudo actualizar el horario'
@@ -502,6 +668,31 @@ const editSchedule = (schedule: any) => {
       }
     }
   })
+}
+
+// Eliminar un grupo de timeSlots
+const deleteTimeSlotGroup = (timeSlotGroup: any) => {
+  showConfirmation(
+    'Confirmar eliminación',
+    `¿Está seguro de eliminar el horario ${timeSlotGroup.startTime} - ${timeSlotGroup.endTime}?`,
+    async () => {
+      try {
+       //send container id and time slots to delete
+       const dataToSend = {
+        idContenedor: getContenedorId(),  
+        timeSlots: timeSlotGroup.slots
+       }
+       const response = await deleteHorarios(dataToSend)
+       if (response.success) {
+        clearSelection()
+        await loadSchedules(dataToSend.idContenedor)
+       }
+        showSuccess('Horario eliminado', 'El horario fue eliminado correctamente.')
+      } catch (err: any) {
+        showError('Error', err?.message || 'No se pudo eliminar el horario.')
+      }
+    }
+  )
 }
 
 
@@ -525,8 +716,7 @@ onMounted(async () => {
     }
   }
 
-  // Agregar eventos globales para drag & drop
-  document.addEventListener('mouseup', endDrag)
+  // Eventos globales removidos - se manejan en el botón
 })
 
 // Si cambia la fuente (por ejemplo, recarga), actualizamos la lista plana

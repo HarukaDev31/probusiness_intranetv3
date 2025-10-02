@@ -6,7 +6,8 @@ export const useHorariosAdmin = () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const lastFechaByDateKey = ref<Record<string, number>>({}) // YYYY-MM-DD -> idFecha
-
+  const selectedDaysComposable=ref<Date[]>([])
+  const schedulesByDayComposable=ref<ScheduleConfig[]>([])
   // Cargar horarios disponibles
   // Permite opcionalmente pasar el id del contenedor para traer los horarios reales desde backend
   const loadSchedules = async (idContenedor?: number) => {
@@ -29,9 +30,14 @@ export const useHorariosAdmin = () => {
             maxCapacity: Number(s.capacity ?? s.delivery_count) ?? undefined,
             currentBookings: Number(s.assigned) ?? 0
           }))
+          //format date to long name of day month and year
+          // Parse date string correctly to avoid timezone issues
+          const [year, month, day] = date.split('-').map(Number)
+          const dateObj = new Date(year, month - 1, day) // month is 0-indexed
+          const dateLong = dateObj.toLocaleDateString('es-PE', { weekday: 'long', month: 'long', day: 'numeric' })
           return {
             id: `sch-${date}`,
-            name: `Horario ${date}`,
+            name: `${dateLong}`,
             description: `Horarios disponibles para ${date}`,
             timeSlots: slots.sort((a, b) => a.time.localeCompare(b.time)),
             isActive: true,
@@ -52,19 +58,39 @@ export const useHorariosAdmin = () => {
       loading.value = false
     }
   }
-
+  const selectDaysComposable = async (days: Date[]) => {
+    // Agregar días sin duplicados
+    for (const day of days) {
+      const dayString = day.toISOString().split('T')[0]
+      const exists = selectedDaysComposable.value.some(existingDay => 
+        existingDay.toISOString().split('T')[0] === dayString
+      )
+      if (!exists) {
+        selectedDaysComposable.value.push(new Date(day))
+      }
+    }
+    //filter schedules by selected days
+    schedulesByDayComposable.value = schedules.value.filter(s => selectedDaysComposable.value.some(day => s.id.includes(day.toISOString().split('T')[0])))
+    
+  }   
+  const unselectDaysComposable = async (days: Date[]) => {
+    //remove days from selectedDaysComposable
+    selectedDaysComposable.value = selectedDaysComposable.value.filter(day => !days.some(d => d.toISOString().split('T')[0] === day.toISOString().split('T')[0]))
+    //filter schedules by selected days
+    schedulesByDayComposable.value = schedules.value.filter(s => selectedDaysComposable.value.some(day => s.id.includes(day.toISOString().split('T')[0])))
+  }
   // Crear nueva configuración de horarios
   const createSchedule = async (formData: ScheduleFormData) => {
     try {
       loading.value = true
       error.value = null
-      
+
       // Simular llamada a API - reemplazar con llamada real
       const response = await $fetch<{ data: ScheduleConfig }>('/api/schedules', {
         method: 'POST',
         body: formData
       })
-      
+
       schedules.value.push(response.data)
       return response
     } catch (err: any) {
@@ -81,18 +107,18 @@ export const useHorariosAdmin = () => {
     try {
       loading.value = true
       error.value = null
-      
+
       // Simular llamada a API - reemplazar con llamada real
       const response = await $fetch<{ data: ScheduleConfig }>(`/api/schedules/${id}`, {
         method: 'PUT',
         body: formData
       })
-      
+
       const index = schedules.value.findIndex(s => s.id === id)
       if (index !== -1) {
         schedules.value[index] = response.data
       }
-      
+
       return response
     } catch (err: any) {
       error.value = err.message || 'Error al actualizar horario'
@@ -108,12 +134,12 @@ export const useHorariosAdmin = () => {
     try {
       loading.value = true
       error.value = null
-      
+
       // Simular llamada a API - reemplazar con llamada real
       await $fetch(`/api/schedules/${id}`, {
         method: 'DELETE'
       })
-      
+
       schedules.value = schedules.value.filter(s => s.id !== id)
     } catch (err: any) {
       error.value = err.message || 'Error al eliminar horario'
@@ -129,15 +155,15 @@ export const useHorariosAdmin = () => {
     try {
       loading.value = true
       error.value = null
-      
+
       const schedule = schedules.value.find(s => s.id === id)
       if (!schedule) throw new Error('Horario no encontrado')
-      
+
       // Simular llamada a API - reemplazar con llamada real
       const response = await $fetch(`/api/schedules/${id}/toggle`, {
         method: 'PATCH'
       })
-      
+
       schedule.isActive = !schedule.isActive
       return response
     } catch (err: any) {
@@ -152,7 +178,7 @@ export const useHorariosAdmin = () => {
   // Generar horarios por defecto
   const generateDefaultTimeSlots = (): TimeSlotFormData[] => {
     const slots: TimeSlotFormData[] = []
-    
+
     // Horarios de mañana
     for (let hour = 8; hour < 12; hour++) {
       slots.push(
@@ -160,7 +186,7 @@ export const useHorariosAdmin = () => {
         { time: `${hour.toString().padStart(2, '0')}:30`, isAvailable: true, maxCapacity: 5 }
       )
     }
-    
+
     // Horarios de tarde
     for (let hour = 14; hour < 18; hour++) {
       slots.push(
@@ -168,14 +194,14 @@ export const useHorariosAdmin = () => {
         { time: `${hour.toString().padStart(2, '0')}:30`, isAvailable: true, maxCapacity: 5 }
       )
     }
-    
+
     // Horarios de noche (como en el ejemplo)
     slots.push(
       { time: '19:00', isAvailable: true, maxCapacity: 5 },
       { time: '19:30', isAvailable: true, maxCapacity: 5 },
       { time: '20:30', isAvailable: true, maxCapacity: 5 }
     )
-    
+
     return slots
   }
 
@@ -217,7 +243,49 @@ export const useHorariosAdmin = () => {
   ) => {
     await EntregaService.updateRango(idContenedor, idFecha, idRango, payload)
   }
-
+  const editHorarios = async (data: any, slots: any) => {
+    try {
+      loading.value = true
+      error.value = null
+      const response = await EntregaService.editHorarios(data, slots)
+      return response
+    } catch (err: any) {
+      error.value = err.message || 'Error al editar horarios'
+      console.error('Error editing horarios:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+    
+  }
+  const createHorarios = async (data: any) => {
+    try {
+      loading.value = true
+      error.value = null
+      const response = await EntregaService.createHorarios(data)
+      return response
+    } catch (err: any) {
+      error.value = err.message || 'Error al crear horarios'
+      console.error('Error creating horarios:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+  const deleteHorarios = async (data: { idContenedor: number, timeSlots: any[] }) => {
+    try {
+      loading.value = true
+      error.value = null
+      const response = await EntregaService.deleteHorarios(data)
+      return response
+    } catch (err: any) {
+      error.value = err.message || 'Error al eliminar horarios'
+      console.error('Error deleting horarios:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
   return {
     schedules: readonly(schedules),
     loading: readonly(loading),
@@ -229,23 +297,19 @@ export const useHorariosAdmin = () => {
     toggleScheduleStatus,
     generateDefaultTimeSlots,
     getActiveSchedules,
+    createHorarios,
     // new helpers
     createFechaIfNeeded,
     createRangoOnDate,
     deleteRangoOnDate,
-    updateRangoOnDate
+    updateRangoOnDate,
+    selectedDaysComposable,
+    selectDaysComposable,
+    unselectDaysComposable,
+    schedulesByDayComposable,
+    editHorarios,
+    deleteHorarios
   }
 
-  return {
-    schedules: readonly(schedules),
-    loading: readonly(loading),
-    error: readonly(error),
-    loadSchedules,
-    createSchedule,
-    updateSchedule,
-    deleteSchedule,
-    toggleScheduleStatus,
-    generateDefaultTimeSlots,
-    getActiveSchedules
-  }
+
 }

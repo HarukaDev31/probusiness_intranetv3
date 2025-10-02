@@ -3,7 +3,7 @@ import { BaseService } from '~/services/base/BaseService'
 import type { EntregaResponse } from '../../../types/cargaconsolidada/entrega/entrega'
 import type { TimeSlot } from '~/types/horarios'
 
-export class EntregaService extends BaseService {
+export class  EntregaService extends BaseService {
   protected static baseUrl = '/api/carga-consolidada/contenedor/entrega'
 
   static async getEntregas(id: number, params: any): Promise<EntregaResponse> {
@@ -300,7 +300,7 @@ export class EntregaService extends BaseService {
     try {
       const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/send-message/${id_cotizacion}`, {
         method: 'POST',
-      
+
       })
       return response
     } catch (error) {
@@ -328,12 +328,12 @@ export class EntregaService extends BaseService {
       console.log('📤 Iniciando upload de conformidad...')
       console.log('FormData:', formData)
       console.log('URL completa:', `${EntregaService.baseUrl}/entregas/conformidad`)
-      
+
       //print formData
       for (let [key, value] of formData.entries()) {
         console.log(`${key}:`, value)
-      } 
-      
+      }
+
       console.log('🚀 Enviando petición...')
       const response = await this.apiCall<{ success: boolean; data: { id: number; photo_1: string; photo_2: string } }>(`${this.baseUrl}/entregas/conformidad`, {
         method: 'POST',
@@ -389,12 +389,48 @@ export class EntregaService extends BaseService {
       if (params?.search) queryParams.append('search', params.search)
       if (params?.filters) queryParams.append('filters', JSON.stringify(params.filters))
       const qs = queryParams.toString()
-      
+
       return await this.apiCall(`${this.baseUrl}/delivery/all${qs ? `?${qs}` : ''}`, {
         method: 'GET'
       })
     } catch (error) {
       console.error('Error al obtener todos los datos de delivery:', error)
+      throw error
+    }
+  }
+  static async createHorarios(data: any): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/horarios`, {
+        method: 'POST',
+        body: data
+      })
+    } catch (error) {
+      console.error('Error al crear horarios:', error)
+      throw error
+    }
+  }
+  static async editHorarios(data: any, slots: any): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/horarios/edit`, {
+        method: 'POST',
+        body: {
+          days: data,
+          ranges: slots
+        }
+      })
+    } catch (error) {
+      console.error('Error al editar horarios:', error)
+      throw error
+    }
+  }
+  static async deleteHorarios(data: { idContenedor: number, timeSlots: any[] }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/horarios/delete`, {
+        method: 'DELETE',
+        body: data
+      })
+    } catch (error) {
+      console.error('Error al eliminar horarios:', error)
       throw error
     }
   }

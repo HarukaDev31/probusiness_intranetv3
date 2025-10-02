@@ -24,24 +24,15 @@
           <UFormField label="Hora de fin" required class="w-full">
             <USelect
               v-model="formState.endTime"
-              :items="timeOptions"
+              :items="endTimeOptions"
               placeholder="Seleccionar hora"
-              :disabled="loading"
+              :disabled="loading || !formState.startTime"
               class="w-full"
             />
           </UFormField>
         </div>
-    
-        <UFormField label="Cantidad de reservas" required class="w-full">
-          <UInput
-            v-model.number="formState.maxBookings"
-            class="w-full"
-            type="number"
-            min="1"
-            placeholder="5"
-            :disabled="loading"
-          />
-        </UFormField>
+  
+        
       </UForm>
     </template>
     
@@ -101,8 +92,8 @@ const formState = ref({
 // Generar opciones de tiempo cada 15 minutos
 const timeOptions = computed(() => {
   const options = []
-  for (let hour = 0; hour < 24; hour++) {
-    for (let minute = 0; minute < 60; minute += 15) {
+  for (let hour = 7; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
       const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
       options.push({
         label: timeString,
@@ -111,6 +102,23 @@ const timeOptions = computed(() => {
     }
   }
   return options
+})
+
+// Opciones de hora de fin filtradas según la hora de inicio seleccionada
+const endTimeOptions = computed(() => {
+  if (!formState.value.startTime) {
+    return timeOptions.value
+  }
+  
+  const startTime = formState.value.startTime
+  const [startHour, startMinute] = startTime.split(':').map(Number)
+  const startMinutes = startHour * 60 + startMinute
+  
+  return timeOptions.value.filter(option => {
+    const [hour, minute] = option.value.split(':').map(Number)
+    const optionMinutes = hour * 60 + minute
+    return optionMinutes > startMinutes
+  })
 })
 
 // Computed properties
@@ -172,7 +180,7 @@ const handleSubmit = async () => {
       date: props.selectedDate!.toISOString().split('T')[0],
       startTime: formState.value.startTime,
       endTime: formState.value.endTime,
-      maxBookings: formState.value.maxBookings
+      maxBookings:1,
     }
     
     emit('save', data)
@@ -191,6 +199,23 @@ watch(
   () => {
     if (props.selectedDate) {
       resetForm()
+    }
+  }
+)
+
+// Limpiar hora de fin si es menor o igual a la hora de inicio
+watch(
+  () => formState.value.startTime,
+  (newStartTime) => {
+    if (newStartTime && formState.value.endTime) {
+      const [startHour, startMinute] = newStartTime.split(':').map(Number)
+      const [endHour, endMinute] = formState.value.endTime.split(':').map(Number)
+      const startMinutes = startHour * 60 + startMinute
+      const endMinutes = endHour * 60 + endMinute
+      
+      if (endMinutes <= startMinutes) {
+        formState.value.endTime = ''
+      }
     }
   }
 )
