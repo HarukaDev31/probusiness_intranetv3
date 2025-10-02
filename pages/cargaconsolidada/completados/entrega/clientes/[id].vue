@@ -39,6 +39,10 @@
                 <label class="block text-[11px] font-medium text-gray-500 mb-1">CBM</label>
                 <UInput class="w-full" v-model="form.cbm_total_china" size="sm" disabled />
               </div>
+              <div class="md:col-span-2">
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Productos</label>
+                <UInput class="w-full" v-model="form.productos" size="sm" :disabled="!editable" />
+              </div>
               <div v-if="!isLima">
                 <label class="block text-[11px] font-medium text-gray-500 mb-1">Tipo</label>
                 <USelect class="w-full" :items="tipoReceptorOptions" v-model="form.r_type" size="sm" :disabled="!editable" placeholder="Seleccione" />
@@ -239,6 +243,7 @@ const form = ref<any>({
   tipo_entrega: 'Lima',
   qty_box_china: '',
   cbm_total_china: '',
+  productos: '',
 
   // Lima
   documento: '',
@@ -291,6 +296,8 @@ const handleSave = async () => {
   const addIf = (key: string, val: any) => {
     if (val !== undefined && val !== null && String(val) !== '') payloadForm[key] = val
   }
+  // Enviar productos siempre (permite limpiar el campo)
+  addIf('productos', form.value.productos)
   if (isLima.value) {
     // Lima
     addIf('voucher_doc', form.value.comp_documento)
@@ -547,6 +554,7 @@ onMounted(async () => {
     const d: any = entregaDetalle.value
     form.value.qty_box_china = d.qty_box_china || ''
     form.value.cbm_total_china = d.cbm_total_china || ''
+    form.value.productos = d.productos || ''
     form.value.nombre = d.import_name || ''
     form.value.documento = d.documento || ''
 

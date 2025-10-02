@@ -4,9 +4,10 @@
       icon="" :show-pagination="false" :current-page="currentPage" :total-pages="totalPages"
       :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
       :show-secondary-search="false" :show-filters="true" :filter-config="clientesFilterConfig" :show-export="false"
-      empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleClientesSearch"
-      @page-change="handleClientesPageChange" @items-per-page-change="handleClientesItemsPerPageChange"
-      @filter-change="handleClientesFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
+    empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleClientesSearch"
+    @page-change="handleClientesPageChange" @items-per-page-change="handleClientesItemsPerPageChange"
+    @filter-change="handleClientesFilterChange" @clear-filters="onClearClientesFilters"
+    :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
   :previous-page-url="`/cargaconsolidada/abiertos/pasos/${id}`">
       <template #actions>
         <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3" icon="i-heroicons-calendar"
@@ -17,8 +18,8 @@
           <div class="flex items-center justify-between gap-3">
             <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
             <div class="flex gap-2">
-              <UButton size="xs" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
-              <UButton size="xs" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
+              <UButton size="lg" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
+              <UButton size="lg" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
             </div>
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
@@ -38,8 +39,8 @@
           <div class="flex items-center justify-between gap-3">
             <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
             <div class="flex gap-2">
-              <UButton size="xs" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
-              <UButton size="xs" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
+              <UButton size="lg" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
+              <UButton size="lg" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
             </div>
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
@@ -54,8 +55,8 @@
           <div class="flex items-center justify-between gap-3">
             <SectionHeader :title="`Delivery #${carga}`" :headers="headers" :loading="loadingHeaders" />
             <div class="flex gap-2">
-              <UButton size="xs" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
-              <UButton size="xs" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
+              <UButton size="lg" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
+              <UButton size="lg" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
             </div>
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
@@ -111,6 +112,8 @@ const {
   handleClientesFilterChange,
   handleClientesPageChange,
   handleClientesItemsPerPageChange,
+  clearClientesFilters,
+  clearFilters,
   headers,
   carga,
   loadingHeaders,
@@ -192,7 +195,7 @@ const clientesColumns = ref<TableColumn<any>[]>([
   {
     accessorKey: 'entregado',
     header: 'Entregado',
-    cell: ({ row }) => h(UBadge, { label: row.original.voucher_doc ? 'Si' : 'No', color: row.original.voucher_doc ? 'success' : 'error' })
+    cell: ({ row }) => h(UBadge, { label: row.original.conformidad_count ? 'Si' : 'No', color: row.original.conformidad_count ? 'success' : 'error' })
   },
   {
     accessorKey: 'estado_cotizacion_final',
@@ -293,7 +296,7 @@ const entregasColumns = ref<TableColumn<any>[]>([
   },
   {
     id: 'estado', header: 'Estado', cell: ({ row }) => {
-      const estado = row.original.estado_entrega || (row.original.entregado ? 'ENTREGADO' : 'PENDIENTE')
+      const estado = row.original.estado_entrega || (row.original.conformidad_count ? 'ENTREGADO' : 'PENDIENTE')
       const color = estado === 'ENTREGADO' ? 'success' : estado === 'PROGRAMADA' ? 'warning' : 'neutral'
       return h(UBadge, { label: estado, color, variant: 'soft' })
     }
@@ -319,19 +322,25 @@ const goToClienteDetalle = (data: any) => {
   navigateTo(`/cargaconsolidada/abiertos/entrega/clientes/${cid}`)
 }
 const handleEnviarMensaje = (id_cotizacion: number) => {
-  try {
-    withSpinner(async () => {
-      const response = await sendMessageForCotizacion(id_cotizacion)
-      if (response?.success) {
-        showSuccess('Mensaje enviado', 'Mensaje enviado correctamente')
-      } else {
-        showError('Error', response?.error || 'No se pudo enviar el mensaje')
+  showConfirmation(
+    'Confirmar envío',
+    '¿Deseas enviar el mensaje al cliente ahora?',
+    () => {
+      try {
+        withSpinner(async () => {
+          const response = await sendMessageForCotizacion(id_cotizacion)
+          if (response?.success) {
+            showSuccess('Mensaje enviado', 'Mensaje enviado correctamente')
+          } else {
+            showError('Error', response?.error || 'No se pudo enviar el mensaje')
+          }
+        }, 'Enviando mensaje...')
+      } catch (error) {
+        showError('Error', (error as any)?.message || String(error))
       }
-    }, 'Enviando mensaje...')
-  } catch (error) {
-    showError('Error', error as string)
-  }
-
+    },
+    () => {}
+  )
 }
 const handleEliminarRegistro = (row: any) => {
   const registroId = row?.id_cotizacion || row?.id
@@ -397,6 +406,11 @@ const handleDeletePago = (row: any, pagoId: number) => {
       }
     }, 'Eliminando pago...')
   })
+}
+
+// Clear filters from DataTable panel
+const onClearClientesFilters = () => {
+  clearClientesFilters()
 }
 const deliveryColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'nro', header: 'N', cell: ({ row }) => row.index + 1 },

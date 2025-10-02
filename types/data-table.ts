@@ -95,6 +95,7 @@ export interface DataTableEmits {
   'update:itemsPerPage': [value: number]
   'export': []
   'filter-change': [filterType: string, value: string]
+  'clear-filters': []
   'page-change': [page: number]
   'items-per-page-change': [limit: number]
   'retry': []

@@ -5,7 +5,7 @@
       :subtitle="clienteNombre || ''"
       icon=""
       :hide-back-button="false"
-      @back="navigateTo(`/cargaconsolidada/abiertos/entrega/${contenedorId}`)"
+      @back="router.back()"
     >
       <template #actions>
         <div class="flex gap-2">
@@ -38,6 +38,10 @@
               <div>
                 <label class="block text-[11px] font-medium text-gray-500 mb-1">CBM</label>
                 <UInput class="w-full" v-model="form.cbm_total_china" size="sm" disabled />
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Productos</label>
+                <UInput class="w-full" v-model="form.productos" size="sm" :disabled="!editable" />
               </div>
               <div v-if="!isLima">
                 <label class="block text-[11px] font-medium text-gray-500 mb-1">Tipo</label>
@@ -200,7 +204,9 @@ import PageHeader from '~/components/PageHeader.vue'
 import FileUploader from '@/components/commons/FileUploader.vue'
 import ImageModal from '~/components/ImageModal.vue'
 import { LocationService } from '@/services/commons/locationService'
+import { useRouter } from 'vue-router'
 import { EntregaService } from '@/services/cargaconsolidada/entrega/entregaService'
+const router = useRouter()
 
 // Props/params
 const route = useRoute()
@@ -236,6 +242,7 @@ const form = ref<any>({
   tipo_entrega: 'Lima',
   qty_box_china: '',
   cbm_total_china: '',
+  productos: '',
 
   // Lima
   documento: '',
@@ -288,6 +295,8 @@ const handleSave = async () => {
   const addIf = (key: string, val: any) => {
     if (val !== undefined && val !== null && String(val) !== '') payloadForm[key] = val
   }
+  // Campos comunes: siempre enviar productos (incluso vacío para permitir limpiar)
+  addIf('productos', form.value.productos)
   if (isLima.value) {
     // Lima
     addIf('voucher_doc', form.value.comp_documento)
@@ -543,6 +552,7 @@ onMounted(async () => {
     const d: any = entregaDetalle.value
     form.value.qty_box_china = d.qty_box_china || ''
     form.value.cbm_total_china = d.cbm_total_china || ''
+    form.value.productos = d.productos || ''
     form.value.nombre = d.import_name || ''
     form.value.documento = d.documento || ''
 
