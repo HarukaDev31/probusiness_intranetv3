@@ -121,7 +121,8 @@ const {
   updateImporteDelivery,
   registrarPagoDelivery,
   deletePagoDelivery,
-  sendMessageForCotizacion
+  sendMessageForCotizacion,
+  deleteEntregaRegistro
 } = useEntrega()
 
 const activeTab = ref('clientes')
@@ -292,7 +293,7 @@ const entregasColumns = ref<TableColumn<any>[]>([
   },
   {
     id: 'estado', header: 'Estado', cell: ({ row }) => {
-      const estado = row.original.estado_entrega || (row.original.entregado ? 'ENTREGADO' : 'PENDIENTE')
+      const estado = row.original.estado_entrega || (row.original.conformidad_count ? 'ENTREGADO' : 'PENDIENTE')
       const color = estado === 'ENTREGADO' ? 'success' : estado === 'PROGRAMADA' ? 'warning' : 'neutral'
       return h(UBadge, { label: estado, color, variant: 'soft' })
     }
@@ -332,7 +333,25 @@ const handleEnviarMensaje = (id_cotizacion: number) => {
   }
 
 }
-const handleEliminarRegistro = (row: any) => { console.log('Eliminar registro completado', row.id_cotizacion) }
+const handleEliminarRegistro = (row: any) => {
+  const registroId = row?.id_cotizacion || row?.id
+  if (!registroId) return
+  showConfirmation('Confirmar eliminación', '¿Está seguro de eliminar este registro de entrega?', () => {
+    withSpinner(async () => {
+      try {
+        const res = await deleteEntregaRegistro(registroId)
+        if (res?.success) {
+          showSuccess('Eliminado', 'El registro de entrega fue eliminado correctamente')
+          await getEntregas(id)
+        } else {
+          showError('Error', res?.error || 'No se pudo eliminar el registro')
+        }
+      } catch (e: any) {
+        showError('Error', e?.message || 'No se pudo eliminar el registro')
+      }
+    }, 'Eliminando...')
+  })
+}
 
 onMounted(async () => {
   handleTabChange(tabs[0].value)

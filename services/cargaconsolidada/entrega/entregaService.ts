@@ -335,7 +335,7 @@ export class EntregaService extends BaseService {
       } 
       
       console.log('🚀 Enviando petición...')
-      const response = await this.apiCall(`${this.baseUrl}/entregas/conformidad`, {
+      const response = await this.apiCall<{ success: boolean; data: { id: number; photo_1: string; photo_2: string } }>(`${this.baseUrl}/entregas/conformidad`, {
         method: 'POST',
         body: formData
       })
@@ -349,7 +349,7 @@ export class EntregaService extends BaseService {
 
   static async updateConformidad(id: number, formData: FormData): Promise<{ success: boolean; data: { id: number; photo_1: string; photo_2: string } }> {
     try {
-      return await this.apiCall(`${this.baseUrl}/entregas/conformidad/${id}/update`, {
+      return await this.apiCall<{ success: boolean; data: { id: number; photo_1: string; photo_2: string } }>(`${this.baseUrl}/entregas/conformidad/${id}/update`, {
         method: 'POST',
         body: formData
       })
@@ -366,6 +366,18 @@ export class EntregaService extends BaseService {
       })
     } catch (error) {
       console.error('Error al eliminar conformidad:', error)
+      throw error
+    }
+  }
+  // --- ELIMINAR REGISTRO EN LISTA DE ENTREGAS ---
+  static async deleteEntregaRegistro(registroId: number): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      // Ajustar path si el backend expone otra ruta
+      return await this.apiCall(`${this.baseUrl}/entregas/detalle/${registroId}`, {
+        method: 'DELETE'
+      })
+    } catch (error) {
+      console.error('Error al eliminar registro de entrega:', error)
       throw error
     }
   }

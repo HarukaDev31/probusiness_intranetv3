@@ -7,7 +7,7 @@
       empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleClientesSearch"
       @page-change="handleClientesPageChange" @items-per-page-change="handleClientesItemsPerPageChange"
       @filter-change="handleClientesFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
-      :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
+  :previous-page-url="`/cargaconsolidada/abiertos/pasos/${id}`">
       <template #actions>
         <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3" icon="i-heroicons-calendar"
           @click="navigateTo(`/cargaconsolidada/completados/entrega/fechas-horarios/${id}`)" />
@@ -32,7 +32,7 @@
       empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleSearch"
       @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
       @filter-change="handleFilterChange" :hide-back-button="false" :show-primary-search="false" :show-body-top="true"
-      :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
+  :previous-page-url="`/cargaconsolidada/abiertos/pasos/${id}`">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <div class="flex items-center justify-between gap-3">
@@ -48,7 +48,7 @@
     </DataTable>
     <DataTable v-if="activeTab === 'delivery'" title="" :data="delivery" :columns="deliveryColumns" :loading="loading"
       icon="" :show-pagination="false" :hide-back-button="false" :show-primary-search="false" :show-body-top="true"
-      :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
+  :previous-page-url="`/cargaconsolidada/abiertos/pasos/${id}`">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <div class="flex items-center justify-between gap-3">
@@ -121,7 +121,8 @@ const {
   updateImporteDelivery,
   registrarPagoDelivery,
   deletePagoDelivery,
-  sendMessageForCotizacion
+  sendMessageForCotizacion,
+  deleteEntregaRegistro
 } = useEntrega()
 
 const activeTab = ref('clientes')
@@ -315,7 +316,7 @@ const goToClienteDetalle = (data: any) => {
     return
   }
   // Solo navegamos con el id de la cotización; el detalle obtendrá el id_contenedor desde la propia data.
-  navigateTo(`/cargaconsolidada/completados/entrega/clientes/${cid}`)
+  navigateTo(`/cargaconsolidada/abiertos/entrega/clientes/${cid}`)
 }
 const handleEnviarMensaje = (id_cotizacion: number) => {
   try {
@@ -332,7 +333,25 @@ const handleEnviarMensaje = (id_cotizacion: number) => {
   }
 
 }
-const handleEliminarRegistro = (row: any) => { console.log('Eliminar registro completado', row.id_cotizacion) }
+const handleEliminarRegistro = (row: any) => {
+  const registroId = row?.id_cotizacion || row?.id
+  if (!registroId) return
+  showConfirmation('Confirmar eliminación', '¿Está seguro de eliminar este registro de entrega?', () => {
+    withSpinner(async () => {
+      try {
+        const res = await deleteEntregaRegistro(registroId)
+        if (res?.success) {
+          showSuccess('Eliminado', 'El registro de entrega fue eliminado correctamente')
+          await getEntregas(id)
+        } else {
+          showError('Error', res?.error || 'No se pudo eliminar el registro')
+        }
+      } catch (e: any) {
+        showError('Error', e?.message || 'No se pudo eliminar el registro')
+      }
+    }, 'Eliminando...')
+  })
+}
 
 onMounted(async () => {
   handleTabChange(tabs[0].value)
