@@ -151,7 +151,7 @@ const handleCreateConsolidado = async (data: any) => {
         showSuccess('Carga consolidada creada correctamente', 'La carga consolidada se ha creado correctamente y ya está disponible en el sistema.')
         await getConsolidadoData()
     } catch (error) {
-        showError(error as string)
+        showError('Error al crear carga consolidada', error as string)
     }
 }
 const columns: TableColumn<any>[] = [
@@ -451,7 +451,7 @@ const handleDeleteCarga = async (id: number) => {
             }, 'Eliminando carga consolidada~.')
         })
     } catch (error) {
-        showError(error as string)
+        showError('Error al eliminar carga consolidada', error as string)
     }
 }
 

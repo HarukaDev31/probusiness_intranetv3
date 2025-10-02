@@ -581,6 +581,13 @@ const columnsDocumentacion: TableColumn<any>[] = [
         }
     },
     {
+        accessorKey: 'asesor',
+        header: 'Asesor',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('asesor')
+        }
+    },
+    {
         accessorKey: 'nombre',
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {

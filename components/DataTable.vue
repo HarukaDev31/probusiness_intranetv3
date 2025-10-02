@@ -57,10 +57,12 @@
                           }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
                     </div>
                   </div>
-                  <!-- Botón para cerrar filtros -->
-                  <div class="flex justify-end mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <UButton :label="translations.close" color="gray" variant="outline" size="sm" @click="showFiltersPanel = false"
-                      @click.stop />
+                  <!-- Botones para borrar y cerrar filtros -->
+                  <div class="flex justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 gap-2">
+                    <UButton :label="translations.clearFilters" color="warning" variant="soft" size="sm"
+                      icon="i-heroicons-x-mark" @click="handleClearFilters" @click.stop />
+                    <UButton :label="translations.close" color="gray" variant="outline" size="sm"
+                      @click="showFiltersPanel = false" @click.stop />
                   </div>
                 </div>
               </div>
@@ -197,6 +199,7 @@ const {
   isSelectOpen,
   filteredData,
   handleFilterChange,
+    handleClearFilters,
   handleSelectOpen,
   handleSelectClose,
   handleExport,
@@ -220,15 +223,15 @@ const translations = computed(() => {
     return {
       export: 'Export',
       filters: 'Filters',
+      clearFilters: 'Clear filters',
       close: 'Close',
       loading: 'Loading...',
       emptyTitle: 'No records',
       emptyMessage: 'There are no records to show',
-      showing: 'Showing',
+  showing: 'Showing',
       results: 'results',
       perPage: 'Showing per page',
       viewExcel: 'View products Excel',
-      showing: 'Showing',
       a: 'to',
       resultados: 'results',
       de: 'of',
@@ -238,15 +241,15 @@ const translations = computed(() => {
   return {
     export: 'Exportar',
     filters: 'Filtros',
+    clearFilters: 'Borrar filtros',
     close: 'Cerrar',
     loading: 'Cargando...',
     emptyTitle: 'No hay registros',
     emptyMessage: 'No hay registros',
-    showing: 'Mostrando',
+  showing: 'Mostrando',
     results: 'resultados',
     perPage: 'Mostrar:',
     viewExcel: 'Ver Excel de productos',
-    showing: 'Mostrando',
     a: 'a',
     resultados: 'resultados',
     de: 'de',

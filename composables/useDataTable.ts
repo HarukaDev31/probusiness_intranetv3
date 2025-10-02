@@ -30,6 +30,11 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
     emit('export')
   }
 
+  const handleClearFilters = () => {
+    emit('clear-filters')
+    showFiltersPanel.value = false
+  }
+
   const onPageChange = (page: number) => {
     emit('update:currentPage', page)
     emit('page-change', page)
@@ -109,6 +114,7 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
     handleFilterChange,
     handleSelectOpen,
     handleSelectClose,
+    handleClearFilters,
     handleExport,
     onPageChange,
     onItemsPerPageChange
