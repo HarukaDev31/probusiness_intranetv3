@@ -267,7 +267,10 @@ const {
   registrarPagoDelivery,
   deletePagoDelivery,
   getAllDeliveryData,
-  fetchDeliveryData
+  fetchDeliveryData,
+  updateFiltersDelivery,
+  clearFiltersDelivery,
+  cargasDisponiblesDelivery
 } = useEntrega()
 
 
@@ -349,6 +352,25 @@ const filterConfigCursos = computed(() => [
   }
 ])
 
+// Opciones de cargas desde el backend (cargas_disponibles)
+const cargasOptionsDelivery = computed(() => {
+  // Si hay cargas_disponibles en el composable, usarlas
+  if (cargasDisponiblesDelivery.value && Array.isArray(cargasDisponiblesDelivery.value) && cargasDisponiblesDelivery.value.length > 0) {
+    return [{ value: 'todos', label: 'Todas las cargas' }, ...cargasDisponiblesDelivery.value]
+  }
+  
+  // Fallback: derivar de los datos si no hay cargas_disponibles
+  const values = (deliveryData.value || []).map((it: any) => it.carga).filter((v: any) => v !== undefined && v !== null && String(v).trim() !== '')
+  const unique = Array.from(new Set(values.map((v: any) => String(v))))
+  unique.sort((a: string, b: string) => {
+    const na = Number(a)
+    const nb = Number(b)
+    if (!isNaN(na) && !isNaN(nb)) return na - nb
+    return a.localeCompare(b, undefined, { numeric: true })
+  })
+  return [{ value: 'todos', label: 'Todas las cargas' }, ...unique.map((v: string) => ({ value: String(v), label: `#${v}` }))]
+})
+
 const filterConfigDelivery = computed(() => [
   {
     key: 'estado',
@@ -371,6 +393,13 @@ const filterConfigDelivery = computed(() => [
       { value: 'LIMA', label: 'Lima' },
       { value: 'PROVINCIA', label: 'Provincia' }
     ]
+  },
+  {
+    key: 'carga',
+    label: 'Carga',
+    type: 'select',
+    placeholder: 'Seleccionar carga',
+    options: cargasOptionsDelivery.value
   },
   {
     key: 'fecha_inicio',
@@ -721,7 +750,7 @@ const deliveryColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => {
       const monto = row.getValue('total_pago_delivery')
       return h('div', { class: 'flex items-center space-x-1' }, [
-        h('span', {}, formatCurrency(monto)),
+        h('span', {}, formatCurrency(monto,'PEN')),
         h('UIcon', {
           name: 'i-heroicons-chevron-down',
           class: 'w-4 h-4 text-gray-400'
@@ -735,7 +764,7 @@ const deliveryColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => {
       const total = row.original.pagado
       return h('div', { class: 'flex items-center space-x-1' }, [
-        h('span', {}, formatCurrency(total)),
+        h('span', {}, formatCurrency(total,'PEN')),
         h('UIcon', {
           name: 'i-heroicons-chevron-up',
           class: 'w-4 h-4 text-gray-400'
@@ -747,14 +776,14 @@ const deliveryColumns: TableColumn<any>[] = [
     accessorKey: 'pagos_detalle',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
-      const pagos = row.getValue('pagos_detalle') ?? []
+      const pagos = row.original.pagos_details ?? []
       return h(PagoGrid,
         {
           numberOfPagos: pagos.length,
           pagoDetails: pagos,
           showDelete: false,
           clienteNombre: row.original.nombre,
-          currency: 'USD',
+          currency: 'PEN',
           onSave: (data: any) => handleRegistrarPagoDelivery(row.original, data),
           onDelete: (pagoId: number) => handleDeletePagoDelivery(row.original, pagoId)
         }
@@ -771,7 +800,7 @@ const totalImporteCursos = computed(() =>
   cursosData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
 )
 const totalImporteDelivery = computed(() =>
-  deliveryData.value.reduce((sum, item) => sum + (Number(item.importe) || 0), 0)
+  deliveryData.value.reduce((sum, item) => sum + (Number(item.pagado) || 0), 0)
 )
 
 // Computed para el total del consolidado (asegurar que sea un número)
@@ -825,7 +854,7 @@ const handlePageChange = async (page: number) => {
   } else if (activeTab.value === 'cursos') {
     fetchCursosData(filtersCursos.value, page, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
-    currentPageDelivery.value = page
+    paginationDelivery.value.current_page = page
     await fetchDeliveryData(filtersDelivery.value, page, itemsPerPageDelivery.value)
   }
 }
@@ -839,7 +868,7 @@ const handleItemsPerPageChange = async (items: number) => {
   } else if (activeTab.value === 'cursos') {
     fetchCursosData(filtersCursos.value, 1, items, idPedido)
   } else if (activeTab.value === 'delivery') {
-    itemsPerPageDelivery.value = items
+    paginationDelivery.value.per_page = items
     await fetchDeliveryData(filtersDelivery.value, 1, items)
   }
 }
@@ -855,7 +884,7 @@ const handleFilterChange = async (filterType: string, value: string) => {
     updateFiltersCursos({ [filterType]: value })
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
-    filtersDelivery.value = { ...filtersDelivery.value, [filterType]: value }
+    updateFiltersDelivery({ [filterType]: value })
     await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
   }
 }

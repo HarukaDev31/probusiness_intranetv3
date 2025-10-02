@@ -387,7 +387,16 @@ export class  EntregaService extends BaseService {
       if (params?.page) queryParams.append('page', params.page.toString())
       if (params?.per_page) queryParams.append('per_page', params.per_page.toString())
       if (params?.search) queryParams.append('search', params.search)
-      if (params?.filters) queryParams.append('filters', JSON.stringify(params.filters))
+      
+      // Enviar filtros como parámetros separados en lugar de objeto JSON
+      if (params?.filters) {
+        Object.entries(params.filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            queryParams.append(key, value.toString())
+          }
+        })
+      }
+      
       const qs = queryParams.toString()
 
       return await this.apiCall(`${this.baseUrl}/delivery/all${qs ? `?${qs}` : ''}`, {
