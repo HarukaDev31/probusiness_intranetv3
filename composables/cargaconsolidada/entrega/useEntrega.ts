@@ -33,6 +33,7 @@ export const useEntrega = () => {
     entrega: string | null
   }
   const delivery = ref<DeliveryRow[]>([])
+  const cargasDisponiblesDelivery = ref<any[]>([])
 
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -357,6 +358,15 @@ export const useEntrega = () => {
     if (contenedorId.value) getEntregas(contenedorId.value)
   }
 
+  // Funciones para manejar filtros de delivery
+  const updateFiltersDelivery = (newFilters: any) => {
+    filters.value = { ...filters.value, ...newFilters }
+  }
+
+  const clearFiltersDelivery = () => {
+    filters.value = {}
+  }
+
   // Clientes: handlers específicos para buscador y filtros
   const handleClientesSearch = (value: string) => {
     search.value = value
@@ -504,7 +514,13 @@ export const useEntrega = () => {
         // algunos endpoints devuelven { data: { data, pagination, total } }
         const dataBlock: any = (response as any).data
         delivery.value = (dataBlock?.data ?? dataBlock ?? [])
-        if (dataBlock?.pagination) {
+        // Guardar cargas_disponibles si vienen en la respuesta (está en la raíz)
+        if ((response as any).cargas_disponibles) {
+          cargasDisponiblesDelivery.value = (response as any).cargas_disponibles
+        }
+        if ((response as any).pagination) {
+          pagination.value = (response as any).pagination
+        } else if (dataBlock?.pagination) {
           pagination.value = dataBlock.pagination
         } else {
           pagination.value = {
@@ -538,12 +554,17 @@ export const useEntrega = () => {
       const response = await EntregaService.getAllDeliveryData(params)
       
       if (response.success) {
-        delivery.value = response.data.data || response.data
-        pagination.value = response.data.pagination || {
+        const responseData = response as any
+        delivery.value = responseData.data.data || responseData.data
+        // Guardar cargas_disponibles si vienen en la respuesta (está en la raíz)
+        if (responseData.cargas_disponibles) {
+          cargasDisponiblesDelivery.value = responseData.cargas_disponibles
+        }
+        pagination.value = responseData.pagination || {
           current_page: page,
           last_page: 1,
           per_page: itemsPerPage,
-          total: response.data.total || 0,
+          total: responseData.data.total || 0,
           from: 0,
           to: 0
         }
@@ -603,5 +624,8 @@ export const useEntrega = () => {
     , saveClienteDetalle
     , getAllDeliveryData
     , fetchDeliveryData
+    , updateFiltersDelivery
+    , clearFiltersDelivery
+    , cargasDisponiblesDelivery
   }
 }
