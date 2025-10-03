@@ -5,7 +5,7 @@
             <template #actions>
                 <!--button save-->
                 <UButton label="Guardar cambios" color="primary" variant="solid" icon="i-heroicons-arrow-down-tray"
-                    size="sm" @click="handleSaveChanges" v-if="currentRole === ROLES.COORDINACION" />
+                    size="sm" @click="handleSaveChanges" v-if="isCoordinacion" />
             </template>
         </PageHeader>
 
@@ -184,7 +184,7 @@
                                 class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-gray-400 hover:text-gray-600"
                                 aria-label="Copiar nombre"
                                 title="Copiar nombre">
-                                <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4" />
+                                <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4 hover:text-gray-600 dark:hover:text-gray-300" />
                             </button>
                             <span v-if="copied" class="ml-2 text-sm text-green-400">Copiado</span>
                         </div>
@@ -194,7 +194,7 @@
                 </div>
             </div>
             <!-- Tabs de proveedores -->
-            <div v-if="hasProveedores" class="mb-6">
+                    <div v-if="hasProveedores" class="mb-6">
                 <UTabs v-model="activeTab" :items="tabs" size="md" variant="pill"
                     :class="{ 'w-200': tabs.length >=3, 'w-50': tabs.length <3, 'w-300': tabs.length >= 5 }"
                     color="neutral"
@@ -266,20 +266,18 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Factura Comercial
                             </label>
-                            <div class="relative">
-                                <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
-                                    :custom-message="'Selecciona o arrastra tu archivo aquí'"
-                                    :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.factura_comercial ? [{
-                                        id: proveedorActivo.id, // debe ser número
-                                        file_name: 'Factura Comercial',
-                                        file_url: proveedorActivo.factura_comercial,
-                                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // tipo MIME si está disponible, si no dejar vacío
-                                        size: 0, // tamaño en bytes si está disponible, si no dejar en 0
-                                        lastModified: 0, // timestamp si está disponible, si no dejar en 0
-                                        file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
-                                    }] : []" @files-selected="handleFacturaComercial"
-                                    @file-removed="handleRemoveFacturaComercial" />
-                            </div>
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false" :disabled="!isCoordinacion"
+                                :custom-message="'Selecciona o arrastra tu archivo aquí'"
+                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.factura_comercial ? [{
+                                    id: proveedorActivo.id, // debe ser número
+                                    file_name: 'Factura Comercial',
+                                    file_url: proveedorActivo.factura_comercial,
+                                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // tipo MIME si está disponible, si no dejar vacío
+                                    size: 0, // tamaño en bytes si está disponible, si no dejar en 0
+                                    lastModified: 0, // timestamp si está disponible, si no dejar en 0
+                                    file_ext: 'xlsx' // extensión si está disponible, si no dejar vacío
+                                }] : []" @files-selected="handleFacturaComercial"
+                                @file-removed="handleRemoveFacturaComercial" />
                         </div>
 
                         <!-- Área de carga de Packing List -->
@@ -287,8 +285,8 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Packing List
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']"
-                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
+                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :immediate="false" :disabled="!isCoordinacion"
                                 :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.packing_list ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Packing List',
@@ -305,7 +303,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Excel Confirmación
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']" :immediate="false" :disabled="currentRole !== ROLES.COORDINACION"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false" :disabled="!isCoordinacion"
                                 :show-remove-button="currentRole === ROLES.COORDINACION"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="proveedorActivo.excel_confirmacion ? [{
                                     id: proveedorActivo.id, // debe ser número
@@ -320,7 +318,7 @@
                         </div>
                         <div v-for="file in files.filter(f => f.id_proveedor === proveedorActivo.id)" :key="file.id">
                             <span>{{ file.folder_name||file.file_name }}</span>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']" :immediate="false"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false"
                                 :show-remove-button="false" :initial-files="[{
                                     id: file.id,
                                     file_name: file.folder_name||file.file_name,
@@ -359,7 +357,7 @@
                         <div v-for="file in filesAlmacenDocumentacion.filter(f => f.id_proveedor === proveedorActivo.id)"
                             :key="file.id">
 
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']" :immediate="false"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false"
                                 :show-remove-button="false" :initial-files="[{
                                     id: file.id,
                                     file_name: file.file_name,
@@ -397,7 +395,7 @@
                     <div class="space-y-4">
                         <div v-for="file in filesAlmacenInspection.filter(f => f.id_proveedor === proveedorActivo.id)"
                             :key="file.id">
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf']" :immediate="false"
+                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false"
                                 :show-remove-button="false" :initial-files="[{
                                     id: file.id,
                                     file_name: file.file_name,
@@ -415,7 +413,7 @@
 
                 <!-- Sección de Cotizaciones -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg h-40 shadow-md"
-                    v-if="currentRole === ROLES.COORDINACION || currentId === ID_JEFEVENTAS">
+                    v-if="currentRole === ROLES.COORDINACION">
 
                     <div class="space-y-4">
 
@@ -685,10 +683,7 @@ const handleSaveChanges = async () => {
             const result = await updateProveedorDocumentacion(proveedorActivo.value.id, formData)
 
             if (!result.success) {
-                const msg = (typeof result === 'object' && result && 'error' in result)
-                    ? (result as any).error
-                    : 'Error al guardar los cambios'
-                throw new Error(msg as string)
+                throw new Error(result.error || 'Error al guardar los cambios')
             }
 
             // Limpiar cambios pendientes
