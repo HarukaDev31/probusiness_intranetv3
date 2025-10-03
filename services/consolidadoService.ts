@@ -124,7 +124,20 @@ export class ConsolidadoService extends BaseService {
       throw new Error('No se pudo obtener el detalle del pago')
     }
   }
-
+  static async getPagoDetalleDelivery(id: number): Promise<PagoDetalleResponse> {
+    try {
+      const response = await this.apiCall<PagoDetalleResponse>(
+        `${this.baseUrl}/delivery/${id}`,
+        {
+          method: 'GET'
+        }
+      )
+      return response
+    } catch (error) {
+      console.error('Error al obtener detalle de pago:', error)
+      throw new Error('No se pudo obtener el detalle del pago')
+    }
+  }
   /**
    * Exporta los datos de consolidado
    */

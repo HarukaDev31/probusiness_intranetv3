@@ -173,6 +173,16 @@ export const useConsolidado = () => {
     }
   }
 
+  const getPagoDetalleDelivery = async (id: number) => {
+    try {
+      const response = await ConsolidadoService.getPagoDetalleDelivery(id)
+      return response
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Error al obtener detalle'
+      throw err
+    }
+  }
+
   const exportData = async () => {
     try {
       const blob = await ConsolidadoService.exportConsolidado(filters.value)
@@ -242,8 +252,9 @@ export const useConsolidado = () => {
     updateEstadoPago,
     updateNota,
     getPagoDetalle,
+    getPagoDetalleDelivery,
     exportData,
     updateFilters,
-    clearFilters
+    clearFilters,
   }
 } 

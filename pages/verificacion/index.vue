@@ -786,6 +786,21 @@ const deliveryColumns: TableColumn<any>[] = [
       )
     }
   },
+  {
+    accessorKey: 'acciones',
+    header: 'Acciones',
+    cell: ({ row }: { row: any }) => {
+      return h('div', { class: 'flex items-center gap-2' }, [
+        h(UButton as any, {
+          size: 'xs',
+          icon: 'i-heroicons-eye',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => navigateTo(`/verificacion/delivery/${row.original.id}`)
+        }),
+      ])
+    }
+  }
   
 ]
 
