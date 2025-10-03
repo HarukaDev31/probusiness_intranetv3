@@ -716,11 +716,7 @@ const deliveryColumns: TableColumn<any>[] = [
     header: 'WhatsApp',
     cell: ({ row }: { row: any }) => formatPhoneNumber(row.getValue('telefono'))
   },
-  {
-    accessorKey: 'tipo',
-    header: 'Servicio',
-    cell: ({ row }: { row: any }) => row.getValue('tipo')
-  },
+
   {
     accessorKey: 'carga',
     header: 'Carga',
