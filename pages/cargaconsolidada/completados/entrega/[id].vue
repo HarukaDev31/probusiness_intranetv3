@@ -259,8 +259,8 @@ const entregasColumns = ref<TableColumn<any>[]>([
     }
   },
   { accessorKey: 'ciudad', header: 'Ciudad', cell: ({ row }) => row.original.department_name || 'Lima' },
-  { accessorKey: 'documento', header: 'Ruc o Dni', cell: ({ row }) => row.original.agency_ruc || row.original.pick_doc || '—' },
-  { accessorKey: 'razon_social', header: 'Razon social o Nombre', cell: ({ row }) => row.original.agency_name || row.original.pick_name || '—' },
+  { accessorKey: 'documento', header: 'Ruc o Dni', cell: ({ row }) => row.original.r_doc || row.original.pick_doc || '—' },
+  { accessorKey: 'razon_social', header: 'Razon social o Nombre', cell: ({ row }) => row.original.r_name || row.original.pick_name || '—' },
   {
     accessorKey: 'fecha_programada', header: 'Fecha', cell: ({ row }) => {
       const fp = formatDateTimeToDmy(row.original.delivery_date)
