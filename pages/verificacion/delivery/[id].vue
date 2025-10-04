@@ -2,7 +2,7 @@
     <div class="p-6">
       <!-- Header con botones de navegación y guardar -->
       <div class="flex justify-between items-center mb-6">
-        <UButton icon="i-heroicons-arrow-left" color="neutral" variant="ghost" @click="navigateTo('/verificacion?tab=consolidado')">
+        <UButton icon="i-heroicons-arrow-left" color="neutral" variant="ghost" @click="navigateTo('/verificacion?tab=delivery')">
           Regresar
         </UButton>
   
@@ -92,49 +92,7 @@
   
       <!-- Sección inferior con cotizaciones y notas -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Cotizaciones -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border p-4">
-          <div class="flex items-center space-x-2 mb-4">
-            <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Cotizaciones</h3>
-          </div>
-  
-          <!-- Skeleton loading para cotizaciones -->
-          <div v-if="loading" class="space-y-3">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div class="flex-1">
-                <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
-              </div>
-              <div class="w-6 h-6 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div class="flex-1">
-                <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
-              </div>
-              <div class="w-6 h-6 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-  
-          <!-- Contenido real de cotizaciones -->
-          <div v-else class="space-y-3">
-            <div class="flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer">
-              <UIcon name="i-heroicons-document-text" class="w-8 h-8 text-green-600" />
-              <span class="flex-1 text-sm text-gray-700 dark:text-gray-200">Cotización Inicial.xlsx</span>
-              <UButton icon="i-heroicons-arrow-down-tray" size="xs" color="neutral" variant="ghost"
-                @click="downloadFile('cotizacion-inicial')" />
-            </div>
-  
-            <div class="flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer">
-              <UIcon name="i-heroicons-document-text" class="w-8 h-8 text-green-600" />
-              <span class="flex-1 text-sm text-gray-700 dark:text-gray-200">Cotización Final.xlsx</span>
-              <UButton icon="i-heroicons-arrow-down-tray" size="xs" color="neutral" variant="ghost"
-                @click="downloadFile('cotizacion-final')" />
-            </div>
-          </div>
-        </div>
-  
+       
         <!-- Nota -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border p-4">
           <div class="flex items-center justify-between mb-4">
