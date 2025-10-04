@@ -78,7 +78,7 @@ const filterConfig = computed(() => [
       { label: 'Todos', value: 'todos' },
       { label: 'Cliente', value: 'Cliente' },
       { label: 'Recurrente', value: 'Recurrente' },
-      { label: 'Premiun', value: 'Premiun' },
+      { label: 'Premium', value: 'Premium' },
       { label: 'Inactivo', value: 'Inactivo' }
     ]
   },
@@ -182,7 +182,7 @@ const getCategoriaColor = (categoria: string) => {
     const colors = {
         'Cliente': 'bg-blue-100 text-blue-800',
         'Recurrente': 'bg-green-100 text-green-800',
-        'Premiun': 'bg-purple-100 text-purple-800',
+        'Premium': 'bg-purple-100 text-purple-800',
         'Inactivo': 'bg-gray-100 text-gray-800'
     }
     return colors[categoria as keyof typeof colors] || 'bg-gray-100 text-gray-800'

@@ -33,7 +33,7 @@ export const useClientes = () => {
     categorias: string[]
     fechas: string[]
   }>({
-    categorias: ['Cliente', 'Recurrente', 'Premiun', 'Inactivo'],
+    categorias: ['Cliente', 'Recurrente', 'Premium', 'Inactivo'],
     fechas: []
   })
 
