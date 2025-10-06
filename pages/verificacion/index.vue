@@ -39,8 +39,9 @@
           </div>
           <div class="my-3 mr-20 flex justify-end items-center">
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total: 
-              <span class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
+              Importe total:
+              <span
+                class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
                 {{ formatCurrency(totalImporteConsolidado) }}
               </span>
             </div>
@@ -57,12 +58,13 @@
     <div v-else-if="activeTab === 'cursos'">
       <!-- Cursos Tab -->
       <DataTable title="Cursos" icon="i-heroicons-clipboard-document-check" :data="cursosData" :columns="cursosColumns"
-        :loading="loadingCursos" :current-page="currentPageCursos" :total-pages="totalPagesCursos" :total-records="totalRecordsCursos"
-        :items-per-page="itemsPerPageCursos" :primary-search-value="searchCursos" :show-secondary-search="false"
-        :show-filters="true" :filter-config="filterConfigCursos" :filters-value="filtersCursos" :show-export="false"
-        empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
-        @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportCursosData"
-        @filter-change="handleFilterChange" :show-body-top="true">
+        :loading="loadingCursos" :current-page="currentPageCursos" :total-pages="totalPagesCursos"
+        :total-records="totalRecordsCursos" :items-per-page="itemsPerPageCursos" :primary-search-value="searchCursos"
+        :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigCursos"
+        :filters-value="filtersCursos" :show-export="false" empty-state-message="No se encontraron registros de cursos."
+        @update:primary-search="handleSearch" @page-change="handlePageChange"
+        @items-per-page-change="handleItemsPerPageChange" @export="exportCursosData" @filter-change="handleFilterChange"
+        :show-body-top="true">
 
         <template #body-top>
           <div class="w-50 mb-6 flex items-center">
@@ -89,8 +91,9 @@
           </div>
           <div class="my-3 mr-20 flex justify-end items-center">
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total: 
-              <span class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
+              Importe total:
+              <span
+                class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
                 {{ formatCurrency(totalImporteCursos, 'PEN') }}
               </span>
             </div>
@@ -106,9 +109,10 @@
     <div v-else-if="activeTab === 'delivery'">
       <!-- Delivery Tab -->
       <DataTable title="Delivery" icon="i-heroicons-truck" :data="deliveryData" :columns="deliveryColumns"
-        :loading="loadingDelivery" :current-page="currentPageDelivery" :total-pages="totalPagesDelivery" :total-records="totalRecordsDelivery"
-        :items-per-page="itemsPerPageDelivery" :primary-search-value="searchDelivery" :show-secondary-search="false"
-        :show-filters="true" :filter-config="filterConfigDelivery" :filters-value="filtersDelivery" :show-export="false"
+        :loading="loadingDelivery" :current-page="currentPageDelivery" :total-pages="totalPagesDelivery"
+        :total-records="totalRecordsDelivery" :items-per-page="itemsPerPageDelivery"
+        :primary-search-value="searchDelivery" :show-secondary-search="false" :show-filters="true"
+        :filter-config="filterConfigDelivery" :filters-value="filtersDelivery" :show-export="false"
         empty-state-message="No se encontraron registros de delivery." @update:primary-search="handleSearch"
         @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportDeliveryData"
         @filter-change="handleFilterChange" :show-body-top="true">
@@ -138,8 +142,9 @@
           </div>
           <div class="my-3 mr-20 flex justify-end items-center">
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total: 
-              <span class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
+              Importe total:
+              <span
+                class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
                 {{ formatCurrency(totalImporteDelivery, 'PEN') }}
               </span>
             </div>
@@ -166,11 +171,11 @@ import { ESTADOS_PAGO, CARGAS_DISPONIBLES } from '~/constants/consolidado'
 import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS } from '~/constants/cursos'
 import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '~/utils/consolidado'
 import { getEstadoColor as getEstadoColorCursos, formatCurrency as formatCurrencyCursos, formatPhoneNumber as formatPhoneNumberCursos } from '~/utils/cursos'
-import { UButton } from '#components'
+import { UButton, USelect } from '#components'
 import DynamicModal from '~/components/DynamicModal.vue'
 import type { ModalData } from '~/composables/commons/useModal'
 import PagoGrid from '~/components/PagoGrid.vue'
-
+import { STATUS_BG_CLASSES } from '~/constants/ui'
 // Tabs
 const tabs = [
   { value: 'consolidado', label: 'Consolidado' },
@@ -247,7 +252,7 @@ const {
   totalRecordsCursos,
   currentPageCursos,
   itemsPerPageCursos,
-  searchCursos  
+  searchCursos
 } = usePagos()
 
 // Composable de entrega para delivery
@@ -358,7 +363,7 @@ const cargasOptionsDelivery = computed(() => {
   if (cargasDisponiblesDelivery.value && Array.isArray(cargasDisponiblesDelivery.value) && cargasDisponiblesDelivery.value.length > 0) {
     return [{ value: 'todos', label: 'Todas las cargas' }, ...cargasDisponiblesDelivery.value]
   }
-  
+
   // Fallback: derivar de los datos si no hay cargas_disponibles
   const values = (deliveryData.value || []).map((it: any) => it.carga).filter((v: any) => v !== undefined && v !== null && String(v).trim() !== '')
   const unique = Array.from(new Set(values.map((v: any) => String(v))))
@@ -475,20 +480,12 @@ const consolidadoColumns: TableColumn<any>[] = [
       const estado = row.getValue('estado_pago')
 
       return h('div', [
-        h('select', {
+        h(USelect as any, {
           class: `py-1 text-xs font-medium border ${getEstadoColor(estado)}`,
-          value: estado,
+          modelValue: estado,
+          items: ESTADOS_PAGO,
           disabled: true
-        },
-          // generar opciones desde ESTADOS_PAGO (value,label)
-          (ESTADOS_PAGO || []).map((opt: any) =>
-            h('option', { value: opt.value }, opt.label)
-          )
-        ),
-        h('UIcon', {
-          name: 'i-heroicons-chevron-down',
-          class: 'w-4 h-4 text-gray-400 cursor-pointer'
-        })
+        },)
       ])
     }
   },
@@ -728,18 +725,14 @@ const deliveryColumns: TableColumn<any>[] = [
     accessorKey: 'estado_pago',
     header: 'Estado',
     cell: ({ row }: { row: any }) => {
-      const pagado = row.original.pagado || 0
-      const importe = row.original.importe || 0
-      const estado = pagado >= importe && pagado > 0 ? 'Pagado' : 'Pendiente'
-      const color = estado === 'Pagado' ? 'success' : 'warning'
-      
-      return h('div', { class: 'flex items-center space-x-1' }, [
-        h('span', { class: `px-2 py-1 rounded-full text-xs font-medium border bg-${color}-100 text-${color}-800 border-${color}-200` }, estado),
-        h('UIcon', {
-          name: estado === 'Pagado' ? 'i-heroicons-check-circle' : 'i-heroicons-clock',
-          class: 'w-4 h-4 text-gray-400'
-        })
-      ])
+      const estado_pago = row.getValue('estado_pago')
+
+      return h(USelect as any, {
+        modelValue: estado_pago,
+        items: ESTADOS_PAGO,
+        class: [STATUS_BG_CLASSES[estado_pago as keyof typeof STATUS_BG_CLASSES]],
+        disabled: true
+      })
     }
   },
   {
@@ -748,7 +741,7 @@ const deliveryColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => {
       const monto = row.getValue('total_pago_delivery')
       return h('div', { class: 'flex items-center space-x-1' }, [
-        h('span', {}, formatCurrency(monto,'PEN')),
+        h('span', {}, formatCurrency(monto, 'PEN')),
         h('UIcon', {
           name: 'i-heroicons-chevron-down',
           class: 'w-4 h-4 text-gray-400'
@@ -762,7 +755,7 @@ const deliveryColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => {
       const total = row.original.pagado
       return h('div', { class: 'flex items-center space-x-1' }, [
-        h('span', {}, formatCurrency(total,'PEN')),
+        h('span', {}, formatCurrency(total, 'PEN')),
         h('UIcon', {
           name: 'i-heroicons-chevron-up',
           class: 'w-4 h-4 text-gray-400'
@@ -803,7 +796,7 @@ const deliveryColumns: TableColumn<any>[] = [
       ])
     }
   }
-  
+
 ]
 
 const totalImporteConsolidado = computed(() =>
@@ -845,7 +838,7 @@ const handleSearch = async (query: string) => {
   search.value = query
   const idCotizacion = getIdCotizacionFromRoute()
   const idPedido = getIdPedidoFromRoute()
-  
+
   if (activeTab.value === 'consolidado') {
     updateFiltersConsolidado({ search: query })
     fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
@@ -861,7 +854,7 @@ const handleSearch = async (query: string) => {
 const handlePageChange = async (page: number) => {
   const idCotizacion = getIdCotizacionFromRoute()
   const idPedido = getIdPedidoFromRoute()
-  
+
   if (activeTab.value === 'consolidado') {
     fetchConsolidadoData(filtersConsolidado.value, page, itemsPerPage.value, idCotizacion)
   } else if (activeTab.value === 'cursos') {
@@ -875,7 +868,7 @@ const handlePageChange = async (page: number) => {
 const handleItemsPerPageChange = async (items: number) => {
   const idCotizacion = getIdCotizacionFromRoute()
   const idPedido = getIdPedidoFromRoute()
-  
+
   if (activeTab.value === 'consolidado') {
     fetchConsolidadoData(filtersConsolidado.value, 1, items, idCotizacion)
   } else if (activeTab.value === 'cursos') {
@@ -889,7 +882,7 @@ const handleItemsPerPageChange = async (items: number) => {
 const handleFilterChange = async (filterType: string, value: string) => {
   const idCotizacion = getIdCotizacionFromRoute()
   const idPedido = getIdPedidoFromRoute()
-  
+
   if (activeTab.value === 'consolidado') {
     updateFiltersConsolidado({ [filterType]: value })
     fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
@@ -980,12 +973,12 @@ const handleUpdateImporteDelivery = async (row: any) => {
 
 
 // Initialize
-onMounted(async() => {
+onMounted(async () => {
   const route = useRoute()
   const tabQuery = route.query.tab
   const idCotizacion = route.query.idCotizacion ? Number(route.query.idCotizacion) : undefined
   const idPedido = route.query.idPedido ? Number(route.query.idPedido) : undefined
-  
+
   if (tabQuery) {
     activeTab.value = tabQuery as string
   } else {
@@ -994,7 +987,7 @@ onMounted(async() => {
   console.log('activeTab:', activeTab.value)
   console.log('idCotizacion desde query:', idCotizacion)
   console.log('idPedido desde query:', idPedido)
-  
+
   // Cargar datos iniciales según el tab activo
   if (activeTab.value === 'consolidado') {
     fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
@@ -1011,7 +1004,7 @@ watch(activeTab, async (newTab, oldTab) => {
   const route = useRoute()
   const idCotizacion = route.query.idCotizacion ? Number(route.query.idCotizacion) : undefined
   const idPedido = route.query.idPedido ? Number(route.query.idPedido) : undefined
-  
+
   if (newTab === 'consolidado') {
     navigateTo(`/verificacion?tab=consolidado`)
     fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
