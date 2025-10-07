@@ -109,24 +109,42 @@
         
         <!-- Contenedor de vista previa -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-          <!-- PDF Preview usando Google Docs Viewer -->
+          <!-- PDF Preview con múltiples opciones -->
           <div v-if="getFileExtension(datosCliente.url_constancia) === 'pdf'" class="w-full h-[600px]">
-            <iframe 
-              :src="`https://docs.google.com/gview?url=${encodeURIComponent(datosCliente.url_constancia)}&embedded=true`"
-              class="w-full h-full border-0"
-              title="Vista previa de la constancia"
-              loading="lazy"
-            ></iframe>
-          </div>
-          
-          <!-- Fallback: iframe directo para PDFs -->
-          <div v-else-if="getFileExtension(datosCliente.url_constancia) === 'pdf'" class="w-full h-[600px]">
-            <iframe 
-              :src="datosCliente.url_constancia"
-              class="w-full h-full border-0"
-              title="Vista previa de la constancia"
-              loading="lazy"
-            ></iframe>
+            <!-- Opción 1: Iframe directo -->
+            <div v-if="!showAlternativeViewer" class="w-full h-full">
+              <iframe 
+                :src="datosCliente.url_constancia"
+                class="w-full h-full border-0"
+                title="Vista previa de la constancia"
+                loading="lazy"
+                @error="handleIframeError"
+              ></iframe>
+            </div>
+            
+            <!-- Opción 2: Google Docs Viewer como alternativa -->
+            <div v-else class="w-full h-full">
+              <iframe 
+                :src="`https://docs.google.com/gview?url=${encodeURIComponent(datosCliente.url_constancia)}&embedded=true`"
+                class="w-full h-full border-0"
+                title="Vista previa de la constancia (Google Docs Viewer)"
+                loading="lazy"
+                @error="handleGoogleViewerError"
+              ></iframe>
+            </div>
+            
+            <!-- Controles para cambiar el visor -->
+            <div class="absolute top-2 right-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg p-2">
+              <UButton
+                :icon="showAlternativeViewer ? 'i-heroicons-document' : 'i-heroicons-globe-alt'"
+                variant="ghost"
+                size="xs"
+                @click="toggleViewer"
+                :title="showAlternativeViewer ? 'Cambiar a iframe directo' : 'Cambiar a Google Docs Viewer'"
+              >
+                {{ showAlternativeViewer ? 'Directo' : 'Google' }}
+              </UButton>
+            </div>
           </div>
           
           <!-- Vista previa para imágenes -->
@@ -147,13 +165,22 @@
             />
             <p class="text-lg font-medium mb-2">Vista previa no disponible</p>
             <p class="text-sm mb-4">Este tipo de archivo no puede ser previsualizado inline</p>
-            <UButton
-              icon="i-heroicons-arrow-down-tray"
-              variant="outline"
-              @click="descargarConstancia(datosCliente.url_constancia)"
-            >
-              Descargar archivo
-            </UButton>
+            <div class="flex gap-2">
+              <UButton
+                icon="i-heroicons-arrow-down-tray"
+                variant="outline"
+                @click="descargarConstancia(datosCliente.url_constancia)"
+              >
+                Descargar archivo
+              </UButton>
+              <UButton
+                icon="i-heroicons-arrow-top-right-on-square"
+                variant="outline"
+                @click="openInNewTab(datosCliente.url_constancia)"
+              >
+                Abrir en nueva pestaña
+              </UButton>
+            </div>
           </div>
         </div>
         
@@ -203,6 +230,9 @@ const editMode = ref(false)
 // Overlay para modal de previsualización
 const overlay = useOverlay()
 const modalPreview = overlay.create(ModalPreview)
+
+// Estado para alternar entre visores de PDF
+const showAlternativeViewer = ref(false)
 
 
 onMounted(async () => {
@@ -332,5 +362,27 @@ function isImageFile(url: string): boolean {
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
   const extension = getFileExtension(url).toLowerCase()
   return imageExtensions.includes(extension)
+}
+
+// Función para alternar entre visores de PDF
+function toggleViewer() {
+  showAlternativeViewer.value = !showAlternativeViewer.value
+}
+
+// Función para manejar errores del iframe directo
+function handleIframeError() {
+  console.warn('Error cargando PDF con iframe directo, intentando con Google Docs Viewer...')
+  showAlternativeViewer.value = true
+}
+
+// Función para manejar errores del Google Docs Viewer
+function handleGoogleViewerError() {
+  console.warn('Error cargando PDF con Google Docs Viewer, volviendo a iframe directo...')
+  showAlternativeViewer.value = false
+}
+
+// Función para abrir archivo en nueva pestaña
+function openInNewTab(url: string) {
+  window.open(url, '_blank')
 }
 </script>
