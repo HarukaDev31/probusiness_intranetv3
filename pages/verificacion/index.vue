@@ -698,7 +698,7 @@ const deliveryColumns: TableColumn<any>[] = [
   {
     accessorKey: 'fecha',
     header: 'Fecha',
-    cell: ({ row }: { row: any }) => row.getValue('fecha')
+    cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.getValue('fecha'))
   },
   {
     accessorKey: 'nombre',
