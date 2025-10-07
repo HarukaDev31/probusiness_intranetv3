@@ -208,11 +208,10 @@ const columns = ref<TableColumn<CursoItem>[]>([
             const items = [
                 { label: 'Pendiente', value: 1, icon: 'ic:outline-access-time' },
                 { label: 'Creado', value: 2, icon: 'ic:outline-person' },
+                { label: 'Constancia', value: 3, icon: 'solar:diploma-outline', disabled: true }
             ]
             // Solo mostrar la opción de constancia si puede_constancia es verdadero
-            if (row.original.puede_constancia) {
-                items.push({ label: 'Constancia', value: 3, icon: 'solar:diploma-outline', disabled: true })
-            }
+            
             const icon = items.find(item => item.value === row.original.Nu_Estado_Usuario_Externo)?.icon
             // Valor por defecto: pendiente (1) si no está definido
             let  modelValue = row.original.Nu_Estado_Usuario_Externo ?? 1
