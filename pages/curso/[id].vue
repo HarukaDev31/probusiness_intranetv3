@@ -87,7 +87,7 @@
           @click="previsualizarConstancia(datosCliente?.url_constancia)"
           variant="outline"
         >
-          Previsualizar
+          Vista Modal
         </UButton>
         <UButton 
           icon="i-heroicons-arrow-down-tray"
@@ -95,6 +95,84 @@
         >
           Descargar
         </UButton>
+      </div>
+    </div>
+
+    <!-- Vista previa inline de la constancia -->
+    <div v-if="datosCliente?.url_constancia" class="mt-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="mb-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            Vista previa de la constancia
+          </h3>
+        </div>
+        
+        <!-- Contenedor de vista previa -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <!-- PDF Preview usando Google Docs Viewer -->
+          <div v-if="getFileExtension(datosCliente.url_constancia) === 'pdf'" class="w-full h-[600px]">
+            <iframe 
+              :src="`https://docs.google.com/gview?url=${encodeURIComponent(datosCliente.url_constancia)}&embedded=true`"
+              class="w-full h-full border-0"
+              title="Vista previa de la constancia"
+              loading="lazy"
+            ></iframe>
+          </div>
+          
+          <!-- Fallback: iframe directo para PDFs -->
+          <div v-else-if="getFileExtension(datosCliente.url_constancia) === 'pdf'" class="w-full h-[600px]">
+            <iframe 
+              :src="datosCliente.url_constancia"
+              class="w-full h-full border-0"
+              title="Vista previa de la constancia"
+              loading="lazy"
+            ></iframe>
+          </div>
+          
+          <!-- Vista previa para imágenes -->
+          <div v-else-if="isImageFile(datosCliente.url_constancia)" class="flex justify-center p-4">
+            <img 
+              :src="datosCliente.url_constancia"
+              :alt="'Constancia de curso'"
+              class="max-w-full max-h-[600px] object-contain rounded shadow-lg"
+              loading="lazy"
+            />
+          </div>
+          
+          <!-- Vista previa no disponible para otros tipos -->
+          <div v-else class="flex flex-col items-center justify-center h-96 text-gray-500 dark:text-gray-400">
+            <UIcon 
+              name="i-heroicons-document" 
+              class="w-16 h-16 mb-4"
+            />
+            <p class="text-lg font-medium mb-2">Vista previa no disponible</p>
+            <p class="text-sm mb-4">Este tipo de archivo no puede ser previsualizado inline</p>
+            <UButton
+              icon="i-heroicons-arrow-down-tray"
+              variant="outline"
+              @click="descargarConstancia(datosCliente.url_constancia)"
+            >
+              Descargar archivo
+            </UButton>
+          </div>
+        </div>
+        
+        <!-- Información del archivo -->
+        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600 dark:text-gray-400">
+              <strong>Archivo:</strong> Constancia de curso.{{ getFileExtension(datosCliente.url_constancia).toUpperCase() }}
+            </span>
+            <UButton
+              icon="i-heroicons-arrow-top-right-on-square"
+              variant="ghost"
+              size="xs"
+              @click="descargarConstancia(datosCliente.url_constancia)"
+            >
+              Abrir en nueva pestaña
+            </UButton>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -125,6 +203,7 @@ const editMode = ref(false)
 // Overlay para modal de previsualización
 const overlay = useOverlay()
 const modalPreview = overlay.create(ModalPreview)
+
 
 onMounted(async () => {
   datosCliente.value = await cargarDatosClientePorPedido(Number(route.params.id))
@@ -229,7 +308,7 @@ function getFileExtension(url: string): string {
   }
 }
 
-// Función para previsualizar la constancia
+// Función para previsualizar la constancia en modal
 function previsualizarConstancia(url: string) {
   const extension = getFileExtension(url)
   const fileName = `Constancia de curso.${extension}`
@@ -245,5 +324,13 @@ function previsualizarConstancia(url: string) {
     file: fileItem,
     isOpen: true
   })
+}
+
+
+// Función para verificar si es un archivo de imagen
+function isImageFile(url: string): boolean {
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
+  const extension = getFileExtension(url).toLowerCase()
+  return imageExtensions.includes(extension)
 }
 </script>
