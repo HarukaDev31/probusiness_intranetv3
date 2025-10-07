@@ -98,12 +98,19 @@
         <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Historial de compras</h3>
         <div class="overflow-x-auto">
           <DataTable
-            :data="historialCompras"
+            title=""
+            :data="historialComprasPaginado"
             :columns="historialColumns"
             :loading="loading"
             :show-primary-search="false"
             :show-top-section="true"
-            :show-pagination="false"
+            :show-pagination="true"
+            :current-page="currentPageHistorial"
+            :total-pages="totalPagesHistorial"
+            :total-records="totalRecordsHistorial"
+            :items-per-page="itemsPerPageHistorial"
+            @page-change="handlePageChangeHistorial"
+            @items-per-page-change="handleItemsPerPageChangeHistorial"
           />
         </div>
       </div>
@@ -129,6 +136,20 @@ const error = ref<string | null>(null)
 
 // Historial de compras (datos de ejemplo basados en la imagen)
 const historialCompras = ref<any[]>([])
+const historialComprasOriginal = ref<any[]>([])
+
+// Pagination state for purchase history
+const currentPageHistorial = ref(1)
+const itemsPerPageHistorial = ref(10)
+const totalRecordsHistorial = computed(() => historialComprasOriginal.value.length)
+const totalPagesHistorial = computed(() => Math.ceil(totalRecordsHistorial.value / itemsPerPageHistorial.value))
+
+// Computed for paginated purchase history
+const historialComprasPaginado = computed(() => {
+  const start = (currentPageHistorial.value - 1) * itemsPerPageHistorial.value
+  const end = start + itemsPerPageHistorial.value
+  return historialComprasOriginal.value.slice(start, end)
+})
 
 // Configuración de columnas para el historial
 const historialColumns: TableColumn<any>[] = [
@@ -136,8 +157,9 @@ const historialColumns: TableColumn<any>[] = [
     accessorKey: 'numero',
     header: 'N.',
     cell: ({ row }: { row: any }) => {
-      const index = historialCompras.value.indexOf(row.original)
-      return index + 1
+      // Calculate the actual index based on pagination
+      const baseIndex = (currentPageHistorial.value - 1) * itemsPerPageHistorial.value
+      return baseIndex + row.index + 1
     }
   },
   {
@@ -188,7 +210,7 @@ const loadCliente = async () => {
     const clienteData = await ClienteService.getClienteById(clienteId)
     cliente.value = clienteData
     if (clienteData.servicios) {
-      historialCompras.value = clienteData.servicios.map((servicio: any, index: number) => ({
+      historialComprasOriginal.value = clienteData.servicios.map((servicio: any, index: number) => ({
         id: index + 1,
         id_servicio: servicio.id,
         numero: index + 1,
@@ -206,6 +228,16 @@ const loadCliente = async () => {
 
 const navigateBack = () => {
   navigateTo('/basedatos/clientes')
+}
+
+// Pagination handlers for purchase history
+const handlePageChangeHistorial = (page: number) => {
+  currentPageHistorial.value = page
+}
+
+const handleItemsPerPageChangeHistorial = (items: number) => {
+  itemsPerPageHistorial.value = items
+  currentPageHistorial.value = 1 // Reset to first page when changing items per page
 }
 
 
