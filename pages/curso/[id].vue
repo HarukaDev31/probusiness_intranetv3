@@ -15,47 +15,69 @@
         <div class="space-y-3">
           <div class="flex items-center">
             <span class="w-48 font-medium">Nombre y apellidos:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.nombres" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.nombres" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Dni / ID:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.dni" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.dni" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Correo:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.correo" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.correo" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">WhatsApp:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.whatsapp" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.whatsapp" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Fecha de nacimiento:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.nacimiento" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.nacimiento" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Sexo:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.sexo" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.sexo" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Red social:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.red_social" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.red_social" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">País:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.pais" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.pais" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Departamento:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.departamento" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.departamento" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Provincia:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.provincia" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.provincia" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Distrito:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.distrito" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.distrito" :readonly="!editMode" />
           </div>
         </div>
       </div>
@@ -68,11 +90,90 @@
         <div class="space-y-3">
           <div class="flex items-center">
             <span class="w-48 font-medium">Usuario:</span>
-            <input :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']" v-model="form.usuario_moodle" :readonly="!editMode" />
+            <input
+              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
+              v-model="form.usuario_moodle" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Contraseña:</span>
-            <input class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full" v-model="form.password_moodle" :readonly="!editMode" />
+            <input class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full" v-model="form.password_moodle"
+              :readonly="!editMode" />
+          </div>
+        </div>
+        <div v-if="datosCliente?.url_constancia" class="mt-6">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                Vista previa de la constancia
+              </h3>
+            </div>
+
+            <!-- Contenedor de vista previa -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <!-- PDF Preview con múltiples opciones -->
+              <div v-if="getFileExtension(datosCliente.url_constancia) === 'pdf'" class="w-full h-[600px]">
+                <!-- Opción 1: Iframe directo -->
+                <div v-if="!showAlternativeViewer" class="w-full h-full">
+                  <iframe :src="datosCliente.url_constancia" class="w-full h-full border-0"
+                    title="Vista previa de la constancia" loading="lazy" @error="handleIframeError"></iframe>
+                </div>
+
+                <!-- Opción 2: Google Docs Viewer como alternativa -->
+                <div v-else class="w-full h-full">
+                  <iframe
+                    :src="`https://docs.google.com/gview?url=${encodeURIComponent(datosCliente.url_constancia)}&embedded=true`"
+                    class="w-full h-full border-0" title="Vista previa de la constancia (Google Docs Viewer)"
+                    loading="lazy" @error="handleGoogleViewerError"></iframe>
+                </div>
+
+                <!-- Controles para cambiar el visor -->
+                <div
+                  class="absolute top-2 right-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg p-2">
+                  <UButton :icon="showAlternativeViewer ? 'i-heroicons-document' : 'i-heroicons-globe-alt'"
+                    variant="ghost" size="xs" @click="toggleViewer"
+                    :title="showAlternativeViewer ? 'Cambiar a iframe directo' : 'Cambiar a Google Docs Viewer'">
+                    {{ showAlternativeViewer ? 'Directo' : 'Google' }}
+                  </UButton>
+                </div>
+              </div>
+
+              <!-- Vista previa para imágenes -->
+              <div v-else-if="isImageFile(datosCliente.url_constancia)" class="flex justify-center p-4">
+                <img :src="datosCliente.url_constancia" :alt="'Constancia de curso'"
+                  class="max-w-full max-h-[600px] object-contain rounded shadow-lg" loading="lazy" />
+              </div>
+
+              <!-- Vista previa no disponible para otros tipos -->
+              <div v-else class="flex flex-col items-center justify-center h-96 text-gray-500 dark:text-gray-400">
+                <UIcon name="i-heroicons-document" class="w-16 h-16 mb-4" />
+                <p class="text-lg font-medium mb-2">Vista previa no disponible</p>
+                <p class="text-sm mb-4">Este tipo de archivo no puede ser previsualizado inline</p>
+                <div class="flex gap-2">
+                  <UButton icon="i-heroicons-arrow-down-tray" variant="outline"
+                    @click="descargarConstancia(datosCliente.url_constancia)">
+                    Descargar archivo
+                  </UButton>
+                  <UButton icon="i-heroicons-arrow-top-right-on-square" variant="outline"
+                    @click="openInNewTab(datosCliente.url_constancia)">
+                    Abrir en nueva pestaña
+                  </UButton>
+                </div>
+              </div>
+            </div>
+
+            <!-- Información del archivo -->
+            <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-gray-600 dark:text-gray-400">
+                  <strong>Archivo:</strong> Constancia de curso.{{
+                    getFileExtension(datosCliente.url_constancia).toUpperCase() }}
+                </span>
+                <UButton icon="i-heroicons-arrow-top-right-on-square" variant="ghost" size="xs"
+                  @click="descargarConstancia(datosCliente.url_constancia)">
+                  Abrir en nueva pestaña
+                </UButton>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -81,127 +182,11 @@
           Crear usuario
         </UButton>
       </div>
-      <div v-if="datosCliente?.url_constancia" class="flex gap-2">
-        <UButton 
-          icon="i-heroicons-eye"
-          @click="previsualizarConstancia(datosCliente?.url_constancia)"
-          variant="outline"
-        >
-          Vista Modal
-        </UButton>
-        <UButton 
-          icon="i-heroicons-arrow-down-tray"
-          @click="descargarConstancia(datosCliente?.url_constancia)"
-        >
-          Descargar
-        </UButton>
-      </div>
+
     </div>
 
     <!-- Vista previa inline de la constancia -->
-    <div v-if="datosCliente?.url_constancia" class="mt-6">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <div class="mb-4">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Vista previa de la constancia
-          </h3>
-        </div>
-        
-        <!-- Contenedor de vista previa -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-          <!-- PDF Preview con múltiples opciones -->
-          <div v-if="getFileExtension(datosCliente.url_constancia) === 'pdf'" class="w-full h-[600px]">
-            <!-- Opción 1: Iframe directo -->
-            <div v-if="!showAlternativeViewer" class="w-full h-full">
-              <iframe 
-                :src="datosCliente.url_constancia"
-                class="w-full h-full border-0"
-                title="Vista previa de la constancia"
-                loading="lazy"
-                @error="handleIframeError"
-              ></iframe>
-            </div>
-            
-            <!-- Opción 2: Google Docs Viewer como alternativa -->
-            <div v-else class="w-full h-full">
-              <iframe 
-                :src="`https://docs.google.com/gview?url=${encodeURIComponent(datosCliente.url_constancia)}&embedded=true`"
-                class="w-full h-full border-0"
-                title="Vista previa de la constancia (Google Docs Viewer)"
-                loading="lazy"
-                @error="handleGoogleViewerError"
-              ></iframe>
-            </div>
-            
-            <!-- Controles para cambiar el visor -->
-            <div class="absolute top-2 right-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg p-2">
-              <UButton
-                :icon="showAlternativeViewer ? 'i-heroicons-document' : 'i-heroicons-globe-alt'"
-                variant="ghost"
-                size="xs"
-                @click="toggleViewer"
-                :title="showAlternativeViewer ? 'Cambiar a iframe directo' : 'Cambiar a Google Docs Viewer'"
-              >
-                {{ showAlternativeViewer ? 'Directo' : 'Google' }}
-              </UButton>
-            </div>
-          </div>
-          
-          <!-- Vista previa para imágenes -->
-          <div v-else-if="isImageFile(datosCliente.url_constancia)" class="flex justify-center p-4">
-            <img 
-              :src="datosCliente.url_constancia"
-              :alt="'Constancia de curso'"
-              class="max-w-full max-h-[600px] object-contain rounded shadow-lg"
-              loading="lazy"
-            />
-          </div>
-          
-          <!-- Vista previa no disponible para otros tipos -->
-          <div v-else class="flex flex-col items-center justify-center h-96 text-gray-500 dark:text-gray-400">
-            <UIcon 
-              name="i-heroicons-document" 
-              class="w-16 h-16 mb-4"
-            />
-            <p class="text-lg font-medium mb-2">Vista previa no disponible</p>
-            <p class="text-sm mb-4">Este tipo de archivo no puede ser previsualizado inline</p>
-            <div class="flex gap-2">
-              <UButton
-                icon="i-heroicons-arrow-down-tray"
-                variant="outline"
-                @click="descargarConstancia(datosCliente.url_constancia)"
-              >
-                Descargar archivo
-              </UButton>
-              <UButton
-                icon="i-heroicons-arrow-top-right-on-square"
-                variant="outline"
-                @click="openInNewTab(datosCliente.url_constancia)"
-              >
-                Abrir en nueva pestaña
-              </UButton>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Información del archivo -->
-        <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-gray-600 dark:text-gray-400">
-              <strong>Archivo:</strong> Constancia de curso.{{ getFileExtension(datosCliente.url_constancia).toUpperCase() }}
-            </span>
-            <UButton
-              icon="i-heroicons-arrow-top-right-on-square"
-              variant="ghost"
-              size="xs"
-              @click="descargarConstancia(datosCliente.url_constancia)"
-            >
-              Abrir en nueva pestaña
-            </UButton>
-          </div>
-        </div>
-      </div>
-    </div>
+
   </div>
 </template>
 
@@ -257,7 +242,7 @@ const sexoLabel = computed(() => {
     case 1: return 'Masculino'
     case 2: return 'Femenino'
     default: return 'Otros'
-  }     
+  }
 })
 
 function getRedSocialText(num?: number, otros?: string) {
@@ -342,14 +327,14 @@ function getFileExtension(url: string): string {
 function previsualizarConstancia(url: string) {
   const extension = getFileExtension(url)
   const fileName = `Constancia de curso.${extension}`
-  
+
   // Crear un objeto FileItem compatible con ModalPreview
   const fileItem = {
     file_name: fileName,
     file_url: url,
     size: 0 // No tenemos el tamaño real
   }
-  
+
   modalPreview.open({
     file: fileItem,
     isOpen: true
