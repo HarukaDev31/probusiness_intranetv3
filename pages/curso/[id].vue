@@ -81,9 +81,19 @@
           Crear usuario
         </UButton>
       </div>
-      <div v-if="datosCliente?.url_constancia">
-        <UButton @click="descargarConstancia(datosCliente?.url_constancia)">
-          Descargar Constancia
+      <div v-if="datosCliente?.url_constancia" class="flex gap-2">
+        <UButton 
+          icon="i-heroicons-eye"
+          @click="previsualizarConstancia(datosCliente?.url_constancia)"
+          variant="outline"
+        >
+          Previsualizar
+        </UButton>
+        <UButton 
+          icon="i-heroicons-arrow-down-tray"
+          @click="descargarConstancia(datosCliente?.url_constancia)"
+        >
+          Descargar
         </UButton>
       </div>
     </div>
@@ -95,6 +105,8 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCursos } from '~/composables/useCursos'
 import type { DatosClientePorPedido } from '~/types/cursos/cursos'
+import { useOverlay } from '#imports'
+import ModalPreview from '~/components/commons/ModalPreview.vue'
 const route = useRoute()
 const router = useRouter()
 
@@ -109,6 +121,10 @@ const showModal = ref(false)
 
 const form = ref<Partial<DatosClientePorPedido>>({})
 const editMode = ref(false)
+
+// Overlay para modal de previsualización
+const overlay = useOverlay()
+const modalPreview = overlay.create(ModalPreview)
 
 onMounted(async () => {
   datosCliente.value = await cargarDatosClientePorPedido(Number(route.params.id))
@@ -197,5 +213,37 @@ async function enviarEmailUsuarioMoodle(id: number, ID_Pedido_Curso: number) {
 
 function descargarConstancia(url: string) {
   window.open(url, '_blank')
+}
+
+// Función para extraer la extensión del archivo desde la URL
+function getFileExtension(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    const pathname = urlObj.pathname
+    const extension = pathname.split('.').pop()?.toLowerCase() || 'file'
+    return extension
+  } catch {
+    // Si la URL no es válida, intentar extraer extensión de otra manera
+    const match = url.match(/\.([^./?#]+)(?:[?#]|$)/)
+    return match ? match[1].toLowerCase() : 'file'
+  }
+}
+
+// Función para previsualizar la constancia
+function previsualizarConstancia(url: string) {
+  const extension = getFileExtension(url)
+  const fileName = `Constancia de curso.${extension}`
+  
+  // Crear un objeto FileItem compatible con ModalPreview
+  const fileItem = {
+    file_name: fileName,
+    file_url: url,
+    size: 0 // No tenemos el tamaño real
+  }
+  
+  modalPreview.open({
+    file: fileItem,
+    isOpen: true
+  })
 }
 </script>
