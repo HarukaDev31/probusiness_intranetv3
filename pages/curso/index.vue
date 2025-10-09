@@ -256,7 +256,7 @@ const columns = ref<TableColumn<CursoItem>[]>([
         header: 'Estado',
         cell: ({ row }: { row: any }) => {
             //parse all to 2 decimal places
-            const nSs_Importe = Number(row.original.Ss_Importe??0)
+            const nSs_Importe = Number(row.original.Ss_Total??0)
             const nTotal_pagos = Number(row.original.total_pagos??0)
             console.log('Ss_Importe:', nSs_Importe, 'total_pagos:', nTotal_pagos)
             let value = 'pendiente'
