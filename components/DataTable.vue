@@ -106,9 +106,29 @@
       body:'px-0'
     }">
       
-      <div class="overflow-x-auto">
+      <div 
+        ref="tableContainerRef"
+        class="overflow-x-auto relative scroll-container"
+        @scroll="handleScroll"
+        @mousemove="handleMouseMove"
+        @mouseleave="stopAutoScroll"
+      >
+        <!-- Sombra izquierda -->
+        <div 
+          v-if="showLeftShadow" 
+          class="scroll-shadow scroll-shadow-left"
+          :style="{ left: scrollLeft + 'px' }"
+        ></div>
+        <!-- Sombra derecha -->
+        <div 
+          v-if="showRightShadow" 
+          class="scroll-shadow scroll-shadow-right"
+          :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
+        ></div>
         <UTable :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
           class="bg-transparent min-w-full" :ui="{
+            root: 'relative overflow-visible',
+            base: 'min-w-full',
             thead: 'bg-transparent',
             tbody: 'border-separate border-spacing-y-6',
             td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
@@ -167,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { h, resolveComponent, computed } from 'vue'
+import { h, resolveComponent, computed, ref, onMounted, onUnmounted } from 'vue'
 import type { DataTableProps, DataTableEmits } from '../types/data-table'
 import { useDataTable } from '../composables/useDataTable'
 import { DATA_TABLE_DEFAULTS, PAGINATION_OPTIONS } from '../constants/data-table'
@@ -208,6 +228,115 @@ const {
 } = useDataTable(props, emit)
 
 const router = useRouter()
+
+// Scroll automático y sombras laterales
+const tableContainerRef = ref<HTMLElement | null>(null)
+const showLeftShadow = ref(false)
+const showRightShadow = ref(false)
+const scrollLeft = ref(0)
+const containerWidth = ref(0)
+const autoScrollInterval = ref<number | null>(null)
+const SCROLL_SPEED = 20 // píxeles por frame
+const EDGE_THRESHOLD = 100 // píxeles desde el borde para activar auto-scroll
+
+const canScrollLeft = () => {
+  if (!tableContainerRef.value) return false
+  return tableContainerRef.value.scrollLeft > 0
+}
+
+const canScrollRight = () => {
+  if (!tableContainerRef.value) return false
+  const element = tableContainerRef.value
+  const scrollLeft = element.scrollLeft
+  const scrollWidth = element.scrollWidth
+  const clientWidth = element.clientWidth
+  return scrollLeft < (scrollWidth - clientWidth - 1)
+}
+
+const updateScrollPosition = () => {
+  if (!tableContainerRef.value) return
+  scrollLeft.value = tableContainerRef.value.scrollLeft
+  containerWidth.value = tableContainerRef.value.clientWidth
+}
+
+const handleScroll = () => {
+  updateScrollPosition()
+}
+
+const handleMouseMove = (event: MouseEvent) => {
+  if (!tableContainerRef.value) return
+  
+  updateScrollPosition()
+  
+  const rect = tableContainerRef.value.getBoundingClientRect()
+  const mouseX = event.clientX - rect.left
+  const width = rect.width
+  
+  // Detectar si el mouse está cerca del borde izquierdo
+  if (mouseX < EDGE_THRESHOLD && canScrollLeft()) {
+    showLeftShadow.value = true
+    showRightShadow.value = false
+    startAutoScroll('left')
+  }
+  // Detectar si el mouse está cerca del borde derecho
+  else if (mouseX > width - EDGE_THRESHOLD && canScrollRight()) {
+    showRightShadow.value = true
+    showLeftShadow.value = false
+    startAutoScroll('right')
+  }
+  // Si está en el medio, ocultar sombras y detener auto-scroll
+  else {
+    showLeftShadow.value = false
+    showRightShadow.value = false
+    stopAutoScroll()
+  }
+}
+
+const startAutoScroll = (direction: 'left' | 'right') => {
+  if (autoScrollInterval.value) return // Ya está corriendo
+  
+  autoScrollInterval.value = window.setInterval(() => {
+    if (!tableContainerRef.value) return
+    
+    const scrollAmount = direction === 'left' ? -SCROLL_SPEED : SCROLL_SPEED
+    tableContainerRef.value.scrollLeft += scrollAmount
+    
+    // Verificar si llegamos al límite y detener
+    if ((direction === 'left' && !canScrollLeft()) ||
+        (direction === 'right' && !canScrollRight())) {
+      stopAutoScroll()
+    }
+  }, 16) // ~60fps
+}
+
+const stopAutoScroll = () => {
+  if (autoScrollInterval.value) {
+    clearInterval(autoScrollInterval.value)
+    autoScrollInterval.value = null
+  }
+  // Ocultar sombras cuando se detiene el auto-scroll
+  showLeftShadow.value = false
+  showRightShadow.value = false
+}
+
+onMounted(() => {
+  updateScrollPosition()
+  // Observar cambios de tamaño
+  if (tableContainerRef.value) {
+    const resizeObserver = new ResizeObserver(() => {
+      updateScrollPosition()
+    })
+    resizeObserver.observe(tableContainerRef.value)
+    
+    onUnmounted(() => {
+      resizeObserver.disconnect()
+    })
+  }
+})
+
+onUnmounted(() => {
+  stopAutoScroll()
+})
 
 const goBack = () => {
   if (props.previousPageUrl) {
@@ -283,6 +412,48 @@ const displayedFilterConfig = computed(() => {
 <style scoped>
 tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   display: none;
+}
+
+/* Contenedor de scroll */
+.scroll-container {
+  position: relative;
+}
+
+/* Sombras laterales para indicar scroll horizontal */
+.scroll-shadow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  pointer-events: none;
+  z-index: 30;
+  animation: fadeIn 0.15s ease-in-out;
+}
+
+.scroll-shadow-left {
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.5) 0%, rgba(59, 130, 246, 0.3) 40%, transparent 100%);
+}
+
+.scroll-shadow-right {
+  background: linear-gradient(to left, rgba(59, 130, 246, 0.5) 0%, rgba(59, 130, 246, 0.3) 40%, transparent 100%);
+}
+
+/* Sombras para modo oscuro */
+.dark .scroll-shadow-left {
+  background: linear-gradient(to right, rgba(96, 165, 250, 0.6) 0%, rgba(96, 165, 250, 0.4) 40%, transparent 100%);
+}
+
+.dark .scroll-shadow-right {
+  background: linear-gradient(to left, rgba(96, 165, 250, 0.6) 0%, rgba(96, 165, 250, 0.4) 40%, transparent 100%);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Estilos para mejorar la responsividad */

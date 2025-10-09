@@ -258,7 +258,6 @@ const columns = ref<TableColumn<CursoItem>[]>([
             //parse all to 2 decimal places
             const nSs_Importe = Number(row.original.Ss_Total??0)
             const nTotal_pagos = Number(row.original.total_pagos??0)
-            console.log('Ss_Importe:', nSs_Importe, 'total_pagos:', nTotal_pagos)
             let value = 'pendiente'
             
             if(nTotal_pagos > nSs_Importe){
