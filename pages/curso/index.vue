@@ -256,17 +256,16 @@ const columns = ref<TableColumn<CursoItem>[]>([
         header: 'Estado',
         cell: ({ row }: { row: any }) => {
             //parse all to 2 decimal places
-            const Ss_Importe = Number(row.original.Ss_Importe??0).toFixed(2)
-            const total_pagos = Number(row.original.total_pagos??0).toFixed(2)
-            console.log(Ss_Importe,total_pagos)
+            const nSs_Importe = Number(row.original.Ss_Importe??0)
+            const nTotal_pagos = Number(row.original.total_pagos??0)
+            console.log('Ss_Importe:', nSs_Importe, 'total_pagos:', nTotal_pagos)
             let value = 'pendiente'
-            const nSs_Importe = Number(Ss_Importe)
-            const nTotal_pagos = Number(total_pagos)
-            if(nSs_Importe > nTotal_pagos){
-                value = 'adelanto'
-            }else if(nSs_Importe < nTotal_pagos && nSs_Importe !== 0){
+            
+            if(nTotal_pagos > nSs_Importe){
                 value = 'sobrepago'
-            }else if(nSs_Importe === nTotal_pagos){
+            }else if(nTotal_pagos < nSs_Importe && nTotal_pagos !== 0){
+                value = 'adelanto'
+            }else if(nTotal_pagos === nSs_Importe && nSs_Importe !== 0){
                 value = 'pagado'
             }
             const items = [
