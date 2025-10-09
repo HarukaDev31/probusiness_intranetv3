@@ -84,6 +84,8 @@ export interface EstadoDisponible {
     No_Signo: string
     No_Usuario: string
     Url_Constancia: string | null
+    usuario_moodle: string | null
+    password_moodle: string | null
   }
 
   export interface DatosClientePorPedido {

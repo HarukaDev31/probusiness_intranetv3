@@ -2,7 +2,9 @@ import { BaseService } from '~/services/base/BaseService'
 
 export class LocationService extends BaseService {
   private static baseUrl = 'api/clientes/ubicacion'
-
+  static async getPaises(): Promise<{ success: boolean; data: Array<{ id: number; nombre: string }> }> {
+    return await this.apiCall(`${this.baseUrl}/paises`)
+  }
   static async getDepartamentos(): Promise<{ success: boolean; data: Array<{ id: number; nombre: string }> }> {
     return await this.apiCall(`${this.baseUrl}/departamentos`)
   }
