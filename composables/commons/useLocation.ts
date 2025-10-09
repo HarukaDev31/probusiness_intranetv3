@@ -21,8 +21,8 @@ export const useLocation = () => {
       if (response.success) {
         // Mapear los datos del API a la estructura { value, label }
         paises.value = response.data.map((p: any) => ({
-          value: p.iID_Pais,
-          label: p.No_Pais
+          value: p.value,
+          label: p.label
         }))
       }
     } catch (error) {

@@ -152,17 +152,7 @@
             <input class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full" v-model="form.password_moodle"
               :readonly="true" />
           </div>
-          <div class="mt-4">
-            <UButton 
-              color="primary" 
-              variant="solid" 
-              icon="i-heroicons-envelope-20-solid"
-              class="w-full"
-              @click="enviarCredencialesCorreo"
-              :loading="enviandoCorreo">
-              Enviar credenciales por correo
-            </UButton>
-          </div>
+         
         </div>
         <div v-if="datosCliente?.url_constancia" class="mt-6">
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">

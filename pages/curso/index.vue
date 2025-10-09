@@ -206,6 +206,7 @@ const columns = ref<TableColumn<CursoItem>[]>([
         header: 'Usuario',
         cell: ({ row }: { row: any }) => {
             const items = [
+                { label: 'No creado', value: 0, icon: 'ic:outline-access-time' , disabled: true,selected: true},
                 { label: 'Pendiente', value: 1, icon: 'ic:outline-access-time' },
                 { label: 'Creado', value: 2, icon: 'ic:outline-person' },
                 { label: 'Constancia', value: 3, icon: 'solar:diploma-outline', disabled: true }
@@ -254,7 +255,20 @@ const columns = ref<TableColumn<CursoItem>[]>([
         accessorKey: 'estado',
         header: 'Estado',
         cell: ({ row }: { row: any }) => {
-            const value = row.original.estado_pago
+            //parse all to 2 decimal places
+            const Ss_Importe = Number(row.original.Ss_Importe??0).toFixed(2)
+            const total_pagos = Number(row.original.total_pagos??0).toFixed(2)
+            console.log(Ss_Importe,total_pagos)
+            let value = 'pendiente'
+            const nSs_Importe = Number(Ss_Importe)
+            const nTotal_pagos = Number(total_pagos)
+            if(nSs_Importe > nTotal_pagos){
+                value = 'adelanto'
+            }else if(nSs_Importe < nTotal_pagos && nSs_Importe !== 0){
+                value = 'sobrepago'
+            }else if(nSs_Importe === nTotal_pagos){
+                value = 'pagado'
+            }
             const items = [
                 { label: 'Pendiente', value: 'pendiente', icon: 'ic:outline-access-time' },
                 { label: 'Adelanto', value: 'adelanto', icon: 'ic:round-double-arrow' },
@@ -444,8 +458,11 @@ const handleChangeEstadoUsuarioExterno = async (idUsuario: number, idPedido: num
             const response = await changeEstadoUsuarioExterno(data)
             if (response.success) {
                 if(response?.data){
+                    console.log(response.data)
                     //show success with data.No_Usuario Y data.No_Password
-                    showSuccess('El Usuario ha sido creado en Moodle', `Usuario: ${response.data.No_Usuario}, Password: ${response.data.No_Password}`)
+                    let usuario = response.data.No_Usuario??response.data.moodle_username
+                    let password = response.data.No_Password??response.data.moodle_password
+                    showSuccess('El Usuario ha sido creado en Moodle', `Usuario: ${usuario}, Password: ${password}`)
                 }else{
                     showSuccess('Estado de usuario externo cambiado', 'Estado de usuario externo cambiado correctamente')
                 }
