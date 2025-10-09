@@ -76,7 +76,7 @@
                 :class="[
                   'w-10 h-10 rounded-full text-sm font-medium transition-all duration-200',
                   !date.isPast
-                    ? 'hover:bg-primary-600' 
+                    ? 'hover:bg-primary-600 hover:text-white cursor-pointer' 
                     : 'text-neutral-500',
                   getDateClass(date)
                 ]"
@@ -510,13 +510,13 @@ const clearSelection = () => {
 
 const getDateClass = (date: any) => {
   if (date.isPast) {
-    return 'text-secondary-500'
+    return 'text-secondary-300'
   } else if (date.isSelected) {
     return 'bg-primary-400 text-white'
   } else if (date.hasSchedule) {
     return 'bg-green-400 text-white'
   } else {
-    return 'text-secondary-300'
+    return 'text-secondary-500'
   }
 }
 
