@@ -333,7 +333,6 @@ const redSocialOptions = [
   { label: 'Instagram', value: 3 },
   { label: 'Youtube', value: 4 },
   { label: 'Familiares/Amigos', value: 5 },
-  { label: 'LinkedIn', value: 6 },
   { label: 'Google', value: 7 },
   { label: 'Otros', value: 8 }
 ]
