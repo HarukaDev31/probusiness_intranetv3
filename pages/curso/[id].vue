@@ -39,45 +39,98 @@
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Fecha de nacimiento:</span>
-            <input
-              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
-              v-model="form.nacimiento" :readonly="!editMode" />
+            <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
+              {{ form.nacimiento ? formatDateDisplay(form.nacimiento) : 'No especificada' }}
+            </div>
+            <UPopover v-else>
+              <UButton color="neutral" variant="subtle" icon="i-lucide-calendar" class="w-full justify-start">
+                {{ fechaNacimiento ? df.format(fechaNacimiento.toDate(getLocalTimeZone())) : 'Seleccionar fecha' }}
+              </UButton>
+              <template #content>
+                <UCalendar v-model="fechaNacimiento" class="p-2" />
+              </template>
+            </UPopover>
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Sexo:</span>
-            <input
-              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
-              v-model="form.sexo" :readonly="!editMode" />
+            <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
+              {{ getSexoLabel(Number(form.sexo)) }}
+            </div>
+            <USelect 
+              v-if="editMode" 
+              v-model="sexoSeleccionado" 
+              :items="sexoOptions"
+              :disabled="!editMode"
+              class="w-full" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Red social:</span>
-            <input
-              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
-              v-model="form.red_social" :readonly="!editMode" />
+            <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
+              {{ getRedSocialLabel(Number(form.red_social)) }}
+            </div>
+            <USelect 
+              v-if="editMode" 
+              v-model="redSocialSeleccionada" 
+              :items="redSocialOptions"
+              :disabled="!editMode"
+              class="w-full" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">País:</span>
-            <input
-              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
-              v-model="form.pais" :readonly="!editMode" />
+            <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
+              {{ form.pais || 'No especificado' }}
+            </div>
+            
+            <USelect 
+              v-if="editMode" 
+              v-model="selectedPais" 
+              :items="paisOptions" 
+       
+              :disabled="!editMode"
+              class="w-full"
+              placeholder="Seleccionar país" />
           </div>
-          <div class="flex items-center">
+          <div v-if="selectedPais === 1" class="flex items-center">
             <span class="w-48 font-medium">Departamento:</span>
-            <input
-              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
-              v-model="form.departamento" :readonly="!editMode" />
+            <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
+              {{ form.departamento || 'No especificado' }}
+            </div>
+            <USelect 
+              v-if="editMode" 
+              v-model="selectedDepartamento" 
+              :items="departamentoOptions"
+              :disabled="!editMode"
+              class="w-full"
+              placeholder="Seleccionar departamento"
+              :loading="loadingDepartamentos" />
           </div>
-          <div class="flex items-center">
+          <div v-if="selectedPais === 1 && selectedDepartamento" class="flex items-center">
             <span class="w-48 font-medium">Provincia:</span>
-            <input
-              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
-              v-model="form.provincia" :readonly="!editMode" />
+            <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
+              {{ form.provincia || 'No especificado' }}
+            </div>
+            <USelect 
+              v-if="editMode" 
+              v-model="selectedProvincia" 
+              :items="provinciaOptions"
+              :disabled="!editMode"
+              class="w-full"
+              placeholder="Seleccionar provincia"
+              :loading="loadingProvincias" />
           </div>
-          <div class="flex items-center">
+          <div v-if="selectedPais === 1 && selectedProvincia" class="flex items-center">
             <span class="w-48 font-medium">Distrito:</span>
-            <input
-              :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
-              v-model="form.distrito" :readonly="!editMode" />
+            <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
+              {{ form.distrito || 'No especificado' }}
+            </div>
+            <USelect 
+              v-if="editMode" 
+              v-model="selectedDistrito" 
+              :items="distritoOptions"
+              :disabled="!editMode"
+              class="w-full"
+              placeholder="Seleccionar distrito"
+              :loading="loadingDistritos" />
           </div>
         </div>
       </div>
@@ -92,12 +145,23 @@
             <span class="w-48 font-medium">Usuario:</span>
             <input
               :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
-              v-model="form.usuario_moodle" :readonly="!editMode" />
+              v-model="form.usuario_moodle" :readonly="true" />
           </div>
           <div class="flex items-center">
             <span class="w-48 font-medium">Contraseña:</span>
             <input class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full" v-model="form.password_moodle"
-              :readonly="!editMode" />
+              :readonly="true" />
+          </div>
+          <div class="mt-4">
+            <UButton 
+              color="primary" 
+              variant="solid" 
+              icon="i-heroicons-envelope-20-solid"
+              class="w-full"
+              @click="enviarCredencialesCorreo"
+              :loading="enviandoCorreo">
+              Enviar credenciales por correo
+            </UButton>
           </div>
         </div>
         <div v-if="datosCliente?.url_constancia" class="mt-6">
@@ -187,16 +251,20 @@
 
     <!-- Vista previa inline de la constancia -->
 
+  
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch, shallowRef, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCursos } from '~/composables/useCursos'
 import type { DatosClientePorPedido } from '~/types/cursos/cursos'
 import { useOverlay } from '#imports'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
+import { CalendarDate, DateFormatter, getLocalTimeZone, parseDate } from '@internationalized/date'
+import { useLocation } from '~/composables/commons/useLocation'
+
 const route = useRoute()
 const router = useRouter()
 
@@ -219,31 +287,316 @@ const modalPreview = overlay.create(ModalPreview)
 // Estado para alternar entre visores de PDF
 const showAlternativeViewer = ref(false)
 
+// Estado para el envío de correo
+const enviandoCorreo = ref(false)
+
+// DateFormatter para la fecha de nacimiento
+const df = new DateFormatter('es-PE', {
+  dateStyle: 'medium'
+})
+
+// Fecha de nacimiento como CalendarDate
+const fechaNacimiento = shallowRef<CalendarDate | null>(null)
+
+// Variables para sexo y red social
+const sexoSeleccionado = ref<number | null>(null)
+const redSocialSeleccionada = ref<number | null>(null)
+
+// Variables locales para ubicación
+const selectedPais = ref<number | null>(null)
+const selectedDepartamento = ref<number | null>(null)
+const selectedProvincia = ref<number | null>(null)
+const selectedDistrito = ref<number | null>(null)
+
+// Bandera para indicar si estamos en la carga inicial
+const isInitialLoad = ref(true)
+
+// Composable de ubicación
+const {
+  paises,
+  departamentos,
+  provincias,
+  distritos,
+  loadingPaises,
+  loadingDepartamentos,
+  loadingProvincias,
+  loadingDistritos,
+  fetchPaises,
+  fetchDepartamentos,
+  fetchProvincias,
+  fetchDistritos,
+  limpiarProvinciasYDistritos,
+  limpiarDistritos,
+  limpiarUbicacionesPeruanas,
+  initializeLocation
+} = useLocation()
+
+// Opciones para los selects
+const sexoOptions = [
+  { label: 'Masculino', value: 1 },
+  { label: 'Femenino', value: 0 }
+]
+
+const redSocialOptions = [
+  { label: 'Tiktok', value: 1 },
+  { label: 'Facebook', value: 2 },
+  { label: 'Instagram', value: 3 },
+  { label: 'Youtube', value: 4 },
+  { label: 'Familiares/Amigos', value: 5 },
+  { label: 'LinkedIn', value: 6 },
+  { label: 'Google', value: 7 },
+  { label: 'Otros', value: 8 }
+]
+
+// Opciones computadas para los selects de ubicación
+const paisOptions = computed(() => paises.value)
+
+const departamentoOptions = computed(() => 
+  departamentos.value.map(d => ({ label: d.nombre, value: d.id }))
+)
+
+const provinciaOptions = computed(() => 
+  provincias.value.map(p => ({ label: p.nombre, value: p.id }))
+)
+
+const distritoOptions = computed(() => 
+  distritos.value.map(d => ({ label: d.nombre, value: d.id }))
+)
+
+// Funciones para obtener labels de los datos
+const getSexoLabel = (value?: number) => {
+  const option = sexoOptions.find(o => o.value === value)
+  return option?.label || 'No especificado'
+}
+
+const getRedSocialLabel = (value?: number) => {
+  const option = redSocialOptions.find(o => o.value === value)
+  return option?.label || 'No especificado'
+}
+
+// Función para formatear fecha para visualización
+const formatDateDisplay = (dateString?: string) => {
+  if (!dateString) return 'No especificada'
+  try {
+    const date = new Date(dateString)
+    return df.format(date)
+  } catch {
+    return dateString
+  }
+}
+
+// Función para convertir string de fecha a CalendarDate
+const stringToCalendarDate = (dateString?: string): CalendarDate | null => {
+  if (!dateString) return null
+  try {
+    // Intenta parsear la fecha en formato ISO
+    const date = new Date(dateString)
+    return new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate())
+  } catch {
+    return null
+  }
+}
+
+// Función para convertir CalendarDate a string ISO
+const calendarDateToString = (calendarDate: CalendarDate | null): string | undefined => {
+  if (!calendarDate) return undefined
+  try {
+    const date = calendarDate.toDate(getLocalTimeZone())
+    return date.toISOString().split('T')[0]
+  } catch {
+    return undefined
+  }
+}
+
+// Watch para sincronizar fechaNacimiento con form.nacimiento
+watch(fechaNacimiento, (newDate) => {
+  if (newDate && editMode.value) {
+    form.value.nacimiento = calendarDateToString(newDate)
+  }
+})
+
+// Watchers para sincronizar selecciones con el formulario
+watch(selectedPais, async (newPais, oldPais) => {
+  console.log('Watch selectedPais - nuevo:', newPais, 'anterior:', oldPais, 'editMode:', editMode.value, 'isInitialLoad:', isInitialLoad.value)
+  
+  // No hacer nada si estamos en carga inicial o no estamos en modo edición
+  if (isInitialLoad.value || !editMode.value || newPais === oldPais) return
+  
+  if (newPais !== null && newPais !== undefined) {
+    form.value.id_pais = newPais
+    
+    // Limpiar campos dependientes
+    selectedDepartamento.value = null
+    selectedProvincia.value = null
+    selectedDistrito.value = null
+    form.value.id_departamento = 0
+    form.value.id_provincia = 0
+    form.value.id_distrito = 0
+    
+    // Si es Perú (id = 1), cargar departamentos, si no, limpiar
+    if (newPais === 1) {
+      await fetchDepartamentos()
+    } else {
+      limpiarUbicacionesPeruanas()
+    }
+  }
+})
+
+watch(selectedDepartamento, async (newDepto, oldDepto) => {
+  console.log('Watch selectedDepartamento - nuevo:', newDepto, 'anterior:', oldDepto, 'isInitialLoad:', isInitialLoad.value)
+  
+  if (isInitialLoad.value || !editMode.value || newDepto === oldDepto) return
+  
+  if (newDepto !== null && newDepto !== undefined) {
+    form.value.id_departamento = newDepto
+    
+    // Limpiar campos dependientes
+    selectedProvincia.value = null
+    selectedDistrito.value = null
+    form.value.id_provincia = 0
+    form.value.id_distrito = 0
+    
+    // Cargar provincias
+    await fetchProvincias(newDepto)
+  }
+})
+
+watch(selectedProvincia, async (newProv, oldProv) => {
+  console.log('Watch selectedProvincia - nuevo:', newProv, 'anterior:', oldProv, 'isInitialLoad:', isInitialLoad.value)
+  
+  if (isInitialLoad.value || !editMode.value || newProv === oldProv) return
+  
+  if (newProv !== null && newProv !== undefined) {
+    form.value.id_provincia = newProv
+    
+    // Limpiar distrito
+    selectedDistrito.value = null
+    form.value.id_distrito = 0
+    
+    // Cargar distritos
+    await fetchDistritos(newProv)
+  }
+})
+
+watch(selectedDistrito, (newDist, oldDist) => {
+  console.log('Watch selectedDistrito - nuevo:', newDist, 'anterior:', oldDist, 'isInitialLoad:', isInitialLoad.value)
+  
+  if (isInitialLoad.value || !editMode.value || newDist === oldDist) return
+  
+  if (newDist !== null && newDist !== undefined) {
+    form.value.id_distrito = newDist
+  }
+})
+
+watch(sexoSeleccionado, (newSexo, oldSexo) => {
+  if (isInitialLoad.value || !editMode.value || newSexo === oldSexo) return
+  
+  if (newSexo !== null && newSexo !== undefined) {
+    form.value.sexo = String(newSexo)
+  }
+})
+
+watch(redSocialSeleccionada, (newRedSocial, oldRedSocial) => {
+  if (isInitialLoad.value || !editMode.value || newRedSocial === oldRedSocial) return
+  
+  if (newRedSocial !== null && newRedSocial !== undefined) {
+    form.value.red_social = String(newRedSocial)
+  }
+})
 
 onMounted(async () => {
   datosCliente.value = await cargarDatosClientePorPedido(Number(route.params.id))
   if (datosCliente.value) {
     form.value = { ...datosCliente.value }
+    
+    console.log('Datos del cliente cargados:', {
+      id_pais: datosCliente.value.id_pais,
+      id_departamento: datosCliente.value.id_departamento,
+      id_provincia: datosCliente.value.id_provincia,
+      id_distrito: datosCliente.value.id_distrito,
+      pais: datosCliente.value.pais
+    })
+    
+    // Inicializar fecha de nacimiento
+    fechaNacimiento.value = stringToCalendarDate(datosCliente.value.nacimiento)
+    
+    // Inicializar sexo y red social
+    sexoSeleccionado.value = datosCliente.value.sexo ? Number(datosCliente.value.sexo) : null
+    redSocialSeleccionada.value = datosCliente.value.red_social ? Number(datosCliente.value.red_social) : null
+    
+    // Primero cargar ubicación (cargar listas)
+    await initializeLocation(
+      datosCliente.value.id_pais,
+      datosCliente.value.id_departamento,
+      datosCliente.value.id_provincia,
+      datosCliente.value.id_distrito
+    )
+    
+    console.log('Países cargados:', paises.value)
+    
+    // Esperar un tick para que Vue procese los computed
+    await nextTick()
+    
+    console.log('Opciones de países (después de nextTick):', paisOptions.value)
+    
+    // Luego asignar valores locales de ubicación después de que las listas estén cargadas
+    selectedPais.value = datosCliente.value.id_pais || null
+    selectedDepartamento.value = datosCliente.value.id_departamento || null
+    selectedProvincia.value = datosCliente.value.id_provincia || null
+    selectedDistrito.value = datosCliente.value.id_distrito || null
+    
+    console.log('selectedPais asignado:', selectedPais.value, 'tipo:', typeof selectedPais.value)
+    console.log('selectedDepartamento asignado:', selectedDepartamento.value, 'tipo:', typeof selectedDepartamento.value)
+    console.log('Verificando paisOptions:', paisOptions.value)
+    console.log('¿Existe el país en paisOptions?', paisOptions.value.find(p => p.value === selectedPais.value))
+    
+    // Desactivar la bandera de carga inicial después de un pequeño delay
+    // para asegurar que todos los valores estén asignados
+    await nextTick()
+    setTimeout(() => {
+      isInitialLoad.value = false
+      console.log('Carga inicial completada, watchers activados')
+    }, 100)
   }
 })
 
 const guardarCambios = async () => {
   if (!datosCliente.value) return
-  await editarDatosCliente(datosCliente.value.id_entidad, form.value)
+  
+  // Construir el payload solo con los campos necesarios
+  const payload: any = {
+    nombres: form.value.nombres,
+    dni: form.value.dni,
+    correo: form.value.correo,
+    whatsapp: form.value.whatsapp,
+    nacimiento: form.value.nacimiento,
+    sexo: form.value.sexo,
+    red_social: form.value.red_social,
+    id_pais: form.value.id_pais
+  }
+  
+  // Solo incluir ubicación peruana si el país es Perú (id = 1)
+  if (form.value.id_pais === 1) {
+    payload.id_departamento = form.value.id_departamento
+    payload.id_provincia = form.value.id_provincia
+    payload.id_distrito = form.value.id_distrito
+  }
+  
+  console.log('Payload a enviar:', payload)
+  
+  await editarDatosCliente(datosCliente.value.id_entidad, payload)
   editMode.value = false
-  // Opcional: recargar datos del cliente
   datosCliente.value = await cargarDatosClientePorPedido(Number(route.params.id))
   form.value = { ...datosCliente.value }
+  
+  // Reinicializar valores locales
+  sexoSeleccionado.value = datosCliente.value.sexo ? Number(datosCliente.value.sexo) : null
+  redSocialSeleccionada.value = datosCliente.value.red_social ? Number(datosCliente.value.red_social) : null
+  selectedPais.value = datosCliente.value.id_pais || null
+  selectedDepartamento.value = datosCliente.value.id_departamento || null
+  selectedProvincia.value = datosCliente.value.id_provincia || null
+  selectedDistrito.value = datosCliente.value.id_distrito || null
 }
-
-const sexoLabel = computed(() => {
-  if (!datosCliente.value) return ''
-  switch (datosCliente.value.sexo) {
-    case 1: return 'Masculino'
-    case 2: return 'Femenino'
-    default: return 'Otros'
-  }
-})
 
 function getRedSocialText(num?: number, otros?: string) {
   switch (num) {
@@ -302,6 +655,41 @@ async function enviarEmailUsuarioMoodle(id: number, ID_Pedido_Curso: number) {
     modalType.value = 'danger'
     modalMessage.value = 'Error en la petición'
     setTimeout(() => { showModal.value = false }, 4100)
+  }
+}
+
+async function enviarCredencialesCorreo() {
+  if (!datosCliente.value?.id_usuario || !datosCliente.value?.id_pedido_curso) {
+    showModal.value = true
+    modalType.value = 'danger'
+    modalMessage.value = 'No se pudo obtener la información del usuario'
+    setTimeout(() => { showModal.value = false }, 3000)
+    return
+  }
+
+  enviandoCorreo.value = true
+  try {
+    const response = await fetch(
+      `/api/Curso/PedidosCurso/enviarEmailUsuarioMoodle/${datosCliente.value.id_usuario}/${datosCliente.value.id_pedido_curso}`
+    )
+    const data = await response.json()
+    
+    showModal.value = true
+    modalType.value = data.status === 'success' ? 'success' : 'danger'
+    modalMessage.value = data.status === 'success' 
+      ? 'Correo enviado exitosamente con las credenciales de acceso' 
+      : data.message || 'Error al enviar el correo'
+    
+    setTimeout(() => { 
+      showModal.value = false 
+    }, data.status === 'success' ? 3000 : 4000)
+  } catch (err) {
+    showModal.value = true
+    modalType.value = 'danger'
+    modalMessage.value = 'Error en la petición al enviar el correo'
+    setTimeout(() => { showModal.value = false }, 4000)
+  } finally {
+    enviandoCorreo.value = false
   }
 }
 
