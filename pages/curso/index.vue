@@ -206,8 +206,7 @@ const columns = ref<TableColumn<CursoItem>[]>([
         header: 'Usuario',
         cell: ({ row }: { row: any }) => {
             const items = [
-                { label: 'No creado', value: 3, icon: 'ic:outline-access-time' , disabled: true,selected: true},
-                { label: 'Pendiente', value: 1, icon: 'ic:outline-access-time' },
+                { label: 'Pendiente', value: 3, icon: 'ic:outline-access-time' },
                 { label: 'Creado', value: 2, icon: 'ic:outline-person' },
                 { label: 'Constancia', value: 4, icon: 'solar:diploma-outline', disabled: true }
             ]
