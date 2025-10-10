@@ -161,4 +161,16 @@ export class CursosService extends BaseService {
       throw new Error('No se pudo cambiar el estado de usuario externo')
     }
   }
+  
+  static async generarYEnviarConstancia(idPedido: number): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; message?: string; error?: string }>(`${this.baseUrl}/pedido/${idPedido}/generar-constancia`, {
+        method: 'POST'
+      })
+      return response
+    } catch (error) {
+      console.error('Error al generar y enviar constancia:', error)
+      throw new Error('No se pudo generar y enviar la constancia')
+    }
+  }
 }

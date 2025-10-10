@@ -236,6 +236,18 @@
           Crear usuario
         </UButton>
       </div>
+      
+      <!-- Botón para generar y enviar constancia -->
+      <div v-if="datosCliente?.Nu_Estado_Usuario_Externo == 2 && !datosCliente?.url_constancia" class="mt-4">
+        <UButton 
+          @click="handleGenerarConstancia" 
+          color="success"
+          icon="i-heroicons-document-plus"
+          :loading="generandoConstancia"
+        >
+          Generar y Enviar Constancia
+        </UButton>
+      </div>
 
     </div>
 
@@ -259,7 +271,7 @@ const route = useRoute()
 const router = useRouter()
 
 const datosCliente = ref<DatosClientePorPedido | undefined>(undefined)
-const { cargarDatosClientePorPedido, editarDatosCliente } = useCursos()
+const { cargarDatosClientePorPedido, editarDatosCliente, generarYEnviarConstancia } = useCursos()
 
 const volver = () => router.back()
 
@@ -279,6 +291,9 @@ const showAlternativeViewer = ref(false)
 
 // Estado para el envío de correo
 const enviandoCorreo = ref(false)
+
+// Estado para la generación de constancia
+const generandoConstancia = ref(false)
 
 // DateFormatter para la fecha de nacimiento
 const df = new DateFormatter('es-PE', {
@@ -746,5 +761,48 @@ function handleGoogleViewerError() {
 // Función para abrir archivo en nueva pestaña
 function openInNewTab(url: string) {
   window.open(url, '_blank')
+}
+
+// Función para generar y enviar constancia
+async function handleGenerarConstancia() {
+  if (!datosCliente.value?.id_pedido_curso) {
+    showModal.value = true
+    modalType.value = 'danger'
+    modalMessage.value = 'No se pudo obtener la información del pedido'
+    setTimeout(() => { showModal.value = false }, 3000)
+    return
+  }
+
+  generandoConstancia.value = true
+  try {
+    const response = await generarYEnviarConstancia(datosCliente.value.id_pedido_curso)
+    
+    showModal.value = true
+    if (response.success) {
+      modalType.value = 'success'
+      modalMessage.value = response.message || 'Constancia generada y enviada exitosamente'
+      
+      // Recargar la vista después de 2 segundos
+      setTimeout(async () => {
+        showModal.value = false
+        // Recargar los datos del cliente
+        datosCliente.value = await cargarDatosClientePorPedido(Number(route.params.id))
+        if (datosCliente.value) {
+          form.value = { ...datosCliente.value }
+        }
+      }, 2000)
+    } else {
+      modalType.value = 'danger'
+      modalMessage.value = response.error || 'Error al generar la constancia'
+      setTimeout(() => { showModal.value = false }, 4000)
+    }
+  } catch (err) {
+    showModal.value = true
+    modalType.value = 'danger'
+    modalMessage.value = 'Error al generar y enviar la constancia'
+    setTimeout(() => { showModal.value = false }, 4000)
+  } finally {
+    generandoConstancia.value = false
+  }
 }
 </script>
