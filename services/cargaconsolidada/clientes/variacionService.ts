@@ -13,8 +13,15 @@ export class VariacionService extends BaseService {
     /**
      * Obtiene la lista de clientes de un consolidado
      */
-    static async getClientes(idConsolidado: number) {
-        const response = await this.apiCall<any>(`${this.baseUrl}/${idConsolidado}`)
+    static async getClientes(idConsolidado: number, filters: any = {}, search: string = '', itemsPerPage: number = 100, currentPage: number = 1) {
+        const response = await this.apiCall<any>(`${this.baseUrl}/${idConsolidado}`, {
+            method: 'GET',
+            params: {
+                search,
+                itemsPerPage,
+                currentPage
+            }
+        })
         return response
     }
 
@@ -215,6 +222,23 @@ export class VariacionService extends BaseService {
         catch (error) {
             console.error('Error al crear documento:', error)
             throw error
+        }
+    }
+    
+    static async exportClientes(id: number): Promise<Blob> {
+        try {
+            const url = `${this.baseUrl}/${id}/export`
+            const response = await this.apiCall<Blob>(url, {
+                method: 'GET',
+                responseType: 'blob',
+                headers: {
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            })
+            return response
+        } catch (error) {
+            console.error('Error al exportar los clientes de variación:', error)
+            throw new Error(error?.data?.message || 'Error al exportar clientes de variación')
         }
     }
 }
