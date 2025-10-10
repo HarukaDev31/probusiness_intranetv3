@@ -206,10 +206,10 @@ const columns = ref<TableColumn<CursoItem>[]>([
         header: 'Usuario',
         cell: ({ row }: { row: any }) => {
             const items = [
-                { label: 'No creado', value: 0, icon: 'ic:outline-access-time' , disabled: true,selected: true},
+                { label: 'No creado', value: 3, icon: 'ic:outline-access-time' , disabled: true,selected: true},
                 { label: 'Pendiente', value: 1, icon: 'ic:outline-access-time' },
                 { label: 'Creado', value: 2, icon: 'ic:outline-person' },
-                { label: 'Constancia', value: 3, icon: 'solar:diploma-outline', disabled: true }
+                { label: 'Constancia', value: 4, icon: 'solar:diploma-outline', disabled: true }
             ]
             // Solo mostrar la opción de constancia si puede_constancia es verdadero
             
@@ -217,7 +217,7 @@ const columns = ref<TableColumn<CursoItem>[]>([
             // Valor por defecto: pendiente (1) si no está definido
             let  modelValue = row.original.Nu_Estado_Usuario_Externo ?? 1
             if(row.original.puede_constancia){
-                modelValue = 3
+                modelValue = 4
             }
             return h(USelect as any, {
                 modelValue,
