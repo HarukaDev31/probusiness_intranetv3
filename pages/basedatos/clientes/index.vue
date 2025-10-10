@@ -15,6 +15,7 @@
             @update:search-query="handleSearch" @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
             @filter-change="handleFilterChange"
+            @clear-filters="handleClearFilters"
             >
             
 
@@ -52,7 +53,8 @@ const {
     handleFilterChange,
     handlePageChange,
     handleItemsPerPageChange,
-    exportClientes
+    exportClientes,
+    handleClearFilters
 } = useClientes()
 
 const localCurrentPage = ref(1)

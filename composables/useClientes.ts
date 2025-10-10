@@ -257,6 +257,25 @@ export const useClientes = () => {
       loading.value = false
     }
   }
+  const handleClearFilters = async () => {
+    try {
+      filters.value = {
+        categoria: 'todos',
+        fecha_inicio: '',
+        fecha_fin: '',
+        servicio: 'todos'
+      }
+      const response = await ClienteService.getClientes(filters.value)
+      clientes.value = response.data
+      pagination.value = response.pagination
+      headers.value = response.headers
+      return { success: true, data: clientes }
+    } catch (err: any) {
+      error.value = err.message || 'Error al limpiar filtros'
+      return { success: false, error: error.value }
+    }
+  }
+
 
   const getClienteById = async (id: number) => {
     loading.value = true
@@ -321,6 +340,7 @@ export const useClientes = () => {
     exportClientes,
     getClienteById,
     clearError,
-    resetFilters
+    resetFilters,
+    handleClearFilters
   }
 } 

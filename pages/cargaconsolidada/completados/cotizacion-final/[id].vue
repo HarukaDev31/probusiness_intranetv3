@@ -106,7 +106,13 @@ const handleUploadFactura = () => {
 }
 const handleDownloadPlantillaGeneral = () => {
   withSpinner(async () => {
-    await downloadPlantillaGeneral(Number(id))
+   const response = await downloadPlantillaGeneral(Number(id))
+   if (response.success) {
+    showSuccess('Éxito', 'Plantilla general descargada correctamente')
+
+   } else {
+    showError('Error', 'Error al descargar la plantilla general')
+   }
   }, 'Descargando plantilla general...')
 }
 const handleUploadPlantillaFinal = () => {
@@ -120,8 +126,10 @@ const handleUploadPlantillaFinal = () => {
         formData.append('file', data.file)
         formData.append('idContenedor', id.toString())
         const result = await uploadPlantillaFinal(formData)
-        if (result) {
+        if (result.success) {
           showSuccess('Éxito', 'Plantilla final subida correctamente')
+          //reload table genearl
+          await getGeneral(Number(id))
         } else {
           showError('Error', 'Error al subir la plantilla final')
         }
