@@ -762,7 +762,7 @@ async function handleGenerarConstancia() {
     })
   } catch (err) {
     generandoConstancia.value = false
-    console.error('Error al generar constancia:', err)
+    showError('Error', 'Error al generar y enviar la constancia')
   }
 }
 </script>
