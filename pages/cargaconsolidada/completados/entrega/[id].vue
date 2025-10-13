@@ -14,12 +14,15 @@
           @click="navigateTo(`/cargaconsolidada/completados/entrega/fechas-horarios/${id}`)" />
       </template>
       <template #body-top>
-        <div class="flex flex-col gap-2 w-full">
-          <div class="flex items-center justify-between gap-3">
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-3">
             <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
-            <div class="flex gap-2">
-              <UButton size="lg" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
-              <UButton size="lg" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
+            <div class="flex gap-2 items-center">
+              <UButton size="lg" color="primary" variant="outline" label="Copiar Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
+              <UButton size="lg" color="warning" variant="outline" label="Copiar Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
+              <transition name="fade">
+                <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm">¡Copiado!</span>
+              </transition>
             </div>
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
@@ -35,12 +38,15 @@
       @filter-change="handleFilterChange" :hide-back-button="false" :show-primary-search="false" :show-body-top="true"
       :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #body-top>
-        <div class="flex flex-col gap-2 w-full">
-          <div class="flex items-center justify-between gap-3">
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-3">
             <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
-            <div class="flex gap-2">
-              <UButton size="lg" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
-              <UButton size="lg" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
+            <div class="flex gap-2 items-center">
+              <UButton size="lg" color="primary" variant="outline" label="Copiar Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
+              <UButton size="lg" color="warning" variant="outline" label="Copiar Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
+              <transition name="fade">
+                <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm">¡Copiado!</span>
+              </transition>
             </div>
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
@@ -51,12 +57,15 @@
       icon="" :show-pagination="false" :hide-back-button="false" :show-primary-search="false" :show-body-top="true"
       :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #body-top>
-        <div class="flex flex-col gap-2 w-full">
-          <div class="flex items-center justify-between gap-3">
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-3">
             <SectionHeader :title="`Delivery #${carga}`" :headers="headers" :loading="loadingHeaders" />
-            <div class="flex gap-2">
-              <UButton size="lg" color="primary" variant="outline" label="Link Lima" @click="openExternal(linkLima)" />
-              <UButton size="lg" color="warning" variant="outline" label="Link Provincia" @click="openExternal(linkProvincia)" />
+            <div class="flex gap-2 items-center">
+              <UButton size="lg" color="primary" variant="outline" label="Copiar Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
+              <UButton size="lg" color="warning" variant="outline" label="Copiar Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
+              <transition name="fade">
+                <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm">¡Copiado!</span>
+              </transition>
             </div>
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
@@ -148,8 +157,41 @@ const handleTabChange = (value: string) => {
 // Links externos por contenedor (usa el id del contenedor "carga")
 const linkLima = computed(() => `https://clientes.probusiness.pe/formulario-entrega/lima/${id}`)
 const linkProvincia = computed(() => `https://clientes.probusiness.pe/formulario-entrega/provincia/${id}`)
-const openExternal = (url: string) => {
-  if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener')
+// Estados para mostrar mensaje de copiado
+const copiedLima = ref(false)
+const copiedProvincia = ref(false)
+
+const copyToClipboard = async (url: string, type: string) => {
+  try {
+    await navigator.clipboard.writeText(url)
+    
+    // Mostrar mensaje de copiado
+    if (type === 'Lima') {
+      copiedLima.value = true
+      setTimeout(() => copiedLima.value = false, 2000)
+    } else {
+      copiedProvincia.value = true
+      setTimeout(() => copiedProvincia.value = false, 2000)
+    }
+  } catch (err) {
+    console.error('Error al copiar URL:', err)
+    // Fallback para navegadores que no soportan clipboard API
+    const textArea = document.createElement('textarea')
+    textArea.value = url
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    
+    // Mostrar mensaje de copiado
+    if (type === 'Lima') {
+      copiedLima.value = true
+      setTimeout(() => copiedLima.value = false, 2000)
+    } else {
+      copiedProvincia.value = true
+      setTimeout(() => copiedProvincia.value = false, 2000)
+    }
+  }
 }
 const clientesColumns = ref<TableColumn<any>[]>([
   {
@@ -428,9 +470,6 @@ const deliveryColumns = ref<TableColumn<any>[]>([
       })
     }
   },
-  { accessorKey: 'ciudad', header: 'Ciudad', cell: ({ row }) => row.original.ciudad || '—' },
-  { accessorKey: 'documento', header: 'Ruc o Dni', cell: ({ row }) => row.original.documento || '—' },
-  { accessorKey: 'razon_social', header: 'Razon Social o Nombre', cell: ({ row }) => row.original.razon_social },
   {
     accessorKey: 'estado', header: 'Estado', cell: ({ row }) => {
       //if pagado>= importe then return Pagado else return Pendiente
@@ -505,3 +544,12 @@ const handleUpdate = (row: any) => {
 }
 watch(entregas, () => { if (activeTab.value === 'delivery') getDelivery(id) })
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>
