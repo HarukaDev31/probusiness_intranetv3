@@ -4,12 +4,37 @@ import type { Header } from '../types/data-table'
 import { useSpinner } from '../composables/commons/useSpinner'
 const { withSpinner } = useSpinner()
 
+// Función para cargar estado desde sessionStorage
+const loadStateFromStorage = () => {
+  if (typeof window === 'undefined') return null
+  
+  const savedState = sessionStorage.getItem('clientes_state')
+  if (savedState) {
+    try {
+      return JSON.parse(savedState)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
+// Función para guardar estado en sessionStorage
+const saveStateToStorage = (state: any) => {
+  if (typeof window === 'undefined') return
+  
+  sessionStorage.setItem('clientes_state', JSON.stringify(state))
+}
+
 export const useClientes = () => {
+  // Cargar estado guardado
+  const savedState = loadStateFromStorage()
+  
   // State
   const clientes = ref<Cliente[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
-  const pagination = ref<PaginationInfo>({
+  const pagination = ref<PaginationInfo>(savedState?.pagination || {
     current_page: 1,
     last_page: 1,
     per_page: 100,
@@ -18,10 +43,10 @@ export const useClientes = () => {
     to: 0
   })
 
-  // Filtros y búsqueda
-  const search = ref('')
-  const primarySearch = ref('')
-  const filters = ref({
+  // Filtros y búsqueda - Restaurar desde sessionStorage si existe
+  const search = ref(savedState?.search || '')
+  const primarySearch = ref(savedState?.primarySearch || '')
+  const filters = ref(savedState?.filters || {
     categoria: 'todos',
     fecha_inicio: '',
     fecha_fin: '',
@@ -80,6 +105,14 @@ export const useClientes = () => {
       pagination.value.total = response.pagination.total
       pagination.value.from = response.pagination.from
       pagination.value.to = response.pagination.to
+
+      // Guardar estado en sessionStorage
+      saveStateToStorage({
+        pagination: pagination.value,
+        search: search.value,
+        primarySearch: primarySearch.value,
+        filters: filters.value
+      })
 
 
 
@@ -265,10 +298,22 @@ export const useClientes = () => {
         fecha_fin: '',
         servicio: 'todos'
       }
+      search.value = ''
+      primarySearch.value = ''
+      
       const response = await ClienteService.getClientes(filters.value)
       clientes.value = response.data
       pagination.value = response.pagination
       headers.value = response.headers
+      
+      // Guardar estado limpio en sessionStorage
+      saveStateToStorage({
+        pagination: pagination.value,
+        search: '',
+        primarySearch: '',
+        filters: filters.value
+      })
+      
       return { success: true, data: clientes }
     } catch (err: any) {
       error.value = err.message || 'Error al limpiar filtros'
@@ -307,6 +352,12 @@ export const useClientes = () => {
     }
   }
 
+  const clearStoredState = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('clientes_state')
+    }
+  }
+
   return {
     // State
     clientes,
@@ -341,6 +392,7 @@ export const useClientes = () => {
     getClienteById,
     clearError,
     resetFilters,
-    handleClearFilters
+    handleClearFilters,
+    clearStoredState
   }
 } 
