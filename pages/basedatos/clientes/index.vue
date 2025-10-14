@@ -211,7 +211,11 @@ const handleDeleteCliente = (id: number) => {
 // Detectar recarga de página vs navegación
 onMounted(async () => {
   // Verificar si es una recarga de página real (F5)
-  const navType = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming)?.type
+  const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
+  const navType = navEntries[0]?.type
+  
+  console.log('🔍 Tipo de navegación detectado:', navType)
+  console.log('📦 Estado en sessionStorage antes:', sessionStorage.getItem('clientes_state'))
   
   if (navType === 'reload') {
     // Es una recarga real, limpiar el storage y resetear filtros
@@ -227,6 +231,8 @@ onMounted(async () => {
       fecha_fin: '',
       servicio: 'todos'
     }
+  } else {
+    console.log('✅ Navegación normal detectada (back/forward), manteniendo filtros')
   }
   
   // Cargar datos (con o sin filtros según el caso)
