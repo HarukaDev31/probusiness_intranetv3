@@ -4,9 +4,34 @@ import type { Header } from '../types/data-table'
 import { useSpinner } from '../composables/commons/useSpinner'
 const { withSpinner } = useSpinner()
 
+// Función para detectar si es una recarga de página
+const isPageReload = () => {
+  if (typeof window === 'undefined') return false
+  
+  // Verificar si es una recarga usando performance.navigation (deprecado pero funcional)
+  // o el API moderno performance.getEntriesByType
+  const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
+  if (navEntries.length > 0) {
+    return navEntries[0].type === 'reload'
+  }
+  
+  // Fallback para navegadores antiguos
+  return (
+    (performance as any).navigation?.type === 1 || 
+    window.performance?.navigation?.type === 1
+  )
+}
+
 // Función para cargar estado desde sessionStorage
 const loadStateFromStorage = () => {
   if (typeof window === 'undefined') return null
+  
+  // Si es una recarga de página, limpiar el storage y retornar null
+  if (isPageReload()) {
+    console.log('🔄 Recarga de página detectada, limpiando sessionStorage')
+    sessionStorage.removeItem('clientes_state')
+    return null
+  }
   
   const savedState = sessionStorage.getItem('clientes_state')
   if (savedState) {
