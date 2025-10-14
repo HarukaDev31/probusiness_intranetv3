@@ -102,7 +102,7 @@ import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotiza
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
+import { ROLES, ID_JEFEVENTAS,COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
@@ -392,7 +392,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const nombre = row.getValue('nombre').toUpperCase()
             return h('div',{
-                class: 'max-w-30 whitespace-normal break-words',
+                class: 'max-w-30 whitespace-normal',
             }, nombre
             )
         }
@@ -414,7 +414,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const correo = row.getValue('correo')
             return h('div',{
-                class: 'max-w-40 whitespace-normal break-words',
+                class: 'max-w-55 whitespace-normal',
             }, correo || 'Sin correo'
             )
         }
@@ -570,13 +570,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'nombre',
         header: 'Nombre',
-        cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre').toUpperCase()
-            return h('div',{
-                class: 'max-w-30 whitespace-normal break-words',
-            }, nombre
-            )
-        }
+        cell: ({ row }: { row: any }) => row.getValue('nombre').toUpperCase()
     },
     {
         accessorKey: 'documento',
@@ -586,24 +580,12 @@ const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'correo',
         header: 'Correo',
-        cell: ({ row }: { row: any }) => {
-            const correo = row.getValue('correo')
-            return h('div',{
-                class: 'max-w-40 whitespace-normal break-words',
-            }, correo || 'Sin correo'
-            )
-        }
+        cell: ({ row }: { row: any }) => row.getValue('correo') || 'Sin correo'
     },
     {
         accessorKey: 'telefono',
         header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            const telefono = row.getValue('telefono')
-            return h('div',{
-                class: 'max-w-20 whitespace-normal',
-            }, telefono
-            )
-        }
+        cell: ({ row }: { row: any }) => row.getValue('telefono')
     },
     {
         accessorKey: 'estado_cliente',
@@ -977,7 +959,6 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
 
 
             ]
-            console.log(proveedores)
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
@@ -1088,7 +1069,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full w-25',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier = value
                     }
@@ -1128,7 +1109,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full w-30',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -1745,11 +1726,12 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
+               
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
-                    'onUpdate:modelValue': (value: any) => {
+                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    'onUpdate:modelValue': (value: string) => {
                         proveedor.supplier = value
                     }
                 })
@@ -1908,7 +1890,6 @@ const handleRefreshRotuladoStatus = async (proveedor: any) => {
 }
 const handleAddProspecto = async () => {
     const modal = overlay.create(CreateProspectoModal)
-    console.log(id)
     modal.open({
         idConsolidado: Number(id),
         idCotizacion: null,
@@ -1966,7 +1947,7 @@ const handleUpdateProveedorEstado = async (idProveedor: number, estado: string) 
         await withSpinner(async () => {
             await updateProveedorEstado({ id: idProveedor, estado })
             showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
-            await getCotizaciones(Number(id))
+            await getCotizacionProveedor(Number(id))
         }, 'Actualizando estado del proveedor...')
     } catch (error) {
         showError('Error al actualizar el estado del proveedor', error)
@@ -1974,7 +1955,6 @@ const handleUpdateProveedorEstado = async (idProveedor: number, estado: string) 
 }
 const handleUpdateCotizacion = async (idCotizacion: number) => {
     const modal = overlay.create(CreateProspectoModal)
-    console.log(idCotizacion)
     modal.open({
         idCotizacion: idCotizacion,
         idConsolidado: null,
@@ -2140,6 +2120,12 @@ const updateProveedorData = async (row: any) => {
     if (currentRole.value === ROLES.COTIZADOR) {
         data.products = row.products ?? []
         formData.append('products', data.products)
+        if (COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number)) {
+            data.supplier = row.supplier ?? []
+            data.supplier_phone = row.supplier_phone ?? []
+            formData.append('supplier', data.supplier)
+            formData.append('supplier_phone', data.supplier_phone)
+        }
     }
     if (currentRole.value === ROLES.COORDINACION) {
         data.supplier = row.supplier ?? []
