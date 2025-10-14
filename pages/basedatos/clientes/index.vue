@@ -208,10 +208,28 @@ const handleDeleteCliente = (id: number) => {
     console.log('Eliminar cliente:', id)
 }
 
-// Initialize data
+// Detectar recarga de página vs navegación
 onMounted(async () => {
-  // Los valores de search, primarySearch y filters ya están cargados desde sessionStorage
-  // por el composable, solo necesitamos cargar los datos
+  // Verificar si es una recarga de página real (F5)
+  const navType = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming)?.type
+  
+  if (navType === 'reload') {
+    // Es una recarga real, limpiar el storage y resetear filtros
+    console.log('🔄 Recarga de página detectada, limpiando filtros')
+    sessionStorage.removeItem('clientes_state')
+    
+    // Resetear los valores del composable
+    search.value = ''
+    primarySearch.value = ''
+    filters.value = {
+      categoria: 'todos',
+      fecha_inicio: '',
+      fecha_fin: '',
+      servicio: 'todos'
+    }
+  }
+  
+  // Cargar datos (con o sin filtros según el caso)
   await loadClientes()
 })
 </script>
