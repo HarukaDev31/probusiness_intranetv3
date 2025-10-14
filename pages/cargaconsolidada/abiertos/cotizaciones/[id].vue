@@ -1770,7 +1770,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -1790,7 +1790,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
                     class: 'w-full',
-                    disabled: false,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
                     }
@@ -1810,7 +1810,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
                     class: 'w-full',
-                    disabled: false,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
                     }
@@ -1832,7 +1832,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.arrive_date_china,
                     class: 'w-full',
                     type: 'date',
-                    disabled: false,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
                     }
