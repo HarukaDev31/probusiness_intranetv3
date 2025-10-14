@@ -30,6 +30,16 @@ export const useClientes = () => {
   // Cargar estado guardado
   const savedState = loadStateFromStorage()
   
+  // Debug: ver qué se cargó desde storage
+  if (savedState) {
+    console.log('🔄 Estado restaurado desde sessionStorage:', {
+      search: savedState.search,
+      primarySearch: savedState.primarySearch,
+      filters: savedState.filters,
+      pagination: savedState.pagination
+    })
+  }
+  
   // State
   const clientes = ref<Cliente[]>([])
   const loading = ref(false)

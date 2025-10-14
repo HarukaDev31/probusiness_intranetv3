@@ -210,8 +210,9 @@ const handleDeleteCliente = (id: number) => {
 
 // Initialize data
 onMounted(async () => {
-  
-    await loadClientes()
+  // Los valores de search, primarySearch y filters ya están cargados desde sessionStorage
+  // por el composable, solo necesitamos cargar los datos
+  await loadClientes()
 })
 </script>
 <style scoped>
