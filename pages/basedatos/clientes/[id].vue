@@ -227,6 +227,8 @@ const loadCliente = async () => {
 }
 
 const navigateBack = () => {
+  // Establecer flag para indicar que estamos navegando internamente
+  sessionStorage.setItem('clientes_internal_nav', 'true')
   navigateTo('/basedatos/clientes')
 }
 

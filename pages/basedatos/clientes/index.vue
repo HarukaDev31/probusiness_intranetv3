@@ -173,7 +173,11 @@ const columns: TableColumn<any>[] = [
                 icon: 'i-heroicons-eye',
                 color: 'primary',
                 variant: 'ghost',
-                onClick: () => navigateTo(`/basedatos/clientes/${row.original.id}`)
+                onClick: () => {
+                    // Establecer flag para indicar navegación interna
+                    sessionStorage.setItem('clientes_internal_nav', 'true')
+                    navigateTo(`/basedatos/clientes/${row.original.id}`)
+                }
             })
         ])
     }
@@ -208,18 +212,18 @@ const handleDeleteCliente = (id: number) => {
     console.log('Eliminar cliente:', id)
 }
 
-// Detectar recarga de página vs navegación
+// Detectar si venimos de navegación interna o es una recarga real
 onMounted(async () => {
-  // Verificar si es una recarga de página real (F5)
-  const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
-  const navType = navEntries[0]?.type
+  // Verificar si hay un flag que indica que navegamos internamente
+  const cameFromInternal = sessionStorage.getItem('clientes_internal_nav')
   
-  console.log('🔍 Tipo de navegación detectado:', navType)
+  console.log('🔍 Navegación interna detectada:', cameFromInternal)
   console.log('📦 Estado en sessionStorage antes:', sessionStorage.getItem('clientes_state'))
   
-  if (navType === 'reload') {
-    // Es una recarga real, limpiar el storage y resetear filtros
-    console.log('🔄 Recarga de página detectada, limpiando filtros')
+  if (!cameFromInternal) {
+    // No venimos de navegación interna, es una carga directa o recarga
+    // Limpiar el storage y resetear filtros
+    console.log('🔄 Carga directa o recarga detectada, limpiando filtros')
     sessionStorage.removeItem('clientes_state')
     
     // Resetear los valores del composable
@@ -232,7 +236,9 @@ onMounted(async () => {
       servicio: 'todos'
     }
   } else {
-    console.log('✅ Navegación normal detectada (back/forward), manteniendo filtros')
+    console.log('✅ Navegación desde detalle detectada, manteniendo filtros')
+    // Limpiar el flag para la próxima vez
+    sessionStorage.removeItem('clientes_internal_nav')
   }
   
   // Cargar datos (con o sin filtros según el caso)
