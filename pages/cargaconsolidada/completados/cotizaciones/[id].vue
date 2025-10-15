@@ -292,6 +292,41 @@ const filterConfigProspectosCoordinacion = ref([
         ]
     }
 ])
+const filterConfigProspectosAlmacen = ref([
+    {
+        label: 'Fecha Inicio',
+        key: 'fecha_inicio',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+    {
+        label: 'Fecha Fin',
+        key: 'fecha_fin',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+
+    {
+        key: 'estado_china',
+        label: 'Estado Proveedor',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'WAIT', value: 'WAIT', inrow: true },
+            { label: 'NC', value: 'NC', inrow: true },
+            { label: 'C', value: 'C', inrow: true },
+            { label: 'R', value: 'R', inrow: true },
+            { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
+            { label: 'LOADED', value: 'LOADED', inrow: true },
+            { label: 'NO LOADED', value: 'NO LOADED', inrow: true }
+        ]
+    }
+])
 const filterConfigProspectos = ref([
     {
         label: 'Fecha Inicio',
@@ -326,7 +361,10 @@ const filterConfigProspectos = ref([
 const getFilterPerRole = () => {
     if (currentRole.value === ROLES.COORDINACION) {
         return filterConfigProspectosCoordinacion.value
-    } else {
+    }else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
+        return filterConfigProspectosAlmacen.value
+    } 
+    else {
         return filterConfigProspectos.value
     }
 }
