@@ -285,6 +285,7 @@ const filterConfigProspectosCoordinacion = ref([
             { label: 'WAIT', value: 'WAIT', inrow: true },
             { label: 'NC', value: 'NC', inrow: true },
             { label: 'C', value: 'C', inrow: true },
+            { label: 'NS', value: 'NS', inrow: true },
             { label: 'R', value: 'R', inrow: true },
             { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
             { label: 'LOADED', value: 'LOADED', inrow: true },
