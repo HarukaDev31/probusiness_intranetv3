@@ -282,6 +282,7 @@ const filterConfigProspectosCoordinacion = ref([
         placeholder: 'Seleccionar estado',
         options: [
             { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'WAIT', value: 'WAIT', inrow: true },
             { label: 'NC', value: 'NC', inrow: true },
             { label: 'C', value: 'C', inrow: true },
             { label: 'R', value: 'R', inrow: true },
@@ -876,8 +877,16 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     class: 'flex flex-col gap-2'
                 },
                 proveedores.map((proveedor: any) => {
+                    // Transformar las opciones para incluir clases de color
+                    const optionsWithClasses = filterConfig.value
+                        .find((filter: any) => filter.key === 'estado_china')?.options
+                        .map((option: any) => ({
+                            ...option,
+                            class: option.value !== 'todos' ? STATUS_BG_CLASSES[option.value as keyof typeof STATUS_BG_CLASSES] : ''
+                        }))
+
                     return h(USelect as any, {
-                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
+                        items: optionsWithClasses,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
                         class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
@@ -1237,8 +1246,16 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     class: 'flex flex-col gap-2'
                 },
                 proveedores.map((proveedor: any) => {
+                    // Transformar las opciones para incluir clases de color
+                    const optionsWithClasses = filterConfig.value
+                        .find((filter: any) => filter.key === 'estado_china')?.options
+                        .map((option: any) => ({
+                            ...option,
+                            class: option.value !== 'todos' ? STATUS_BG_CLASSES[option.value as keyof typeof STATUS_BG_CLASSES] : ''
+                        }))
+
                     return h(USelect as any, {
-                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
+                        items: optionsWithClasses,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
                         class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
@@ -1603,8 +1620,16 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     class: 'flex flex-col gap-2'
                 },
                 proveedores.map((proveedor: any) => {
+                    // Transformar las opciones para incluir clases de color
+                    const optionsWithClasses = filterConfig.value
+                        .find((filter: any) => filter.key === 'estado_china')?.options
+                        .map((option: any) => ({
+                            ...option,
+                            class: option.value !== 'todos' ? STATUS_BG_CLASSES[option.value as keyof typeof STATUS_BG_CLASSES] : ''
+                        }))
+
                     return h(USelect as any, {
-                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
+                        items: optionsWithClasses,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
                         class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],

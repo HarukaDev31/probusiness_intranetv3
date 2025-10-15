@@ -28,6 +28,7 @@ export const    useCotizacionProveedor = () => {
             placeholder: 'Seleccionar estado',
             options: [
                 { label: 'Todos', value: 'todos' },
+                { label: 'WAIT', value: 'WAIT' },
                 { label: 'NC', value: 'NC' },
                 { label: 'C', value: 'C' },
                 { label: 'R', value: 'R' },
