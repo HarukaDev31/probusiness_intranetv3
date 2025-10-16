@@ -21,7 +21,7 @@
     
 
     <div class="flex flex-col lg:flex-row gap-8 p-4 w-full justify-center">
-      <div class="space-y-2 bg-white p-4 rounded-lg shadow w-240">
+      <div class="space-y-2 bg-white dark:bg-gray-800 p-4 rounded-lg shadow w-240">
         <h2 class="font-semibold text-xl p-4">{{ clienteNombre }}</h2>
         <!-- Información de entrega -->
         <div class="border-t border-gray-200" />
