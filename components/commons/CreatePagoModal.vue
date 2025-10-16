@@ -1,16 +1,19 @@
 <template>
-    <UModal class="max-w-2xl">
+    <UModal class="max-w-lg">
         <template #header>
-            <div class="text-center">
+            <div class="text-center align-middle flex-1">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    Registrar Pago de Cliente - {{ clienteNombre }}
+                    Registrar Pago de Cliente
                 </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <span class="font-medium">{{ props.clienteNombre }}</span>
+                </p>
             </div>
         </template>
         <template #body>
-            <div class="space-y-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-6 flex flex-col gap-4 items-center">
                 <!-- Monto Field -->
-                <div>
+                <div class="w-1/2">
                     <UFormField label="Monto" name="monto">
                         <UInput v-model="formData.monto" type="number" placeholder="0.00" step="0.01" min="0"
                             class="w-full">
@@ -22,20 +25,21 @@
                 </div>
 
                 <!-- Banco Field -->
-                <div>
+                <div class="w-1/2">
                     <UFormField label="Banco" name="banco">
                         <URadioGroup v-model="formData.banco" :items="bancoOptions" :multiple="false" variant="list"
-                            orientation="horizontal" class="flex flex-row align-middle">
+                            orientation="horizontal" class="flex flex-col items-center"
+                            :ui="{item: 'flex flex-col-reverse items-center gap-2 p-1'}">
                             <template #label="{ item }">
                                 <div class="">
-                                    <img :src="item.icon" alt="Banco" class="w-12 h-12 ">
+                                    <img :src="item.icon" alt="Banco" class="w-15 h-15 rounded-md">
                                 </div>
                             </template>
                         </URadioGroup>
                     </UFormField>
                 </div>
 
-                <UFormField label="Fecha Cierre" required >
+                <UFormField label="Fecha Cierre" required class="w-1/2">
                     <UPopover>
                         <UButton color="neutral" variant="outline" icon="i-lucide-calendar" class="w-full">
                             {{ fecha ? df.format(fecha.toDate(getLocalTimeZone())) : 'Seleccione una fecha'
@@ -43,7 +47,7 @@
                         </UButton>
 
                         <template #content>
-                            <UCalendar v-model="fecha" class="p-2" />
+                            <UCalendar v-model="fecha" class="p-2 w-full" />
                         </template>
                     </UPopover>
                 </UFormField>
@@ -66,8 +70,8 @@
         <!-- Footer Actions -->
         <template #footer="{ close }">
             <div class="flex justify-end space-x-3">
-                <UButton label="Cancelar" color="neutral" variant="ghost" @click="close" />
-                <UButton label="Guardar" color="warning" @click="() => {
+                <UButton label="Cancelar" size="xl" color="neutral" variant="ghost" @click="close" />
+                <UButton label="Guardar" size="xl" color="primary" @click="() => {
                     handleSave()
                 }" />
             </div>
