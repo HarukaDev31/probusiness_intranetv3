@@ -216,9 +216,7 @@ const handleDeleteCliente = (id: number) => {
 onMounted(async () => {
   // Verificar si hay un flag que indica que navegamos internamente
   const cameFromInternal = sessionStorage.getItem('clientes_internal_nav')
-  
-  console.log('🔍 Navegación interna detectada:', cameFromInternal)
-  )
+ 
   
   if (!cameFromInternal) {
     // No venimos de navegación interna, es una carga directa o recarga

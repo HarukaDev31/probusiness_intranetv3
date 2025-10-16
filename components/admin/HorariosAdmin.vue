@@ -324,7 +324,6 @@ const nextMonth = () => {
 
 const handleDateClick = (date: any) => {
  
-  
   if (date.isPast) {
     
     return
