@@ -69,7 +69,7 @@ const { withSpinner } = useSpinner()
 const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
-const { registrarPago, deletePago } = usePagosClientes()
+const { registrarPagoFinal, deletePago } = usePagosClientes()
 const route = useRoute()
 const id = Number(route.params.id)
 
@@ -341,7 +341,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
             formData.append('idContenedor', row.original.id_contenedor)
             formData.append('idCotizacion', row.original.id_cotizacion)
             withSpinner(async () => {
-              const response = await registrarPago(formData)
+              const response = await registrarPagoFinal(formData)
               if (response.success) {
                 showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
                 getPagos(Number(id))
@@ -349,7 +349,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
               } else {
                 showError('Error al registrar pago', response.error, { persistent: true })
               }
-            }, 'registrarPago')
+            }, 'registrarPagoFinal')
 
           },
           onDelete: (pagoId: number) => {

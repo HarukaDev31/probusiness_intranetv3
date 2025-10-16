@@ -2,7 +2,7 @@
   <div class="p-6">
     <!-- Header Section -->
     <PageHeader title="" subtitle="Gestión de cotizaciones" icon="" :hide-back-button="false"
-      @back="navigateTo(`/cargaconsolidada/completados/pasos/${id}`)" />
+      @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
     <!-- add 3 buttons 
  Subir Factura
  Plantilla General
@@ -69,7 +69,7 @@ const { withSpinner } = useSpinner()
 const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
-const { registrarPago, deletePago } = usePagosClientes()
+const { registrarPagoFinal, deletePago } = usePagosClientes()
 const route = useRoute()
 const id = Number(route.params.id)
 
@@ -341,7 +341,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
             formData.append('idContenedor', row.original.id_contenedor)
             formData.append('idCotizacion', row.original.id_cotizacion)
             withSpinner(async () => {
-              const response = await registrarPago(formData)
+              const response = await registrarPagoFinal(formData)
               if (response.success) {
                 showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
                 getPagos(Number(id))
@@ -349,7 +349,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
               } else {
                 showError('Error al registrar pago', response.error, { persistent: true })
               }
-            }, 'registrarPago')
+            }, 'registrarPagoFinal')
 
           },
           onDelete: (pagoId: number) => {
@@ -413,7 +413,7 @@ const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: s
   })
 }
 const goBack = () => {
-  navigateTo(`/cargaconsolidada/completados/pasos/${id}`)
+  navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
 }
 
 // Handle save pago
@@ -429,11 +429,11 @@ watch(activeTab, async (newVal, oldVal) => {
   }
 
   if (newVal === 'general') {
-    navigateTo(`/cargaconsolidada/completados/cotizacion-final/${id}?tab=general`)
+    navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`)
     await getGeneral(Number(id))
   }
   if (newVal === 'pagos') {
-    navigateTo(`/cargaconsolidada/completados/cotizacion-final/${id}?tab=pagos`)
+    navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=pagos`)
     await getPagos(Number(id))
   }
   await getHeaders(Number(id))
