@@ -97,7 +97,7 @@ export function useDashboard() {
         try {
             const response = await DashboardService.getPorVendedor(filters.value)
             if (response.success) {
-                console.log('Datos de vendedores cargados:', response.data)
+                
                 vendedoresData.value = response.data
             }
         } catch (error) {

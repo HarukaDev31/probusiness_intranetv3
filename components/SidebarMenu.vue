@@ -246,7 +246,6 @@ const isActiveRoute = (route: string) => {
 }
 
 const handleNavigation = (route: string) => {
-  console.log('Navegando a:', route)
   // Usar el navigateTo de Nuxt, no la función local
   return navigateTo(route)
 }

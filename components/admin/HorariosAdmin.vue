@@ -323,29 +323,23 @@ const nextMonth = () => {
 }
 
 const handleDateClick = (date: any) => {
-  console.log('handleDateClick called', {
-    date: date.value,
-    isPast: date.isPast,
-    hasDragged: hasDragged.value,
-    isDragging: isDragging.value
-  })
-  
+ 
   if (date.isPast) {
-    console.log('Date is past, returning')
+    
     return
   }
   
   if (hasDragged.value) {
-    console.log('Has dragged, returning')
+    
     return
   }
   
-  console.log('Calling selectDate')
+  
   selectDate(date)
 }
 
 const selectDate = (date: any) => {
-  console.log('selectDate', date)
+  
   if (date.isPast) return
   
   // Click normal: seleccionar/deseleccionar una fecha
@@ -363,7 +357,7 @@ const selectDate = (date: any) => {
 }
 
 const startDrag = (date: any) => {
-  console.log('startDrag called', date.value)
+  
   if (date.isPast) return
   
   isDragging.value = true
@@ -379,7 +373,7 @@ const handleDrag = (date: any) => {
   // Solo marcar como drag si hay movimiento real
   if (date.value.getTime() !== dragStartDate.value.getTime()) {
     hasDragged.value = true
-    console.log('Real drag detected')
+    
   }
   
   // Seleccionar todas las fechas entre la fecha inicial y la actual
@@ -411,16 +405,16 @@ const handleDrag = (date: any) => {
 }
 
 const handleMouseUp = (date: any) => {
-  console.log('handleMouseUp called', date.value, 'hasDragged:', hasDragged.value)
+  
   
   // Si no hubo drag, ejecutar click
   if (!hasDragged.value && !date.isPast) {
-    console.log('No drag detected, calling selectDate')
+    
     selectDate(date)
   }
   
   // Reset flags inmediatamente
-  console.log('Resetting flags')
+  
   isDragging.value = false
   dragStartDate.value = null
   hasDragged.value = false
@@ -562,8 +556,8 @@ const generateSchedulesForDates = async (dates: Date[], data: any) => {
       showError('Falta contenedor', 'No se encontró el ID de contenedor en la ruta.')
       return
     }
-    console.log('data', data)
-    console.log('dates', dates)
+    
+    
     const dataToSend={
       dayData:[],
       idContenedor:contId
@@ -589,9 +583,9 @@ const generateSchedulesForDates = async (dates: Date[], data: any) => {
 // Handler para crear horarios sobre las fechas seleccionadas (botón)
 const handleSaveHorarioForSelectedDates = async (data: any) => {
   if (selectedDates.value.length === 0) return
-  console.log('handleSaveHorarioForSelectedDates', data)
+  
   const dataToSend = await generateSchedulesForDates(selectedDates.value, data)
-  console.log('dataToSend', dataToSend)
+  
   if (dataToSend) {
     await withSpinner(async () => {
       const response = await createHorarios(dataToSend)
@@ -609,7 +603,7 @@ const handleSaveHorarioForSelectedDates = async (data: any) => {
 
 // Editar un grupo de timeSlots
 const editTimeSlotGroup = (timeSlotGroup: any) => {
-  console.log('editTimeSlotGroup', timeSlotGroup)
+  
   const contId = getContenedorId()
   if (!contId) {
     showError('Falta contenedor', 'No se encontró el ID de contenedor en la ruta.')
@@ -649,7 +643,7 @@ const editTimeSlotGroup = (timeSlotGroup: any) => {
       try {
         //send all slots of timeSlotGroup and generate schedules for dates
         const dataToSend = await generateSchedulesForDates(selectedDates.value, data)
-        console.log('dataToSend', dataToSend)
+        
         if (dataToSend) {
           await withSpinner(async () => {
             const response = await editHorarios(dataToSend,timeSlotGroup.slots)

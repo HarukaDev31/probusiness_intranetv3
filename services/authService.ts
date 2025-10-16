@@ -112,7 +112,7 @@ class AuthService {
 
     const roleConfig = websocketRoles[role]
     if (roleConfig) {
-      console.log('Suscribiendo a canales para rol:', role)
+      
       this.echo.subscribeToRoleChannels(roleConfig)
     }
   }

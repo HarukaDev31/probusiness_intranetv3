@@ -153,7 +153,7 @@ export const useConsolidado = () => {
     const createConsolidado = async (payload: any) => {
         try {
             const response = await ConsolidadoService.createConsolidado(payload)
-            console.log(response)
+            
         } catch (error) {
             console.error('Error en createConsolidado:', error)
         }

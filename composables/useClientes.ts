@@ -31,7 +31,7 @@ export const useClientes = () => {
   const savedState = loadStateFromStorage()
   
   // Debug: ver qué se cargó desde storage
-  console.log('🏗️ Composable useClientes inicializando...')
+  
   if (savedState) {
     console.log('🔄 Estado restaurado desde sessionStorage:', {
       search: savedState.search,
@@ -40,7 +40,7 @@ export const useClientes = () => {
       pagination: savedState.pagination
     })
   } else {
-    console.log('❌ No hay estado guardado en sessionStorage')
+    
   }
   
   // State

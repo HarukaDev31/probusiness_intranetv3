@@ -13,7 +13,7 @@ export default defineNuxtPlugin(() => {
     }
 
     inactivityTimer = setTimeout(() => {
-      console.log('Inactividad detectada, expirando sesión...')
+      
       handleSessionExpired()
     }, INACTIVITY_TIMEOUT)
   }

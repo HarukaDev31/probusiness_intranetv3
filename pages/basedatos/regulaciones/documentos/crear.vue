@@ -255,7 +255,7 @@ const createProduct = async () => {
       }
       showCreateProductModal.value = false
       searchProducts('')
-      console.log('Rubro creado exitosamente:', response.data)
+      
     } else {
       console.error('Error al crear rubro:', response.error)
     }
@@ -294,8 +294,8 @@ const saveForm = async () => {
     }
     
     isSubmitting.value = true
-    console.log('Guardando documento especial:', formData.value)
-    console.log('Documentos:', documentSlots.value)
+    
+    
 
     // Preparar datos para la API
     const documentoData: CreateDocumentoRequest = {
@@ -310,7 +310,7 @@ const saveForm = async () => {
     const response = await DocumentoService.createDocumento(documentoData)
 
     if (response.success && response.data) {
-      console.log('Documento especial guardado exitosamente:', response.data)
+      
       
       // Mostrar notificación de éxito (aquí podrías usar un toast o notificación)
       

@@ -337,10 +337,10 @@ const loadProduct = async () => {
             loading.value = true
             error.value = null
 
-            console.log('Cargando datos del producto:', productId)
+            
 
             const response = await ProductService.getProductById(Number(productId))
-            console.log('Response:', response)
+            
             if (response.success && response.data) {
                 // Mapear los datos del producto al formulario
                 const product = response.data
@@ -368,7 +368,7 @@ const loadProduct = async () => {
                 selectedEntidadId.value = product.entidad_id ? Number(product.entidad_id) : null
                 selectedEtiquetadoId.value = product.tipo_etiquetado_id ? Number(product.tipo_etiquetado_id) : null
 
-                console.log('Datos del producto cargados:', formData.value)
+                
             } else {
                 error.value = response.error || 'Error al cargar el producto'
                 showError(`Error al cargar el producto ${response.error}`)
@@ -420,7 +420,7 @@ const searchEntidades = async (search: string) => {
     loadingEntidades.value = true
 
     const response = await EntityService.getEntities(search)
-    console.log('response:', response)  
+      
     if (response.success) {
       entidadesOptions.value = response.data.map(entity => ({
         id: entity.id,
@@ -432,7 +432,7 @@ const searchEntidades = async (search: string) => {
         const selectedEntidad = entidadesOptions.value.find(e => e.id === selectedEntidadId.value)
         if (selectedEntidad) {
           formData.value.entidad = selectedEntidad.nombre
-          console.log('Entidad seleccionada automáticamente:', selectedEntidad.nombre)
+          
         }
       }
     }
@@ -459,7 +459,7 @@ const searchEtiquetados = async (search: string) => {
         const selectedEtiquetado = etiquetadosOptions.value.find(e => e.id === selectedEtiquetadoId.value)
         if (selectedEtiquetado) {
           formData.value.tipoEtiquetado = selectedEtiquetado.nombre
-          console.log('Etiquetado seleccionado automáticamente:', selectedEtiquetado.nombre)
+          
         }
       }
     }
@@ -474,13 +474,13 @@ const searchEtiquetados = async (search: string) => {
 const onEntidadSelected = (selectedName: string) => {
   const selectedEntidad = entidadesOptions.value.find(e => e.nombre === selectedName)
   selectedEntidadId.value = selectedEntidad?.id || null
-  console.log('Entidad seleccionada:', selectedEntidad)
+  
 }
 
 const onEtiquetadoSelected = (selectedName: string) => {
   const selectedEtiquetado = etiquetadosOptions.value.find(e => e.nombre === selectedName)
   selectedEtiquetadoId.value = selectedEtiquetado?.id || null
-  console.log('Etiquetado seleccionado:', selectedEtiquetado)
+  
 }
 
 // Funciones de edición
@@ -502,7 +502,7 @@ const saveForm = async () => {
       return
     }
 
-    console.log('Guardando formulario:', formData.value)
+    
     
  
     
@@ -524,7 +524,7 @@ const saveForm = async () => {
       caracteristicas: formData.value.caracteristicas
     }
 
-    console.log('Datos a enviar al backend:', updateData)
+    
     
     const response = await withLoading(
       () => ProductService.updateProduct(Number(productId), updateData),
@@ -533,7 +533,7 @@ const saveForm = async () => {
     )
     
     if (response.success) {
-      console.log('Producto actualizado exitosamente:', response.data)
+      
       isEditing.value = false // Desactivar modo de edición
       showUpdateSuccess('Producto')
     } else {

@@ -48,7 +48,7 @@ export function useImageManagement() {
       // También agregar al array del backend
       imagesToDeleteBackend.value.push(imageId)
     }
-    console.log('Imágenes marcadas para eliminar:', imagesToDeleteBackend.value)
+    
   }
 
   const deleteSelectedImages = () => {
@@ -61,7 +61,7 @@ export function useImageManagement() {
     // Limpiar la selección visual
     imagesToDelete.value = []
     // Mantener las imágenes marcadas para el backend
-    console.log('Imágenes eliminadas de la vista, marcadas para backend:', imagesToDeleteBackend.value)
+    
   }
 
   const deselectAllImages = () => {

@@ -67,7 +67,7 @@ export function useRegulationEdit(config: RegulationEditConfig, regulationId: st
           setExistingMediaCallback(regulation.media)
         }
 
-        console.log('Regulación cargada:', regulation)
+        
       } else {
         error.value = response.error || 'No se pudo cargar la regulación'
       }
@@ -134,7 +134,7 @@ export function useRegulationEdit(config: RegulationEditConfig, regulationId: st
       })
 
       if (response.success) {
-        console.log('Regulación actualizada exitosamente:', response.data)
+        
         router.push('/basedatos/regulaciones')
         return true
       } else {

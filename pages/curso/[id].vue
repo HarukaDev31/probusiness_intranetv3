@@ -388,7 +388,7 @@ watch(fechaNacimiento, (newDate) => {
 
 // Watchers para sincronizar selecciones con el formulario
 watch(selectedPais, async (newPais, oldPais) => {
-  console.log('Watch selectedPais - nuevo:', newPais, 'anterior:', oldPais, 'editMode:', editMode.value, 'isInitialLoad:', isInitialLoad.value)
+  
 
   // No hacer nada si estamos en carga inicial o no estamos en modo edición
   if (isInitialLoad.value || !editMode.value || newPais === oldPais) return
@@ -414,7 +414,7 @@ watch(selectedPais, async (newPais, oldPais) => {
 })
 
 watch(selectedDepartamento, async (newDepto, oldDepto) => {
-  console.log('Watch selectedDepartamento - nuevo:', newDepto, 'anterior:', oldDepto, 'isInitialLoad:', isInitialLoad.value)
+  
 
   if (isInitialLoad.value || !editMode.value || newDepto === oldDepto) return
 
@@ -433,7 +433,7 @@ watch(selectedDepartamento, async (newDepto, oldDepto) => {
 })
 
 watch(selectedProvincia, async (newProv, oldProv) => {
-  console.log('Watch selectedProvincia - nuevo:', newProv, 'anterior:', oldProv, 'isInitialLoad:', isInitialLoad.value)
+  
 
   if (isInitialLoad.value || !editMode.value || newProv === oldProv) return
 
@@ -450,7 +450,7 @@ watch(selectedProvincia, async (newProv, oldProv) => {
 })
 
 watch(selectedDistrito, (newDist, oldDist) => {
-  console.log('Watch selectedDistrito - nuevo:', newDist, 'anterior:', oldDist, 'isInitialLoad:', isInitialLoad.value)
+  
 
   if (isInitialLoad.value || !editMode.value || newDist === oldDist) return
 
@@ -503,12 +503,11 @@ onMounted(async () => {
       datosCliente.value.id_distrito
     )
 
-    console.log('Países cargados:', paises.value)
+    
 
     // Esperar un tick para que Vue procese los computed
     await nextTick()
 
-    console.log('Opciones de países (después de nextTick):', paisOptions.value)
 
     // Luego asignar valores locales de ubicación después de que las listas estén cargadas
     selectedPais.value = datosCliente.value.id_pais || null
@@ -516,17 +515,13 @@ onMounted(async () => {
     selectedProvincia.value = datosCliente.value.id_provincia || null
     selectedDistrito.value = datosCliente.value.id_distrito || null
 
-    console.log('selectedPais asignado:', selectedPais.value, 'tipo:', typeof selectedPais.value)
-    console.log('selectedDepartamento asignado:', selectedDepartamento.value, 'tipo:', typeof selectedDepartamento.value)
-    console.log('Verificando paisOptions:', paisOptions.value)
-    console.log('¿Existe el país en paisOptions?', paisOptions.value.find(p => p.value === selectedPais.value))
 
     // Desactivar la bandera de carga inicial después de un pequeño delay
     // para asegurar que todos los valores estén asignados
     await nextTick()
     setTimeout(() => {
       isInitialLoad.value = false
-      console.log('Carga inicial completada, watchers activados')
+      
     }, 100)
   }
 })
@@ -553,7 +548,7 @@ const guardarCambios = async () => {
     payload.id_distrito = form.value.id_distrito
   }
 
-  console.log('Payload a enviar:', payload)
+  
 
   await editarDatosCliente(datosCliente.value.id_entidad, payload)
   editMode.value = false
@@ -742,7 +737,7 @@ async function handleGenerarConstancia() {
       generandoConstancia.value = true
       await withSpinner(async () => {
         const response = await generarYEnviarConstancia(datosCliente.value!.id_pedido_curso)
-        console.log(response)
+        
         
         if (response.success) {
           showSuccess('Éxito', 'Constancia generada y enviada correctamente')

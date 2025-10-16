@@ -170,7 +170,7 @@ export const useCalculadoraImportacion = () => {
     const proveedoresLength = proveedores.value.length
     const clienteQtyProveedores = clienteInfo.value.qtyProveedores
     const diff = clienteQtyProveedores - proveedoresLength
-    console.log('diff', diff)
+    
     if (currentStep.value === 1) {
       if (diff > 0) {
         for (let i = 0; i < diff; i++) {

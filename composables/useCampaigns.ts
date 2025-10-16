@@ -108,7 +108,7 @@ export const useCampaigns = () => {
   const createCampaign = async (campaignData: CampaignData) => {
     loading.value = true
     try {
-      console.log('Datos de la campaña: composable', campaignData)
+      
       const response = await CampaignService.createCampaign(campaignData)
       return response
       

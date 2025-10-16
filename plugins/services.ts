@@ -7,6 +7,6 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   // Opcional: Log para debugging
   if (process.dev) {
-    console.log('✅ All services initialized with NuxtApp')
+    
   }
 })

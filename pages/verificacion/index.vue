@@ -812,7 +812,7 @@ const totalImporteDelivery = computed(() =>
 // Computed para el total del consolidado (asegurar que sea un número)
 const totalAmountConsolidadoComputed = computed(() => {
   const amount = totalAmountConsolidado.value
-  console.log('totalAmountConsolidado.value:', amount, 'type:', typeof amount)
+  
   return typeof amount === 'number' ? amount : 0
 })
 
@@ -902,14 +902,14 @@ const exportData = async () => {
     await exportCursosData()
   } else if (activeTab.value === 'delivery') {
     // Aquí se implementaría la lógica de exportación para delivery
-    console.log('Exportando datos de delivery')
+    
   }
 }
 
 const handleViewDetails = async (id: number) => {
   try {
     const detalle = await getPagoDetalle(id)
-    console.log('Detalle del pago:', detalle)
+    
     // Aquí puedes abrir un modal o navegar a una página de detalles
   } catch (err) {
     console.error('Error al obtener detalles:', err)
@@ -917,12 +917,12 @@ const handleViewDetails = async (id: number) => {
 }
 
 const handleViewDocument = (id: number) => {
-  console.log('Ver documento del registro:', id)
+  
 }
 
 // Función para exportar datos de delivery
 const exportDeliveryData = async () => {
-  console.log('Exportando datos de delivery')
+  
   // Aquí se implementaría la lógica de exportación específica para delivery
 }
 
@@ -984,9 +984,9 @@ onMounted(async () => {
   } else {
     activeTab.value = (tabs && tabs.length > 0) ? tabs[0].value : 'consolidado' // Cambiar a 'consolidado' como tab inicial
   }
-  console.log('activeTab:', activeTab.value)
-  console.log('idCotizacion desde query:', idCotizacion)
-  console.log('idPedido desde query:', idPedido)
+  
+  
+  
 
   // Cargar datos iniciales según el tab activo
   if (activeTab.value === 'consolidado') {
@@ -999,8 +999,8 @@ onMounted(async () => {
   }
 })
 watch(activeTab, async (newTab, oldTab) => {
-  console.log('newTab:', newTab)
-  console.log('oldTab:', oldTab)
+  
+  
   const route = useRoute()
   const idCotizacion = route.query.idCotizacion ? Number(route.query.idCotizacion) : undefined
   const idPedido = route.query.idPedido ? Number(route.query.idPedido) : undefined

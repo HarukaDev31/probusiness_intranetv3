@@ -242,7 +242,7 @@ const loadPermiso = async () => {
     
     if (response.success && response.data) {
       permiso.value = response.data as unknown as PermisoResponse
-      console.log('Permiso cargado:', permiso.value)
+      
     } else {
       error.value = response.error || 'No se pudo cargar el permiso'
     }

@@ -518,7 +518,7 @@ const getEstadoLabel = (estado: string) => {
 // Función para obtener el color del estado según el rol
 const getColorByEstado = (estado: string) => {
     if (!estado) return 'neutral'
-    console.log('estado', estado)
+    
 
     // Para otros roles: colores en español
     if (estado === 'PENDIENTE') return 'warning'
@@ -540,7 +540,7 @@ const handleViewSteps = (id: number) => {
 }
 
 const handleEditCarga = (id: number) => {
-    console.log('Editar carga:', id)
+    
 }
 
 const handleDeleteCarga = async (id: number) => {
@@ -562,7 +562,7 @@ const handleDeleteCarga = async (id: number) => {
 
 const exportClientes = async () => {
     try {
-        console.log('Exportando contenedores~.')
+        
     } catch (error) {
         console.error('Error al exportar:', error)
     }

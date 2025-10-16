@@ -1999,7 +1999,7 @@ const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string
                     await getCotizaciones(Number(id))
                 }
             } catch (error: any) {
-                console.log(error.data)
+                
                 showError('Error al actualizar el estado de la cotización', error)
             }
         }, 'Actualizando estado de la cotización...')
@@ -2049,7 +2049,7 @@ const handleDelete = async (idCotizacion: number) => {
         showConfirmation('¿Estás seguro de querer eliminar esta cotización?', 'Esta acción no se puede deshacer.', async () => {
             await withSpinner(async () => {
                 const response = await deleteCotizacion(idCotizacion)
-                console.log(response)
+                
                 if (response?.success) {
                     showSuccess('Cotización eliminada correctamente', 'La cotización se ha eliminado correctamente.')
                     await getCotizaciones(Number(id))
@@ -2108,7 +2108,7 @@ const getEstadoPago = (estado: string) => {
 }
 const downloadFile = async (fileUrl: string) => {
 
-    console.log(fileUrl)
+    
     try {
         await withSpinner(async () => {
             const a = document.createElement('a')

@@ -412,7 +412,7 @@ const loadRegulation = async () => {
       const selectedProduct = productOptions.value.find(p => p.value === regulation.value?.id_rubro.toString())
       if (selectedProduct) {
         formData.value.producto = selectedProduct
-        console.log('Producto seleccionado:', selectedProduct)
+        
       } else {
         console.warn('No se encontró el producto con ID:', regulation.value?.id_rubro)
       }
@@ -475,7 +475,7 @@ const searchProducts = async (query: string) => {
         label: product.nombre,
         value: product.id.toString()
       }))
-      console.log('Productos cargados:', productOptions.value.length)
+      
     }
   } catch (err) {
     console.error('Error searching products:', err)
@@ -607,8 +607,8 @@ const saveForm = async () => {
       updateData.imagenes = newImages
     }
     
-    console.log('Enviando datos de actualización:', updateData)
-    console.log('Imágenes a eliminar:', imagesToDelete.value)
+    
+    
     
     const response = await AntidumpingService.updateAntidumping(regulationId, updateData, imagesToDelete.value)
     

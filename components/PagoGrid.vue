@@ -78,7 +78,6 @@ const openPagoDetailsModal = (pago: PagosDetails) => {
     showDelete: props.showDelete,
     onDelete: (pagoId: number) => {
       if (props.showDelete) {
-        console.log(pagoId, 'xd')
         emit('delete', pagoId)
       }
     },

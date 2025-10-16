@@ -572,7 +572,6 @@ const borrarDocumentoProveedor = async (campo: string) => {
 
   try {
     // Aquí deberías llamar al servicio para borrar el documento del proveedor
-    console.log('Borrando documento del proveedor:', campo)
 
     // Por ahora solo recargamos los datos
     await cargarDatos()

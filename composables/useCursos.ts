@@ -117,7 +117,7 @@ export const useCursos = () => {
     // Handlers
     const handleSearch = async (searchTerm: string) => {
         searchQuery.value = searchTerm
-        console.log('Search term:', searchTerm)
+        
         currentPage.value = 1
         await loadCursos({ page: 1, search: searchTerm })
     }
@@ -126,7 +126,7 @@ export const useCursos = () => {
         // Si el value es un objeto con propiedad value, extrae el value
         const realValue = (typeof value === 'object' && value !== null && 'value' in value) ? value.value : value
         filters.value = { ...filters.value, [key]: realValue }
-        console.log('Updated filters:', filters.value)
+        
         currentPage.value = 1
         await loadCursos({ page: 1, filters: filters.value })
     }

@@ -76,7 +76,7 @@ export const useProducts = () => {
         sortBy: params.sortBy,
         sortOrder: params.sortOrder
       })
-      console.log('Response:', response)
+      
 
 
       if (response.success) {
@@ -96,7 +96,7 @@ export const useProducts = () => {
           totalPages.value = 1
           itemsPerPage.value = response.data.length
         }
-        console.log('Headers:', response.headers)
+        
         // Asegurar que headers.value sea un arreglo de Header[] requerido por DataTable
         if (Array.isArray(response.headers)) {
           headers.value = response.headers as Header[]
@@ -109,7 +109,7 @@ export const useProducts = () => {
       } else {
         error.value = response.error || 'Error al cargar productos'
         products.value = []
-        console.log('Error loading products:', response.error)
+        
       }
     } catch (err) {
       error.value = 'Error de conexión'
@@ -117,15 +117,15 @@ export const useProducts = () => {
       products.value = []
     } finally {
       loading.value = false
-      console.log('Loading finished. Products count:', products.value.length)
+      
     }
   }
 
   const loadFilterOptions = async () => {
     try {
-      console.log('Loading filter options...')
+      
       const options = await ProductService.getFilterOptions()
-      console.log('Filter options response:', options)
+      
       filterOptions.value = options
     } catch (err) {
       console.error('Error loading filter options:', err)
@@ -138,7 +138,7 @@ export const useProducts = () => {
   }
   const handleSearch = async (searchTerm: string) => {
     search.value = searchTerm
-    console.log('Search term:', searchTerm)
+    
     await loadProducts({ page: 1, search: searchTerm })
   }
   const applyFilters = async () => {

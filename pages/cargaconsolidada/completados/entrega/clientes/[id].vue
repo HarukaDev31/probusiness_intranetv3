@@ -477,7 +477,7 @@ const onUploaderFilesSelected = (files: File[]) => {
   }
 }
 const onUploaderCleared = () => {
-  console.log('onUploaderCleared')
+  
   picked1.value = null
   picked2.value = null
 }

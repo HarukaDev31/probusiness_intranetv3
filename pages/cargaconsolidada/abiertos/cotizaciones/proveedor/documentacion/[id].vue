@@ -133,7 +133,7 @@ const deleteFileDocumentacion = async (idDocumento: number) => {
     showConfirmation('Eliminar archivo', '¿Estás seguro de querer eliminar este archivo?', async () => {
         await withSpinner(async () => {
             const response = await deleteDocumentosChina(idDocumento)
-            console.log('response', response)
+            
             if (response?.success) {
                 showSuccess('Éxito', 'Archivo eliminado correctamente')
             } else {
@@ -144,7 +144,7 @@ const deleteFileDocumentacion = async (idDocumento: number) => {
         await getDocumentosChina(id)
         loadingDocumentacion.value = false
     }, () => {
-        console.log('Cancelado')
+        
     })
 
 }
@@ -157,7 +157,7 @@ const deleteFileInspeccion = async (idInspeccion: number) => {
         await getInspeccionChina(id)
         loadingInspeccion.value = false
     }, () => {
-        console.log('Cancelado')
+        
     })
 
 }

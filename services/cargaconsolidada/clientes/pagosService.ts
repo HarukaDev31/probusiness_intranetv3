@@ -3,6 +3,7 @@ import { BaseService } from "~/services/base/BaseService"
 
 export class PagosService extends BaseService {
     static baseUrl = 'api/carga-consolidada/contenedor/clientes/pagos'
+    static baseUrlFinal = 'api/carga-consolidada/contenedor/cotizacion-final/pagos'
     static async getClientes(idConsolidado: number, filters: any, search: string, itemsPerPage: number, currentPage: number) {
         const response = await this.apiCall<any>(`${this.baseUrl}/${idConsolidado}`, {
             method: 'GET',
@@ -22,6 +23,19 @@ export class PagosService extends BaseService {
             return response
         } catch (err) {
             console.error('Error al registrar el pago:', err)
+            throw err
+        }
+    }
+    static async registrarPagoFinal(formData: FormData) {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrlFinal}`, {
+                method: 'POST',
+                body: formData
+            })
+            return response
+        }
+        catch (err) {
+            console.error('Error al registrar el pago final:', err)
             throw err
         }
     }

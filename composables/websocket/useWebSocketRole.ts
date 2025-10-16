@@ -9,18 +9,18 @@ export const useWebSocketRole = () => {
     const currentRole = ref<string | null>(null)
 
     const setupRoleChannels = async () => {
-        console.log('userRole', userRole.value)
+        
         if (!userRole.value) return
 
         currentRole.value = userRole.value
-        console.log('currentRole', currentRole.value)
+        
         const roleConfig = Object.values(websocketRoles).find(config => config.role === userRole.value)
 
         if (roleConfig) {
-            console.log('🔧 Configurando canales para rol:', roleConfig.role)
+            
             try {
                 subscribeToRoleChannels(roleConfig)
-                console.log('✅ Canales configurados exitosamente para rol:', roleConfig.role)
+                
             } catch (error) {
                 console.error('❌ Error configurando canales para rol:', roleConfig.role, error)
             }

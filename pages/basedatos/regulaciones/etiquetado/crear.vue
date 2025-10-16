@@ -259,7 +259,7 @@ const createProduct = async () => {
       }
       showCreateProductModal.value = false
       searchProducts('')
-      console.log('Rubro creado exitosamente:', response.data)
+      
     } else {
       console.error('Error al crear rubro:', response.error)
     }
@@ -307,8 +307,8 @@ const saveForm = async () => {
     }
     
     isSubmitting.value = true
-    console.log('Guardando regulación de etiquetado:', formData.value)
-    console.log('Imágenes:', imageSlots.value)
+    
+    
 
     // Preparar datos para la API
     const etiquetadoData: CreateEtiquetadoRequest = {
@@ -323,7 +323,7 @@ const saveForm = async () => {
     const response = await EtiquetadoService.createEtiquetado(etiquetadoData)
 
     if (response.success && response.data) {
-      console.log('Regulación de etiquetado guardada exitosamente:', response.data)
+      
       
       // Mostrar notificación de éxito (aquí podrías usar un toast o notificación)
       

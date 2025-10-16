@@ -209,7 +209,7 @@ const handleEstadoChange = (id: string, value: string) => {
       })
     },
     () => {
-      console.log('Cancelado')
+      
     }
   )
 }
@@ -231,12 +231,12 @@ const handleDelete = (id: string) => {
       }
     },
     () => {
-      console.log('Cancelado')
+      
     }
   )
 }
 const handleEdit = (id: string) => {
-  console.log(id)
+  
 }
 const handleDuplicate = (id: string) => {
   showConfirmation('Duplicar Cotización', '¿Estás seguro de que deseas duplicar esta cotización?',
@@ -252,7 +252,7 @@ const handleDuplicate = (id: string) => {
       })
     },
     () => {
-      console.log('Cancelado')
+      
     }
   )
 }

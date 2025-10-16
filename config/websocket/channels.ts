@@ -39,13 +39,13 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: WS_EVENTS.SYSTEM.UPDATE,
             callback: (data) => {
-              console.log('Alerta del sistema:', data)
+              
             }
           },
           {
             event: 'UserActivity',
             callback: (data) => {
-              console.log('Actividad de usuario:', data)
+              
             }
           }
         ]
@@ -57,7 +57,7 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: 'DashboardUpdate',
             callback: (data) => {
-              console.log('Actualización dashboard:', data)
+              
             }
           }
         ]
@@ -74,13 +74,13 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: 'StockUpdate',
             callback: (data) => {
-              console.log('Actualización de stock:', data)
+              
             }
           },
           {
             event: 'WarehouseAlert',
             callback: (data) => {
-              console.log('Alerta de almacén:', data)
+              
             }
           }
         ]
@@ -97,13 +97,13 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: WS_EVENTS.CONTAINER.STATUS_CHANGE,
             callback: (data) => {
-              console.log('Cambio de estado del contenedor:', data)
+              
             }
           },
           {
             event: WS_EVENTS.CONTAINER.NEW,
             callback: (data) => {
-              console.log('Nuevo contenedor:', data)
+              
             }
           }
         ]
@@ -115,7 +115,7 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: 'ContainerActivity',
             callback: (data) => {
-              console.log('Actividad de contenedor:', data)
+              
             }
           }
         ]
@@ -132,13 +132,13 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: 'TaskAssignment',
             callback: (data) => {
-              console.log('Asignación de tarea:', data)
+              
             }
           },
           {
             event: 'ScheduleUpdate',
             callback: (data) => {
-              console.log('Actualización de cronograma:', data)
+              
             }
           }
         ]
@@ -155,13 +155,13 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: WS_EVENTS.COTIZACION.NEW_REQUEST,
             callback: (data) => {
-              console.log('Nueva solicitud de cotización:', data)
+              
             }
           },
           {
             event: WS_EVENTS.COTIZACION.STATUS_UPDATED,
             callback: (data) => {
-              console.log('Actualización de estado de cotización:', data)
+              
             }
           }
         ]
@@ -179,26 +179,26 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: WS_EVENTS.DOCUMENT.NEW,
             callback: (data) => {
-              console.log('Nuevo documento:', data)
+              
             }
           },
           {
             event: WS_EVENTS.DOCUMENT.STATUS_CHANGE,
             callback: (data) => {
-              console.log('Cambio de estado de documento:', data)
+              
             }
           },
           {
             event: WS_EVENTS.DOCUMENT.REQUEST,
             callback: (data) => {
-              console.log('Solicitud de documento:', data)
+              
             }
           },
                                {
             event: WS_EVENTS.DOCUMENT.IMPORT_EXCEL_COMPLETED,
             callback: (data) => {
-              console.log('📊 Importación Excel completada:', data)
-              console.log('🎯 Callback ejecutándose para ImportacionExcelCompleted')
+              
+              
               
               try {
                 // Mostrar notificación de éxito
@@ -207,7 +207,7 @@ export const websocketRoles: Record<string, WebSocketRole> = {
                 
                 // Log adicional para debugging
                 if (data.estadisticas) {
-                  console.log('📈 Estadísticas de importación:', data.estadisticas)
+                  
                 }
               } catch (error) {
                 console.error('❌ Error en callback de ImportacionExcelCompleted:', error)
@@ -218,7 +218,7 @@ export const websocketRoles: Record<string, WebSocketRole> = {
            {
              event: 'TestEvent',
              callback: (data) => {
-               console.log('🧪 Evento de prueba recibido:', data)
+               
                const { showSuccess } = useModal()
                showSuccess('Evento de Prueba', 'WebSocket funcionando correctamente')
              }
@@ -237,19 +237,19 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: WS_EVENTS.SYSTEM.GENERAL,
             callback: (data) => {
-              console.log('Notificación general:', data)
+              
             }
           },
           {
             event: WS_EVENTS.SYSTEM.UPDATE,
             callback: (data) => {
-              console.log('Actualización del sistema:', data)
+              
             }
           },
           {
             event: WS_EVENTS.SYSTEM.MAINTENANCE,
             callback: (data) => {
-              console.log('Alerta de mantenimiento:', data)
+              
             }
           }
         ]

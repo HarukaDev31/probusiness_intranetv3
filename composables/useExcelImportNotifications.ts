@@ -4,7 +4,7 @@ export const useExcelImportNotifications = () => {
   const { showSuccess, showError } = useNotifications()
 
   const handleImportExcelCompleted = (data: any) => {
-    console.log('📊 Importación Excel completada:', data)
+    
     
     // Mostrar notificación de éxito
     showSuccess({
@@ -20,7 +20,7 @@ export const useExcelImportNotifications = () => {
     // - Actualizar contadores
     // - Mostrar estadísticas
     if (data.estadisticas) {
-      console.log('📈 Estadísticas de importación:', data.estadisticas)
+      
     }
   }
 
@@ -36,7 +36,7 @@ export const useExcelImportNotifications = () => {
   }
 
   const handleImportExcelProgress = (data: any) => {
-    console.log('⏳ Progreso de importación:', data)
+    
     // Aquí puedes mostrar un progreso en tiempo real
   }
 

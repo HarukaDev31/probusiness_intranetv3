@@ -49,7 +49,7 @@ export function useProductSelector() {
         // Actualizar la lista de productos
         await searchProducts('')
         
-        console.log('Rubro creado exitosamente:', response.data)
+        
         return newProduct
       } else {
         console.error('Error al crear rubro:', response.error)

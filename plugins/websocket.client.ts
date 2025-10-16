@@ -5,7 +5,7 @@ export default defineNuxtPlugin(async () => {
   // Solo ejecutar en el cliente
   if (process.server) return
 
-  console.log('🔌 Plugin de WebSocket cargado')
+  
 
   // Variable para evitar inicialización múltiple
   let isInitializing = false
@@ -16,17 +16,17 @@ export default defineNuxtPlugin(async () => {
 
   // Función para inicializar websockets cuando el usuario esté autenticado
   const initializeWebSockets = async () => {
-    console.log('🔌 Intentando inicializar WebSockets...')
+    
     
     // Evitar inicialización múltiple
     if (isInitializing || isInitialized) {
-      console.log('🔌 WebSocket ya inicializado o en proceso de inicialización')
+      
       return
     }
 
     // Resetear estado si es necesario
     if (typeof window !== 'undefined' && (window as any).Echo) {
-      console.log('🔄 Echo ya existe en window, reseteando estado...')
+      
       resetEcho()
     }
 
@@ -41,7 +41,7 @@ export default defineNuxtPlugin(async () => {
     })
     
     if (!authToken || !authUser) {
-      console.log('🔌 Usuario no autenticado, esperando...')
+      
       return
     }
 
@@ -75,7 +75,7 @@ export default defineNuxtPlugin(async () => {
       }
     }
     
-    console.log('🔧 Configuración Echo:', echoConfig)
+    
 
           try {
         // Inicializar Echo
@@ -86,7 +86,7 @@ export default defineNuxtPlugin(async () => {
           const echoInstance = getEchoInstance()
           if (echoInstance) {
             ;(window as any).Echo = echoInstance
-            console.log('🌐 Echo disponible globalmente como window.Echo')
+            
           }
         }
 
@@ -94,7 +94,7 @@ export default defineNuxtPlugin(async () => {
         await setupRoleChannels()
 
         isInitialized = true
-        console.log('🔌 Plugin de WebSocket inicializado correctamente')
+        
       } catch (error) {
         console.error('❌ Error inicializando WebSocket:', error)
       } finally {
@@ -114,7 +114,7 @@ export default defineNuxtPlugin(async () => {
         
         if (!authToken || !authUser) {
           // Usuario se deslogueó
-          console.log('🔌 Usuario deslogueado, limpiando WebSocket...')
+          
           resetEcho()
           isInitialized = false
           isInitializing = false
@@ -123,7 +123,7 @@ export default defineNuxtPlugin(async () => {
           }
         } else {
           // Usuario se logueó
-          console.log('🔌 Usuario logueado, reinicializando WebSocket...')
+          
           initializeWebSockets()
         }
       }

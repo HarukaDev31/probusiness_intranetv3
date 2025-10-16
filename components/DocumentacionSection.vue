@@ -50,7 +50,6 @@ const handleFilesSelected = (files: File[]) => {
 
 const handleFileRemoved = (id: number) => {
   emit('delete-file', id)
-  console.log('id', id)
 }
 
 </script>

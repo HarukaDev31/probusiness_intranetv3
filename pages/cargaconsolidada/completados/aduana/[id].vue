@@ -247,7 +247,7 @@ const canalesControl = [
 ]
 
 const handleFileRemoved = async (id: number) => {
-    console.log('id', id)
+    
     showConfirmation('Eliminar archivo', '¿Estás seguro de querer eliminar este archivo?', async () => {
     await withSpinner(async () => {
         const result = await deleteFileAduana(id.toString())
@@ -259,7 +259,7 @@ const handleFileRemoved = async (id: number) => {
             }
         }, 'Eliminando archivo...')
         }, () => {
-        console.log('Cancelado')
+        
     })
 }
 // Form submit
@@ -276,17 +276,17 @@ const handleSubmit = async () => {
 
 // Cargar datos al montar el componente
 onMounted(() => {
-    console.log('Componente montado, cargando datos...')
+    
     loadAduanaData()
 })
 
 // Watcher para debuggear cambios en el formulario
 watch(formData, (newValue) => {
-    console.log('FormData cambió:', newValue)
+    
 }, { deep: true })
 
 // Watcher para debuggear cuando se cargan los datos
 watch(aduanaData, (newValue) => {
-    console.log('AduanaData cambió:', newValue)
+    
 }, { deep: true })
 </script>

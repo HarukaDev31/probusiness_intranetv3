@@ -70,6 +70,16 @@ export const usePagos = () => {
             loadingPagos.value = false
         }
     }
+    const registrarPagoFinal = async (formData: FormData) => {
+        try{
+            const response = await PagosService.registrarPagoFinal(formData)
+            return response
+        }catch(err){
+            error.value = err as string
+        }finally{
+            loadingPagos.value = false
+        }
+    }
     const deletePago = async (pagoId: number) => {
         try{
             const response = await PagosService.deletePago(pagoId)
@@ -118,6 +128,7 @@ export const usePagos = () => {
         handleSearchPagos,
         registrarPago,
         deletePago,
-        exportData
+        exportData,
+        registrarPagoFinal
     }
 }   
