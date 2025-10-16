@@ -122,12 +122,7 @@ export function useEtiquetadoEdit(regulationId: string) {
         return
       }
 
-      // Si hay imágenes por eliminar y el backend lo requiere en un endpoint separado, aquí podríamos hacer otra llamada.
-      // Si tu backend acepta eliminaciones en el mismo update, ajusta el servicio para incluir "imagenes_eliminar".
-      if (imagesToDeleteBackend.length > 0) {
-        // TODO: Implementar si existe endpoint para eliminar imágenes individualmente.
-        :', imagesToDeleteBackend)
-      }
+
 
       
       router.push('/basedatos/regulaciones?tab=etiquetado')
