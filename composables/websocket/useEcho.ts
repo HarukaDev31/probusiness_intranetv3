@@ -81,7 +81,6 @@ export const useEcho = () => {
             
             connection.bind('connected', () => {
               
-              )
             })
 
             connection.bind('disconnected', () => {
@@ -97,7 +96,6 @@ export const useEcho = () => {
             
             connection.on('connected', () => {
               
-              )
             })
 
             connection.on('disconnected', () => {
@@ -113,7 +111,6 @@ export const useEcho = () => {
             
             connection.addEventListener('connected', () => {
               
-              )
             })
 
             connection.addEventListener('disconnected', () => {
@@ -215,7 +212,6 @@ export const useEcho = () => {
         registeredEvents.add(eventKey)
         
         
-        )
         
         try {
           // Intentar diferentes métodos para registrar eventos

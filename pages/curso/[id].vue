@@ -508,7 +508,6 @@ onMounted(async () => {
     // Esperar un tick para que Vue procese los computed
     await nextTick()
 
-    :', paisOptions.value)
 
     // Luego asignar valores locales de ubicación después de que las listas estén cargadas
     selectedPais.value = datosCliente.value.id_pais || null
@@ -516,10 +515,6 @@ onMounted(async () => {
     selectedProvincia.value = datosCliente.value.id_provincia || null
     selectedDistrito.value = datosCliente.value.id_distrito || null
 
-    
-    
-    
-    )
 
     // Desactivar la bandera de carga inicial después de un pequeño delay
     // para asegurar que todos los valores estén asignados
