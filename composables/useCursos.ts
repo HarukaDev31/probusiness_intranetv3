@@ -206,7 +206,16 @@ export const useCursos = () => {
 
     const exportData = async () => {
         try {
-            await CursosService.exportCursos(filters.value)
+            const response = await CursosService.exportCursos(filters.value)
+            const url = window.URL.createObjectURL(response)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `cursos_${new Date().toISOString().split('T')[0]}.xlsx`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+            return { success: true }
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Error al exportar datos'
             console.error('Error al exportar datos:', err)
