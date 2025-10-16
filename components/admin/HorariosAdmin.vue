@@ -323,24 +323,19 @@ const nextMonth = () => {
 }
 
 const handleDateClick = (date: any) => {
-  console.log('handleDateClick called', {
-    date: date.value,
-    isPast: date.isPast,
-    hasDragged: hasDragged.value,
-    isDragging: isDragging.value
-  })
+ 
   
   if (date.isPast) {
-    console.log('Date is past, returning')
+    
     return
   }
   
   if (hasDragged.value) {
-    console.log('Has dragged, returning')
+    
     return
   }
   
-  console.log('Calling selectDate')
+  
   selectDate(date)
 }
 
@@ -379,7 +374,7 @@ const handleDrag = (date: any) => {
   // Solo marcar como drag si hay movimiento real
   if (date.value.getTime() !== dragStartDate.value.getTime()) {
     hasDragged.value = true
-    console.log('Real drag detected')
+    
   }
   
   // Seleccionar todas las fechas entre la fecha inicial y la actual
@@ -415,12 +410,12 @@ const handleMouseUp = (date: any) => {
   
   // Si no hubo drag, ejecutar click
   if (!hasDragged.value && !date.isPast) {
-    console.log('No drag detected, calling selectDate')
+    
     selectDate(date)
   }
   
   // Reset flags inmediatamente
-  console.log('Resetting flags')
+  
   isDragging.value = false
   dragStartDate.value = null
   hasDragged.value = false

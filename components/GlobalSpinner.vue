@@ -37,14 +37,7 @@
 import { useSpinner } from '../composables/commons/useSpinner'
 const { isSpinning, spinnerMessage } = useSpinner()
 
-// Debug logs
-watch(isSpinning, (newValue) => {
-  console.log('🎯 Spinner visibility changed:', newValue)
-})
 
-watch(spinnerMessage, (newValue) => {
-  console.log('📝 Spinner message changed:', newValue)
-})
 </script>
 <style scoped>
 .loader-overlay {

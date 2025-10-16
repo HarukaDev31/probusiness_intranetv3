@@ -55,7 +55,7 @@ export const validateWebSocketConfig = (): boolean => {
     return false
   }
   
-  console.log('✅ Configuración de WebSocket válida')
+  
   return true
 }
 

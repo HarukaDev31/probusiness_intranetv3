@@ -48,11 +48,9 @@
                       <!-- Filtro de tipo select -->
                       <USelect v-else :model-value="(() => {
                           const value = filtersValue && filtersValue[filter.key]
-                          console.log('DataTable - Select model-value:', { key: filter.key, value, allFilters: filtersValue })
                           return value
                         })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
                           @update:model-value="(value) => {
-                            console.log('DataTable - Select cambio:', { key: filter.key, value, currentFiltersValue: filtersValue })
                             handleFilterChange(filter.key, value)
                           }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
                     </div>

@@ -902,7 +902,7 @@ const exportData = async () => {
     await exportCursosData()
   } else if (activeTab.value === 'delivery') {
     // Aquí se implementaría la lógica de exportación para delivery
-    console.log('Exportando datos de delivery')
+    
   }
 }
 
@@ -922,7 +922,7 @@ const handleViewDocument = (id: number) => {
 
 // Función para exportar datos de delivery
 const exportDeliveryData = async () => {
-  console.log('Exportando datos de delivery')
+  
   // Aquí se implementaría la lógica de exportación específica para delivery
 }
 

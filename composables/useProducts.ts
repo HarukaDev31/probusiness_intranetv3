@@ -123,7 +123,7 @@ export const useProducts = () => {
 
   const loadFilterOptions = async () => {
     try {
-      console.log('Loading filter options...')
+      
       const options = await ProductService.getFilterOptions()
       console.log('Filter options response:', options)
       filterOptions.value = options

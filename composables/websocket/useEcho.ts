@@ -16,12 +16,12 @@ export const useEcho = () => {
   const initializeEcho = async (echoConfig: EchoConfig) => {
     // Evitar múltiples inicializaciones
     if (isInitializing) {
-      console.log('🔄 Echo ya está siendo inicializado, esperando...')
+      
       return
     }
     
     if (isInitialized && echoInstance) {
-      console.log('✅ Echo ya está inicializado, retornando instancia existente')
+      
       return echoInstance
     }
 
@@ -35,7 +35,7 @@ export const useEcho = () => {
 
           // Habilitar logs de Pusher
           ;(window as any).Pusher.logToConsole = true
-          console.log('✅ Pusher importado correctamente')
+          
         } catch (error) {
           console.error('❌ Error importando Pusher:', error)
           throw error
@@ -78,14 +78,14 @@ export const useEcho = () => {
         if (connection && typeof connection === 'object') {
           // Método 1: bind (Pusher tradicional)
           if (typeof connection.bind === 'function') {
-            console.log('✅ Usando método bind para eventos de conexión')
+            
             connection.bind('connected', () => {
-              console.log('🟢 Pusher: Conectado')
+              
               console.log('🔌 Socket ID:', echoInstance?.socketId())
             })
 
             connection.bind('disconnected', () => {
-              console.log('🔴 Pusher: Desconectado')
+              
             })
 
             connection.bind('error', (err: any) => {
@@ -94,14 +94,14 @@ export const useEcho = () => {
           }
           // Método 2: on (alternativa)
           else if (typeof connection.on === 'function') {
-            console.log('✅ Usando método on para eventos de conexión')
+            
             connection.on('connected', () => {
-              console.log('🟢 Pusher: Conectado')
+              
               console.log('🔌 Socket ID:', echoInstance?.socketId())
             })
 
             connection.on('disconnected', () => {
-              console.log('🔴 Pusher: Desconectado')
+              
             })
 
             connection.on('error', (err: any) => {
@@ -110,14 +110,14 @@ export const useEcho = () => {
           }
           // Método 3: addEventListener (DOM)
           else if (typeof connection.addEventListener === 'function') {
-            console.log('✅ Usando método addEventListener para eventos de conexión')
+            
             connection.addEventListener('connected', () => {
-              console.log('🟢 Pusher: Conectado')
+              
               console.log('🔌 Socket ID:', echoInstance?.socketId())
             })
 
             connection.addEventListener('disconnected', () => {
-              console.log('🔴 Pusher: Desconectado')
+              
             })
 
             connection.addEventListener('error', (err: any) => {
@@ -136,7 +136,7 @@ export const useEcho = () => {
       isConnected.value = true
       error.value = null
       isInitialized = true
-      console.log('✅ Echo inicializado correctamente')
+      
     } catch (err) {
       error.value = err as Error
       console.error('❌ Error inicializando Echo:', err)
@@ -152,22 +152,22 @@ export const useEcho = () => {
 
     // Verificar si ya estamos suscritos a este canal para evitar duplicados
     if (activeChannels.value.has(channel.name)) {
-      console.log(`ℹ️ Ya suscrito al canal: ${channel.name}, omitiendo...`)
+      
       return activeChannels.value.get(channel.name)
     }
 
-    console.log(`📡 Intentando suscribirse al canal: ${channel.name} (${channel.type})`)
+    
     let channelInstance: any
 
     try {
       switch (channel.type) {
         case 'private':
-          console.log(`🔧 Creando canal privado: ${channel.name}`)
+          
           channelInstance = echoInstance.private(channel.name)
           console.log(`🔧 Canal privado creado:`, channelInstance)
           break
         case 'presence':
-          console.log(`🔧 Creando canal de presencia: ${channel.name}`)
+          
           channelInstance = echoInstance.join(channel.name)
           console.log(`🔧 Canal de presencia creado:`, channelInstance)
           break
@@ -181,7 +181,7 @@ export const useEcho = () => {
           // Intentar diferentes métodos para los eventos de suscripción
           if (typeof channelInstance.bind === 'function') {
             channelInstance.bind('pusher:subscription_succeeded', () => {
-              console.log(`✅ Suscripción exitosa al canal: ${channel.name}`)
+              
             })
 
             channelInstance.bind('pusher:subscription_error', (err: any) => {
@@ -189,14 +189,14 @@ export const useEcho = () => {
             })
           } else if (typeof channelInstance.listen === 'function') {
             channelInstance.listen('pusher:subscription_succeeded', () => {
-              console.log(`✅ Suscripción exitosa al canal: ${channel.name}`)
+              
             })
 
             channelInstance.listen('pusher:subscription_error', (err: any) => {
               console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
             })
           } else {
-            console.log(`ℹ️ No se pudieron registrar los eventos de suscripción para el canal: ${channel.name}`)
+            
           }
         } catch (err) {
           console.warn(`⚠️ Error registrando eventos de suscripción para ${channel.name}:`, err)
@@ -209,11 +209,11 @@ export const useEcho = () => {
         // Evitar registrar el mismo evento múltiples veces
         const eventKey = `${channel.name}:${event}`
         if (registeredEvents.has(eventKey)) {
-          console.log(`ℹ️ Evento '${event}' ya registrado en canal '${channel.name}', omitiendo...`)
+          
           return
         }
         registeredEvents.add(eventKey)
-        console.log(`🎯 Registrando evento '${event}' en canal '${channel.name}'`)
+        
         console.log(`🔍 Tipo de canalInstance:`, typeof channelInstance)
         console.log(`🔍 Métodos disponibles:`, Object.getOwnPropertyNames(channelInstance))
         
@@ -222,7 +222,7 @@ export const useEcho = () => {
           if (channelInstance && typeof channelInstance === 'object') {
             // Método 1: bind (Pusher) - PRIORITARIO para eventos de Pusher
             if (typeof channelInstance.bind === 'function') {
-              console.log(`✅ Usando método 'bind' para evento '${event}'`)
+              
               channelInstance.bind(event, (data: any) => {
                 console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
                 callback(data)
@@ -230,7 +230,7 @@ export const useEcho = () => {
             }
             // Método 2: Acceder al objeto pusher del canal para usar bind
             else if (channelInstance.pusher && typeof channelInstance.pusher.bind === 'function') {
-              console.log(`✅ Usando método 'bind' del objeto pusher para evento '${event}'`)
+              
               channelInstance.pusher.bind(event, (data: any) => {
                 console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
                 callback(data)
@@ -238,7 +238,7 @@ export const useEcho = () => {
             }
             // Método 3: listen (Laravel Echo) - Para eventos de Laravel
             else if (typeof channelInstance.listen === 'function') {
-              console.log(`✅ Usando método 'listen' para evento '${event}'`)
+              
               channelInstance.listen(event, (data: any) => {
                 console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
                 callback(data)
@@ -246,7 +246,7 @@ export const useEcho = () => {
             }
             // Método 4: on (alternativa)
             else if (typeof channelInstance.on === 'function') {
-              console.log(`✅ Usando método 'on' para evento '${event}'`)
+              
               channelInstance.on(event, (data: any) => {
                 console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
                 callback(data)
@@ -254,7 +254,7 @@ export const useEcho = () => {
             }
             // Método 5: addEventListener (DOM)
             else if (typeof channelInstance.addEventListener === 'function') {
-              console.log(`✅ Usando método 'addEventListener' para evento '${event}'`)
+              
               channelInstance.addEventListener(event, (data: any) => {
                 console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
                 callback(data)
@@ -285,12 +285,12 @@ export const useEcho = () => {
   }
 
   const subscribeToRoleChannels = (roleConfig: WebSocketRole) => {
-    console.log(`👥 Configurando canales para rol: ${roleConfig.role}`)
+    
     roleConfig.channels.forEach(channel => {
       try {
-        console.log(`📡 Intentando suscribirse a: ${channel.name}`)
+        
         subscribeToChannel(channel)
-        console.log(`✅ Suscripción exitosa a: ${channel.name}`)
+        
       } catch (err) {
         console.error(`❌ Error configurando canal ${channel.name}:`, err)
         // Continuar con otros canales aunque uno falle
@@ -299,13 +299,13 @@ export const useEcho = () => {
   }
 
   const unsubscribeFromChannel = (channelName: string) => {
-    console.log(`🔌 Desuscribiendo del canal: ${channelName}`)
+    
     const channel = activeChannels.value.get(channelName)
     if (channel) {
       try {
         echoInstance?.leave(channelName)
         activeChannels.value.delete(channelName)
-        console.log(`✅ Desuscripción exitosa del canal: ${channelName}`)
+        
       } catch (err) {
         console.error(`❌ Error desuscribiendo del canal ${channelName}:`, err)
       }
@@ -314,7 +314,7 @@ export const useEcho = () => {
 
   const disconnect = () => {
     if (echoInstance) {
-      console.log('🔌 Desconectando todos los canales')
+      
       activeChannels.value.forEach((_, channelName) => {
         unsubscribeFromChannel(channelName)
       })
@@ -323,12 +323,12 @@ export const useEcho = () => {
       isConnected.value = false
       isInitialized = false
       isInitializing = false
-      console.log('✅ Desconexión completa')
+      
     }
   }
 
   const resetEcho = () => {
-    console.log('🔄 Reseteando estado global de Echo')
+    
     echoInstance = null
     isInitialized = false
     isInitializing = false

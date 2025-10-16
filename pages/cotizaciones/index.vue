@@ -209,7 +209,7 @@ const handleEstadoChange = (id: string, value: string) => {
       })
     },
     () => {
-      console.log('Cancelado')
+      
     }
   )
 }
@@ -231,7 +231,7 @@ const handleDelete = (id: string) => {
       }
     },
     () => {
-      console.log('Cancelado')
+      
     }
   )
 }
@@ -252,7 +252,7 @@ const handleDuplicate = (id: string) => {
       })
     },
     () => {
-      console.log('Cancelado')
+      
     }
   )
 }

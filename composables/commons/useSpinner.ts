@@ -11,7 +11,7 @@ function createSpinnerInstance() {
   }
 
   const hideSpinner = () => {
-    console.log('✅ Hiding spinner')
+    
     isSpinning.value = false
     spinnerMessage.value = 'Cargando...'
   }

@@ -526,7 +526,7 @@ onMounted(async () => {
     await nextTick()
     setTimeout(() => {
       isInitialLoad.value = false
-      console.log('Carga inicial completada, watchers activados')
+      
     }, 100)
   }
 })

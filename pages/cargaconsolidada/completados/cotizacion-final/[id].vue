@@ -459,7 +459,7 @@ onMounted(async () => {
     await getGeneral(Number(id))
   }
   if (activeTab.value === 'pagos') {
-    console.log('getPagos')
+    
     await getPagos(Number(id))
   }
   await getHeaders(Number(id))

@@ -66,13 +66,13 @@ export const useModules = () => {
   }
 
   const fetchSidebar = async () => {
-    console.log('fetchSidebar called')
+    
     loading.value = true
     error.value = null
     
     try {
       const moduleService = ModuleService.getInstance()
-      console.log('ModuleService instance created')
+      
       const response: SidebarResponse = await moduleService.getSidebarModules()
       console.log('Sidebar response:', response)
       
@@ -88,7 +88,7 @@ export const useModules = () => {
       console.error('Error fetching sidebar:', err)
     } finally {
       loading.value = false
-      console.log('fetchSidebar completed')
+      
     }
   }
 

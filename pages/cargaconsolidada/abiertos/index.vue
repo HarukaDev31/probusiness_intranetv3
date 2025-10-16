@@ -457,7 +457,7 @@ const handleDeleteCarga = async (id: number) => {
 
 const exportClientes = async () => {
     try {
-        console.log('Exportando contenedores~.')
+        
     } catch (error) {
         console.error('Error al exportar:', error)
     }

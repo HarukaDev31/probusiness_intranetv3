@@ -20,13 +20,13 @@ export const useSession = () => {
           .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
       })
       
-      console.log('Sesión limpiada completamente')
+      
     }
   }
 
   // Función para manejar sesión expirada
   const handleSessionExpired = () => {
-    console.log('Sesión expirada detectada')
+    
     isSessionExpired.value = true
     clearSession()
     

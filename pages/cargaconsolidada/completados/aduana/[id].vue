@@ -259,7 +259,7 @@ const handleFileRemoved = async (id: number) => {
             }
         }, 'Eliminando archivo...')
         }, () => {
-        console.log('Cancelado')
+        
     })
 }
 // Form submit
@@ -276,7 +276,7 @@ const handleSubmit = async () => {
 
 // Cargar datos al montar el componente
 onMounted(() => {
-    console.log('Componente montado, cargando datos...')
+    
     loadAduanaData()
 })
 

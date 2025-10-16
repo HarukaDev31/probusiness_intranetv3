@@ -144,7 +144,7 @@ const deleteFileDocumentacion = async (idDocumento: number) => {
         await getDocumentosChina(id)
         loadingDocumentacion.value = false
     }, () => {
-        console.log('Cancelado')
+        
     })
 
 }
@@ -157,7 +157,7 @@ const deleteFileInspeccion = async (idInspeccion: number) => {
         await getInspeccionChina(id)
         loadingInspeccion.value = false
     }, () => {
-        console.log('Cancelado')
+        
     })
 
 }

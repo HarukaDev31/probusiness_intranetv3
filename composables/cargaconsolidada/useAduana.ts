@@ -57,7 +57,7 @@ export const useAduana = () => {
         console.log('loadAduanaData ejecutándose, containerId:', containerId.value)
         
         if (!containerId.value) {
-            console.log('No hay containerId, saliendo...')
+            
             return
         }
 

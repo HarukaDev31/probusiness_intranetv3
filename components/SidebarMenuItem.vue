@@ -88,10 +88,8 @@ function navigateToItem(item: any) {
     
     // Priorizar url_intranet_v2 si existe
     if (item.url_intranet_v2) {
-      console.log('Navegando a url_intranet_v2:', item.url_intranet_v2)
       targetUrl = item.url_intranet_v2
     } else if (item.No_Menu_Url && item.No_Menu_Url !== '#' && item.url_intranet_v2 !== "/") {
-      console.log('Navegando a No_Menu_Url:', item.No_Menu_Url)
       targetUrl = item.No_Menu_Url.replace(/\\/g, '/')
     }
     

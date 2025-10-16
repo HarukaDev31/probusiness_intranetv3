@@ -37,7 +37,7 @@ const testShowSpinner = () => {
 const testWithSpinner = async () => {
   await withSpinner(async () => {
     await new Promise(resolve => setTimeout(resolve, 2000))
-    console.log('Operación completada')
+    
   }, 'Operación en progreso...')
 }
 

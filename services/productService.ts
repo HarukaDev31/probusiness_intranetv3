@@ -157,7 +157,7 @@ export class ProductService extends BaseService {
   // Obtener opciones para filtros
   static async getFilterOptions(): Promise<FilterOptions> {
     try {
-      console.log('Calling filter options API...')
+      
       const response = await this.apiCall<FilterOptionsResponse>(`${this.baseUrl}/filters/options`)
       console.log('Filter options API response:', response)
       

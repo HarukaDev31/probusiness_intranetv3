@@ -305,7 +305,7 @@ const loadPermiso = async () => {
         console.log('Documentos cargados desde media:', permiso.media)
         console.log('Documentos mapeados:', existingDocuments.value)
       } else {
-        console.log('No hay documentos en media')
+        
         existingDocuments.value = []
       }
       
@@ -379,7 +379,7 @@ const saveForm = async () => {
     const response = await PermisoService.updatePermiso(permisoId, formDataToSend)
     
     if (response.success) {
-      console.log('Permiso actualizado exitosamente')
+      
       router.push('/basedatos/regulaciones?tab=permisos')
     } else {
       console.error('Error al actualizar el permiso:', response.error)

@@ -218,12 +218,12 @@ onMounted(async () => {
   const cameFromInternal = sessionStorage.getItem('clientes_internal_nav')
   
   console.log('🔍 Navegación interna detectada:', cameFromInternal)
-  console.log('📦 Estado en sessionStorage antes:', sessionStorage.getItem('clientes_state'))
+  )
   
   if (!cameFromInternal) {
     // No venimos de navegación interna, es una carga directa o recarga
     // Limpiar el storage y resetear filtros
-    console.log('🔄 Carga directa o recarga detectada, limpiando filtros')
+    
     sessionStorage.removeItem('clientes_state')
     
     // Resetear los valores del composable
@@ -236,7 +236,7 @@ onMounted(async () => {
       servicio: 'todos'
     }
   } else {
-    console.log('✅ Navegación desde detalle detectada, manteniendo filtros')
+    
     // Limpiar el flag para la próxima vez
     sessionStorage.removeItem('clientes_internal_nav')
   }

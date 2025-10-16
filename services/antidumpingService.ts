@@ -191,7 +191,7 @@ export class AntidumpingService extends BaseService {
         })
       }
 
-      console.log('FormData contents for update:')
+      
       for (let [key, value] of formData.entries()) {
         console.log(`${key}:`, value)
       }
