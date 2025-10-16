@@ -27,7 +27,7 @@
                             @selectstart.prevent
                             draggable="false"
                             :style="{
-                                transform: `scale(${imageScale}) translate(${imagePosition.x}px, ${imagePosition.y}px)`,
+                                transform: 'scale(' + imageScale + ') translate(' + imagePosition.x + 'px, ' + imagePosition.y + 'px)',
                                 transition: isDragging ? 'none' : 'transform 0.2s ease-out',
                                 cursor: isDragging ? 'grabbing' : 'grab'
                             }"
@@ -125,7 +125,7 @@
                                                     :key="colIndex"
                                                     class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-r border-gray-200 dark:border-gray-700 min-w-[120px]"
                                                 >
-                                                    {{ header || `Col ${colIndex + 1}` }}
+                                                    {{ header || 'Col ' + (colIndex + 1) }}
                                                 </th>
                                             </tr>
                                         </thead>
@@ -440,12 +440,6 @@ const loadExcelFile = async () => {
                 return normalizedRow
             })
             
-             // Debug
-             // Debug
-             // Debug
-             // Debug
-             // Debug
-            :`, normalizedData.slice(0, 2)) // Debug
             
             return {
                 name: sheetName,
