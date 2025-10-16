@@ -82,7 +82,7 @@ const closeModal = () => {
 const loadConsolidados = async () => {
   try {
     const response = await ConsolidadoService.getContenedoresDisponibles()
-    console.log(response)
+    
     consolidados.value = response.map((item: any) => ({
       value: item.id,
       label: `Contenedor #${item.carga}`

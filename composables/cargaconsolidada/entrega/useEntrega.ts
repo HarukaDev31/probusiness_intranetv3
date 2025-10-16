@@ -450,7 +450,7 @@ export const useEntrega = () => {
     id_form_province?: number;
   }) => {
     const fd = new FormData()
-    console.log(payload)
+    
     fd.append('id_contenedor', String(payload.id_contenedor))
     fd.append('id_cotizacion', String(payload.id_cotizacion))
     fd.append('type_form', String(payload.type_form))
@@ -459,7 +459,7 @@ export const useEntrega = () => {
     if (payload.id_form_lima) fd.append('id_form_lima', String(payload.id_form_lima))
     if (payload.id_form_province) fd.append('id_form_province', String(payload.id_form_province))
     const res = await EntregaService.uploadConformidad(fd)
-    console.log(res)  
+      
     if (res?.success) {
       // refrescar detalle para tener urls correctas
       if (entregaDetalle.value?.id_cotizacion) await getEntregasDetalle(entregaDetalle.value.id_cotizacion)

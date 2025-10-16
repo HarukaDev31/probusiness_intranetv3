@@ -111,7 +111,7 @@ export const useVariacionCliente = () => {
   const cambiarProveedor = async (tabId: string) => {
     try {
       activeTab.value = tabId
-      console.log(tabId,proveedores.value)
+      
       const proveedor = proveedores.value.find(p => p.code_supplier.toString() === tabId)
       
       if (proveedor) {

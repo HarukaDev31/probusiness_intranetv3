@@ -90,7 +90,7 @@ export const usePagos = () => {
             }
             const response = await PagosService.getCursosPagos(mergedFilters)
             pagosData.value = response.data
-            console.log(pagosData.value)
+            
             pagination.value = response.pagination
             totalAmountPagos.value = response.total_amount
         } catch (err) {
@@ -106,7 +106,7 @@ export const usePagos = () => {
     // Handlers
     const handleSearchPagos = async (searchTerm: string) => {
         searchQueryPagos.value = searchTerm
-        console.log('Search term:', searchTerm)
+        
         currentPagePagos.value = 1
         await loadPagos({ page: 1, search: searchTerm })
     }
@@ -115,7 +115,7 @@ export const usePagos = () => {
         // Si el value es un objeto con propiedad value, extrae el value
         const realValue = (typeof value === 'object' && value !== null && 'value' in value) ? value.value : value
         filtersPagos.value = { ...filtersPagos.value, [key]: realValue }
-        console.log('Updated filters:', filtersPagos.value)
+        
         currentPagePagos.value = 1
         await loadPagos({ page: 1, filters: filtersPagos.value })
     }

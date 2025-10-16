@@ -47,13 +47,13 @@ export const useGeneral = () => {
                 search: searchGeneral.value,
                 filters: filtersGeneral.value
             }
-            console.log('Params:', params)
+            
             const response = await GeneralService.getGeneral(id, params)
             general.value = response.data
             paginationGeneral.value = response.pagination
         } catch (err) {
             error.value = err as string
-            console.log('Error al obtener general:', err)
+            
         } finally {
             loadingGeneral.value = false
         }

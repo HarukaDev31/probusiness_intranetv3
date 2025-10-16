@@ -305,7 +305,7 @@ const toggleSidebar = () => {
 onMounted(async () => {
   
   await initializeAuth()
-  console.log('Auth initialized, menu loaded:', menu.value)
-  console.log('Sidebar categories:', sidebarCategories.value)
+  
+  
 })
 </script>

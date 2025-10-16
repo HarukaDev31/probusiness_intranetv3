@@ -325,7 +325,7 @@ const handleFileUpload = async () => {
         await withSpinner(async () => {
             // Importar el archivo Excel usando el servicio
             const response = await ClienteService.importExcel(selectedFile.value!)
-            console.log(response)
+            
             
             if (response.success) {
                 // Recargar la lista de archivos desde el backend

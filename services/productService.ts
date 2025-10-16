@@ -34,7 +34,7 @@ export class ProductService extends BaseService {
         })
       }
 
-      console.log('Calling API with URL:', `${this.baseUrl}?${queryParams.toString()}`)
+      }`)
       const response = await this.apiCall<ProductsResponse>(`${this.baseUrl}?${queryParams.toString()}`)
       
       // Verificar si la respuesta tiene la estructura esperada
@@ -71,7 +71,7 @@ export class ProductService extends BaseService {
   static async getProductById(id: number): Promise<ProductResponse> {
     try {
       const response = await this.apiCall<ProductResponse>(`${this.baseUrl}/${id}`)
-      console.log('Product response:', response)
+      
       return response
     } catch (error) {
       console.error('Error fetching product:', error)
@@ -159,7 +159,7 @@ export class ProductService extends BaseService {
     try {
       
       const response = await this.apiCall<FilterOptionsResponse>(`${this.baseUrl}/filters/options`)
-      console.log('Filter options API response:', response)
+      
       
       if (response.status === 'success') {
         const options = {
@@ -167,7 +167,7 @@ export class ProductService extends BaseService {
           tiposProducto: response.data.tipos_producto || [],
           campanas: response.data.cargas || [] // Usar 'cargas' como campañas
         }
-        console.log('Processed filter options:', options)
+        
         return options
       }
       

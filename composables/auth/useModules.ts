@@ -74,11 +74,11 @@ export const useModules = () => {
       const moduleService = ModuleService.getInstance()
       
       const response: SidebarResponse = await moduleService.getSidebarModules()
-      console.log('Sidebar response:', response)
+      
       
       if (response.success) {
         sidebarCategories.value = response.data
-        console.log('Sidebar categories set:', sidebarCategories.value)
+        
       } else {
         error.value = response.error || 'Error al cargar sidebar'
         console.error('Sidebar error:', error.value)

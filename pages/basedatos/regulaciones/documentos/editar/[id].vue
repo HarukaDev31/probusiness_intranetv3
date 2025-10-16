@@ -326,7 +326,7 @@ const createProduct = async () => {
       }
       showCreateProductModal.value = false
       searchProducts('')
-      console.log('Rubro creado exitosamente:', response.data)
+      
     } else {
       console.error('Error al crear rubro:', response.error)
     }
@@ -417,7 +417,7 @@ const loadRegulation = async () => {
         existingDocuments.value = response.data.documentos
       }
       
-      console.log('Regulación cargada:', response.data)
+      
     } else {
       console.error('Error al cargar la regulación:', response.error)
     }
@@ -442,7 +442,7 @@ const saveForm = async () => {
     }
     
     isSubmitting.value = true
-    console.log('Guardando documento especial:', formData.value)
+    
 
     // Preparar FormData para la API
     const formDataToSend = new FormData()
@@ -473,7 +473,7 @@ const saveForm = async () => {
     const response = await DocumentoService.updateDocumento(parseInt(regulationId), formDataToSend)
 
     if (response.success && response.data) {
-      console.log('Documento especial actualizado exitosamente:', response.data)
+      
       
       // Redirigir de vuelta a la lista
       router.push('/basedatos/regulaciones?tab=documentos')

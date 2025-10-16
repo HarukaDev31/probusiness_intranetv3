@@ -426,7 +426,7 @@ const goBack = () => {
 
 // Handle save pago
 const handleSavePago = (pagoData: any) => {
-  console.log('Pago guardado:', pagoData)
+  
   // Aquí puedes implementar la lógica para guardar el pago
   // Por ejemplo, llamar a un servicio o actualizar el estado
 }

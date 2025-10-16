@@ -509,7 +509,7 @@ const deliveryColumns = ref<TableColumn<any>[]>([
   //div with button with icon save
   {
     accessorKey: 'actions', header: 'Acciones', cell: ({ row }) => {
-      console.log('Acciones:', row.original)
+      
       return h('div', { class: 'flex gap-2' }, [
         h(UButton, {
           size: 'xs',
@@ -523,7 +523,7 @@ const deliveryColumns = ref<TableColumn<any>[]>([
 ])
 const handleUpdate = (row: any) => {
   try {
-    console.log('Guardando importe:', row)
+    
     const data = {
       id_cotizacion: row.id_cotizacion,
       importe: row.importe

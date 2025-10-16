@@ -54,7 +54,7 @@ export const useAduana = () => {
 
     // Cargar datos existentes
     const loadAduanaData = async () => {
-        console.log('loadAduanaData ejecutándose, containerId:', containerId.value)
+        
         
         if (!containerId.value) {
             
@@ -67,13 +67,13 @@ export const useAduana = () => {
             aduanaFiles.value = []
             aduanaImpuestosPagados.value = []
 
-            console.log('Llamando al servicio con containerId:', containerId.value)
+            
             const response = await AduanaService.getAduanaByContainer(containerId.value)
-            console.log('Respuesta del servicio:', response)
+            
             
             if (response.success && response.data ) {
                 const apiData = response.data // La API devuelve un array
-                console.log('Datos recibidos de la API:', apiData)
+                
                 aduanaData.value = apiData
                
                 const mappedData = {
@@ -96,20 +96,20 @@ export const useAduana = () => {
                 }
                 
                 formData.value = mappedData
-                console.log('apiData.files', apiData.files)
+                
                 aduanaFiles.value = apiData.files.map((file: FileItem) => {
                     if (file.tipo == "aduana") {
                         return file
                     }
                 }).filter((file: FileItem) => file !== undefined)
                 aduanaImpuestosPagados.value = apiData.files.map((file: FileItem) => {
-                    console.log('file', file)
+                    
                     if (file.tipo == "impuestos") {
                         return file
                     }
                 }).filter((file: FileItem) => file !== undefined)
                 
-                console.log('Formulario después de mapear:', formData.value)
+                
             }
         } catch (err: any) {
             error.value = err.message || 'Error al cargar los datos de aduana'

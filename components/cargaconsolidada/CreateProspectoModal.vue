@@ -41,7 +41,7 @@ const loading = ref(false)
 const selectedFile = ref<File | null>(null)
 const { withSpinner } = useSpinner()
 const handleFileSelected = (files: File[]) => {
-    console.log(files)
+    
     if (files.length > 0) {
         selectedFile.value = files[0]
     }
@@ -69,7 +69,7 @@ const handleSubmit = async () => {
         } else {
             data.id_contenedor = props.idConsolidado
         }
-        console.log(data)
+        
         await withSpinner(async () => {
             let response: any
             if (props.idCotizacion) {

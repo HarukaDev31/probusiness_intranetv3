@@ -247,7 +247,7 @@ const canalesControl = [
 ]
 
 const handleFileRemoved = async (id: number) => {
-    console.log('id', id)
+    
     showConfirmation('Eliminar archivo', '¿Estás seguro de querer eliminar este archivo?', async () => {
     await withSpinner(async () => {
         const result = await deleteFileAduana(id.toString())
@@ -282,11 +282,11 @@ onMounted(() => {
 
 // Watcher para debuggear cambios en el formulario
 watch(formData, (newValue) => {
-    console.log('FormData cambió:', newValue)
+    
 }, { deep: true })
 
 // Watcher para debuggear cuando se cargan los datos
 watch(aduanaData, (newValue) => {
-    console.log('AduanaData cambió:', newValue)
+    
 }, { deep: true })
 </script>

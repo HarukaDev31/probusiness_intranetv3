@@ -834,7 +834,7 @@ const seguroPorProducto = computed(() => {
 const getDisabledByRangeItem = (proveedor: Proveedor) => {
   const totalCbm = proveedor.cbm;
   const tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(tarifa => {
-    console.log(totalCbm, tarifa.limit_inf, tarifa.limit_sup)
+    
     return totalCbm >= tarifa.limit_inf && totalCbm <= tarifa.limit_sup
   })
   return proveedor.productos.length >= tarifa?.item_base + tarifa?.item_extra ? true : false

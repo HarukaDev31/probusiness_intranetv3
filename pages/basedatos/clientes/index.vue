@@ -204,12 +204,12 @@ const goToArchivos = () => {
 
 const handleEditCliente = (id: number) => {
     // Implementar edición de cliente
-    console.log('Editar cliente:', id)
+    
 }
 
 const handleDeleteCliente = (id: number) => {
     // Implementar eliminación de cliente
-    console.log('Eliminar cliente:', id)
+    
 }
 
 // Detectar si venimos de navegación interna o es una recarga real

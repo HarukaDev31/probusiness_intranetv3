@@ -20,7 +20,7 @@ export class BaseService {
       
       const result = await this.nuxtApp.$api.call(endpoint, options)
       
-      console.log('✅ BaseService - Respuesta exitosa:', result)
+      
       return result as T
     } catch (error: any) {
       const status = error?.status || error?.statusCode

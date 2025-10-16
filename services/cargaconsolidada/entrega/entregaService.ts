@@ -326,12 +326,12 @@ export class  EntregaService extends BaseService {
   static async uploadConformidad(formData: FormData): Promise<{ success: boolean; data: { id: number; photo_1: string; photo_2: string } }> {
     try {
       
-      console.log('FormData:', formData)
-      console.log('URL completa:', `${EntregaService.baseUrl}/entregas/conformidad`)
+      
+      
 
       //print formData
       for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value)
+        
       }
 
       
@@ -339,7 +339,7 @@ export class  EntregaService extends BaseService {
         method: 'POST',
         body: formData
       })
-      console.log('✅ Respuesta recibida:', response)
+      
       return response
     } catch (error) {
       console.error('Error al subir conformidad:', error)

@@ -186,9 +186,9 @@ export class NotificationService extends BaseService {
         }
 
         // Navegar usando el router de Nuxt
-        console.log('Navegando a:', url)
-        console.log('URL original:', notification.navigate_to)
-        console.log('Parámetros:', notification.navigate_params)
+        
+        
+        
         navigateTo(url)
     }
 

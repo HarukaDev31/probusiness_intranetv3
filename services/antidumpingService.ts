@@ -72,7 +72,7 @@ export class AntidumpingService extends BaseService {
     try {
       // Crear FormData para manejar archivos
       const formData = new FormData()
-      console.log('antidumpingData', antidumpingData)
+      
     
       formData.append('id_rubro', antidumpingData.producto_id.toString())
       formData.append('descripcion', antidumpingData.descripcion)
@@ -193,7 +193,7 @@ export class AntidumpingService extends BaseService {
 
       
       for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value)
+        
       }
 
       // Usar el mismo endpoint que crear pero con id_regulacion

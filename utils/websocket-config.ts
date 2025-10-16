@@ -62,7 +62,7 @@ export const validateWebSocketConfig = (): boolean => {
 export const testWebSocketConnection = async (): Promise<boolean> => {
   try {
     const config = getWebSocketConfig()
-    console.log('🧪 Probando conexión WebSocket con config:', config)
+    
     
     // Aquí podrías hacer una prueba de conexión real
     // Por ahora solo validamos la configuración

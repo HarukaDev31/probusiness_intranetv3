@@ -57,7 +57,7 @@ export const useEcho = () => {
         // No sobrescribir forceTLS, usar el valor del echoConfig
       }
       
-      console.log('🔧 Configuración final de Echo:', finalConfig)
+      
       
       echoInstance = new Echo(finalConfig)
 
@@ -81,7 +81,7 @@ export const useEcho = () => {
             
             connection.bind('connected', () => {
               
-              console.log('🔌 Socket ID:', echoInstance?.socketId())
+              )
             })
 
             connection.bind('disconnected', () => {
@@ -97,7 +97,7 @@ export const useEcho = () => {
             
             connection.on('connected', () => {
               
-              console.log('🔌 Socket ID:', echoInstance?.socketId())
+              )
             })
 
             connection.on('disconnected', () => {
@@ -113,7 +113,7 @@ export const useEcho = () => {
             
             connection.addEventListener('connected', () => {
               
-              console.log('🔌 Socket ID:', echoInstance?.socketId())
+              )
             })
 
             connection.addEventListener('disconnected', () => {
@@ -164,12 +164,12 @@ export const useEcho = () => {
         case 'private':
           
           channelInstance = echoInstance.private(channel.name)
-          console.log(`🔧 Canal privado creado:`, channelInstance)
+          
           break
         case 'presence':
           
           channelInstance = echoInstance.join(channel.name)
-          console.log(`🔧 Canal de presencia creado:`, channelInstance)
+          
           break
         default:
           throw new Error(`Tipo de canal no soportado: ${channel.type}`)
@@ -214,8 +214,8 @@ export const useEcho = () => {
         }
         registeredEvents.add(eventKey)
         
-        console.log(`🔍 Tipo de canalInstance:`, typeof channelInstance)
-        console.log(`🔍 Métodos disponibles:`, Object.getOwnPropertyNames(channelInstance))
+        
+        )
         
         try {
           // Intentar diferentes métodos para registrar eventos
@@ -224,7 +224,7 @@ export const useEcho = () => {
             if (typeof channelInstance.bind === 'function') {
               
               channelInstance.bind(event, (data: any) => {
-                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                
                 callback(data)
               })
             }
@@ -232,7 +232,7 @@ export const useEcho = () => {
             else if (channelInstance.pusher && typeof channelInstance.pusher.bind === 'function') {
               
               channelInstance.pusher.bind(event, (data: any) => {
-                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                
                 callback(data)
               })
             }
@@ -240,7 +240,7 @@ export const useEcho = () => {
             else if (typeof channelInstance.listen === 'function') {
               
               channelInstance.listen(event, (data: any) => {
-                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                
                 callback(data)
               })
             }
@@ -248,7 +248,7 @@ export const useEcho = () => {
             else if (typeof channelInstance.on === 'function') {
               
               channelInstance.on(event, (data: any) => {
-                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                
                 callback(data)
               })
             }
@@ -256,7 +256,7 @@ export const useEcho = () => {
             else if (typeof channelInstance.addEventListener === 'function') {
               
               channelInstance.addEventListener(event, (data: any) => {
-                console.log(`📨 Evento recibido '${event}' en canal '${channel.name}':`, data)
+                
                 callback(data)
               })
             }
@@ -339,7 +339,7 @@ export const useEcho = () => {
 
   const getActiveChannels = () => {
     const channels = Array.from(activeChannels.value.keys())
-    console.log('📻 Canales activos:', channels)
+    
     return channels
   }
 

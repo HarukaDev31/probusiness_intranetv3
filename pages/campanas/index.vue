@@ -161,7 +161,7 @@ const openCreateModal = async () => {
                 // Aquí se llamaría al servicio para crear la campaña
 
                 await withSpinner(async () => {
-                    console.log('Datos de la campaña:', campaignData)
+                    
                     const response = await createCampaign(campaignData)
                     if (response) {
                         showSuccess('Campaña creada correctamente', 'La campaña se ha creado correctamente')
@@ -181,7 +181,7 @@ const openCreateModal = async () => {
 }
 
 const handleEdit = (campaign: any) => {
-    console.log('Editar campaña:', campaign)
+    
     // navigateTo(`/curso/campañas/${campaign.id}/editar`)
 }
 

@@ -85,7 +85,7 @@ export const useCotizacion = () => {
     const deleteCotizacion = async (id: number) => {
         try {
             const response = await CotizacionService.deleteCotizacion(id)
-            console.log(response)
+            
             return response
         } catch (error) {
             console.error('Error en deleteCotizacion:', error)
@@ -125,7 +125,7 @@ export const useCotizacion = () => {
             const response = await CotizacionService.updateEstadoCotizacionCotizador(id, data)
             return response
         } catch (error) {
-            console.log(error)
+            
             throw error
         }
     }

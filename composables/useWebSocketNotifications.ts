@@ -6,7 +6,7 @@ export const useWebSocketNotifications = () => {
 
   const handleWebSocketModal = (event: CustomEvent) => {
     
-    console.log('📨 Evento recibido:', event.detail)
+    
     const { type, title, message, duration } = event.detail
 
     switch (type) {

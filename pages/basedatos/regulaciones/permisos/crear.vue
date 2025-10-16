@@ -223,7 +223,7 @@ const loadEntities = async () => {
         label: entity.nombre,
         value: entity.id.toString()
       }))
-      console.log('Entidades cargadas:', entityOptions.value)
+      
     } else {
       console.error('Error al cargar entidades:', response.error)
     }

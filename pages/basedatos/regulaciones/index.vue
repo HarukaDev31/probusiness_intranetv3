@@ -840,7 +840,7 @@ const createProduct = async () => {
                 }
                 showSuccess('Creación Exitosa', 'La categoría se ha creado correctamente.')
 
-            console.log('Rubro creado exitosamente:', response.data)
+            
             } else {
             console.error('Error al crear rubro:', response.error)
             }
@@ -1276,7 +1276,7 @@ const loadAntidumpingData = async () => {
             }))
 
             antidumpingData.value = transformDataForGrouping(transformedData, 'nombre')
-            console.log('Datos de antidumping cargados:', antidumpingData.value)
+            
         } else {
             console.error('Error al cargar datos de antidumping:', response.error)
             antidumpingData.value = []
@@ -1323,7 +1323,7 @@ const loadPermisosData = async () => {
             }))
 
             permisosData.value = transformDataForGrouping(transformedData, 'nombre')
-            console.log('Datos de permisos cargados:', permisosData.value)
+            
         } else {
             console.error('Error al cargar datos de permisos:', response.error)
             permisosData.value = []
@@ -1360,7 +1360,7 @@ const loadEtiquetadoData = async () => {
             }))
 
             etiquetadoData.value = transformDataForGrouping(transformedData, 'nombre')
-            console.log('Datos de etiquetado cargados:', etiquetadoData.value)
+            
         } else {
             console.error('Error al cargar datos de etiquetado:', response.error)
             etiquetadoData.value = []
@@ -1398,7 +1398,7 @@ const loadDocumentosData = async () => {
             }))
 
             documentosData.value = transformDataForGrouping(transformedData, 'nombre')
-            console.log('Datos de documentos especiales cargados:', documentosData.value)
+            
         } else {
             console.error('Error al cargar datos de documentos especiales:', response.error)
             documentosData.value = []
@@ -1479,7 +1479,7 @@ const viewRegulationDetail = (regulationId: number) => {
 
 // Edit regulation
 const editRegulation = (regulationId: number) => {
-    console.log('Navigating to edit:', regulationId)
+    
     navigateTo(`/basedatos/regulaciones/antidumping/editar/${regulationId}`)
 }
 const deleteRegulation = (regulationId: number) => {
@@ -1520,13 +1520,13 @@ const editPermiso = (regulationId: number) => {
 
 // Edit etiquetado
 const editEtiquetado = (regulationId: number) => {
-    console.log('Navigating to edit etiquetado:', regulationId)
+    
     navigateTo(`/basedatos/regulaciones/etiquetado/editar/${regulationId}`)
 }
 
 // Edit documento especial
 const editDocumento = (regulationId: number) => {
-    console.log('Navigating to edit documento:', regulationId)
+    
     navigateTo(`/basedatos/regulaciones/documentos/editar/${regulationId}`)
 }
 

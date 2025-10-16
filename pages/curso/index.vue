@@ -455,7 +455,7 @@ const handleChangeEstadoUsuarioExterno = async (idUsuario: number, idPedido: num
             const response = await changeEstadoUsuarioExterno(data)
             if (response.success) {
                 if(response?.data){
-                    console.log(response.data)
+                    
                     //show success with data.No_Usuario Y data.No_Password
                     let usuario = response.data.No_Usuario??response.data.moodle_username
                     let password = response.data.No_Password??response.data.moodle_password
@@ -535,7 +535,7 @@ const handleChangeTipoCurso = async (value: number, idPedido: number) => {
 }
 const fillFilters = async () => {
     const response = await getFiltros()
-    console.log(response)
+    
     filterConfig.value = response.data as FilterConfig[]
 
 }

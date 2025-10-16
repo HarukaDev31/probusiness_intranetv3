@@ -56,7 +56,7 @@ export const checkChannelStatus = () => {
     // Verificar estado de conexión
     if (echo.connector?.pusher?.connection) {
       const state = echo.connector.pusher.connection.state
-      console.log('🔌 Estado de conexión:', state)
+      
       
       if (state === 'connected') {
         
@@ -111,12 +111,12 @@ export const addTestListeners = () => {
   if (typeof window !== 'undefined') {
     // Listener para eventos de prueba
     window.addEventListener('websocket-test', (event: any) => {
-      console.log('🧪 Evento de prueba recibido:', event.detail)
+      
     })
     
     // Listener para eventos de importación
     window.addEventListener('websocket-import', (event: any) => {
-      console.log('📊 Evento de importación recibido:', event.detail)
+      
     })
     
     

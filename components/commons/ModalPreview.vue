@@ -350,7 +350,7 @@ const loadExcelFile = async () => {
                 defval: '' // Valor por defecto para celdas vacías
             }) as any[][]
             
-            console.log(`Sheet: ${sheetName}`, jsonData) // Debug
+             // Debug
             
             // Detección dinámica de headers basada en el patrón de distribución de contenido
             let headerRowIndex = 0
@@ -440,12 +440,12 @@ const loadExcelFile = async () => {
                 return normalizedRow
             })
             
-            console.log(`Header row index:`, headerRowIndex) // Debug
-            console.log(`Best header score:`, bestHeaderScore) // Debug
-            console.log(`Headers found:`, trimmedHeaders) // Debug
-            console.log(`Headers count:`, trimmedHeaders.length) // Debug
-            console.log(`Data rows count:`, normalizedData.length) // Debug
-            console.log(`Data sample (first 2 rows):`, normalizedData.slice(0, 2)) // Debug
+             // Debug
+             // Debug
+             // Debug
+             // Debug
+             // Debug
+            :`, normalizedData.slice(0, 2)) // Debug
             
             return {
                 name: sheetName,

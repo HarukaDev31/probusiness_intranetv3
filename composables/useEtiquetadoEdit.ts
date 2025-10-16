@@ -80,8 +80,8 @@ export function useEtiquetadoEdit(regulationId: string) {
           setExistingImagesCallback(regulation.media)
         }
 
-        console.log('Regulación cargada:', regulation)
-        console.log('Producto seleccionado:', formData.value.producto)
+        
+        
       } else {
         error.value = response.error || 'No se pudo cargar la regulación'
       }
@@ -126,10 +126,10 @@ export function useEtiquetadoEdit(regulationId: string) {
       // Si tu backend acepta eliminaciones en el mismo update, ajusta el servicio para incluir "imagenes_eliminar".
       if (imagesToDeleteBackend.length > 0) {
         // TODO: Implementar si existe endpoint para eliminar imágenes individualmente.
-        console.log('Imágenes marcadas para eliminar (implementa endpoint backend si aplica):', imagesToDeleteBackend)
+        :', imagesToDeleteBackend)
       }
 
-      console.log('Etiquetado actualizado exitosamente:', response.data)
+      
       router.push('/basedatos/regulaciones?tab=etiquetado')
     } catch (err) {
       console.error('Error updating etiquetado:', err)

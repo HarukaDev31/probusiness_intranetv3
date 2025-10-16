@@ -277,10 +277,10 @@ const removeExistingDocument = (documentId: number) => {
 const loadPermiso = async () => {
   try {
     const permisoId = parseInt(route.params.id as string)
-    console.log('Cargando permiso ID:', permisoId)
+    
     
     const response = await PermisoService.getPermisoById(permisoId)
-    console.log('Respuesta del servicio:', response)
+    
     
     if (response.success && response.data) {
       const permiso = response.data as unknown as PermisoResponse
@@ -302,15 +302,15 @@ const loadPermiso = async () => {
           nombre_original: doc.nombre_original,
           ruta: doc.ruta
         }))
-        console.log('Documentos cargados desde media:', permiso.media)
-        console.log('Documentos mapeados:', existingDocuments.value)
+        
+        
       } else {
         
         existingDocuments.value = []
       }
       
-      console.log('Formulario cargado:', formData.value)
-      console.log('Documentos existentes:', existingDocuments.value)
+      
+      
     } else {
       console.error('Error al cargar el permiso:', response.error)
       alert('Error al cargar el permiso: ' + response.error)
@@ -373,7 +373,7 @@ const saveForm = async () => {
     })
     
     for (let [key, value] of formDataToSend.entries()) {
-      console.log(`${key}:`, value)
+      
     }
     
     const response = await PermisoService.updatePermiso(permisoId, formDataToSend)
@@ -404,7 +404,7 @@ const loadEntities = async () => {
         label: entity.nombre,
         value: entity.id.toString()
       }))
-      console.log('Entidades cargadas:', entityOptions.value)
+      
     } else {
       console.error('Error al cargar entidades:', response.error)
     }
@@ -417,7 +417,7 @@ const loadEntities = async () => {
 
 const createEntity = async (entity: { nombre: string; descripcion: string }) => {
   try {
-    console.log('Creando nueva entidad:', entity)
+    
 
     // Validar campos requeridos
     if (!entity.nombre || !entity.descripcion) {
@@ -441,7 +441,7 @@ const createEntity = async (entity: { nombre: string; descripcion: string }) => 
         value: response.data.id.toString()
       })
 
-      console.log('Entidad creada exitosamente:', response.data)
+      
     } else {
       console.error('Error al crear entidad:', response.error)
     }

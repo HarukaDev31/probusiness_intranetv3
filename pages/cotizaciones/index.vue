@@ -236,7 +236,7 @@ const handleDelete = (id: string) => {
   )
 }
 const handleEdit = (id: string) => {
-  console.log(id)
+  
 }
 const handleDuplicate = (id: string) => {
   showConfirmation('Duplicar Cotización', '¿Estás seguro de que deseas duplicar esta cotización?',

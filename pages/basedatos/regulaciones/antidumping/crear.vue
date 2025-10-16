@@ -271,7 +271,7 @@ const validateField = (field: string, value: any): string => {
       if (precioNum <= 0) return 'Precio debe ser mayor a 0'
       return ''
     case 'antidumping':
-      console.log('value', value)
+      
       if ( (typeof value === 'string' && value.trim() === '')) return 'Antidumping es requerido'
       const antidumpingNum = parseFloat(value)
       if (isNaN(antidumpingNum)) return 'Antidumping debe ser un número válido'
@@ -337,7 +337,7 @@ const selectImage = (index: number) => {
 }
 
 const searchProducts = async (searchTerm: string) => {
-  console.log('searchTerm', searchTerm)
+  
   try {
     loadingProducts.value = true
     const response = await productRubroService.getProductRubros(searchTerm,'ANTIDUMPING')
@@ -379,7 +379,7 @@ const createProduct = async () => {
       }
       showCreateProductModal.value = false
       searchProducts('')
-      console.log('Rubro creado exitosamente:', response.data)
+      
     } else {
       console.error('Error al crear rubro:', response.error)
     }
@@ -397,10 +397,10 @@ const saveForm = async () => {
       return
     }
     
-    console.log('Guardando regulación antidumping:', formData.value)
-    console.log('Imágenes:', imageSlots.value)
     
-    console.log('formData.value.antidumping', formData.value.antidumping)
+    
+    
+    
     const payload: CreateAntidumpingRequest = {
       producto_id: parseInt(formData.value.producto.value),
       descripcion: formData.value.descripcion,
@@ -413,7 +413,7 @@ const saveForm = async () => {
         .map(slot => slot.file!)
     }
     
-    console.log('Payload para API:', payload)
+    
     
     // Llamar al servicio para crear la regulación con loading
     const response = await withLoading(

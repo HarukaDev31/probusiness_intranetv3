@@ -49,7 +49,7 @@ export const useNotifications = () => {
       }
 
       const response = await NotificationService.getNotifications(filters.value)
-      console.log(response)
+      
       notifications.value = response.data.data
       currentPage.value = response.data.current_page
       totalPages.value = response.data.last_page
@@ -67,7 +67,7 @@ export const useNotifications = () => {
   const fetchUnreadCount = async () => {
     try {
       const response = await NotificationService.getUnreadCount()
-      console.log(response)
+      
       unreadCount.value = response
     } catch (err: any) {
       console.error('Error fetching unread count:', err)

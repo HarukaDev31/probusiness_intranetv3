@@ -75,7 +75,7 @@ export default defineNuxtPlugin(async () => {
       }
     }
     
-    console.log('🔧 Configuración Echo:', echoConfig)
+    
 
           try {
         // Inicializar Echo

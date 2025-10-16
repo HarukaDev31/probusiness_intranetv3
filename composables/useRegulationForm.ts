@@ -97,7 +97,7 @@ export function useRegulationForm(config: RegulationFormConfig) {
       })
 
       if (response.success) {
-        console.log('Regulación guardada exitosamente:', response.data)
+        
         router.push('/basedatos/regulaciones')
         return true
       } else {
