@@ -5,7 +5,7 @@ import { BaseService } from "~/services/base/BaseService"
 export class ProductService extends BaseService {
   private static instance: ProductService
   private static baseUrl = '/api/base-datos/productos';
-
+  
 
  
 
@@ -34,7 +34,6 @@ export class ProductService extends BaseService {
         })
       }
 
-      }`)
       const response = await this.apiCall<ProductsResponse>(`${this.baseUrl}?${queryParams.toString()}`)
       
       // Verificar si la respuesta tiene la estructura esperada
