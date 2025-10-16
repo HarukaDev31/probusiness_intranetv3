@@ -82,46 +82,46 @@
             </div>
 
             <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
-              <div>
-                <label class="pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
-                <UInput class="" v-model="form.r_name" size="sm" :disabled="!editable" />
+              <div class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
+                <UInput class="flex-1/4" v-model="form.r_name" size="sm" :disabled="!editable" />
               </div>
-              <div>
-                <label class="pr-4 text-[11px] font-medium text-gray-500 mb-1">Celular</label>
-                <UInput class="" v-model="form.r_phone" size="sm" :disabled="!editable" />
+              <div class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Celular</label>
+                <UInput class="flex-1/4" v-model="form.r_phone" size="sm" :disabled="!editable" />
               </div>
-              <div>
-                <label class="pr-4 text-[11px] font-medium text-gray-500 mb-1">Departamento</label>
-                <USelect class="" :items="departamentos" v-model="form.departamento_id" :disabled="!editable" placeholder="Seleccione" @update:model-value="onDepartamentoChange" />
+              <div class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Departamento</label>
+                <USelect class="flex-1/4" :items="departamentos" v-model="form.departamento_id" :disabled="!editable" placeholder="Seleccione" @update:model-value="onDepartamentoChange" />
               </div>
-              <div>
-                <label class="pr-4 text-[11px] font-medium text-gray-500 mb-1">Provincia</label>
-                <USelect class="" :items="provincias" v-model="form.provincia_id" :disabled="!editable || !form.departamento_id" placeholder="Seleccione" @update:model-value="onProvinciaChange" />
+              <div class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Provincia</label>
+                <USelect class="flex-1/4" :items="provincias" v-model="form.provincia_id" :disabled="!editable || !form.departamento_id" placeholder="Seleccione" @update:model-value="onProvinciaChange" />
               </div>
-              <div>
-                <label class="pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito</label>
-                <USelect class="" :items="distritos" v-model="form.distrito_id" :disabled="!editable || !form.provincia_id" placeholder="Seleccione" />
+              <div class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito</label>
+                <USelect class="flex-1/4" :items="distritos" v-model="form.distrito_id" :disabled="!editable || !form.provincia_id" placeholder="Seleccione" />
               </div>
-              <div>
-                <label class="pr-4 text-[11px] font-medium text-gray-500 mb-1">Agencia</label>
-                <USelect class="" :items="agencias" v-model="form.id_agency" :disabled="!editable" placeholder="Seleccione"
+              <div class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Agencia</label>
+                <USelect class="flex-1/4" :items="agencias" v-model="form.id_agency" :disabled="!editable" placeholder="Seleccione"
                   @update:model-value="onAgenciaChange" />
               </div>
-              <div v-if="isOtraOpcionAgencia">
-                <label class="pr-4 text-[11px] font-medium text-gray-500 mb-1">RUC de la agencia</label>
-                <UInput class="" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
+              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">RUC de la agencia</label>
+                <UInput class="flex-1/4" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
               </div>
-              <div v-if="isOtraOpcionAgencia">
-                <label class="pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección inicial de entrega</label>
-                <UInput class="" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
+              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección inicial de entrega</label>
+                <UInput class="flex-1/4" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
               </div>
-              <div>
-                <label class="pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección final de entrega</label>
-                <UInput class="" v-model="form.agency_address_final_delivery" size="sm" :disabled="!editable" />
+              <div class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección final de entrega</label>
+                <UInput class="flex-1/4" v-model="form.agency_address_final_delivery" size="sm" :disabled="!editable" />
               </div>
-              <div v-if="form.home_adress_delivery">
-                <label class="pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección a domicilio</label>
-                <UInput class="" v-model="form.home_adress_delivery" size="sm" :disabled="!editable" />
+              <div v-if="form.home_adress_delivery" class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección a domicilio</label>
+                <UInput class="flex-1/4" v-model="form.home_adress_delivery" size="sm" :disabled="!editable" />
               </div>
             </div>
           </div>
