@@ -99,17 +99,21 @@
                 <USelect class="w-full" :items="agencias" v-model="form.id_agency" :disabled="!editable" placeholder="Seleccione"
                   @update:model-value="onAgenciaChange" />
               </div>
-              <div>
+              <div v-if="isOtraOpcionAgencia">
                 <label class="block text-[11px] font-medium text-gray-500 mb-1">RUC de la agencia</label>
                 <UInput class="w-full" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
               </div>
-              <div>
+              <div v-if="isOtraOpcionAgencia">
                 <label class="block text-[11px] font-medium text-gray-500 mb-1">Dirección inicial de entrega</label>
                 <UInput class="w-full" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
               </div>
               <div>
                 <label class="block text-[11px] font-medium text-gray-500 mb-1">Dirección final de entrega</label>
                 <UInput class="w-full" v-model="form.agency_address_final_delivery" size="sm" :disabled="!editable" />
+              </div>
+              <div v-if="form.home_adress_delivery">
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">Dirección a domicilio</label>
+                <UInput class="w-full" v-model="form.home_adress_delivery" size="sm" :disabled="!editable" />
               </div>
             </div>
           </div>
@@ -389,6 +393,13 @@ const loadAgencias = async (search?: string) => {
   const list = (res?.data || [])
   agencias.value = list.map((a: any) => ({ label: a.label ?? `${a.name} - ${a.ruc}`, value: Number(a.value ?? a.id), ruc: a.ruc, name: a.name }))
 }
+// Computed para mostrar campos extra solo si agencia es "otra opción"
+const isOtraOpcionAgencia = computed(() => {
+  const selected = agencias.value.find(a => a.value === Number(form.value.id_agency))
+  if (!selected) return false
+  // Puedes ajustar el criterio aquí si el label exacto es diferente
+  return selected.label?.toLowerCase().includes('otra opcion') || selected.label?.toLowerCase().includes('otra opción')
+})
 const onAgenciaChange = (id: number | string) => {
   const selected = agencias.value.find(a => a.value === Number(id))
   if (selected) {

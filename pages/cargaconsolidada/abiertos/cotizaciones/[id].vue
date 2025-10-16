@@ -102,7 +102,7 @@ import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotiza
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
+import { ROLES, ID_JEFEVENTAS,COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
@@ -282,6 +282,43 @@ const filterConfigProspectosCoordinacion = ref([
         placeholder: 'Seleccionar estado',
         options: [
             { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'WAIT', value: 'WAIT', inrow: true },
+            { label: 'NC', value: 'NC', inrow: true },
+            { label: 'C', value: 'C', inrow: true },
+            { label: 'NS', value: 'NS', inrow: true },
+            { label: 'R', value: 'R', inrow: true },
+            { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
+            { label: 'LOADED', value: 'LOADED', inrow: true },
+            { label: 'NO LOADED', value: 'NO LOADED', inrow: true }
+        ]
+    }
+])
+const filterConfigProspectosAlmacen = ref([
+    {
+        label: 'Fecha Inicio',
+        key: 'fecha_inicio',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+    {
+        label: 'Fecha Fin',
+        key: 'fecha_fin',
+        type: 'date',
+        placeholder: 'Selecciona una fecha',
+        options: []
+    },
+
+
+    {
+        key: 'estado_china',
+        label: 'Estado Proveedor',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'WAIT', value: 'WAIT', inrow: true },
             { label: 'NC', value: 'NC', inrow: true },
             { label: 'C', value: 'C', inrow: true },
             { label: 'R', value: 'R', inrow: true },
@@ -325,7 +362,10 @@ const filterConfigProspectos = ref([
 const getFilterPerRole = () => {
     if (currentRole.value === ROLES.COORDINACION) {
         return filterConfigProspectosCoordinacion.value
-    } else {
+    }else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
+        return filterConfigProspectosAlmacen.value
+    } 
+    else {
         return filterConfigProspectos.value
     }
 }
@@ -392,7 +432,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const nombre = row.getValue('nombre').toUpperCase()
             return h('div',{
-                class: 'max-w-30 whitespace-normal break-words',
+                class: 'max-w-30 whitespace-normal',
             }, nombre
             )
         }
@@ -414,7 +454,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const correo = row.getValue('correo')
             return h('div',{
-                class: 'max-w-40 whitespace-normal break-words',
+                class: 'max-w-55 whitespace-normal',
             }, correo || 'Sin correo'
             )
         }
@@ -570,13 +610,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'nombre',
         header: 'Nombre',
-        cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre').toUpperCase()
-            return h('div',{
-                class: 'max-w-30 whitespace-normal break-words',
-            }, nombre
-            )
-        }
+        cell: ({ row }: { row: any }) => row.getValue('nombre').toUpperCase()
     },
     {
         accessorKey: 'documento',
@@ -586,24 +620,12 @@ const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'correo',
         header: 'Correo',
-        cell: ({ row }: { row: any }) => {
-            const correo = row.getValue('correo')
-            return h('div',{
-                class: 'max-w-40 whitespace-normal break-words',
-            }, correo || 'Sin correo'
-            )
-        }
+        cell: ({ row }: { row: any }) => row.getValue('correo') || 'Sin correo'
     },
     {
         accessorKey: 'telefono',
         header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            const telefono = row.getValue('telefono')
-            return h('div',{
-                class: 'max-w-20 whitespace-normal',
-            }, telefono
-            )
-        }
+        cell: ({ row }: { row: any }) => row.getValue('telefono')
     },
     {
         accessorKey: 'estado_cliente',
@@ -894,8 +916,16 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     class: 'flex flex-col gap-2'
                 },
                 proveedores.map((proveedor: any) => {
+                    // Transformar las opciones para incluir clases de color
+                    const optionsWithClasses = filterConfig.value
+                        .find((filter: any) => filter.key === 'estado_china')?.options
+                        .map((option: any) => ({
+                            ...option,
+                            class: option.value !== 'todos' ? STATUS_BG_CLASSES[option.value as keyof typeof STATUS_BG_CLASSES] : ''
+                        }))
+
                     return h(USelect as any, {
-                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
+                        items: optionsWithClasses,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
                         class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
@@ -977,7 +1007,6 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
 
 
             ]
-            console.log(proveedores)
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
@@ -1088,7 +1117,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full w-25',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier = value
                     }
@@ -1128,7 +1157,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full w-30',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -1148,7 +1177,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
                     class: 'w-full',
-                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
                     }
@@ -1168,7 +1197,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
                     class: 'w-full',
-                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
                     }
@@ -1189,7 +1218,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.arrive_date_china,
                     class: 'w-full w-25',
-                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
                     }
@@ -1256,8 +1285,16 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     class: 'flex flex-col gap-2'
                 },
                 proveedores.map((proveedor: any) => {
+                    // Transformar las opciones para incluir clases de color
+                    const optionsWithClasses = filterConfig.value
+                        .find((filter: any) => filter.key === 'estado_china')?.options
+                        .map((option: any) => ({
+                            ...option,
+                            class: option.value !== 'todos' ? STATUS_BG_CLASSES[option.value as keyof typeof STATUS_BG_CLASSES] : ''
+                        }))
+
                     return h(USelect as any, {
-                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
+                        items: optionsWithClasses,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
                         class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
@@ -1622,8 +1659,16 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     class: 'flex flex-col gap-2'
                 },
                 proveedores.map((proveedor: any) => {
+                    // Transformar las opciones para incluir clases de color
+                    const optionsWithClasses = filterConfig.value
+                        .find((filter: any) => filter.key === 'estado_china')?.options
+                        .map((option: any) => ({
+                            ...option,
+                            class: option.value !== 'todos' ? STATUS_BG_CLASSES[option.value as keyof typeof STATUS_BG_CLASSES] : ''
+                        }))
+
                     return h(USelect as any, {
-                        items: filterConfig.value.find((filter: any) => filter.key === 'estado_china')?.options,
+                        items: optionsWithClasses,
                         placeholder: 'Seleccionar estado',
                         value: proveedor.estados_proveedor,
                         class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
@@ -1745,11 +1790,12 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
+               
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
-                    'onUpdate:modelValue': (value: any) => {
+                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    'onUpdate:modelValue': (value: string) => {
                         proveedor.supplier = value
                     }
                 })
@@ -1788,7 +1834,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -1808,7 +1854,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
                     class: 'w-full',
-                    disabled: false,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
                     }
@@ -1828,7 +1874,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
                     class: 'w-full',
-                    disabled: false,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
                     }
@@ -1850,7 +1896,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.arrive_date_china,
                     class: 'w-full',
                     type: 'date',
-                    disabled: false,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
                     }
@@ -1908,7 +1954,6 @@ const handleRefreshRotuladoStatus = async (proveedor: any) => {
 }
 const handleAddProspecto = async () => {
     const modal = overlay.create(CreateProspectoModal)
-    console.log(id)
     modal.open({
         idConsolidado: Number(id),
         idCotizacion: null,
@@ -1966,7 +2011,7 @@ const handleUpdateProveedorEstado = async (idProveedor: number, estado: string) 
         await withSpinner(async () => {
             await updateProveedorEstado({ id: idProveedor, estado })
             showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
-            await getCotizaciones(Number(id))
+            await getCotizacionProveedor(Number(id))
         }, 'Actualizando estado del proveedor...')
     } catch (error) {
         showError('Error al actualizar el estado del proveedor', error)
@@ -1974,7 +2019,6 @@ const handleUpdateProveedorEstado = async (idProveedor: number, estado: string) 
 }
 const handleUpdateCotizacion = async (idCotizacion: number) => {
     const modal = overlay.create(CreateProspectoModal)
-    console.log(idCotizacion)
     modal.open({
         idCotizacion: idCotizacion,
         idConsolidado: null,
@@ -2140,6 +2184,12 @@ const updateProveedorData = async (row: any) => {
     if (currentRole.value === ROLES.COTIZADOR) {
         data.products = row.products ?? []
         formData.append('products', data.products)
+        if (COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number)) {
+            data.supplier = row.supplier ?? []
+            data.supplier_phone = row.supplier_phone ?? []
+            formData.append('supplier', data.supplier)
+            formData.append('supplier_phone', data.supplier_phone)
+        }
     }
     if (currentRole.value === ROLES.COORDINACION) {
         data.supplier = row.supplier ?? []

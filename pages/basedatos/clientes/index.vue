@@ -15,6 +15,7 @@
             @update:search-query="handleSearch" @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
             @filter-change="handleFilterChange"
+            @clear-filters="handleClearFilters"
             >
             
 
@@ -52,7 +53,8 @@ const {
     handleFilterChange,
     handlePageChange,
     handleItemsPerPageChange,
-    exportClientes
+    exportClientes,
+    handleClearFilters
 } = useClientes()
 
 const localCurrentPage = ref(1)
@@ -171,7 +173,11 @@ const columns: TableColumn<any>[] = [
                 icon: 'i-heroicons-eye',
                 color: 'primary',
                 variant: 'ghost',
-                onClick: () => navigateTo(`/basedatos/clientes/${row.original.id}`)
+                onClick: () => {
+                    // Establecer flag para indicar navegación interna
+                    sessionStorage.setItem('clientes_internal_nav', 'true')
+                    navigateTo(`/basedatos/clientes/${row.original.id}`)
+                }
             })
         ])
     }
@@ -206,10 +212,37 @@ const handleDeleteCliente = (id: number) => {
     console.log('Eliminar cliente:', id)
 }
 
-// Initialize data
+// Detectar si venimos de navegación interna o es una recarga real
 onMounted(async () => {
+  // Verificar si hay un flag que indica que navegamos internamente
+  const cameFromInternal = sessionStorage.getItem('clientes_internal_nav')
   
-    await loadClientes()
+  console.log('🔍 Navegación interna detectada:', cameFromInternal)
+  console.log('📦 Estado en sessionStorage antes:', sessionStorage.getItem('clientes_state'))
+  
+  if (!cameFromInternal) {
+    // No venimos de navegación interna, es una carga directa o recarga
+    // Limpiar el storage y resetear filtros
+    console.log('🔄 Carga directa o recarga detectada, limpiando filtros')
+    sessionStorage.removeItem('clientes_state')
+    
+    // Resetear los valores del composable
+    search.value = ''
+    primarySearch.value = ''
+    filters.value = {
+      categoria: 'todos',
+      fecha_inicio: '',
+      fecha_fin: '',
+      servicio: 'todos'
+    }
+  } else {
+    console.log('✅ Navegación desde detalle detectada, manteniendo filtros')
+    // Limpiar el flag para la próxima vez
+    sessionStorage.removeItem('clientes_internal_nav')
+  }
+  
+  // Cargar datos (con o sin filtros según el caso)
+  await loadClientes()
 })
 </script>
 <style scoped>

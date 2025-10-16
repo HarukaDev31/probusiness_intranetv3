@@ -54,8 +54,8 @@
 
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
-                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
-                @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
+                @update:primary-search="handleSearchPagos" @page-change="handlePagePagosChange"
+                @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos">
                 <template #body-top>
                     <div class="flex flex-col gap-2 w-full">
                         <SectionHeader :title="`Contenedor #${carga}`" :headers="headers" :loading="loadingHeaders" />

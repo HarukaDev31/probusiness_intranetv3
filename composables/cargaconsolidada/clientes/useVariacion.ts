@@ -1,8 +1,8 @@
 import { ref } from 'vue'
-import { VariacionService } from '../services/cargaconsolidada/clientes/variacionService'
-import type { PaginationInfo } from '../types/data-table'
+import { VariacionService } from '~/services/cargaconsolidada/clientes/variacionService'
+import type { PaginationInfo } from '~/types/data-table'
 import { useRoute } from '#app'
-import { useSpinner } from '../composables/commons/useSpinner'
+import { useSpinner } from '~/composables/commons/useSpinner'
 const { withSpinner } = useSpinner()
 
 export const useVariacion = () => {
@@ -46,7 +46,13 @@ export const useVariacion = () => {
     const getClientesVariacion = async (id: number) => {
         try {
             loadingVariacion.value = true
-            const response = await VariacionService.getClientes(id)
+            const response = await VariacionService.getClientes(
+                id,
+                filtersVariacion.value,
+                searchVariacion.value,
+                itemsPerPageVariacion.value,
+                currentPageVariacion.value
+            )
             clientesVariacion.value = response.data
             paginationVariacion.value = response.pagination
         } catch (err) {

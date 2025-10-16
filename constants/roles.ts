@@ -10,6 +10,7 @@ export const ROLES = {
     ADMINISTRACION: 'Administración',
 } as const
 export const ID_JEFEVENTAS = 28791
+export const COTIZADORES_WITH_PRIVILEGES = [28911]
 
 // Tipos de roles
 export type UserRole = typeof ROLES[keyof typeof ROLES]

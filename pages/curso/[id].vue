@@ -56,11 +56,7 @@
             <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
               {{ getSexoLabel(Number(form.sexo)) }}
             </div>
-            <USelect 
-              v-if="editMode" 
-              v-model="sexoSeleccionado" 
-              :items="sexoOptions"
-              :disabled="!editMode"
+            <USelect v-if="editMode" v-model="sexoSeleccionado" :items="sexoOptions" :disabled="!editMode"
               class="w-full" />
           </div>
           <div class="flex items-center">
@@ -68,11 +64,7 @@
             <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
               {{ getRedSocialLabel(Number(form.red_social)) }}
             </div>
-            <USelect 
-              v-if="editMode" 
-              v-model="redSocialSeleccionada" 
-              :items="redSocialOptions"
-              :disabled="!editMode"
+            <USelect v-if="editMode" v-model="redSocialSeleccionada" :items="redSocialOptions" :disabled="!editMode"
               class="w-full" />
           </div>
           <div class="flex items-center">
@@ -80,14 +72,8 @@
             <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
               {{ form.pais || 'No especificado' }}
             </div>
-            
-            <USelect 
-              v-if="editMode" 
-              v-model="selectedPais" 
-              :items="paisOptions" 
-       
-              :disabled="!editMode"
-              class="w-full"
+
+            <USelect v-if="editMode" v-model="selectedPais" :items="paisOptions" :disabled="!editMode" class="w-full"
               placeholder="Seleccionar país" />
           </div>
           <div v-if="selectedPais === 1" class="flex items-center">
@@ -95,42 +81,24 @@
             <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
               {{ form.departamento || 'No especificado' }}
             </div>
-            <USelect 
-              v-if="editMode" 
-              v-model="selectedDepartamento" 
-              :items="departamentoOptions"
-              :disabled="!editMode"
-              class="w-full"
-              placeholder="Seleccionar departamento"
-              :loading="loadingDepartamentos" />
+            <USelect v-if="editMode" v-model="selectedDepartamento" :items="departamentoOptions" :disabled="!editMode"
+              class="w-full" placeholder="Seleccionar departamento" :loading="loadingDepartamentos" />
           </div>
           <div v-if="selectedPais === 1 && selectedDepartamento" class="flex items-center">
             <span class="w-48 font-medium">Provincia:</span>
             <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
               {{ form.provincia || 'No especificado' }}
             </div>
-            <USelect 
-              v-if="editMode" 
-              v-model="selectedProvincia" 
-              :items="provinciaOptions"
-              :disabled="!editMode"
-              class="w-full"
-              placeholder="Seleccionar provincia"
-              :loading="loadingProvincias" />
+            <USelect v-if="editMode" v-model="selectedProvincia" :items="provinciaOptions" :disabled="!editMode"
+              class="w-full" placeholder="Seleccionar provincia" :loading="loadingProvincias" />
           </div>
           <div v-if="selectedPais === 1 && selectedProvincia" class="flex items-center">
             <span class="w-48 font-medium">Distrito:</span>
             <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
               {{ form.distrito || 'No especificado' }}
             </div>
-            <USelect 
-              v-if="editMode" 
-              v-model="selectedDistrito" 
-              :items="distritoOptions"
-              :disabled="!editMode"
-              class="w-full"
-              placeholder="Seleccionar distrito"
-              :loading="loadingDistritos" />
+            <USelect v-if="editMode" v-model="selectedDistrito" :items="distritoOptions" :disabled="!editMode"
+              class="w-full" placeholder="Seleccionar distrito" :loading="loadingDistritos" />
           </div>
         </div>
       </div>
@@ -152,7 +120,7 @@
             <input class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full" v-model="form.password_moodle"
               :readonly="true" />
           </div>
-         
+
         </div>
         <div v-if="datosCliente?.url_constancia" class="mt-6">
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
@@ -237,11 +205,19 @@
         </UButton>
       </div>
 
+      <!-- Botón para generar y enviar constancia -->
+      <div v-if="datosCliente?.Nu_Estado_Usuario_Externo == 2 && !datosCliente?.url_constancia" class="mt-4">
+        <UButton @click="handleGenerarConstancia" color="success" icon="i-heroicons-document-plus"
+          :loading="generandoConstancia">
+          Generar y Enviar Constancia
+        </UButton>
+      </div>
+
     </div>
 
     <!-- Vista previa inline de la constancia -->
 
-  
+
   </div>
 </template>
 
@@ -254,12 +230,15 @@ import { useOverlay } from '#imports'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import { CalendarDate, DateFormatter, getLocalTimeZone, parseDate } from '@internationalized/date'
 import { useLocation } from '~/composables/commons/useLocation'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 
 const route = useRoute()
 const router = useRouter()
-
+const { showSuccess, showError, showConfirmation } = useModal()
+const { withSpinner } = useSpinner()
 const datosCliente = ref<DatosClientePorPedido | undefined>(undefined)
-const { cargarDatosClientePorPedido, editarDatosCliente } = useCursos()
+const { cargarDatosClientePorPedido, editarDatosCliente, generarYEnviarConstancia } = useCursos()
 
 const volver = () => router.back()
 
@@ -279,6 +258,9 @@ const showAlternativeViewer = ref(false)
 
 // Estado para el envío de correo
 const enviandoCorreo = ref(false)
+
+// Estado para la generación de constancia
+const generandoConstancia = ref(false)
 
 // DateFormatter para la fecha de nacimiento
 const df = new DateFormatter('es-PE', {
@@ -340,15 +322,15 @@ const redSocialOptions = [
 // Opciones computadas para los selects de ubicación
 const paisOptions = computed(() => paises.value)
 
-const departamentoOptions = computed(() => 
+const departamentoOptions = computed(() =>
   departamentos.value.map(d => ({ label: d.nombre, value: d.id }))
 )
 
-const provinciaOptions = computed(() => 
+const provinciaOptions = computed(() =>
   provincias.value.map(p => ({ label: p.nombre, value: p.id }))
 )
 
-const distritoOptions = computed(() => 
+const distritoOptions = computed(() =>
   distritos.value.map(d => ({ label: d.nombre, value: d.id }))
 )
 
@@ -407,13 +389,13 @@ watch(fechaNacimiento, (newDate) => {
 // Watchers para sincronizar selecciones con el formulario
 watch(selectedPais, async (newPais, oldPais) => {
   console.log('Watch selectedPais - nuevo:', newPais, 'anterior:', oldPais, 'editMode:', editMode.value, 'isInitialLoad:', isInitialLoad.value)
-  
+
   // No hacer nada si estamos en carga inicial o no estamos en modo edición
   if (isInitialLoad.value || !editMode.value || newPais === oldPais) return
-  
+
   if (newPais !== null && newPais !== undefined) {
     form.value.id_pais = newPais
-    
+
     // Limpiar campos dependientes
     selectedDepartamento.value = null
     selectedProvincia.value = null
@@ -421,7 +403,7 @@ watch(selectedPais, async (newPais, oldPais) => {
     form.value.id_departamento = 0
     form.value.id_provincia = 0
     form.value.id_distrito = 0
-    
+
     // Si es Perú (id = 1), cargar departamentos, si no, limpiar
     if (newPais === 1) {
       await fetchDepartamentos()
@@ -433,18 +415,18 @@ watch(selectedPais, async (newPais, oldPais) => {
 
 watch(selectedDepartamento, async (newDepto, oldDepto) => {
   console.log('Watch selectedDepartamento - nuevo:', newDepto, 'anterior:', oldDepto, 'isInitialLoad:', isInitialLoad.value)
-  
+
   if (isInitialLoad.value || !editMode.value || newDepto === oldDepto) return
-  
+
   if (newDepto !== null && newDepto !== undefined) {
     form.value.id_departamento = newDepto
-    
+
     // Limpiar campos dependientes
     selectedProvincia.value = null
     selectedDistrito.value = null
     form.value.id_provincia = 0
     form.value.id_distrito = 0
-    
+
     // Cargar provincias
     await fetchProvincias(newDepto)
   }
@@ -452,16 +434,16 @@ watch(selectedDepartamento, async (newDepto, oldDepto) => {
 
 watch(selectedProvincia, async (newProv, oldProv) => {
   console.log('Watch selectedProvincia - nuevo:', newProv, 'anterior:', oldProv, 'isInitialLoad:', isInitialLoad.value)
-  
+
   if (isInitialLoad.value || !editMode.value || newProv === oldProv) return
-  
+
   if (newProv !== null && newProv !== undefined) {
     form.value.id_provincia = newProv
-    
+
     // Limpiar distrito
     selectedDistrito.value = null
     form.value.id_distrito = 0
-    
+
     // Cargar distritos
     await fetchDistritos(newProv)
   }
@@ -469,9 +451,9 @@ watch(selectedProvincia, async (newProv, oldProv) => {
 
 watch(selectedDistrito, (newDist, oldDist) => {
   console.log('Watch selectedDistrito - nuevo:', newDist, 'anterior:', oldDist, 'isInitialLoad:', isInitialLoad.value)
-  
+
   if (isInitialLoad.value || !editMode.value || newDist === oldDist) return
-  
+
   if (newDist !== null && newDist !== undefined) {
     form.value.id_distrito = newDist
   }
@@ -479,7 +461,7 @@ watch(selectedDistrito, (newDist, oldDist) => {
 
 watch(sexoSeleccionado, (newSexo, oldSexo) => {
   if (isInitialLoad.value || !editMode.value || newSexo === oldSexo) return
-  
+
   if (newSexo !== null && newSexo !== undefined) {
     form.value.sexo = String(newSexo)
   }
@@ -487,7 +469,7 @@ watch(sexoSeleccionado, (newSexo, oldSexo) => {
 
 watch(redSocialSeleccionada, (newRedSocial, oldRedSocial) => {
   if (isInitialLoad.value || !editMode.value || newRedSocial === oldRedSocial) return
-  
+
   if (newRedSocial !== null && newRedSocial !== undefined) {
     form.value.red_social = String(newRedSocial)
   }
@@ -497,7 +479,7 @@ onMounted(async () => {
   datosCliente.value = await cargarDatosClientePorPedido(Number(route.params.id))
   if (datosCliente.value) {
     form.value = { ...datosCliente.value }
-    
+
     console.log('Datos del cliente cargados:', {
       id_pais: datosCliente.value.id_pais,
       id_departamento: datosCliente.value.id_departamento,
@@ -505,14 +487,14 @@ onMounted(async () => {
       id_distrito: datosCliente.value.id_distrito,
       pais: datosCliente.value.pais
     })
-    
+
     // Inicializar fecha de nacimiento
     fechaNacimiento.value = stringToCalendarDate(datosCliente.value.nacimiento)
-    
+
     // Inicializar sexo y red social
     sexoSeleccionado.value = datosCliente.value.sexo ? Number(datosCliente.value.sexo) : null
     redSocialSeleccionada.value = datosCliente.value.red_social ? Number(datosCliente.value.red_social) : null
-    
+
     // Primero cargar ubicación (cargar listas)
     await initializeLocation(
       datosCliente.value.id_pais,
@@ -520,25 +502,25 @@ onMounted(async () => {
       datosCliente.value.id_provincia,
       datosCliente.value.id_distrito
     )
-    
+
     console.log('Países cargados:', paises.value)
-    
+
     // Esperar un tick para que Vue procese los computed
     await nextTick()
-    
+
     console.log('Opciones de países (después de nextTick):', paisOptions.value)
-    
+
     // Luego asignar valores locales de ubicación después de que las listas estén cargadas
     selectedPais.value = datosCliente.value.id_pais || null
     selectedDepartamento.value = datosCliente.value.id_departamento || null
     selectedProvincia.value = datosCliente.value.id_provincia || null
     selectedDistrito.value = datosCliente.value.id_distrito || null
-    
+
     console.log('selectedPais asignado:', selectedPais.value, 'tipo:', typeof selectedPais.value)
     console.log('selectedDepartamento asignado:', selectedDepartamento.value, 'tipo:', typeof selectedDepartamento.value)
     console.log('Verificando paisOptions:', paisOptions.value)
     console.log('¿Existe el país en paisOptions?', paisOptions.value.find(p => p.value === selectedPais.value))
-    
+
     // Desactivar la bandera de carga inicial después de un pequeño delay
     // para asegurar que todos los valores estén asignados
     await nextTick()
@@ -551,7 +533,7 @@ onMounted(async () => {
 
 const guardarCambios = async () => {
   if (!datosCliente.value) return
-  
+
   // Construir el payload solo con los campos necesarios
   const payload: any = {
     nombres: form.value.nombres,
@@ -563,21 +545,21 @@ const guardarCambios = async () => {
     red_social: form.value.red_social,
     id_pais: form.value.id_pais
   }
-  
+
   // Solo incluir ubicación peruana si el país es Perú (id = 1)
   if (form.value.id_pais === 1) {
     payload.id_departamento = form.value.id_departamento
     payload.id_provincia = form.value.id_provincia
     payload.id_distrito = form.value.id_distrito
   }
-  
+
   console.log('Payload a enviar:', payload)
-  
+
   await editarDatosCliente(datosCliente.value.id_entidad, payload)
   editMode.value = false
   datosCliente.value = await cargarDatosClientePorPedido(Number(route.params.id))
   form.value = { ...datosCliente.value }
-  
+
   // Reinicializar valores locales
   sexoSeleccionado.value = datosCliente.value.sexo ? Number(datosCliente.value.sexo) : null
   redSocialSeleccionada.value = datosCliente.value.red_social ? Number(datosCliente.value.red_social) : null
@@ -662,15 +644,15 @@ async function enviarCredencialesCorreo() {
       `/api/Curso/PedidosCurso/enviarEmailUsuarioMoodle/${datosCliente.value.id_usuario}/${datosCliente.value.id_pedido_curso}`
     )
     const data = await response.json()
-    
+
     showModal.value = true
     modalType.value = data.status === 'success' ? 'success' : 'danger'
-    modalMessage.value = data.status === 'success' 
-      ? 'Correo enviado exitosamente con las credenciales de acceso' 
+    modalMessage.value = data.status === 'success'
+      ? 'Correo enviado exitosamente con las credenciales de acceso'
       : data.message || 'Error al enviar el correo'
-    
-    setTimeout(() => { 
-      showModal.value = false 
+
+    setTimeout(() => {
+      showModal.value = false
     }, data.status === 'success' ? 3000 : 4000)
   } catch (err) {
     showModal.value = true
@@ -746,5 +728,41 @@ function handleGoogleViewerError() {
 // Función para abrir archivo en nueva pestaña
 function openInNewTab(url: string) {
   window.open(url, '_blank')
+}
+
+// Función para generar y enviar constancia
+async function handleGenerarConstancia() {
+  if (!datosCliente.value?.id_pedido_curso) {
+    showError('Error', 'No se pudo obtener la información del usuario')
+    return
+  }
+
+  try {
+    await showConfirmation('Confirmación', '¿Estás seguro de querer generar y enviar la constancia?', async () => {
+      generandoConstancia.value = true
+      await withSpinner(async () => {
+        const response = await generarYEnviarConstancia(datosCliente.value!.id_pedido_curso)
+        console.log(response)
+        
+        if (response.success) {
+          showSuccess('Éxito', 'Constancia generada y enviada correctamente')
+          
+          // Recargar los datos del cliente después de 1 segundo
+          setTimeout(async () => {
+            datosCliente.value = await cargarDatosClientePorPedido(Number(route.params.id))
+            if (datosCliente.value) {
+              form.value = { ...datosCliente.value }
+            }
+          }, 1000)
+        } else {
+          showError('Error', response.error || 'Error al generar y enviar la constancia')
+        }
+      }, 'Generando constancia...')
+      generandoConstancia.value = false
+    })
+  } catch (err) {
+    generandoConstancia.value = false
+    showError('Error', 'Error al generar y enviar la constancia')
+  }
 }
 </script>

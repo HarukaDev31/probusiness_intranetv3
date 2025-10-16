@@ -92,7 +92,7 @@ export const useGeneral = () => {
             a.click()
             document.body.removeChild(a)
             window.URL.revokeObjectURL(url)
-            return { success: true }
+            return { success: true, data: response }
         } catch (err) {
             error.value = err as string
         }

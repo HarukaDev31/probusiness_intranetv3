@@ -1,5 +1,5 @@
 <template>
-    <div class="w-full">
+    <div>
         <!-- Skeleton cuando está cargando -->
         <div v-if="loading" class="flex flex-wrap gap-2 lg:gap-3">
             <!-- Skeleton del título -->

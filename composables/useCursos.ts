@@ -300,6 +300,15 @@ export const useCursos = () => {
         changeImportePedido,
         deleteCurso,
         totalAmountCursos,
-        changeEstadoUsuarioExterno
+        changeEstadoUsuarioExterno,
+        generarYEnviarConstancia: async (idPedido: number) => {
+            try {
+                const response = await CursosService.generarYEnviarConstancia(idPedido)
+                return response
+            } catch (error) {
+                console.error('Error al generar y enviar constancia:', error)
+                throw error
+            }
+        }
     }
 }

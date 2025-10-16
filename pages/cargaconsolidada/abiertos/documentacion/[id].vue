@@ -5,9 +5,9 @@
             <PageHeader :title="''" :subtitle="''" :icon="''" :hide-back-button="false" @back="goBack" />
 
             <div class="flex items-center gap-3" v-if="currentRole === ROLES.COORDINACION">
-                <UButton label="Factura General" variant="outline" icon="i-heroicons-arrow-down-tray" color="neutral"
+                <UButton label="Factura General" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary"
                     :loading="downloadingFactura" @click="handleDownloadFactura" />
-                <UButton label="Descargar todo" variant="outline" icon="i-heroicons-arrow-down-tray" color="neutral"
+                <UButton label="Descargar plantillas" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary"
                     @click="handleDownloadAll" />
                 <UButton label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning"
                     @click="handleNuevoDocumento" />
@@ -15,8 +15,8 @@
              
             </div>
             <div class="flex items-center gap-3" v-if="currentRole === ROLES.ADMINISTRACION">
-                <UButton label="Descargar todo"
-                    variant="outline" icon="i-heroicons-arrow-down-tray" color="neutral"
+                <UButton label="Descargar plantillas"
+                    variant="solid" icon="i-heroicons-arrow-down-tray" color="primary"
                     @click="handleDownloadAllAdministracion" />
             </div>
         </div>
