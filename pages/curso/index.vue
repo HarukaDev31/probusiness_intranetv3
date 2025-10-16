@@ -5,12 +5,13 @@
             v-if="activeTab === 'alumnos'" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="searchQuery" :show-primary-search="true"
             :primary-search-label="'Buscar por'" :primary-search-placeholder="'Buscar...'" :show-filters="true"
-            :filter-config="filterConfig" :filters-value="filters" :show-export="false"
+            :filter-config="filterConfig" :filters-value="filters" :show-export="true"
             empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
             @update:primarySearch="handleSearch" @page-change="handlePageChange"
-            @items-per-page-change="handleItemsPerPageChange" @export="exportData" @filter-change="handleFilterChange"
+            @items-per-page-change="handleItemsPerPageChange" @export="handleExport" @filter-change="handleFilterChange"
             :show-body-top="true">
             <template #actions>
+
                 <!--button to navigate to /curso/campañas-->
                 <UButton icon="i-heroicons-plus" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
             </template>
@@ -532,6 +533,16 @@ const handleChangeTipoCurso = async (value: number, idPedido: number) => {
     } catch (error) {
         showError('Error al cambiar el tipo de curso', error as string)
     }
+}
+const handleExport = async () => {
+    await withSpinner(async () => { 
+        const response = await exportData()
+        if (response.success) {
+            showSuccess('Exportación exitosa', 'La exportación se ha realizado correctamente')
+        } else {
+            showError('Error al exportar cursos', response.error)
+        }
+    }, 'Exportando cursos...')
 }
 const fillFilters = async () => {
     const response = await getFiltros()
