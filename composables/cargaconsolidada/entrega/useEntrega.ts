@@ -141,6 +141,7 @@ export const useEntrega = () => {
           // Lima
           nombre_chofer: lima?.drver_name ?? root.driver_name ?? '',
           licencia: lima?.driver_license ?? root.driver_license ?? '',
+          placa: lima?.driver_plate ?? root.driver_plate ?? '',
           direccion_final: lima?.final_destination_place ?? root.final_destination_place ?? '',
           distrito: lima?.final_destination_district ?? root.final_destination_district ?? province?.distrito ?? root.distrito ?? '',
           // Provincia
