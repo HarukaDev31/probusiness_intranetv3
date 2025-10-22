@@ -321,7 +321,6 @@ const filterConfigProspectosAlmacen = ref([
             { label: 'NC', value: 'NC', inrow: true },
             { label: 'C', value: 'C', inrow: true },
             { label: 'NS', value: 'NS', inrow: true },
-
             { label: 'R', value: 'R', inrow: true },
             { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
             { label: 'LOADED', value: 'LOADED', inrow: true },
@@ -1855,7 +1854,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
                     class: 'w-full',
-                    disabled: true,
+                    disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
                     }
@@ -1875,7 +1874,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
                     class: 'w-full',
-                    disabled: true,
+                    disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
                     }
