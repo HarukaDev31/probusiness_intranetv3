@@ -1896,7 +1896,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.arrive_date_china,
                     class: 'w-full',
                     type: 'date',
-                    disabled: true,
+                    disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
                     }
