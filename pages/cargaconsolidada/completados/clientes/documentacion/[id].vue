@@ -224,7 +224,8 @@
                                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
 
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Documentación {{ currentRole === ROLES.DOCUMENTACION ? 'Perú' : '' }}
+                                    Documentación {{ currentRole === ROLES.DOCUMENTACION ? 'Perú' : '' }} - {{ proveedorActivo?.products }}
+                                    
                                 </h3>
                                 <img  v-if="currentRole === ROLES.DOCUMENTACION" :src="CUSTOMIZED_ICONS_URL['PERU']" alt="Flag" class="w-5 h-5" />
                                 <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
