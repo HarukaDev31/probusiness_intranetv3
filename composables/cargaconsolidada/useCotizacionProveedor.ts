@@ -397,6 +397,20 @@ export const    useCotizacionProveedor = () => {
             loading.value = false
         }
     }
+    const updateArriveDate = async (idProveedor: number, arrive_date: string) => {
+        if (!idProveedor) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.updateArriveDate(idProveedor, { arrive_date })
+            return response
+        } catch (err: any) {
+            error.value = err.message || 'Error al actualizar arrive_date'
+            console.error('Error en updateArriveDate:', err)
+        } finally {
+            loading.value = false
+        }
+    }
     const getProveedoresByCotizacion = async (id: number) => {
         if (!id) return
         loading.value = true
@@ -494,6 +508,7 @@ export const    useCotizacionProveedor = () => {
         deleteCotizacion,
         updateProveedor,
         updateProveedorEstado,
+        updateArriveDate,
         resetFiltersProveedor,
         exportData,
         refreshRotuladoStatus,

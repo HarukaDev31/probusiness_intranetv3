@@ -211,6 +211,18 @@ export class CotizacionProveedorService extends BaseService {
             throw new Error('No se pudo actualizar el proveedor')
         }
     }
+    static async updateArriveDate(idProveedor: number, data: { arrive_date: string }): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(
+                `${this.baseUrl}/proveedor/${idProveedor}/arrive-date`,
+                { method: 'PATCH', body: data }
+            )
+            return response
+        } catch (error) {
+            console.error('Error al actualizar arrive_date del proveedor:', error)
+            throw new Error('No se pudo actualizar la fecha de llegada del proveedor')
+        }
+    }
     static async refreshRotuladoStatus(id: number): Promise<any> {
         try {
             const response = await this.apiCall<any>(
