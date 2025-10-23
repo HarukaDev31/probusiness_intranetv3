@@ -4,11 +4,12 @@
             :show-pagination="false" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
-            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="(currentId == ID_JEFEVENTAS) ? true : false"
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
+            :show-export="(currentId == ID_JEFEVENTAS) ? true : false"
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
-            @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos" @export="exportData"
-            :hide-back-button="false"
+            @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
+            @export="exportData" :hide-back-button="false"
             :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
             :show-body-top="true">
             <template #body-top>
@@ -70,6 +71,8 @@
                 </div>
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3" />
+                <UButton v-if="currentRole === ROLES.COORDINACION" icon="i-heroicons-arrow-down-tray" color="success"
+                    label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3" />
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
@@ -102,7 +105,7 @@ import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotiza
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES, ID_JEFEVENTAS,COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
+import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
@@ -115,64 +118,67 @@ import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
+import SelectTipoCargaModal from '~/components/cargaconsolidada/SelectTipoCargaModal.vue'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 
-const { getCotizacionProveedor, 
-        updateProveedorEstado,
-        updateProveedor,
-        cotizacionProveedor,
-        loading,
-        currentPage,
-        totalPages,
-        totalRecords,
-        itemsPerPage,
-        search,
-        filterConfig,
-        handleSearch,
-        handlePageChange,
-        handleItemsPerPageChange,
-        handleFilterChange,
-        resetFiltersProveedor,
-        exportData: exportEmbarqueData,
-        refreshRotuladoStatus,
-    } = useCotizacionProveedor()
+const { getCotizacionProveedor,
+    updateProveedorEstado,
+    updateProveedor,
+    cotizacionProveedor,
+    loading,
+    currentPage,
+    totalPages,
+    totalRecords,
+    itemsPerPage,
+    search,
+    filterConfig,
+    handleSearch,
+    handlePageChange,
+    handleItemsPerPageChange,
+    handleFilterChange,
+    resetFiltersProveedor,
+    exportData: exportEmbarqueData,
+    refreshRotuladoStatus,
+    downloadEmbarque,
+    sendRotulado
+} = useCotizacionProveedor()
 const { cotizaciones,
-        refreshCotizacionFile,
-        deleteCotizacion,
-        deleteCotizacionFile,
-        updateEstadoCotizacionCotizador,
-        loading: loadingCotizaciones,
-        error: errorCotizaciones,
-        pagination: paginationCotizaciones,
-        search: searchCotizaciones,
-        itemsPerPage: itemsPerPageCotizaciones,
-        totalPages: totalPagesCotizaciones,
-        totalRecords: totalRecordsCotizaciones,
-        currentPage: currentPageCotizaciones,
-        filters: filtersCotizaciones,
-        getCotizaciones,
-        headersCotizaciones,
-        getHeaders,
-        carga,
-        loadingHeaders,
-        resetFiltersCotizacion,
-        packingList,
-        exportData: exportProspectosData,
-    } = useCotizacion()
+    refreshCotizacionFile,
+    deleteCotizacion,
+    deleteCotizacionFile,
+    updateEstadoCotizacionCotizador,
+    loading: loadingCotizaciones,
+    error: errorCotizaciones,
+    pagination: paginationCotizaciones,
+    search: searchCotizaciones,
+    itemsPerPage: itemsPerPageCotizaciones,
+    totalPages: totalPagesCotizaciones,
+    totalRecords: totalRecordsCotizaciones,
+    currentPage: currentPageCotizaciones,
+    filters: filtersCotizaciones,
+    getCotizaciones,
+    headersCotizaciones,
+    getHeaders,
+    carga,
+    loadingHeaders,
+    resetFiltersCotizacion,
+    packingList,
+    exportData: exportProspectosData,
+} = useCotizacion()
 const { cotizacionPagos,
-        loading: loadingPagos,
-        error: errorPagos,
-        pagination: paginationPagos,
-        search: searchPagos,
-        itemsPerPage: itemsPerPagePagos,
-        totalPages: totalPagesPagos,
-        totalRecords: totalRecordsPagos,
-        currentPage: currentPagePagos,
-        filters: filtersPagos,
-        getCotizacionPagos,
-        headers: headersPagos
-    } = useCotizacionPagos()
+    loading: loadingPagos,
+    error: errorPagos,
+    pagination: paginationPagos,
+    search: searchPagos,
+    itemsPerPage: itemsPerPagePagos,
+    totalPages: totalPagesPagos,
+    totalRecords: totalRecordsPagos,
+    currentPage: currentPagePagos,
+    filters: filtersPagos,
+    getCotizacionPagos,
+    headers: headersPagos
+} = useCotizacionPagos()
 
 // Registrar/eliminar pagos para el grid de adelantos
 const { registrarPago, deletePago } = usePagos()
@@ -237,11 +243,11 @@ const overlay = useOverlay()
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 const statusOptionsModal = overlay.create(StatusOptionsModal)
 const exportData = async () => {
-  if (tab.value === 'prospectos') {
-    await exportProspectosData()
-  } if (tab.value === 'embarque') {
-    await exportEmbarqueData()
-  }
+    if (tab.value === 'prospectos') {
+        await exportProspectosData()
+    } if (tab.value === 'embarque') {
+        await exportEmbarqueData()
+    }
 }
 
 const filterConfigProspectosCoordinacion = ref([
@@ -362,9 +368,9 @@ const filterConfigProspectos = ref([
 const getFilterPerRole = () => {
     if (currentRole.value === ROLES.COORDINACION) {
         return filterConfigProspectosCoordinacion.value
-    }else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
+    } else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
         return filterConfigProspectosAlmacen.value
-    } 
+    }
     else {
         return filterConfigProspectos.value
     }
@@ -431,7 +437,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {
             const nombre = row.getValue('nombre').toUpperCase()
-            return h('div',{
+            return h('div', {
                 class: 'max-w-30 whitespace-normal',
             }, nombre
             )
@@ -442,7 +448,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         header: 'DNI/RUC',
         cell: ({ row }: { row: any }) => {
             const documento = row.getValue('documento')
-            return h('div',{
+            return h('div', {
                 class: 'max-w-18 whitespace-normal',
             }, documento
             )
@@ -453,7 +459,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         header: 'Correo',
         cell: ({ row }: { row: any }) => {
             const correo = row.getValue('correo')
-            return h('div',{
+            return h('div', {
                 class: 'max-w-55 whitespace-normal',
             }, correo || 'Sin correo'
             )
@@ -464,7 +470,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         header: 'Whatsapp',
         cell: ({ row }: { row: any }) => {
             const telefono = row.getValue('telefono')
-            return h('div',{
+            return h('div', {
                 class: 'max-w-20 whitespace-normal',
             }, telefono
             )
@@ -888,7 +894,7 @@ const getPagosColumns = () => {
                         )
                     }
                 }) :
-                null
+                    null
             }
         }
     ]
@@ -932,8 +938,9 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
+                            console.log(value, row.original)
                             proveedor.estados_proveedor = value
-                            handleUpdateProveedorEstado(proveedor.id, value)
+                            handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                         }
                     })
                 }))
@@ -1017,8 +1024,10 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     class: 'w-full w-30',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
+                        console.log(value, row.original)
+
                         proveedor.estados = value
-                        handleUpdateProveedorEstado(proveedor.id, value)
+                        handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                     }
                 })
             }))
@@ -1302,7 +1311,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
                             proveedor.estados_proveedor = value
-                            handleUpdateProveedorEstado(proveedor.id, value)
+                            handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                         }
                     })
                 }))
@@ -1385,8 +1394,9 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     class: 'w-full w-30',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
+                        console.log(value, row.original)
                         proveedor.estados = value
-                        handleUpdateProveedorEstado(proveedor.id, value)
+                        handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                     }
                 })
             }))
@@ -1625,7 +1635,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                             updateProveedorData(proveedor)
                         }
                     }),
-                    
+
                     row.original.estado_cotizador === 'CONFIRMADO' ? h(UButton, {
                         icon: 'i-heroicons-ellipsis-vertical',
                         variant: 'ghost',
@@ -1637,10 +1647,10 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                                 idContainer: row.original.id_contenedor,
                                 onSuccess: () => {
                                     getCotizacionProveedor(Number(id))
-                                }  
+                                }
                             });
                         }
-                    } ): null
+                    }) : null
                 ])
             }))
         }
@@ -1675,8 +1685,9 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
+                            console.log(value, row.original)
                             proveedor.estados_proveedor = value
-                            handleUpdateProveedorEstado(proveedor.id, value)
+                            handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                         }
                     })
                 }))
@@ -1790,7 +1801,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
-               
+
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full',
@@ -1944,7 +1955,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
 const handleRefreshRotuladoStatus = async (proveedor: any) => {
     try {
         showConfirmation('¿Estás seguro de querer actualizar el estado del proveedor?', 'Esta acción no se puede deshacer.', async () => {
-        await withSpinner(async () => {
+            await withSpinner(async () => {
                 await refreshRotuladoStatus(proveedor.id_proveedor)
             }, 'Actualizando estado del proveedor...')
         })
@@ -1962,6 +1973,31 @@ const handleAddProspecto = async () => {
         },
 
     })
+}
+const handleDownloadEmbarque = async () => {
+    try {
+        await withSpinner(async () => {
+            const response = await downloadEmbarque(Number(id))
+            //return blobs
+            if (response) {
+                //download file type excel
+                const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `embarque_${id}.xlsx`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                showSuccess('Embarque descargado correctamente', 'El embarque se ha descargado correctamente.')
+            }
+            else {
+                showError('Error al descargar embarque', 'No se pudo descargar el embarque')
+            }
+        }, 'Descargando embarque...')
+    } catch (error) {
+        showError('Error al descargar embarque', error)
+    }
 }
 const handleMoveCotizacion = async (idCotizacion: number) => {
     const modal = overlay.create(MoveCotizacionModal)
@@ -1990,15 +2026,17 @@ const handleRefresh = async (idCotizacion: number) => {
 }
 const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string) => {
     try {
+        console.log(estado)
         await withSpinner(async () => {
             try {
+
                 const response = await updateEstadoCotizacionCotizador(idCotizacion, { estado })
                 if (response?.success) {
                     showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
                     await getCotizaciones(Number(id))
                 }
             } catch (error: any) {
-                
+
                 showError('Error al actualizar el estado de la cotización', error)
             }
         }, 'Actualizando estado de la cotización...')
@@ -2006,9 +2044,34 @@ const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string
         showError('Error al actualizar el estado de la cotización', error)
     }
 }
-const handleUpdateProveedorEstado = async (idProveedor: number, estado: string) => {
+const handleUpdateProveedorEstado = async (idProveedor: number, estado: string, idCotizacion: number) => {
     try {
+        console.log(estado)
         await withSpinner(async () => {
+            if (estado === 'ROTULADO') {
+                const modal = overlay.create(SelectTipoCargaModal)
+                modal.open({
+                    show: true,
+                    cotizacionId: idCotizacion,
+                    onSelected: async (data: any) => {
+                        await withSpinner(async () => {
+                            try {
+                                const response = await sendRotulado(data)
+                                if (response?.success) {
+                                    showSuccess('Rotulado enviado correctamente', 'El rotulado se ha enviado correctamente.')
+                                    await getCotizacionProveedor(Number(id))
+                                }
+                                else {
+                                    showError('Error al enviar el rotulado', response?.message)
+                                }
+                            } catch (error) {
+                                showError('Error al enviar el rotulado', error)
+                            }
+                        }, 'Enviando rotulado...')
+                    }
+                })
+                return;
+            }
             await updateProveedorEstado({ id: idProveedor, estado })
             showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
             await getCotizacionProveedor(Number(id))
@@ -2048,7 +2111,7 @@ const handleDelete = async (idCotizacion: number) => {
         showConfirmation('¿Estás seguro de querer eliminar esta cotización?', 'Esta acción no se puede deshacer.', async () => {
             await withSpinner(async () => {
                 const response = await deleteCotizacion(idCotizacion)
-                
+
                 if (response?.success) {
                     showSuccess('Cotización eliminada correctamente', 'La cotización se ha eliminado correctamente.')
                     await getCotizaciones(Number(id))
@@ -2107,7 +2170,7 @@ const getEstadoPago = (estado: string) => {
 }
 const downloadFile = async (fileUrl: string) => {
 
-    
+
     try {
         await withSpinner(async () => {
             const a = document.createElement('a')

@@ -411,7 +411,39 @@ export const    useCotizacionProveedor = () => {
         } finally {
             loading.value = false
         }
+    }//downloadEmbarque apply same filters
+    const downloadEmbarque = async (id: number) => {
+        if (!id) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.downloadEmbarque(id, filters.value)
+            return response
+        }
+        catch (error) {
+            error.value = error.message || 'Error al descargar el embarque'
+            console.error('Error en downloadEmbarque:', error)
+        } finally {
+            loading.value = false
+        }
     }
+
+    const sendRotulado = async (data: { idCotizacion: number, proveedores: Array<{ id: number, tipo_rotulado: string }> }) => {
+        if (!data.idCotizacion || !data.proveedores.length) return
+        loading.value = true
+        error.value = null
+        try {
+            const response = await CotizacionProveedorService.sendRotulado(data)
+            return response
+        }
+        catch (error) {
+            error.value = error.message || 'Error al enviar rotulado'
+            console.error('Error en sendRotulado:', error)
+        } finally {
+            loading.value = false
+        }
+    }
+
     return {
         // Estado principal
         cotizacionProveedor,
@@ -465,6 +497,8 @@ export const    useCotizacionProveedor = () => {
         resetFiltersProveedor,
         exportData,
         refreshRotuladoStatus,
-        getProveedoresByCotizacion
+        getProveedoresByCotizacion,
+        downloadEmbarque,
+        sendRotulado
     }
 }

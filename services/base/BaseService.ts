@@ -10,14 +10,7 @@ export class BaseService {
       if (!this.nuxtApp) {
         throw new Error('Nuxt app not initialized')
       }
-      
-      console.log('🌐 BaseService - Enviando petición:', {
-        endpoint,
-        method: options.method || 'GET',
-        hasBody: !!options.body,
-        headers: options.headers
-      })
-      
+    
       const result = await this.nuxtApp.$api.call(endpoint, options)
       
       
