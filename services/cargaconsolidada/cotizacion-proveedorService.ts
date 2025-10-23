@@ -108,7 +108,7 @@ export class CotizacionProveedorService extends BaseService {
             const formData = new FormData()
             formData.append('idProveedor', data.id_proveedor.toString())
             formData.append('idCotizacion', data.id_cotizacion.toString())
-            data.files.forEach((file:any, index:number) => {
+            data.files.forEach((file: any, index: number) => {
                 formData.append(`files[${index}]`, file)
             })
             const response = await this.apiCall<CotizacionProveedorResponse>(
@@ -150,7 +150,7 @@ export class CotizacionProveedorService extends BaseService {
             const formData = new FormData()
             formData.append('idProveedor', data.id_proveedor.toString())
             formData.append('idCotizacion', data.id_cotizacion.toString())
-            data.files.forEach((file:any, index:number) => {
+            data.files.forEach((file: any, index: number) => {
                 formData.append(`files[${index}]`, file)
             })
             const response = await this.apiCall<CotizacionProveedorResponse>(
@@ -175,9 +175,9 @@ export class CotizacionProveedorService extends BaseService {
             throw new Error('No se pudo enviar las notas de China')
         }
     }
-    static async deleteCotizacion(id: number): Promise<{success: boolean}> {
+    static async deleteCotizacion(id: number): Promise<{ success: boolean }> {
         try {
-            const response = await this.apiCall<{success: boolean}>(
+            const response = await this.apiCall<{ success: boolean }>(
                 `${this.baseUrl}/proveedor/cotizacion/${id}`,
                 { method: 'DELETE' }
             )
@@ -234,6 +234,32 @@ export class CotizacionProveedorService extends BaseService {
         catch (error) {
             console.error('Error al obtener los proveedores por cotización:', error)
             throw new Error('No se pudieron obtener los proveedores por cotización')
+        }
+    }
+    static async downloadEmbarque(id: number, filters: CotizacionProveedorFilters): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(
+                `${this.baseUrl}/proveedor/download-embarque/${id}`,
+                { method: 'GET', params: filters }
+            )
+            return response
+        }
+        catch (error) {
+            console.error('Error al descargar el embarque:', error)
+            throw new Error('No se pudo descargar el embarque')
+        }
+    }
+
+    static async sendRotulado(data: { idCotizacion: number, proveedores: Array<{ id: number, tipo_rotulado: string }> }): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(
+                `${this.baseUrl}/proveedor/send-rotulado`,
+                { method: 'POST', body: data }
+            )
+            return response
+        } catch (error) {
+            console.error('Error al enviar rotulado:', error)
+            throw new Error('No se pudo enviar el rotulado')
         }
     }
 }
