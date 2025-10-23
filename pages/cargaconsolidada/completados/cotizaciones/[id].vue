@@ -2046,7 +2046,6 @@ const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string
 }
 const handleUpdateProveedorEstado = async (idProveedor: number, estado: string, idCotizacion: number) => {
     try {
-        console.log(estado)
         await withSpinner(async () => {
             if (estado === 'ROTULADO') {
                 const modal = overlay.create(SelectTipoCargaModal)

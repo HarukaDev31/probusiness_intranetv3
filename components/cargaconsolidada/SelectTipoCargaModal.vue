@@ -248,11 +248,10 @@ const handleSelect = () => {
       proveedores: proveedores
     }
     
-    // Llamar al callback si está disponible
+    // Llamar al callback si está disponible (el overlay maneja los eventos)
     if (props.onSelected) {
       props.onSelected(result)
     }
-    emit('selected', result)
     closeModal()
   } catch (error) {
     console.error('Error enviando rotulado:', error)
@@ -267,14 +266,5 @@ onMounted(() => {
     loadItems()
   }
 })
-
-// Cargar items cuando cambia el show o cotizacionId
-watch([() => props.show, () => props.cotizacionId], ([newShow, newCotizacionId]) => {
-  console.log('Watch triggered - show:', newShow, 'cotizacionId:', newCotizacionId)
-  if (newShow && newCotizacionId) {
-    console.log('Calling loadItems from watch')
-    loadItems()
-  }
-}, { immediate: true })
 
 </script>

@@ -71,10 +71,8 @@
                 </div>
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3" />
-                <UButton v-if="currentRole === ROLES.COORDINACION" icon="i-heroicons-arrow-down-tray"
-                color="success"
-                label="Descargar Embarque"
-                    @click="handleDownloadEmbarque" class="py-3" />
+                <UButton v-if="currentRole === ROLES.COORDINACION" icon="i-heroicons-arrow-down-tray" color="success"
+                    label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3" />
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
@@ -112,7 +110,6 @@ import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
 import CreateProspectoModal from '~/components/cargaconsolidada/CreateProspectoModal.vue'
-import SelectTipoCargaModal from '~/components/cargaconsolidada/SelectTipoCargaModal.vue'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import MoveCotizacionModal from '~/components/cargaconsolidada/MoveCotizacionModal.vue'
 import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
@@ -121,6 +118,7 @@ import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
+import SelectTipoCargaModal from '~/components/cargaconsolidada/SelectTipoCargaModal.vue'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 
@@ -940,8 +938,9 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
+                            console.log(value, row.original)
                             proveedor.estados_proveedor = value
-                            handleUpdateProveedorEstado(proveedor.id, value)
+                            handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                         }
                     })
                 }))
@@ -1025,8 +1024,10 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     class: 'w-full w-30',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
+                        console.log(value, row.original)
+
                         proveedor.estados = value
-                        handleUpdateProveedorEstado(proveedor.id, value)
+                        handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                     }
                 })
             }))
@@ -1310,7 +1311,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
                             proveedor.estados_proveedor = value
-                            handleUpdateProveedorEstado(proveedor.id, value)
+                            handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                         }
                     })
                 }))
@@ -1393,8 +1394,9 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     class: 'w-full w-30',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
+                        console.log(value, row.original)
                         proveedor.estados = value
-                        handleUpdateProveedorEstado(proveedor.id, value)
+                        handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                     }
                 })
             }))
@@ -1683,8 +1685,9 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
+                            console.log(value, row.original)
                             proveedor.estados_proveedor = value
-                            handleUpdateProveedorEstado(proveedor.id, value)
+                            handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                         }
                     })
                 }))
@@ -2026,29 +2029,7 @@ const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string
         console.log(estado)
         await withSpinner(async () => {
             try {
-                if(estado === 'ROTULADO') {
-                    const modal = overlay.create(SelectTipoCargaModal)
-                    modal.open({
-                        show: true,
-                        cotizacionId: idCotizacion,
-                        onSelected: async (data: any) => {
-                            try {
-                                await withSpinner(async () => {
-                                    const response = await sendRotulado(data)
-                                    if (response?.success) {
-                                        showSuccess('Rotulado enviado correctamente', `Se ha enviado el rotulado para ${data.proveedores.length} proveedores correctamente.`)
-                                        await getCotizacionProveedor(Number(id))
-                                    } else {
-                                        showError('Error al enviar rotulado', 'No se pudo enviar el rotulado correctamente')
-                                    }
-                                }, 'Enviando rotulado...')
-                            } catch (error) {
-                                showError('Error al enviar rotulado', error)
-                            }
-                        }
-                    })
-                    return;
-                }
+
                 const response = await updateEstadoCotizacionCotizador(idCotizacion, { estado })
                 if (response?.success) {
                     showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
@@ -2063,9 +2044,35 @@ const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string
         showError('Error al actualizar el estado de la cotización', error)
     }
 }
-const handleUpdateProveedorEstado = async (idProveedor: number, estado: string) => {
+const handleUpdateProveedorEstado = async (idProveedor: number, estado: string, idCotizacion: number) => {
     try {
         await withSpinner(async () => {
+            if (estado === 'ROTULADO') {
+                const modal = overlay.create(SelectTipoCargaModal)
+                modal.open({
+                    show: true,
+                    cotizacionId: idCotizacion,
+                    onSelected: async (data: any) => {
+                        await withSpinner(async () => {
+                            try {
+                                const response = await sendRotulado(data)
+                                if (response?.success) {
+                                    showSuccess('Rotulado enviado correctamente', 'El rotulado se ha enviado correctamente.')
+                                    await getCotizacionProveedor(Number(id))
+                                }
+                                else {
+                                    showError('Error al enviar el rotulado', response?.message)
+                                }
+                                return;
+                            } catch (error) {
+                                showError('Error al enviar el rotulado', error)
+                                return;
+                            }
+                        }, 'Enviando rotulado...')
+                    }
+                })
+                return;
+            }
             await updateProveedorEstado({ id: idProveedor, estado })
             showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
             await getCotizacionProveedor(Number(id))
