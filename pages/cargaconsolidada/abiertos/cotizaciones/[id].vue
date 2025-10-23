@@ -78,8 +78,8 @@
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
-            :show-pagination="false" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
-            :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
+            :show-pagination="false" :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
+            :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos"
             :show-secondary-search="false" :show-filters="false" :filter-config="filterConfig" :show-export="false"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
@@ -106,6 +106,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
+import { formatDateForInput } from '~/utils/data-table'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
@@ -127,6 +128,7 @@ import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoServi
 const { getCotizacionProveedor,
     updateProveedorEstado,
     updateProveedor,
+    updateArriveDate,
     cotizacionProveedor,
     loading,
     currentPage,
@@ -168,18 +170,19 @@ const { cotizaciones,
     packingList,
     exportData: exportProspectosData,
 } = useCotizacion()
-const { cotizacionPagos,
-    loading: loadingPagos,
+const {
+    cotizacionPagos,
+    loadingPagos,
     error: errorPagos,
-    pagination: paginationPagos,
-    search: searchPagos,
-    itemsPerPage: itemsPerPagePagos,
-    totalPages: totalPagesPagos,
-    totalRecords: totalRecordsPagos,
-    currentPage: currentPagePagos,
-    filters: filtersPagos,
+    paginationPagos,
+    searchPagos,
+    itemsPerPagePagos,
+    totalPagesPagos,
+    totalRecordsPagos,
+    currentPagePagos,
+    filtersPagos,
     getCotizacionPagos,
-    headers: headersPagos
+    headersPagos
 } = useCotizacionPagos()
 
 // Registrar/eliminar pagos para el grid de adelantos
@@ -1055,6 +1058,30 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         }
     },
     {
+        accessorKey: 'fecha_llegada',
+        header: 'F. llegada',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                const isChinaDate = !!proveedor.arrive_date_china
+                const rawValue = proveedor.arrive_date_china || proveedor.arrive_date || ''
+                const rawDatePart = rawValue && String(rawValue).includes('T') ? String(rawValue).split('T')[0] : (rawValue && String(rawValue).includes(' ') ? String(rawValue).split(' ')[0] : rawValue)
+                const displayedValue = formatDateForInput(rawDatePart)
+                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || currentRole.value === ROLES.COORDINACION)
+
+                return h('div', { class: 'flex flex-col gap-1' }, [
+                    h(UInput as any, {
+                        type: 'date',
+                        modelValue: displayedValue,
+                        class: 'min-w-36',
+                        'onUpdate:modelValue': (value: string) => handleUpdateProveedorFechaLlegada(proveedor.id_proveedor, isChinaDate ? 'arrive_date_china' : 'arrive_date', value),
+                        disabled: !editable
+                    })
+                ])
+            }))
+        }
+    },
+    {
         accessorKey: 'qty_box',
         header: 'Qty Box',
         cell: ({ row }: { row: any }) => {
@@ -1270,6 +1297,22 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         }
     }
 ])
+
+const handleUpdateProveedorFechaLlegada = async (idProveedor: number, _field: string, value: string) => {
+    try {
+        await withSpinner(async () => {
+            const response = await updateArriveDate(idProveedor, value || '')
+            if (response?.success) {
+                showSuccess('Fecha actualizada', 'La fecha de llegada se ha actualizado correctamente.')
+                await getCotizacionProveedor(Number(id))
+            } else {
+                showError('Error', response?.error || 'No se pudo actualizar la fecha')
+            }
+        }, 'Actualizando fecha...')
+    } catch (error) {
+        showError('Error al actualizar fecha', error)
+    }
+}
 const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
     //Asesor	Status	N.	Buyer	Whatsapp	Estado	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
     {
@@ -1420,6 +1463,30 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 })
             }))
             return div
+        }
+    },
+    {
+        accessorKey: 'fecha_llegada',
+        header: 'F. llegada',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                const isChinaDate = !!proveedor.arrive_date_china
+                const rawValue = proveedor.arrive_date_china || proveedor.arrive_date || ''
+                const rawDatePart = rawValue && String(rawValue).includes('T') ? String(rawValue).split('T')[0] : (rawValue && String(rawValue).includes(' ') ? String(rawValue).split(' ')[0] : rawValue)
+                const displayedValue = formatDateForInput(rawDatePart)
+                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || currentRole.value === ROLES.COORDINACION)
+
+                return h('div', { class: 'flex flex-col gap-1' }, [
+                    h(UInput as any, {
+                        type: 'date',
+                        modelValue: displayedValue,
+                        class: 'min-w-36',
+                        'onUpdate:modelValue': (value: string) => handleUpdateProveedorFechaLlegada(proveedor.id_proveedor, isChinaDate ? 'arrive_date_china' : 'arrive_date', value),
+                        disabled: !editable
+                    })
+                ])
+            }))
         }
     },
     {

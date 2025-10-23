@@ -23,6 +23,28 @@
 
                 </template>
             </DataTable>
+            <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados" :columns="columnsEmbarcados"
+                :loading="loadingEmbarcados" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
+                :total-records="totalRecordsEmbarcados" :items-per-page="itemsPerPageEmbarcados"
+                :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
+                :filter-config="filtersEmbarcados" :show-export="false" :show-body-top="true"
+                :hide-back-button="false"
+                :show-pagination="false" @export="exportData"
+
+                :previous-page-url="(currentRole == ROLES.COORDINACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                empty-state-message="No se encontraron registros de clientes."
+                @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
+                @items-per-page-change="handleItemsPerPageChangeEmbarcados" @filter-change="handleFilterChangeEmbarcados">
+                <template #body-top>
+                    <div class="flex flex-col gap-2 w-full">
+                        <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                            color="neutral" />
+                    </div>
+
+                </template>
+
+            </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
                 :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
                 :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
@@ -67,10 +89,14 @@
         </div>
     </template>
 <script setup lang="ts">
+import { ref, h } from 'vue'
+import { formatDate, formatCurrency } from '~/utils/formatters'
+import { formatDateForInput } from '~/utils/data-table'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
+import { useEmbarcados } from '~/composables/cargaconsolidada/clientes/useEmbarcados'
 import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
-import { UButton, UBadge, USelect } from '#components'
+import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
@@ -107,6 +133,21 @@ const { getClientes,
         loadingHeaders, 
         handleUpdateStatusClienteDoc,
         exportData: exportGeneralData } = useGeneral()
+const { getEmbarcados, 
+        clientesEmbarcados, 
+        totalRecordsEmbarcados, 
+        loadingEmbarcados, 
+        paginationEmbarcados, 
+        searchEmbarcados, 
+        itemsPerPageEmbarcados, 
+        totalPagesEmbarcados, 
+        currentPageEmbarcados, 
+        filtersEmbarcados, 
+        handlePageEmbarcadosChange, 
+        handleItemsPerPageChangeEmbarcados, 
+        handleFilterChangeEmbarcados, 
+        handleSearchEmbarcados,
+} = useEmbarcados()
 const { getClientesVariacion, 
         updateVolumenSelected, 
         clientesVariacion, 
@@ -144,6 +185,8 @@ const tabs = ref()
 const handleTabChange = (value: string) => {
     if (tab.value === 'general') {
         getClientes(Number(id))
+    } else if (tab.value === 'embarcados') {
+        getEmbarcados(Number(id))
     } else if (tab.value === 'variacion') {
         getClientesVariacion(Number(id))
     } else if (tab.value === 'pagos') {
@@ -680,6 +723,266 @@ const getColorStatusDocumentacion = (status: string) => {
     }
     return 'neutral'
 }
+const columnsEmbarcados = ref<TableColumn<any>[]>([
+    {
+        accessorKey: 'index',
+        header: 'N°',
+        cell: ({ row }: { row: any }) => {
+            return row.index + 1
+        }
+    },
+    {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('nombre')
+        }
+    },
+    {
+        accessorKey: 'whatsapp',
+        header: 'Whatsapp',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('whatsapp')
+        }
+    },
+    {
+        accessorKey: 'tipo_cliente',
+        header: 'T. Cliente',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('tipo_cliente')
+        }
+    },
+    {
+        accessorKey: 'products',
+        header: 'Productos',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.products,
+                    class: 'w-full w-40',
+                    disabled: true,
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'supplier',
+        header: 'Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.supplier,
+                    class: 'w-full w-25',
+                    disabled: true,
+                })
+            }))
+            return div
+        }
+    },
+    {        
+        accessorKey: 'code_supplier',
+        header: 'Code Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.code_supplier,
+                    class: 'w-full w-25',
+                    disabled: true,
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'volumen_peru',
+        header: 'Vol. Perú',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.vol_peru,
+                    class: 'w-full w-12',
+                    disabled: true,
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'volumen_china',
+        header: 'Vol. China',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.vol_china,
+                    class: 'w-full',
+                    disabled: true,
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'factura_comercial',
+        header: 'Factura Comercial',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores ?? []
+            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any, idx: number) => {
+                const url = proveedor.factura_comercial
+                if (url) {
+                    return h('div', {
+                    class: 'flex flex-row gap-2'
+                    }, [
+                    h(UButton, {
+                        icon: 'vscode-icons:file-type-pdf2',
+                        color: 'primary',
+                        variant: 'ghost',
+                        onClick: () => {
+                        handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)
+                        }
+                    }),
+                    h(UButton, {
+                        icon: 'i-heroicons-trash',
+                        color: 'error',
+                        variant: 'ghost',
+                        onClick: () => {
+                        deleteCotizacionFinal(row.original.id_cotizacion)
+                        }
+                    })
+                    ])
+                } else {
+                    return h(UButton, {
+                    icon: 'i-heroicons-arrow-up-tray',
+                    color: 'primary',
+                    variant: 'outline',
+                    label: 'Subir',
+                    onClick: () => {
+                        handleUploadPlantillaFinal()
+                    }
+                    })
+                }
+            }))
+        }
+    },
+    {
+        accessorKey: 'packing_list',
+        header: 'Packing List',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores ?? []
+            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any, idx: number) => {
+                const url = proveedor.packing_list
+                if (url) {
+                    return h('div', {
+                    class: 'flex flex-row gap-2'
+                    }, [
+                    h(UButton, {
+                        icon: 'vscode-icons:file-type-pdf2',
+                        color: 'primary',
+                        variant: 'ghost',
+                        onClick: () => {
+                        handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)
+                        }
+                    }),
+                    h(UButton, {
+                        icon: 'i-heroicons-trash',
+                        color: 'error',
+                        variant: 'ghost',
+                        onClick: () => {
+                        deleteCotizacionFinal(row.original.id_cotizacion)
+                        }
+                    })
+                    ])
+                } else {
+                    return h(UButton, {
+                    icon: 'i-heroicons-arrow-up-tray',
+                    color: 'primary',
+                    variant: 'outline',
+                    label: 'Subir',
+                    onClick: () => {
+                        handleUploadPlantillaFinal()
+                    }
+                    })
+                }
+            }))
+        }
+    },
+    {
+        accessorKey: 'excel_confirmacion',
+        header: 'Excel Confirmación',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores ?? []
+            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any, idx: number) => {
+                const url = proveedor.excel_confirmacion
+                if (url) {
+                    return h('div', {
+                        class: 'flex flex-row gap-2'
+                    }, [
+                    h(UButton, {
+                        icon: 'vscode-icons:file-type-excel',
+                        color: 'primary',
+                        variant: 'ghost',
+                        onClick: () => {
+                        window.open(row.original.cotizacion_final_url, '_blank')
+                        }
+                    }),
+                    h(UButton, {
+                        icon: 'i-heroicons-trash',
+                        color: 'error',
+                        variant: 'ghost',
+                        onClick: () => {
+                        deleteCotizacionFinal(row.original.id_cotizacion)
+                        }
+                    })
+                    ])
+
+                } else {
+                    return h(UButton, {
+                    icon: 'i-heroicons-arrow-up-tray',
+                    color: 'primary',
+                    variant: 'outline',
+                    label: 'Subir',
+                    onClick: () => {
+                        handleUploadPlantillaFinal()
+                    }
+                    })
+                }
+            }))
+        }
+    },
+    {
+        accessorKey: 'acciones',
+        header: 'Acciones',
+        cell: ({ row }: { row: any }) => {
+            //button view with more info
+            return h(UButton, {
+                icon: 'iconamoon:menu-burger-horizontal',
+                variant: 'ghost',
+                size: 'xs',
+                onClick: () => {
+                    //generar un modal para solicitar el tipo de recordatorio de documento
+
+                }
+            },
+            )
+        }
+    }
+])
 const columnsVariacion = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
@@ -857,6 +1160,10 @@ onMounted(() => {
                 value: 'general'
             },
             {
+                label: 'Embarcados',
+                value: 'embarcados'
+            },
+            {
                 label: 'Variación',
                 value: 'variacion'
             },
@@ -885,6 +1192,9 @@ watch(() => tab.value, async (newVal) => {
             if (newVal === 'general') {
                 navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=general`)
                 await getClientes(Number(id))
+            } else if (newVal === 'embarcados') {
+                navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=embarcados`)
+                await getEmbarcados(Number(id))
             } else if (newVal === 'variacion') {
                 navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=variacion`)
                 await getClientesVariacion(Number(id))
