@@ -17,7 +17,7 @@
                 <template #body-top>
                     <div class="flex flex-col gap-2 w-full">
                         <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
-                        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                        <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15"
                             color="neutral" />
                     </div>
 
@@ -38,7 +38,7 @@
                 <template #body-top>
                     <div class="flex flex-col gap-2 w-full">
                         <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
-                        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                        <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15"
                             color="neutral" />
                     </div>
 
@@ -60,7 +60,7 @@
                 <template #body-top>
                     <div class="flex flex-col gap-2 w-full">
                         <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
-                        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                        <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15"
                             color="neutral" />
                     </div>
 
@@ -81,7 +81,7 @@
                 <template #body-top>
                     <div class="flex flex-col gap-2 w-full">
                         <SectionHeader :title="`Contenedor #${carga}`" :headers="headers" :loading="loadingHeaders" />
-                        <UTabs v-model="tab" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                        <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15"
                             color="neutral" />
                     </div>
                 </template>
@@ -863,7 +863,8 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         color: 'primary',
                         variant: 'ghost',
                         onClick: () => {
-                        handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)
+                        // Abrir la URL del proveedor directamente
+                        window.open(url, '_blank')
                         }
                     }),
                     h(UButton, {
@@ -871,7 +872,8 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         color: 'error',
                         variant: 'ghost',
                         onClick: () => {
-                        deleteCotizacionFinal(row.original.id_cotizacion)
+                        // Usar id de cotización para eliminar (handler simulado)
+                        deleteFacturaComercial(row.original.id_cotizacion)
                         }
                     })
                     ])
@@ -882,7 +884,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                     variant: 'outline',
                     label: 'Subir',
                     onClick: () => {
-                        handleUploadPlantillaFinal()
+                        handleUploadFacturaComercial(url)
                     }
                     })
                 }
@@ -905,7 +907,8 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         color: 'primary',
                         variant: 'ghost',
                         onClick: () => {
-                        handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)
+                        // Abrir la URL del proveedor directamente
+                        window.open(url, '_blank')
                         }
                     }),
                     h(UButton, {
@@ -913,7 +916,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         color: 'error',
                         variant: 'ghost',
                         onClick: () => {
-                        deleteCotizacionFinal(row.original.id_cotizacion)
+                        deletePackingList(row.original.id_cotizacion)
                         }
                     })
                     ])
@@ -924,7 +927,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                     variant: 'outline',
                     label: 'Subir',
                     onClick: () => {
-                        handleUploadPlantillaFinal()
+                        handleUploadPackingList(row.original.id_cotizacion)
                     }
                     })
                 }
@@ -938,7 +941,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
             const proveedores = row.original.proveedores ?? []
             return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any, idx: number) => {
                 const url = proveedor.excel_confirmacion
-                if (url) {
+                    if (url) {
                     return h('div', {
                         class: 'flex flex-row gap-2'
                     }, [
@@ -947,7 +950,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         color: 'primary',
                         variant: 'ghost',
                         onClick: () => {
-                        window.open(row.original.cotizacion_final_url, '_blank')
+                        window.open(url, '_blank')
                         }
                     }),
                     h(UButton, {
@@ -955,7 +958,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         color: 'error',
                         variant: 'ghost',
                         onClick: () => {
-                        deleteCotizacionFinal(row.original.id_cotizacion)
+                        deleteExcelConfirmacion(row.original.id_cotizacion)
                         }
                     })
                     ])
@@ -967,7 +970,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                     variant: 'outline',
                     label: 'Subir',
                     onClick: () => {
-                        handleUploadPlantillaFinal()
+                        handleUploadExcelConfirmacion(row.original.id_cotizacion)
                     }
                     })
                 }
@@ -1153,6 +1156,192 @@ const updateVolSelected = async (data: any) => {
         error.value = err as string
     }
 }
+// ---------- Handlers faltantes (placeholders seguros) ----------
+/** Helpers para localizar cliente y primeras URLs disponibles */
+const findCliente = (id_cotizacion: number) => {
+    return clientes.value?.find((c: any) => Number(c.id_cotizacion) === Number(id_cotizacion) || Number(c.id) === Number(id_cotizacion))
+}
+
+const getFirstUrl = (cliente: any, keys: string[]) => {
+    if (!cliente) return null
+    // buscar en proveedores primero
+    const provs = cliente.proveedores ?? []
+    for (const p of provs) {
+        for (const k of keys) {
+            if (p && p[k]) return p[k]
+        }
+    }
+    // luego en el objeto cliente
+    for (const k of keys) {
+        if (cliente[k]) return cliente[k]
+    }
+    return null
+}
+
+const handleDownloadFacturaComercial = async (id_cotizacion: number) => {
+    try {
+        const cliente = findCliente(id_cotizacion)
+        const url = getFirstUrl(cliente, ['factura_comercial', 'factura', 'factura_comercial_url'])
+        if (url) { window.open(url, '_blank'); return }
+        showError('Archivo no disponible', 'No se encontró la factura comercial para este cliente.')
+    } catch (err) {
+        console.error('handleDownloadFacturaComercial', err)
+        showError('Error', 'No se pudo descargar la factura comercial')
+    }
+}
+
+const deleteFacturaComercial = async (id_cotizacion: number) => {
+    try {
+        await showConfirmation(
+            'Confirmar eliminación',
+            '¿Está seguro que desea eliminar la factura comercial? Esta acción sólo afectará al registro local (simulación).',
+            async () => {
+                const cliente = findCliente(id_cotizacion)
+                if (!cliente) return
+                // eliminar en proveedores si existe
+                const provs = cliente.proveedores ?? []
+                for (const p of provs) {
+                    if (p.factura_comercial) p.factura_comercial = null
+                }
+                if (cliente.factura_comercial) cliente.factura_comercial = null
+                clientes.value = [...clientes.value]
+                showSuccess('Eliminado', 'Factura comercial eliminada (simulada).')
+            }
+        )
+    } catch (err) {
+        console.error('deleteFacturaComercial', err)
+        showError('Error', 'No se pudo eliminar la factura comercial')
+    }
+}
+
+const handleUploadFacturaComercial = async (id_cotizacion: number) => {
+    try {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = '.pdf,.jpg,.png'
+        input.onchange = async (e: Event) => {
+            const target = e.target as HTMLInputElement
+            const file = target.files && target.files[0]
+            if (!file) return
+                await withSpinner(async () => {
+                const cliente = findCliente(id_cotizacion)
+                if (!cliente) return
+                // No asignamos URL local: el backend ahora proveerá la URL en entornos locales/producción.
+                // Mantener la UI limpia: informar al usuario que la subida fue recibida (simulada)
+                // y que la URL estará disponible desde el backend.
+                clientes.value = [...clientes.value]
+                showSuccess('Subida simulada', 'Factura subida (simulada). La URL será provista por el backend cuando corresponda.')
+            }, 'Subiendo factura...')
+        }
+        input.click()
+    } catch (err) {
+        console.error('handleUploadFacturaComercial', err)
+        showError('Error', 'No se pudo subir la factura comercial')
+    }
+}
+
+const handleDownloadPackingList = async (id_cotizacion: number) => {
+    try {
+        const cliente = findCliente(id_cotizacion)
+        const url = getFirstUrl(cliente, ['packing_list', 'packinglist', 'packing_list_url'])
+        if (url) { window.open(url, '_blank'); return }
+        showError('Archivo no disponible', 'No se encontró el packing list para este cliente.')
+    } catch (err) {
+        console.error('handleDownloadPackingList', err)
+        showError('Error', 'No se pudo descargar el packing list')
+    }
+}
+
+const deletePackingList = async (id_cotizacion: number) => {
+    try {
+        await showConfirmation(
+            'Confirmar eliminación',
+            '¿Está seguro que desea eliminar el packing list? Esta acción sólo afectará al registro local (simulación).',
+            async () => {
+                const cliente = findCliente(id_cotizacion)
+                if (!cliente) return
+                const provs = cliente.proveedores ?? []
+                for (const p of provs) if (p.packing_list) p.packing_list = null
+                if (cliente.packing_list) cliente.packing_list = null
+                clientes.value = [...clientes.value]
+                showSuccess('Eliminado', 'Packing list eliminado (simulado).')
+            }
+        )
+    } catch (err) {
+        console.error('deletePackingList', err)
+        showError('Error', 'No se pudo eliminar el packing list')
+    }
+}
+
+const handleUploadPackingList = async (id_cotizacion: number) => {
+    try {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = '.pdf,.xlsx'
+        input.onchange = async (e: Event) => {
+            const target = e.target as HTMLInputElement
+            const file = target.files && target.files[0]
+            if (!file) return
+                await withSpinner(async () => {
+                const cliente = findCliente(id_cotizacion)
+                if (!cliente) return
+                // No asignamos URL local: el backend ahora proveerá la URL en entornos locales/producción.
+                clientes.value = [...clientes.value]
+                showSuccess('Subida simulada', 'Packing list subido (simulado). La URL será provista por el backend cuando corresponda.')
+            }, 'Subiendo packing list...')
+        }
+        input.click()
+    } catch (err) {
+        console.error('handleUploadPackingList', err)
+        showError('Error', 'No se pudo subir el packing list')
+    }
+}
+
+const deleteExcelConfirmacion = async (id_cotizacion: number) => {
+    try {
+        await showConfirmation(
+            'Confirmar eliminación',
+            '¿Está seguro que desea eliminar el Excel de confirmación? Esta acción sólo afectará al registro local (simulación).',
+            async () => {
+                const cliente = findCliente(id_cotizacion)
+                if (!cliente) return
+                if (cliente.excel_confirmacion) cliente.excel_confirmacion = null
+                const provs = cliente.proveedores ?? []
+                for (const p of provs) if (p.excel_confirmacion) p.excel_confirmacion = null
+                clientes.value = [...clientes.value]
+                showSuccess('Eliminado', 'Excel de confirmación eliminado (simulado).')
+            }
+        )
+    } catch (err) {
+        console.error('deleteExcelConfirmacion', err)
+        showError('Error', 'No se pudo eliminar el Excel de confirmación')
+    }
+}
+
+const handleUploadExcelConfirmacion = async (id_cotizacion: number) => {
+    try {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = '.xlsx,.xls'
+        input.onchange = async (e: Event) => {
+            const target = e.target as HTMLInputElement
+            const file = target.files && target.files[0]
+            if (!file) return
+                await withSpinner(async () => {
+                const cliente = findCliente(id_cotizacion)
+                if (!cliente) return
+                // No asignamos URL local: el backend proporcionará la URL para el excel de confirmación.
+                clientes.value = [...clientes.value]
+                showSuccess('Subida simulada', 'Excel subido (simulado). La URL será provista por el backend cuando corresponda.')
+            }, 'Subiendo excel...')
+        }
+        input.click()
+    } catch (err) {
+        console.error('handleUploadExcelConfirmacion', err)
+        showError('Error', 'No se pudo subir el Excel de confirmación')
+    }
+}
+// ---------- Fin handlers ----------
 onMounted(() => {
     if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
