@@ -1153,7 +1153,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full w-25',
-                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled:!COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier = value
                     }
@@ -1622,7 +1622,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
                     class: 'w-full',
-                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
                     }
@@ -1642,7 +1642,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
                     class: 'w-full',
-                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
                     }
@@ -1663,7 +1663,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.arrive_date_china,
                     class: 'w-full w-25',
-                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    disabled:true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
                     }

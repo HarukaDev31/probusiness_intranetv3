@@ -218,12 +218,12 @@
     <!-- Pagination -->
     <div v-if="totalPages > 1" class="mt-8 flex justify-center">
       <UPagination
-        v-model="currentPage"
-        :page-count="totalPages"
+        :model-value="currentPage"
         :total="totalItems"
-        :per-page="itemsPerPage"
+        :items-per-page="itemsPerPage"
         show-first
         show-last
+        @update:page="changePage"
       />
     </div>
   </div>
@@ -260,6 +260,7 @@ const {
   markAllAsRead,
   handleNotificationClick: originalHandleNotificationClick,
   deleteNotification,
+  changePage,
   getTypeColor,
   getTypeIcon,
   formatDate,

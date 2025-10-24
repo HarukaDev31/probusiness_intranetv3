@@ -82,7 +82,7 @@
           <!-- Delete Button -->
           <UButton
             icon="i-heroicons-trash"
-            color="red"
+            color="error"
             variant="ghost"
             size="sm"
             @click="deleteNotification(notification.id)"

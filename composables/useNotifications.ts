@@ -38,6 +38,20 @@ export const useNotifications = () => {
     notifications.value.filter(n => n.estado_usuario.leida)
   )
 
+  // Método para cambiar de página
+  const changePage = async (newPage: number) => {
+    console.log('changePage called with:', newPage, 'current:', currentPage.value, 'totalPages:', totalPages.value)
+    if (newPage !== currentPage.value && newPage >= 1 && newPage <= totalPages.value) {
+      console.log('Changing page from', currentPage.value, 'to', newPage)
+      currentPage.value = newPage
+      filters.value.page = newPage
+      console.log('Filters updated:', filters.value)
+      await fetchNotifications()
+    } else {
+      console.log('Page change rejected:', { newPage, current: currentPage.value, totalPages: totalPages.value })
+    }
+  }
+
   // Métodos principales
   const fetchNotifications = async (newFilters?: Partial<NotificationFilters>) => {
     try {
@@ -48,13 +62,23 @@ export const useNotifications = () => {
         filters.value = { ...filters.value, ...newFilters }
       }
 
+      console.log('fetchNotifications called with filters:', filters.value)
       const response = await NotificationService.getNotifications(filters.value)
       
       notifications.value = response.data.data
+      console.log(response.data)
       currentPage.value = response.data.current_page
       totalPages.value = response.data.last_page
       totalItems.value = response.data.total
       itemsPerPage.value = response.data.per_page
+      
+      console.log('Response received:', {
+        current_page: response.data.current_page,
+        last_page: response.data.last_page,
+        total: response.data.total,
+        per_page: response.data.per_page,
+        data_length: response.data.data.length
+      })
 
     } catch (err: any) {
       error.value = err.message || 'Error al cargar notificaciones'
@@ -182,7 +206,7 @@ export const useNotifications = () => {
     unreadCount: readonly(unreadCount),
     
     // Paginación
-    currentPage: readonly(currentPage),
+    currentPage,
     totalPages: readonly(totalPages),
     totalItems: readonly(totalItems),
     itemsPerPage: readonly(itemsPerPage),
@@ -201,6 +225,7 @@ export const useNotifications = () => {
     markAllAsRead,
     handleNotificationClick,
     deleteNotification,
+    changePage,
     getTypeColor,
     getTypeIcon,
     formatDate,
