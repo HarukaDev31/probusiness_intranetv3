@@ -65,4 +65,16 @@ export class CommonsService extends BaseService {
             throw error
         }
     }
+    static async forceSendRecordatorioDatosProveedor(data: forceSendRequest): Promise<{ success: boolean }> {
+        try {
+            const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/force-send-recordatorio-datos-proveedor`, {
+                method: 'POST',
+                body: data
+            })
+            return response
+        }catch(error){
+            console.error('Error en CommonsService.forceSendRecordatorioDatosProveedor:', error)
+            throw error
+        }
+    }
 }

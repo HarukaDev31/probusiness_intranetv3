@@ -68,7 +68,7 @@ const proveedores = ref([])
 const selectedProveedor = ref([])
 const { withSpinner } = useSpinner()
 const { showError, showSuccess } = useModal()
-const { forceSendInspection, forceSendRotulado, forceSendCobranza ,forceSendMove} = useCommons()
+const { forceSendInspection, forceSendRotulado, forceSendCobranza ,forceSendMove, forceSendRecordatorioDatosProveedor} = useCommons()
 const emit = defineEmits<{
     (e: 'success'): void
 }>()
@@ -85,6 +85,7 @@ const statusOptions = ref([
     { label: 'Inspeccion', value: 'INSPECCION',disabled: false },
     { label: 'Rotulado', value: 'ROTULADO',disabled: false },
     { label: 'Cobrando', value: 'COBRANDO',disabled: false },
+    { label: 'Recordatorio datos de Proveedor', value: 'RECORDATORIO_DATOS_PROVEEDOR',disabled: false },
     { label: 'Mover',value: 'MOVER',disabled: false },
 ])
 const contenedores = ref([])
@@ -183,6 +184,13 @@ const handleSave = async () => {
                     proveedores: selectedProveedor.value,
                     idContainerDestino: Number(contenedorDestino.value),
                     idContainerPagoDestino: Number(contenedorPagoDestino.value),
+                })
+                break
+            case 'RECORDATORIO_DATOS_PROVEEDOR':
+                response = await forceSendRecordatorioDatosProveedor({
+                    idCotizacion: props.idCotizacion,
+                    idContainer: props.idContainer,
+                    proveedores: selectedProveedor.value,
                 })
                 break
         }

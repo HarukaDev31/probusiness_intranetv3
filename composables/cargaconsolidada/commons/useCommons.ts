@@ -17,10 +17,15 @@ export const useCommons = () => {
         const response = await CommonsService.forceSendMove(data)
         return response
     }
+    const forceSendRecordatorioDatosProveedor = async (data: forceSendRequest) => {
+        const response = await CommonsService.forceSendRecordatorioDatosProveedor(data)
+        return response
+    }
     return {
         forceSendInspection,
         forceSendRotulado,
         forceSendCobranza,
-        forceSendMove
+        forceSendMove,
+        forceSendRecordatorioDatosProveedor
     }
 }
