@@ -76,9 +76,10 @@
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
-            :show-pagination="false" :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
-            :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos"
-            :show-secondary-search="false" :show-filters="false" :filter-config="filterConfig" :show-export="false"
+            :show-pagination="false" :loading="loadingPagos" :current-page="currentPagePagos"
+            :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
+            :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
+            :filter-config="filterConfig" :show-export="false"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
@@ -1039,6 +1040,29 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         }
     },
     {
+        accessorKey: 'tipo_rotulado',
+        header: 'Tipo Rotulado',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                const tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
+                const formattedValue = tipoRotulado
+                    .toUpperCase()
+                    .replace(/_/g, ' ')
+                    .trim() || '-'
+
+                return h(UBadge as any, {
+                    label: formattedValue,
+                    color: 'gray',
+                    variant: 'soft'
+                })
+            }))
+            return div
+        }
+    },
+    {
         accessorKey: 'productos',
         header: 'Productos',
         cell: ({ row }: { row: any }) => {
@@ -1153,7 +1177,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full w-25',
-                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled: !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier = value
                     }
@@ -1448,6 +1472,29 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         }
     },
     {
+        accessorKey: 'tipo_rotulado',
+        header: 'Tipo Rotulado',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                const tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
+                const formattedValue = tipoRotulado
+                    .toUpperCase()
+                    .replace(/_/g, ' ')
+                    .trim() || '-'
+
+                return h(UBadge as any, {
+                    label: formattedValue,
+                    color: 'gray',
+                    variant: 'soft'
+                })
+            }))
+            return div
+        }
+    },
+    {
         accessorKey: 'productos',
         header: 'Productos',
         cell: ({ row }: { row: any }) => {
@@ -1622,7 +1669,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
                     class: 'w-full',
-                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
                     }
@@ -1642,7 +1689,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
                     class: 'w-full',
-                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
                     }
@@ -1663,7 +1710,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.arrive_date_china,
                     class: 'w-full w-25',
-                    disabled: currentRole.value === ROLES.CONTENEDOR_ALMACEN,
+                    disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.arrive_date_china = value
                     }
@@ -2130,8 +2177,10 @@ const handleUpdateProveedorEstado = async (idProveedor: number, estado: string, 
                                 else {
                                     showError('Error al enviar el rotulado', response?.message)
                                 }
+                                return;
                             } catch (error) {
                                 showError('Error al enviar el rotulado', error)
+                                return;
                             }
                         }, 'Enviando rotulado...')
                     }
