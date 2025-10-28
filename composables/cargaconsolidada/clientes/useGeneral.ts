@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { GeneralService } from '~/services/cargaconsolidada/clientes/generalService'
 import type { Header, PaginationInfo } from '~/types/data-table'
 import { useRoute } from '#app'
@@ -74,13 +74,14 @@ export const useGeneral = () => {
         try {
             loadingHeaders.value = true
             const response = await GeneralService.getHeaders(id)
-            headers.value = response.data
+            // Ensure headers is always an array: backend may return an object or an array
+            headers.value = Array.isArray(response.data) ? response.data : Object.values(response.data)
             carga.value = response.carga
         } catch (err) {
             error.value = err as string
         } finally {
             loadingHeaders.value = false
-            }
+        }
     }
     const handleUpdateStatusClienteDoc = async (data: any) => {
         try {

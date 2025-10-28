@@ -7,7 +7,7 @@
                 :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
                 :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="false"
-                :filter-config="filtersGeneral" :show-export="(currentId == ID_JEFEVENTAS) ? true : false" :show-body-top="true"
+                :filters-value="filtersGeneral" :show-export="(currentId == ID_JEFEVENTAS) ? true : false" :show-body-top="true"
                 :show-pagination="false" @export="exportData"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
@@ -15,33 +15,54 @@
                 :hide-back-button="false"
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
                 <template #body-top>
-                    <div class="flex flex-col gap-2 w-full">
-                        <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
-                        <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15"
-                            color="neutral" />
+                    <div class="flex items-center justify-between w-full gap-4">
+                        <div class="flex flex-col gap-2">
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <div class="flex justify-between">
+                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
+                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
+                                    <div class="flex flex-col mr-2 space-y-1">
+                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
+                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados" :columns="columnsEmbarcados"
                 :loading="loadingEmbarcados" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
                 :total-records="totalRecordsEmbarcados" :items-per-page="itemsPerPageEmbarcados"
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
-                :filter-config="filtersEmbarcados" :show-export="false" :show-body-top="true"
+                :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true"
                 :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-
                 :previous-page-url="(currentRole == ROLES.COORDINACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados" @filter-change="handleFilterChangeEmbarcados">
                 <template #body-top>
-                    <div class="flex flex-col gap-2 w-full">
-                        <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
-                        <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15"
-                            color="neutral" />
+                    <div class="flex items-center justify-between w-full gap-4">
+                        <div class="flex flex-col gap-2">
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <div class="flex justify-between">
+                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
+                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
+                                    <div class="flex flex-col mr-2 space-y-1">
+                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
+                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
                 </template>
 
             </DataTable>
@@ -49,47 +70,68 @@
                 :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
                 :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
-                :filter-config="filtersVariacion" :show-export="false" :show-body-top="true"
+                :filters-value="filtersVariacion" :show-export="false" :show-body-top="true"
                 :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
-                    <div class="flex flex-col gap-2 w-full">
-                        <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
-                        <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15"
-                            color="neutral" />
+                    <div class="flex items-center justify-between w-full gap-4">
+                        <div class="flex flex-col gap-2">
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <div class="flex justify-between">
+                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
+                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
+                                    <div class="flex flex-col mr-2 space-y-1">
+                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
+                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
                 :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
                 :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
-                :filter-config="filtersPagos" :show-export="false" :hide-back-button="false"
+                :filters-value="filtersPagos" :show-export="false" :hide-back-button="false"
                 :show-body-top="true"
                 :show-pagination="false" @export="exportData"
-
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
-                    <div class="flex flex-col gap-2 w-full">
-                        <SectionHeader :title="`Contenedor #${carga}`" :headers="headers" :loading="loadingHeaders" />
-                        <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15"
-                            color="neutral" />
+                    <div class="flex items-center justify-between w-full gap-4">
+                        <div class="flex flex-col gap-2">
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <div class="flex justify-between">
+                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
+                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
+                                    <div class="flex flex-col mr-2 space-y-1">
+                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
+                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </template>
             </DataTable>
         </div>
     </template>
 <script setup lang="ts">
-import { ref, h } from 'vue'
+import { ref, h, computed } from 'vue'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
@@ -111,6 +153,44 @@ const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
+
+// F. Max. Documentacion (visible in the UI)
+// default is placeholder '00/00/0000' until backend provides a real value
+const fMaxDocumentacion = ref<string | null>(null)
+const fMaxDocumentacionDisplay = computed(() => fMaxDocumentacion.value ?? '00/00/0000')
+
+const handleSaveFMaxDocumentacion = async () => {
+    if (!fMaxDocumentacion.value) {
+        showError('Fecha requerida', 'Por favor selecciona una fecha válida')
+        return
+    }
+    try {
+        await withSpinner(async () => {
+            // Use the project's api plugin so the Authorization header (JWT) is attached
+            const nuxtApp = useNuxtApp()
+            const endpoint = `/api/carga-consolidada/contenedor/update-fecha-documentacion/${Number(id)}`
+            const res = await nuxtApp.$api.call(endpoint, {
+                method: 'POST',
+                body: { fecha_documentacion_max: fMaxDocumentacion.value }
+            })
+
+            if (res && (res as any).success) {
+                const data = (res as any).data
+                if (data && data.fecha_documentacion_max) {
+                    fMaxDocumentacion.value = data.fecha_documentacion_max
+                }
+                showSuccess('Fecha actualizada', (res as any).message || 'Fecha actualizada correctamente')
+                // refresh headers / data
+                await getHeaders(Number(id))
+            } else {
+                showError('Error', (res as any).message || 'No se pudo actualizar la fecha')
+            }
+        }, 'Actualizando fecha...')
+    } catch (error) {
+        console.error('handleSaveFMaxDocumentacion', error)
+        showError('Error', 'Error al actualizar la fecha de documentación')
+    }
+}
 const { getClientes, 
         clientes, 
         updateEstadoCliente, 
@@ -134,20 +214,31 @@ const { getClientes,
         handleUpdateStatusClienteDoc,
         exportData: exportGeneralData } = useGeneral()
 const { getEmbarcados, 
-        clientesEmbarcados, 
-        totalRecordsEmbarcados, 
-        loadingEmbarcados, 
-        paginationEmbarcados, 
-        searchEmbarcados, 
-        itemsPerPageEmbarcados, 
-        totalPagesEmbarcados, 
-        currentPageEmbarcados, 
-        filtersEmbarcados, 
-        handlePageEmbarcadosChange, 
-        handleItemsPerPageChangeEmbarcados, 
-        handleFilterChangeEmbarcados, 
-        handleSearchEmbarcados,
-} = useEmbarcados()
+    clientesEmbarcados, 
+    totalRecordsEmbarcados, 
+    loadingEmbarcados, 
+    paginationEmbarcados, 
+    searchEmbarcados, 
+    itemsPerPageEmbarcados, 
+    totalPagesEmbarcados, 
+    currentPageEmbarcados, 
+    filtersEmbarcados, 
+    handlePageEmbarcadosChange, 
+    handleItemsPerPageChangeEmbarcados, 
+    handleFilterChangeEmbarcados, 
+    handleSearchEmbarcados,
+    // helpers and handlers
+    findCliente,
+    getFirstUrl,
+    handleDownloadFacturaComercial,
+    deleteFacturaComercial,
+    handleUploadFacturaComercial,
+    handleDownloadPackingList,
+    deletePackingList,
+    handleUploadPackingList,
+    deleteExcelConfirmacion,
+    handleUploadExcelConfirmacion
+} = useEmbarcados({ refresh: getClientes, clientsRef: clientes })
 const { getClientesVariacion, 
         updateVolumenSelected, 
         clientesVariacion, 
@@ -872,8 +963,8 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         color: 'error',
                         variant: 'ghost',
                         onClick: () => {
-                        // Usar id de cotización para eliminar (handler simulado)
-                        deleteFacturaComercial(row.original.id_cotizacion)
+                        // Usar id del proveedor para eliminar
+                        deleteFacturaComercial(proveedor.id)
                         }
                     })
                     ])
@@ -884,7 +975,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                     variant: 'outline',
                     label: 'Subir',
                     onClick: () => {
-                        handleUploadFacturaComercial(url)
+                        handleUploadFacturaComercial(proveedor.id)
                     }
                     })
                 }
@@ -916,7 +1007,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         color: 'error',
                         variant: 'ghost',
                         onClick: () => {
-                        deletePackingList(row.original.id_cotizacion)
+                        deletePackingList(proveedor.id)
                         }
                     })
                     ])
@@ -927,7 +1018,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                     variant: 'outline',
                     label: 'Subir',
                     onClick: () => {
-                        handleUploadPackingList(row.original.id_cotizacion)
+                        handleUploadPackingList(proveedor.id)
                     }
                     })
                 }
@@ -958,7 +1049,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         color: 'error',
                         variant: 'ghost',
                         onClick: () => {
-                        deleteExcelConfirmacion(row.original.id_cotizacion)
+                        deleteExcelConfirmacion(proveedor.id)
                         }
                     })
                     ])
@@ -970,7 +1061,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                     variant: 'outline',
                     label: 'Subir',
                     onClick: () => {
-                        handleUploadExcelConfirmacion(row.original.id_cotizacion)
+                        handleUploadExcelConfirmacion(proveedor.id)
                     }
                     })
                 }
@@ -1156,192 +1247,6 @@ const updateVolSelected = async (data: any) => {
         error.value = err as string
     }
 }
-// ---------- Handlers faltantes (placeholders seguros) ----------
-/** Helpers para localizar cliente y primeras URLs disponibles */
-const findCliente = (id_cotizacion: number) => {
-    return clientes.value?.find((c: any) => Number(c.id_cotizacion) === Number(id_cotizacion) || Number(c.id) === Number(id_cotizacion))
-}
-
-const getFirstUrl = (cliente: any, keys: string[]) => {
-    if (!cliente) return null
-    // buscar en proveedores primero
-    const provs = cliente.proveedores ?? []
-    for (const p of provs) {
-        for (const k of keys) {
-            if (p && p[k]) return p[k]
-        }
-    }
-    // luego en el objeto cliente
-    for (const k of keys) {
-        if (cliente[k]) return cliente[k]
-    }
-    return null
-}
-
-const handleDownloadFacturaComercial = async (id_cotizacion: number) => {
-    try {
-        const cliente = findCliente(id_cotizacion)
-        const url = getFirstUrl(cliente, ['factura_comercial', 'factura', 'factura_comercial_url'])
-        if (url) { window.open(url, '_blank'); return }
-        showError('Archivo no disponible', 'No se encontró la factura comercial para este cliente.')
-    } catch (err) {
-        console.error('handleDownloadFacturaComercial', err)
-        showError('Error', 'No se pudo descargar la factura comercial')
-    }
-}
-
-const deleteFacturaComercial = async (id_cotizacion: number) => {
-    try {
-        await showConfirmation(
-            'Confirmar eliminación',
-            '¿Está seguro que desea eliminar la factura comercial? Esta acción sólo afectará al registro local (simulación).',
-            async () => {
-                const cliente = findCliente(id_cotizacion)
-                if (!cliente) return
-                // eliminar en proveedores si existe
-                const provs = cliente.proveedores ?? []
-                for (const p of provs) {
-                    if (p.factura_comercial) p.factura_comercial = null
-                }
-                if (cliente.factura_comercial) cliente.factura_comercial = null
-                clientes.value = [...clientes.value]
-                showSuccess('Eliminado', 'Factura comercial eliminada (simulada).')
-            }
-        )
-    } catch (err) {
-        console.error('deleteFacturaComercial', err)
-        showError('Error', 'No se pudo eliminar la factura comercial')
-    }
-}
-
-const handleUploadFacturaComercial = async (id_cotizacion: number) => {
-    try {
-        const input = document.createElement('input')
-        input.type = 'file'
-        input.accept = '.pdf,.jpg,.png'
-        input.onchange = async (e: Event) => {
-            const target = e.target as HTMLInputElement
-            const file = target.files && target.files[0]
-            if (!file) return
-                await withSpinner(async () => {
-                const cliente = findCliente(id_cotizacion)
-                if (!cliente) return
-                // No asignamos URL local: el backend ahora proveerá la URL en entornos locales/producción.
-                // Mantener la UI limpia: informar al usuario que la subida fue recibida (simulada)
-                // y que la URL estará disponible desde el backend.
-                clientes.value = [...clientes.value]
-                showSuccess('Subida simulada', 'Factura subida (simulada). La URL será provista por el backend cuando corresponda.')
-            }, 'Subiendo factura...')
-        }
-        input.click()
-    } catch (err) {
-        console.error('handleUploadFacturaComercial', err)
-        showError('Error', 'No se pudo subir la factura comercial')
-    }
-}
-
-const handleDownloadPackingList = async (id_cotizacion: number) => {
-    try {
-        const cliente = findCliente(id_cotizacion)
-        const url = getFirstUrl(cliente, ['packing_list', 'packinglist', 'packing_list_url'])
-        if (url) { window.open(url, '_blank'); return }
-        showError('Archivo no disponible', 'No se encontró el packing list para este cliente.')
-    } catch (err) {
-        console.error('handleDownloadPackingList', err)
-        showError('Error', 'No se pudo descargar el packing list')
-    }
-}
-
-const deletePackingList = async (id_cotizacion: number) => {
-    try {
-        await showConfirmation(
-            'Confirmar eliminación',
-            '¿Está seguro que desea eliminar el packing list? Esta acción sólo afectará al registro local (simulación).',
-            async () => {
-                const cliente = findCliente(id_cotizacion)
-                if (!cliente) return
-                const provs = cliente.proveedores ?? []
-                for (const p of provs) if (p.packing_list) p.packing_list = null
-                if (cliente.packing_list) cliente.packing_list = null
-                clientes.value = [...clientes.value]
-                showSuccess('Eliminado', 'Packing list eliminado (simulado).')
-            }
-        )
-    } catch (err) {
-        console.error('deletePackingList', err)
-        showError('Error', 'No se pudo eliminar el packing list')
-    }
-}
-
-const handleUploadPackingList = async (id_cotizacion: number) => {
-    try {
-        const input = document.createElement('input')
-        input.type = 'file'
-        input.accept = '.pdf,.xlsx'
-        input.onchange = async (e: Event) => {
-            const target = e.target as HTMLInputElement
-            const file = target.files && target.files[0]
-            if (!file) return
-                await withSpinner(async () => {
-                const cliente = findCliente(id_cotizacion)
-                if (!cliente) return
-                // No asignamos URL local: el backend ahora proveerá la URL en entornos locales/producción.
-                clientes.value = [...clientes.value]
-                showSuccess('Subida simulada', 'Packing list subido (simulado). La URL será provista por el backend cuando corresponda.')
-            }, 'Subiendo packing list...')
-        }
-        input.click()
-    } catch (err) {
-        console.error('handleUploadPackingList', err)
-        showError('Error', 'No se pudo subir el packing list')
-    }
-}
-
-const deleteExcelConfirmacion = async (id_cotizacion: number) => {
-    try {
-        await showConfirmation(
-            'Confirmar eliminación',
-            '¿Está seguro que desea eliminar el Excel de confirmación? Esta acción sólo afectará al registro local (simulación).',
-            async () => {
-                const cliente = findCliente(id_cotizacion)
-                if (!cliente) return
-                if (cliente.excel_confirmacion) cliente.excel_confirmacion = null
-                const provs = cliente.proveedores ?? []
-                for (const p of provs) if (p.excel_confirmacion) p.excel_confirmacion = null
-                clientes.value = [...clientes.value]
-                showSuccess('Eliminado', 'Excel de confirmación eliminado (simulado).')
-            }
-        )
-    } catch (err) {
-        console.error('deleteExcelConfirmacion', err)
-        showError('Error', 'No se pudo eliminar el Excel de confirmación')
-    }
-}
-
-const handleUploadExcelConfirmacion = async (id_cotizacion: number) => {
-    try {
-        const input = document.createElement('input')
-        input.type = 'file'
-        input.accept = '.xlsx,.xls'
-        input.onchange = async (e: Event) => {
-            const target = e.target as HTMLInputElement
-            const file = target.files && target.files[0]
-            if (!file) return
-                await withSpinner(async () => {
-                const cliente = findCliente(id_cotizacion)
-                if (!cliente) return
-                // No asignamos URL local: el backend proporcionará la URL para el excel de confirmación.
-                clientes.value = [...clientes.value]
-                showSuccess('Subida simulada', 'Excel subido (simulado). La URL será provista por el backend cuando corresponda.')
-            }, 'Subiendo excel...')
-        }
-        input.click()
-    } catch (err) {
-        console.error('handleUploadExcelConfirmacion', err)
-        showError('Error', 'No se pudo subir el Excel de confirmación')
-    }
-}
-// ---------- Fin handlers ----------
 onMounted(() => {
     if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
