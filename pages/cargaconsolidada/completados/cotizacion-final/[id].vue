@@ -220,11 +220,13 @@ const generalColumns = ref<TableColumn<any>[]>([
     header: 'Estados',
     cell: ({ row }: { row: any }) => {
       const initialValue = row.original.estado_cotizacion_final
+      console.log(initialValue)
       return h(USelect as any, {
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
         class: [STATUS_BG_CLASSES[initialValue as keyof typeof STATUS_BG_CLASSES]],
         modelValue: initialValue,
         'onUpdate:modelValue': async (value: any) => {
+          console.log(value, initialValue)
           if (value && value !== initialValue) {
             await handleUpdateEstadoCotizacionFinal(row.original.id_cotizacion, value)
           }
@@ -540,11 +542,7 @@ const ensurePagosAndRunChecks = async () => {
 }
 
 // Watch the general table and trigger pagos/checks so states like PAGADO_V are evaluated
-watch(general, async (newVal) => {
-  if (!newVal || !Array.isArray(newVal)) return
-  // run in background
-  ensurePagosAndRunChecks()
-}, { immediate: true })
+
 watch(activeTab, async (newVal, oldVal) => {
 
   if (oldVal === '' || !newVal) {
@@ -564,16 +562,6 @@ watch(activeTab, async (newVal, oldVal) => {
 })
 
 // Whenever pagos list updates, verify if any client should be moved to PAGADO_V
-watch(pagos, async (newVal) => {
-  if (!newVal || !Array.isArray(newVal)) return
-  for (const client of newVal) {
-    const idCot = client?.id_cotizacion ?? client?.idPedido ?? client?.id
-    if (idCot) {
-      // fire-and-forget per client to avoid blocking UI; check handles errors
-      checkAndSetPagadoForClient(Number(idCot))
-    }
-  }
-}, { immediate: true })
 
 onMounted(async () => {
   const tabQuery = route.query.tab
