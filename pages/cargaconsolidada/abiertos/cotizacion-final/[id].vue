@@ -242,6 +242,37 @@ const generalColumns = ref<TableColumn<any>[]>([
         return h('div', {
           class: 'flex flex-row gap-2'
         }, [
+              // Send reminder button
+              h(UButton, {
+                icon: 'material-symbols:send-outline',
+                color: 'primary',
+                variant: 'ghost',
+                onClick: () => {
+                  showConfirmation(
+                    'Confirmar envío',
+                    '¿Está seguro de enviar un recordatorio de pago a este cliente?',
+                    async () => {
+                      try {
+                        await withSpinner(async () => {
+                          const nuxtApp = useNuxtApp()
+                          const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
+                          const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
+                          if (res && (res as any).success) {
+                            showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
+                            await getGeneral(Number(id))
+                            await getHeaders(Number(id))
+                          } else {
+                            showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
+                          }
+                        }, 'Enviando recordatorio...')
+                      } catch (err) {
+                        console.error('Error send reminder:', err)
+                        showError('Error', 'Error al enviar recordatorio')
+                      }
+                    }
+                  )
+                }
+              }),
           h(UButton, {
             icon: 'vscode-icons:file-type-excel',
             color: 'primary',

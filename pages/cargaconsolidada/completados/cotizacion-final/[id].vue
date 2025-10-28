@@ -242,6 +242,37 @@ const generalColumns = ref<TableColumn<any>[]>([
         return h('div', {
           class: 'flex flex-row gap-2'
         }, [
+              // Send reminder button
+              h(UButton, {
+                icon: 'material-symbols:send-outline',
+                color: 'primary',
+                variant: 'ghost',
+                onClick: () => {
+                  showConfirmation(
+                    'Confirmar envío',
+                    '¿Está seguro de enviar un recordatorio de pago a este cliente?',
+                    async () => {
+                      try {
+                        await withSpinner(async () => {
+                          const nuxtApp = useNuxtApp()
+                          const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
+                          const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
+                          if (res && (res as any).success) {
+                            showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
+                            await getGeneral(Number(id))
+                            await getHeaders(Number(id))
+                          } else {
+                            showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
+                          }
+                        }, 'Enviando recordatorio...')
+                      } catch (err) {
+                        console.error('Error send reminder:', err)
+                        showError('Error', 'Error al enviar recordatorio')
+                      }
+                    }
+                  )
+                }
+              }),
           h(UButton, {
             icon: 'vscode-icons:file-type-excel',
             color: 'primary',
@@ -352,8 +383,9 @@ const pagosColumns = ref<TableColumn<any>[]>([
               const response = await registrarPagoFinal(formData)
               if (response.success) {
                 showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
-                getPagos(Number(id))
-                getHeaders(Number(id))
+                  await getPagos(Number(id))
+                  await getHeaders(Number(id))
+                  await checkAndSetPagadoForClient(row.original.id_cotizacion)
               } else {
                 showError('Error al registrar pago', response.error, { persistent: true })
               }
@@ -369,9 +401,10 @@ const pagosColumns = ref<TableColumn<any>[]>([
                   await withSpinner(async () => {
                     const response = await deletePago(pagoId)
                     if (response.success) {
-                      await getPagos(Number(id))
-                      showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
-                      getHeaders(Number(id))
+                          await getPagos(Number(id))
+                          showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                          await getHeaders(Number(id))
+                          await checkAndSetPagadoForClient(row.original.id_cotizacion)
                     }
                   }, 'Eliminando pago...')
                 } catch (error) {
@@ -412,7 +445,27 @@ const deleteCotizacionFinal = async (idCotizacion: number) => {
 const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: string) => {
   withSpinner(async () => {
     const result = await updateEstadoCotizacionFinal(idCotizacion, estado)
-    if (result.success) {
+    if (result && (result as any).success) {
+      // If the state moved to COBRANDO, send the payment reminder automatically
+      if (estado === 'COBRANDO') {
+        try {
+          await withSpinner(async () => {
+            const nuxtApp = useNuxtApp()
+            // reuse the same endpoint format used for manual send
+            const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${idCotizacion}/send-reminder-pago`
+            const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
+            if (res && (res as any).success) {
+              showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
+            } else {
+              showError('Error al enviar recordatorio', (res as any).message || 'No se pudo enviar el recordatorio')
+            }
+          }, 'Enviando recordatorio...')
+        } catch (err) {
+          console.error('Error sending reminder after estado COBRANDO:', err)
+          showError('Error', 'Ocurrió un error al enviar el recordatorio de pago')
+        }
+      }
+
       await getGeneral(Number(id))
       showSuccess('Éxito', 'Estado actualizado correctamente')
     } else {
@@ -424,12 +477,74 @@ const goBack = () => {
   navigateTo(`/cargaconsolidada/completados/pasos/${id}`)
 }
 
+// Check if all payments for a given cotizacion are confirmed; if so, set estado to PAGADO_V
+const checkAndSetPagadoForClient = async (idCotizacion: number) => {
+  try {
+    const client = pagos.value.find((p: any) => Number(p.id_cotizacion) === Number(idCotizacion))
+    if (!client) return
+
+    let payments: any[] = []
+    try {
+      payments = Array.isArray(client.pagos) ? client.pagos : JSON.parse(client.pagos || '[]')
+    } catch (e) {
+      payments = []
+    }
+
+    if (payments.length === 0) return
+
+    const allConfirmed = payments.every((py: any) => {
+      const s = ((py.status ?? py.estado ?? py.estado_pago ?? py.payment_status) || '').toString().toUpperCase()
+      return s === 'CONFIRMADO' || s === 'CONFIRMED' || s === 'CONFIRMADOS'
+    })
+
+    if (allConfirmed && client.estado_cotizacion_final !== 'PAGADO_V') {
+      const res = await updateEstadoCotizacionFinal(idCotizacion, 'PAGADO_V')
+      if (res && (res as any).success) {
+        showSuccess('Estado actualizado', 'Estado cambiado a PAGADO_V por confirmación de todos los pagos')
+        await getGeneral(Number(id))
+        await getHeaders(Number(id))
+      }
+    }
+  } catch (err) {
+    console.error('checkAndSetPagadoForClient error', err)
+  }
+}
+
 // Handle save pago
 const handleSavePago = (pagoData: any) => {
   
   // Aquí puedes implementar la lógica para guardar el pago
   // Por ejemplo, llamar a un servicio o actualizar el estado
 }
+
+// Ensure pagos are loaded and run the PAGADO_V checks for all clients in the general table
+const ensurePagosAndRunChecks = async () => {
+  try {
+    // Load pagos if not present so checks can inspect payment details
+    if (!pagos.value || !Array.isArray(pagos.value) || pagos.value.length === 0) {
+      await getPagos(Number(id))
+    }
+
+    if (!general.value || !Array.isArray(general.value)) return
+
+    for (const client of general.value) {
+      const idCot = client?.id_cotizacion ?? client?.idPedido ?? client?.id
+      if (idCot) {
+        // fire-and-forget per client to avoid blocking UI (check handles its own errors)
+        checkAndSetPagadoForClient(Number(idCot))
+      }
+    }
+  } catch (err) {
+    console.error('ensurePagosAndRunChecks error', err)
+  }
+}
+
+// Watch the general table and trigger pagos/checks so states like PAGADO_V are evaluated
+watch(general, async (newVal) => {
+  if (!newVal || !Array.isArray(newVal)) return
+  // run in background
+  ensurePagosAndRunChecks()
+}, { immediate: true })
 watch(activeTab, async (newVal, oldVal) => {
 
   if (oldVal === '' || !newVal) {
@@ -447,6 +562,18 @@ watch(activeTab, async (newVal, oldVal) => {
   await getHeaders(Number(id))
 
 })
+
+// Whenever pagos list updates, verify if any client should be moved to PAGADO_V
+watch(pagos, async (newVal) => {
+  if (!newVal || !Array.isArray(newVal)) return
+  for (const client of newVal) {
+    const idCot = client?.id_cotizacion ?? client?.idPedido ?? client?.id
+    if (idCot) {
+      // fire-and-forget per client to avoid blocking UI; check handles errors
+      checkAndSetPagadoForClient(Number(idCot))
+    }
+  }
+}, { immediate: true })
 
 onMounted(async () => {
   const tabQuery = route.query.tab
