@@ -219,13 +219,13 @@ const generalColumns = ref<TableColumn<any>[]>([
     accessorKey: 'estado_cotizacion_final',
     header: 'Estados',
     cell: ({ row }: { row: any }) => {
-      //RETURN USELECT WITH OPTION SELECTED FROM FILTERCONFIGGENERAL WITH KEY 'estado_cotizacion_final'
+      //RETURN USELECT WITH OPTION SELECTED FROM FILTERCONFIGGEMRERAL WITH KEY 'estado_cotizacion_final'
       return h(USelect as any, {
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
         class: [STATUS_BG_CLASSES[row.original.estado_cotizacion_final as keyof typeof STATUS_BG_CLASSES]],
         modelValue: row.original.estado_cotizacion_final,
         'onUpdate:modelValue': async (value: any) => {
-          if (value && value !== row.original.estado_cliente) {
+          if (value && value !== row.original.estado_cotizacion_final) {
             await handleUpdateEstadoCotizacionFinal(row.original.id_cotizacion, value)
           }
         }
