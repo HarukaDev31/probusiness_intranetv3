@@ -32,7 +32,9 @@ export const useGeneral = () => {
                 { label: 'Todos', value: 'todos' },
                 { label: 'PENDIENTE', value: 'PENDIENTE' },
                 { label: 'COTIZADO', value: 'COTIZADO' },
+                { label: 'COBRANDO', value: 'COBRANDO' },
                 { label: 'PAGADO', value: 'PAGADO' },
+                { label: 'PAGADO', value: 'PAGADO_V' },
                 { label: 'AJUSTADO', value: 'AJUSTADO' },
                 { label: 'SOBREPAGO', value: 'SOBREPAGO' },
             ]
