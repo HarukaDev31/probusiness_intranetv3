@@ -172,8 +172,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
 const { withSpinner } = useSpinner()
 const { getProveedoresItems, solicitarDocumentos, getProveedoresPendingDocuments, enviarRecordatorios } = useGeneral()
+const { showSuccess, showError } = useModal()
 interface Props {
   show: boolean
   clienteId?: number
@@ -345,7 +347,13 @@ const handleSave = async () => {
     })
     // Llamar al composable para realizar la petición
     await withSpinner(async () => {
-      await solicitarDocumentos(props.clienteId as number, { proveedores: proveedoresPayload })
+     const res = await solicitarDocumentos(props.clienteId as number, { proveedores: proveedoresPayload })
+     if(res?.success){
+      showSuccess('Solicitud enviada correctamente', 'success')
+      currentStep.value = 1
+    }else{
+      showError('Error al enviar solicitud', 'error')
+     }
     }, 'Enviando solicitud...')
     // Emitir resultado simple por si el padre requiere reaccionar
     result = { action: 'pedir_documentos', success: true }
@@ -359,7 +367,13 @@ const handleSave = async () => {
     })
     await withSpinner(async () => {
       const payload = { id_cotizacion: props.clienteId as number, proveedores: proveedoresPayload }
-      await enviarRecordatorios(payload as any)
+      const res = await enviarRecordatorios(payload as any)
+      if(res?.success){
+        showSuccess('Recordatorio enviado correctamente', 'success')
+        currentStep.value = 1
+      }else{
+        showError('Error al enviar recordatorio', 'error')
+      }
     }, 'Enviando recordatorios...')
     result = { action: 'recordatorio', success: true }
   }
