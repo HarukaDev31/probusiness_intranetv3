@@ -132,6 +132,7 @@
     </template>
 <script setup lang="ts">
 import { ref, h, computed } from 'vue'
+import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones.vue'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
@@ -153,7 +154,8 @@ const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
-
+const overlay = useOverlay()
+const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
 // default is placeholder '00/00/0000' until backend provides a real value
 const fMaxDocumentacion = ref<string | null>(null)
@@ -1079,7 +1081,14 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                 size: 'xs',
                 onClick: () => {
                     //generar un modal para solicitar el tipo de recordatorio de documento
-
+                    console.log(row.original)
+                    modalAcciones.open({
+                        show: true,
+                        clienteId: row.original.id,
+                        onSelected: (data: any) => {
+                            console.log(data)
+                        }
+                    })
                 }
             },
             )

@@ -1,8 +1,8 @@
 import { ref, computed } from 'vue'
-import { GeneralService } from '~/services/cargaconsolidada/clientes/generalService'
+import { GeneralService, type SolicitarDocumentosRequest, type SolicitarDocumentosResponse, type GetProveedoresItemsResponse, type ProveedorItem, type GetProveedoresPendingDocumentsResponse, type EnviarRecordatoriosRequest, type EnviarRecordatoriosResponse } from '~/services/cargaconsolidada/clientes/generalService'
 import type { Header, PaginationInfo } from '~/types/data-table'
 import { useRoute } from '#app'
-import { useSpinner } from '../composables/commons/useSpinner'
+import { useSpinner } from '~/composables/commons/useSpinner'
 
 const { withSpinner } = useSpinner()
 
@@ -119,6 +119,72 @@ export const useGeneral = () => {
                 loadingGeneral.value = false
             }
         }
+    
+    /**
+     * Método para obtener proveedores y sus items para categorización
+     * @param idCotizacion - ID de la cotización
+     * @returns Response con lista de proveedores e items
+     */
+    const getProveedoresItems = async (idCotizacion: number): Promise<GetProveedoresItemsResponse> => {
+        try {
+            loadingGeneral.value = true
+            const response = await GeneralService.getProveedoresItems(idCotizacion)
+            return response
+        } catch (err: any) {
+            error.value = err.message || 'Error al obtener proveedores e items'
+            return { success: false, data: [], message: error.value }
+        } finally {
+            loadingGeneral.value = false
+        }
+    }
+
+    /**
+     * Método para solicitar documentos/categorización con selección de tipo de producto
+     * @param idCotizacion - ID de la cotización
+     * @param data - Datos con lista de proveedores y sus items con tipo_producto_seleccionado
+     * @returns Response del servicio
+     */
+    const solicitarDocumentos = async (idCotizacion: number, data: SolicitarDocumentosRequest): Promise<SolicitarDocumentosResponse> => {
+        try {
+            loadingGeneral.value = true
+            const response = await GeneralService.solicitarDocumentos(idCotizacion, data)
+            return response
+        } catch (err: any) {
+            error.value = err.message || 'Error al solicitar documentos'
+            return { success: false, message: error.value }
+        } finally {
+            loadingGeneral.value = false
+        }
+    }
+    const getProveedoresPendingDocuments = async (idCotizacion: number): Promise<GetProveedoresPendingDocumentsResponse> => {
+        try {
+            loadingGeneral.value = true
+            const response = await GeneralService.getProveedoresPendingDocuments(idCotizacion)
+            return response
+        } catch (err: any) {
+            error.value = err.message || 'Error al obtener proveedores pendientes de documentos'
+            return { success: false, data: [], message: error.value }
+        } finally {
+            loadingGeneral.value = false
+        }
+    }
+
+    /**
+     * Enviar recordatorios de documentos por proveedor
+     */
+    const enviarRecordatorios = async (data: EnviarRecordatoriosRequest): Promise<EnviarRecordatoriosResponse> => {
+        try {
+            loadingGeneral.value = true
+            const response = await GeneralService.enviarRecordatorios(data)
+            return response
+        } catch (err: any) {
+            error.value = err.message || 'Error al enviar recordatorios'
+            return { success: false, message: error.value }
+        } finally {
+            loadingGeneral.value = false
+        }
+    }
+
     return {
         clientes,
         loadingGeneral,
@@ -141,6 +207,10 @@ export const useGeneral = () => {
         carga,
         loadingHeaders,
         handleUpdateStatusClienteDoc,
-        exportData
+        exportData,
+        getProveedoresItems,
+        solicitarDocumentos,
+        getProveedoresPendingDocuments,
+        enviarRecordatorios
     }
 }   
