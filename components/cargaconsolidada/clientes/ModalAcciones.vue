@@ -419,6 +419,7 @@ watch(selectedAction, async (newVal) => {
         } else {
           productosPorItem.value = []
         }
+        currentStep.value = 2
       }
     }, 'Cargando proveedores...')
   }else if (newVal === 'recordatorio') {
@@ -433,6 +434,7 @@ watch(selectedAction, async (newVal) => {
         for (const p of res.data) map[p.id] = []
         selectedDocsByProveedor.value = map
         selectedDocsGeneral.value = []
+        currentStep.value = 2
       }
     }, 'Cargando proveedores pendientes de documentos...')
   }
