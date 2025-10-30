@@ -129,6 +129,23 @@ export class  EntregaService extends BaseService {
     }
   }
 
+  static async downloadPlantillas(idContenedor: number): Promise<Blob> {
+    try {
+      const url = `${this.baseUrl}/${idContenedor}/rotulado-pared`
+      const response = await this.apiCall<Blob>(url, {
+        method: 'GET',
+        responseType: 'blob',
+        headers: {
+          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al descargar plantillas (rotulado-pared):', error)
+      throw new Error('No se pudo descargar las plantillas')
+    }
+  }
+
   static async programarEntrega(data: FormData): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
       const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/programar`, {

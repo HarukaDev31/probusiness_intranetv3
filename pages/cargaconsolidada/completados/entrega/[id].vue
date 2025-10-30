@@ -27,6 +27,19 @@
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
         </div>
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-2">
+              <UButton
+              size="md"
+              color="neutral"
+              variant="outline"
+              icon="ic:baseline-download"
+              :disabled="!carga"
+              label="Descargar Plantillas"
+              @click="async (e) => { await downloadPlantillas(); }"
+            />
+          </div>
+        </div>
       </template>
     </DataTable>
     <DataTable v-if="activeTab === 'entregas'" title="" :data="entregas" :columns="entregasColumns" :loading="loading"
@@ -125,6 +138,7 @@ const {
   carga,
   loadingHeaders,
   getHeaders,
+  downloadPlantillas,
   // delivery
   delivery,
   getDelivery,
@@ -193,6 +207,9 @@ const copyToClipboard = async (url: string, type: string) => {
     }
   }
 }
+
+// downloadPlantillas proviene del composable `useEntrega` y realiza la descarga como blob
+
 const clientesColumns = ref<TableColumn<any>[]>([
   {
     accessorKey: 'nro',

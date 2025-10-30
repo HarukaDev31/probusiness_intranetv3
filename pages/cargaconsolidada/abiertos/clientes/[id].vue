@@ -147,6 +147,7 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import type { TableColumn } from '@nuxt/ui'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
+import { FILE_ICONS_MAP } from '~/constants/file'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
@@ -181,8 +182,13 @@ const handleSaveFMaxDocumentacion = async () => {
                     fMaxDocumentacion.value = data.fecha_documentacion_max
                 }
                 showSuccess('Fecha actualizada', (res as any).message || 'Fecha actualizada correctamente')
-                // refresh headers / data
-                await getHeaders(Number(id))
+                // refresh headers / data and update local fecha if available
+                try {
+                    await getHeaders(Number(id))
+                    if (fecha_documentacion_max && fecha_documentacion_max.value) fMaxDocumentacion.value = fecha_documentacion_max.value
+                } catch (e) {
+                    // ignore
+                }
             } else {
                 showError('Error', (res as any).message || 'No se pudo actualizar la fecha')
             }
@@ -211,6 +217,7 @@ const { getClientes,
         getHeaders, 
         headers, 
         carga, 
+        fecha_documentacion_max,
         loadingHeaders, 
         handleUpdateStatusClienteDoc,
         exportData: exportGeneralData } = useGeneral()
@@ -814,6 +821,24 @@ const getColorStatusDocumentacion = (status: string) => {
     }
     return 'neutral'
 }
+// Helper: elegir icono según la extensión en la URL/filename
+const getFileIcon = (url?: string) => {
+    try {
+        if (!url) return 'i-heroicons-document'
+        // eliminar query string
+        const clean = url.split('?')[0]
+        const parts = clean.split('/')
+        const last = parts[parts.length - 1] || clean
+        const segs = last.split('.')
+        if (segs.length < 2) return 'i-heroicons-document'
+        const ext = segs[segs.length - 1].toLowerCase()
+        // FILE_ICONS_MAP es readonly, index con fallback
+        // @ts-ignore
+        return FILE_ICONS_MAP[ext] ?? 'i-heroicons-document'
+    } catch (e) {
+        return 'i-heroicons-document'
+    }
+}
 const columnsEmbarcados = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
@@ -937,11 +962,12 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
             return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any, idx: number) => {
                 const url = proveedor.factura_comercial
                 if (url) {
+                    const icon = getFileIcon(url)
                     return h('div', {
                     class: 'flex flex-row gap-2'
                     }, [
                     h(UButton, {
-                        icon: 'vscode-icons:file-type-pdf2',
+                        icon,
                         color: 'primary',
                         variant: 'ghost',
                         onClick: () => {
@@ -981,11 +1007,12 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
             return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any, idx: number) => {
                 const url = proveedor.packing_list
                 if (url) {
+                    const icon = getFileIcon(url)
                     return h('div', {
                     class: 'flex flex-row gap-2'
                     }, [
                     h(UButton, {
-                        icon: 'vscode-icons:file-type-pdf2',
+                        icon,
                         color: 'primary',
                         variant: 'ghost',
                         onClick: () => {
@@ -1024,11 +1051,12 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
             return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any, idx: number) => {
                 const url = proveedor.excel_confirmacion
                     if (url) {
+                        const icon = getFileIcon(url)
                     return h('div', {
                         class: 'flex flex-row gap-2'
                     }, [
                     h(UButton, {
-                        icon: 'vscode-icons:file-type-excel',
+                        icon,
                         color: 'primary',
                         variant: 'ghost',
                         onClick: () => {
@@ -1300,6 +1328,9 @@ watch(() => tab.value, async (newVal) => {
             }
             await getHeaders(Number(id))
             //implements getHeaders
+            if (fecha_documentacion_max && fecha_documentacion_max.value) {
+                fMaxDocumentacion.value = fecha_documentacion_max.value
+            }
         } catch (error) {
             console.error('Error en carga inicial:', error)
         }
