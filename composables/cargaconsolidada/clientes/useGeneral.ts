@@ -23,6 +23,7 @@ export const useGeneral = () => {
         to: 0
     })
     const loadingHeaders = ref(false)
+    const fecha_documentacion_max = ref<string | null>(null)
     const searchGeneral = ref('')
     const itemsPerPageGeneral = ref(100)
     const totalPagesGeneral = computed(() => Math.ceil(paginationGeneral.value.total / itemsPerPageGeneral.value))
@@ -77,6 +78,9 @@ export const useGeneral = () => {
             // Ensure headers is always an array: backend may return an object or an array
             headers.value = Array.isArray(response.data) ? response.data : Object.values(response.data)
             carga.value = response.carga
+            // Fecha máxima de documentación (puede venir en la raíz o en data)
+            const respAny: any = response
+            fecha_documentacion_max.value = respAny.fecha_documentacion_max ?? respAny.data?.fecha_documentacion_max ?? null
         } catch (err) {
             error.value = err as string
         } finally {
@@ -205,6 +209,7 @@ export const useGeneral = () => {
         getHeaders,
         headers,
         carga,
+        fecha_documentacion_max,
         loadingHeaders,
         handleUpdateStatusClienteDoc,
         exportData,
