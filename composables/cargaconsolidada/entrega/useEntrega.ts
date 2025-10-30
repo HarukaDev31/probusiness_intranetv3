@@ -339,6 +339,73 @@ export const useEntrega = () => {
     }
   }
 
+  /**
+   * Descargar plantillas (rotulado pared) como blob y forzar descarga en el cliente
+   */
+  const downloadPlantillas = async (idContenedor?: number) => {
+    try {
+      const cid = idContenedor ?? contenedorId.value
+      if (!cid) {
+        throw new Error('ID de contenedor no disponible')
+      }
+      loading.value = true
+      const maybeResult: any = await EntregaService.downloadPlantillas(cid)
+      // El service puede devolver directamente un Blob (retrocompat) o un objeto { blob, filename, contentType }
+      let blob: Blob
+      let filename: string | undefined = undefined
+      let contentType: string | undefined = undefined
+      if (maybeResult && typeof (maybeResult as any).blob !== 'undefined') {
+        blob = (maybeResult as any).blob
+        filename = (maybeResult as any).filename
+        contentType = (maybeResult as any).contentType
+      } else {
+        blob = maybeResult as Blob
+      }
+
+      // Construir nombre de archivo. Si el servidor entregó filename lo usamos; si no, generamos uno.
+      let finalFilename = filename
+      if (!finalFilename) {
+        const suffix = carga.value ?? cid
+        const now = new Date()
+        const pad = (n: number) => String(n).padStart(2, '0')
+        const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`
+        // Elegir extensión según contentType si viene; si no, detectar por signature (ZIP -> PK..)
+        const ct = contentType || ''
+        let ext = 'bin'
+        if (ct.includes('zip')) ext = 'zip'
+        else if (ct.includes('spreadsheet') || ct.includes('excel')) ext = 'xlsx'
+        else {
+          try {
+            // Intentar leer los primeros bytes del blob para detectar ZIP (PK.. = 0x50 0x4B)
+            const headerBuf = await blob.slice(0, 4).arrayBuffer()
+            const headerView = new Uint8Array(headerBuf)
+            if (headerView.length >= 2 && headerView[0] === 0x50 && headerView[1] === 0x4B) {
+              ext = 'zip'
+            }
+          } catch (e) {
+            // ignore and fallback to bin
+          }
+        }
+        finalFilename = `PLANTILLAS_${suffix}_${ts}.${ext}`
+      }
+
+      const url = window.URL.createObjectURL(new Blob([blob]))
+      const link = document.createElement('a')
+      link.href = url
+  link.setAttribute('download', finalFilename || `ROTULADO_PARED_${cid}.zip`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      return { success: true }
+    } catch (err: any) {
+      console.error('Error en downloadPlantillas (composable):', err)
+      return { success: false, error: err?.message || String(err) }
+    } finally {
+      loading.value = false
+    }
+  }
+
   const handleSearch = (value: string) => {
     search.value = value
     pagination.value.current_page = 1
@@ -611,7 +678,8 @@ export const useEntrega = () => {
     headers,
     carga,
     loadingHeaders,
-    getHeaders,
+  getHeaders,
+  downloadPlantillas,
     // delivery
     getDelivery,
     updateImporteDelivery,

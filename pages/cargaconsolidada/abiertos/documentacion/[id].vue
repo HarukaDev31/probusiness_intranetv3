@@ -77,6 +77,7 @@
                     <FileUploader 
                     :disabled="currentRole!=ROLES.DOCUMENTACION"
                     :accepted-types="acceptedFileTypes" :custom-message="uploadMessage" :immediate="false"
+                    :show-remove-button="folder.id!=1"
                         :showSaveButton="true" :initial-files="folder.file_url ? [{
                             id: typeof folder.id === 'number' ? folder.id : 0, // debe ser número
                             file_name: folder.folder_name,
