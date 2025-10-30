@@ -34,7 +34,6 @@ export const useGeneral = () => {
                 { label: 'COTIZADO', value: 'COTIZADO' },
                 { label: 'COBRANDO', value: 'COBRANDO' },
                 { label: 'PAGADO', value: 'PAGADO' },
-                { label: 'PAGADO', value: 'PAGADO_V' },
                 { label: 'AJUSTADO', value: 'AJUSTADO' },
                 { label: 'SOBREPAGO', value: 'SOBREPAGO' },
             ]
