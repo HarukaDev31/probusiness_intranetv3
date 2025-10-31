@@ -1115,7 +1115,8 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                     console.log(row.original)
                     modalAcciones.open({
                         show: true,
-                        clienteId: row.original.id,
+                        clienteId: row.original.id, 
+                        clienteName: row.original.nombre,
                         onSelected: (data: any) => {
                             console.log(data)
                         }
