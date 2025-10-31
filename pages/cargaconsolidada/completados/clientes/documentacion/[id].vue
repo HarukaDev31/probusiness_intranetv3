@@ -320,7 +320,7 @@
                         <div v-for="file in files.filter(f => f.id_proveedor === proveedorActivo.id)" :key="file.id">
                             <span>{{ file.folder_name||file.file_name }}</span>
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false"
-                                :show-remove-button="false" :initial-files="[{
+                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="[{
                                     id: file.id,
                                     file_name: file.folder_name||file.file_name,
                                     file_url: file.file_url,
@@ -328,7 +328,7 @@
                                     size: 0,
                                     lastModified: 0,
                                     file_ext: file.file_ext
-                                }]" />
+                                }]" @file-removed="handleRemoveFile(proveedorActivo.id, file.id)" />
                         </div>
                     </div>
                 </UCard>
@@ -647,7 +647,26 @@ const handleRemoveExcelConfirmacion = (idProveedor: number) => {
         }
     )
 }
-
+const handleRemoveFile = (idProveedor: number, idFile: number) => {
+    showConfirmation(
+        'Confirmar eliminación',
+        '¿Está seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const result = await deleteArchivo(idProveedor, idFile)
+                    if (result.success) {
+                        showSuccess('Eliminación Exitosa', 'El archivo se ha eliminado correctamente.')
+                        await getClienteDocumentacion(clienteId)
+                    }
+                }, 'Eliminando archivo...')
+            } catch (error) {
+                console.error('Error al eliminar archivo:', error)
+                showError('Error de Eliminación', 'Error al eliminar el archivo')
+            }
+        }
+    )
+}
 // Función para guardar todos los cambios
 const handleSaveChanges = async () => {
     if (!proveedorActivo.value || !hasUnsavedChanges.value) return
