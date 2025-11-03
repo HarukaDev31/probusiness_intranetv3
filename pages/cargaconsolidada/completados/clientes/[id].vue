@@ -16,7 +16,7 @@
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
-                        <div class="flex flex-col gap-2">
+                        <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
@@ -47,7 +47,7 @@
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados" @filter-change="handleFilterChangeEmbarcados">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
-                        <div class="flex flex-col gap-2">
+                        <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
@@ -79,7 +79,7 @@
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
-                        <div class="flex flex-col gap-2">
+                        <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
@@ -110,7 +110,7 @@
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
-                        <div class="flex flex-col gap-2">
+                        <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
