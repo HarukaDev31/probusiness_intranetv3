@@ -10,8 +10,11 @@
           size="xs"
           @click="goBack"
         />
+        <div class="flex items-center gap-2 flex-col">
+        <div class="text-sm text-gray-500">Selecciona la acción de tu preferencia para:</div>
         <div class="text-lg font-semibold">
-          Selecciona la acción de tu preferencia:
+          {{ props.clienteName }}
+        </div>
         </div>
       </div>
     </template>
@@ -179,6 +182,7 @@ const { showSuccess, showError } = useModal()
 interface Props {
   show: boolean
   clienteId?: number
+  clienteName?: string
   onSelected?: (data: any) => void
 }
 

@@ -16,7 +16,7 @@
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
-                        <div class="flex flex-col gap-2">
+                        <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
@@ -47,7 +47,7 @@
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados" @filter-change="handleFilterChangeEmbarcados">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
-                        <div class="flex flex-col gap-2">
+                        <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
@@ -79,7 +79,7 @@
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
-                        <div class="flex flex-col gap-2">
+                        <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
@@ -106,11 +106,11 @@
                 :show-pagination="false" @export="exportData"
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
-                @update:primary-search="handleSearchPagos" @page-change="handlePagePagosChange"
-                @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos">
+                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
+                @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
-                        <div class="flex flex-col gap-2">
+                        <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
@@ -132,6 +132,7 @@
     </template>
 <script setup lang="ts">
 import { ref, h, computed } from 'vue'
+import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones.vue'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
@@ -140,7 +141,6 @@ import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariaci
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useModal } from '~/composables/commons/useModal'
-import { EmbarcadosService } from '~/services/cargaconsolidada/clientes/embarcadosService'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
@@ -155,7 +155,8 @@ const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
 const tab = ref('general')
-
+const overlay = useOverlay()
+const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
 // default is placeholder '00/00/0000' until backend provides a real value
 const fMaxDocumentacion = ref<string | null>(null)
@@ -182,12 +183,14 @@ const handleSaveFMaxDocumentacion = async () => {
                     fMaxDocumentacion.value = data.fecha_documentacion_max
                 }
                 showSuccess('Fecha actualizada', (res as any).message || 'Fecha actualizada correctamente')
-                // refresh headers / data and update local fecha if available
+                // refresh headers / data and update fMaxDocumentacion if backend returned it in headers
                 try {
                     await getHeaders(Number(id))
-                    if (fecha_documentacion_max && fecha_documentacion_max.value) fMaxDocumentacion.value = fecha_documentacion_max.value
+                    if (fecha_documentacion_max && fecha_documentacion_max.value) {
+                        fMaxDocumentacion.value = fecha_documentacion_max.value
+                    }
                 } catch (e) {
-                    // ignore
+                    // ignore header refresh errors
                 }
             } else {
                 showError('Error', (res as any).message || 'No se pudo actualizar la fecha')
@@ -235,6 +238,7 @@ const { getEmbarcados,
     handleItemsPerPageChangeEmbarcados, 
     handleFilterChangeEmbarcados, 
     handleSearchEmbarcados,
+    // helpers and handlers
     findCliente,
     getFirstUrl,
     handleDownloadFacturaComercial,
@@ -245,7 +249,7 @@ const { getEmbarcados,
     handleUploadPackingList,
     deleteExcelConfirmacion,
     handleUploadExcelConfirmacion
-} = useEmbarcados()
+} = useEmbarcados({ refresh: getClientes, clientsRef: clientes })
 const { getClientesVariacion, 
         updateVolumenSelected, 
         clientesVariacion, 
@@ -283,8 +287,6 @@ const tabs = ref()
 const handleTabChange = (value: string) => {
     if (tab.value === 'general') {
         getClientes(Number(id))
-    } else if (tab.value === 'embarcados') {
-        getEmbarcados(Number(id))
     } else if (tab.value === 'variacion') {
         getClientesVariacion(Number(id))
     } else if (tab.value === 'pagos') {
@@ -316,7 +318,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
         accessorKey: 'nombre',
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre').toUpperCase()
+            return row.getValue('nombre')
         }
     },
     {
@@ -486,7 +488,11 @@ const columns: TableColumn<any>[] = [
         accessorKey: 'telefono',
         header: 'Whatsapp',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('telefono')
+            const telefono = row.getValue('telefono')
+            return h('div', {
+                class: 'max-w-20 whitespace-normal',
+            }, telefono
+            )
         }
     },
     {
@@ -578,8 +584,10 @@ const columnsCoordinacion: TableColumn<any>[] = [
         accessorKey: 'nombre',
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {
-            //todos en mayusculas
-            return row.getValue('nombre').toUpperCase()
+            const nombre = row.getValue('nombre').toUpperCase()
+            return h('div', {
+                class: 'max-w-30 whitespace-normal break-words',
+            }, nombre)
         }
     },
     {
@@ -594,7 +602,12 @@ const columnsCoordinacion: TableColumn<any>[] = [
         accessorKey: 'correo',
         header: 'Correo',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('correo')
+            const correo = row.getValue('correo')
+            return h('div',{
+                //que tenga un max width y si es muy largo que lo haga doble linea pero no hay espaciados para usar whitespace
+                class: 'max-w-40 whitespace-normal break-words',
+            }, correo || 'Sin correo'
+            )
         }
     },
     {
@@ -661,7 +674,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
             //show estado_cliente in USELECT WITH STATUS RESERVADO,NO RESERVADO DOCUMENTACION C FINAL FACTURADO
             return h(USelect as any, {
                 //color status based on estado_cliente
-                class: STATUS_BG_CLASSES[row.original.estado_cliente as keyof typeof STATUS_BG_CLASSES],
+                class: [STATUS_BG_CLASSES[row.original.estado_cliente as keyof typeof STATUS_BG_CLASSES], 'w-full'],
                 modelValue: row.original.estado_cliente,
                 items: [
                     { label: 'Reservado', value: 'RESERVADO' },
@@ -821,6 +834,7 @@ const getColorStatusDocumentacion = (status: string) => {
     }
     return 'neutral'
 }
+
 // Helper: elegir icono según la extensión en la URL/filename
 const getFileIcon = (url?: string) => {
     try {
@@ -1052,38 +1066,38 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                 const url = proveedor.excel_confirmacion
                     if (url) {
                         const icon = getFileIcon(url)
-                    return h('div', {
-                        class: 'flex flex-row gap-2'
-                    }, [
-                    h(UButton, {
-                        icon,
-                        color: 'primary',
-                        variant: 'ghost',
-                        onClick: () => {
-                        window.open(url, '_blank')
-                        }
-                    }),
-                    h(UButton, {
-                        icon: 'i-heroicons-trash',
-                        color: 'error',
-                        variant: 'ghost',
-                        onClick: () => {
-                        deleteExcelConfirmacion(proveedor.id)
-                        }
-                    })
-                    ])
+                        return h('div', {
+                            class: 'flex flex-row gap-2'
+                        }, [
+                        h(UButton, {
+                            icon,
+                            color: 'primary',
+                            variant: 'ghost',
+                            onClick: () => {
+                            window.open(url, '_blank')
+                            }
+                        }),
+                        h(UButton, {
+                            icon: 'i-heroicons-trash',
+                            color: 'error',
+                            variant: 'ghost',
+                            onClick: () => {
+                            deleteExcelConfirmacion(proveedor.id)
+                            }
+                        })
+                        ])
 
-                } else {
-                    return h(UButton, {
-                    icon: 'i-heroicons-arrow-up-tray',
-                    color: 'primary',
-                    variant: 'outline',
-                    label: 'Subir',
-                    onClick: () => {
-                        handleUploadExcelConfirmacion(proveedor.id)
+                    } else {
+                        return h(UButton, {
+                        icon: 'i-heroicons-arrow-up-tray',
+                        color: 'primary',
+                        variant: 'outline',
+                        label: 'Subir',
+                        onClick: () => {
+                            handleUploadExcelConfirmacion(proveedor.id)
+                        }
+                        })
                     }
-                    })
-                }
             }))
         }
     },
@@ -1098,7 +1112,15 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                 size: 'xs',
                 onClick: () => {
                     //generar un modal para solicitar el tipo de recordatorio de documento
-
+                    console.log(row.original)
+                    modalAcciones.open({
+                        show: true,
+                        clienteId: row.original.id,
+                        clienteName: row.original.nombre,
+                        onSelected: (data: any) => {
+                            console.log(data)
+                        }
+                    })
                 }
             },
             )
@@ -1266,8 +1288,6 @@ const updateVolSelected = async (data: any) => {
         error.value = err as string
     }
 }
-
-// handlers are provided by the composable instance destructured above
 onMounted(() => {
     if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
@@ -1328,6 +1348,9 @@ watch(() => tab.value, async (newVal) => {
             }
             await getHeaders(Number(id))
             //implements getHeaders
+            if (fecha_documentacion_max && fecha_documentacion_max.value) {
+                fMaxDocumentacion.value = fecha_documentacion_max.value
+            }
             if (fecha_documentacion_max && fecha_documentacion_max.value) {
                 fMaxDocumentacion.value = fecha_documentacion_max.value
             }

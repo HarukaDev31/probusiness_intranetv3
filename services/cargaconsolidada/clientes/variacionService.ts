@@ -124,7 +124,7 @@ export class VariacionService extends BaseService {
         idArchivo: number
     ): Promise<{ success: boolean; message?: string; error?: string }> {
         try {
-            await this.apiCall(`${this.baseUrl}/documentacion/${idCliente}/archivo/${idArchivo}`, {
+            await this.apiCall(`${this.baseUrl}/documentacion/archivo/${idArchivo}`, {
                 method: 'DELETE'
             })
 

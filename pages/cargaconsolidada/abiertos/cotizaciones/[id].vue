@@ -123,6 +123,7 @@ import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import SelectTipoCargaModal from '~/components/cargaconsolidada/SelectTipoCargaModal.vue'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
+import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones.vue'
 
 const { getCotizacionProveedor,
     updateProveedorEstado,
@@ -189,7 +190,6 @@ const { registrarPago, deletePago } = usePagos()
 
 const showUploadPanel = ref(false)
 
-
 const { withSpinner } = useSpinner()
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 const route = useRoute()
@@ -244,6 +244,7 @@ const loadTabs = () => {
     }
 }
 const overlay = useOverlay()
+const modalAcciones = overlay.create(ModalAcciones)
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 const statusOptionsModal = overlay.create(StatusOptionsModal)
 const exportData = async () => {
@@ -1764,11 +1765,28 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                                 }
                             });
                         }
-                    }) : null
+                    }) : null,
+                    h(UButton, {
+                        icon: 'material-symbols:send-outline',
+                        variant: 'ghost',
+                        color: 'primary',
+                        size: 'md',
+                        onClick: () => {
+                            modalAcciones.open({
+                                show: true,
+                                clienteId: row.original.id,
+                                clienteName: row.original.nombre,
+                                onSelected: (data: any) => {
+                                    console.log(data)
+                                }
+                            })
+                        }
+                    })
                 ])
             }))
         }
-    }
+    },
+    
 ])
 const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
     //	Status	N.	Buyer	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones

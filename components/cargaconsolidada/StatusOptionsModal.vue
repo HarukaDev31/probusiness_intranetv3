@@ -102,6 +102,10 @@ const handleStatusChange = async (value: string) => {
                 label: proveedor.code_supplier,
                 value: proveedor.id
             }))
+            if(selectedStatus.value === 'RECORDATORIO_DATOS_PROVEEDOR'){
+                //FILTER PROVIDERS WITH supplier and supplier_phone not empty
+                proveedores.value = proveedores.value.filter((proveedor: any) => proveedor.supplier && proveedor.supplier_phone)
+            }
         }
     }, 'Cargando proveedores...')
 }
