@@ -390,8 +390,8 @@ const uploadPackingList = () => {
             const formData = new FormData()
             formData.append('file', data.file)
             formData.append('idContenedor', id)
-            const result = await ConsolidadoService.uploadPackingList(formData)
             await withSpinner(async () => {
+                const result = await ConsolidadoService.uploadPackingList(formData)
                 if (result.success) {
                     showSuccess('Packing List subido correctamente', 'success')
                 } else {
