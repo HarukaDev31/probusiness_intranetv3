@@ -554,9 +554,12 @@ watch(activeTab, async (newTab, oldTab) => {
     if (newTab === 'alumnos') {
         navigateTo(`/curso?tab=alumnos`)
 
+        // reset search to avoid sending stale query param to backend
+        try { searchQuery.value = '' } catch (e) { /* ignore */ }
         await loadCursos()
     } else if (newTab === 'pagos') {
         navigateTo(`/curso?tab=pagos`)
+        try { searchQueryPagos.value = '' } catch (e) { /* ignore */ }
         await loadPagos()
     }
 })

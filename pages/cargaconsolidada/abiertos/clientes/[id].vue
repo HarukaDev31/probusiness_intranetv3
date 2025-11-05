@@ -1335,15 +1335,20 @@ watch(() => tab.value, async (newVal) => {
         try {
             if (newVal === 'general') {
                 navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=general`)
+                // reset search to avoid sending stale query param to backend
+                try { searchGeneral.value = '' } catch (e) { /* ignore */ }
                 await getClientes(Number(id))
             } else if (newVal === 'embarcados') {
                 navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=embarcados`)
+                try { searchEmbarcados.value = '' } catch (e) { /* ignore */ }
                 await getEmbarcados(Number(id))
             } else if (newVal === 'variacion') {
                 navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=variacion`)
+                try { searchVariacion.value = '' } catch (e) { /* ignore */ }
                 await getClientesVariacion(Number(id))
             } else if (newVal === 'pagos') {
                 navigateTo(`/cargaconsolidada/abiertos/clientes/${id}?tab=pagos`)
+                try { searchPagos.value = '' } catch (e) { /* ignore */ }
                 await getClientesPagos(Number(id))
             }
             await getHeaders(Number(id))

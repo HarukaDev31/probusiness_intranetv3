@@ -1007,13 +1007,17 @@ watch(activeTab, async (newTab, oldTab) => {
 
   if (newTab === 'consolidado') {
     navigateTo(`/verificacion?tab=consolidado`)
+    // reset search to avoid sending stale query param to backend
+    try { search.value = '' } catch (e) { /* ignore */ }
     fetchConsolidadoData(filtersConsolidado.value, 1, itemsPerPage.value, idCotizacion)
   } else if (newTab === 'cursos') {
     navigateTo(`/verificacion?tab=cursos`)
+    try { searchCursos.value = '' } catch (e) { /* ignore */ }
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   } else if (newTab === 'delivery') {
     navigateTo(`/verificacion?tab=delivery`)
     // Cargar todos los datos de delivery
+    try { searchDelivery.value = '' } catch (e) { /* ignore */ }
     await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
   }
 })

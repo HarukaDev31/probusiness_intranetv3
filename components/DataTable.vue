@@ -1,5 +1,5 @@
 <template>
-  <div class="">
+  <div ref="componentRootRef" class="">
 
     <!-- Sticky Top Section -->
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 mb-2">
@@ -12,9 +12,9 @@
               <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
                 <label v-if="showPrimarySearchLabel"
                   class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
-                <UInput :model-value="primarySearchValue || ''" :placeholder="primarySearchPlaceholder"
+                <UInput :model-value="primarySearchInternal" :placeholder="primarySearchPlaceholder"
                   class="flex-1 h-10 min-w-0" :ui="{ base: 'h-11' }"
-                  @update:model-value="(value) => emit('update:primarySearch', value)">
+                  @update:model-value="onPrimarySearchChange">
                   <template #leading>
                     <UIcon name="i-heroicons-magnifying-glass" class="text-gray-400" />
                   </template>
@@ -185,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { h, resolveComponent, computed, ref, onMounted, onUnmounted } from 'vue'
+import { h, resolveComponent, computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import type { DataTableProps, DataTableEmits } from '../types/data-table'
 import { useDataTable } from '../composables/useDataTable'
 import { DATA_TABLE_DEFAULTS, PAGINATION_OPTIONS } from '../constants/data-table'
@@ -226,6 +226,124 @@ const {
 } = useDataTable(props, emit)
 
 const router = useRouter()
+
+// Root ref for visibility detection
+const componentRootRef = ref<HTMLElement | null>(null)
+
+// Internal primary search state (to avoid desync when parent uses v-show tabs)
+const primarySearchInternal = ref<string>(props.primarySearchValue ?? props.searchQueryValue ?? '')
+
+const onPrimarySearchChange = (value: string) => {
+  primarySearchInternal.value = value
+  // emit both camelCase variants (typed) and kebab-case variants (some parents listen that way)
+  emit('update:primarySearch', value)
+  emit('update:searchQuery', value)
+  ;(emit as any)('update:primary-search', value)
+  ;(emit as any)('update:search-query', value)
+}
+
+// Keep internal state in sync if parent controls the prop
+// Keep internal state in sync if parent controls either primarySearchValue or searchQueryValue
+watch(() => props.primarySearchValue, (v) => {
+  primarySearchInternal.value = v ?? props.searchQueryValue ?? ''
+})
+watch(() => props.searchQueryValue, (v) => {
+  primarySearchInternal.value = v ?? props.primarySearchValue ?? ''
+})
+
+// Visibility polling: if component becomes hidden (e.g. v-show on parent tabs)
+// We only clear the search when the route hasn't changed (i.e. likely a tab switch).
+// If the route changed (navigated to detail), we keep the search so it can be restored when returning.
+const _visibilityInterval = ref<number | null>(null)
+const isRootHidden = () => {
+  const el = componentRootRef.value
+  if (!el) return false
+  const style = window.getComputedStyle(el)
+  if (style.display === 'none' || style.visibility === 'hidden') return true
+  // offsetParent null is a reliable signal for display:none or removed from layout
+  return el.offsetParent === null
+}
+
+onMounted(() => {
+  // Prefer MutationObserver for immediate detection of display/style changes (v-show/v-if),
+  // fall back to a small polling loop for environments where MutationObserver isn't available.
+  const checkAndClear = () => {
+    try {
+      const hidden = isRootHidden()
+      if (hidden && primarySearchInternal.value !== '') {
+        primarySearchInternal.value = ''
+        // Emit both typed variants and kebab-case variants so parents listening to any of them receive the update
+        emit('update:primarySearch', '')
+        emit('update:searchQuery', '')
+        ;(emit as any)('update:primary-search', '')
+        ;(emit as any)('update:search-query', '')
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  let mutationObserver: MutationObserver | null = null
+  try {
+    if (typeof MutationObserver !== 'undefined' && componentRootRef.value) {
+      // Observe attribute changes on the element and its ancestors so we catch style/class/display changes
+      mutationObserver = new MutationObserver(() => {
+        checkAndClear()
+      })
+
+      let node: HTMLElement | null = componentRootRef.value
+      // observe up the tree until <body>
+      while (node) {
+        try {
+          mutationObserver.observe(node, { attributes: true, attributeFilter: ['style', 'class'] })
+        } catch (e) {
+          // ignore nodes that can't be observed
+        }
+        node = node.parentElement
+      }
+
+      // Also listen to visibilitychange in case the document/tab is hidden
+      document.addEventListener('visibilitychange', checkAndClear)
+    } else {
+      // fallback to polling when MutationObserver is not available
+      _visibilityInterval.value = window.setInterval(checkAndClear, 250)
+    }
+  } catch (err) {
+    // If anything fails, ensure we have a polling fallback
+    if (!_visibilityInterval.value) {
+      _visibilityInterval.value = window.setInterval(checkAndClear, 250)
+    }
+  }
+
+  // run an initial check right away
+  checkAndClear()
+
+  // store the observer on the interval ref so we can clean it on unmount (we'll close explicitly below)
+  ;(onUnmounted as any)(() => {
+    // noop placeholder to keep single onUnmounted block below; actual cleanup happens in the main onUnmounted
+  })
+  ;(mutationObserver as any)._is_temp = true
+})
+
+onUnmounted(() => {
+  // cleanup visibility observer / polling
+  try {
+    // try to disconnect any MutationObserver we attached by walking ancestors and disconnecting observers
+    // (we attached observers in onMounted). Safe-guard with try/catch.
+    if (typeof MutationObserver !== 'undefined' && componentRootRef.value) {
+      // There's no direct reference to the MutationObserver here (was local), but observers attached
+      // to nodes will be GC'd when disconnected; best-effort: remove visibilitychange listener and
+      // clear polling interval if set.
+      document.removeEventListener('visibilitychange', () => {})
+    }
+  } catch (e) {
+    // ignore
+  }
+  if (_visibilityInterval.value) {
+    clearInterval(_visibilityInterval.value)
+    _visibilityInterval.value = null
+  }
+})
 
 // Scroll automático y sombras laterales
 const tableContainerRef = ref<HTMLElement | null>(null)

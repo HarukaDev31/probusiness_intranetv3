@@ -428,10 +428,13 @@ watch(activeTab, async (newVal) => {
   if (newVal && newVal !== '') {
     try {
       if (newVal === 'clientes') {
+        try { search.value = '' } catch (e) { /* ignore */ }
         await getClientes(id)
       } else if (newVal === 'entregas') {
+        try { search.value = '' } catch (e) { /* ignore */ }
         await getEntregas(id)
       } else if (newVal === 'delivery') {
+        try { search.value = '' } catch (e) { /* ignore */ }
         await getEntregas(id)
         getDelivery(id)
       }

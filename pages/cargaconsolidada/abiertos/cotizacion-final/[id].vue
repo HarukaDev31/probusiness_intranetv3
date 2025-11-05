@@ -469,10 +469,13 @@ watch(activeTab, async (newVal, oldVal) => {
 
   if (newVal === 'general') {
     navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`)
+    // reset search to avoid sending stale query param to backend
+    try { searchGeneral.value = '' } catch (e) { /* ignore */ }
     await getGeneral(Number(id))
   }
   if (newVal === 'pagos') {
     navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=pagos`)
+    try { searchPagos.value = '' } catch (e) { /* ignore */ }
     await getPagos(Number(id))
   }
   await getHeaders(Number(id))
