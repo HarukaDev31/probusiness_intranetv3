@@ -106,8 +106,8 @@
                 :show-pagination="false" @export="exportData"
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
                 empty-state-message="No se encontraron registros de clientes."
-                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
-                @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
+                @update:primary-search="handleSearchPagos" @page-change="handlePagePagosChange"
+                @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
@@ -1335,15 +1335,20 @@ watch(() => tab.value, async (newVal) => {
         try {
             if (newVal === 'general') {
                 navigateTo(`/cargaconsolidada/completados/clientes/${id}?tab=general`)
+                // reset search to avoid sending stale query param to backend
+                try { searchGeneral.value = '' } catch (e) { /* ignore */ }
                 await getClientes(Number(id))
             } else if (newVal === 'embarcados') {
                 navigateTo(`/cargaconsolidada/completados/clientes/${id}?tab=embarcados`)
+                try { searchEmbarcados.value = '' } catch (e) { /* ignore */ }
                 await getEmbarcados(Number(id))
             } else if (newVal === 'variacion') {
                 navigateTo(`/cargaconsolidada/completados/clientes/${id}?tab=variacion`)
+                try { searchVariacion.value = '' } catch (e) { /* ignore */ }
                 await getClientesVariacion(Number(id))
             } else if (newVal === 'pagos') {
                 navigateTo(`/cargaconsolidada/completados/clientes/${id}?tab=pagos`)
+                try { searchPagos.value = '' } catch (e) { /* ignore */ }
                 await getClientesPagos(Number(id))
             }
             await getHeaders(Number(id))

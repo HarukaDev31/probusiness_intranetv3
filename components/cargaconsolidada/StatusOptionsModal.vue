@@ -100,11 +100,12 @@ const handleStatusChange = async (value: string) => {
             if(selectedStatus.value === 'MOVER' && response.data.length < 2)return
             proveedores.value = (response.data).map((proveedor: any) => ({
                 label: proveedor.code_supplier,
-                value: proveedor.id
+                value: proveedor.id,
+                supplier: proveedor.supplier,
+                supplier_phone: proveedor.supplier_phone
             }))
             if(selectedStatus.value === 'RECORDATORIO_DATOS_PROVEEDOR'){
-                //FILTER PROVIDERS WITH supplier and supplier_phone not empty
-                proveedores.value = proveedores.value.filter((proveedor: any) => proveedor.supplier && proveedor.supplier_phone)
+                proveedores.value = proveedores.value.filter((proveedor: any) => !(proveedor.supplier && proveedor.supplier_phone))
             }
         }
     }, 'Cargando proveedores...')
