@@ -582,11 +582,9 @@ onMounted(async () => {
   }
   distritos.value = (await LocationService.getAllDistritos()).data || []
     if (entregaDetalle.value) {
-    // Inicializar formulario con datos del detalle
-    const d: any = entregaDetalle.value
-  form.value.qty_box_china = d.qty_box_china || ''
-  // `useEntrega` normaliza el peso en `peso` (resumen.cbm_total_china). Aceptar varios fallbacks
-  form.value.peso = d.peso ?? d.cbm_total_china ?? d.cbm ?? ''
+    const d: any = entregaDetalle.value;
+    form.value.qty_box_china = d.qty_box_china || ''
+    form.value.peso = d.peso ?? d.cbm_total_china 
     form.value.productos = d.productos || ''
     form.value.nombre = d.import_name || ''
     form.value.documento = d.documento || ''

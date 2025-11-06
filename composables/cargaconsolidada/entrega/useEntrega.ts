@@ -134,7 +134,7 @@ export const useEntrega = () => {
           type_form: (type_form === '1') ? 1 : (type_form === '0') ? 0 : type_form,
           // Generales
           qty_box_china: resumen?.qty_box_china ?? root.qty_box_china ?? '',
-          peso: resumen?.cbm_total_china ?? '',
+          peso: resumen?.peso ?? resumen?.cbm_total_china ?? '',
           documento: lima?.pick_doc ?? province?.r_doc ?? '',
           import_name: lima?.import_name ?? province.import_name ?? '',
           productos: lima?.productos ?? province.productos ?? '',
