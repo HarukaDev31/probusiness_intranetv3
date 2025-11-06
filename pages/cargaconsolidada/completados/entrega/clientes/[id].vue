@@ -73,6 +73,7 @@
               </div>
               <div class="flex items-center flex-1 justify-between">
                 <label class="flex-1 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito del destino final</label>
+             
                 <USelect class="flex-1/2" :items="distritos" v-model="form.distrito" :disabled="!editable" placeholder="Seleccione" />
               </div>
               <div class="flex items-center flex-1 justify-between">
@@ -574,14 +575,13 @@ onMounted(async () => {
   // Derivar contenedor desde el detalle si existe
   if (entregaDetalle.value?.id_contenedor) {
     contenedorId = entregaDetalle.value.id_contenedor as any
-  }
+  } 
   // Obtener headers/carga sólo si aún no está y tenemos id_contenedor
   if (contenedorId && !carga.value) {
     await getHeaders(contenedorId)
   }
-  const distritos = await LocationService.getAllDistritos()
-  
-  if (entregaDetalle.value) {
+  distritos.value = (await LocationService.getAllDistritos()).data || []
+    if (entregaDetalle.value) {
     // Inicializar formulario con datos del detalle
     const d: any = entregaDetalle.value
     form.value.qty_box_china = d.qty_box_china || ''
