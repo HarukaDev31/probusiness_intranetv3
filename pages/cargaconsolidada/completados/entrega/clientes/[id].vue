@@ -613,7 +613,7 @@ onMounted(async () => {
     form.value.departamento_id = d.id_department !== undefined && d.id_department !== null && d.id_department !== '' ? Number(d.id_department) : undefined
     form.value.provincia_id = d.id_province !== undefined && d.id_province !== null && d.id_province !== '' ? Number(d.id_province) : undefined
     form.value.distrito_id = d.id_district !== undefined && d.id_district !== null && d.id_district !== '' ? Number(d.id_district) : undefined
-
+    form.value.distrito = d.distrito !== undefined && d.distrito !== null && d.distrito !== '' ? Number(d.distrito) : undefined
     // Comprobante
     form.value.comp_documento = d.comp_documento || d.documento || ''
     form.value.comp_nombre = d.comp_nombre || d.nombre || ''
