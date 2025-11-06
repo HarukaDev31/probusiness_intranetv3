@@ -329,7 +329,7 @@ const handleSave = async () => {
     addIf('driver_doc', form.value.documento)
     addIf('driver_license', form.value.licencia)
     addIf('final_destination_place', form.value.direccion_final)
-    addIf('final_destination_district', form.value.distrito)
+    addIf('final_destination_district', Number(form.value.distrito??0))
   } else {
     // Provincia
     addIf('import_name', form.value.nombre)
