@@ -80,7 +80,7 @@
             :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
             :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
             :filter-config="filterConfig" :show-export="false"
-            empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
+            empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
             :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
@@ -182,6 +182,7 @@ const {
     currentPagePagos,
     filtersPagos,
     getCotizacionPagos,
+    handleSearchPagos,
     headersPagos
 } = useCotizacionPagos()
 
@@ -2354,12 +2355,16 @@ watch(() => tab.value, async (newVal) => {
             resetFilters()
             if (newVal === 'prospectos') {
                 navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos`)
+                // reset search to avoid sending stale query param to backend
+                try { searchCotizaciones.value = '' } catch (e) { /* ignore */ }
                 await getCotizaciones(Number(id))
             } else if (newVal === 'embarque') {
                 navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=embarque`)
+                try { search.value = '' } catch (e) { /* ignore */ }
                 await getCotizacionProveedor(Number(id))
             } else if (newVal === 'pagos') {
                 navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=pagos`)
+                try { searchPagos.value = '' } catch (e) { /* ignore */ }
                 await getCotizacionPagos(Number(id))
             }
             await getHeaders(Number(id))

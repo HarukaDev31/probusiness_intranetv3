@@ -499,6 +499,25 @@ onMounted(async () => {
   }
   await getHeaders(Number(id))
 })
+
+// Watch tab changes and clear searches before fetching to avoid stale query params
+import { watch } from 'vue'
+watch(()=> activeTab.value, async (newVal) => {
+  if (newVal && newVal !== '') {
+    try {
+      if (newVal === 'general') {
+        try { searchGeneral.value = '' } catch (e) { /* ignore */ }
+        await getGeneral(Number(id))
+      } else if (newVal === 'pagos') {
+        try { searchPagos.value = '' } catch (e) { /* ignore */ }
+        if (typeof getPagos === 'function') await getPagos(Number(id))
+      }
+      if (typeof getHeaders === 'function') await getHeaders(Number(id))
+    } catch (error) {
+      console.error('Error en cambio de pestaña:', error)
+    }
+  }
+})
 </script>
 
 <style scoped>
