@@ -583,7 +583,7 @@ onMounted(async () => {
     // Inicializar formulario con datos del detalle
     const d: any = entregaDetalle.value
     form.value.qty_box_china = d.qty_box_china || ''
-    form.value.peso = d.peso || ''
+    form.value.peso = d.cbm_total_china || ''
     form.value.productos = d.productos || ''
     form.value.nombre = d.import_name || ''
     form.value.documento = d.documento || ''

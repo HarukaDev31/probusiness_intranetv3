@@ -16,7 +16,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -39,7 +39,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -80,7 +80,7 @@
             :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
             :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
             :filter-config="filterConfig" :show-export="false"
-            empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearch"
+            empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
             :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
@@ -182,6 +182,7 @@ const {
     currentPagePagos,
     filtersPagos,
     getCotizacionPagos,
+    handleSearchPagos,
     headersPagos
 } = useCotizacionPagos()
 

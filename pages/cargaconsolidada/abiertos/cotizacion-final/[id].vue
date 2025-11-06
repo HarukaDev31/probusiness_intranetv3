@@ -219,13 +219,24 @@ const generalColumns = ref<TableColumn<any>[]>([
     accessorKey: 'estado_cotizacion_final',
     header: 'Estados',
     cell: ({ row }: { row: any }) => {
-      //RETURN USELECT WITH OPTION SELECTED FROM FILTERCONFIGGEMRERAL WITH KEY 'estado_cotizacion_final'
+      const initialValue = row.original.estado_cotizacion_final
+      // If estado is PAGADO and pagado_verificado is true, use explicit green class
+      const isPagadoVerificado = initialValue === 'PAGADO' && row.original.pagado_verificado === true
+      // If estado is PENDIENTE use gray class
+      const isPendiente = initialValue === 'PENDIENTE'
+
+      const className = isPagadoVerificado
+        ? 'bg-green-500 text-white dark:bg-green-500 dark:text-white'
+        : isPendiente
+        ? 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+        : STATUS_BG_CLASSES[initialValue as keyof typeof STATUS_BG_CLASSES]
+
       return h(USelect as any, {
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
-        class: [STATUS_BG_CLASSES[row.original.estado_cotizacion_final as keyof typeof STATUS_BG_CLASSES]],
-        modelValue: row.original.estado_cotizacion_final,
+        class: [className],
+        modelValue: initialValue,
         'onUpdate:modelValue': async (value: any) => {
-          if (value && value !== row.original.estado_cotizacion_final) {
+          if (value && value !== initialValue) {
             await handleUpdateEstadoCotizacionFinal(row.original.id_cotizacion, value)
           }
         }
