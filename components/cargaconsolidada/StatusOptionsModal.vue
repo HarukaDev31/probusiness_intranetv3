@@ -83,7 +83,6 @@ const showContenedoresOpttons = ref(false)
 const statusOptions = ref([
     { label: 'Todos', value: 'TODOS' ,disabled: true },
     { label: 'Inspeccion', value: 'INSPECCION',disabled: false },
-    { label: 'Rotulado', value: 'ROTULADO',disabled: false },
     { label: 'Cobrando', value: 'COBRANDO',disabled: false },
     { label: 'Recordatorio datos de Proveedor', value: 'RECORDATORIO_DATOS_PROVEEDOR',disabled: false },
     { label: 'Mover',value: 'MOVER',disabled: false },

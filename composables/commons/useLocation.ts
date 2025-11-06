@@ -78,7 +78,20 @@ export const useLocation = () => {
       loadingDistritos.value = false
     }
   }
-
+  const fetchAllProvincias = async () => {
+    try {
+      loadingProvincias.value = true
+      provincias.value = []
+      const response = await LocationService.getAllProvincias()
+      if (response.success) {
+        provincias.value = response.data
+      }
+    } catch (error) {
+      console.error('Error al cargar provincias:', error)
+    } finally {
+      loadingProvincias.value = false
+    }
+  }
   // Función para limpiar provincias y distritos
   const limpiarProvinciasYDistritos = () => {
     provincias.value = []
@@ -136,7 +149,8 @@ export const useLocation = () => {
     limpiarProvinciasYDistritos,
     limpiarDistritos,
     limpiarUbicacionesPeruanas,
-    initializeLocation
+    initializeLocation,
+    fetchAllProvincias
   }
 }
 
