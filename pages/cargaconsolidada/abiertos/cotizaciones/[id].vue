@@ -1753,7 +1753,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     }),
 
                     row.original.estado_cotizador === 'CONFIRMADO' ? h(UButton, {
-                        icon: 'i-heroicons-ellipsis-vertical',
+                        icon: 'iconamoon:menu-burger-horizontal',
                         variant: 'ghost',
                         color: 'success',
                         size: 'md',
