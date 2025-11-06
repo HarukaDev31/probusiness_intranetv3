@@ -98,6 +98,14 @@ export const useGeneral = () => {
             error.value = err as string
         }
     }
+    const uploadCotizacionFinalFile = async (data: any, idCotizacion?: number) => {
+        try {
+            const response = await GeneralService.uploadCotizacionFinalFile(data, idCotizacion)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
     const downloadPlantillaGeneral = async (idContenedor: number) => {
         try {
             const response = await GeneralService.downloadPlantillaGeneral(idContenedor)
@@ -181,7 +189,8 @@ export const useGeneral = () => {
         totalRecordsGeneral,
         updateEstadoCotizacionFinal,
         uploadFacturaComercial,
-        uploadPlantillaFinal,
+    uploadPlantillaFinal,
+    uploadCotizacionFinalFile,
         handleSearchGeneral,
         downloadPlantillaGeneral,
         handlePageChangeGeneral,

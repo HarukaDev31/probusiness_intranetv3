@@ -66,7 +66,7 @@ import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
-const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders } = useGeneral()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, uploadCotizacionFinalFile, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
 const { registrarPagoFinal, deletePago } = usePagosClientes()
@@ -91,9 +91,10 @@ const handleUploadFactura = () => {
     onClose: () => simpleUploadFileModal.close(),
     onSave: async (data: { file: File }) => {
       await withSpinner(async () => {
-        const formData = new FormData()
-        formData.append('file', data.file)
-        formData.append('idContenedor', id.toString())
+  const formData = new FormData()
+  formData.append('file', data.file)
+  // El backend ahora espera `idCotizacion` en lugar de `idContenedor`
+  formData.append('idCotizacion', id.toString())
         const result = await uploadFacturaComercial(formData)
         if (result.success) {
           showSuccess('Éxito', 'Factura subida correctamente')
@@ -125,13 +126,15 @@ const handleUploadPlantillaFinal = () => {
         const formData = new FormData()
         formData.append('file', data.file)
         formData.append('idContenedor', id.toString())
-        const result = await uploadPlantillaFinal(formData)
-        if (result.success) {
+        // Use the new composable method to upload the cotización final file
+        // pass the cotización id as route param so backend can use the route signature
+        const result = await uploadCotizacionFinalFile(formData, id)
+        if (result && (result as any).success) {
           showSuccess('Éxito', 'Plantilla final subida correctamente')
-          //reload table genearl
+          //reload table general
           await getGeneral(Number(id))
         } else {
-          showError('Error', 'Error al subir la plantilla final')
+          showError('Error', (result as any)?.message || 'Error al subir la plantilla final')
         }
       }, 'Subiendo plantilla final...')
     }
