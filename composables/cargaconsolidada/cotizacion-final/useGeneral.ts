@@ -48,13 +48,13 @@ export const useGeneral = () => {
                 search: searchGeneral.value,
                 filters: filtersGeneral.value
             }
-            
+
             const response = await GeneralService.getGeneral(id, params)
             general.value = response.data
             paginationGeneral.value = response.pagination
         } catch (err) {
             error.value = err as string
-            
+
         } finally {
             loadingGeneral.value = false
         }
@@ -189,8 +189,8 @@ export const useGeneral = () => {
         totalRecordsGeneral,
         updateEstadoCotizacionFinal,
         uploadFacturaComercial,
-    uploadPlantillaFinal,
-    uploadCotizacionFinalFile,
+        uploadPlantillaFinal,
+        uploadCotizacionFinalFile,
         handleSearchGeneral,
         downloadPlantillaGeneral,
         handlePageChangeGeneral,

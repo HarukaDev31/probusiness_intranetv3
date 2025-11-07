@@ -116,6 +116,26 @@ const handleDownloadPlantillaGeneral = () => {
    }
   }, 'Descargando plantilla general...')
 }
+const handleUploadCotizacionFinal =(idCotizacion:any)=>{
+  simpleUploadFileModal.open({
+    title:'Subir Cotizacion Final',
+    onClose:()=>simpleUploadFileModal.close(),
+    onSave:async(data:{file:File})=>{
+      await withSpinner(async () => {
+        const formData=new FormData()
+        formData.append('file',data.file)
+        const result=await uploadCotizacionFinalFile(formData,idCotizacion)
+        if (result && (result as any).success) {
+          showSuccess('Éxito', 'Cotizacion final subida correctamente')
+          //reload table general
+          await getGeneral(Number(id))
+        } else {
+          showError('Error', (result as any)?.message || 'Error al subir la plantilla final')
+        }
+      })
+    }
+  })
+}
 const handleUploadPlantillaFinal = () => {
   simpleUploadFileModal.open({
     title: 'Subir Plantilla Final',
@@ -319,7 +339,7 @@ const generalColumns = ref<TableColumn<any>[]>([
           color: 'primary',
           variant: 'outline',
           onClick: () => {
-            handleUploadPlantillaFinal()
+            handleUploadCotizacionFinal(row.original.id_cotizacion)
           }
         })
       }
