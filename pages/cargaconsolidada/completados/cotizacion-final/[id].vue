@@ -148,7 +148,7 @@ const handleUploadPlantillaFinal = () => {
         formData.append('idContenedor', id.toString())
         // Use the new composable method to upload the cotización final file
         // pass the cotización id as route param so backend can use the route signature
-        const result = await uploadCotizacionFinalFile(formData, id)
+        const result = await uploadPlantillaFinal(formData)
         if (result && (result as any).success) {
           showSuccess('Éxito', 'Plantilla final subida correctamente')
           //reload table general
