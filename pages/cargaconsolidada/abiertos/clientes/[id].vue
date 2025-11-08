@@ -1119,7 +1119,8 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         clienteName: row.original.nombre,
                         onSelected: (data: any) => {
                             console.log(data)
-                        }
+                        },
+                        validateMaxDate:false
                     })
                 }
             },

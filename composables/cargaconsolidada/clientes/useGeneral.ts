@@ -148,14 +148,15 @@ export const useGeneral = () => {
      * @param data - Datos con lista de proveedores y sus items con tipo_producto_seleccionado
      * @returns Response del servicio
      */
-    const solicitarDocumentos = async (idCotizacion: number, data: SolicitarDocumentosRequest): Promise<SolicitarDocumentosResponse> => {
+    const solicitarDocumentos = async (idCotizacion: number, data: SolicitarDocumentosRequest,validate_max_date:boolean): Promise<SolicitarDocumentosResponse> => {
         try {
             loadingGeneral.value = true
-            const response = await GeneralService.solicitarDocumentos(idCotizacion, data)
+            const response = await GeneralService.solicitarDocumentos(idCotizacion, data,validate_max_date)
             return response
         } catch (err: any) {
-            error.value = err.message || 'Error al solicitar documentos'
-            return { success: false, message: error.value }
+            console.log(err)
+            error.value = err || 'Error al solicitar documentos'
+            throw err
         } finally {
             loadingGeneral.value = false
         }

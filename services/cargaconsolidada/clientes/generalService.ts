@@ -143,13 +143,14 @@ export class GeneralService extends BaseService {
     /**
      * Solicitar documentos/categorización con selección de tipo de producto
      */
-    static async solicitarDocumentos(idCotizacion: number, data: SolicitarDocumentosRequest): Promise<SolicitarDocumentosResponse> {
+    static async solicitarDocumentos(idCotizacion: number, data: SolicitarDocumentosRequest,validate_max_date=true): Promise<SolicitarDocumentosResponse> {
         try {
             const response = await this.apiCall<SolicitarDocumentosResponse>(`${this.baseUrl}/solicitar-documentos`, {
                 method: 'POST',
                 body: {
                     id_cotizacion: idCotizacion,
-                    proveedores: data.proveedores
+                    proveedores: data.proveedores,
+                    validate_max_date:validate_max_date
                 }
             })
             return response
