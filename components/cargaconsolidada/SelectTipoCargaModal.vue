@@ -56,8 +56,46 @@
                       class="min-w-40"
                     />
                   </div>
+                  <div
+                    v-if="itemTipoCarga[itemId] === 'movilidad_personal' && getMovilidadItems(itemId).length"
+                    class="mt-3 space-y-2 rounded-lg border border-dashed border-gray-200  p-3 text-sm "
+                  >
+                    <div class="font-medium ">
+                      Detalle de movilidad personal
+                    </div>
+                    <div
+                      v-for="(movilidadItem, movilidadIdx) in getMovilidadItems(itemId)"
+                      :key="getMovilidadItemKey(itemId, movilidadItem, movilidadIdx)"
+                      class="flex flex-wrap items-center gap-3 rounded border border-gray-200  px-3 py-2"
+                    >
+                      <UCheckbox
+                        :model-value="isMovilidadItemChecked(itemId, movilidadItem, movilidadIdx)"
+                        @update:model-value="value => toggleMovilidadItem(itemId, movilidadItem, movilidadIdx, Boolean(value))"
+                        size="sm"
+                      />
+                      <div class="flex flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between font-medium" >
+                        <span class="font-medium ">{{ movilidadItem.initial_name ?? 'Sin nombre' }}</span>
+                        <div class="flex flex-wrap items-center gap-4 text-sm">
+                          <span class="flex items-center gap-1">
+                            <span class="text-gray-500">Cantidad  :</span>
+                            <span class="font-semibold ">{{ movilidadItem.initial_qty ?? '—' }}</span>
+                          </span>
+                        
+                        </div>
+                      </div>
+                    </div>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            <div
+              v-if="totalMovilidadPersonalSeleccionada > 0"
+              class="rounded-lg border border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-700"
+            >
+              <span class="font-medium">Total movilidad personal seleccionada:</span>
+              <span class="ml-1 font-semibold">{{ totalMovilidadPersonalSeleccionada }}</span>
             </div>
           </div>
 
@@ -72,7 +110,6 @@
           </div>
          
         </div>
-      </div>
     </template>
 
     <template #footer>
@@ -105,7 +142,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 interface Props {
   show: boolean
   cotizacionId?: number
-  onSelected?: (categorizacion: any) => void
+  onSelected?: (categorizacion: any, extras?: any) => void
 }
 
 const props = defineProps<Props>()
@@ -123,6 +160,7 @@ const loadingItems = ref(false)
 const availableItems = ref<any[]>([])
 const selectedItems = ref<string[]>([])
 const itemTipoCarga = ref<Record<string, string>>({})
+const movilidadItemsSeleccionados = ref<Record<string, string[]>>({})
 
 // Computed para crear los items del checkbox en el formato correcto
 const checkboxItems = computed(() => {
@@ -138,10 +176,20 @@ const canSave = computed(() => {
   if (selectedItems.value.length === 0) {
     return false
   }
-  
+
   // Todos los items seleccionados deben tener un tipo de carga asignado
   return selectedItems.value.every(itemId => {
-    return itemTipoCarga.value[itemId] && itemTipoCarga.value[itemId].trim() !== ''
+    const tipo = itemTipoCarga.value[itemId]?.trim()
+    if (!tipo) {
+      return false
+    }
+
+    if (tipo === 'movilidad_personal') {
+      const movilidadSeleccionada = movilidadItemsSeleccionados.value[itemId] ?? []
+      return movilidadSeleccionada.length > 0
+    }
+
+    return true
   })
 })
 
@@ -175,6 +223,7 @@ const loadItems = async () => {
         // Inicializar el objeto de tipos de carga
         availableItems.value.forEach(item => {
           itemTipoCarga.value[item.id.toString()] = ''
+          movilidadItemsSeleccionados.value[item.id.toString()] = []
         })
       }
     }, 'Cargando items...')
@@ -192,10 +241,19 @@ watch(selectedItems, (newValue, oldValue) => {
     oldValue.forEach(itemId => {
       if (!newValue.includes(itemId)) {
         itemTipoCarga.value[itemId] = ''
+        movilidadItemsSeleccionados.value[itemId] = []
       }
     })
   }
 })
+
+watch(itemTipoCarga, newValue => {
+  Object.entries(newValue).forEach(([itemId, tipo]) => {
+    if (tipo !== 'movilidad_personal') {
+      movilidadItemsSeleccionados.value[itemId] = []
+    }
+  })
+}, { deep: true })
 
 // Obtener el nombre de un item por su ID
 const getItemName = (itemId: string) => {
@@ -215,6 +273,79 @@ const getItemSendStatus = (itemId: string) => {
   return item ? item.send_rotulado_status || '' : ''
 }
 
+interface MovilidadItem {
+  id?: number | string
+  initial_price?: number | string
+  initial_qty?: number | string
+  initial_name?: string
+  [key: string]: any
+}
+
+const getMovilidadItems = (itemId: string): MovilidadItem[] => {
+  const item = availableItems.value.find(i => i.id.toString() === itemId)
+  if (!item) {
+    return []
+  }
+
+  const movilidadItems = (item as Record<string, any>).items_movilidad_personal ?? (item as Record<string, any>).items ?? []
+
+  return Array.isArray(movilidadItems) ? movilidadItems : []
+}
+
+const getMovilidadItemIdentifier = (movilidadItem: MovilidadItem, index: number) => {
+  return String(movilidadItem.id ?? index)
+}
+
+const getMovilidadItemKey = (itemId: string, movilidadItem: MovilidadItem, index: number) => {
+  return `${itemId}-${getMovilidadItemIdentifier(movilidadItem, index)}`
+}
+
+const isMovilidadItemChecked = (itemId: string, movilidadItem: MovilidadItem, index: number) => {
+  const identifier = getMovilidadItemIdentifier(movilidadItem, index)
+  return movilidadItemsSeleccionados.value[itemId]?.includes(identifier) ?? false
+}
+
+const toggleMovilidadItem = (itemId: string, movilidadItem: MovilidadItem, index: number, checked: boolean) => {
+  const identifier = getMovilidadItemIdentifier(movilidadItem, index)
+  const current = movilidadItemsSeleccionados.value[itemId] ?? []
+
+  if (checked) {
+    if (!current.includes(identifier)) {
+      movilidadItemsSeleccionados.value[itemId] = [...current, identifier]
+    }
+  } else {
+    movilidadItemsSeleccionados.value[itemId] = current.filter(itemKey => itemKey !== identifier)
+  }
+}
+
+const getSelectedMovilidadQtySum = (itemId: string) => {
+  const identifiers = movilidadItemsSeleccionados.value[itemId] ?? []
+  if (!identifiers.length) {
+    return 0
+  }
+
+  const movilidadItems = getMovilidadItems(itemId)
+
+  return identifiers.reduce((total, identifier) => {
+    const matchingItem = movilidadItems.find((movilidadItem, index) => {
+      return getMovilidadItemIdentifier(movilidadItem, index) === identifier
+    })
+
+    const qty = Number(matchingItem?.initial_qty ?? 0)
+    return Number.isFinite(qty) ? total + qty : total
+  }, 0)
+}
+
+const totalMovilidadPersonalSeleccionada = computed(() => {
+  return selectedItems.value.reduce((total, itemId) => {
+    const tipo = itemTipoCarga.value[itemId]
+    if (tipo === 'movilidad_personal') {
+      return total + getSelectedMovilidadQtySum(itemId)
+    }
+    return total
+  }, 0)
+})
+
 // Obtener items en una categoría específica
 const getItemsInCategory = (categoriaValue: string) => {
   return availableItems.value.filter(item => 
@@ -226,6 +357,7 @@ const closeModal = () => {
   availableItems.value = []
   selectedItems.value = []
   itemTipoCarga.value = {}
+  movilidadItemsSeleccionados.value = {}
   emit('close')
 }
 
@@ -237,20 +369,26 @@ const handleSelect = () => {
     // Crear array de proveedores con id y tipo de rotulado
     const proveedores = selectedItems.value.map(itemId => {
       const tipoRotulado = itemTipoCarga.value[itemId]
+      const totalMovilidadQty = tipoRotulado === 'movilidad_personal'
+        ? getSelectedMovilidadQtySum(itemId)
+        : 0
       return {
         id: parseInt(itemId),
-        tipo_rotulado: tipoRotulado
+        tipo_rotulado: tipoRotulado,
+        ...(tipoRotulado === 'movilidad_personal' ? { total_initial_qty_movilidad_personal: totalMovilidadQty } : {})
       }
     })
     
+    const totalMovilidadPersonal = totalMovilidadPersonalSeleccionada.value
+
     const result = {
       idCotizacion: props.cotizacionId,
-      proveedores: proveedores
+      proveedores
     }
     
     // Llamar al callback si está disponible (el overlay maneja los eventos)
     if (props.onSelected) {
-      props.onSelected(result)
+      props.onSelected(result, { total_movilidad_personal: totalMovilidadPersonal })
     }
     closeModal()
   } catch (error) {
@@ -268,3 +406,4 @@ onMounted(() => {
 })
 
 </script>
+
