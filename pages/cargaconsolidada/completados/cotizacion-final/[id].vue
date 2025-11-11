@@ -19,7 +19,7 @@
     <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
       :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
-      :show-primary-search="false" :show-pagination="false" :show-secondary-search="false" :show-filters="false"
+  :show-primary-search="true" :show-pagination="false" :show-secondary-search="false" :show-filters="false"
       :filter-config="filterConfigGeneral" :show-export="false"
       empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
