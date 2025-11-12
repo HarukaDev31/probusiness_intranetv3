@@ -1,7 +1,7 @@
 <template>
     <div class="py-6 ">
         <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
-            :show-pagination="false" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
+            :show-pagination="true" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
@@ -26,7 +26,7 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
+        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="true"
             :columns="getEmbarqueColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
@@ -76,7 +76,7 @@
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
-            :show-pagination="false" :loading="loadingPagos" :current-page="currentPagePagos"
+            :show-pagination="true" :loading="loadingPagos" :current-page="currentPagePagos"
             :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
             :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
             :filter-config="filterConfig" :show-export="false"
@@ -443,7 +443,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'nombre',
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre').toUpperCase()
+            const nombre = row.getValue('nombre')?.toUpperCase() || ''
             return h('div', {
                 class: 'max-w-30 whitespace-normal',
             }, nombre
@@ -623,7 +623,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'nombre',
         header: 'Nombre',
-        cell: ({ row }: { row: any }) => row.getValue('nombre').toUpperCase()
+        cell: ({ row }: { row: any }) => row.getValue('nombre')?.toUpperCase()
     },
     {
         accessorKey: 'documento',
@@ -782,7 +782,7 @@ const getPagosColumns = () => {
         {
             accessorKey: 'nombre',
             header: 'Nombre',
-            cell: ({ row }: { row: any }) => row.original.nombre.toUpperCase()
+            cell: ({ row }: { row: any }) => row.original.nombre?.toUpperCase() || ''
         },
         {
             accessorKey: 'documento',
@@ -967,7 +967,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre.toUpperCase()
+            const nombre = row.original.nombre?.toUpperCase() || ''
             const div = h('div', {
                 //que tenga un max width y si es muy largo que lo haga doble linea
                 class: 'max-w-45 whitespace-normal',
@@ -1401,7 +1401,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre.toUpperCase()
+            const nombre = row.original.nombre?.toUpperCase() || ''
             const div = h('div', {
                 class: 'max-w-45 whitespace-normal',
             }, nombre)
@@ -1842,7 +1842,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre.toUpperCase()
+            const nombre = row.original.nombre?.toUpperCase() || ''
             return h('div', {
                 class: 'max-w-45 whitespace-normal',
             }, nombre)
