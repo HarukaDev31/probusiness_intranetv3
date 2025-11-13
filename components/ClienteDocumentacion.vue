@@ -133,7 +133,7 @@
                           <span class="file-name">{{ archivo.nombre }}</span>
                           <div class="flex gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <span>{{ formatFileSize(archivo.tamaño) }}</span>
-                            <span>{{ formatDate(archivo.fecha_subida) }}</span>
+                            <span>{{ formatDateTimeToDmy(archivo.fecha_subida) }}</span>
                           </div>
                         </div>
                         <div class="flex gap-2">
@@ -225,7 +225,7 @@
                           <span class="file-name">{{ archivo.nombre }}</span>
                           <div class="flex gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <span>{{ formatFileSize(archivo.tamaño) }}</span>
-                            <span>{{ formatDate(archivo.fecha_subida) }}</span>
+                            <span>{{ formatDateTimeToDmy(archivo.fecha_subida) }}</span>
                           </div>
                         </div>
                         <div class="flex gap-2">
@@ -318,7 +318,7 @@
                           <span class="file-name">{{ archivo.nombre }}</span>
                           <div class="flex gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <span>{{ formatFileSize(archivo.tamaño) }}</span>
-                            <span>{{ formatDate(archivo.fecha_subida) }}</span>
+                            <span>{{ formatDateTimeToDmy(archivo.fecha_subida) }}</span>
                           </div>
                         </div>
                         <div class="flex gap-2">

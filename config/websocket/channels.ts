@@ -123,10 +123,10 @@ export const websocketRoles: Record<string, WebSocketRole> = {
     ]
   },
   [ROLES.COORDINACION]: {
-    role: ROLES.COORDINACION,
+    role: 'Coordinacion',
     channels: [
       {
-        name: `${ROLES.COORDINACION}-notifications`,
+        name: `Coordinacion-notifications`,
         type: 'private',
         handlers: [
           {
@@ -161,7 +161,9 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: WS_EVENTS.COTIZACION.STATUS_UPDATED,
             callback: (data) => {
-              
+              //mostrar notificacion de cotizacion actualizada
+              const { showSuccess } = useModal()
+              showSuccess('Cotización Actualizada', data.message || 'La cotización se ha actualizado exitosamente.')
             }
           }
         ]
