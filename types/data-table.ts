@@ -70,6 +70,11 @@ export interface DataTableProps {
   // Messages
   emptyStateMessage?: string
 
+  // Skeleton loading UI
+  showSkeleton?: boolean
+  skeletonRows?: number
+  skeletonCols?: number
+
   // Values from parent
   searchQueryValue?: string
   primarySearchValue?: string

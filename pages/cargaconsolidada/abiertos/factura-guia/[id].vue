@@ -3,7 +3,7 @@
     <!-- Header Section -->
 
 
-    <DataTable title="" :data="general" :columns="generalColumns" :loading="loadingGeneral" icon=""
+  <DataTable title="" :data="general" :columns="generalColumns" :loading="loadingGeneral || loadingHeaders" icon=""
     :show-pagination="false"
 
       :current-page="currentPageGeneral" :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
@@ -17,7 +17,7 @@
       :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
         </div>
       </template>
     </DataTable>
