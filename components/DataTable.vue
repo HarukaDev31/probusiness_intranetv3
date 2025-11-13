@@ -221,11 +221,38 @@ const currentPageModel = computed({
 const tableKey = ref(0)
 
 // Re-render table when page or items per page change so images are not briefly reused
-watch(() => props.currentPage, () => {
+watch(() => props.currentPage, (newPage: number | undefined) => {
   tableKey.value += 1
+
+  // If parent provided a prefetchNextPage callback, trigger prefetch for the next page
+  try {
+    const current = newPage || 1
+    const next = current + 1
+    const total = props.totalPages || props.totalRecords || undefined
+    if (typeof props.prefetchNextPage === 'function') {
+      // Only prefetch if we don't know total or next is within totalPages
+      if (!total || (typeof total === 'number' && next <= (props.totalPages || total))) {
+        // Fire-and-forget; swallow errors
+        ;(props.prefetchNextPage as any)(next, props.itemsPerPage || 10).catch(() => {})
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
 })
-watch(() => props.itemsPerPage, () => {
+
+watch(() => props.itemsPerPage, (newLimit: number | undefined) => {
   tableKey.value += 1
+  // When items per page changes, also attempt to prefetch the next page using current page
+  try {
+    const current = props.currentPage || 1
+    const next = current + 1
+    if (typeof props.prefetchNextPage === 'function') {
+      ;(props.prefetchNextPage as any)(next, newLimit || 10).catch(() => {})
+    }
+  } catch (e) {
+    // ignore
+  }
 })
 
 // Composable
