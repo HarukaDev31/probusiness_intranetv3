@@ -35,7 +35,7 @@ export const registerCoordinacionEvents = () => {
   // ============================================
   
   subscribeEventsToRole(
-    'Coordinacion',
+    'Coordinación',
     `${'Coordinacion'}-notifications`,
     [
       WS_EVENTS.TASK_ASSIGNMENT,
