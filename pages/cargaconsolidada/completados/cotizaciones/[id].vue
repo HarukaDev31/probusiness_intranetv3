@@ -1,7 +1,7 @@
 <template>
     <div class="py-6 ">
         <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
-            :show-pagination="false" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
+            :show-pagination="true" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
@@ -15,8 +15,8 @@
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
-                        :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" variant="pill" class="mb-4 w-80 h-15"
+                        :loading="loadingCotizaciones || loadingHeaders" />
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -26,8 +26,8 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
-            :columns="getEmbarqueColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
+            <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
+            :columns="getEmbarqueColumns()" :loading="loading || loadingHeaders" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
@@ -38,8 +38,8 @@
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
-                        :loading="loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" variant="pill" class="mb-4 w-80 h-15"
+                        :loading="loading || loadingHeaders" />
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -76,7 +76,7 @@
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
-            :show-pagination="false" :loading="loadingPagos" :current-page="currentPagePagos"
+            :show-pagination="false" :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos"
             :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
             :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
             :filter-config="filterConfig" :show-export="false"
@@ -87,7 +87,7 @@
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
-                        :loading="loadingHeaders" />
+                        :loading="loadingPagos || loadingHeaders" />
                     <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
@@ -393,6 +393,7 @@ const uploadPackingList = () => {
             formData.append('idContenedor', id)
             await withSpinner(async () => {
                 const result = await ConsolidadoService.uploadPackingList(formData)
+
                 if (result.success) {
                     showSuccess('Packing List subido correctamente', 'success')
                 } else {
@@ -435,14 +436,14 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         header: 'Fecha',
         cell: ({ row }: { row: any }) => {
             const fecha = row.getValue('fecha')
-            return fecha ? formatDate(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
+            return fecha ? formatDateTimeToDmy(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
         }
     },
     {
         accessorKey: 'nombre',
         header: 'Nombre',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre').toUpperCase()
+            const nombre = row.getValue('nombre')?.toUpperCase() || ''
             return h('div', {
                 class: 'max-w-30 whitespace-normal',
             }, nombre
@@ -616,13 +617,13 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         header: 'Fecha',
         cell: ({ row }: { row: any }) => {
             const fecha = row.getValue('fecha')
-            return fecha ? formatDate(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
+            return fecha ? formatDateTimeToDmy(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
         }
     },
     {
         accessorKey: 'nombre',
         header: 'Nombre',
-        cell: ({ row }: { row: any }) => row.getValue('nombre').toUpperCase()
+        cell: ({ row }: { row: any }) => row.getValue('nombre')?.toUpperCase()
     },
     {
         accessorKey: 'documento',
@@ -781,7 +782,7 @@ const getPagosColumns = () => {
         {
             accessorKey: 'nombre',
             header: 'Nombre',
-            cell: ({ row }: { row: any }) => row.original.nombre.toUpperCase()
+            cell: ({ row }: { row: any }) => row.original.nombre?.toUpperCase() || ''
         },
         {
             accessorKey: 'documento',
@@ -966,7 +967,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre.toUpperCase()
+            const nombre = row.original.nombre?.toUpperCase() || ''
             const div = h('div', {
                 //que tenga un max width y si es muy largo que lo haga doble linea
                 class: 'max-w-45 whitespace-normal',
@@ -1400,7 +1401,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre.toUpperCase()
+            const nombre = row.original.nombre?.toUpperCase() || ''
             const div = h('div', {
                 class: 'max-w-45 whitespace-normal',
             }, nombre)
@@ -1779,7 +1780,8 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                                 clienteName: row.original.nombre,
                                 onSelected: (data: any) => {
                                     console.log(data)
-                                }
+                                },
+                                validateMaxDate:false
                             })
                         }
                     })
@@ -1840,7 +1842,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         accessorKey: 'buyer',
         header: 'Buyer',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre.toUpperCase()
+            const nombre = row.original.nombre?.toUpperCase() || ''
             return h('div', {
                 class: 'max-w-45 whitespace-normal',
             }, nombre)

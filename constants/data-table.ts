@@ -21,6 +21,7 @@ const translations = computed(() => {
 
 export const DATA_TABLE_DEFAULTS = {
   icon: 'i-heroicons-document-text',
+  showSkeleton: true,
   loading: false,
   searchPlaceholder: translations.value.searchPlaceholder,
   showPagination: true,

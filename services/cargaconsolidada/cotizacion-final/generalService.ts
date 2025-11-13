@@ -59,6 +59,18 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+    static async uploadCotizacionFinalFile(data: any, idCotizacion: number): Promise<GeneralResponse> {
+        try {
+            const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/upload-cotizacion-final/${idCotizacion}`, {
+                method: 'POST',
+                body: data
+            })
+            return response
+        } catch (error) {
+            console.error('Error al subir la cotización final:', error)
+            throw error
+        }
+    }
     static async downloadPlantillaGeneral(id: number): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/download-plantilla-general/${id}  `, {

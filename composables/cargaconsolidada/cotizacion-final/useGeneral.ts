@@ -48,13 +48,13 @@ export const useGeneral = () => {
                 search: searchGeneral.value,
                 filters: filtersGeneral.value
             }
-            
+
             const response = await GeneralService.getGeneral(id, params)
             general.value = response.data
             paginationGeneral.value = response.pagination
         } catch (err) {
             error.value = err as string
-            
+
         } finally {
             loadingGeneral.value = false
         }
@@ -94,6 +94,14 @@ export const useGeneral = () => {
             document.body.removeChild(a)
             window.URL.revokeObjectURL(url)
             return { success: true, data: response }
+        } catch (err) {
+            error.value = err as string
+        }
+    }
+    const uploadCotizacionFinalFile = async (data: any, idCotizacion?: number) => {
+        try {
+            const response = await GeneralService.uploadCotizacionFinalFile(data, idCotizacion)
+            return response
         } catch (err) {
             error.value = err as string
         }
@@ -182,6 +190,7 @@ export const useGeneral = () => {
         updateEstadoCotizacionFinal,
         uploadFacturaComercial,
         uploadPlantillaFinal,
+        uploadCotizacionFinalFile,
         handleSearchGeneral,
         downloadPlantillaGeneral,
         handlePageChangeGeneral,

@@ -184,6 +184,7 @@ interface Props {
   clienteId?: number
   clienteName?: string
   onSelected?: (data: any) => void
+  validateMaxDate?:boolean
 }
 
 const props = defineProps<Props>()
@@ -351,13 +352,17 @@ const handleSave = async () => {
     })
     // Llamar al composable para realizar la petición
     await withSpinner(async () => {
-     const res = await solicitarDocumentos(props.clienteId as number, { proveedores: proveedoresPayload })
+      try{
+     const res = await solicitarDocumentos(props.clienteId as number, { proveedores: proveedoresPayload },props.validateMaxDate)
      if(res?.success){
       showSuccess('Solicitud enviada correctamente', 'success')
       currentStep.value = 1
     }else{
       showError('Error al enviar solicitud', 'error')
      }
+    }catch(error){
+      showError('Error  al solicitar Documentos',error)
+    }
     }, 'Enviando solicitud...')
     // Emitir resultado simple por si el padre requiere reaccionar
     result = { action: 'pedir_documentos', success: true }

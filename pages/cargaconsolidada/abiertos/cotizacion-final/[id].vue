@@ -17,21 +17,21 @@
         @click="handleUploadPlantillaFinal" />
     </div>
     <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
-      :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
+      :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
-      :show-primary-search="false" :show-pagination="false" :show-secondary-search="false" :show-filters="false"
+  :show-primary-search="true" :show-pagination="false" :show-secondary-search="false" :show-filters="false"
       :filter-config="filterConfigGeneral" :show-export="false"
       empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
       @filter-change="handleFilterChangeGeneral" :show-body-top="true">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
         </div>
       </template>
     </DataTable>
-    <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos" title=""
+  <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos || loadingHeaders" title=""
       :icon="''" :current-page="currentPagePagos" :total-pages="totalPagesPagos" :total-records="totalRecordsPagos"
       :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos" :show-secondary-search="false"
       :show-filters="false" :filter-config="filterConfigPagos" :show-export="false"
@@ -40,7 +40,7 @@
       :show-pagination="false" @filter-change="handleFilterChangePagos" :show-body-top="true">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
         </div>
 
@@ -66,7 +66,7 @@ import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
-const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders } = useGeneral()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
 const { registrarPagoFinal, deletePago } = usePagosClientes()
@@ -219,13 +219,24 @@ const generalColumns = ref<TableColumn<any>[]>([
     accessorKey: 'estado_cotizacion_final',
     header: 'Estados',
     cell: ({ row }: { row: any }) => {
-      //RETURN USELECT WITH OPTION SELECTED FROM FILTERCONFIGGEMRERAL WITH KEY 'estado_cotizacion_final'
+      const initialValue = row.original.estado_cotizacion_final
+      // If estado is PAGADO and pagado_verificado is true, use explicit green class
+      const isPagadoVerificado = initialValue === 'PAGADO' && row.original.pagado_verificado === true
+      // If estado is PENDIENTE use gray class
+      const isPendiente = initialValue === 'PENDIENTE'
+
+      const className = isPagadoVerificado
+        ? 'bg-green-500 text-white dark:bg-green-500 dark:text-white'
+        : isPendiente
+        ? 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+        : STATUS_BG_CLASSES[initialValue as keyof typeof STATUS_BG_CLASSES]
+
       return h(USelect as any, {
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
-        class: [STATUS_BG_CLASSES[row.original.estado_cotizacion_final as keyof typeof STATUS_BG_CLASSES]],
-        modelValue: row.original.estado_cotizacion_final,
+        class: [className],
+        modelValue: initialValue,
         'onUpdate:modelValue': async (value: any) => {
-          if (value && value !== row.original.estado_cotizacion_final) {
+          if (value && value !== initialValue) {
             await handleUpdateEstadoCotizacionFinal(row.original.id_cotizacion, value)
           }
         }

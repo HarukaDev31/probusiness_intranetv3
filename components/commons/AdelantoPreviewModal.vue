@@ -18,7 +18,7 @@
                     <!-- Fecha -->
                     <div class="flex flex-col">
                         <span class="text-sm font-medium text-gray-600">Fecha:</span>
-                        <span class="text-base">{{ formatDate(pago?.fecha_pago) }}</span>
+                        <span class="text-base">{{ formatDateTimeToDmy(pago?.fecha_pago) }}</span>
                     </div>
                     <!-- Banco -->
                     <div class="flex flex-col">

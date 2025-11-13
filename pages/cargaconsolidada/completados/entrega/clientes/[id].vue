@@ -73,6 +73,7 @@
               </div>
               <div class="flex items-center flex-1 justify-between">
                 <label class="flex-1 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito del destino final</label>
+             
                 <USelect class="flex-1/2" :items="distritos" v-model="form.distrito" :disabled="!editable" placeholder="Seleccione" />
               </div>
               <div class="flex items-center flex-1 justify-between">
@@ -329,7 +330,7 @@ const handleSave = async () => {
     addIf('driver_doc', form.value.documento)
     addIf('driver_license', form.value.licencia)
     addIf('final_destination_place', form.value.direccion_final)
-    addIf('final_destination_district', form.value.distrito)
+    addIf('final_destination_district', Number(form.value.distrito??0))
   } else {
     // Provincia
     addIf('import_name', form.value.nombre)
@@ -574,18 +575,16 @@ onMounted(async () => {
   // Derivar contenedor desde el detalle si existe
   if (entregaDetalle.value?.id_contenedor) {
     contenedorId = entregaDetalle.value.id_contenedor as any
-  }
+  } 
   // Obtener headers/carga sólo si aún no está y tenemos id_contenedor
   if (contenedorId && !carga.value) {
     await getHeaders(contenedorId)
   }
-  const distritos = await LocationService.getAllDistritos()
-  
-  if (entregaDetalle.value) {
-    // Inicializar formulario con datos del detalle
-    const d: any = entregaDetalle.value
+  distritos.value = (await LocationService.getAllDistritos()).data || []
+    if (entregaDetalle.value) {
+    const d: any = entregaDetalle.value;
     form.value.qty_box_china = d.qty_box_china || ''
-    form.value.peso = d.peso || ''
+    form.value.peso = d.peso ?? d.cbm_total_china 
     form.value.productos = d.productos || ''
     form.value.nombre = d.import_name || ''
     form.value.documento = d.documento || ''
@@ -613,7 +612,7 @@ onMounted(async () => {
     form.value.departamento_id = d.id_department !== undefined && d.id_department !== null && d.id_department !== '' ? Number(d.id_department) : undefined
     form.value.provincia_id = d.id_province !== undefined && d.id_province !== null && d.id_province !== '' ? Number(d.id_province) : undefined
     form.value.distrito_id = d.id_district !== undefined && d.id_district !== null && d.id_district !== '' ? Number(d.id_district) : undefined
-
+    form.value.distrito = d.distrito !== undefined && d.distrito !== null && d.distrito !== '' ? Number(d.distrito) : undefined
     // Comprobante
     form.value.comp_documento = d.comp_documento || d.documento || ''
     form.value.comp_nombre = d.comp_nombre || d.nombre || ''
@@ -638,15 +637,24 @@ onMounted(async () => {
   departamentos.value = list.map((d: any) => ({ label: d.nombre ?? d.name ?? String(d.id), value: Number(d.id) }))
   // Cargar agencias y preseleccionar si viene id_agency del backend
   await loadAgencias()
+    const detail: any = entregaDetalle.value || {}
     if (form.value.departamento_id) {
-  const rp = await LocationService.getProvincias(form.value.departamento_id)
-  const listP = toArray(rp, 'provincias')
+      // cargar provincias primero y luego asignar el id de provincia para evitar condiciones de carrera
+      const rp = await LocationService.getProvincias(form.value.departamento_id)
+      const listP = toArray(rp, 'provincias')
       provincias.value = listP.map((p: any) => ({ label: p.nombre ?? p.name ?? String(p.id), value: Number(p.id), id_departamento: Number(p.id_departamento) }))
+
+      // asegurar que el select de provincia tenga la opción cargada antes de asignar el valor
+      const provVal = (detail.id_province ?? detail.province?.id_province ?? form.value.provincia_id)
+      form.value.provincia_id = provVal !== undefined && provVal !== null && provVal !== '' ? Number(provVal) : undefined
     }
     if (form.value.provincia_id) {
-  const rd = await LocationService.getDistritos(form.value.provincia_id)
-  const listD = toArray(rd, 'distritos')
-      distritos.value = listD.map((d: any) => ({ label: d.nombre ?? d.name ?? String(d.id), value: Number(d.id), id_provincia: Number(d.id_provincia) }))
+      const rd = await LocationService.getDistritos(form.value.provincia_id)
+      const listD = toArray(rd, 'distritos')
+      distritos.value = listD.map((dItem: any) => ({ label: dItem.nombre ?? dItem.name ?? String(dItem.id), value: Number(dItem.id), id_provincia: Number(dItem.id_provincia) }))
+
+      const distVal = (detail.id_district ?? detail.province?.id_district ?? form.value.distrito_id)
+      form.value.distrito_id = distVal !== undefined && distVal !== null && distVal !== '' ? Number(distVal) : undefined
     }
   } catch (e) { /* noop */ }
 })
