@@ -106,7 +106,8 @@ export interface DataTableEmits {
   'retry': []
 } 
 export interface HeaderResponse {
-  data: Header[]
+  data: Header[] | Header
   success: boolean,
-  carga?: string
+  carga?: string,
+  lista_embarque_url?: string
 }

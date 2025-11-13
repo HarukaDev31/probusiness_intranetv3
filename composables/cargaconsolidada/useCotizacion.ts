@@ -3,7 +3,7 @@ import type { Header, PaginationInfo } from "../../types/data-table"
 import type { Cotizacion, CotizacionFilters } from "../../types/cargaconsolidada/cotizaciones"
 import { ref, computed } from 'vue'
 import { useRoute } from '#app'
-import { useSpinner } from '../composables/commons/useSpinner'
+import { useSpinner } from '~/composables/commons/useSpinner'
 import { fi } from "@nuxt/ui/runtime/locale/index.js"
 const { withSpinner } = useSpinner()
 
@@ -40,6 +40,7 @@ export const useCotizacion = () => {
     
     const getCotizaciones = async (id: number) => {
         try {
+            loading.value = true
             const params: any = {
                 page: pagination.value.current_page,
                 limit: itemsPerPage.value
@@ -133,14 +134,19 @@ export const useCotizacion = () => {
         loadingHeaders.value = true
         try {
             const response = await CotizacionService.getHeaders(id)
-            headersCotizaciones.value = response.data
+            const headers = Array.isArray(response.data)
+                ? response.data
+                : Object.values(response.data ?? {})
+
+            headersCotizaciones.value = headers as Header[]
             carga.value = response.carga
-            loadingHeaders.value = false
             packingList.value = response.lista_embarque_url
             return response
         } catch (error) {
             console.error('Error en getHeaders:', error)
             throw error
+        } finally {
+            loadingHeaders.value = false
         }
     }
     const resetFiltersCotizacion = () => {
