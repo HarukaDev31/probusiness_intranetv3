@@ -1,7 +1,7 @@
 import { ref, onMounted } from 'vue'
 import { useUserRole } from '../auth/useUserRole'
 import { useEcho } from './useEcho'
-import { websocketRoles } from '@/config/websocket/channels'
+import { getWebsocketRoles } from '@/config/websocket/channels'
 
 export const useWebSocketRole = () => {
     const { currentRole: userRole } = useUserRole()
@@ -14,6 +14,8 @@ export const useWebSocketRole = () => {
 
         currentRole.value = userRole.value
         
+        // Obtener la configuración actualizada (incluye registros dinámicos)
+        const websocketRoles = getWebsocketRoles()
         const roleConfig = Object.values(websocketRoles).find(config => config.role === userRole.value)
 
         if (roleConfig) {
@@ -30,6 +32,8 @@ export const useWebSocketRole = () => {
     }
 
     const cleanupRoleChannels = () => {
+        // Obtener la configuración actualizada
+        const websocketRoles = getWebsocketRoles()
         const roleConfig = Object.values(websocketRoles).find(config => config.role === currentRole.value)
         if (roleConfig) {
             roleConfig.channels.forEach(channel => {
