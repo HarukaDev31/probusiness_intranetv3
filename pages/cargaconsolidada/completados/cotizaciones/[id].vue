@@ -766,7 +766,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         handleRefresh(row.original.id)
                     }
                 }) : null,
-                row.original.estado_cotizador !== 'CONFIRMADO' ? h(UButton, {
+                row.original.estado_cotizador !== 'CONFIRMADO' && currentId.value === ID_JEFEVENTAS ? h(UButton, {
                 icon: 'i-heroicons-trash',
                 variant: 'ghost',
                 activeColor: 'error',
