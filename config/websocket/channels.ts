@@ -123,10 +123,10 @@ export const websocketRoles: Record<string, WebSocketRole> = {
     ]
   },
   [ROLES.COORDINACION]: {
-    role: ROLES.COORDINACION,
+    role: 'Coordinacion',
     channels: [
       {
-        name: `${ROLES.COORDINACION}-notifications`,
+        name: `Coordinacion-notifications`,
         type: 'private',
         handlers: [
           {

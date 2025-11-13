@@ -80,7 +80,7 @@ export const useEcho = () => {
           if (typeof connection.bind === 'function') {
             
             connection.bind('connected', () => {
-              
+              console.log('🔗 Pusher: Conexión establecida')
             })
 
             connection.bind('disconnected', () => {

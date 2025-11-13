@@ -152,9 +152,23 @@ export const useClientes = () => {
     }
   }
 
+  // Timeout para el debounce de búsqueda
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null
+
   const handleSearch = async (searchTerm: string) => {
+    // Actualizar el valor de búsqueda inmediatamente para que se refleje en el input
     search.value = searchTerm
-    await loadClientes({ currentPage: 1, search: searchTerm })
+    
+    // Limpiar el timeout anterior si existe
+    if (searchTimeout) {
+      clearTimeout(searchTimeout)
+    }
+    
+    // Crear un nuevo timeout que ejecutará la búsqueda después de 500ms de inactividad
+    searchTimeout = setTimeout(async () => {
+      await loadClientes({ currentPage: 1, search: searchTerm })
+      searchTimeout = null
+    }, 500)
   }
 
   // Función para convertir fecha de DD/MM/YYYY a YYYY-MM-DD
