@@ -1,5 +1,5 @@
 import type { User, LoginCredentials as _LoginCredentials, LoginResponse as _LoginResponse, ApiLoginResponse } from '../types/auth'
-import { websocketRoles } from '../config/websocket/channels'
+import { getWebsocketRoles } from '../config/websocket/channels'
 import { useEcho } from '../composables/websocket/useEcho'
 
 interface ApiPlugin {
@@ -110,6 +110,8 @@ class AuthService {
       return
     }
 
+    // Obtener la configuración actualizada (incluye registros dinámicos)
+    const websocketRoles = getWebsocketRoles()
     const roleConfig = websocketRoles[role]
     if (roleConfig) {
       
