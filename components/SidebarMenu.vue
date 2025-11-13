@@ -1,14 +1,13 @@
 <template>
   <!-- Sidebar -->
   <div
-    class="fixed inset-y-0 left-0 z-50 w-70 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out flex flex-col"
-    :class="visible ? 'translate-x-0' : '-translate-x-full'">
+    class="fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out flex flex-col"
+    :class="[visible ? 'translate-x-0' : '-translate-x-full', collapsed ? 'w-20' : 'w-70']">
     <!-- Top: centered logo -->
-    <div class="py-6 px-4 flex items-center justify-center">
-      <NuxtLink to="/" class="flex items-center">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">probusiness</h1>
-        <img src="https://intranet.probusiness.pe/assets/img/logos/probusiness.png" alt="Probusiness"
-          class="w-14 h-auto" />
+      <div class="py-3 px-3 flex items-center justify-start gap-3">
+      <NuxtLink to="/" class="flex items-center gap-3">
+        <img src="https://intranet.probusiness.pe/assets/img/logos/probusiness.png" alt="Probusiness" class="w-10 h-auto" />
+        <h1 v-if="!collapsed" class="text-2xl font-bold text-gray-900 dark:text-white">probusiness</h1>
       </NuxtLink>
     </div>
 
@@ -17,6 +16,12 @@
 
     <!-- Nav: scrollable -->
     <nav class="px-2 overflow-y-auto flex-1">
+      <!-- Floating midpoint control: always show collapse chevron on desktop -->
+  <div class="absolute right-[-12px] top-1/2 transform -translate-y-1/2 z-50 hidden lg:block">
+        <button type="button" class="p-1 rounded-md text-gray-500 bg-white dark:bg-gray-800 shadow hover:bg-gray-100 dark:hover:bg-gray-700" @click="toggleCollapsed" :title="collapsed ? 'Expandir menú' : 'Minimizar menú'">
+          <UIcon :name="collapsed ? 'i-heroicons-chevron-right' : 'i-heroicons-chevron-left'" class="w-5 h-5" />
+        </button>
+  </div>
       <div class="space-y-2 pb-4">
         <template v-if="!menuCategories || menuCategories.length === 0">
           <div class="text-center py-6">
@@ -28,7 +33,7 @@
 
         <template v-else>
           <template v-for="category in menuCategories" :key="category.id">
-            <div class="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <div v-if="!collapsed" class="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               {{ category.name }}
             </div>
 
@@ -39,16 +44,16 @@
                   <div class="flex items-center justify-between">
                     <!-- Left: clickable area (navega si tiene route, sino actúa como toggle) -->
                     <button type="button"
-                      class="flex-1 flex items-center gap-3 py-2 px-3 rounded-md text-sm text-left focus:outline-none"
-                      :class="isParentActive(item) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                      class="flex-1 flex items-center gap-3 rounded-md text-sm focus:outline-none"
+                      :class="[ isParentActive(item) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'text-left px-3 py-2' ]"
                       @click="navigateOrToggle(item)">
                       <UIcon :name="item.icon || 'i-heroicons-archive-box'" class="w-5 h-5 text-gray-400" />
-                      <span class="truncate">{{ item.name }} </span>
+                      <span v-if="!collapsed" class="truncate">{{ item.name }} </span>
                     </button>
 
                     <!-- Right: chevron toggle (stop propagation para no navegar) -->
                     <button type="button"
-                      class="ml-2 p-2 rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                       @click.stop="toggleParent(item.id)">
                       <UIcon name="i-heroicons-chevron-down" class="w-4 h-4 transform"
                         :class="expanded[String(item.id)] ? 'rotate-180' : ''" />
@@ -57,18 +62,26 @@
 
                   <transition name="fade" enter-active-class="transition-all duration-150"
                     leave-active-class="transition-all duration-150">
-                    <div v-show="expanded[String(item.id)]" class="pl-10 mt-1 space-y-1">
+                    <div v-show="expanded[String(item.id)]" class="mt-1 space-y-1" :class="[ collapsed ? 'px-0' : 'pl-10' ]">
                       <template v-for="child in item.children" :key="child.id">
                         <!-- Child con sub-hijos -->
                         <div v-if="child.children && child.children.length">
                           <div class="flex items-center justify-between">
 
                             <button type="button"
-                              class="flex-1 flex items-center gap-2 py-2 px-2 rounded-md text-sm text-left focus:outline-none"
-                              :class="isParentActive(child) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                              class="flex-1 flex items-center gap-2 rounded-md text-sm focus:outline-none"
+                              :class="[ isParentActive(child) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'text-left px-2' ]"
                               @click="navigateOrToggle(child)">
-                              <UIcon :name="child.icon || 'i-heroicons-archive-box'" class="w-4 h-4 text-gray-400" />
-                              <span class="truncate">{{ child.name }}</span>
+                              <template v-if="child.icon">
+                                <UIcon :name="child.icon" class="w-4 h-4 text-gray-400" />
+                              </template>
+                              <template v-else>
+                                <span v-if="collapsed"
+                                  :class="['w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900 text-xs text-gray-400 font-medium', collapsed ? '-ml-2 mr-0' : 'mr-2']">
+                                  {{ initialLetter(item.name, child.name) }}
+                                </span>
+                              </template>
+                              <span v-if="!collapsed" class="truncate">{{ child.name }}</span>
                             </button>
 
                             <button type="button"
@@ -81,20 +94,46 @@
 
                           <div v-show="expanded[String(child.id)]" class="pl-6 mt-1 space-y-1">
                             <template v-for="sub in child.children" :key="sub.id">
-                              <UButton :label="sub.name" :icon="sub.icon" variant="ghost"
-                                class="w-full justify-start text-sm gap-2 py-1 px-2 rounded-md"
-                                :class="isActiveRoute(sub.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                                @click="handleNavigation(sub.route)" />
+                              <UButton variant="ghost"
+                                class="w-full text-sm gap-2 py-1 rounded-md"
+                                :class="[ isActiveRoute(sub.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0' : 'justify-start px-2' ]"
+                                @click="handleNavigation(sub.route)">
+                                <template #default>
+                                  <span v-if="sub.icon">
+                                    <UIcon :name="sub.icon" class="w-4 h-4 text-gray-400 mr-2" />
+                                  </span>
+                                  <span v-else>
+                                    <span v-if="collapsed"
+                                      :class="['w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 font-medium', collapsed ? '-ml-2 mr-0' : 'mr-2']">
+                                      {{ initialLetter(child.name, sub.name) }}
+                                    </span>
+                                  </span>
+                                  <span v-if="!collapsed">{{ sub.name }}</span>
+                                </template>
+                              </UButton>
                             </template>
                           </div>
                         </div>
 
                         <!-- Child simple -->
                         <div v-else>
-                          <UButton :label="getCustomMenuName(item.name, child.name)" :icon="child.icon" variant="ghost"
-                            class="w-full justify-start text-sm gap-2 py-2 px-2 rounded-md"
-                            :class="isActiveRoute(child.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                            @click="handleNavigation(child.route)" />
+                          <UButton variant="ghost"
+                            class="w-full text-sm gap-2 py-2 px-2 rounded-md"
+                            :class="[ isActiveRoute(child.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'justify-start px-2' ]"
+                            @click="handleNavigation(child.route)">
+                            <template #default>
+                              <span v-if="child.icon">
+                                <UIcon :name="child.icon" class="w-4 h-4 text-gray-400 mr-2" />
+                              </span>
+                              <span v-else>
+                                <span v-if="collapsed"
+                                  :class="['w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900 text-xs text-gray-500 dark:text-gray-300 font-medium', collapsed ? '-ml-2 mr-0' : 'mr-2']">
+                                  {{ initialLetter(item.name, child.name) }}
+                                </span>
+                              </span>
+                              <span v-if="!collapsed">{{ getCustomMenuName(item.name, child.name) }}</span>
+                            </template>
+                          </UButton>
                         </div>
                       </template>
                     </div>
@@ -103,9 +142,9 @@
 
                 <!-- Item simple (sin hijos) -->
                 <div v-else>
-                  <UButton :label="item.name" :icon="item.icon" variant="ghost"
-                    class="w-full justify-start text-sm gap-3 py-2 px-3 rounded-md"
-                    :class="isActiveRoute(item.route) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                  <UButton :label="collapsed ? '' : item.name" :icon="item.icon || 'i-heroicons-home'" variant="ghost"
+                    class="w-full text-sm gap-3 py-2 rounded-md"
+                    :class="[ isActiveRoute(item.route) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0' : 'justify-start px-3' ]"
                     @click="handleNavigation(item.route)" />
                 </div>
               </template>
@@ -117,16 +156,17 @@
         <!-- Preferencias -->
         <div class="py-5 border-t border-b border-gray-100 dark:border-gray-700"
           v-if="currentRole !== ROLES.CONTENEDOR_ALMACEN">
-          <div class="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preferencias
-          </div>
+            <div v-if="!collapsed" class="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preferencias
+            </div>
           <div class="mt-2 space-y-1 px-2">
             <div class="py-2">
-              <UButton variant="ghost" class="w-full justify-start rounded-md text-sm text-gray-700 dark:text-gray-300"
-                icon="i-heroicons-bell" @click="openNotifications">
+              <UButton variant="ghost" class="w-full rounded-md text-sm text-gray-700 dark:text-gray-300"
+                icon="i-heroicons-bell" @click="openNotifications"
+                :class="collapsed ? 'justify-center' : 'justify-start'">
                 <template #default>
-                  <span>Notificaciones</span>
+                  <span v-if="!collapsed">Notificaciones</span>
                   <UBadge 
-                    v-if="unreadCount > 0"
+                    v-if="!collapsed && unreadCount > 0"
                     :label="unreadCount > 99 ? '99+' : unreadCount.toString()"
                     color="error"
                     variant="solid"
@@ -138,10 +178,10 @@
             </div> 
 
             <div class="flex items-center justify-between py-4">
-              <div class="flex items-center gap-3">
-                <UIcon name="i-heroicons-moon" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                <div class="text-sm text-gray-700 dark:text-gray-300">Modo oscuro</div>
-              </div>
+              <div v-if="!collapsed" class="flex items-center gap-3">
+                  <UIcon name="i-heroicons-moon" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <div class="text-sm text-gray-700 dark:text-gray-300">Modo oscuro</div>
+                </div>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" class="sr-only peer" :checked="isDark" @change="toggleDarkMode" />
                 <div class="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-primary-600 transition-colors"></div>
@@ -156,9 +196,9 @@
 
     <!-- Bottom: user info + logout -->
     <div class="border-b border-gray-100 dark:border-gray-700 px-4 py-4">
-      <div class="flex items-center gap-3">
-        <UAvatar :src="userData?.avatar || undefined" :alt="userName || 'Usuario'" size="sm" />
-        <div class="flex-1 min-w-0">
+  <div class="flex items-center gap-3">
+  <UAvatar :src="userData?.avatar || undefined" :alt="userName || 'Usuario'" :size="collapsed ? 'md' : 'sm'" :class="['w-10 h-10']" />
+  <div class="flex-1 min-w-0" v-if="!collapsed">
           <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ userName || 'Usuario' }}</div>
           <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ currentRole || 'Sin rol' }}</div>
         </div>
@@ -167,8 +207,8 @@
 
     </div>
     <div class="mt-3 p-4">
-      <UButton label="Cerrar sesión" icon="i-heroicons-arrow-right-on-rectangle" variant="ghost" color="error"
-        class="w-full text-sm" @click="logout" />
+      <UButton :label="collapsed ? '' : 'Cerrar sesión'" icon="i-heroicons-arrow-right-on-rectangle" variant="ghost" color="error"
+        class="w-full text-sm" :class="collapsed ? 'justify-center' : ''" @click="logout" />
     </div>
   </div>
 
@@ -177,7 +217,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { SidebarCategory } from '../types/module'
 import { ROLES } from '~/constants/roles'
 import { useUserRole } from '../composables/auth/useUserRole'
@@ -203,6 +243,7 @@ interface Props {
 
 interface Emits {
   (e: 'update:modelValue', value: boolean): void
+  (e: 'collapsed-change', value: boolean): void
 }
 
 const props = defineProps<Props>()
@@ -231,6 +272,19 @@ const isDark = computed(() => colorMode.value === 'dark')
 const visible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
+})
+
+// Sidebar collapsed state (icons-only)
+const collapsed = ref(false)
+const toggleCollapsed = () => {
+  collapsed.value = !collapsed.value
+  // emit collapsed state so parent (layout) can adapt margins
+  emit('collapsed-change', collapsed.value)
+}
+
+// emit initial collapsed state on mount so layout can initialize correctly
+onMounted(() => {
+  emit('collapsed-change', collapsed.value)
 })
 
 const toggleSidebar = () => {
@@ -340,5 +394,16 @@ const getCustomMenuName = (itemName: string, childName: string) => {
     return CUSTOM_MENUS_PER_ROLE[itemName][currentRole.value][childName]
   }
   return childName
+}
+
+// helper to compute the initial letter for a menu entry using custom name mapping
+const initialLetter = (parentName: string, name: string) => {
+  try {
+    const label = getCustomMenuName(parentName, name) || name || ''
+    if (typeof label === 'string' && label.length) return label.charAt(0)
+    return String(label)[0] || '?'
+  } catch (e) {
+    return '?'
+  }
 }
 </script>

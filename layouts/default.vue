@@ -1,13 +1,13 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-    <!-- Sidebar -->
-    <SidebarMenu v-model="sidebarVisible" :user="user" :menu-categories="sidebarCategories" />
+  <div class="min-h-screen bg-[#f0f4f9] dark:bg-gray-900 flex">
+  <!-- Sidebar -->
+  <SidebarMenu v-model="sidebarVisible" :user="user" :menu-categories="sidebarCategories" @collapsed-change="(v) => sidebarCollapsed = v" />
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col transition-all duration-300 w-80" :class="sidebarVisible ? 'lg:ml-70' : ''">
+  <div class="flex-1 flex flex-col transition-all duration-300 w-80" :class="sidebarVisible ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-70') : ''">
       <!-- Top Header -->
       <header 
-      class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 lg:hidden">
+      class="bg-[#f0f4f9] dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 lg:hidden">
         <div class="px-6 py-4">
 
           <div class="flex items-center justify-between">
@@ -58,6 +58,7 @@ import type { SidebarCategory } from '../types/module'
 
 
 const sidebarVisible = ref(true)
+const sidebarCollapsed = ref(false)
 
 const pageTitle = computed(() => {
   const route = useRoute()

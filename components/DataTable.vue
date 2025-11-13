@@ -117,7 +117,7 @@
           class="scroll-shadow scroll-shadow-right"
           :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
         ></div>
-        <UTable :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
+        <UTable :key="tableKey" :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
           class="bg-transparent min-w-full" :ui="{
             root: 'relative overflow-visible',
             base: 'min-w-full',
@@ -215,6 +215,44 @@ const emit = defineEmits<DataTableEmits>()
 const currentPageModel = computed({
   get: () => props.currentPage,
   set: (value) => onPageChange(value)
+})
+
+// Key to force re-render of the table when pagination changes to avoid stale image elements
+const tableKey = ref(0)
+
+// Re-render table when page or items per page change so images are not briefly reused
+watch(() => props.currentPage, (newPage: number | undefined) => {
+  tableKey.value += 1
+
+  // If parent provided a prefetchNextPage callback, trigger prefetch for the next page
+  try {
+    const current = newPage || 1
+    const next = current + 1
+    const total = props.totalPages || props.totalRecords || undefined
+    if (typeof props.prefetchNextPage === 'function') {
+      // Only prefetch if we don't know total or next is within totalPages
+      if (!total || (typeof total === 'number' && next <= (props.totalPages || total))) {
+        // Fire-and-forget; swallow errors
+        ;(props.prefetchNextPage as any)(next, props.itemsPerPage || 10).catch(() => {})
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+})
+
+watch(() => props.itemsPerPage, (newLimit: number | undefined) => {
+  tableKey.value += 1
+  // When items per page changes, also attempt to prefetch the next page using current page
+  try {
+    const current = props.currentPage || 1
+    const next = current + 1
+    if (typeof props.prefetchNextPage === 'function') {
+      ;(props.prefetchNextPage as any)(next, newLimit || 10).catch(() => {})
+    }
+  } catch (e) {
+    // ignore
+  }
 })
 
 // Composable
