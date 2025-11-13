@@ -15,7 +15,7 @@
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
-                        :loading="loadingHeaders" />
+                        :loading="loadingCotizaciones || loadingHeaders" />
                     <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
@@ -26,8 +26,8 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="true"
-            :columns="getEmbarqueColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
+            <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
+            :columns="getEmbarqueColumns()" :loading="loading || loadingHeaders" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
@@ -38,7 +38,7 @@
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
-                        :loading="loadingHeaders" />
+                        :loading="loading || loadingHeaders" />
                     <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
@@ -76,7 +76,7 @@
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
-            :show-pagination="true" :loading="loadingPagos" :current-page="currentPagePagos"
+            :show-pagination="false" :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos"
             :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
             :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
             :filter-config="filterConfig" :show-export="false"
@@ -87,7 +87,7 @@
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
-                        :loading="loadingHeaders" />
+                        :loading="loadingPagos || loadingHeaders" />
                     <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>

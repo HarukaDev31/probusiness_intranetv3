@@ -17,7 +17,7 @@
         @click="handleUploadPlantillaFinal" />
     </div>
     <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
-      :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
+      :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
   :show-primary-search="true" :show-pagination="false" :show-secondary-search="false" :show-filters="false"
       :filter-config="filterConfigGeneral" :show-export="false"
@@ -26,12 +26,12 @@
       @filter-change="handleFilterChangeGeneral" :show-body-top="true">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
         </div>
       </template>
     </DataTable>
-    <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos" title=""
+  <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos || loadingHeaders" title=""
       :icon="''" :current-page="currentPagePagos" :total-pages="totalPagesPagos" :total-records="totalRecordsPagos"
       :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos" :show-secondary-search="false"
       :show-filters="false" :filter-config="filterConfigPagos" :show-export="false"
@@ -40,7 +40,7 @@
       :show-pagination="false" @filter-change="handleFilterChangePagos" :show-body-top="true">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingHeaders" />
+          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
         </div>
 
