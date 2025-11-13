@@ -59,6 +59,7 @@ export const registerCotizadorEvents = () => {
 
   // Handler for CotizacionChinaInspected
   registerEventHandler(WS_EVENTS.COTIZACION_CHINA_INSPECTIONED, (data) => {
+    console.log('data', data)
     if(data.usuario_id == currentId.value) {
       return
     }
