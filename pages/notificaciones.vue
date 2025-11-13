@@ -152,7 +152,7 @@
             
             <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
               <span>{{ notification.modulo }}</span>
-              <span>{{ formatDate(notification.fecha_creacion) }}</span>
+              <span>{{ formatDateTimeToDmy(notification.fecha_creacion) }}</span>
               <span>{{ notification.creador.nombre }}</span>
               
               <!-- Mostrar parámetros de navegación si existen -->

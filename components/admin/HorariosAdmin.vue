@@ -102,7 +102,7 @@
               class="cursor-pointer"
               @click="removeSelectedDate(date)"
             >
-              {{ formatDate(date) }}
+              {{ formatDateTimeToDmy(date) }}
               <UIcon name="i-heroicons-x-mark" class="w-3 h-3 ml-1" />
             </UBadge>
           </div>

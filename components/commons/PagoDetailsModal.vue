@@ -21,7 +21,7 @@
                     <!-- Fecha -->
                     <div class="flex justify-between items-center">
                         <span class="font-medium">Fecha:</span>
-                        <span>{{ formatDate(pagoDetails.payment_date) }}</span>
+                        <span>{{ formatDateTimeToDmy(pagoDetails.payment_date) }}</span>
                     </div>
 
                     <!-- Banco -->

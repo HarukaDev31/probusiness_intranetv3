@@ -435,7 +435,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         header: 'Fecha',
         cell: ({ row }: { row: any }) => {
             const fecha = row.getValue('fecha')
-            return fecha ? formatDate(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
+            return fecha ? formatDateTimeToDmy(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
         }
     },
     {
@@ -616,7 +616,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         header: 'Fecha',
         cell: ({ row }: { row: any }) => {
             const fecha = row.getValue('fecha')
-            return fecha ? formatDate(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
+            return fecha ? formatDateTimeToDmy(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
         }
     },
     {

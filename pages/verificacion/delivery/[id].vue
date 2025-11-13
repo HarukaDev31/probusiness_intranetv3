@@ -61,7 +61,7 @@
   
               <div class="flex justify-between">
                 <span class="text-gray-600 dark:text-gray-200">Fecha:</span>
-                <span class="font-medium">{{ formatDate(pago.payment_date) }}</span>
+                <span class="font-medium">{{ formatDateTimeToDmy(pago.payment_date) }}</span>
               </div>
   
               <div class="flex justify-between">
