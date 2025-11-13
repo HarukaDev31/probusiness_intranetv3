@@ -161,7 +161,9 @@ export const websocketRoles: Record<string, WebSocketRole> = {
           {
             event: WS_EVENTS.COTIZACION.STATUS_UPDATED,
             callback: (data) => {
-              
+              //mostrar notificacion de cotizacion actualizada
+              const { showSuccess } = useModal()
+              showSuccess('Cotización Actualizada', data.message || 'La cotización se ha actualizado exitosamente.')
             }
           }
         ]
