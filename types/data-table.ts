@@ -70,6 +70,11 @@ export interface DataTableProps {
   // Messages
   emptyStateMessage?: string
 
+  // Skeleton loading UI
+  showSkeleton?: boolean
+  skeletonRows?: number
+  skeletonCols?: number
+
   // Values from parent
   searchQueryValue?: string
   primarySearchValue?: string
@@ -101,7 +106,8 @@ export interface DataTableEmits {
   'retry': []
 } 
 export interface HeaderResponse {
-  data: Header[]
+  data: Header[] | Header
   success: boolean,
-  carga?: string
+  carga?: string,
+  lista_embarque_url?: string
 }

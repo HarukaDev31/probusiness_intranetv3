@@ -3,81 +3,75 @@
 
     <!-- Sticky Top Section -->
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 mb-2">
-      <slot name="filters ">
-        <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4 p-4">
-          <div class="w-full lg:w-full flex flex-col lg:flex-row justify-between gap-3 items-center">
-            <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack" />
-            <!-- Search and Actions -->
-            <div class="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full lg:w-auto">
-              <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
-                <label v-if="showPrimarySearchLabel"
-                  class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
-                <UInput :model-value="primarySearchInternal" :placeholder="primarySearchPlaceholder"
-                  class="flex-1 h-10 min-w-0" :ui="{ base: 'h-11' }"
-                  @update:model-value="onPrimarySearchChange">
-                  <template #leading>
-                    <UIcon name="i-heroicons-magnifying-glass" class="text-gray-400" />
-                  </template>
-                </UInput>
-              </div>
-              
-              <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
+  <slot name="filters" />
+  <template v-if="!$slots.filters">
+    <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4 p-4">
+      <div class="w-full lg:w-full flex flex-col lg:flex-row justify-between gap-3 items-center">
+        <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack" />
+        <!-- Search and Actions -->
+        <div class="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full lg:w-auto">
+          <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
+            <label v-if="showPrimarySearchLabel"
+              class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
+            <UInput :model-value="primarySearchInternal" :placeholder="primarySearchPlaceholder"
+              class="flex-1 h-10 min-w-0" :ui="{ base: 'h-11' }"
+              @update:model-value="onPrimarySearchChange">
+              <template #leading>
+                <UIcon name="i-heroicons-magnifying-glass" class="text-gray-400" />
+              </template>
+            </UInput>
+          </div>
+
+          <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
+            class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
+            @click="handleExport" />
+          <div class="flex items-center gap-2 relative w-full lg:w-auto">
+            <div ref="filtersButtonRef" class="w-full lg:w-auto">
+              <UButton v-if="showFilters" :label="translations.filters" icon="i-heroicons-funnel"
                 class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
-                @click="handleExport" />
-              <div class="flex items-center gap-2 relative w-full lg:w-auto">
-                <div ref="filtersButtonRef" class="w-full lg:w-auto">
-                  <UButton v-if="showFilters" :label="translations.filters" icon="i-heroicons-funnel"
-                    class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
-                    @click="showFiltersPanel = !showFiltersPanel" />
-                </div>
-                
-                <!-- Panel de filtros -->
-                <div ref="filtersPanelRef" v-if="showFiltersPanel && showFilters"
-                  class="absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
-                  @click.stop>
-                  <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
-                    <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {{ filter.label }}
-                      </label>
-                      <!-- Filtro de tipo date -->
-                      <UInput v-if="filter.type === 'date'"
-                        :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
-                        :placeholder="filter.placeholder" class="w-full"  
-                        @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
-                      <!-- Filtro de tipo select -->
-                      <USelect v-else :model-value="(() => {
-                          const value = filtersValue && filtersValue[filter.key]
-                          return value
-                        })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
-                          @update:model-value="(value) => {
-                            handleFilterChange(filter.key, value)
-                          }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
-                    </div>
-                  </div>
-                  <!-- Botones para borrar y cerrar filtros -->
-                  <div class="flex justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 gap-2">
-                    <UButton :label="translations.clearFilters" color="warning" variant="soft" size="sm"
-                      icon="i-heroicons-x-mark" @click="handleClearFilters" @click.stop />
-                    <UButton :label="translations.close" color="gray" variant="outline" size="sm"
-                      @click="showFiltersPanel = false" @click.stop />
-                  </div>
+                @click="showFiltersPanel = !showFiltersPanel" />
+            </div>
+
+            <!-- Panel de filtros -->
+            <div ref="filtersPanelRef" v-if="showFiltersPanel && showFilters"
+              class="absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
+              @click.stop>
+              <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
+                <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ filter.label }}
+                  </label>
+                  <!-- Filtro de tipo date -->
+                  <UInput v-if="filter.type === 'date'"
+                    :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
+                    :placeholder="filter.placeholder" class="w-full"  
+                    @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
+                  <!-- Filtro de tipo select -->
+                  <USelect v-else :model-value="(() => {
+                      const value = filtersValue && filtersValue[filter.key]
+                      return value
+                    })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
+                      @update:model-value="(value) => {
+                        handleFilterChange(filter.key, value)
+                      }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
                 </div>
               </div>
-              <!-- Export Button -->
-         
-              <slot name="actions" />
-              <!--Show New Button-->
-              <div class="flex w-full lg:w-auto">
-                <div v-if="showNewButton" class="w-full lg:w-auto">
-                  <UButton :label="newButtonLabel || 'Nuevo'" icon="i-heroicons-plus" color="primary"
-                    class="h-11 flex-1 font-normal w-full lg:w-auto" @click="onNewButtonClick" />
-                </div>
+            </div>
+            <!-- Export Button -->
+
+            <slot name="actions" />
+            <!--Show New Button-->
+            <div class="flex w-full lg:w-auto">
+              <div v-if="showNewButton" class="w-full lg:w-auto">
+                <UButton :label="newButtonLabel || 'Nuevo'" icon="i-heroicons-plus" color="primary"
+                  class="h-11 flex-1 font-normal w-full lg:w-auto" @click="onNewButtonClick" />
               </div>
             </div>
           </div>
         </div>
-      </slot>
+      </div>
+    </div>
+  </template>
 
       <div v-if="showHeaders" class="bg-transparent border-b border-gray-200 dark:border-gray-700">
         <div class="px-4 lg:px-6 py-3">
@@ -135,7 +129,21 @@
           }">
 
           <template #loading>
-            <div class="flex items-center justify-center py-8">
+            <div v-if="props.showSkeleton">
+              <slot name="skeleton">
+                <div class="mb-4">
+                  <div class="flex items-center gap-3 mb-2">
+                    <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`h-${c}`" class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
+                  </div>
+                </div>
+                <div class="space-y-3">
+                  <div v-for="r in (props.skeletonRows || 6)" :key="`row-${r}`" class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${props.skeletonCols || Math.max(1, columns.length)}, minmax(0, 1fr))` }">
+                    <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`c-${r}-${c}`" class="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
+                  </div>
+                </div>
+              </slot>
+            </div>
+            <div v-else class="flex items-center justify-center py-8">
               <UIcon name="i-heroicons-arrow-path" class="animate-spin w-6 h-6 mr-2" />
               <span>{{ translations.loading }}</span>
             </div>

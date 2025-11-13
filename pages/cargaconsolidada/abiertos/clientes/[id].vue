@@ -1111,15 +1111,14 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                 variant: 'ghost',
                 size: 'xs',
                 onClick: () => {
-                    //generar un modal para solicitar el tipo de recordatorio de documento
-                    console.log(row.original)
                     modalAcciones.open({
                         show: true,
                         clienteId: row.original.id,
                         clienteName: row.original.nombre,
                         onSelected: (data: any) => {
                             console.log(data)
-                        }
+                        },
+                        validateMaxDate:false
                     })
                 }
             },

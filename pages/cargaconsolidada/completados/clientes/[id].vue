@@ -4,7 +4,7 @@
 
 
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
-                :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
+                :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
                 :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersGeneral" :show-export="(currentId == ID_JEFEVENTAS) ? true : false" :show-body-top="true"
@@ -17,7 +17,7 @@
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
                                 <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
@@ -35,7 +35,7 @@
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados" :columns="columnsEmbarcados"
-                :loading="loadingEmbarcados" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
+                :loading="loadingEmbarcados || loadingHeaders" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
                 :total-records="totalRecordsEmbarcados" :items-per-page="itemsPerPageEmbarcados"
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true"
@@ -48,7 +48,7 @@
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingEmbarcados || loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
                                 <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
@@ -67,7 +67,7 @@
 
             </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
-                :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
+                :loading="loadingVariacion || loadingHeaders" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
                 :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersVariacion" :show-export="false" :show-body-top="true"
@@ -80,7 +80,7 @@
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingVariacion || loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
                                 <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
@@ -98,7 +98,7 @@
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
-                :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
+                :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
                 :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersPagos" :show-export="false" :hide-back-button="false"
@@ -111,7 +111,7 @@
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
                                 <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
@@ -1119,7 +1119,8 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         clienteName: row.original.nombre,
                         onSelected: (data: any) => {
                             console.log(data)
-                        }
+                        },
+                        validateMaxDate:true
                     })
                 }
             },
