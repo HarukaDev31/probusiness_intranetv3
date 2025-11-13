@@ -29,7 +29,10 @@ export const registerCoordinacionEvents = () => {
       data.message || 'Se ha contactado con China para la cotización.'
     )
   })
-    
+  registerEventHandler(WS_EVENTS.COTIZACION_CHANGE_CONTAINER, (data) => {
+    const { showSuccess } = useModal()
+    showSuccess('Cambio de Contenedor', data.message || 'Se ha cambiado el contenedor de la cotización.')
+  })
   // ============================================
   // SUSCRIBIR EVENTOS AL ROL COORDINACIÓN
   // ============================================
@@ -40,7 +43,8 @@ export const registerCoordinacionEvents = () => {
     [
       WS_EVENTS.TASK_ASSIGNMENT,
       WS_EVENTS.SCHEDULE_UPDATE,
-      WS_EVENTS.COTIZACION_CHINA_CONTACTED
+      WS_EVENTS.COTIZACION_CHINA_CONTACTED,
+      WS_EVENTS.COTIZACION_CHANGE_CONTAINER
     ],
     'private'
   )

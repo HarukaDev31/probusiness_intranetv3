@@ -35,6 +35,12 @@ export const registerCotizadorEvents = () => {
     )
   })
 
+  // Handler para CotizacionChangeContainer
+  registerEventHandler(WS_EVENTS.COTIZACION_CHANGE_CONTAINER, (data) => {
+    const { showSuccess } = useModal()
+    showSuccess('Cambio de Contenedor', data.message || 'Se ha cambiado el contenedor de la cotización.')
+  })
+
   // ============================================
   // SUSCRIBIR EVENTOS AL ROL COTIZADOR
   // ============================================
@@ -45,7 +51,8 @@ export const registerCotizadorEvents = () => {
     [
       WS_EVENTS.COTIZACION_NEW_REQUEST,
       WS_EVENTS.COTIZACION_STATUS_UPDATED,
-      WS_EVENTS.COTIZACION_CHINA_CONTACTED
+      WS_EVENTS.COTIZACION_CHINA_CONTACTED,
+      WS_EVENTS.COTIZACION_CHANGE_CONTAINER
     ],
     'private'
   )
