@@ -22,6 +22,7 @@
   :itemsPerPage="itemsPerPage"
   :totalRecords="totalRecords"
   @update:currentPage="onPageChange"
+  :prefetchNextPage="prefetchImagesForPage"
   @update:itemsPerPage="onItemsPerPageChange"
   :showExport="false"
   :showNewButton="false"
@@ -54,6 +55,8 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, h, resolveComponent } from 'vue'
 import DataTable from '~/components/DataTable.vue'
+import LazyImage from '~/components/LazyImage.vue'
+import { ProductService } from '~/services/productService'
 import type { ProductMapped } from '~/types/product'
 import DynamicModal from '~/components/DynamicModal.vue'
 import ImageModal from '~/components/ImageModal.vue'
@@ -168,7 +171,18 @@ const tableColumns = computed(() => [
   {
     header: 'Foto',
     accessorKey: 'foto',
-    cell: ({ row }: any) => row.original.foto ? h('img', { src: row.original.foto, class: 'w-20 h-20 object-cover rounded cursor-pointer', onClick: () => openImageModal(row.original.foto, row.original.nombreComercial) }) : 'Sin foto'
+    cell: ({ row }: any) => {
+      const url = row.original.foto
+      if (!url) return 'Sin foto'
+      return h(LazyImage, {
+        src: url,
+        alt: row.original.nombreComercial,
+        width: 80,
+        height: 80,
+        class: 'w-20 h-20 object-cover rounded cursor-pointer',
+        onClick: () => openImageModal(url, row.original.nombreComercial)
+      })
+    }
   },
   { header: 'Nombre comercial', accessorKey: 'nombreComercial' },
   { header: 'Rubro', accessorKey: 'rubro' },
@@ -231,7 +245,42 @@ const onPageChange = (page: number) => {
 
   localCurrentPage.value = page
 
+  // Load the requested page; DataTable will call the provided prefetchNextPage
+  // callback to preload the next page's images (if available).
   loadProducts({ page })
+}
+
+// Helper: preload a single image (returns a promise that resolves on load/error)
+const preloadImage = (url: string) => {
+  return new Promise<void>((resolve) => {
+    try {
+      const i = new Image()
+      i.onload = () => resolve()
+      i.onerror = () => resolve()
+      i.src = url
+    } catch (e) {
+      resolve()
+    }
+  })
+}
+
+// Prefetch images for a given page number (uses ProductService directly so we don't alter state)
+const prefetchImagesForPage = async (page: number) => {
+  try {
+    const resp = await ProductService.getProducts({ page, limit: itemsPerPage.value })
+    if (resp.success && Array.isArray(resp.data)) {
+      const urls = resp.data.map((p: any) => p.foto).filter((u: any) => !!u)
+      // preload asynchronously but limit concurrency to avoid spiking connections
+      const CONCURRENCY = 6
+      for (let i = 0; i < urls.length; i += CONCURRENCY) {
+        const chunk = urls.slice(i, i + CONCURRENCY)
+        await Promise.all(chunk.map((u: string) => preloadImage(u)))
+      }
+    }
+  } catch (err) {
+    // ignore prefetch errors
+    console.warn('Prefetch images failed:', err)
+  }
 }
 
 const onFiltersUpdate = (newFilters: Record<string, any>) => {

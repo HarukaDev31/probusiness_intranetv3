@@ -436,7 +436,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         header: 'Fecha',
         cell: ({ row }: { row: any }) => {
             const fecha = row.getValue('fecha')
-            return fecha ? formatDateTimeToDmy(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
+            return fecha ? formatDateTimeToDmy(fecha) : ''
         }
     },
     {
@@ -617,7 +617,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         header: 'Fecha',
         cell: ({ row }: { row: any }) => {
             const fecha = row.getValue('fecha')
-            return fecha ? formatDateTimeToDmy(fecha, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''
+            return fecha ? formatDateTimeToDmy(fecha) : ''
         }
     },
     {
@@ -714,15 +714,6 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     }
                 }) : null,
                 row.original.cotizacion_file_url ? h(UButton, {
-                    icon: 'i-heroicons-arrow-path',
-                    variant: 'ghost',
-                    size: 'xs',
-                    color: 'secondary',
-                    onClick: () => {
-                        handleRefresh(row.original.id)
-                    }
-                }) : null,
-                row.original.cotizacion_file_url ? h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
                     size: 'xs',
@@ -731,15 +722,6 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         handleDeleteFile(row.original.id)
                     }
                 }) : null,
-                h(UButton, {
-                    icon: 'i-heroicons-arrow-right',
-                    variant: 'ghost',
-                    size: 'xs',
-                    color: 'info',
-                    onClick: () => {
-                        handleMoveCotizacion(row.original.id)
-                    }
-                })
             ])
         }
 
@@ -766,6 +748,43 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     }
                 }
             })
+        }
+    },
+    {
+        accessorKey: 'action',
+        header: 'Acciones',
+        cell: ({ row }: { row: any }) => {
+            return h('div', {
+                class: 'flex flex-row gap-2'
+            }, [
+                row.original.cotizacion_file_url ? h(UButton, {
+                    icon: 'i-heroicons-arrow-path',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'secondary',
+                    onClick: () => {
+                        handleRefresh(row.original.id)
+                    }
+                }) : null,
+                row.original.estado_cotizador !== 'CONFIRMADO' && currentId.value === ID_JEFEVENTAS ? h(UButton, {
+                icon: 'i-heroicons-trash',
+                variant: 'ghost',
+                activeColor: 'error',
+                size: 'xs',
+                onClick: () => {
+                    handleDelete(row.original.id)
+                }
+            }) : null,
+                h(UButton, {
+                    icon: 'i-heroicons-arrow-right',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'info',
+                    onClick: () => {
+                        handleMoveCotizacion(row.original.id)
+                    }
+                })
+            ])
         }
     }
 ])

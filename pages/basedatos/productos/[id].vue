@@ -1,12 +1,12 @@
 <template>
-  <UButton label="Regresar" icon="i-heroicons-arrow-left" variant="solid" color="secondary" class="bg-white text-gray-700 px-4 py-2 rounded-md font-medium flex items-center gap-2" @click="goBack" />
+  <UButton label="Regresar" icon="i-heroicons-arrow-left" variant="solid" color="secondary" class="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md font-medium flex items-center gap-2" @click="goBack" />
     <div class="p-6 max-w-4xl mx-auto">
         <!-- Top Navigation Bar -->
         <div class="flex items-center justify-between mb-6">
             <div v-if="loading" class="space-y-6 w-full">
               <!-- Skeleton para el título -->
               <div class="animate-pulse">
-                <div class="h-6 bg-gray-200 rounded w-2/3 mb-2"></div>
+                <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-2"></div>
               </div>
             </div>
             <div v-else>
@@ -46,30 +46,30 @@
             <UCard>
                 <template #header>
                     <div class="animate-pulse">
-                        <div class="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-                        <div class="h-10 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
+                        <div class="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
                     </div>
                 </template>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <!-- Tributos aduanero skeleton -->
                     <div class="space-y-4">
-                        <div class="h-6 bg-gray-200 rounded w-1/3"></div>
+                        <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
                         <div class="space-y-3">
                             <div v-for="i in 4" :key="i" class="flex items-center gap-4">
-                                <div class="h-4 bg-gray-200 rounded w-24"></div>
-                                <div class="h-10 bg-gray-200 rounded flex-1"></div>
+                                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                                <div class="h-10 bg-gray-200 dark:bg-gray-700 rounded flex-1"></div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Requisito aduanero skeleton -->
                     <div class="space-y-4">
-                        <div class="h-6 bg-gray-200 rounded w-1/3"></div>
+                        <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
                         <div class="space-y-3">
                             <div v-for="i in 3" :key="i" class="flex items-center gap-4">
-                                <div class="h-4 bg-gray-200 rounded w-24"></div>
-                                <div class="h-10 bg-gray-200 rounded flex-1"></div>
+                                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                                <div class="h-10 bg-gray-200 dark:bg-gray-700 rounded flex-1"></div>
                             </div>
                         </div>
                     </div>
@@ -78,15 +78,15 @@
                 <!-- Observaciones skeleton -->
                 <div class="mt-6 space-y-4">
                     <div class="flex items-center gap-4">
-                        <div class="h-4 bg-gray-200 rounded w-32"></div>
-                        <div class="h-6 w-11 bg-gray-200 rounded-full"></div>
+                        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+                        <div class="h-6 w-11 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
                     </div>
-                    <div class="h-24 bg-gray-200 rounded w-full"></div>
+                    <div class="h-24 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
                 </div>
                 <!-- Caracteristicas-->
                 <div class="mt-6 space-y-4">
                      <div class="flex items-center gap-4">
-                         <div class="h-4 bg-gray-200 rounded w-32"></div>
+                         <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
                      </div>
                 </div>
             </UCard> 
@@ -256,7 +256,7 @@
                         :rows="4" class="w-full" />
                 </div>
                 <div v-else>
-                    <ul class="list-disc pl-6 text-gray-700">
+                    <ul class="list-disc pl-6 text-gray-700 dark:text-gray-300">
                       <li v-for="(car, idx) in caracteristicasFormateadas" :key="idx">{{ car }}</li>
                     </ul>
                 </div>

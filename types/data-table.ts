@@ -90,6 +90,9 @@ export interface DataTableProps {
   //Previous Page URL
   previousPageUrl?: string|null
   hideBackButton?: boolean
+  // Optional generic prefetch callback: receives the page number to prefetch and itemsPerPage
+  // Should return a Promise that resolves when prefetch completes (or rejects on error)
+  prefetchNextPage?: (page: number, itemsPerPage: number) => Promise<void>
 }
 
 export interface DataTableEmits {
