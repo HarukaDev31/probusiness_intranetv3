@@ -117,7 +117,7 @@
           class="scroll-shadow scroll-shadow-right"
           :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
         ></div>
-        <UTable :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
+        <UTable :key="tableKey" :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
           class="bg-transparent min-w-full" :ui="{
             root: 'relative overflow-visible',
             base: 'min-w-full',
@@ -215,6 +215,17 @@ const emit = defineEmits<DataTableEmits>()
 const currentPageModel = computed({
   get: () => props.currentPage,
   set: (value) => onPageChange(value)
+})
+
+// Key to force re-render of the table when pagination changes to avoid stale image elements
+const tableKey = ref(0)
+
+// Re-render table when page or items per page change so images are not briefly reused
+watch(() => props.currentPage, () => {
+  tableKey.value += 1
+})
+watch(() => props.itemsPerPage, () => {
+  tableKey.value += 1
 })
 
 // Composable
