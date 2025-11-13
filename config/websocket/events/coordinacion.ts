@@ -35,11 +35,12 @@ export const registerCoordinacionEvents = () => {
   // ============================================
   
   subscribeEventsToRole(
-    ROLES.COORDINACION,
-    `${ROLES.COORDINACION}-notifications`,
+    'Coordinacion',
+    `${'Coordinacion'}-notifications`,
     [
       WS_EVENTS.TASK_ASSIGNMENT,
-      WS_EVENTS.SCHEDULE_UPDATE
+      WS_EVENTS.SCHEDULE_UPDATE,
+      WS_EVENTS.COTIZACION_CHINA_CONTACTED
     ],
     'private'
   )
