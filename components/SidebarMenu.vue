@@ -45,7 +45,7 @@
                     <!-- Left: clickable area (navega si tiene route, sino actúa como toggle) -->
                     <button type="button"
                       class="flex-1 flex items-center gap-3 rounded-md text-sm focus:outline-none"
-                      :class="[ isParentActive(item) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'text-left px-3' ]"
+                      :class="[ isParentActive(item) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'text-left px-3 py-2' ]"
                       @click="navigateOrToggle(item)">
                       <UIcon :name="item.icon || 'i-heroicons-archive-box'" class="w-5 h-5 text-gray-400" />
                       <span v-if="!collapsed" class="truncate">{{ item.name }} </span>
@@ -53,7 +53,7 @@
 
                     <!-- Right: chevron toggle (stop propagation para no navegar) -->
                     <button type="button"
-                      class="p-2 rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                       @click.stop="toggleParent(item.id)">
                       <UIcon name="i-heroicons-chevron-down" class="w-4 h-4 transform"
                         :class="expanded[String(item.id)] ? 'rotate-180' : ''" />

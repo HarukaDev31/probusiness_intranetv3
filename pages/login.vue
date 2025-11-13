@@ -13,7 +13,7 @@
             <div class="panel-heading">
               <div class="row row-login-logo">
                 <div class="col-md-12 col-lg-12 text-center">
-                  <img class="img-logo" src="/assets/img/logos/logo_probusiness.png" alt="Logo ProBusiness" title="Logo ProBusiness">
+                  <img class="img-logo" :src="logoSrc" alt="Logo ProBusiness" title="Logo ProBusiness">
                 </div>
               </div>
             </div>
@@ -70,7 +70,7 @@
                         />
                         <span 
                           @click="showPassword = !showPassword"
-                          :class="showPassword ? 'fa-solid fa-fw fa-eye-slash' : 'fa-solid fa-fw fa-eye'"
+                          :class="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
                           class="field-icon toggle-password"
                           style="cursor: pointer;"
                         ></span>
@@ -126,6 +126,7 @@ definePageMeta({
   layout: 'auth'
 })
 import { useAuth } from '../composables/auth/useAuth'
+import { useSpinner } from '../composables/commons/useSpinner'
 // Auth composable
 const { login, loading, error } = useAuth()
 
@@ -133,10 +134,52 @@ const { login, loading, error } = useAuth()
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
 
+// Logo handling: usar URL pública del intranet para el logo oscuro
+const intranetLogoUrl = 'https://intranetback.probusiness.pe/storage/logo_icons/logo_header_white.png'
+const localLogo = '/assets/img/logos/logo_probusiness.png'
+const logoSrc = computed(() => isDark.value ? intranetLogoUrl : localLogo)
+
+import { onMounted } from 'vue'
+
 // Login page state
-const email = ref('admin')
+const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
+
+// Preload images before showing the UI using the global spinner
+const { withSpinner } = useSpinner()
+
+const preloadImage = (url: string, timeout = 10_000) => {
+  return new Promise<void>((resolve, reject) => {
+    try {
+      const img = new Image()
+      let timer: any = null
+      img.onload = () => {
+        if (timer) clearTimeout(timer)
+        resolve()
+      }
+      img.onerror = (e) => {
+        if (timer) clearTimeout(timer)
+        resolve()
+      }
+      img.src = url
+      timer = setTimeout(() => {
+        resolve()
+      }, timeout)
+    } catch (err) {
+      resolve()
+    }
+  })
+}
+
+onMounted(() => {
+  // preload both background and logo (logoSrc may be external)
+  withSpinner(async () => {
+    const bg = '/assets/img/backgrounds/portada_probusiness.png'
+    const logo = isDark.value ? intranetLogoUrl : localLogo
+    await Promise.all([preloadImage(bg), preloadImage(logo)])
+  }, 'Cargando...')
+})
 
 // Login handler
 const handleLogin = async () => {
@@ -163,11 +206,6 @@ useHead({
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&display=swap');
-
-* {
-  font-family: 'Epilogue', sans-serif;
-}
 
 .fondo_pantalla {
   min-height: 100vh;
