@@ -9,8 +9,9 @@
   :data="tableRows"
   :columns="tableColumns"
   :loading="loading"
-        :showPrimarySearch="true"
-        :primarySearchPlaceholder="'Buscar producto'"
+      :showPrimarySearch="true"
+      :primarySearchPlaceholder="'Buscar producto'"
+      :search-debounce-ms="1000"
   :primarySearchValue="searchQuery"
   @update:primarySearch="onPrimarySearchUpdate"
   :filterConfig="filterConfig"
@@ -205,8 +206,6 @@ const tableRows = computed(() => filteredProducts.value.map((p, idx) => ({ ...p,
 
 const onPrimarySearchUpdate = (val: string) => {
   searchQuery.value = val
-  // handleSearch expects the query string
-  handleSearch && handleSearch(val)
 }
 
 // Watchers
