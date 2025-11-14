@@ -11,7 +11,7 @@
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
       @filter-change="handleFilterChangeGeneral" :hide-back-button="false" :show-primary-search="false"
       :show-body-top="true"
-      :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
+      :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
@@ -61,23 +61,20 @@ const generalColumns = ref<TableColumn<any>[]>([
     }
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre'
-  },
-
-  {
-    accessorKey: 'documento',
-    header: 'DNI/RUC'
-  },
-
-  {
-    accessorKey: 'correo',
-    header: 'Correo'
-  },
-
-  {
-    accessorKey: 'telefono',
-    header: 'Whatsapp'
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const correo = row.original?.correo || ''
+      const telefono = row.original?.telefono || ''
+      return h('div', { class: 'py-2 w-full whitespace-normal' }, [
+        h('div', { class: 'font-medium' }, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, correo)
+      ])
+    }
   },
 
   {
@@ -108,6 +105,7 @@ const generalColumns = ref<TableColumn<any>[]>([
           icon: 'vscode-icons:file-type-excel',
           color: 'primary',
           variant: 'ghost',
+          size: 'xl',
           onClick: () => {
             window.open(row.original.cotizacion_final_url, '_blank')
           }

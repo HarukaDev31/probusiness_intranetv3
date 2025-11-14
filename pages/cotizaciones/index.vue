@@ -48,19 +48,18 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.created_at)
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre',
-    cell: ({ row }: { row: any }) => row.original.nombre_cliente
-  },
-  {
-    accessorKey: 'dni',
-    header: 'DNI',
-    cell: ({ row }: { row: any }) => row.original.dni_cliente
-  },
-  {
-    accessorKey: 'whatsapp',
-    header: 'WhatsApp',
-    cell: ({ row }: { row: any }) => row.original.whatsapp_cliente
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre_cliente || row.original?.nombre || ''
+      const telefono = row.original?.whatsapp_cliente || row.original?.whatsapp || ''
+      const dni = row.original?.dni_cliente || row.original?.dni || ''
+      return h('div', { class: 'py-2' }, [
+        h('div', { class: 'font-medium' }, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, dni),
+        h('div', { class: 'text-sm text-gray-500' }, telefono)
+      ])
+    }
   },
   {
     accessorKey: 'volumen',
