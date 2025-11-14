@@ -279,13 +279,38 @@ const componentRootRef = ref<HTMLElement | null>(null)
 // Internal primary search state (to avoid desync when parent uses v-show tabs)
 const primarySearchInternal = ref<string>(props.primarySearchValue ?? props.searchQueryValue ?? '')
 
-const onPrimarySearchChange = (value: string) => {
-  primarySearchInternal.value = value
+// Debounced primary search emission
+const primarySearchTimer = ref<number | null>(null)
+const debounceMs = computed(() => (props.searchDebounceMs ?? 300))
+
+const emitSearchNow = (value: string) => {
   // emit both camelCase variants (typed) and kebab-case variants (some parents listen that way)
   emit('update:primarySearch', value)
   emit('update:searchQuery', value)
   ;(emit as any)('update:primary-search', value)
   ;(emit as any)('update:search-query', value)
+}
+
+const onPrimarySearchChange = (value: string) => {
+  primarySearchInternal.value = value
+  const ms = debounceMs.value
+  // If user wants no debounce, emit immediately
+  if (!ms || ms <= 0) {
+    emitSearchNow(value)
+    return
+  }
+
+  // reset timer
+  if (primarySearchTimer.value) {
+    clearTimeout(primarySearchTimer.value)
+    primarySearchTimer.value = null
+  }
+
+  // schedule emit
+  primarySearchTimer.value = window.setTimeout(() => {
+    emitSearchNow(value)
+    primarySearchTimer.value = null
+  }, ms)
 }
 
 // Keep internal state in sync if parent controls the prop
@@ -388,6 +413,15 @@ onUnmounted(() => {
   if (_visibilityInterval.value) {
     clearInterval(_visibilityInterval.value)
     _visibilityInterval.value = null
+  }
+  // clear pending search debounce timer if any
+  try {
+    if (primarySearchTimer.value) {
+      clearTimeout(primarySearchTimer.value)
+      primarySearchTimer.value = null
+    }
+  } catch (e) {
+    // ignore
   }
 })
 
