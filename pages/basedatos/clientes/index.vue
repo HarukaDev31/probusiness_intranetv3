@@ -142,6 +142,7 @@ const columns: TableColumn<any>[] = [
         ])
       }
     },
+ 
     {
         accessorKey: 'primer_servicio',
         header: 'Servicio',

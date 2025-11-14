@@ -4,9 +4,9 @@ import { OptionsService } from '~/services/commons/optionsService'
 
 export const useLocation = () => {
   const paises = ref<Array<{ value: number; label: string }>>([])
-  const departamentos = ref<Array<{ id: number; nombre: string }>>([])
-  const provincias = ref<Array<{ id: number; nombre: string; id_departamento: number }>>([])
-  const distritos = ref<Array<{ id: number; nombre: string; id_provincia: number }>>([])
+  const departamentos = ref<Array<{ id: number; nombre: string,label: string }>>([])
+  const provincias = ref<Array<{ value: number; label: string; id?: number; nombre?: string }>>([])
+  const distritos = ref<Array<{ id: number; nombre: string; id_provincia: number,label: string }>>([])
 
   const loadingPaises = ref(false)
   const loadingDepartamentos = ref(false)
@@ -38,7 +38,14 @@ export const useLocation = () => {
       loadingDepartamentos.value = true
       const response = await LocationService.getDepartamentos()
       if (response.success) {
-        departamentos.value = response.data
+        departamentos.value = response.data.map((d: {
+          id: number,
+          nombre: string
+        }) => ({
+          id: d.id,
+          nombre: d.nombre,
+          label: d.nombre
+        })) as Array<{ id: number; nombre: string; label: string }>
       }
     } catch (error) {
       console.error('Error al cargar departamentos:', error)
@@ -54,7 +61,15 @@ export const useLocation = () => {
       provincias.value = []
       const response = await LocationService.getProvincias(idDepartamento)
       if (response.success) {
-        provincias.value = response.data
+        // Mapear { id, nombre, id_provincia } a { value, label } para consistencia
+        provincias.value = response.data.map((p: {
+          id: number,
+          nombre: string,
+          id_provincia: number
+        }) => ({
+          value: p.id,
+          label: p.nombre
+        }))
       }
     } catch (error) {
       console.error('Error al cargar provincias:', error)
@@ -70,7 +85,16 @@ export const useLocation = () => {
       distritos.value = []
       const response = await LocationService.getDistritos(idProvincia)
       if (response.success) {
-        distritos.value = response.data
+          distritos.value = response.data.map((d: {
+            id: number,
+            nombre: string,
+            id_provincia: number
+          }) => ({
+          id: d.id,
+          nombre: d.nombre,
+          id_provincia: d.id_provincia,
+          label: d.nombre
+        }))
       }
     } catch (error) {
       console.error('Error al cargar distritos:', error)

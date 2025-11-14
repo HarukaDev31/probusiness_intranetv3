@@ -29,6 +29,17 @@ interface UserRaw {
   estado: number
   grupo: UserGroup
   organizacion: UserOrganization
+  photoUrl?: string
+  phone?: string
+  dni?: string
+  fechaNacimiento?: string
+  goals?: string
+  idCountry?: number
+  idDepartment?: number
+  idProvince?: number
+  idDistrict?: number
+  soldCBM?: number
+  embarquedCBM?: number
 }
 
 interface UserData {
@@ -44,6 +55,9 @@ interface UserData {
   id: number
   nombre: string
   organizacion: UserOrganization
+  photoUrl?: string
+  fullName?: string
+  phone?: string
 }
 
 // Variables globales para el patrón singleton
@@ -81,6 +95,12 @@ const currentId = computed(() => {
   // Computed para verificar si el usuario está activo
   const isUserActive = computed(() => {
     return userData.value?.isActive || false
+  })
+
+  // Computed para obtener la foto de perfil (photoUrl del auth_user)
+  const userPhotoUrl = computed(() => {
+    // Priorizar photoUrl de raw, luego del nivel raíz, luego avatar
+    return userData.value?.raw?.photoUrl || userData.value?.photoUrl || userData.value?.avatar || null
   })
  
   // Función para obtener los datos del usuario actual desde localStorage
@@ -146,6 +166,7 @@ const currentId = computed(() => {
     userName,
     userEmail,
     userCompany,
+    userPhotoUrl,
     isUserActive,
     isCoordinacion,
     isCotizador,
