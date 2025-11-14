@@ -169,28 +169,19 @@ const generalColumns = ref<TableColumn<any>[]>([
     }
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre'
-  },
-
-  {
-    accessorKey: 'documento',
-    header: 'DNI/RUC'
-  },
-
-  {
-    accessorKey: 'correo',
-    header: 'Correo',
+    accessorKey: 'contacto',
+    header: 'Contacto',
     cell: ({ row }: { row: any }) => {
-      return row.original.correo || 'Sin correo'
-    }
-  },
-
-  {
-    accessorKey: 'telefono',
-    header: 'Whatsapp',
-    cell: ({ row }: { row: any }) => {
-      return row.original.telefono || 'Sin Whatsapp'
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const telefono = row.original?.telefono || ''
+      const correo = row.original?.correo || ''
+      return h('div', { class: 'py-2' }, [
+        h('div', { class: 'font-medium' }, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo')
+      ])
     }
   },
 
@@ -355,19 +346,21 @@ const pagosColumns = ref<TableColumn<any>[]>([
     }
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre'
-  },
 
-  {
-    accessorKey: 'documento',
-    header: 'DNI/RUC'
-  },
-
-
-  {
-    accessorKey: 'telefono',
-    header: 'Whatsapp'
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const telefono = row.original?.telefono || ''
+      const correo = row.original?.correo || ''
+      return h('div', { class: '' }, [
+        h('div', { class: 'font-medium' }, nombre || '—'),
+        h('div', { class: 'text-sm text-gray-500' }, documento || ''),
+        h('div', { class: 'text-sm text-gray-500' }, telefono || ''),
+        h('div', { class: 'text-sm text-gray-500' }, correo || '')
+      ])
+    }
   },
 
 

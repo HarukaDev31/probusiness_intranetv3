@@ -449,19 +449,18 @@ const consolidadoColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.getValue('fecha'))
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre',
-    cell: ({ row }: { row: any }) => row.getValue('nombre')
-  },
-  {
-    accessorKey: 'documento',
-    header: 'DNI',
-    cell: ({ row }: { row: any }) => formatDocument(row.getValue('documento'))
-  },
-  {
-    accessorKey: 'telefono',
-    header: 'WhatsApp',
-    cell: ({ row }: { row: any }) => formatPhoneNumber(row.getValue('telefono'))
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre || row.getValue('nombre') || ''
+      const telefono = row.original?.telefono || row.getValue('telefono') || ''
+      const documento = row.original?.documento || row.getValue('documento') || ''
+      return h('div', { class: 'py-2 w-48 whitespace-normal' }, [
+        h('div', {}, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+      ])
+    }
   },
   {
     accessorKey: 'tipo',
@@ -583,14 +582,20 @@ const cursosColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => row.getValue('fecha_registro')
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre',
-    cell: ({ row }: { row: any }) => row.getValue('nombre')
-  },
-  {
-    accessorKey: 'telefono',
-    header: 'Whatsapp',
-    cell: ({ row }: { row: any }) => row.getValue('telefono')
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.getValue('nombre') || ''
+      const documento = row.getValue('documento') || row.original?.documento || ''
+      const telefono = row.getValue('telefono') || ''
+      const correo = row.getValue('correo') || ''
+      return h('div', { class: '' }, [
+        h('div', { class: 'font-medium' }, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, correo || '')
+      ])
+    }
   },
   {
     accessorKey: 'tipo',
@@ -701,19 +706,20 @@ const deliveryColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.getValue('fecha'))
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre',
-    cell: ({ row }: { row: any }) => row.getValue('nombre')
-  },
-  {
-    accessorKey: 'documento',
-    header: 'DNI',
-    cell: ({ row }: { row: any }) => formatDocument(row.getValue('documento'))
-  },
-  {
-    accessorKey: 'telefono',
-    header: 'WhatsApp',
-    cell: ({ row }: { row: any }) => formatPhoneNumber(row.getValue('telefono'))
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.getValue('nombre') || ''
+      const documento = formatDocument(row.getValue('documento')) || ''
+      const telefono = formatPhoneNumber(row.getValue('telefono')) || ''
+      const correo = row.getValue('correo') || ''
+      return h('div', { class: '' }, [
+        h('div', { class: 'font-medium' }, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, correo || '')
+      ])
+    }
   },
 
   {

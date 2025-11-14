@@ -14,7 +14,7 @@
       @filter-change="handleFilterChangeGeneral" :hide-back-button="false"
       :show-primary-search="false"
       :show-body-top="true"
-      :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+      :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
@@ -64,23 +64,20 @@ const generalColumns = ref<TableColumn<any>[]>([
     }
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre'
-  },
-
-  {
-    accessorKey: 'documento',
-    header: 'DNI/RUC'
-  },
-
-  {
-    accessorKey: 'correo',
-    header: 'Correo'
-  },
-
-  {
-    accessorKey: 'telefono',
-    header: 'Whatsapp'
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const telefono = row.original?.telefono || ''
+      const correo = row.original?.correo || ''
+      return h('div', { class: '' }, [
+        h('div', { class: 'font-medium' }, nombre || '—'),
+        h('div', { class: 'text-sm text-gray-500' }, documento || ''),
+        h('div', { class: 'text-sm text-gray-500' }, telefono || ''),
+        h('div', { class: 'text-sm text-gray-500' }, correo || '')
+      ])
+    }
   },
 
   {

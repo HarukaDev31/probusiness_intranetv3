@@ -340,24 +340,17 @@ const columnsPagos = ref<TableColumn<CursoItem>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }) => {
-            return row.original.No_Entidad
-        }
-    },
-    {
-        accessorKey: 'dni',
-        header: 'DNI/RUC',
-        cell: ({ row }) => {
-            return row.original.Nu_Documento_Identidad
-        }
-    },
-    {
-        accessorKey: 'whatsapp',
-        header: 'WhatsApp',
-        cell: ({ row }) => {
-            return row.original.Nu_Celular_Entidad
+            const nombre = row.original.No_Entidad || ''
+            const dni = row.original.Nu_Documento_Identidad || ''
+            const telefono = row.original.Nu_Celular_Entidad || ''
+            return h('div', { class: 'py-2' }, [
+                h('div', { class: 'font-medium' }, nombre),
+                h('div', { class: 'text-sm text-gray-500' }, dni),
+                h('div', { class: 'text-sm text-gray-500' }, telefono)
+            ])
         }
     },
     {

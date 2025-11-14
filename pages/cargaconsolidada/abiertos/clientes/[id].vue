@@ -315,24 +315,19 @@ const columnsPagos = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('documento')
-        }
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('telefono')
+            const nombre = row.original?.nombre || row.getValue('nombre') || ''
+            const documento = row.original?.documento || row.getValue('documento') || ''
+            const telefono = row.original?.telefono || row.getValue('telefono') || ''
+            const correo = row.original?.correo || row.getValue('correo') || ''
+            return h('div', { class: 'py-2' }, [
+                h('div', { class: 'font-medium' }, nombre),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500' }, telefono),
+                h('div', { class: 'text-sm text-gray-500' }, correo || '')
+            ])
         }
     },
     {
@@ -456,43 +451,19 @@ const columns: TableColumn<any>[] = [
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre').toUpperCase()
-            return h('div', {
-                class: 'max-w-30 whitespace-normal break-words',
-            }, nombre)
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('documento')
-        }
-    },
-
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }: { row: any }) => {
-            const correo = row.getValue('correo')
-            return h('div', {
-                class: 'max-w-40 whitespace-normal break-words',
-            }, correo || 'Sin correo'
-            )
-        }
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            const telefono = row.getValue('telefono')
-            return h('div', {
-                class: 'max-w-20 whitespace-normal',
-            }, telefono
-            )
+            const nombre = row.original?.nombre || row.getValue('nombre') || ''
+            const documento = row.original?.documento || row.getValue('documento') || ''
+            const telefono = row.original?.telefono || row.getValue('telefono') || ''
+            const correo = row.original?.correo || row.getValue('correo') || ''
+            return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
+                h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500' }, telefono),
+                h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo')
+            ])
         }
     },
     {
@@ -581,40 +552,19 @@ const columnsCoordinacion: TableColumn<any>[] = [
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre').toUpperCase()
-            return h('div', {
-                class: 'max-w-30 whitespace-normal break-words',
-            }, nombre)
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('documento')
-        }
-    },
-
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }: { row: any }) => {
-            const correo = row.getValue('correo')
-            return h('div',{
-                //que tenga un max width y si es muy largo que lo haga doble linea pero no hay espaciados para usar whitespace
-                class: 'max-w-40 whitespace-normal break-words',
-            }, correo || 'Sin correo'
-            )
-        }
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('telefono')
+            const nombre = (row.getValue('nombre') || '').toUpperCase()
+            const documento = row.getValue('documento') || ''
+            const correo = row.getValue('correo') || ''
+            const telefono = row.getValue('telefono') || ''
+            return h('div', { class: '' }, [
+                h('div', { class: 'max-w-30 whitespace-normal break-words font-medium' }, nombre),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500 max-w-40 whitespace-normal break-words' }, telefono),
+                h('div', { class: 'text-sm text-gray-500 max-w-40 whitespace-normal break-words' }, correo || 'Sin correo')
+            ])
         }
     },
     {
@@ -731,31 +681,19 @@ const columnsDocumentacion: TableColumn<any>[] = [
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('documento')
-        }
-    },
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('correo')
-        }
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('telefono')
+            const nombre = row.getValue('nombre') || ''
+            const documento = row.getValue('documento') || ''
+            const correo = row.getValue('correo') || ''
+            const telefono = row.getValue('telefono') || ''
+            return h('div', { class: '' }, [
+                h('div', { class: 'font-medium' }, nombre),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500' }, telefono),
+                h('div', { class: 'text-sm text-gray-500' }, correo || '')
+            ])
         }
     },
     {
@@ -1142,17 +1080,19 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('documento')
+            const nombre = row.original?.nombre || row.getValue('nombre') || ''
+            const documento = row.original?.documento || row.getValue('documento') || ''
+            const telefono = row.original?.telefono || row.getValue('telefono') || ''
+            const correo = row.original?.correo || row.getValue('correo') || ''
+            return h('div', { class: 'py-2' }, [
+                h('div', { class: 'font-medium' }, nombre),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500' }, telefono),
+                h('div', { class: 'text-sm text-gray-500' }, correo || '')
+            ])
         }
     },
     {
