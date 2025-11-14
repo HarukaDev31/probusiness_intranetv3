@@ -47,11 +47,11 @@
                 <div class="flex items-center gap-2 relative w-full lg:w-auto">
 
                     <div ref="filtersButtonRef" class="w-full lg:w-auto">
-                        <UButton label="Upload" icon="i-heroicons-arrow-up-tray" v-if="ROLES.CONTENEDOR_ALMACEN"
+                        <UButton label="Upload" icon="i-heroicons-arrow-up-tray" v-if="showUploadPanel && currentRole === ROLES.CONTENEDOR_ALMACEN"
                             class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
                             @click="showUploadPanel = !showUploadPanel" />
                     </div>
-                    <div ref="filtersPanelRef" v-if="showUploadPanel && ROLES.CONTENEDOR_ALMACEN"
+                    <div ref="filtersPanelRef" v-if="showUploadPanel && currentRole === ROLES.CONTENEDOR_ALMACEN"
                         class="absolute top-full right-0 mt-2 w-full lg:w-80 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
                         @click.stop>
                         <div class="flex flex-row gap-2 w-full">
