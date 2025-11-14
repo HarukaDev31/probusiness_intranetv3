@@ -318,15 +318,26 @@ const columnsPagos = ref<TableColumn<any>[]>([
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original?.nombre || row.getValue('nombre') || ''
-            const documento = row.original?.documento || row.getValue('documento') || ''
-            const telefono = row.original?.telefono || row.getValue('telefono') || ''
-            const correo = row.original?.correo || row.getValue('correo') || ''
+            const pick = (keys: string[]) => {
+                for (const k of keys) {
+                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    const nested = row.original?.cliente
+                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
+                }
+                return ''
+            }
+
+            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
+            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
+            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
+            const correo = String(pick(['correo', 'email', 'mail']) || '')
+
             return h('div', { class: 'py-2' }, [
-                h('div', { class: 'font-medium' }, nombre),
-                h('div', { class: 'text-sm text-gray-500' }, documento),
-                h('div', { class: 'text-sm text-gray-500' }, telefono),
-                h('div', { class: 'text-sm text-gray-500' }, correo || '')
+                h('div', { class: 'font-medium' }, nombre || '—'),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null
             ])
         }
     },
@@ -454,15 +465,26 @@ const columns: TableColumn<any>[] = [
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original?.nombre || row.getValue('nombre') || ''
-            const documento = row.original?.documento || row.getValue('documento') || ''
-            const telefono = row.original?.telefono || row.getValue('telefono') || ''
-            const correo = row.original?.correo || row.getValue('correo') || ''
+            const pick = (keys: string[]) => {
+                for (const k of keys) {
+                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    const nested = row.original?.cliente
+                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
+                }
+                return ''
+            }
+
+            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
+            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
+            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
+            const correo = String(pick(['correo', 'email', 'mail']) || '')
+
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
-                h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
-                h('div', { class: 'text-sm text-gray-500' }, documento),
-                h('div', { class: 'text-sm text-gray-500' }, telefono),
-                h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo')
+                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo')
             ])
         }
     },
@@ -800,17 +822,30 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
-        }
-    },
-    {
-        accessorKey: 'whatsapp',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('whatsapp')
+            const pick = (keys: string[]) => {
+                for (const k of keys) {
+                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    const nested = row.original?.cliente
+                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
+                }
+                return ''
+            }
+
+            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
+            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
+            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
+            const correo = String(pick(['correo', 'email', 'mail']) || '')
+
+            return h('div', { class: '' }, [
+                h('div', { class: 'font-medium' }, nombre),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null
+            ])
         }
     },
     {
