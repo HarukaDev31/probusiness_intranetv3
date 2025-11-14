@@ -10,7 +10,7 @@
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             @export="exportData" :hide-back-button="false"
-            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
             :show-body-top="true">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -440,47 +440,30 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre')?.toUpperCase() || ''
-            return h('div', {
-                class: 'max-w-30 whitespace-normal',
-            }, nombre
-            )
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            const documento = row.getValue('documento')
-            return h('div', {
-                class: 'max-w-18 whitespace-normal',
-            }, documento
-            )
-        }
-    },
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }: { row: any }) => {
-            const correo = row.getValue('correo')
-            return h('div', {
-                class: 'max-w-55 whitespace-normal',
-            }, correo || 'Sin correo'
-            )
-        }
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            const telefono = row.getValue('telefono')
-            return h('div', {
-                class: 'max-w-20 whitespace-normal',
-            }, telefono
-            )
+            const pick = (keys: string[]) => {
+                for (const k of keys) {
+                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    const nested = row.original?.cliente
+                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
+                }
+                return ''
+            }
+
+            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
+            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
+            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
+            const correo = String(pick(['correo', 'email', 'mail']) || '')
+
+            return h('div', { class: 'max-w-30 whitespace-normal' }, [
+                h('div', { class: 'font-medium' }, nombre || '—'),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo')
+            ])
         }
     },
     {
@@ -621,24 +604,20 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
-        cell: ({ row }: { row: any }) => row.getValue('nombre')?.toUpperCase()
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => row.getValue('documento')
-    },
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }: { row: any }) => row.getValue('correo') || 'Sin correo'
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => row.getValue('telefono')
+        accessorKey: 'contacto',
+        header: 'Contacto',
+        cell: ({ row }: { row: any }) => {
+            const nombre = row.getValue('nombre') || ''
+            const documento = row.getValue('documento') || ''
+            const telefono = row.getValue('telefono') || ''
+            const correo = row.getValue('correo') || ''
+            return h('div', { class: 'py-2' }, [
+                h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500' }, telefono),
+                h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo')
+            ])
+        }
     },
     {
         accessorKey: 'estado_cliente',
@@ -799,19 +778,20 @@ const getPagosColumns = () => {
             }
         },
         {
-            accessorKey: 'nombre',
-            header: 'Nombre',
-            cell: ({ row }: { row: any }) => row.original.nombre?.toUpperCase() || ''
-        },
-        {
-            accessorKey: 'documento',
-            header: 'DNI/RUC',
-            cell: ({ row }: { row: any }) => row.original.documento
-        },
-        {
-            accessorKey: 'whatsapp',
-            header: 'Whatsapp',
-            cell: ({ row }: { row: any }) => row.original.telefono
+            accessorKey: 'contacto',
+            header: 'Contacto',
+            cell: ({ row }: { row: any }) => {
+                const nombre = row.original?.nombre || ''
+                const documento = row.original?.documento || ''
+                const telefono = row.original?.telefono || ''
+                const correo = row.original?.correo || ''
+                return h('div', { class: 'py-2' }, [
+                    h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
+                    h('div', { class: 'text-sm text-gray-500' }, documento),
+                    h('div', { class: 'text-sm text-gray-500' }, telefono),
+                    h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo')
+                ])
+            }
         },
         {
             accessorKey: 'tipo_cliente',

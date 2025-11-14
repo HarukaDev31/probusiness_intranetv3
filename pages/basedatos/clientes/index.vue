@@ -127,14 +127,20 @@ const columns: TableColumn<any>[] = [
         cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-400' }, row.getValue('fecha'))
     },
     {
-        accessorKey: 'nombre',
-        header: 'Datos del Cliente',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-100' }, [
-            h('div',row.getValue('nombre')),
-            h('div','DNI/RUC: ' + row.original.documento),
-            h('div','Correo: ' + row.original.correo),
-            h('div','Whatsapp: ' + row.original.telefono),
+      accessorKey: 'contacto',
+      header: 'Contacto',
+      cell: ({ row }) => {
+        const nombre = row.original?.nombre || row.getValue('nombre') || ''
+        const documento = row.original?.documento || row.getValue('documento') || ''
+        const telefono = row.original?.telefono || row.getValue('telefono') || ''
+        const correo = row.original?.correo || row.getValue('correo') || ''
+        return h('div', { class: 'text-gray-700 py-3 dark:text-gray-100' }, [
+          h('div', { class: 'font-medium' }, nombre),
+          h('div', { class: 'text-sm text-gray-500' }, documento),
+          h('div', { class: 'text-sm text-gray-500' }, telefono),
+          h('div', { class: 'text-sm text-gray-500' }, correo)
         ])
+      }
     },
  
     {
