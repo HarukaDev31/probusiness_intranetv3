@@ -128,24 +128,15 @@ const columns: TableColumn<any>[] = [
     },
     {
         accessorKey: 'nombre',
-        header: 'Nombre',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-100' }, row.getValue('nombre'))
+        header: 'Datos del Cliente',
+        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-100' }, [
+            h('div',row.getValue('nombre')),
+            h('div','DNI/RUC: ' + row.original.documento),
+            h('div','Correo: ' + row.original.correo),
+            h('div','Whatsapp: ' + row.original.telefono),
+        ])
     },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, row.getValue('documento') || '-')
-    },
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, row.getValue('correo'))
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'WhstApp',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, row.getValue('telefono'))
-    },
+ 
     {
         accessorKey: 'primer_servicio',
         header: 'Servicio',
