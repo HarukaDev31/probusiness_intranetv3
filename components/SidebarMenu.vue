@@ -217,7 +217,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { SidebarCategory } from '../types/module'
 import { ROLES } from '~/constants/roles'
 import { useUserRole } from '../composables/auth/useUserRole'
@@ -345,13 +345,44 @@ const isParentActive = (item: any) => {
   return false
 }
 
+// Cache para evitar recalcular expansión en cada navegación
+let lastExpandedRoute: string | null = null
+
+const expandActiveRoute = (route: string) => {
+  // Solo recalcular si la ruta cambió
+  if (lastExpandedRoute === route) return
+  lastExpandedRoute = route
+
+  // expandir padres que contienen la ruta activa
+  for (const category of props.menuCategories || []) {
+    for (const item of category.modules || []) {
+      const key = String(item.id)
+      if (item.children && item.children.length) {
+        // si alguno de sus hijos o subhijos coincide con la ruta actual, abrir
+        if (item.children.some((c: any) => c.route === route || (c.children && c.children.some((s: any) => s.route === route)))) {
+          expanded[key] = true
+        } else if (expanded[key] === undefined) {
+          expanded[key] = false
+        }
+        // inicializar keys de sub-items
+        item.children.forEach((c: any) => {
+          if (c.children && c.children.length) {
+            const subKey = String(c.id)
+            expanded[subKey] = c.children.some((s: any) => s.route === route)
+          }
+        })
+      }
+    }
+  }
+}
+
 onMounted(async () => {
   fetchCurrentUser()
   
   // Cargar contador de notificaciones no leídas
   await fetchUnreadCount()
   
-  // Actualizar contador cada 30 segundos
+  // Actualizar contador cada 5 minutos
   const interval = setInterval(async () => {
     try {
       await fetchUnreadCount()
@@ -365,29 +396,15 @@ onMounted(async () => {
     clearInterval(interval)
   })
 
-  // expandir padres que contienen la ruta activa
+  // Expandir ruta activa inicial
   const current = useRoute().path
-  for (const category of props.menuCategories || []) {
-    for (const item of category.modules || []) {
-      const key = String(item.id)
-      if (item.children && item.children.length) {
-        // si alguno de sus hijos o subhijos coincide con la ruta actual, abrir
-        if (item.children.some((c: any) => c.route === current || (c.children && c.children.some((s: any) => s.route === current)))) {
-          expanded[key] = true
-        } else if (expanded[key] === undefined) {
-          expanded[key] = false
-        }
-        // inicializar keys de sub-items
-        item.children.forEach((c: any) => {
-          if (c.children && c.children.length) {
-            const subKey = String(c.id)
-            expanded[subKey] = c.children.some((s: any) => s.route === current)
-          }
-        })
-      }
-    }
-  }
+  expandActiveRoute(current)
 })
+
+// Watch para expandir cuando cambie la ruta (optimizado)
+watch(() => useRoute().path, (newPath) => {
+  expandActiveRoute(newPath)
+}, { immediate: false })
 const getCustomMenuName = (itemName: string, childName: string) => {
   //if object contains key
   if (Object.keys(CUSTOM_MENUS_PER_ROLE).includes(itemName) && Object.keys(CUSTOM_MENUS_PER_ROLE[itemName]).includes(currentRole.value) && Object.keys(CUSTOM_MENUS_PER_ROLE[itemName][currentRole.value]).includes(childName)) {
