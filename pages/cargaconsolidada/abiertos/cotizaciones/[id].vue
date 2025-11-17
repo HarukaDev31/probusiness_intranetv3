@@ -2336,6 +2336,10 @@ const downloadFile = async (fileUrl: string) => {
 const handleSearchProspectos = (value: string) => {
     searchCotizaciones.value = value
     paginationCotizaciones.value.current_page = 1
+    // Eliminar idCotizacion de la query string cuando se usa el buscador
+    const query = { ...route.query }
+    delete query.idCotizacion
+    navigateTo({ path: route.path, query }, { replace: true })
     getCotizaciones(Number(id))
 }
 
@@ -2356,6 +2360,10 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
         [filterType]: value
     }
     paginationCotizaciones.value.current_page = 1
+    // Eliminar idCotizacion de la query string cuando se usa un filtro
+    const query = { ...route.query }
+    delete query.idCotizacion
+    navigateTo({ path: route.path, query }, { replace: true })
     await getCotizaciones(Number(id))
 }
 
