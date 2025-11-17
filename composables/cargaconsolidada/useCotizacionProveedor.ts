@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { CotizacionProveedorService } from '../../services/cargaconsolidada/cotizacion-proveedorService'
 import type {
     CotizacionProveedor,
@@ -367,10 +367,32 @@ export const    useCotizacionProveedor = () => {
             estado_china: 'todos'
         }
     }
+
+    // Global clear listener: respond to centralized DataTable clear action
+    if (typeof window !== 'undefined') {
+        const globalClearHandler = () => {
+            try {
+                filters.value = {
+                    fecha_inicio: '',
+                    fecha_fin: '',
+                    estado: 'todos',
+                    estado_coordinacion: 'todos',
+                    estado_china: 'todos'
+                }
+                pagination.value.current_page = 1
+                const id = Number(route.params.id)
+                if (id) getCotizacionProveedor(id)
+            } catch (err) {
+                console.error('Error handling global clear for cotizacion proveedor', err)
+            }
+        }
+        onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
+        onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
+    }
     const exportData = async () => {
         loading.value = true
         try {
-            const blob = await CotizacionProveedorService.exportCotizacionProveedor(Number(route.params.id), filters.value)
+            const blob = await CotizacionProveedorService.downloadEmbarque(Number(route.params.id), filters.value)
             const url = window.URL.createObjectURL(new Blob([blob]))
             const link = document.createElement('a')
             link.href = url
