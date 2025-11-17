@@ -56,6 +56,24 @@
                       }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
                 </div>
               </div>
+
+              <!-- Footer actions for filters (design similar to screenshot) -->
+              <div class="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
+                <div class="flex items-center justify-between">
+                  <!-- Left: prominent clear filters button -->
+                  <UButton
+                    icon="i-heroicons-x-mark"
+                    class="h-8 bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 border-0"
+                    :label="translations.clearFilters"
+                    @click="handleClearFilters"
+                  />
+
+                  <!-- Right: close link-style button -->
+                  <button type="button" class="text-sm text-gray-600 dark:text-gray-300 hover:underline" @click="showFiltersPanel = false">
+                    {{ translations.close }}
+                  </button>
+                </div>
+              </div>
             </div>
             <!-- Export Button -->
 

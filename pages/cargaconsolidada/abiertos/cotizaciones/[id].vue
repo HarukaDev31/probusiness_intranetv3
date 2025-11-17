@@ -445,7 +445,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const pick = (keys: string[]) => {
                 for (const k of keys) {
-                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    const v = row.original?.[k]
                     if (v !== undefined && v !== null && String(v).trim() !== '') return v
                     // nested cliente object fallback
                     const nested = row.original?.cliente
@@ -610,7 +610,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const pick = (keys: string[]) => {
                 for (const k of keys) {
-                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    const v = row.original?.[k]
                     if (v !== undefined && v !== null && String(v).trim() !== '') return v
                     const nested = row.original?.cliente
                     if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
@@ -722,7 +722,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         header: 'Estado',
 
         cell: ({ row }: { row: any }) => {
-            const estado = row.getValue('estado_cotizador') || row.original.estado
+            const estado = row.getValue('estado_cotizador')
             const color = getEstadoColor(estado)
 
             return h(USelect as any, {

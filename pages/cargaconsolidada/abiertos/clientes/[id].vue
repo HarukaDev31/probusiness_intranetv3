@@ -320,7 +320,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const pick = (keys: string[]) => {
                 for (const k of keys) {
-                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    const v = row.original?.[k]
                     if (v !== undefined && v !== null && String(v).trim() !== '') return v
                     const nested = row.original?.cliente
                     if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
@@ -467,7 +467,7 @@ const columns: TableColumn<any>[] = [
         cell: ({ row }: { row: any }) => {
             const pick = (keys: string[]) => {
                 for (const k of keys) {
-                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    const v = row.original?.[k]
                     if (v !== undefined && v !== null && String(v).trim() !== '') return v
                     const nested = row.original?.cliente
                     if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
@@ -579,7 +579,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
         cell: ({ row }: { row: any }) => {
             const pick = (keys: string[]) => {
                 for (const k of keys) {
-                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    const v = row.original?.[k]
                     if (v !== undefined && v !== null && String(v).trim() !== '') return v
                     const nested = row.original?.cliente
                     if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
@@ -719,7 +719,7 @@ const columnsDocumentacion: TableColumn<any>[] = [
         cell: ({ row }: { row: any }) => {
             const pick = (keys: string[]) => {
                 for (const k of keys) {
-                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    const v = row.original?.[k]
                     if (v !== undefined && v !== null && String(v).trim() !== '') return v
                     const nested = row.original?.cliente
                     if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
@@ -849,7 +849,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const pick = (keys: string[]) => {
                 for (const k of keys) {
-                    const v = row.getValue?.(k) ?? row.original?.[k]
+                    const v = row.original?.[k]
                     if (v !== undefined && v !== null && String(v).trim() !== '') return v
                     const nested = row.original?.cliente
                     if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
@@ -1140,10 +1140,10 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original?.nombre || row.getValue('nombre') || ''
-            const documento = row.original?.documento || row.getValue('documento') || ''
-            const telefono = row.original?.telefono || row.getValue('telefono') || ''
-            const correo = row.original?.correo || row.getValue('correo') || ''
+            const nombre = row.original?.nombre  || ''
+            const documento = row.original?.documento || ''
+            const telefono = row.original?.telefono || ''
+            const correo = row.original?.correo  || ''
             return h('div', { class: 'py-2' }, [
                 h('div', { class: 'font-medium' }, nombre),
                 h('div', { class: 'text-sm text-gray-500' }, documento),
@@ -1293,7 +1293,7 @@ onMounted(() => {
             }
         ]
     }
-    else if (currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS)) {
+    else if (currentRole.value === ROLES.COORDINACION) {
         tabs.value = [
             {
                 label: 'General',
@@ -1310,6 +1310,21 @@ onMounted(() => {
             {
                 label: 'Pagos',
                 value: 'pagos'
+            }
+        ]
+    } else if (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS) {
+        tabs.value = [
+            {
+                label: 'General',
+                value: 'general'
+            },
+            {
+                label: 'Embarcados',
+                value: 'embarcados'
+            },
+            {
+                label: 'Variación',
+                value: 'variacion'
             }
         ]
     } else {
