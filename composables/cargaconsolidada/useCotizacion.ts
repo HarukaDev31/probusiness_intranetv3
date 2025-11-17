@@ -72,6 +72,10 @@ export const useCotizacion = () => {
             if (filters.value.estado_china && filters.value.estado_china !== 'todos') {
                 params.estado_china = filters.value.estado_china
             }
+            // Leer idCotizacion de la query string si existe
+            if (route.query.idCotizacion) {
+                params.idCotizacion = route.query.idCotizacion
+            }
           
             const response = await CotizacionService.getCotizaciones(id,params)
             // only apply response if it's the latest request
