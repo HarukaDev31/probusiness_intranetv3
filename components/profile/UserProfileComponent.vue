@@ -115,7 +115,7 @@
             }">
                 <div class="flex flex-col gap-4">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold">Estadísticas</h3>
+                        <h3 class="text-lg font-semibold">Felicidades! Llevas</h3>
                         <UButton
                             variant="ghost"
                             size="sm"
