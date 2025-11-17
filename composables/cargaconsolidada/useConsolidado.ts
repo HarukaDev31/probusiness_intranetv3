@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ConsolidadoService } from '../../services/cargaconsolidada/consolidadoService'
 import type { PaginationInfo } from '../../types/data-table'
 import type { Contenedor, ContenedorFilters, ContenedorPasos } from '../../types/cargaconsolidada/contenedor'
@@ -113,6 +113,21 @@ export const useConsolidado = () => {
         }
         pagination.value.current_page = 1
         getConsolidadoData()
+    }
+
+    // Listen for global clear-all-filters to reset and refetch consolidado
+    if (typeof window !== 'undefined') {
+        const globalClearHandler = () => {
+            filters.value = {
+                fecha_inicio: '',
+                fecha_fin: '',
+                estado_china: 'todos'
+            }
+            pagination.value.current_page = 1
+            getConsolidadoData()
+        }
+        onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
+        onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
     }
 
     const resetSearch = () => {
