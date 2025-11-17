@@ -1292,7 +1292,24 @@ onMounted(() => {
                 value: 'general'
             }
         ]
-    }else if (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS) {
+    }
+    else if (currentRole.value === ROLES.COORDINACION) {
+        tabs.value = [
+            {
+                label: 'General',
+                value: 'general'
+            },
+            {
+                label: 'Embarcados',
+                value: 'embarcados'
+            },
+            {
+                label: 'Variación',
+                value: 'variacion'
+            },
+          
+        ]
+    } else if (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS) {
         tabs.value = [
             {
                 label: 'General',
