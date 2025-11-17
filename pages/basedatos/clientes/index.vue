@@ -130,10 +130,10 @@ const columns: TableColumn<any>[] = [
       accessorKey: 'contacto',
       header: 'Contacto',
       cell: ({ row }) => {
-        const nombre = row.original?.nombre || row.getValue('nombre') || ''
-        const documento = row.original?.documento || row.getValue('documento') || ''
-        const telefono = row.original?.telefono || row.getValue('telefono') || ''
-        const correo = row.original?.correo || row.getValue('correo') || ''
+        const nombre = row.original?.nombre  || ''
+        const documento = row.original?.documento  || ''
+        const telefono = row.original?.telefono  || ''
+        const correo = row.original?.correo  || ''
         return h('div', { class: 'text-gray-700 py-3 dark:text-gray-100' }, [
           h('div', { class: 'font-medium' }, nombre),
           h('div', { class: 'text-sm text-gray-500' }, documento),

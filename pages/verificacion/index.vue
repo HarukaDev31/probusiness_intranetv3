@@ -452,9 +452,9 @@ const consolidadoColumns: TableColumn<any>[] = [
     accessorKey: 'contacto',
     header: 'Contacto',
     cell: ({ row }: { row: any }) => {
-      const nombre = row.original?.nombre || row.getValue('nombre') || ''
-      const telefono = row.original?.telefono || row.getValue('telefono') || ''
-      const documento = row.original?.documento || row.getValue('documento') || ''
+      const nombre = row.original?.nombre || ''
+      const telefono = row.original?.telefono || ''
+      const documento = row.original?.documento || ''
       return h('div', { class: 'py-2 w-48 whitespace-normal' }, [
         h('div', {}, nombre),
         h('div', { class: 'text-sm text-gray-500' }, documento),

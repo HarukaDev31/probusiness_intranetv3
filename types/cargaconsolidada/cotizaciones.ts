@@ -21,6 +21,7 @@ export interface CotizacionFilters {
     fecha_fin: string
     estado: string
     estado_coordinacion: string
+    estado_cotizador: string
     estado_china: string
 }
 
