@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import type { PaginationInfo, HeaderResponse } from '~/types/data-table'
 import { EntregaService } from '../../../services/cargaconsolidada/entrega/entregaService'
 import type { Entrega } from '../../../types/cargaconsolidada/entrega/entrega'
@@ -470,6 +470,25 @@ export const useEntrega = () => {
     filters.value = {}
     pagination.value.current_page = 1
     if (contenedorId.value) getEntregas(contenedorId.value)
+  }
+
+  // Global clear handler: clear both delivery and client filters and refetch
+  if (typeof window !== 'undefined') {
+    const globalClearHandler = () => {
+      try {
+        clientesFilters.value = {}
+        filters.value = {}
+        pagination.value.current_page = 1
+        if (contenedorId.value) {
+          getClientes(contenedorId.value)
+          getEntregas(contenedorId.value)
+        }
+      } catch (err) {
+        console.error('Error handling global clear for entrega composable', err)
+      }
+    }
+    onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
+    onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
   }
 
   // ---------------- DELIVERY LOGIC -----------------

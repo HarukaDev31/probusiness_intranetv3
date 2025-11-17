@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { PagosService } from '../services/pagosService'
 import type { CursoItem, CursosFilters, PaginationInfo, CursosDetalleResponse } from '../types/cursos-pagos'
 
@@ -172,6 +172,17 @@ export const usePagos = () => {
 
   const clearFilters = () => {
     filters.value = {}
+  }
+
+  // Listen for centralized clear-all-filters events
+  if (typeof window !== 'undefined') {
+    const globalClearHandler = async () => {
+      filters.value = {}
+      // reload first page
+      await fetchCursosData({}, 1, itemsPerPageCursos.value)
+    }
+    onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
+    onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
   }
 
   return {
