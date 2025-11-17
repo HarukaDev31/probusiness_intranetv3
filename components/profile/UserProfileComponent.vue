@@ -109,7 +109,9 @@
             </UCard>
 
             <!-- Estadísticas -->
-            <UCard class="profile-stats" style="grid-area: profile-stats;" :ui="{
+            <UCard 
+            v-if="currentRole === ROLES.COTIZADOR && currentId != ID_JEFEVENTAS"
+            class="profile-stats" style="grid-area: profile-stats;" :ui="{
                 root: 'w-full',
                 body: 'w-full'
             }">
@@ -145,7 +147,6 @@
                     <!-- Filtro de estadísticas -->
                     <div v-if="showCBMFilter" class="flex flex-col gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div class="flex items-center justify-between">
-                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Filtrar estadísticas</h4>
                             <UButton 
                                 v-if="fechaInicio || fechaFin"
                                 variant="ghost" 
@@ -258,11 +259,21 @@ import { formatCurrency, formatDateTimeToDmy } from '~/utils/formatters'
 import { useModal } from '~/composables/commons/useModal'
 import { CalendarDate } from '@internationalized/date'
 import { DateFormatter, getLocalTimeZone } from '@internationalized/date'
-
+import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
+import { useUserRole } from '@/composables/auth/useUserRole'
 const { withSpinner } = useSpinner();
 const { showSuccess, showError } = useModal();
 const { paises, getPaises } = useOptions();
 const { departamentos, provincias, distritos, fetchDepartamentos, fetchProvincias, fetchAllProvincias, fetchDistritos } = useLocation();
+const {
+  userData,
+  currentRole,
+  userName,
+  userEmail,
+  userPhotoUrl,
+  currentId,
+  fetchCurrentUser
+} = useUserRole()
 
 // Computed para convertir a formato de USelect
 const departamentosForSelect = computed(() => {
