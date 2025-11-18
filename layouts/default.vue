@@ -20,7 +20,7 @@
       </header>
 
       <!-- Page Content -->
-      <main class="flex-1 p-3 bg-[#f0f4f9] dark:bg-gray-900">
+      <main ref="mainContentRef" :class="['flex-1 p-3 bg-[#f0f4f9] dark:bg-gray-900', isContentNarrow ? 'flex justify-center' : '']" :style="isContentNarrow ? { minWidth: '640px', width: '100%' } : {}">
         <div class="">
           <!-- <Breadcrumbs /> -->
         </div>
@@ -43,7 +43,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { isContentNarrow, setContentNarrow } from '~/composables/usePageLayout'
 import { useAuth } from '../composables/auth/useAuth'
 import { useWebSocketNotifications } from '../composables/useWebSocketNotifications'
 import { useWebSocketRole } from '../composables/websocket/useWebSocketRole'
@@ -59,6 +60,7 @@ import type { SidebarCategory } from '../types/module'
 
 const sidebarVisible = ref(true)
 const sidebarCollapsed = ref(false)
+const mainContentRef = ref<HTMLElement | null>(null)
 
 const pageTitle = computed(() => {
   const route = useRoute()
@@ -308,5 +310,34 @@ onMounted(async () => {
   await initializeAuth()
   
   
+})
+
+onMounted(() => {
+  // Observe the main content for any DOM changes (slot content updates) so we can reset the
+  // page-level narrow flag and allow components to re-evaluate their layout.
+  let observer: MutationObserver | null = null
+  let timer: number | null = null
+  try {
+    if (typeof MutationObserver !== 'undefined' && mainContentRef.value) {
+      observer = new MutationObserver(() => {
+        // Debounce rapid mutations
+        if (timer) {
+          clearTimeout(timer)
+          timer = null
+        }
+        timer = window.setTimeout(() => {
+          try { setContentNarrow(false) } catch (e) {}
+        }, 50)
+      })
+      observer.observe(mainContentRef.value, { childList: true, subtree: true, attributes: true })
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  onUnmounted(() => {
+    try { if (observer) observer.disconnect() } catch (e) {}
+    try { if (timer) { clearTimeout(timer); timer = null } } catch (e) {}
+  })
 })
 </script>
