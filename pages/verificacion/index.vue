@@ -82,7 +82,7 @@
                 Cursos
               </button>
               <button type="button" @click="activeTab = 'delivery'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition',
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isDelivery ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
               ]">
                 Delivery
@@ -585,10 +585,10 @@ const cursosColumns: TableColumn<any>[] = [
     accessorKey: 'contacto',
     header: 'Contacto',
     cell: ({ row }: { row: any }) => {
-      const nombre = row.getValue('nombre') || ''
-      const documento = row.getValue('documento') || row.original?.documento || ''
-      const telefono = row.getValue('telefono') || ''
-      const correo = row.getValue('correo') || ''
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const telefono = row.original?.telefono || ''
+      const correo = row.original?.correo || ''
       return h('div', { class: '' }, [
         h('div', { class: 'font-medium' }, nombre),
         h('div', { class: 'text-sm text-gray-500' }, documento),
@@ -709,15 +709,15 @@ const deliveryColumns: TableColumn<any>[] = [
     accessorKey: 'contacto',
     header: 'Contacto',
     cell: ({ row }: { row: any }) => {
-      const nombre = row.getValue('nombre') || ''
-      const documento = formatDocument(row.getValue('documento')) || ''
-      const telefono = formatPhoneNumber(row.getValue('telefono')) || ''
-      const correo = row.getValue('correo') || ''
+      const nombre = row.original?.nombre || ''
+      const documento = formatDocument(row.original?.documento || '') || ''
+      const telefono = formatPhoneNumber(row.original?.telefono || '') || ''
+      const correo = row.original?.correo || ''
       return h('div', { class: '' }, [
         h('div', { class: 'font-medium' }, nombre),
         h('div', { class: 'text-sm text-gray-500' }, documento),
         h('div', { class: 'text-sm text-gray-500' }, telefono),
-        h('div', { class: 'text-sm text-gray-500' }, correo || '')
+        h('div', { class: 'text-sm text-gray-500' }, correo)
       ])
     }
   },

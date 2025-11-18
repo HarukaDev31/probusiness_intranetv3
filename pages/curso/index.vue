@@ -16,7 +16,7 @@
                 <UButton icon="i-heroicons-plus" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
             </template>
             <template #body-top>
-                <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-4 w-80 h-15" />
+                <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-1 w-80 h-15" />
                 <div class="mb-4 flex justify-end">
                     <div class="text-lg font-semibold text-gray-900 dark:text-white">
                         Importe total:
@@ -38,7 +38,7 @@
             @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos"
             :show-body-top="true">
             <template #body-top>
-                <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-4 w-80 h-15" />
+                <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-1 w-80 h-15" />
                 <div class="mb-4 flex justify-end">
                     <div class="text-lg font-semibold text-gray-900 dark:text-white">
                         Importe total:

@@ -4,7 +4,7 @@
     class="fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out flex flex-col"
     :class="[visible ? 'translate-x-0' : '-translate-x-full', collapsed ? 'w-20' : 'w-70']">
     <!-- Top: centered logo -->
-    <div class="py-3 px-3 flex items-center justify-start gap-3">
+    <div class="py-3 px-3 flex items-center gap-3" :class="[collapsed ? 'justify-center' : 'justify-start']">
       <NuxtLink to="/" class="flex items-center gap-3">
         <img src="https://intranet.probusiness.pe/assets/img/logos/probusiness.png" alt="Probusiness"
           class="w-10 h-auto" />
@@ -146,7 +146,7 @@
                 <div v-else>
                   <UButton :label="collapsed ? '' : item.name" :icon="item.icon || 'i-heroicons-home'" variant="ghost"
                     class="w-full text-sm gap-3 py-2 rounded-md"
-                    :class="[isActiveRoute(item.route) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0' : 'justify-start px-3']"
+                    :class="[isActiveRoute(item.route) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0 gap-0' : 'justify-start px-3']"
                     @click="handleNavigation(item.route)" />
                 </div>
               </template>
@@ -280,6 +280,15 @@ const toggleCollapsed = () => {
   // emit collapsed state so parent (layout) can adapt margins
   emit('collapsed-change', collapsed.value)
 }
+
+// When the sidebar is minimized (icons-only), collapse any expanded menu groups
+watch(collapsed, (newVal) => {
+  if (newVal) {
+    for (const key of Object.keys(expanded)) {
+      expanded[key] = false
+    }
+  }
+})
 
 // emit initial collapsed state on mount so layout can initialize correctly
 onMounted(() => {
@@ -447,3 +456,24 @@ const initialLetter = (parentName: string, name: string) => {
   }
 }
 </script>
+
+<style scoped>
+/* Smooth fade/slide for submenu open/close. Uses a small max-height
+   so the height and opacity transitions run concurrently with sidebar
+   minimize animation. Tweak times or max-height as needed. */
+.fade-enter-active, .fade-leave-active {
+  transition: all 160ms cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+  max-height: 0;
+}
+.fade-enter-to, .fade-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+  /* large enough to accomodate submenu content */
+  max-height: 800px;
+}
+</style>
