@@ -2,7 +2,7 @@
   <div ref="componentRootRef" class="">
 
     <!-- Sticky Top Section -->
-    <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 mb-2">
+    <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
   <slot name="filters" />
   <template v-if="!$slots.filters">
     <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4 p-4">
@@ -112,82 +112,83 @@
     </div>
 
     <!-- Table Section -->
-    <div class="mb-6 ring-0 bg-transparent" :ui="{
-      body:'px-0'
-    }">
-      
+    <div 
+      ref="tableContainerRef"
+      class="overflow-x-auto relative scroll-container hide-native-scrollbar"
+      @scroll="handleScroll"
+      @mousemove="handleMouseMove"
+      @mouseleave="stopAutoScroll"
+    >
+      <!-- Sombra izquierda -->
       <div 
-        ref="tableContainerRef"
-        class="overflow-x-auto relative scroll-container"
-        @scroll="handleScroll"
-        @mousemove="handleMouseMove"
-        @mouseleave="stopAutoScroll"
-      >
-        <!-- Sombra izquierda -->
-        <div 
-          v-if="showLeftShadow" 
-          class="scroll-shadow scroll-shadow-left"
-          :style="{ left: scrollLeft + 'px' }"
-        ></div>
-        <!-- Sombra derecha -->
-        <div 
-          v-if="showRightShadow" 
-          class="scroll-shadow scroll-shadow-right"
-          :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
-        ></div>
-        <UTable :key="tableKey" :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
-          class="bg-transparent min-w-full" :ui="{
-            root: 'relative overflow-visible',
-            base: 'min-w-full',
-            thead: 'bg-transparent',
-            tbody: 'border-separate border-spacing-y-6',
-            td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
-            th: 'font-normal text-xs lg:text-sm p-2 lg:p-4',
-            tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
-          }">
+        v-if="showLeftShadow" 
+        class="scroll-shadow scroll-shadow-left"
+        :style="{ left: scrollLeft + 'px' }"
+      ></div>
+      <!-- Sombra derecha -->
+      <div 
+        v-if="showRightShadow" 
+        class="scroll-shadow scroll-shadow-right"
+        :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
+      ></div>
+      <UTable :key="tableKey" :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
+        class="bg-transparent min-w-full" :ui="{
+          root: 'relative overflow-visible',
+          base: 'min-w-full',
+          thead: 'bg-transparent',
+          tbody: 'border-separate border-spacing-y-6',
+          td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
+          th: 'font-normal text-xs lg:text-sm p-2 lg:p-1',
+          tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
+        }">
 
-          <template #loading>
-            <div v-if="props.showSkeleton">
-              <slot name="skeleton">
-                <div class="mb-4">
-                  <div class="flex items-center gap-3 mb-2">
-                    <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`h-${c}`" class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
-                  </div>
+        <template #loading>
+          <div v-if="props.showSkeleton">
+            <slot name="skeleton">
+              <div class="mb-4">
+                <div class="flex items-center gap-3 mb-2">
+                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`h-${c}`" class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
                 </div>
-                <div class="space-y-3">
-                  <div v-for="r in (props.skeletonRows || 6)" :key="`row-${r}`" class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${props.skeletonCols || Math.max(1, columns.length)}, minmax(0, 1fr))` }">
-                    <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`c-${r}-${c}`" class="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
-                  </div>
+              </div>
+              <div class="space-y-3">
+                <div v-for="r in (props.skeletonRows || 6)" :key="`row-${r}`" class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${props.skeletonCols || Math.max(1, columns.length)}, minmax(0, 1fr))` }">
+                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`c-${r}-${c}`" class="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
                 </div>
-              </slot>
-            </div>
-            <div v-else class="flex items-center justify-center py-8">
-              <UIcon name="i-heroicons-arrow-path" class="animate-spin w-6 h-6 mr-2" />
-              <span>{{ translations.loading }}</span>
-            </div>
-          </template>
+              </div>
+            </slot>
+          </div>
+          <div v-else class="flex items-center justify-center py-8">
+            <UIcon name="i-heroicons-arrow-path" class="animate-spin w-6 h-6 mr-2" />
+            <span>{{ translations.loading }}</span>
+          </div>
+        </template>
 
-          <template #empty>
-            <div class="text-center py-8">
-              <UIcon name="i-heroicons-inbox" class="mx-auto h-12 w-12 text-gray-400" />
-              <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ translations.emptyTitle }}</h3>
-              <p class="mt-1 text-sm text-gray-500">
-                {{ translations.emptyMessage || emptyStateMessage }}
-              </p>
-            </div>
-          </template>
+        <template #empty>
+          <div class="text-center py-8">
+            <UIcon name="i-heroicons-inbox" class="mx-auto h-12 w-12 text-gray-400" />
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ translations.emptyTitle }}</h3>
+            <p class="mt-1 text-sm text-gray-500">
+              {{ translations.emptyMessage || emptyStateMessage }}
+            </p>
+          </div>
+        </template>
 
-          <template #expanded="{ row }">
-            <pre>{{ row.original }}</pre>
-          </template>
-        </UTable>
-      </div>
+        <template #expanded="{ row }">
+          <pre>{{ row.original }}</pre>
+        </template>
+      </UTable>
     </div>
 
     <!-- Sticky Bottom Section - Pagination -->
     <div v-if="showBottomSection"
-      class="sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
-      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
+      class="sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 bottom-with-scrollbar">
+      <!-- Fake horizontal scrollbar placed visually above the sticky bottom content -->
+      <div ref="fakeScrollbarRef" class="table-scrollbar" @scroll.stop="onFakeScroll" v-show="true">
+        <!-- inner spacer that sets the fake scroll width to the table's scrollWidth -->
+        <div :style="{ width: tableScrollWidth + 'px', height: '1px' }"></div>
+      </div>
+
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4 bottom-inner">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
           {{ translations.showing }} {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} {{translations.a}} {{ Math.min((currentPage || 1) *
             (itemsPerPage || 100), totalRecords) }}
@@ -445,6 +446,10 @@ onUnmounted(() => {
 
 // Scroll automático y sombras laterales
 const tableContainerRef = ref<HTMLElement | null>(null)
+// Fake scrollbar refs and sync state
+const fakeScrollbarRef = ref<HTMLElement | null>(null)
+const tableScrollWidth = ref<number>(0)
+const isSyncing = ref(false)
 const showLeftShadow = ref(false)
 const showRightShadow = ref(false)
 const scrollLeft = ref(0)
@@ -475,6 +480,29 @@ const updateScrollPosition = () => {
 
 const handleScroll = () => {
   updateScrollPosition()
+  // Sync to fake scrollbar (avoid re-entrancy)
+  try {
+    if (!isSyncing.value && fakeScrollbarRef.value && tableContainerRef.value) {
+      isSyncing.value = true
+      fakeScrollbarRef.value.scrollLeft = tableContainerRef.value.scrollLeft
+      requestAnimationFrame(() => { isSyncing.value = false })
+    }
+  } catch (e) {
+    // ignore
+    isSyncing.value = false
+  }
+}
+
+const onFakeScroll = (e?: Event) => {
+  if (!fakeScrollbarRef.value || !tableContainerRef.value) return
+  if (isSyncing.value) return
+  try {
+    isSyncing.value = true
+    tableContainerRef.value.scrollLeft = fakeScrollbarRef.value.scrollLeft
+    requestAnimationFrame(() => { isSyncing.value = false })
+  } catch (err) {
+    isSyncing.value = false
+  }
 }
 
 const handleMouseMove = (event: MouseEvent) => {
@@ -537,11 +565,19 @@ onMounted(() => {
   updateScrollPosition()
   // Observar cambios de tamaño
   if (tableContainerRef.value) {
+    // Update both scroll position and the fake scrollbar width
     const resizeObserver = new ResizeObserver(() => {
       updateScrollPosition()
+      try {
+        tableScrollWidth.value = tableContainerRef.value?.scrollWidth || 0
+        // ensure fake scrollbar initial position follows table
+        if (fakeScrollbarRef.value) fakeScrollbarRef.value.scrollLeft = tableContainerRef.value?.scrollLeft || 0
+      } catch (e) {
+        // ignore
+      }
     })
     resizeObserver.observe(tableContainerRef.value)
-    
+
     onUnmounted(() => {
       resizeObserver.disconnect()
     })
@@ -806,6 +842,48 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   right: 0;
   bottom: 0;
   left: 0;
+}
+
+/* Container marker for bottom area; do NOT change its position (keep sticky) */
+.bottom-with-scrollbar {
+  pointer-events: auto; /* keep rule non-empty without affecting layout */
+}
+
+/* Inner wrapper inside the sticky bottom that provides a positioning context */
+.bottom-with-scrollbar .bottom-inner {
+  position: relative;
+}
+
+/* Fake horizontal scrollbar shown above the sticky bottom */
+.table-scrollbar {
+  position: absolute;
+  top: -12px; /* place visually above the bottom sticky bar */
+  left: 0;
+  right: 0;
+  height: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  z-index: 60;
+}
+
+/* Style the fake scrollbar track & thumb (webkit) */
+.table-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+.table-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.table-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(107,114,128,0.6);
+  border-radius: 9999px;
+}
+
+/* Hide native horizontal scrollbar in the table container */
+.hide-native-scrollbar {
+  scrollbar-width: none; /* firefox */
+}
+.hide-native-scrollbar::-webkit-scrollbar {
+  height: 0px; /* hide horizontal scrollbar for webkit browsers */
 }
 
 /* Mejorar la legibilidad del texto en mobile */

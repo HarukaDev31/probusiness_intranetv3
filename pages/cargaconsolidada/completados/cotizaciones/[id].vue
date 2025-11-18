@@ -1,5 +1,5 @@
 <template>
-    <div class="py-6 ">
+    <div class="">
         <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
             :show-pagination="true" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
@@ -16,7 +16,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingCotizaciones || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -39,7 +39,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loading || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -88,7 +88,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingPagos || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -974,25 +974,15 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'buyer',
-        header: 'Buyer',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre?.toUpperCase() || ''
-            const div = h('div', {
-                //que tenga un max width y si es muy largo que lo haga doble linea
-                class: 'max-w-45 whitespace-normal',
-            }, nombre)
-            return div
-        }
-    },
-    {
-        accessorKey: 'whatsapp',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            const telefono = row.original.telefono
-            return h('div', {
-                class: 'max-w-20 whitespace-normal',
-            }, telefono)
+            const nombre = row.original?.nombre ? (row.original.nombre.toUpperCase ? row.original.nombre.toUpperCase() : row.original.nombre) : ''
+            const telefono = row.original?.telefono || ''
+            return h('div', { class: 'w-70 whitespace-normal' }, [
+                h('div', { class: 'font-medium' }, nombre || '—'),
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
+            ])
         }
     },
     {
@@ -1408,24 +1398,15 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'buyer',
-        header: 'Buyer',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre?.toUpperCase() || ''
-            const div = h('div', {
-                class: 'max-w-45 whitespace-normal',
-            }, nombre)
-            return div
-        }
-    },
-    {
-        accessorKey: 'whatsapp',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            const telefono = row.original.telefono
-            return h('div', {
-                class: 'max-w-20 whitespace-normal',
-            }, telefono)
+            const nombre = row.original?.nombre ? (row.original.nombre.toUpperCase ? row.original.nombre.toUpperCase() : row.original.nombre) : ''
+            const telefono = row.original?.telefono || ''
+            return h('div', { class: 'w-70 whitespace-normal' }, [
+                h('div', { class: 'font-medium' }, nombre || '—'),
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
+            ])
         }
     },
     {
@@ -1849,13 +1830,15 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'buyer',
-        header: 'Buyer',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre?.toUpperCase() || ''
-            return h('div', {
-                class: 'max-w-45 whitespace-normal',
-            }, nombre)
+            const nombre = row.original?.nombre ? (row.original.nombre.toUpperCase ? row.original.nombre.toUpperCase() : row.original.nombre) : ''
+            const telefono = row.original?.telefono || ''
+            return h('div', { class: 'w-70 whitespace-normal' }, [
+                h('div', { class: 'font-medium' }, nombre || '—'),
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
+            ])
         }
     },
     {
