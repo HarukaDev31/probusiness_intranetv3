@@ -710,12 +710,10 @@ const deliveryColumns: TableColumn<any>[] = [
     header: 'Contacto',
     cell: ({ row }: { row: any }) => {
       const nombre = row.original?.nombre || ''
-      const documento = formatDocument(row.original?.documento || '') || ''
       const telefono = formatPhoneNumber(row.original?.telefono || '') || ''
       const correo = row.original?.correo || ''
       return h('div', { class: '' }, [
         h('div', { class: 'font-medium' }, nombre),
-        h('div', { class: 'text-sm text-gray-500' }, documento),
         h('div', { class: 'text-sm text-gray-500' }, telefono),
         h('div', { class: 'text-sm text-gray-500' }, correo)
       ])

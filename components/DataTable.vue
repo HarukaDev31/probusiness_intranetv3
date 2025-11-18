@@ -131,16 +131,8 @@
         class="scroll-shadow scroll-shadow-right"
         :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
       ></div>
-      <UTable :key="tableKey" :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
-        class="bg-transparent min-w-full" :ui="{
-          root: 'relative overflow-visible',
-          base: 'min-w-full',
-          thead: 'bg-transparent',
-          tbody: 'border-separate border-spacing-y-6',
-          td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
-          th: 'font-normal text-xs lg:text-sm p-2 lg:p-1',
-          tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
-        }">
+      <UTable ref="utableRef" :key="tableKey" :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
+        :class="['bg-transparent', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="uiForTable">
 
         <template #loading>
           <div v-if="props.showSkeleton">
@@ -221,6 +213,7 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 const { hasRole, isCoordinacion,currentRole } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
 import { formatDateForInput } from '../utils/data-table'
+import { setContentNarrow } from '../composables/usePageLayout'
 import { navigateTo, useRouter } from '#imports'
 const UButton = resolveComponent('UButton')
 
@@ -446,6 +439,9 @@ onUnmounted(() => {
 
 // Scroll automático y sombras laterales
 const tableContainerRef = ref<HTMLElement | null>(null)
+// Ref to the UTable root so we can apply centering class when table doesn't scroll horizontally
+const utableRef = ref<HTMLElement | null>(null)
+const isTableNarrow = ref(false)
 // Fake scrollbar refs and sync state
 const fakeScrollbarRef = ref<HTMLElement | null>(null)
 const tableScrollWidth = ref<number>(0)
@@ -478,8 +474,45 @@ const updateScrollPosition = () => {
   containerWidth.value = tableContainerRef.value.clientWidth
 }
 
+const updateNarrowness = () => {
+  try {
+    const container = tableContainerRef.value
+    if (!container) {
+      isTableNarrow.value = false
+      return
+    }
+    // Prefer the actual <table> width if present (UTable may render table inside)
+    const innerTable = container.querySelector && container.querySelector('table')
+    const contentWidth = innerTable ? (innerTable.scrollWidth || (innerTable as HTMLElement).offsetWidth) : (container.scrollWidth || 0)
+    // If content width is greater than container clientWidth => has horizontal scroll
+    const hasHorizontal = contentWidth > (container.clientWidth + 1)
+    isTableNarrow.value = !hasHorizontal
+  } catch (e) {
+    isTableNarrow.value = false
+  }
+  // propagate to page-level layout so the outer layout can center content
+  try {
+    setContentNarrow(isTableNarrow.value)
+  } catch (e) {
+    // ignore if composable not available
+  }
+}
+
+// Computed UI classes for UTable — switch `base` when table is narrow so inner <table> doesn't force full width
+const uiForTable = computed(() => ({
+  root: 'relative overflow-visible',
+  base: isTableNarrow.value ? 'min-w-[80%]' : 'min-w-full',
+  thead: 'bg-transparent',
+  tbody: 'border-separate border-spacing-y-6',
+  td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
+  th: 'font-normal text-xs lg:text-sm p-2 lg:p-1',
+  tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
+}))
+
 const handleScroll = () => {
   updateScrollPosition()
+  // Re-evaluate narrowness whenever the user scrolls (in case scroll state changed)
+  try { updateNarrowness() } catch (e) {}
   // Sync to fake scrollbar (avoid re-entrancy)
   try {
     if (!isSyncing.value && fakeScrollbarRef.value && tableContainerRef.value) {
@@ -568,6 +601,7 @@ onMounted(() => {
     // Update both scroll position and the fake scrollbar width
     const resizeObserver = new ResizeObserver(() => {
       updateScrollPosition()
+      updateNarrowness()
       try {
         tableScrollWidth.value = tableContainerRef.value?.scrollWidth || 0
         // ensure fake scrollbar initial position follows table
@@ -578,14 +612,48 @@ onMounted(() => {
     })
     resizeObserver.observe(tableContainerRef.value)
 
+    // compute initial narrowness
+    updateNarrowness()
+
+    // keep narrowness updated on window resize too
+    window.addEventListener('resize', updateNarrowness)
+
+    // Also observe the UTable's rendered DOM for content width changes (columns/data may change scrollWidth)
+    let utableResizeObserver: ResizeObserver | null = null
+    try {
+      if (typeof ResizeObserver !== 'undefined') {
+        // If ref points to a component instance, prefer its $el
+        const maybeComponent = (utableRef as any).value
+        const utableEl = maybeComponent && maybeComponent.$el ? maybeComponent.$el as HTMLElement : maybeComponent as HTMLElement
+        const targetToObserve = utableEl || tableContainerRef.value
+        if (targetToObserve) {
+          utableResizeObserver = new ResizeObserver(() => {
+            try {
+              tableScrollWidth.value = tableContainerRef.value?.scrollWidth || 0
+              updateNarrowness()
+            } catch (e) {
+              // ignore
+            }
+          })
+          utableResizeObserver.observe(targetToObserve)
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
     onUnmounted(() => {
       resizeObserver.disconnect()
+      window.removeEventListener('resize', updateNarrowness)
+      try { if (utableResizeObserver) utableResizeObserver.disconnect() } catch (e) {}
     })
   }
 })
 
 onUnmounted(() => {
   stopAutoScroll()
+  // reset global page narrow state when component unmounts
+  try { setContentNarrow(false) } catch (e) {}
 })
 
 const goBack = () => {
@@ -884,6 +952,24 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 }
 .hide-native-scrollbar::-webkit-scrollbar {
   height: 0px; /* hide horizontal scrollbar for webkit browsers */
+}
+
+/* When table is narrow (no horizontal scroll), center it by applying flex on the UTable root */
+.utable-narrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.utable-narrow table {
+  width: auto !important;
+  min-width: 80% !important;
+}
+
+/* Scoped styles can't reach inside child components; use deep selector to target inner table rendered by UTable */
+.utable-narrow ::v-deep table {
+  width: auto !important;
+  /* Allow very small tables to keep their natural width; page container enforces minimum instead */
+  min-width: 80% !important;
 }
 
 /* Mejorar la legibilidad del texto en mobile */

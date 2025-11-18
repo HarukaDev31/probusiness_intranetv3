@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="">
     <!-- Header Section -->
     <PageHeader title="" subtitle="Gestión de cotizaciones" icon="" :hide-back-button="false"
       @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
