@@ -25,7 +25,7 @@
               </transition>
             </div>
           </div>
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-2">
@@ -62,7 +62,7 @@
               </transition>
             </div>
           </div>
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
       </template>
     </DataTable>
@@ -81,7 +81,7 @@
               </transition>
             </div>
           </div>
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
           <div class="text-xs text-gray-500">Gestiona importes y adelantos. Cambia el importe manualmente y registra
             adelantos con los botones.</div>
         </div>
