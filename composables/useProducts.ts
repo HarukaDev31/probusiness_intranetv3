@@ -1,6 +1,7 @@
 import type { Product, ProductMapped, ProductFilters, ProductResponse, ProductsServiceResponse, FilterOptions, Pagination } from '../types/product'
 import type { Header } from '../types/data-table'
 import {ProductService} from '../services/productService'
+import { onMounted, onBeforeUnmount } from 'vue'
 
 export const useProducts = () => {
   const products = ref<ProductMapped[]>([])
@@ -151,6 +152,18 @@ export const useProducts = () => {
     searchQuery.value = ''
     currentPage.value = 1
     await loadProducts()
+  }
+
+  // Global listener: respond to a centralized "clear all filters" event
+  if (typeof window !== 'undefined') {
+    const globalClearHandler = async () => {
+      filters.value = {}
+      searchQuery.value = ''
+      currentPage.value = 1
+      await loadProducts({ page: 1 })
+    }
+    onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
+    onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
   }
 
   const loadMore = async () => {

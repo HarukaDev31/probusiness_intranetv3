@@ -1,5 +1,5 @@
 <template>
-    <div class="py-6 ">
+    <div class="">
         <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
             :show-pagination="true" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
@@ -10,13 +10,13 @@
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             @export="exportData" :hide-back-button="false"
-            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
             :show-body-top="true">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingCotizaciones || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -39,7 +39,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loading || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -47,11 +47,11 @@
                 <div class="flex items-center gap-2 relative w-full lg:w-auto">
 
                     <div ref="filtersButtonRef" class="w-full lg:w-auto">
-                        <UButton label="Upload" icon="i-heroicons-arrow-up-tray" v-if="ROLES.CONTENEDOR_ALMACEN"
+                        <UButton label="Upload" icon="i-heroicons-arrow-up-tray" v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
                             class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
                             @click="showUploadPanel = !showUploadPanel" />
                     </div>
-                    <div ref="filtersPanelRef" v-if="showUploadPanel && ROLES.CONTENEDOR_ALMACEN"
+                    <div ref="filtersPanelRef" v-if="showUploadPanel && currentRole === ROLES.CONTENEDOR_ALMACEN"
                         class="absolute top-full right-0 mt-2 w-full lg:w-80 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
                         @click.stop>
                         <div class="flex flex-row gap-2 w-full">
@@ -88,7 +88,7 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingPagos || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-4 w-80 h-15"
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
                         v-if="tabs.length > 1" />
                 </div>
             </template>
@@ -440,47 +440,30 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre')?.toUpperCase() || ''
-            return h('div', {
-                class: 'max-w-30 whitespace-normal',
-            }, nombre
-            )
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            const documento = row.getValue('documento')
-            return h('div', {
-                class: 'max-w-18 whitespace-normal',
-            }, documento
-            )
-        }
-    },
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }: { row: any }) => {
-            const correo = row.getValue('correo')
-            return h('div', {
-                class: 'max-w-55 whitespace-normal',
-            }, correo || 'Sin correo'
-            )
-        }
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            const telefono = row.getValue('telefono')
-            return h('div', {
-                class: 'max-w-20 whitespace-normal',
-            }, telefono
-            )
+            const pick = (keys: string[]) => {
+                for (const k of keys) {
+                    const v = row.original?.[k]
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    const nested = row.original?.cliente
+                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
+                }
+                return ''
+            }
+
+            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
+            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
+            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
+            const correo = String(pick(['correo', 'email', 'mail']) || '')
+
+            return h('div', { class: 'max-w-30 whitespace-normal' }, [
+                h('div', { class: 'font-medium' }, nombre || '—'),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo')
+            ])
         }
     },
     {
@@ -621,24 +604,31 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
-        cell: ({ row }: { row: any }) => row.getValue('nombre')?.toUpperCase()
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => row.getValue('documento')
-    },
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }: { row: any }) => row.getValue('correo') || 'Sin correo'
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => row.getValue('telefono')
+        accessorKey: 'contacto',
+        header: 'Contacto',
+        cell: ({ row }: { row: any }) => {
+            const pick = (keys: string[]) => {
+                for (const k of keys) {
+                    const v = row.original?.[k]
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    const nested = row.original?.cliente
+                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
+                }
+                return ''
+            }
+
+            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
+            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
+            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
+            const correo = String(pick(['correo', 'email', 'mail']) || '')
+
+            return h('div', { class: 'py-2' }, [
+                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo')
+            ])
+        }
     },
     {
         accessorKey: 'estado_cliente',
@@ -731,7 +721,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         header: 'Estado',
 
         cell: ({ row }: { row: any }) => {
-            const estado = row.getValue('estado_cotizador') || row.original.estado
+            const estado = row.getValue('estado_cotizador')
             const color = getEstadoColor(estado)
 
             return h(USelect as any, {
@@ -799,19 +789,20 @@ const getPagosColumns = () => {
             }
         },
         {
-            accessorKey: 'nombre',
-            header: 'Nombre',
-            cell: ({ row }: { row: any }) => row.original.nombre?.toUpperCase() || ''
-        },
-        {
-            accessorKey: 'documento',
-            header: 'DNI/RUC',
-            cell: ({ row }: { row: any }) => row.original.documento
-        },
-        {
-            accessorKey: 'whatsapp',
-            header: 'Whatsapp',
-            cell: ({ row }: { row: any }) => row.original.telefono
+            accessorKey: 'contacto',
+            header: 'Contacto',
+            cell: ({ row }: { row: any }) => {
+                const nombre = row.original?.nombre || ''
+                const documento = row.original?.documento || ''
+                const telefono = row.original?.telefono || ''
+                const correo = row.original?.correo || ''
+                return h('div', { class: 'py-2' }, [
+                    h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
+                    h('div', { class: 'text-sm text-gray-500' }, documento),
+                    h('div', { class: 'text-sm text-gray-500' }, telefono),
+                    h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo')
+                ])
+            }
         },
         {
             accessorKey: 'tipo_cliente',
@@ -983,25 +974,15 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'buyer',
-        header: 'Buyer',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre?.toUpperCase() || ''
-            const div = h('div', {
-                //que tenga un max width y si es muy largo que lo haga doble linea
-                class: 'max-w-45 whitespace-normal',
-            }, nombre)
-            return div
-        }
-    },
-    {
-        accessorKey: 'whatsapp',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            const telefono = row.original.telefono
-            return h('div', {
-                class: 'max-w-20 whitespace-normal',
-            }, telefono)
+            const nombre = row.original?.nombre ? (row.original.nombre.toUpperCase ? row.original.nombre.toUpperCase() : row.original.nombre) : ''
+            const telefono = row.original?.telefono || ''
+            return h('div', { class: 'w-70 whitespace-normal' }, [
+                h('div', { class: 'font-medium' }, nombre || '—'),
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
+            ])
         }
     },
     {
@@ -1417,24 +1398,15 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'buyer',
-        header: 'Buyer',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre?.toUpperCase() || ''
-            const div = h('div', {
-                class: 'max-w-45 whitespace-normal',
-            }, nombre)
-            return div
-        }
-    },
-    {
-        accessorKey: 'whatsapp',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            const telefono = row.original.telefono
-            return h('div', {
-                class: 'max-w-20 whitespace-normal',
-            }, telefono)
+            const nombre = row.original?.nombre ? (row.original.nombre.toUpperCase ? row.original.nombre.toUpperCase() : row.original.nombre) : ''
+            const telefono = row.original?.telefono || ''
+            return h('div', { class: 'w-70 whitespace-normal' }, [
+                h('div', { class: 'font-medium' }, nombre || '—'),
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
+            ])
         }
     },
     {
@@ -1858,13 +1830,15 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'buyer',
-        header: 'Buyer',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original.nombre?.toUpperCase() || ''
-            return h('div', {
-                class: 'max-w-45 whitespace-normal',
-            }, nombre)
+            const nombre = row.original?.nombre ? (row.original.nombre.toUpperCase ? row.original.nombre.toUpperCase() : row.original.nombre) : ''
+            const telefono = row.original?.telefono || ''
+            return h('div', { class: 'w-70 whitespace-normal' }, [
+                h('div', { class: 'font-medium' }, nombre || '—'),
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
+            ])
         }
     },
     {

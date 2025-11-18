@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ConsolidadoService } from '../services/consolidadoService'
 import type { ConsolidadoItem, ConsolidadoFilters, PaginationInfo, PagoDetalleResponse } from '../types/pagos/consolidado-pagos'
 
@@ -228,6 +228,24 @@ export const useConsolidado = () => {
       carga: '',
       search: ''
     }
+    // keep the API call separate so caller can decide; DataTable global clear should trigger refetch
+  }
+
+  // Global clear listener: reset filters and reload data
+  if (typeof window !== 'undefined') {
+    const globalClearHandler = () => {
+      filters.value = {
+        fecha_inicio: '',
+        fecha_fin: '',
+        estado: '',
+        carga: '',
+        search: ''
+      }
+      // fetch first page after clearing
+      fetchConsolidadoData({}, 1, itemsPerPage.value)
+    }
+    onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
+    onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
   }
 
   return {

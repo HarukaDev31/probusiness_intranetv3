@@ -8,12 +8,16 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
   const filtersPanelRef = ref<HTMLElement>()
   const filtersButtonRef = ref<HTMLElement>()
   const isSelectOpen = ref(false)
+  // When true, suppress per-filter 'filter-change' emits (used during bulk clear)
+  const suppressFilterEmits = ref(false)
 
   // Filtered data (can be overridden by parent)
   const filteredData = computed(() => props.data)
 
   // Methods
   const handleFilterChange = (filterType: string, value: string) => {
+    // If suppressed (e.g. during a bulk clear), don't emit per-filter events
+    if ((suppressFilterEmits as any)?.value) return
     emit('filter-change', filterType, value)
 
   }
@@ -31,8 +35,39 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
   }
 
   const handleClearFilters = () => {
+    // Suppress per-filter emits while we clear so parents receive a single
+    // 'update:filters' / 'clear-filters' notification instead of many events.
+    try {
+      suppressFilterEmits.value = true
+    } catch (e) {
+      // ignore
+    }
+
+    // Inform parent that filters were cleared and close the panel.
     emit('clear-filters')
+    try {
+      emit('update:filters', {})
+    } catch (e) {
+      // if parent doesn't listen or types mismatch, still proceed
+    }
     showFiltersPanel.value = false
+
+    // Re-enable per-filter emits shortly after to allow normal interactions.
+    try {
+      window.setTimeout(() => {
+        suppressFilterEmits.value = false
+      }, 50)
+    } catch (e) {
+      suppressFilterEmits.value = false
+    }
+    // Dispatch a global event so other parts of the app can react if they want
+    try {
+      if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('probusiness:clear-all-filters'))
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   const onPageChange = (page: number) => {

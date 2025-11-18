@@ -16,7 +16,7 @@
                 <UButton icon="i-heroicons-plus" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
             </template>
             <template #body-top>
-                <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-4 w-80 h-15" />
+                <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-1 w-80 h-15" />
                 <div class="mb-4 flex justify-end">
                     <div class="text-lg font-semibold text-gray-900 dark:text-white">
                         Importe total:
@@ -38,7 +38,7 @@
             @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos"
             :show-body-top="true">
             <template #body-top>
-                <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-4 w-80 h-15" />
+                <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-1 w-80 h-15" />
                 <div class="mb-4 flex justify-end">
                     <div class="text-lg font-semibold text-gray-900 dark:text-white">
                         Importe total:
@@ -340,24 +340,17 @@ const columnsPagos = ref<TableColumn<CursoItem>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }) => {
-            return row.original.No_Entidad
-        }
-    },
-    {
-        accessorKey: 'dni',
-        header: 'DNI/RUC',
-        cell: ({ row }) => {
-            return row.original.Nu_Documento_Identidad
-        }
-    },
-    {
-        accessorKey: 'whatsapp',
-        header: 'WhatsApp',
-        cell: ({ row }) => {
-            return row.original.Nu_Celular_Entidad
+            const nombre = row.original.No_Entidad || ''
+            const dni = row.original.Nu_Documento_Identidad || ''
+            const telefono = row.original.Nu_Celular_Entidad || ''
+            return h('div', { class: 'py-2' }, [
+                h('div', { class: 'font-medium' }, nombre),
+                h('div', { class: 'text-sm text-gray-500' }, dni),
+                h('div', { class: 'text-sm text-gray-500' }, telefono)
+            ])
         }
     },
     {

@@ -9,6 +9,9 @@ export const WS_EVENTS = {
   COTIZACION_NEW_REQUEST: 'CotizacionNewRequest',
   //evento cuando china llena arrive date de la cotizacion
   COTIZACION_CHINA_CONTACTED: 'CotizacionChinaContacted',
+  COTIZACION_CHINA_RECEIVED: 'CotizacionChinaReceived',
+  COTIZACION_CHINA_INSPECTIONED: 'CotizacionChinaInspected',
+  //Evento que se envia cuando rolean un carga
   COTIZACION_CHANGE_CONTAINER: 'CotizacionChangeContainer',
   // Eventos de Contenedor (usados en events/contenedor-consolidado.ts)
   CONTAINER_STATUS_CHANGE: 'ContainerStatusChange',

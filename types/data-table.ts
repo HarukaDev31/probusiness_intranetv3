@@ -78,6 +78,8 @@ export interface DataTableProps {
   // Values from parent
   searchQueryValue?: string
   primarySearchValue?: string
+  /** Delay in milliseconds to debounce the primary search input. When <= 0, search emits immediately. */
+  searchDebounceMs?: number
   filtersValue?: Record<string, any>
   showHeaders?: boolean
   headers?: Header[]

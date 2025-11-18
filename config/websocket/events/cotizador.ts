@@ -5,7 +5,8 @@ import {
 } from '~/config/websocket/channels'
 import { ROLES } from '~/constants/roles'
 import { useModal } from '~/composables/commons/useModal'
-
+import { useUserRole } from '~/composables/auth/useUserRole'
+const { currentId } = useUserRole()
 /**
  * Configuración de eventos para el rol Cotizador
  * Este archivo se ejecuta antes de la suscripción a los canales
@@ -28,6 +29,9 @@ export const registerCotizadorEvents = () => {
 
   // Handler para CotizacionChinaContacted
   registerEventHandler(WS_EVENTS.COTIZACION_CHINA_CONTACTED, (data) => {
+    if(data.usuario_id == currentId.value) {
+      return
+    }
     const { showSuccess } = useModal()
     showSuccess(
       'Contacto con China', 
@@ -37,8 +41,30 @@ export const registerCotizadorEvents = () => {
 
   // Handler para CotizacionChangeContainer
   registerEventHandler(WS_EVENTS.COTIZACION_CHANGE_CONTAINER, (data) => {
+    if(data.usuario_id == currentId.value) {
+      return
+    }
     const { showSuccess } = useModal()
     showSuccess('Cambio de Contenedor', data.message || 'Se ha cambiado el contenedor de la cotización.')
+  })
+
+  // Handler para CotizacionChinaReceived
+  registerEventHandler(WS_EVENTS.COTIZACION_CHINA_RECEIVED, (data) => {
+    if(data.usuario_id == currentId.value) {
+      return
+    }
+    const { showSuccess } = useModal()
+    showSuccess('Cotización Recibida', data.message || 'Se ha recibido la cotización.')
+  })
+
+  // Handler for CotizacionChinaInspected
+  registerEventHandler(WS_EVENTS.COTIZACION_CHINA_INSPECTIONED, (data) => {
+    console.log('data', data)
+    if(data.usuario_id == currentId.value) {
+      return
+    }
+    const { showSuccess } = useModal()
+    showSuccess('Cotización Inspectada', data.message || 'Se ha inspeccionado la cotización.')
   })
 
   // ============================================
@@ -52,7 +78,9 @@ export const registerCotizadorEvents = () => {
       WS_EVENTS.COTIZACION_NEW_REQUEST,
       WS_EVENTS.COTIZACION_STATUS_UPDATED,
       WS_EVENTS.COTIZACION_CHINA_CONTACTED,
-      WS_EVENTS.COTIZACION_CHANGE_CONTAINER
+      WS_EVENTS.COTIZACION_CHANGE_CONTAINER,
+      WS_EVENTS.COTIZACION_CHINA_RECEIVED,
+      WS_EVENTS.COTIZACION_CHINA_INSPECTIONED
     ],
     'private'
   )

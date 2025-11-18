@@ -13,7 +13,7 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
@@ -315,24 +315,30 @@ const columnsPagos = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('documento')
-        }
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('telefono')
+            const pick = (keys: string[]) => {
+                for (const k of keys) {
+                    const v = row.original?.[k]
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    const nested = row.original?.cliente
+                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
+                }
+                return ''
+            }
+
+            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
+            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
+            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
+            const correo = String(pick(['correo', 'email', 'mail']) || '')
+
+            return h('div', { class: 'py-2' }, [
+                h('div', { class: 'font-medium' }, nombre || '—'),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null
+            ])
         }
     },
     {
@@ -456,43 +462,30 @@ const columns: TableColumn<any>[] = [
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre').toUpperCase()
-            return h('div', {
-                class: 'max-w-30 whitespace-normal break-words',
-            }, nombre)
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('documento')
-        }
-    },
+            const pick = (keys: string[]) => {
+                for (const k of keys) {
+                    const v = row.original?.[k]
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    const nested = row.original?.cliente
+                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
+                }
+                return ''
+            }
 
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }: { row: any }) => {
-            const correo = row.getValue('correo')
-            return h('div', {
-                class: 'max-w-40 whitespace-normal break-words',
-            }, correo || 'Sin correo'
-            )
-        }
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            const telefono = row.getValue('telefono')
-            return h('div', {
-                class: 'max-w-20 whitespace-normal',
-            }, telefono
-            )
+            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
+            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
+            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
+            const correo = String(pick(['correo', 'email', 'mail']) || '')
+
+            return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
+                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo')
+            ])
         }
     },
     {
@@ -581,40 +574,19 @@ const columnsCoordinacion: TableColumn<any>[] = [
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre').toUpperCase()
-            return h('div', {
-                class: 'max-w-30 whitespace-normal break-words',
-            }, nombre)
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('documento')
-        }
-    },
-
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }: { row: any }) => {
-            const correo = row.getValue('correo')
-            return h('div',{
-                //que tenga un max width y si es muy largo que lo haga doble linea pero no hay espaciados para usar whitespace
-                class: 'max-w-40 whitespace-normal break-words',
-            }, correo || 'Sin correo'
-            )
-        }
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('telefono')
+            const nombre = row.original?.nombre || ''
+            const documento = row.original?.documento || ''
+            const telefono = row.original?.telefono || ''
+            const correo = row.original?.correo || ''
+            return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
+                h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500' }, telefono),
+                h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo')
+            ])
         }
     },
     {
@@ -731,31 +703,19 @@ const columnsDocumentacion: TableColumn<any>[] = [
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('documento')
-        }
-    },
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('correo')
-        }
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('telefono')
+            const nombre = row.getValue('nombre') || ''
+            const documento = row.getValue('documento') || ''
+            const correo = row.getValue('correo') || ''
+            const telefono = row.getValue('telefono') || ''
+            return h('div', { class: '' }, [
+                h('div', { class: 'font-medium' }, nombre),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500' }, telefono),
+                h('div', { class: 'text-sm text-gray-500' }, correo || '')
+            ])
         }
     },
     {
@@ -862,17 +822,30 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
-        }
-    },
-    {
-        accessorKey: 'whatsapp',
-        header: 'Whatsapp',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('whatsapp')
+            const pick = (keys: string[]) => {
+                for (const k of keys) {
+                    const v = row.original?.[k]
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    const nested = row.original?.cliente
+                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
+                }
+                return ''
+            }
+
+            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
+            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
+            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
+            const correo = String(pick(['correo', 'email', 'mail']) || '')
+
+            return h('div', { class: '' }, [
+                h('div', { class: 'font-medium' }, nombre),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null
+            ])
         }
     },
     {
@@ -1144,17 +1117,19 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
+        accessorKey: 'contacto',
+        header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            return row.getValue('nombre')
-        }
-    },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }: { row: any }) => {
-            return row.getValue('documento')
+            const nombre = row.original?.nombre || ''
+            const documento = row.original?.documento || ''
+            const telefono = row.original?.telefono || ''
+            const correo = row.original?.correo || ''
+            return h('div', { class: '' }, [
+                h('div', { class: 'font-medium' }, nombre),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500' }, telefono),
+                h('div', { class: 'text-sm text-gray-500' }, correo || '')
+            ])
         }
     },
     {
@@ -1298,7 +1273,7 @@ onMounted(() => {
             }
         ]
     }
-    else if (currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS)) {
+    else if (currentRole.value === ROLES.COORDINACION) {
         tabs.value = [
             {
                 label: 'General',
@@ -1312,9 +1287,21 @@ onMounted(() => {
                 label: 'Variación',
                 value: 'variacion'
             },
+         
+        ]
+    } else if (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS) {
+        tabs.value = [
             {
-                label: 'Pagos',
-                value: 'pagos'
+                label: 'General',
+                value: 'general'
+            },
+            {
+                label: 'Embarcados',
+                value: 'embarcados'
+            },
+            {
+                label: 'Variación',
+                value: 'variacion'
             }
         ]
     } else {

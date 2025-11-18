@@ -1,5 +1,5 @@
 import type { TableColumn } from '@nuxt/ui'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { PagosService } from '~/services/curso/pagosService'
 import type { CursosFilters, PaginationInfo, CursosDetalleResponse, CursoItem, DatosClientePorPedido, PagoDetalle } from '~/types/cursos/cursos'
 import type { FilterConfig } from '~/types/data-table'
@@ -136,6 +136,18 @@ export const usePagos = () => {
         searchQueryPagos.value = ''
         currentPagePagos.value = 1
         await loadPagos({ page: 1 })
+    }
+
+    // Global clear handler for pagos composable
+    if (typeof window !== 'undefined') {
+        const globalClearHandler = async () => {
+            filtersPagos.value = {}
+            searchQueryPagos.value = ''
+            currentPagePagos.value = 1
+            await loadPagos({ page: 1 })
+        }
+        onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
+        onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
     }
 
     // Otros métodos

@@ -127,25 +127,22 @@ const columns: TableColumn<any>[] = [
         cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-400' }, row.getValue('fecha'))
     },
     {
-        accessorKey: 'nombre',
-        header: 'Nombre',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-100' }, row.getValue('nombre'))
+      accessorKey: 'contacto',
+      header: 'Contacto',
+      cell: ({ row }) => {
+        const nombre = row.original?.nombre  || ''
+        const documento = row.original?.documento  || ''
+        const telefono = row.original?.telefono  || ''
+        const correo = row.original?.correo  || ''
+        return h('div', { class: 'text-gray-700 py-3 dark:text-gray-100' }, [
+          h('div', { class: 'font-medium' }, nombre),
+          h('div', { class: 'text-sm text-gray-500' }, documento),
+          h('div', { class: 'text-sm text-gray-500' }, telefono),
+          h('div', { class: 'text-sm text-gray-500' }, correo)
+        ])
+      }
     },
-    {
-        accessorKey: 'documento',
-        header: 'DNI/RUC',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, row.getValue('documento') || '-')
-    },
-    {
-        accessorKey: 'correo',
-        header: 'Correo',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, row.getValue('correo'))
-    },
-    {
-        accessorKey: 'telefono',
-        header: 'WhstApp',
-        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, row.getValue('telefono'))
-    },
+ 
     {
         accessorKey: 'primer_servicio',
         header: 'Servicio',

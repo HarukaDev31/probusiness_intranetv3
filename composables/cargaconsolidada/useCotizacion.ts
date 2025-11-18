@@ -1,7 +1,7 @@
 import { CotizacionService } from "../../services/cargaconsolidada/cotizacionService"
 import type { Header, PaginationInfo } from "../../types/data-table"
 import type { Cotizacion, CotizacionFilters } from "../../types/cargaconsolidada/cotizaciones"
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from '#app'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { fi } from "@nuxt/ui/runtime/locale/index.js"
@@ -33,14 +33,19 @@ export const useCotizacion = () => {
         fecha_inicio: '',
         fecha_fin: '',
         estado: 'todos', // Inicializar con 'todos' para consistencia
+        // La UI usa 'estado_cotizador' como key en los filtros; exponerla aquí
+        estado_cotizador: 'todos',
         estado_coordinacion: 'todos',
         estado_china: 'todos',
     
     })
+    // request sequencing to avoid applying out-of-order responses
+    const latestRequestId = ref(0)
     
     const getCotizaciones = async (id: number) => {
         try {
             loading.value = true
+            const requestId = ++latestRequestId.value
             const params: any = {
                 page: pagination.value.current_page,
                 limit: itemsPerPage.value
@@ -57,16 +62,27 @@ export const useCotizacion = () => {
             if (filters.value.estado && filters.value.estado !== 'todos') {
                 params.estado = filters.value.estado
             }
+            // Si la UI envía 'estado_cotizador' (nombre usado en los filtros), mapearlo a params.estado_cotizador
+            if (filters.value.estado_cotizador && filters.value.estado_cotizador !== 'todos') {
+                params.estado_cotizador = filters.value.estado_cotizador
+            }
             if (filters.value.estado_coordinacion && filters.value.estado_coordinacion !== 'todos') {
                 params.estado_coordinacion = filters.value.estado_coordinacion
             }
             if (filters.value.estado_china && filters.value.estado_china !== 'todos') {
                 params.estado_china = filters.value.estado_china
             }
+            // Leer idCotizacion de la query string si existe
+            if (route.query.idCotizacion) {
+                params.idCotizacion = route.query.idCotizacion
+            }
           
             const response = await CotizacionService.getCotizaciones(id,params)
-            cotizaciones.value = response.data
-            pagination.value = response.pagination
+            // only apply response if it's the latest request
+            if (requestId === latestRequestId.value) {
+                cotizaciones.value = response.data
+                pagination.value = response.pagination
+            }
         } catch (err) {
             error.value = err as string
         } finally {
@@ -154,11 +170,38 @@ export const useCotizacion = () => {
             fecha_inicio: '',
             fecha_fin: '',
             estado: 'todos',
+            estado_cotizador: 'todos',
             estado_coordinacion: 'todos',
             estado_china: 'todos'
         }
     }
     const route = useRoute()
+
+    // Global clear handler: when DataTable dispatches 'probusiness:clear-all-filters',
+    // reset local filters and reload cotizaciones (if on a container page).
+    const globalClearHandler = async () => {
+        try {
+            resetFiltersCotizacion()
+            pagination.value.current_page = 1
+            search.value = ''
+            const containerId = Number(route.params.id)
+            if (containerId) await getCotizaciones(containerId)
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    onMounted(() => {
+        if (typeof window !== 'undefined' && (window as any).addEventListener) {
+            window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener)
+        }
+    })
+
+    onUnmounted(() => {
+        if (typeof window !== 'undefined' && (window as any).removeEventListener) {
+            window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener)
+        }
+    })
 
     const exportData = async (id?: number) => {
         loading.value = true

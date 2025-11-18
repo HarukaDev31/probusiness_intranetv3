@@ -2,7 +2,7 @@
   <div ref="componentRootRef" class="">
 
     <!-- Sticky Top Section -->
-    <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 mb-2">
+    <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
   <slot name="filters" />
   <template v-if="!$slots.filters">
     <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4 p-4">
@@ -56,6 +56,24 @@
                       }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
                 </div>
               </div>
+
+              <!-- Footer actions for filters (design similar to screenshot) -->
+              <div class="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
+                <div class="flex items-center justify-between">
+                  <!-- Left: prominent clear filters button -->
+                  <UButton
+                    icon="i-heroicons-x-mark"
+                    class="h-8 bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 border-0"
+                    :label="translations.clearFilters"
+                    @click="handleClearFilters"
+                  />
+
+                  <!-- Right: close link-style button -->
+                  <button type="button" class="text-sm text-gray-600 dark:text-gray-300 hover:underline" @click="showFiltersPanel = false">
+                    {{ translations.close }}
+                  </button>
+                </div>
+              </div>
             </div>
             <!-- Export Button -->
 
@@ -94,82 +112,75 @@
     </div>
 
     <!-- Table Section -->
-    <div class="mb-6 ring-0 bg-transparent" :ui="{
-      body:'px-0'
-    }">
-      
+    <div 
+      ref="tableContainerRef"
+      class="overflow-x-auto relative scroll-container hide-native-scrollbar"
+      @scroll="handleScroll"
+      @mousemove="handleMouseMove"
+      @mouseleave="stopAutoScroll"
+    >
+      <!-- Sombra izquierda -->
       <div 
-        ref="tableContainerRef"
-        class="overflow-x-auto relative scroll-container"
-        @scroll="handleScroll"
-        @mousemove="handleMouseMove"
-        @mouseleave="stopAutoScroll"
-      >
-        <!-- Sombra izquierda -->
-        <div 
-          v-if="showLeftShadow" 
-          class="scroll-shadow scroll-shadow-left"
-          :style="{ left: scrollLeft + 'px' }"
-        ></div>
-        <!-- Sombra derecha -->
-        <div 
-          v-if="showRightShadow" 
-          class="scroll-shadow scroll-shadow-right"
-          :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
-        ></div>
-        <UTable :key="tableKey" :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
-          class="bg-transparent min-w-full" :ui="{
-            root: 'relative overflow-visible',
-            base: 'min-w-full',
-            thead: 'bg-transparent',
-            tbody: 'border-separate border-spacing-y-6',
-            td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
-            th: 'font-normal text-xs lg:text-sm p-2 lg:p-4',
-            tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
-          }">
+        v-if="showLeftShadow" 
+        class="scroll-shadow scroll-shadow-left"
+        :style="{ left: scrollLeft + 'px' }"
+      ></div>
+      <!-- Sombra derecha -->
+      <div 
+        v-if="showRightShadow" 
+        class="scroll-shadow scroll-shadow-right"
+        :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
+      ></div>
+      <UTable ref="utableRef" :key="tableKey" :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
+        :class="['bg-transparent', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="uiForTable">
 
-          <template #loading>
-            <div v-if="props.showSkeleton">
-              <slot name="skeleton">
-                <div class="mb-4">
-                  <div class="flex items-center gap-3 mb-2">
-                    <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`h-${c}`" class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
-                  </div>
+        <template #loading>
+          <div v-if="props.showSkeleton">
+            <slot name="skeleton">
+              <div class="mb-4">
+                <div class="flex items-center gap-3 mb-2">
+                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`h-${c}`" class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
                 </div>
-                <div class="space-y-3">
-                  <div v-for="r in (props.skeletonRows || 6)" :key="`row-${r}`" class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${props.skeletonCols || Math.max(1, columns.length)}, minmax(0, 1fr))` }">
-                    <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`c-${r}-${c}`" class="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
-                  </div>
+              </div>
+              <div class="space-y-3">
+                <div v-for="r in (props.skeletonRows || 6)" :key="`row-${r}`" class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${props.skeletonCols || Math.max(1, columns.length)}, minmax(0, 1fr))` }">
+                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`c-${r}-${c}`" class="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
                 </div>
-              </slot>
-            </div>
-            <div v-else class="flex items-center justify-center py-8">
-              <UIcon name="i-heroicons-arrow-path" class="animate-spin w-6 h-6 mr-2" />
-              <span>{{ translations.loading }}</span>
-            </div>
-          </template>
+              </div>
+            </slot>
+          </div>
+          <div v-else class="flex items-center justify-center py-8">
+            <UIcon name="i-heroicons-arrow-path" class="animate-spin w-6 h-6 mr-2" />
+            <span>{{ translations.loading }}</span>
+          </div>
+        </template>
 
-          <template #empty>
-            <div class="text-center py-8">
-              <UIcon name="i-heroicons-inbox" class="mx-auto h-12 w-12 text-gray-400" />
-              <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ translations.emptyTitle }}</h3>
-              <p class="mt-1 text-sm text-gray-500">
-                {{ translations.emptyMessage || emptyStateMessage }}
-              </p>
-            </div>
-          </template>
+        <template #empty>
+          <div class="text-center py-8">
+            <UIcon name="i-heroicons-inbox" class="mx-auto h-12 w-12 text-gray-400" />
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ translations.emptyTitle }}</h3>
+            <p class="mt-1 text-sm text-gray-500">
+              {{ translations.emptyMessage || emptyStateMessage }}
+            </p>
+          </div>
+        </template>
 
-          <template #expanded="{ row }">
-            <pre>{{ row.original }}</pre>
-          </template>
-        </UTable>
-      </div>
+        <template #expanded="{ row }">
+          <pre>{{ row.original }}</pre>
+        </template>
+      </UTable>
     </div>
 
     <!-- Sticky Bottom Section - Pagination -->
     <div v-if="showBottomSection"
-      class="sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
-      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
+      class="sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 bottom-with-scrollbar">
+      <!-- Fake horizontal scrollbar placed visually above the sticky bottom content -->
+      <div ref="fakeScrollbarRef" class="table-scrollbar" @scroll.stop="onFakeScroll" v-show="true">
+        <!-- inner spacer that sets the fake scroll width to the table's scrollWidth -->
+        <div :style="{ width: tableScrollWidth + 'px', height: '1px' }"></div>
+      </div>
+
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4 bottom-inner">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
           {{ translations.showing }} {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} {{translations.a}} {{ Math.min((currentPage || 1) *
             (itemsPerPage || 100), totalRecords) }}
@@ -202,6 +213,7 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 const { hasRole, isCoordinacion,currentRole } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
 import { formatDateForInput } from '../utils/data-table'
+import { setContentNarrow } from '../composables/usePageLayout'
 import { navigateTo, useRouter } from '#imports'
 const UButton = resolveComponent('UButton')
 
@@ -279,13 +291,38 @@ const componentRootRef = ref<HTMLElement | null>(null)
 // Internal primary search state (to avoid desync when parent uses v-show tabs)
 const primarySearchInternal = ref<string>(props.primarySearchValue ?? props.searchQueryValue ?? '')
 
-const onPrimarySearchChange = (value: string) => {
-  primarySearchInternal.value = value
+// Debounced primary search emission
+const primarySearchTimer = ref<number | null>(null)
+const debounceMs = computed(() => (props.searchDebounceMs ?? 300))
+
+const emitSearchNow = (value: string) => {
   // emit both camelCase variants (typed) and kebab-case variants (some parents listen that way)
   emit('update:primarySearch', value)
   emit('update:searchQuery', value)
   ;(emit as any)('update:primary-search', value)
   ;(emit as any)('update:search-query', value)
+}
+
+const onPrimarySearchChange = (value: string) => {
+  primarySearchInternal.value = value
+  const ms = debounceMs.value
+  // If user wants no debounce, emit immediately
+  if (!ms || ms <= 0) {
+    emitSearchNow(value)
+    return
+  }
+
+  // reset timer
+  if (primarySearchTimer.value) {
+    clearTimeout(primarySearchTimer.value)
+    primarySearchTimer.value = null
+  }
+
+  // schedule emit
+  primarySearchTimer.value = window.setTimeout(() => {
+    emitSearchNow(value)
+    primarySearchTimer.value = null
+  }, ms)
 }
 
 // Keep internal state in sync if parent controls the prop
@@ -389,10 +426,26 @@ onUnmounted(() => {
     clearInterval(_visibilityInterval.value)
     _visibilityInterval.value = null
   }
+  // clear pending search debounce timer if any
+  try {
+    if (primarySearchTimer.value) {
+      clearTimeout(primarySearchTimer.value)
+      primarySearchTimer.value = null
+    }
+  } catch (e) {
+    // ignore
+  }
 })
 
 // Scroll automático y sombras laterales
 const tableContainerRef = ref<HTMLElement | null>(null)
+// Ref to the UTable root so we can apply centering class when table doesn't scroll horizontally
+const utableRef = ref<HTMLElement | null>(null)
+const isTableNarrow = ref(false)
+// Fake scrollbar refs and sync state
+const fakeScrollbarRef = ref<HTMLElement | null>(null)
+const tableScrollWidth = ref<number>(0)
+const isSyncing = ref(false)
 const showLeftShadow = ref(false)
 const showRightShadow = ref(false)
 const scrollLeft = ref(0)
@@ -421,8 +474,68 @@ const updateScrollPosition = () => {
   containerWidth.value = tableContainerRef.value.clientWidth
 }
 
+const updateNarrowness = () => {
+  try {
+    const container = tableContainerRef.value
+    if (!container) {
+      isTableNarrow.value = false
+      return
+    }
+    // Prefer the actual <table> width if present (UTable may render table inside)
+    const innerTable = container.querySelector && container.querySelector('table')
+    const contentWidth = innerTable ? (innerTable.scrollWidth || (innerTable as HTMLElement).offsetWidth) : (container.scrollWidth || 0)
+    // If content width is greater than container clientWidth => has horizontal scroll
+    const hasHorizontal = contentWidth > (container.clientWidth + 1)
+    isTableNarrow.value = !hasHorizontal
+  } catch (e) {
+    isTableNarrow.value = false
+  }
+  // propagate to page-level layout so the outer layout can center content
+  try {
+    setContentNarrow(isTableNarrow.value)
+  } catch (e) {
+    // ignore if composable not available
+  }
+}
+
+// Computed UI classes for UTable — switch `base` when table is narrow so inner <table> doesn't force full width
+const uiForTable = computed(() => ({
+  root: 'relative overflow-visible',
+  base: isTableNarrow.value ? 'min-w-0' : 'min-w-full',
+  thead: 'bg-transparent',
+  tbody: 'border-separate border-spacing-y-6',
+  td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
+  th: 'font-normal text-xs lg:text-sm p-2 lg:p-1',
+  tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
+}))
+
 const handleScroll = () => {
   updateScrollPosition()
+  // Re-evaluate narrowness whenever the user scrolls (in case scroll state changed)
+  try { updateNarrowness() } catch (e) {}
+  // Sync to fake scrollbar (avoid re-entrancy)
+  try {
+    if (!isSyncing.value && fakeScrollbarRef.value && tableContainerRef.value) {
+      isSyncing.value = true
+      fakeScrollbarRef.value.scrollLeft = tableContainerRef.value.scrollLeft
+      requestAnimationFrame(() => { isSyncing.value = false })
+    }
+  } catch (e) {
+    // ignore
+    isSyncing.value = false
+  }
+}
+
+const onFakeScroll = (e?: Event) => {
+  if (!fakeScrollbarRef.value || !tableContainerRef.value) return
+  if (isSyncing.value) return
+  try {
+    isSyncing.value = true
+    tableContainerRef.value.scrollLeft = fakeScrollbarRef.value.scrollLeft
+    requestAnimationFrame(() => { isSyncing.value = false })
+  } catch (err) {
+    isSyncing.value = false
+  }
 }
 
 const handleMouseMove = (event: MouseEvent) => {
@@ -485,19 +598,62 @@ onMounted(() => {
   updateScrollPosition()
   // Observar cambios de tamaño
   if (tableContainerRef.value) {
+    // Update both scroll position and the fake scrollbar width
     const resizeObserver = new ResizeObserver(() => {
       updateScrollPosition()
+      updateNarrowness()
+      try {
+        tableScrollWidth.value = tableContainerRef.value?.scrollWidth || 0
+        // ensure fake scrollbar initial position follows table
+        if (fakeScrollbarRef.value) fakeScrollbarRef.value.scrollLeft = tableContainerRef.value?.scrollLeft || 0
+      } catch (e) {
+        // ignore
+      }
     })
     resizeObserver.observe(tableContainerRef.value)
-    
+
+    // compute initial narrowness
+    updateNarrowness()
+
+    // keep narrowness updated on window resize too
+    window.addEventListener('resize', updateNarrowness)
+
+    // Also observe the UTable's rendered DOM for content width changes (columns/data may change scrollWidth)
+    let utableResizeObserver: ResizeObserver | null = null
+    try {
+      if (typeof ResizeObserver !== 'undefined') {
+        // If ref points to a component instance, prefer its $el
+        const maybeComponent = (utableRef as any).value
+        const utableEl = maybeComponent && maybeComponent.$el ? maybeComponent.$el as HTMLElement : maybeComponent as HTMLElement
+        const targetToObserve = utableEl || tableContainerRef.value
+        if (targetToObserve) {
+          utableResizeObserver = new ResizeObserver(() => {
+            try {
+              tableScrollWidth.value = tableContainerRef.value?.scrollWidth || 0
+              updateNarrowness()
+            } catch (e) {
+              // ignore
+            }
+          })
+          utableResizeObserver.observe(targetToObserve)
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
     onUnmounted(() => {
       resizeObserver.disconnect()
+      window.removeEventListener('resize', updateNarrowness)
+      try { if (utableResizeObserver) utableResizeObserver.disconnect() } catch (e) {}
     })
   }
 })
 
 onUnmounted(() => {
   stopAutoScroll()
+  // reset global page narrow state when component unmounts
+  try { setContentNarrow(false) } catch (e) {}
 })
 
 const goBack = () => {
@@ -754,6 +910,66 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   right: 0;
   bottom: 0;
   left: 0;
+}
+
+/* Container marker for bottom area; do NOT change its position (keep sticky) */
+.bottom-with-scrollbar {
+  pointer-events: auto; /* keep rule non-empty without affecting layout */
+}
+
+/* Inner wrapper inside the sticky bottom that provides a positioning context */
+.bottom-with-scrollbar .bottom-inner {
+  position: relative;
+}
+
+/* Fake horizontal scrollbar shown above the sticky bottom */
+.table-scrollbar {
+  position: absolute;
+  top: -12px; /* place visually above the bottom sticky bar */
+  left: 0;
+  right: 0;
+  height: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  z-index: 60;
+}
+
+/* Style the fake scrollbar track & thumb (webkit) */
+.table-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+.table-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.table-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(107,114,128,0.6);
+  border-radius: 9999px;
+}
+
+/* Hide native horizontal scrollbar in the table container */
+.hide-native-scrollbar {
+  scrollbar-width: none; /* firefox */
+}
+.hide-native-scrollbar::-webkit-scrollbar {
+  height: 0px; /* hide horizontal scrollbar for webkit browsers */
+}
+
+/* When table is narrow (no horizontal scroll), center it by applying flex on the UTable root */
+.utable-narrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.utable-narrow table {
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+/* Scoped styles can't reach inside child components; use deep selector to target inner table rendered by UTable */
+.utable-narrow ::v-deep table {
+  width: auto !important;
+  /* Allow very small tables to keep their natural width; page container enforces minimum instead */
+  min-width: 0 !important;
 }
 
 /* Mejorar la legibilidad del texto en mobile */

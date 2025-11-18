@@ -25,7 +25,7 @@
               </transition>
             </div>
           </div>
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-2">
@@ -62,7 +62,7 @@
               </transition>
             </div>
           </div>
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
       </template>
     </DataTable>
@@ -81,7 +81,7 @@
               </transition>
             </div>
           </div>
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
           <div class="text-xs text-gray-500">Gestiona importes y adelantos. Cambia el importe manualmente y registra
             adelantos con los botones.</div>
         </div>
@@ -213,19 +213,22 @@ const clientesColumns = ref<TableColumn<any>[]>([
     header: 'N.',
     cell: ({ row }) => row.index + 1
   },
-  {
-    accessorKey: 'nombre',
-    header: 'Nombre',
-    cell: ({ row }) => row.original.nombre?.toUpperCase?.() || row.original.nombre
-  },
-  {
-    accessorKey: 'documento',
-    header: 'DNI'
-  },
-  {
-    accessorKey: 'telefono',
-    header: 'Whatsapp'
-  },
+    {
+      accessorKey: 'contacto',
+      header: 'Contacto',
+      cell: ({ row }) => {
+        const nombre = row.original?.nombre || ''
+        const documento = row.original?.documento || ''
+        const telefono = row.original?.telefono || ''
+        const correo = row.original?.correo || ''
+        return h('div', { class: 'py-1' }, [
+          h('div', { class: 'font-medium' }, nombre?.toUpperCase?.() || nombre),
+          h('div', { class: 'text-sm text-gray-500' }, documento),
+          h('div', { class: 'text-sm text-gray-500' }, telefono),
+          h('div', { class: 'text-sm text-gray-500' }, correo || '')
+        ])
+      }
+    },
   {
     accessorKey: 'name',
     header: 'T. Cliente',
@@ -285,8 +288,18 @@ const clientesColumns = ref<TableColumn<any>[]>([
 // Columnas actualizadas para Entregas (completados) – mismas que en 'abiertos'
 const entregasColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'nro', header: 'N', cell: ({ row }) => row.index + 1 },
-  { accessorKey: 'nombre', header: 'Nombre', cell: ({ row }) => row.original.nombre || '—' },
-  { accessorKey: 'telefono', header: 'Whatsapp', cell: ({ row }) => row.original.telefono || '—' },
+    { accessorKey: 'contacto', header: 'Contacto', cell: ({ row }) => {
+        const nombre = row.original?.nombre || ''
+        const documento = row.original?.documento || ''
+        const telefono = row.original?.telefono || ''
+        const correo = row.original?.correo || ''
+        return h('div', { class: '' }, [
+          h('div', { class: 'font-medium' }, nombre || row.original.razon_social || '—'),
+          h('div', { class: 'text-sm text-gray-500' }, documento || ''),
+          h('div', { class: 'text-sm text-gray-500' }, telefono || '—'),
+          h('div', { class: 'text-sm text-gray-500' }, correo || '')
+        ])
+      } },
   { accessorKey: 'cbm', header: 'Cbm', cell: ({ row }) => {
       const toNum = (v: any) => {
         const n = Number(v)
@@ -475,8 +488,18 @@ const onClearClientesFilters = () => {
 }
 const deliveryColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'nro', header: 'N', cell: ({ row }) => row.index + 1 },
-  { accessorKey: 'nombre', header: 'Nombre', cell: ({ row }) => row.original.nombre || '—' },
-  { accessorKey: 'telefono', header: 'Whatsapp', cell: ({ row }) => row.original.telefono || '—' },
+  { accessorKey: 'contacto', header: 'Contacto', cell: ({ row }) => {
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const telefono = row.original?.telefono || ''
+      const correo = row.original?.correo || ''
+      return h('div', {}, [
+        h('div', { class: 'font-medium' }, nombre || '—'),
+        h('div', { class: 'text-sm text-gray-500' }, documento || ''),
+        h('div', { class: 'text-sm text-gray-500' }, telefono || '—'),
+        h('div', { class: 'text-sm text-gray-500' }, correo || '')
+      ])
+    } },
   {
     accessorKey: 'entrega', header: 'Entrega', cell: ({ row }) => {
       return h(UBadge, {

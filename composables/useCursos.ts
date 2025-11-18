@@ -1,5 +1,5 @@
 import type { TableColumn } from '@nuxt/ui'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { CursosService } from '~/services/cursosService'
 import type { CursosFilters, PaginationInfo, CursosDetalleResponse, CursoItem, DatosClientePorPedido } from '~/types/cursos/cursos'
 import type { FilterConfig } from '~/types/data-table'
@@ -147,6 +147,18 @@ export const useCursos = () => {
         searchQuery.value = ''
         currentPage.value = 1
         await loadCursos({ page: 1 })
+    }
+
+    // Global clear handler so DataTable's centralized clear clears cursos filters
+    if (typeof window !== 'undefined') {
+        const globalClearHandler = async () => {
+            filters.value = {}
+            searchQuery.value = ''
+            currentPage.value = 1
+            await loadCursos({ page: 1 })
+        }
+        onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
+        onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
     }
 
     // Otros métodos

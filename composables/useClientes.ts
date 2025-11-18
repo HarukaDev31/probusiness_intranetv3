@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ClienteService, type Cliente, type ClientesQueryParams, type PaginationInfo } from '../services/clienteService'
 import type { Header } from '../types/data-table'
 import { useSpinner } from '../composables/commons/useSpinner'
@@ -346,6 +346,27 @@ export const useClientes = () => {
       error.value = err.message || 'Error al limpiar filtros'
       return { success: false, error: error.value }
     }
+  }
+
+  // Global clear listener so DataTable's centralized clear triggers cliente composable clear
+  if (typeof window !== 'undefined') {
+    const globalClearHandler = async () => {
+      try {
+        filters.value = {
+          categoria: 'todos',
+          fecha_inicio: '',
+          fecha_fin: '',
+          servicio: 'todos'
+        }
+        search.value = ''
+        primarySearch.value = ''
+        await loadClientes({ currentPage: 1 })
+      } catch (err) {
+        console.error('Error clearing clientes filters via global event', err)
+      }
+    }
+    onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
+    onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
   }
 
 

@@ -82,7 +82,7 @@
                 Cursos
               </button>
               <button type="button" @click="activeTab = 'delivery'" :class="[
-                'px-4 py-2 rounded-md text-sm font-medium transition',
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
                 isDelivery ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
               ]">
                 Delivery
@@ -449,19 +449,18 @@ const consolidadoColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.getValue('fecha'))
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre',
-    cell: ({ row }: { row: any }) => row.getValue('nombre')
-  },
-  {
-    accessorKey: 'documento',
-    header: 'DNI',
-    cell: ({ row }: { row: any }) => formatDocument(row.getValue('documento'))
-  },
-  {
-    accessorKey: 'telefono',
-    header: 'WhatsApp',
-    cell: ({ row }: { row: any }) => formatPhoneNumber(row.getValue('telefono'))
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre || ''
+      const telefono = row.original?.telefono || ''
+      const documento = row.original?.documento || ''
+      return h('div', { class: 'py-2 w-48 whitespace-normal' }, [
+        h('div', {}, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+      ])
+    }
   },
   {
     accessorKey: 'tipo',
@@ -583,14 +582,20 @@ const cursosColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => row.getValue('fecha_registro')
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre',
-    cell: ({ row }: { row: any }) => row.getValue('nombre')
-  },
-  {
-    accessorKey: 'telefono',
-    header: 'Whatsapp',
-    cell: ({ row }: { row: any }) => row.getValue('telefono')
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const telefono = row.original?.telefono || ''
+      const correo = row.original?.correo || ''
+      return h('div', { class: '' }, [
+        h('div', { class: 'font-medium' }, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, correo || '')
+      ])
+    }
   },
   {
     accessorKey: 'tipo',
@@ -701,19 +706,20 @@ const deliveryColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.getValue('fecha'))
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre',
-    cell: ({ row }: { row: any }) => row.getValue('nombre')
-  },
-  {
-    accessorKey: 'documento',
-    header: 'DNI',
-    cell: ({ row }: { row: any }) => formatDocument(row.getValue('documento'))
-  },
-  {
-    accessorKey: 'telefono',
-    header: 'WhatsApp',
-    cell: ({ row }: { row: any }) => formatPhoneNumber(row.getValue('telefono'))
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre || ''
+      const documento = formatDocument(row.original?.documento || '') || ''
+      const telefono = formatPhoneNumber(row.original?.telefono || '') || ''
+      const correo = row.original?.correo || ''
+      return h('div', { class: '' }, [
+        h('div', { class: 'font-medium' }, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, correo)
+      ])
+    }
   },
 
   {

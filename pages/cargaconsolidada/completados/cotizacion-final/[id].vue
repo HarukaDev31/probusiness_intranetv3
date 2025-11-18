@@ -27,7 +27,7 @@
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
       </template>
     </DataTable>
@@ -41,7 +41,7 @@
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-4 w-80 h-15" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
 
       </template>
@@ -169,28 +169,19 @@ const generalColumns = ref<TableColumn<any>[]>([
     }
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre'
-  },
-
-  {
-    accessorKey: 'documento',
-    header: 'DNI/RUC'
-  },
-
-  {
-    accessorKey: 'correo',
-    header: 'Correo',
+    accessorKey: 'contacto',
+    header: 'Contacto',
     cell: ({ row }: { row: any }) => {
-      return row.original.correo || 'Sin correo'
-    }
-  },
-
-  {
-    accessorKey: 'telefono',
-    header: 'Whatsapp',
-    cell: ({ row }: { row: any }) => {
-      return row.original.telefono || 'Sin Whatsapp'
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const telefono = row.original?.telefono || ''
+      const correo = row.original?.correo || ''
+      return h('div', { class: 'py-2' }, [
+        h('div', { class: 'font-medium' }, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo')
+      ])
     }
   },
 
@@ -355,19 +346,21 @@ const pagosColumns = ref<TableColumn<any>[]>([
     }
   },
   {
-    accessorKey: 'nombre',
-    header: 'Nombre'
-  },
 
-  {
-    accessorKey: 'documento',
-    header: 'DNI/RUC'
-  },
-
-
-  {
-    accessorKey: 'telefono',
-    header: 'Whatsapp'
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const telefono = row.original?.telefono || ''
+      const correo = row.original?.correo || ''
+      return h('div', { class: '' }, [
+        h('div', { class: 'font-medium' }, nombre || '—'),
+        h('div', { class: 'text-sm text-gray-500' }, documento || ''),
+        h('div', { class: 'text-sm text-gray-500' }, telefono || ''),
+        h('div', { class: 'text-sm text-gray-500' }, correo || '')
+      ])
+    }
   },
 
 
