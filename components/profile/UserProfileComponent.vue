@@ -108,117 +108,7 @@
                 </div>
             </UCard>
 
-            <!-- Estadísticas -->
-            <UCard 
-            v-if="currentRole === ROLES.COTIZADOR && currentId != ID_JEFEVENTAS"
-            class="profile-stats" style="grid-area: profile-stats;" :ui="{
-                root: 'w-full',
-                body: 'w-full'
-            }">
-                <div class="flex flex-col gap-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold">Felicidades! Llevas</h3>
-                        <UButton
-                            variant="ghost"
-                            size="sm"
-                            icon="i-heroicons-funnel"
-                            :color="hasFilterActive ? 'primary' : 'neutral'"
-                            @click="showCBMFilter = !showCBMFilter"
-                            class="h-8 w-8 p-0"
-                        />
-                    </div>
-
-                    <!-- Métricas -->
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div class="flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">CBM vendidos</span>
-                            <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                                {{ filteredStats.soldCBM.toLocaleString('es-ES') }} m³
-                            </p>
-                        </div>
-                        <div class="flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">CBM embarcados</span>
-                            <span class="text-2xl font-bold text-gray-900 dark:text-white">
-                                {{ filteredStats.embarquedCBM.toLocaleString('es-ES') }} m³
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <!-- Filtro de estadísticas -->
-                    <div v-if="showCBMFilter" class="flex flex-col gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div class="flex items-center justify-between">
-                            <UButton 
-                                v-if="fechaInicio || fechaFin"
-                                variant="ghost" 
-                                size="xs"
-                                icon="i-heroicons-x-mark"
-                                @click="clearDateRange"
-                            >
-                                Limpiar
-                            </UButton>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <!-- Fecha de inicio -->
-                            <div class="flex flex-col gap-2">
-                                <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Fecha de inicio</label>
-                                <UPopover>
-                                    <UButton 
-                                        variant="outline" 
-                                        class="w-full justify-start"
-                                        icon="i-heroicons-calendar"
-                                        color="neutral"
-                                    >
-                                        {{ fechaInicio ? formatCalendarDateDisplay(fechaInicio) : 'Seleccionar fecha' }}
-                                    </UButton>
-                                    <template #content>
-                                        <UCalendar 
-                                            v-model="fechaInicio" 
-                                            color="primary"
-                                            class="p-2"
-                                        />
-                                    </template>
-                                </UPopover>
-                            </div>
-                            
-                            <!-- Fecha de fin -->
-                            <div class="flex flex-col gap-2">
-                                <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Fecha de fin</label>
-                                <UPopover>
-                                    <UButton 
-                                        variant="outline" 
-                                        class="w-full justify-start"
-                                        icon="i-heroicons-calendar"
-                                        color="neutral"
-                                    >
-                                        {{ fechaFin ? formatCalendarDateDisplay(fechaFin) : 'Seleccionar fecha' }}
-                                    </UButton>
-                                    <template #content>
-                                        <UCalendar 
-                                            v-model="fechaFin" 
-                                            color="primary"
-                                            class="p-2"
-                                        />
-                                    </template>
-                                </UPopover>
-                            </div>
-                        </div>
-                        
-                        <!-- Botón aplicar filtro -->
-                        <UButton
-                            @click="applyFilter"
-                            :loading="loadingProfile"
-                            color="primary"
-                            class="w-full sm:w-auto self-start"
-                            :disabled="!fechaInicio && !fechaFin"
-                        >
-                            Aplicar filtro
-                        </UButton>
-                    </div>
-
-                </div>
-            </UCard>
-
+          
             <!-- Metas -->
             <UCard class="profile-goals" style="grid-area: profile-goals;" :ui="{
                 root: 'w-full',
@@ -818,7 +708,6 @@ watch(() => props.userProfile, (newUserProfile) => {
 .user-profile {
     display: grid;
     grid-template-areas:
-        "profile-header profile-stats"
         "profile-header profile-goals";
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
@@ -850,7 +739,6 @@ watch(() => props.userProfile, (newUserProfile) => {
     .user-profile {
         grid-template-areas:
             "profile-header"
-            "profile-stats"
             "profile-goals";
         grid-template-columns: 1fr;
         grid-template-rows: repeat(3, auto);
@@ -864,7 +752,6 @@ watch(() => props.userProfile, (newUserProfile) => {
     .user-profile {
         grid-template-areas:
             "profile-header"
-            "profile-stats"
             "profile-goals";
         grid-template-columns: 1fr;
         grid-template-rows: repeat(3, auto);

@@ -116,13 +116,50 @@ export const useNotifications = () => {
   }
 
   const markAllAsRead = async () => {
+    loading.value = true
     try {
-      const unreadIds = unreadNotifications.value.map(n => n.id)
-      if (unreadIds.length === 0) return
+      // Verificar si hay notificaciones no leídas
+      if (unreadCount.value === 0) {
+        loading.value = false
+        return
+      }
 
-      await NotificationService.markMultipleAsRead(unreadIds)
+      // Obtener todas las notificaciones no leídas
+      // Usamos un per_page alto para obtener todas en una sola llamada
+      const maxPerPage = 10000 // Número alto para obtener todas
+      const allUnreadResponse = await NotificationService.getNotifications({
+        no_leidas: true,
+        per_page: Math.max(maxPerPage, unreadCount.value),
+        page: 1
+      })
+
+      const allUnreadIds = allUnreadResponse.data.data.map(n => n.id)
+      console.log('Total unread IDs to mark:', allUnreadIds.length, 'out of', unreadCount.value)
+
+      if (allUnreadIds.length === 0) {
+        loading.value = false
+        return
+      }
+
+      // Si hay más páginas de notificaciones no leídas, obtenerlas todas
+      if (allUnreadResponse.data.last_page > 1) {
+        const additionalPages = []
+        for (let page = 2; page <= allUnreadResponse.data.last_page; page++) {
+          const pageResponse = await NotificationService.getNotifications({
+            no_leidas: true,
+            per_page: maxPerPage,
+            page: page
+          })
+          additionalPages.push(...pageResponse.data.data.map(n => n.id))
+        }
+        allUnreadIds.push(...additionalPages)
+        console.log('Total unread IDs after fetching all pages:', allUnreadIds.length)
+      }
+
+      // Marcar todas como leídas en el backend
+      await NotificationService.markMultipleAsRead(allUnreadIds)
       
-      // Actualizar estado local
+      // Actualizar estado local de las notificaciones visibles
       notifications.value.forEach(notification => {
         if (!notification.estado_usuario.leida) {
           notification.estado_usuario.leida = true
@@ -130,10 +167,16 @@ export const useNotifications = () => {
         }
       })
       
+      // Actualizar el contador
       unreadCount.value = 0
+      
+      // Recargar las notificaciones para reflejar los cambios
+      await fetchNotifications()
     } catch (err: any) {
       error.value = err.message || 'Error al marcar todas como leídas'
       console.error('Error marking all as read:', err)
+    } finally {
+      loading.value = false
     }
   }
 
