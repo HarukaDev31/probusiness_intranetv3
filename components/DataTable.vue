@@ -501,7 +501,7 @@ const updateNarrowness = () => {
 // Computed UI classes for UTable — switch `base` when table is narrow so inner <table> doesn't force full width
 const uiForTable = computed(() => ({
   root: 'relative overflow-visible',
-  base: isTableNarrow.value ? 'min-w-0' : 'min-w-full',
+  base: isTableNarrow.value ? 'min-w-[80%]' : 'min-w-full',
   thead: 'bg-transparent',
   tbody: 'border-separate border-spacing-y-6',
   td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
@@ -962,14 +962,14 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 }
 .utable-narrow table {
   width: auto !important;
-  min-width: 0 !important;
+  min-width: 80% !important;
 }
 
 /* Scoped styles can't reach inside child components; use deep selector to target inner table rendered by UTable */
 .utable-narrow ::v-deep table {
   width: auto !important;
   /* Allow very small tables to keep their natural width; page container enforces minimum instead */
-  min-width: 0 !important;
+  min-width: 80% !important;
 }
 
 /* Mejorar la legibilidad del texto en mobile */
