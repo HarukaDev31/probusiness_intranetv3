@@ -376,6 +376,10 @@ const getFilterPerRole = () => {
         return filterConfigProspectosCoordinacion.value
     } else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
         return filterConfigProspectosAlmacen.value
+    } else if (currentRole.value === ROLES.COTIZADOR && tab.value === 'prospectos') {
+        return filterConfigProspectos.value
+    } else if (currentRole.value === ROLES.COTIZADOR && tab.value === 'embarque') {
+        return filterConfigProspectosCoordinacion.value
     }
     else {
         return filterConfigProspectos.value
