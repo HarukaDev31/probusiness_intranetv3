@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
-import { useNotifications } from './useNotifications'
 import { CampaignService, type CampaignStudent } from '~/services/campaignService'
+import { useModal } from '~/composables/commons/useModal'
 
 // Tipos
 export interface Campaign {
@@ -24,7 +24,7 @@ export interface CampaignFilters {
 }
 
 export const useCampaigns = () => {
-  const { showSuccess, showError, showCreateSuccess, showDeleteSuccess } = useNotifications()
+  const { showError, showSuccess } = useModal()
   const { open, close } = useOverlay()
 
   // Estado reactivo
@@ -95,11 +95,7 @@ export const useCampaigns = () => {
       
     } catch (error) {
       console.error('Error al cargar campañas:', error)
-      showError({
-        title: 'Error al cargar campañas',
-        subtitle: 'No se pudieron obtener los datos',
-        message: 'Ha ocurrido un error al cargar la lista de campañas. Intenta nuevamente.'
-      })
+      showError('Error al cargar campañas', 'Ha ocurrido un error al cargar la lista de campañas. Intenta nuevamente.')
     } finally {
       loading.value = false
     }
@@ -131,19 +127,11 @@ export const useCampaigns = () => {
         campaigns.value[index] = response.data
       }
       
-      showSuccess({
-        title: '¡Actualizado exitosamente!',
-        subtitle: 'Campaña actualizada',
-        message: 'Los cambios en la campaña se han guardado correctamente.'
-      })
+      showSuccess('Campaña actualizada', 'Los cambios en la campaña se han guardado correctamente.')
       
     } catch (error) {
       console.error('Error al actualizar campaña:', error)
-      showError({
-        title: 'Error al actualizar campaña',
-        subtitle: 'No se pudo actualizar la campaña',
-        message: 'Ha ocurrido un error al actualizar la campaña. Intenta nuevamente.'
-      })
+      showError('Error al actualizar campaña', 'Ha ocurrido un error al actualizar la campaña. Intenta nuevamente.')
     } finally {
       loading.value = false
     }
@@ -158,11 +146,7 @@ export const useCampaigns = () => {
    
     } catch (error) {
       console.error('Error al eliminar campaña:', error)
-      showError({
-        title: 'Error al eliminar campaña',
-        subtitle: 'No se pudo eliminar la campaña',
-        message: 'Ha ocurrido un error al eliminar la campaña. Intenta nuevamente.'
-      })
+      showError('Error al eliminar campaña', 'Ha ocurrido un error al eliminar la campaña. Intenta nuevamente.')
     } finally {
       loading.value = false
     }
@@ -216,8 +200,24 @@ export const useCampaigns = () => {
       // Asignar datos según la estructura que devuelve el backend
       if (response.success && response.data) {
         students.value = response.data
-        studentsTotalRecords.value = response.data.length
-        studentsTotalPages.value = Math.ceil(studentsTotalRecords.value / studentsItemsPerPage.value)
+        
+        // Usar la paginación del backend
+        if (response.pagination) {
+          studentsTotalRecords.value = response.pagination.total
+          studentsTotalPages.value = response.pagination.last_page
+          // Solo actualizar current_page si es diferente para evitar loops en el watcher
+          if (studentsCurrentPage.value !== response.pagination.current_page) {
+            studentsCurrentPage.value = response.pagination.current_page
+          }
+          // Solo actualizar itemsPerPage si es diferente
+          if (studentsItemsPerPage.value !== response.pagination.per_page) {
+            studentsItemsPerPage.value = response.pagination.per_page
+          }
+        } else {
+          // Fallback si no viene paginación
+          studentsTotalRecords.value = response.data.length
+          studentsTotalPages.value = Math.ceil(studentsTotalRecords.value / studentsItemsPerPage.value)
+        }
       } else {
         students.value = []
         studentsTotalRecords.value = 0
@@ -226,11 +226,7 @@ export const useCampaigns = () => {
       
     } catch (error) {
       console.error('Error al cargar estudiantes:', error)
-      showError({
-        title: 'Error al cargar estudiantes',
-        subtitle: 'No se pudieron obtener los datos',
-        message: 'Ha ocurrido un error al cargar la lista de estudiantes. Intenta nuevamente.'
-      })
+      showError('Error al cargar estudiantes', 'Ha ocurrido un error al cargar la lista de estudiantes. Intenta nuevamente.')
     } finally {
       studentsLoading.value = false
     }

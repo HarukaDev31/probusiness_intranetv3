@@ -74,6 +74,21 @@ export interface CampaignStudent {
 export interface CampaignStudentsResponse {
   success: boolean
   data: CampaignStudent[]
+  headers?: {
+    importe_total?: {
+      value: number
+      label: string
+    }
+  }
+  pagination: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number
+    to: number
+  }
+  total_pedidos?: number
 }
 
 export class CampaignService extends BaseService {
