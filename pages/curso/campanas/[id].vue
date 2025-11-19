@@ -264,20 +264,7 @@ const columns: TableColumn<CampaignStudent>[] = [
                 variant: 'solid',
                 onClick: () => handleView(row.original)
             }),
-            h(UButton, {
-                icon: 'i-heroicons-trash',
-                size: 'sm',
-                color: 'warning',
-                variant: 'solid',
-                onClick: () => handleDelete(row.original)
-            }),
-            h(UButton, {
-                icon: 'i-heroicons-arrow-down-tray',
-                size: 'sm',
-                color: 'warning',
-                variant: 'solid',
-                onClick: () => handleSave(row.original)
-            })
+        
         ])
     }
 ]
