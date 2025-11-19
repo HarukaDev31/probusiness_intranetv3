@@ -11,9 +11,8 @@
             @items-per-page-change="handleItemsPerPageChange" @export="handleExport" @filter-change="handleFilterChange"
             :show-body-top="true">
             <template #actions>
-
-                <!--button to navigate to /curso/campañas-->
-                <UButton icon="i-heroicons-plus" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
+<!--eye icon-->
+                <UButton icon="i-heroicons-eye" label="Ver Campañas" @click="navigateTo('/curso/campanas')" class="py-3" />
             </template>
             <template #body-top>
                 <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-1 w-80 h-15" />
