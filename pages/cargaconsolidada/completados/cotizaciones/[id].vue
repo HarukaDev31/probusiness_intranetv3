@@ -1243,7 +1243,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
-                    class: 'w-full',
+                    class: 'w-full w-10',
                     disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
@@ -1263,7 +1263,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
-                    class: 'w-full',
+                    class: 'w-full w-12',
                     disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
@@ -1666,7 +1666,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
-                    class: 'w-full',
+                    class: 'w-full w-10',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
@@ -1686,7 +1686,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
-                    class: 'w-full',
+                    class: 'w-full w-12',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
@@ -1996,7 +1996,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
-                    class: 'w-full',
+                    class: 'w-full w-10',
                     disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box_china = value
@@ -2016,7 +2016,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
-                    class: 'w-full',
+                    class: 'w-full w-12',
                     disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
