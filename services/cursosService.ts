@@ -185,4 +185,16 @@ export class CursosService extends BaseService {
       throw new Error('No se pudo enviar el recordatorio de pago')
     }
   }
+  
+  static async sendInstruccionesCambioPassword(idPedido: number): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; message?: string; error?: string }>(`${this.baseUrl}/pedido/${idPedido}/enviar-instrucciones-cambio-password`, {
+        method: 'POST'
+      })
+      return response
+    } catch (error) {
+      console.error('Error al enviar instrucciones de cambio de contraseña:', error)
+      throw new Error('No se pudieron enviar las instrucciones de cambio de contraseña')
+    }
+  }
 }

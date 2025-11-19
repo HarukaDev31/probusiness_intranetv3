@@ -298,6 +298,15 @@ export const useCursos = () => {
             throw error
         }
     }
+    const sendInstruccionesCambioPassword = async (idPedido: number) => {
+        try {
+            const response = await CursosService.sendInstruccionesCambioPassword(idPedido)
+            return response
+        } catch (error) {
+            error.value = error as string
+            throw error
+        }
+    }
     return {
         cursosData,
         loading,
@@ -332,6 +341,7 @@ export const useCursos = () => {
         totalAmountCursos,
         changeEstadoUsuarioExterno,
         sendRecordatorioPago,
+        sendInstruccionesCambioPassword,
         generarYEnviarConstancia: async (idPedido: number) => {
             try {
                 const response = await CursosService.generarYEnviarConstancia(idPedido)
