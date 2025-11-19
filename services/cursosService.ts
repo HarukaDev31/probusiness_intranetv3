@@ -173,4 +173,16 @@ export class CursosService extends BaseService {
       throw new Error('No se pudo generar y enviar la constancia')
     }
   }
+  
+  static async sendRecordatorioPago(idPedido: number): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; message?: string; error?: string }>(`${this.baseUrl}/pedido/${idPedido}/enviar-recordatorio-pago`, {
+        method: 'POST'
+      })
+      return response
+    } catch (error) {
+      console.error('Error al enviar recordatorio de pago:', error)
+      throw new Error('No se pudo enviar el recordatorio de pago')
+    }
+  }
 }
