@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { useNotifications } from './useNotifications'
-import { CampaignService } from '~/services/campaignService'
+import { CampaignService, type CampaignStudent } from '~/services/campaignService'
 
 // Tipos
 export interface Campaign {
@@ -192,6 +192,70 @@ export const useCampaigns = () => {
     loadCampaigns()
   }
 
+  // Estado para estudiantes
+  const students = ref<CampaignStudent[]>([])
+  const studentsLoading = ref(false)
+  const studentsCurrentPage = ref(1)
+  const studentsItemsPerPage = ref(10)
+  const studentsTotalPages = ref(1)
+  const studentsTotalRecords = ref(0)
+  const studentsSearchQuery = ref('')
+  const studentsFilters = ref<any>({})
+
+  // Método para cargar estudiantes de una campaña
+  const loadCampaignStudents = async (campaignId: number) => {
+    studentsLoading.value = true
+    try {
+      const response = await CampaignService.getCampaignStudents(campaignId, {
+        page: studentsCurrentPage.value,
+        limit: studentsItemsPerPage.value,
+        search: studentsSearchQuery.value,
+        filters: studentsFilters.value
+      })
+      
+      // Asignar datos según la estructura que devuelve el backend
+      if (response.success && response.data) {
+        students.value = response.data
+        studentsTotalRecords.value = response.data.length
+        studentsTotalPages.value = Math.ceil(studentsTotalRecords.value / studentsItemsPerPage.value)
+      } else {
+        students.value = []
+        studentsTotalRecords.value = 0
+        studentsTotalPages.value = 1
+      }
+      
+    } catch (error) {
+      console.error('Error al cargar estudiantes:', error)
+      showError({
+        title: 'Error al cargar estudiantes',
+        subtitle: 'No se pudieron obtener los datos',
+        message: 'Ha ocurrido un error al cargar la lista de estudiantes. Intenta nuevamente.'
+      })
+    } finally {
+      studentsLoading.value = false
+    }
+  }
+
+  // Métodos de búsqueda y filtros para estudiantes
+  const handleStudentsSearch = (query: string) => {
+    studentsSearchQuery.value = query
+    studentsCurrentPage.value = 1
+  }
+
+  const handleStudentsPageChange = (page: number) => {
+    studentsCurrentPage.value = page
+  }
+
+  const handleStudentsItemsPerPageChange = (newItemsPerPage: number) => {
+    studentsItemsPerPage.value = newItemsPerPage
+    studentsCurrentPage.value = 1
+  }
+
+  const handleStudentsFilterChange = (key: string, value: any) => {
+    studentsFilters.value[key] = value
+    studentsCurrentPage.value = 1
+  }
+
 
   return {
     // Estado
@@ -215,6 +279,23 @@ export const useCampaigns = () => {
     handleSearch,
     handlePageChange,
     handleItemsPerPageChange,
-    handleFilterChange
+    handleFilterChange,
+
+    // Estado de estudiantes
+    students,
+    studentsLoading,
+    studentsCurrentPage,
+    studentsItemsPerPage,
+    studentsTotalPages,
+    studentsTotalRecords,
+    studentsSearchQuery,
+    studentsFilters,
+
+    // Métodos de estudiantes
+    loadCampaignStudents,
+    handleStudentsSearch,
+    handleStudentsPageChange,
+    handleStudentsItemsPerPageChange,
+    handleStudentsFilterChange
   }
 }

@@ -82,7 +82,6 @@
         :disabled="loading"
       >
         Marcar todas como leídas
-        {{ loading }}
       </UButton>
       
       <UButton 
@@ -271,7 +270,6 @@ const {
 // Methods
 const handleMarkAllAsRead = async () => {
   try {
-    console.log('handleMarkAllAsRead called')
     await markAllAsRead()
   } catch (error) {
     console.error('Error al marcar todas como leídas:', error)

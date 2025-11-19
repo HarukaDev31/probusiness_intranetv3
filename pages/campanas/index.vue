@@ -131,6 +131,14 @@ const columns: TableColumn<Campaign>[] = [
                 color: 'error',
                 variant: 'ghost',
                 onClick: () => handleDelete(row.original)
+            }),
+            //eye icon to navigate to /curso/campañas/[id]
+            h(UButton, {
+                icon: 'i-heroicons-eye',
+                size: 'sm',
+                color: 'primary',
+                variant: 'ghost',
+                onClick: () => navigateTo(`/curso/campanas/${row.original.ID_Campana}`)
             })
         ])
     }

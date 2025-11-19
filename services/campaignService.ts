@@ -35,6 +35,47 @@ export interface CampaignListResponse {
   limit: number
 }
 
+// Tipos para estudiantes de campaña
+// Basado en CursoItem de types/cursos/cursos.ts
+export interface CampaignStudent {
+  ID_Empresa: number
+  ID_Organizacion: number
+  ID_Pedido_Curso: number
+  Fe_Emision: string
+  Fe_Registro?: string // Fecha de registro (puede venir como Fe_Emision o Fe_Registro)
+  ID_Entidad: number
+  id_cliente: number
+  ID_Pais: number
+  ID_Medio_Pago: number
+  ID_Moneda: number
+  Ss_Total: string
+  Nu_Estado: number
+  id_cliente_importacion: number | null
+  Nu_Estado_Usuario_Externo: number
+  Fe_Modificacion: string
+  ID_Referencia_Pago_Online: number | null
+  ID_Campana: number
+  note_administracion: string | null
+  tipo_curso: number
+  send_constancia: string
+  from_intranet: number
+  url_constancia: string | null
+  // Campos del cliente (opcionales, pueden venir en el response)
+  No_Entidad?: string // Nombre del cliente
+  Nu_Documento_Identidad?: string // DNI
+  Nu_Celular_Entidad?: string // Teléfono/WhatsApp
+  Txt_Email_Entidad?: string // Email
+  // Campos adicionales para estado de pago
+  total_pagos?: string // Total pagado
+  pagos_count?: number // Cantidad de pagos
+  puede_constancia?: boolean // Si puede generar constancia
+}
+
+export interface CampaignStudentsResponse {
+  success: boolean
+  data: CampaignStudent[]
+}
+
 export class CampaignService extends BaseService {
   private static baseUrl = '/api/campaigns'
   constructor() {
@@ -176,6 +217,22 @@ export class CampaignService extends BaseService {
     return {
       valid: true,
       message: 'Fechas válidas'
+    }
+  }
+
+  /**
+   * Obtener estudiantes de una campaña
+   */
+  static async getCampaignStudents(id: number, params: any = {}): Promise<CampaignStudentsResponse> {
+    try {
+      const response = await this.apiCall<CampaignStudentsResponse>(`${this.baseUrl}/${id}/students`, {
+        method: 'GET',
+        params: params
+      })
+      return response
+    } catch (error) {
+      console.error('Error en getCampaignStudents:', error)
+      throw error
     }
   }
 }
