@@ -124,7 +124,31 @@ export const useCursos = () => {
 
     const handleFilterChange = async (key: string, value: any) => {
         // Si el value es un objeto con propiedad value, extrae el value
-        const realValue = (typeof value === 'object' && value !== null && 'value' in value) ? value.value : value
+        let realValue = (typeof value === 'object' && value !== null && 'value' in value) ? value.value : value
+        // Normalizar filtros de tipo fecha a YYYY-MM-DD si vienen como Date o string
+        if (key === 'fecha_inicio' || key === 'fecha_fin') {
+            try {
+                if (realValue instanceof Date) {
+                    realValue = realValue.toISOString().split('T')[0]
+                } else if (typeof realValue === 'string' && realValue.trim() !== '') {
+                    // Accept strings like 'dd/mm/yyyy' or 'yyyy-mm-dd' — try to parse
+                    const maybe = new Date(realValue)
+                    if (!Number.isNaN(maybe.getTime())) {
+                        realValue = maybe.toISOString().split('T')[0]
+                    } else {
+                        // try dd/mm/yyyy
+                        const parts = realValue.split('/')
+                        if (parts.length === 3) {
+                            const [d, m, y] = parts
+                            const iso = new Date(Number(y), Number(m) - 1, Number(d))
+                            if (!Number.isNaN(iso.getTime())) realValue = iso.toISOString().split('T')[0]
+                        }
+                    }
+                }
+            } catch (e) {
+                // if parsing fails, keep original value
+            }
+        }
         filters.value = { ...filters.value, [key]: realValue }
         
         currentPage.value = 1

@@ -17,10 +17,13 @@
         <div class="flex flex-row items-center gap-4">
           
 
-          <h1 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white flex items-center">
-            <UIcon v-if="icon" :name="icon" class="text-secondary mr-3 text-2xl" />
-            {{ title }}
-          </h1>
+          <div>
+            <h1 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white flex items-center">
+              <UIcon v-if="icon" :name="icon" class="text-secondary mr-3 text-2xl" />
+              {{ title }}
+            </h1>
+            <p v-if="subtitle" class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ subtitle }}</p>
+          </div>
         
         </div>
         <slot name="actions"></slot>
@@ -32,9 +35,9 @@
 
 <script setup lang="ts">
 interface Props {
-  title: string
-  subtitle: string
-  icon: string|null
+  title?: string
+  subtitle?: string
+  icon?: string|null
   loading?: boolean
   hideBackButton?: boolean
   classAdd?: string

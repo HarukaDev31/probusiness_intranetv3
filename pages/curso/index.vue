@@ -1,6 +1,6 @@
 <template>
     <div class="p-6">
-        <PageHeader title="Curso" subtitle="Gestión de cursos" icon="" :hide-back-button="true" />
+        <PageHeader title="Curso" icon="" :hide-back-button="true" />
         <DataTable title="" icon="" :data="cursosData" :columns="columns" :loading="loading" :current-page="currentPage"
             v-if="activeTab === 'alumnos'" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="searchQuery" :show-primary-search="true"
@@ -13,18 +13,11 @@
             <template #actions>
 
                 <!--button to navigate to /curso/campañas-->
-                <UButton icon="i-heroicons-plus" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
+                <UButton icon="i-heroicons-eye" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
             </template>
             <template #body-top>
                 <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-1 w-80 h-15" />
-                <div class="mb-4 flex justify-end">
-                    <div class="text-lg font-semibold text-gray-900 dark:text-white">
-                        Importe total:
-                        <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
-                            {{ formatCurrency(totalAmountCursos, 'PEN') }}
-                        </span>
-                    </div>
-                </div>
+                <!-- Importe total removed per request -->
             </template>
         </DataTable>
         <DataTable title="" icon="" :data="pagosData" :columns="columnsPagos" :loading="loadingPagos"
@@ -39,14 +32,7 @@
             :show-body-top="true">
             <template #body-top>
                 <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-1 w-80 h-15" />
-                <div class="mb-4 flex justify-end">
-                    <div class="text-lg font-semibold text-gray-900 dark:text-white">
-                        Importe total:
-                        <span class="text-black dark:text-primary-400 bg-white p-2 rounded-md border border-gray-200">
-                            {{ formatCurrency(totalAmountPagos, 'PEN') }}
-                        </span>
-                    </div>
-                </div>
+                <!-- Importe total removed per request -->
             </template>
         </DataTable>
     </div>
@@ -153,7 +139,8 @@ const columns = ref<TableColumn<CursoItem>[]>([
                 h('p', row.original.No_Entidad),
                 h('p', row.original.Nu_Documento_Identidad),
                 h('p', row.original.Nu_Celular_Entidad),
-                h('p', row.original.Txt_Email_Entidad)
+                h('p', row.original.Txt_Email_Entidad),
+                h('p', (row.original.No_Departamento || '') + ', ' + (row.original.No_Provincia || '') + ', ' + (row.original.No_Distrito || ''))
             ])
         }
     },
