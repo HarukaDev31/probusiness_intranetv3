@@ -134,6 +134,7 @@ const columns: TableColumn<any>[] = [
         const documento = row.original?.documento  || ''
         const telefono = row.original?.telefono  || ''
         const correo = row.original?.correo  || ''
+        const provincia = row.original?.provincia  || ''
         return h('div', { class: 'text-gray-700 py-3 dark:text-gray-100' }, [
           h('div', { class: 'font-medium' }, nombre),
           h('div', { class: 'text-sm text-gray-500' }, documento),
@@ -142,7 +143,16 @@ const columns: TableColumn<any>[] = [
         ])
       }
     },
- 
+    {
+        accessorKey: 'provincia',
+        header: 'Provincia',
+        cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-400' }, row.getValue('provincia') || '-')
+    },
+    {
+      accessorKey: 'origen',
+      header: 'Origen',
+      cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-400' }, row.getValue('origen') || 'No especificado' )
+    },
     {
         accessorKey: 'primer_servicio',
         header: 'Servicio',

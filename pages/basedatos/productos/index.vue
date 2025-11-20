@@ -3,9 +3,10 @@
     <!-- Tabla de productos usando DataTable -->
     <div class="space-y-4">
     <DataTable
-        :title="'Historial de productos importados'"
-        :icon="''"
-        :showTitle="true"
+      :title="'Historial de productos importados'"
+      :subtitle="countLabel"
+      :icon="''"
+      :showTitle="true"
   :data="tableRows"
   :columns="tableColumns"
   :loading="loading"
@@ -359,6 +360,13 @@ onMounted(async () => {
 const goToArchivos = () => {
   navigateTo('/basedatos/productos/archivos')
 }
+
+// Count label to show as subtitle next to the title: prefer server `totalRecords`, fallback to rows length
+const countLabel = computed(() => {
+  const n = (typeof totalRecords !== 'undefined' && totalRecords !== null) ? (totalRecords as any).value ?? tableRows.value.length : tableRows.value.length
+  if (!n && n !== 0) return ''
+  return `${n} ${n === 1 ? 'producto' : 'productos'}`
+})
 </script>
 
 <style scoped>
