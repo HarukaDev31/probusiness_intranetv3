@@ -313,6 +313,24 @@ export const useCursos = () => {
             throw error
         }
     }
+    const sendRecordatorioPago = async (idPedido: number) => {
+        try {
+            const response = await CursosService.sendRecordatorioPago(idPedido)
+            return response
+        } catch (error) {
+            error.value = error as string
+            throw error
+        }
+    }
+    const sendInstruccionesCambioPassword = async (idPedido: number) => {
+        try {
+            const response = await CursosService.sendInstruccionesCambioPassword(idPedido)
+            return response
+        } catch (error) {
+            error.value = error as string
+            throw error
+        }
+    }
     return {
         cursosData,
         loading,
@@ -346,6 +364,8 @@ export const useCursos = () => {
         deleteCurso,
         totalAmountCursos,
         changeEstadoUsuarioExterno,
+        sendRecordatorioPago,
+        sendInstruccionesCambioPassword,
         generarYEnviarConstancia: async (idPedido: number) => {
             try {
                 const response = await CursosService.generarYEnviarConstancia(idPedido)

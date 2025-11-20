@@ -208,12 +208,7 @@ export function useDashboardUsuario() {
     }
 
     // Métodos de utilidad
-    const formatCurrency = (amount: number, currency: string = 'EUR') => {
-        return new Intl.NumberFormat('es-ES', {
-            style: 'currency',
-            currency: currency
-        }).format(amount)
-    }
+   
 
     const formatVolume = (volume: number) => {
         return `${volume.toFixed(2)} m³`

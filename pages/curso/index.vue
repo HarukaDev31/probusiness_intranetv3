@@ -11,9 +11,8 @@
             @items-per-page-change="handleItemsPerPageChange" @export="handleExport" @filter-change="handleFilterChange"
             :show-body-top="true">
             <template #actions>
-
-                <!--button to navigate to /curso/campañas-->
-                <UButton icon="i-heroicons-eye" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
+<!--eye icon-->
+                <UButton icon="i-heroicons-eye" label="Ver Campañas" @click="navigateTo('/curso/campanas')" class="py-3" />
             </template>
             <template #body-top>
                 <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-1 w-80 h-15" />
@@ -77,7 +76,8 @@ const {
     changeImportePedido,
     deleteCurso,
     totalAmountCursos,
-    changeEstadoUsuarioExterno
+    changeEstadoUsuarioExterno,
+    sendRecordatorioPago
 } = useCursos()
 const {
     pagosData,
@@ -304,6 +304,14 @@ const columns = ref<TableColumn<CursoItem>[]>([
                     variant: 'outline',
                     onClick: () => {
                         handleChangeImporte(row.original.ID_Pedido_Curso, row.original.Ss_Total)
+                    }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-chat-bubble-left-right',
+                    variant: 'outline',
+                    color: 'primary',
+                    onClick: () => {
+                        handleSendRecordatorioPago(row.original)
                     }
                 })
             ])
@@ -553,6 +561,28 @@ onMounted(async () => {
     await loadCursos()
     await fillFilters()
 })
+
+const handleSendRecordatorioPago = async (curso: CursoItem) => {
+    const nombreCliente = curso.No_Entidad || 'Cliente'
+    showConfirmation(
+        'Enviar recordatorio de pago',
+        `¿Está seguro de que desea enviar un recordatorio de pago por WhatsApp a ${nombreCliente}?`,
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const response = await sendRecordatorioPago(curso.ID_Pedido_Curso)
+                    if (response.success) {
+                        showSuccess('Recordatorio enviado', 'El recordatorio de pago se ha enviado correctamente por WhatsApp')
+                    } else {
+                        showError('Error al enviar recordatorio', response.error || 'No se pudo enviar el recordatorio')
+                    }
+                }, 'Enviando recordatorio...')
+            } catch (error) {
+                showError('Error al enviar recordatorio', error as string)
+            }
+        }
+    )
+}
 
 const viewCurso = (curso: CursoItem) => {
     navigateTo(`/curso/${curso.ID_Pedido_Curso}`)

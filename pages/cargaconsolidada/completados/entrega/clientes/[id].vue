@@ -335,7 +335,7 @@ const handleSave = async () => {
     // Provincia
     addIf('import_name', form.value.nombre)
     addIf('r_type', form.value.r_type)
-    addIf('r_doc', form.value.r_doc)
+    addIf('r_doc', form.value.documento)
     addIf('r_name', form.value.r_name)
     addIf('r_phone', form.value.r_phone)
     addIf('id_agency', form.value.id_agency)

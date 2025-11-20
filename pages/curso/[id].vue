@@ -120,6 +120,17 @@
             <input class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full" v-model="form.password_moodle"
               :readonly="true" />
           </div>
+          <div class="mt-4">
+            <UButton 
+              icon="i-heroicons-key" 
+              color="primary" 
+              variant="outline"
+              @click="handleEnviarInstruccionesCambioPassword"
+              :loading="enviandoInstrucciones"
+            >
+              Enviar instrucciones para cambiar contraseña
+            </UButton>
+          </div>
 
         </div>
         <div v-if="datosCliente?.url_constancia" class="mt-6">
@@ -238,7 +249,7 @@ const router = useRouter()
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const datosCliente = ref<DatosClientePorPedido | undefined>(undefined)
-const { cargarDatosClientePorPedido, editarDatosCliente, generarYEnviarConstancia } = useCursos()
+const { cargarDatosClientePorPedido, editarDatosCliente, generarYEnviarConstancia, sendInstruccionesCambioPassword } = useCursos()
 
 const volver = () => router.back()
 
@@ -261,6 +272,9 @@ const enviandoCorreo = ref(false)
 
 // Estado para la generación de constancia
 const generandoConstancia = ref(false)
+
+// Estado para el envío de instrucciones de cambio de contraseña
+const enviandoInstrucciones = ref(false)
 
 // DateFormatter para la fecha de nacimiento
 const df = new DateFormatter('es-PE', {
@@ -758,6 +772,37 @@ async function handleGenerarConstancia() {
   } catch (err) {
     generandoConstancia.value = false
     showError('Error', 'Error al generar y enviar la constancia')
+  }
+}
+
+// Función para enviar instrucciones de cambio de contraseña
+async function handleEnviarInstruccionesCambioPassword() {
+  if (!datosCliente.value?.id_pedido_curso) {
+    showError('Error', 'No se pudo obtener la información del pedido')
+    return
+  }
+
+  try {
+    await showConfirmation(
+      'Enviar instrucciones',
+      '¿Estás seguro de querer enviar las instrucciones para cambiar la contraseña por WhatsApp?',
+      async () => {
+        enviandoInstrucciones.value = true
+        await withSpinner(async () => {
+          const response = await sendInstruccionesCambioPassword(datosCliente.value!.id_pedido_curso)
+          
+          if (response.success) {
+            showSuccess('Éxito', 'Instrucciones enviadas correctamente por WhatsApp')
+          } else {
+            showError('Error', response.error || 'Error al enviar las instrucciones')
+          }
+        }, 'Enviando instrucciones...')
+        enviandoInstrucciones.value = false
+      }
+    )
+  } catch (err) {
+    enviandoInstrucciones.value = false
+    showError('Error', 'Error al enviar las instrucciones')
   }
 }
 </script>

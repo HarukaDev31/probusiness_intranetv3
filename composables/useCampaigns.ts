@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
-import { useNotifications } from './useNotifications'
-import { CampaignService } from '~/services/campaignService'
+import { CampaignService, type CampaignStudent } from '~/services/campaignService'
+import { useModal } from '~/composables/commons/useModal'
 
 // Tipos
 export interface Campaign {
@@ -24,7 +24,7 @@ export interface CampaignFilters {
 }
 
 export const useCampaigns = () => {
-  const { showSuccess, showError, showCreateSuccess, showDeleteSuccess } = useNotifications()
+  const { showError, showSuccess } = useModal()
   const { open, close } = useOverlay()
 
   // Estado reactivo
@@ -95,11 +95,7 @@ export const useCampaigns = () => {
       
     } catch (error) {
       console.error('Error al cargar campañas:', error)
-      showError({
-        title: 'Error al cargar campañas',
-        subtitle: 'No se pudieron obtener los datos',
-        message: 'Ha ocurrido un error al cargar la lista de campañas. Intenta nuevamente.'
-      })
+      showError('Error al cargar campañas', 'Ha ocurrido un error al cargar la lista de campañas. Intenta nuevamente.')
     } finally {
       loading.value = false
     }
@@ -131,19 +127,11 @@ export const useCampaigns = () => {
         campaigns.value[index] = response.data
       }
       
-      showSuccess({
-        title: '¡Actualizado exitosamente!',
-        subtitle: 'Campaña actualizada',
-        message: 'Los cambios en la campaña se han guardado correctamente.'
-      })
+      showSuccess('Campaña actualizada', 'Los cambios en la campaña se han guardado correctamente.')
       
     } catch (error) {
       console.error('Error al actualizar campaña:', error)
-      showError({
-        title: 'Error al actualizar campaña',
-        subtitle: 'No se pudo actualizar la campaña',
-        message: 'Ha ocurrido un error al actualizar la campaña. Intenta nuevamente.'
-      })
+      showError('Error al actualizar campaña', 'Ha ocurrido un error al actualizar la campaña. Intenta nuevamente.')
     } finally {
       loading.value = false
     }
@@ -158,11 +146,7 @@ export const useCampaigns = () => {
    
     } catch (error) {
       console.error('Error al eliminar campaña:', error)
-      showError({
-        title: 'Error al eliminar campaña',
-        subtitle: 'No se pudo eliminar la campaña',
-        message: 'Ha ocurrido un error al eliminar la campaña. Intenta nuevamente.'
-      })
+      showError('Error al eliminar campaña', 'Ha ocurrido un error al eliminar la campaña. Intenta nuevamente.')
     } finally {
       loading.value = false
     }
@@ -192,6 +176,82 @@ export const useCampaigns = () => {
     loadCampaigns()
   }
 
+  // Estado para estudiantes
+  const students = ref<CampaignStudent[]>([])
+  const studentsLoading = ref(false)
+  const studentsCurrentPage = ref(1)
+  const studentsItemsPerPage = ref(10)
+  const studentsTotalPages = ref(1)
+  const studentsTotalRecords = ref(0)
+  const studentsSearchQuery = ref('')
+  const studentsFilters = ref<any>({})
+
+  // Método para cargar estudiantes de una campaña
+  const loadCampaignStudents = async (campaignId: number) => {
+    studentsLoading.value = true
+    try {
+      const response = await CampaignService.getCampaignStudents(campaignId, {
+        page: studentsCurrentPage.value,
+        limit: studentsItemsPerPage.value,
+        search: studentsSearchQuery.value,
+        filters: studentsFilters.value
+      })
+      
+      // Asignar datos según la estructura que devuelve el backend
+      if (response.success && response.data) {
+        students.value = response.data
+        
+        // Usar la paginación del backend
+        if (response.pagination) {
+          studentsTotalRecords.value = response.pagination.total
+          studentsTotalPages.value = response.pagination.last_page
+          // Solo actualizar current_page si es diferente para evitar loops en el watcher
+          if (studentsCurrentPage.value !== response.pagination.current_page) {
+            studentsCurrentPage.value = response.pagination.current_page
+          }
+          // Solo actualizar itemsPerPage si es diferente
+          if (studentsItemsPerPage.value !== response.pagination.per_page) {
+            studentsItemsPerPage.value = response.pagination.per_page
+          }
+        } else {
+          // Fallback si no viene paginación
+          studentsTotalRecords.value = response.data.length
+          studentsTotalPages.value = Math.ceil(studentsTotalRecords.value / studentsItemsPerPage.value)
+        }
+      } else {
+        students.value = []
+        studentsTotalRecords.value = 0
+        studentsTotalPages.value = 1
+      }
+      
+    } catch (error) {
+      console.error('Error al cargar estudiantes:', error)
+      showError('Error al cargar estudiantes', 'Ha ocurrido un error al cargar la lista de estudiantes. Intenta nuevamente.')
+    } finally {
+      studentsLoading.value = false
+    }
+  }
+
+  // Métodos de búsqueda y filtros para estudiantes
+  const handleStudentsSearch = (query: string) => {
+    studentsSearchQuery.value = query
+    studentsCurrentPage.value = 1
+  }
+
+  const handleStudentsPageChange = (page: number) => {
+    studentsCurrentPage.value = page
+  }
+
+  const handleStudentsItemsPerPageChange = (newItemsPerPage: number) => {
+    studentsItemsPerPage.value = newItemsPerPage
+    studentsCurrentPage.value = 1
+  }
+
+  const handleStudentsFilterChange = (key: string, value: any) => {
+    studentsFilters.value[key] = value
+    studentsCurrentPage.value = 1
+  }
+
 
   return {
     // Estado
@@ -215,6 +275,23 @@ export const useCampaigns = () => {
     handleSearch,
     handlePageChange,
     handleItemsPerPageChange,
-    handleFilterChange
+    handleFilterChange,
+
+    // Estado de estudiantes
+    students,
+    studentsLoading,
+    studentsCurrentPage,
+    studentsItemsPerPage,
+    studentsTotalPages,
+    studentsTotalRecords,
+    studentsSearchQuery,
+    studentsFilters,
+
+    // Métodos de estudiantes
+    loadCampaignStudents,
+    handleStudentsSearch,
+    handleStudentsPageChange,
+    handleStudentsItemsPerPageChange,
+    handleStudentsFilterChange
   }
 }

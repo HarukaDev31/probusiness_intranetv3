@@ -190,7 +190,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Impuestos</p>
-              <p class="text-2xl font-bold text-red-600">{{ formatCurrency(metricas.totalImpuestos) }}</p>
+              <p class="text-2xl font-bold text-red-600">{{ formatCurrency(metricas.totalImpuestos,'USD') }}</p>
             </div>
             <div class="text-right">
               <span class="text-red-500 text-sm font-medium">-5.4%</span>
@@ -204,7 +204,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Logística</p>
-              <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(metricas.totalLogistica) }}</p>
+              <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(metricas.totalLogistica,'USD') }}</p>
             </div>
             <div class="text-right">
               <span class="text-red-500 text-sm font-medium">-2.1%</span>
@@ -396,7 +396,6 @@ const {
   updateFilters,
   resetFilters: resetFiltersComposable,
   formatVolume,
-  formatCurrency
 } = useDashboardUsuario()
 
 // Estado local
