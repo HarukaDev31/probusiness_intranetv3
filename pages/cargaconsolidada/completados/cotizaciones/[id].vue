@@ -369,6 +369,22 @@ const filterConfigProspectos = ref([
             { label: 'CONFIRMADO', value: 'CONFIRMADO', inrow: true }
         ]
     },
+    {
+        key: 'estado_china',
+        label: 'Estado Proveedor',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'WAIT', value: 'WAIT', inrow: true },
+            { label: 'NC', value: 'NC', inrow: true },
+            { label: 'C', value: 'C', inrow: true },
+            { label: 'R', value: 'R', inrow: true },
+            { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
+            { label: 'LOADED', value: 'LOADED', inrow: true },
+            { label: 'NO LOADED', value: 'NO LOADED', inrow: true }
+        ]
+    }
 
 ])
 const getFilterPerRole = () => {
@@ -376,10 +392,8 @@ const getFilterPerRole = () => {
         return filterConfigProspectosCoordinacion.value
     } else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
         return filterConfigProspectosAlmacen.value
-    } else if (currentRole.value === ROLES.COTIZADOR && tab.value === 'prospectos') {
+    } else if (currentRole.value === ROLES.COTIZADOR) {
         return filterConfigProspectos.value
-    } else if (currentRole.value === ROLES.COTIZADOR && tab.value === 'embarque') {
-        return filterConfigProspectosCoordinacion.value
     }
     else {
         return filterConfigProspectos.value

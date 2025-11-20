@@ -44,7 +44,7 @@
                         :class="isEditingProfile ? 'items-center' : 'items-start'">
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2 profile-field">
                             <strong class="w-full sm:w-30 font-weight: 300; break-words">F.Nacimiento:</strong>
-                            <span v-if="!isEditingProfile" class="w-full sm:w-40 word-break break-words">
+                            <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ formatDate(userProfile.fechaNacimiento) }}
                             </span>
                             <UInput v-else type="date" v-model="profileForm.fechaNacimiento"
@@ -52,7 +52,7 @@
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
                             <strong class="w-full sm:w-30 font-weight: 300;">País:</strong>
-                            <span v-if="!isEditingProfile" class="w-full sm:w-40 word-break break-words">
+                            <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ getCountryName() }}
                             </span>
                             <USelect v-else v-model="profileForm.country" class="edit-input w-full sm:w-40"
@@ -60,7 +60,7 @@
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
                             <strong class="w-full sm:w-30 font-weight: 300;">Departamento:</strong>
-                            <span v-if="!isEditingProfile" class="w-full sm:w-40 word-break break-words">
+                            <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ getDepartmentName() }}
                             </span>
                             <USelect v-else v-model="profileForm.department" class="edit-input w-full sm:w-40"
@@ -69,7 +69,7 @@
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
                             <strong class="w-full sm:w-30 font-weight: 300;">Provincia:</strong>
-                            <span v-if="!isEditingProfile" class="w-full sm:w-40 word-break break-words">
+                            <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ getProvinceName() }}
                             </span>
                             <USelect v-else v-model="profileForm.city" class="edit-input w-full sm:w-40"
@@ -78,7 +78,7 @@
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
                             <strong class="w-full sm:w-30 font-weight: 300;">Distrito:</strong>
-                            <span v-if="!isEditingProfile" class="w-full sm:w-40 word-break break-words">
+                            <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ getDistrictName() }}
                             </span>
                             <USelect v-else v-model="profileForm.district" class="edit-input w-full sm:w-40"
@@ -87,14 +87,14 @@
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
                             <strong class="w-full sm:w-30 font-weight: 300;">Correo:</strong>
-                            <span v-if="!isEditingProfile" class="w-full sm:w-40 word-break break-words">
+                            <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ userProfile.email || '-' }}
                             </span>
                             <UInput v-else type="email" v-model="profileForm.email" class="edit-input w-full sm:w-40" />
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
                             <strong class="w-full sm:w-30 font-weight: 300;">Celular:</strong>
-                            <span v-if="!isEditingProfile" class="w-full sm:w-40 word-break break-words">
+                            <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ userProfile.phone || '-' }}
                             </span>
                             <UInput v-else v-model="profileForm.phone" class="edit-input w-full sm:w-40" />

@@ -151,7 +151,7 @@ const columns: TableColumn<any>[] = [
     {
       accessorKey: 'origen',
       header: 'Origen',
-      cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-400' }, row.getValue('origen') || 'No especificado' )
+      cell: ({ row }) => h('div', { class: 'text-gray-700 py-3 dark:text-gray-400' }, row.getValue('origen') || '-')
     },
     {
         accessorKey: 'primer_servicio',
