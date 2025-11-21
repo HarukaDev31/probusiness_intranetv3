@@ -476,12 +476,21 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
             const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
             const correo = String(pick(['correo', 'email', 'mail']) || '')
+            const cod_contract = String(pick(['cod_contract']) || '')
+            const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
 
             return h('div', { class: '' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
-                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null,
+                cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
+                    cotizacion_contrato_firmado_url ? h('a', {
+                        href: cotizacion_contrato_firmado_url,
+                        target: '_blank',
+                        class: 'text-primary hover:underline'
+                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+                ]) : null  
             ])
         }
     },
@@ -640,12 +649,21 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
             const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
             const correo = String(pick(['correo', 'email', 'mail']) || '')
+            const cod_contract = String(pick(['cod_contract']) || '')
+            const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
 
             return h('div', { class: 'py-2' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
-                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo')
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
+                cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
+                    cotizacion_contrato_firmado_url ? h('a', {
+                        href: cotizacion_contrato_firmado_url,
+                        target: '_blank',
+                        class: 'text-primary hover:underline'
+                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+                ]) : null            
             ])
         }
         },
