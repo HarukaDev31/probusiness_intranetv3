@@ -54,7 +54,27 @@ export const useEntrega = () => {
   const currentPage = computed(() => pagination.value.current_page)
   const filters = ref<any>({})
   const clientesFilters = ref<any>({})
-  const filterConfig = ref<any>([])
+  const filterConfig = ref<any>([
+    {
+      key: 'fecha_inicio',
+      label: 'Fecha inicio',
+      type: 'date'
+    },
+    {
+      key: 'fecha_fin',
+      label: 'Fecha fin',
+      type: 'date'
+    },
+    {
+      key: 'tipo_entrega',
+      label: 'Tipo de entrega',
+      options: [
+        { label: 'Todos', value: '' },
+        { label: 'Lima', value: 'Lima' },
+        { label: 'Provincia', value: 'Provincia' }
+      ]
+    }
+  ])
   const clientesFilterConfig = ref<any>([
     {
       key: 'registrado',

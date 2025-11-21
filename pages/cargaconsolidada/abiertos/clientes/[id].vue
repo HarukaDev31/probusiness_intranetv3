@@ -51,15 +51,7 @@
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-4">
-                                    <div class="flex flex-col mr-2 space-y-1">
-                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
-                                        <div class="flex items-center gap-2">
-                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
-                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
-                                        </div>
-                                    </div>
-                                </div>
+                                
                             </div>
                         </div>
                     </div>
@@ -83,15 +75,7 @@
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-4">
-                                    <div class="flex flex-col mr-2 space-y-1">
-                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
-                                        <div class="flex items-center gap-2">
-                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
-                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
-                                        </div>
-                                    </div>
-                                </div>
+                                
                             </div>
                         </div>
                     </div>
@@ -114,15 +98,7 @@
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-4">
-                                    <div class="flex flex-col mr-2 space-y-1">
-                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
-                                        <div class="flex items-center gap-2">
-                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
-                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
-                                        </div>
-                                    </div>
-                                </div>
+                                
                             </div>
                         </div>
                     </div>
@@ -1303,10 +1279,10 @@ const updateVolSelected = async (data: any) => {
     }
 }
 onMounted(() => {
-    if (currentRole.value === ROLES.DOCUMENTACION) {
+            if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
             {
-                label: 'General',
+                label: 'Seguimiento',
                 value: 'general'
             }
         ]
@@ -1314,11 +1290,11 @@ onMounted(() => {
     else if (currentRole.value === ROLES.COORDINACION) {
         tabs.value = [
             {
-                label: 'General',
+                label: 'Seguimiento',
                 value: 'general'
             },
             {
-                label: 'Embarcados',
+                label: 'Documentacion',
                 value: 'embarcados'
             },
             {
@@ -1330,11 +1306,11 @@ onMounted(() => {
     } else if (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS) {
         tabs.value = [
             {
-                label: 'General',
+                label: 'Seguimiento',
                 value: 'general'
             },
             {
-                label: 'Embarcados',
+                label: 'Documentacion',
                 value: 'embarcados'
             },
             {
@@ -1345,7 +1321,7 @@ onMounted(() => {
     } else {
         tabs.value = [
             {
-                label: 'General',
+                label: 'Seguimiento',
                 value: 'general'
             },
             {
