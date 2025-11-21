@@ -140,7 +140,7 @@ const columns = ref<TableColumn<CursoItem>[]>([
                 h('p', row.original.Nu_Documento_Identidad),
                 h('p', row.original.Nu_Celular_Entidad),
                 h('p', row.original.Txt_Email_Entidad),
-                h('p', (row.original.No_Departamento || '') + ', ' + (row.original.No_Provincia || '') + ', ' + (row.original.No_Distrito || ''))
+                h('p', row.original.No_Provincia || '')
             ])
         }
     },
