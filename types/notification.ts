@@ -68,6 +68,12 @@ export interface NotificationResponse {
     prev_page_url: string | null
     to: number
     total: number
+    
+  }
+  conteos?: {
+    total: number
+    no_leidas: number
+    leidas: number
   }
   message: string
 }

@@ -42,17 +42,25 @@
 
     <!-- Stats -->
     <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+      <div 
+        @click="applyFilter('all')"
+        class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md transition-shadow"
+        :class="{ 'ring-2 ring-blue-500': currentFilter === 'all' }"
+      >
         <div class="flex items-center">
           <UIcon name="i-heroicons-bell" class="text-blue-500 w-6 h-6 mr-3" />
           <div>
             <p class="text-sm text-gray-600 dark:text-gray-400">Total</p>
-            <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ totalItems }}</p>
+            <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ totalCount }}</p>
           </div>
         </div>
       </div>
       
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+      <div 
+        @click="applyFilter('unread')"
+        class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md transition-shadow"
+        :class="{ 'ring-2 ring-orange-500': currentFilter === 'unread' }"
+      >
         <div class="flex items-center">
           <UIcon name="i-heroicons-exclamation-circle" class="text-orange-500 w-6 h-6 mr-3" />
           <div>
@@ -62,12 +70,16 @@
         </div>
       </div>
       
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+      <div 
+        @click="applyFilter('read')"
+        class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md transition-shadow"
+        :class="{ 'ring-2 ring-green-500': currentFilter === 'read' }"
+      >
         <div class="flex items-center">
           <UIcon name="i-heroicons-check-circle" class="text-green-500 w-6 h-6 mr-3" />
           <div>
             <p class="text-sm text-gray-600 dark:text-gray-400">Leídas</p>
-            <p class="text-xl font-semibold text-green-600 dark:text-green-400">{{ readNotifications.length }}</p>
+            <p class="text-xl font-semibold text-green-600 dark:text-green-400">{{ readCount }}</p>
           </div>
         </div>
       </div>
@@ -239,8 +251,15 @@ definePageMeta({
   layout: 'default'
 })
 
+// Router y route
+const route = useRoute()
+const router = useRouter()
+
 // Estado local para navegación
 const navigatingToId = ref<number | null>(null)
+
+// Estado del filtro actual
+const currentFilter = ref<'all' | 'unread' | 'read'>('unread')
 
 // Composable
 const {
@@ -248,6 +267,8 @@ const {
   loading,
   error,
   unreadCount,
+  totalCount,
+  readCount,
   totalItems,
   totalPages,
   currentPage,
@@ -256,6 +277,7 @@ const {
   hasUnreadNotifications,
   readNotifications,
   fetchNotifications,
+  fetchUnreadCount,
   markAsRead,
   markAllAsRead,
   handleNotificationClick: originalHandleNotificationClick,
@@ -342,8 +364,80 @@ const getNavigationPreview = (notification: Notification): string => {
   }
 }
 
+// Aplicar filtro desde los cards
+const applyFilter = async (filter: 'all' | 'unread' | 'read') => {
+  currentFilter.value = filter
+  
+  // Actualizar query params en la URL
+  const query: Record<string, any> = { ...route.query }
+  
+  if (filter === 'all') {
+    // No enviar query param para "Total"
+    delete query.no_leidas
+  } else if (filter === 'unread') {
+    // Enviar no_leidas=true
+    query.no_leidas = 'true'
+  } else if (filter === 'read') {
+    // Enviar no_leidas=false
+    query.no_leidas = 'false'
+  }
+  
+  // Actualizar la URL sin recargar la página
+  await router.push({ query })
+  
+  // Aplicar el filtro a las notificaciones
+  const filterParams: any = { page: 1 }
+  if (filter === 'unread') {
+    filterParams.no_leidas = true
+  } else if (filter === 'read') {
+    filterParams.no_leidas = false
+  } else {
+    // Si es 'all', establecer explícitamente como undefined para eliminarlo
+    filterParams.no_leidas = undefined
+  }
+  
+  // Resetear a página 1 cuando cambia el filtro
+  await fetchNotifications(filterParams)
+}
+
+// Leer query params al inicializar
+const initializeFilters = () => {
+  const noLeidasParam = route.query.no_leidas
+  
+  if (noLeidasParam === 'true') {
+    currentFilter.value = 'unread'
+  } else if (noLeidasParam === 'false') {
+    currentFilter.value = 'read'
+  } else {
+    currentFilter.value = 'all'
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
-  await initialize()
+  let noLeidasParam: string | undefined = route.query.no_leidas as string | undefined
+  
+  // Si no hay query param, establecer no_leidas=true por defecto
+  if (!noLeidasParam) {
+    await router.push({ query: { ...route.query, no_leidas: 'true' } })
+    currentFilter.value = 'unread'
+    noLeidasParam = 'true'
+  } else {
+    // Inicializar filtros desde query params existentes
+    initializeFilters()
+  }
+  
+  // Cargar notificaciones con el filtro inicial
+  const initialFilters: any = {}
+  
+  if (noLeidasParam === 'true') {
+    initialFilters.no_leidas = true
+  } else if (noLeidasParam === 'false') {
+    initialFilters.no_leidas = false
+  }
+  // Si no hay param o es 'all', no agregamos no_leidas
+  
+  await fetchNotifications(initialFilters)
+  // fetchUnreadCount ya no es necesario, los conteos vienen en fetchNotifications
 })
 </script>

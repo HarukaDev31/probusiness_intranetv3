@@ -13,6 +13,8 @@ export const useNotifications = () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const unreadCount = ref(0)
+  const totalCount = ref(0)
+  const readCount = ref(0)
 
   // Paginación
   const currentPage = ref(1)
@@ -23,7 +25,8 @@ export const useNotifications = () => {
   // Filtros
   const filters = ref<NotificationFilters>({
     per_page: 15,
-    page: 1
+    page: 1,
+    no_leidas: true // Por defecto mostrar solo no leídas
   })
 
   // Computed properties
@@ -59,25 +62,51 @@ export const useNotifications = () => {
       error.value = null
 
       if (newFilters) {
-        filters.value = { ...filters.value, ...newFilters }
+        // Si newFilters tiene no_leidas explícitamente como undefined, eliminarlo
+        const updatedFilters = { ...filters.value, ...newFilters }
+        if ('no_leidas' in newFilters && newFilters.no_leidas === undefined) {
+          delete updatedFilters.no_leidas
+        }
+        filters.value = updatedFilters
       }
 
       console.log('fetchNotifications called with filters:', filters.value)
       const response = await NotificationService.getNotifications(filters.value)
       
+      console.log('Respuesta completa del API:', response)
+      console.log('response.data:', response.data)
+      console.log('response.data.conteos:', response.data.conteos)
+      
       notifications.value = response.data.data
-      console.log(response.data)
       currentPage.value = response.data.current_page
       totalPages.value = response.data.last_page
       totalItems.value = response.data.total
       itemsPerPage.value = response.data.per_page
+      
+      // Actualizar conteos desde la respuesta del API - SIEMPRE usar los conteos del API
+      if (response.conteos) {
+        totalCount.value = Number(response.conteos.total) || 0
+        unreadCount.value = Number(response.conteos.no_leidas) || 0
+        readCount.value = Number(response.conteos.leidas) || 0
+        
+        console.log('Conteos actualizados desde API:', {
+          total: totalCount.value,
+          no_leidas: unreadCount.value,
+          leidas: readCount.value,
+          raw_conteos: response.data.conteos
+        })
+      } else {
+        console.error('ERROR: No se encontraron conteos en la respuesta del API')
+        // Si no vienen conteos, mantener los valores actuales (no calcular)
+      }
       
       console.log('Response received:', {
         current_page: response.data.current_page,
         last_page: response.data.last_page,
         total: response.data.total,
         per_page: response.data.per_page,
-        data_length: response.data.data.length
+        data_length: response.data.data.length,
+        conteos: response.data.conteos
       })
 
     } catch (err: any) {
@@ -89,10 +118,10 @@ export const useNotifications = () => {
   }
 
   const fetchUnreadCount = async () => {
+    // Ya no es necesario llamar a este endpoint ya que los conteos vienen en fetchNotifications
+    // Se mantiene por compatibilidad pero no hace nada
     try {
-      const response = await NotificationService.getUnreadCount()
-      
-      unreadCount.value = response
+      // Los conteos ya se actualizan en fetchNotifications desde response.data.conteos
     } catch (err: any) {
       console.error('Error fetching unread count:', err)
     }
@@ -107,8 +136,10 @@ export const useNotifications = () => {
       if (notification && !notification.estado_usuario.leida) {
         notification.estado_usuario.leida = true
         notification.estado_usuario.fecha_lectura = new Date().toISOString()
-        unreadCount.value = Math.max(0, unreadCount.value - 1)
       }
+      
+      // Recargar notificaciones para obtener conteos actualizados del API
+      await fetchNotifications()
     } catch (err: any) {
       error.value = err.message || 'Error al marcar como leída'
       console.error('Error marking as read:', err)
@@ -167,10 +198,8 @@ export const useNotifications = () => {
         }
       })
       
-      // Actualizar el contador
-      unreadCount.value = 0
-      
-      // Recargar las notificaciones para reflejar los cambios
+      // Recargar las notificaciones para obtener conteos actualizados del API
+      // NO actualizar conteos manualmente, siempre usar los del API
       await fetchNotifications()
     } catch (err: any) {
       error.value = err.message || 'Error al marcar todas como leídas'
@@ -247,6 +276,8 @@ export const useNotifications = () => {
     loading: readonly(loading),
     error: readonly(error),
     unreadCount: readonly(unreadCount),
+    totalCount: readonly(totalCount),
+    readCount: readonly(readCount),
     
     // Paginación
     currentPage,
