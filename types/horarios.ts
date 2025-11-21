@@ -5,6 +5,7 @@ export interface TimeSlot {
   isAvailable: boolean
   maxCapacity?: number
   currentBookings?: number
+  isHidden?: boolean
 }
 
 export interface ScheduleConfig {

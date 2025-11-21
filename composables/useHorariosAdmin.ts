@@ -28,7 +28,8 @@ export const useHorariosAdmin = () => {
             endTime: s.end_time ? String(s.end_time) : undefined,
             isAvailable: (Number(s.available) ?? 0) > 0,
             maxCapacity: Number(s.capacity ?? s.delivery_count) ?? undefined,
-            currentBookings: Number(s.assigned) ?? 0
+            currentBookings: Number(s.assigned) ?? 0,
+            isHidden: Boolean(s.is_hidden ?? false)
           }))
           //format date to long name of day month and year
           // Parse date string correctly to avoid timezone issues
@@ -286,6 +287,21 @@ export const useHorariosAdmin = () => {
       loading.value = false
     }
   }
+
+  const saveSelectedTimeSlots = async (payload: { idContenedor: number; slots: Array<{ id: string | number; selected: boolean }> }) => {
+    try {
+      loading.value = true
+      error.value = null
+      const response = await EntregaService.saveSelectedTimeSlots(payload)
+      return response
+    } catch (err: any) {
+      error.value = err.message || 'Error al guardar selección de horarios'
+      console.error('Error saving selected time slots:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
   return {
     schedules: readonly(schedules),
     loading: readonly(loading),
@@ -308,7 +324,8 @@ export const useHorariosAdmin = () => {
     unselectDaysComposable,
     schedulesByDayComposable,
     editHorarios,
-    deleteHorarios
+    deleteHorarios,
+    saveSelectedTimeSlots
   }
 
 

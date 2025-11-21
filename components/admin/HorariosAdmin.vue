@@ -131,32 +131,91 @@
               class="flex w-full justify-between p-3  flex-col gap-2 rounded-lg"
             >
               <p class="text-sm font-medium ">{{ schedule.name }}</p>
-               <div class="flex items-center gap-3" v-for="timeSlotGroup in groupTimeSlots(schedule.timeSlots)" :key="timeSlotGroup.id">
-                <div class="w-3 h-3 bg-primary-500 rounded-full"></div>
-                <div>
-                  <p class="text-sm font-medium ">
-                    {{ timeSlotGroup.startTime }} - {{ timeSlotGroup.endTime }}
-                  </p>
-                  
+              <div
+                v-for="timeSlotGroup in groupTimeSlots(schedule.timeSlots)"
+                :key="timeSlotGroup.id"
+                class="border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 flex flex-col gap-3"
+              >
+                <div class="flex w-full items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 flex-1">
+                    <!--icon hide and show time slots-->
+                    <UIcon name="i-heroicons-eye-slash" class="w-4 h-4 text-neutral-500" />
+                    <input
+                      type="checkbox"
+                      class="h-4 w-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
+                      :checked="areAllSlotsSelected(timeSlotGroup.slots)"
+                      @change="toggleGroupSelection(timeSlotGroup.slots)"
+                    />
+                    <div class="w-3 h-3 bg-primary-500 rounded-full"></div>
+                    <div>
+                      <p class="text-sm font-medium ">
+                        {{ timeSlotGroup.startTime }} - {{ timeSlotGroup.endTime }}
+                      </p>
+                      
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <UButton
+                      @click="editTimeSlotGroup(timeSlotGroup)"
+                      icon="i-heroicons-pencil-square"
+                      color="neutral"
+                      variant="ghost"
+                      size="sm"
+                    />
+                    <UButton
+                      @click="deleteTimeSlotGroup(timeSlotGroup)"
+                      icon="i-heroicons-trash"
+                      color="error"
+                      variant="ghost"
+                      size="sm"
+                    />
+                    <UButton
+                      @click="toggleTimeSlots(schedule.id, timeSlotGroup.id)"
+                      :icon="isGroupOpen(schedule.id, timeSlotGroup.id) ? 'i-heroicons-arrow-up' : 'i-heroicons-arrow-down'"
+                      color="neutral"
+                      variant="ghost"
+                      size="sm"
+                    />
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
-                <UButton
-                  @click="editTimeSlotGroup(timeSlotGroup)"
-                  icon="i-heroicons-pencil-square"
-                  color="neutral"
-                  variant="ghost"
-                  size="sm"
-                />
-                <UButton
-                  @click="deleteTimeSlotGroup(timeSlotGroup)"
-                  icon="i-heroicons-trash"
-                  color="error"
-                  variant="ghost"
-                  size="sm"
-                />
+                <div
+                  v-if="isGroupOpen(schedule.id, timeSlotGroup.id)"
+                  class="ml-7 flex flex-col gap-2"
+                >
+                  <div
+                    v-for="slot in timeSlotGroup.slots"
+                    :key="slot.id"
+                    class="flex items-center justify-between gap-3 rounded-md border border-neutral-100 dark:border-neutral-800 p-2"
+                  >
+                    <div class="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
+                        :checked="isSlotSelected(slot.id)"
+                        @change="toggleSlotSelection(slot.id)"
+                      />
+                      <div>
+                        <p class="text-sm font-medium ">
+                          {{ slot.time }} - {{ slot.endTime || addMinutes(slot.time, 30) }}
+                        </p>
+                        
+                      </div>
+                    </div>
+                    <span class="text-xs text-neutral-500">
+                      Reservadas: {{ slot.currentBookings ?? 0 }}
+                    </span>
+                  </div>
+                </div>
               </div>
-              </div>
-             
+            </div>
+            <div  class="flex justify-end pt-2">
+              <UButton
+                color="primary"
+                :loading="isSavingSelectedSlots"
+                @click="saveSelectedTimeSlots"
+              >
+                Ocultar/Mostrar ({{ selectedTimeSlotIds.length }})
+              </UButton>
             </div>
           </div>
         </UCard>
@@ -195,6 +254,9 @@ const selectedDates = ref<Date[]>([])
 const isDragging = ref(false)
 const dragStartDate = ref<Date | null>(null)
 const hasDragged = ref(false)
+const openTimeSlotGroups = ref<Record<string, boolean>>({})
+const selectedTimeSlotIds = ref<string[]>([])
+const isSavingSelectedSlots = ref(false)
 const today = new Date()
 today.setHours(0, 0, 0, 0) // Resetear horas para comparación
 
@@ -205,7 +267,8 @@ const { getActiveSchedules, loadSchedules, createHorarios, createFechaIfNeeded, 
   schedulesByDayComposable,
   unselectDaysComposable,
   editHorarios,
-  deleteHorarios
+  deleteHorarios,
+  saveSelectedTimeSlots: saveSelectedTimeSlotsRequest
  } = useHorariosAdmin()
 
 // Lista de horarios (UI)
@@ -476,6 +539,104 @@ const groupTimeSlots = (timeSlots: any[]) => {
   return groups
 }
 
+const getGroupKey = (scheduleId: string, groupId: string) => `${scheduleId}-${groupId}`
+
+const isGroupOpen = (scheduleId: string, groupId: string) =>
+  !!openTimeSlotGroups.value[getGroupKey(scheduleId, groupId)]
+
+const toggleTimeSlots = (scheduleId: string, groupId: string) => {
+  const key = getGroupKey(scheduleId, groupId)
+  openTimeSlotGroups.value[key] = !openTimeSlotGroups.value[key]
+}
+
+const isSlotSelected = (slotId: string | number) =>
+  selectedTimeSlotIds.value.includes(String(slotId))
+
+const toggleSlotSelection = (slotId: string | number) => {
+  const id = String(slotId)
+  const currentIndex = selectedTimeSlotIds.value.indexOf(id)
+  if (currentIndex !== -1) {
+    selectedTimeSlotIds.value.splice(currentIndex, 1)
+  } else {
+    selectedTimeSlotIds.value.push(id)
+  }
+}
+
+const areAllSlotsSelected = (slots: any[] = []) =>
+  slots.length > 0 && slots.every(slot => isSlotSelected(slot.id))
+
+const toggleGroupSelection = (slots: any[] = []) => {
+  if (!slots.length) return
+  const shouldSelectAll = !areAllSlotsSelected(slots)
+  for (const slot of slots) {
+    const id = String(slot.id)
+    const idx = selectedTimeSlotIds.value.indexOf(id)
+    if (shouldSelectAll && idx === -1) {
+      selectedTimeSlotIds.value.push(id)
+    } else if (!shouldSelectAll && idx !== -1) {
+      selectedTimeSlotIds.value.splice(idx, 1)
+    }
+  }
+}
+
+const saveSelectedTimeSlots = async () => {
+  const slotsWithState = collectAllSlotsWithState()
+  if (!slotsWithState.length) {
+    showError('Sin horarios', 'No hay horarios disponibles para guardar.')
+    return
+  }
+  const contId = getContenedorId()
+  if (!contId) {
+    showError('Falta contenedor', 'No se encontró el ID de contenedor en la ruta.')
+    return
+  }
+  try {
+    await withSpinner(async () => { 
+    isSavingSelectedSlots.value = true
+    const response = await saveSelectedTimeSlotsRequest({
+      idContenedor: contId,
+      slots: slotsWithState
+    })
+    if (response?.success) {
+      const selectedCount = slotsWithState.filter(s => s.selected).length
+      showSuccess(
+        'Horarios guardados',
+        `${selectedCount} de ${slotsWithState.length} horarios fueron guardados correctamente.`
+      )
+      await loadSchedules(contId)
+      selectedTimeSlotIds.value = []
+      // Deseleccionar días para poder recargar la lista actualizada
+      clearSelection()
+      unselectDaysComposable(selectedDaysComposable.value)
+    } else {
+      showError('Error', 'No se pudo guardar la selección de horarios.')
+    }
+    }, 'Guardando...')
+  } catch (error: any) {
+    showError('Error al guardar', error?.message || 'No se pudieron guardar los horarios seleccionados.')
+  }
+  finally {
+    isSavingSelectedSlots.value = false
+  }
+}
+
+const collectAllSlotsWithState = () => {
+  const selectedSet = new Set(selectedTimeSlotIds.value.map(String))
+  const slotsWithState: Array<{ id: string | number; selected: boolean }> = []
+  
+  for (const schedule of schedulesByDayComposable.value) {
+    for (const slot of schedule.timeSlots) {
+      const slotId = String(slot.id)
+      slotsWithState.push({
+        id: slotId,
+        selected: selectedSet.has(slotId)
+      })
+    }
+  }
+  
+  return slotsWithState
+}
+
 // Función auxiliar para verificar si dos tiempos son consecutivos (30 min)
 const isConsecutiveTime = (endTime: string, startTime: string): boolean => {
   const [endHour, endMin] = endTime.split(':').map(Number)
@@ -716,6 +877,49 @@ onMounted(async () => {
 
 // Si cambia la fuente (por ejemplo, recarga), actualizamos la lista plana
 watch(getActiveSchedules, () => refreshScheduleListFromComposable())
+
+watch(
+  () => schedulesByDayComposable.value,
+  newSchedules => {
+    const availableSlotIds = new Set<string>()
+    const availableGroupKeys = new Set<string>()
+    const hiddenSlotIds = new Set<string>()
+    
+    for (const schedule of newSchedules) {
+      for (const slot of schedule.timeSlots) {
+        const slotId = String(slot.id)
+        availableSlotIds.add(slotId)
+        // Si el slot tiene is_hidden: true, agregarlo a la selección
+        if (slot.isHidden === true) {
+          hiddenSlotIds.add(slotId)
+        }
+      }
+      const groups = groupTimeSlots(schedule.timeSlots)
+      for (const group of groups) {
+        availableGroupKeys.add(getGroupKey(schedule.id, group.id))
+      }
+    }
+    
+    // Mantener solo los IDs que existen y agregar los que están ocultos
+    const currentSelected = new Set(selectedTimeSlotIds.value.filter(id =>
+      availableSlotIds.has(id)
+    ))
+    
+    // Agregar todos los slots ocultos
+    hiddenSlotIds.forEach(id => currentSelected.add(id))
+    
+    selectedTimeSlotIds.value = Array.from(currentSelected)
+    
+    const nextOpenState: Record<string, boolean> = {}
+    for (const key of Object.keys(openTimeSlotGroups.value)) {
+      if (availableGroupKeys.has(key) && openTimeSlotGroups.value[key]) {
+        nextOpenState[key] = true
+      }
+    }
+    openTimeSlotGroups.value = nextOpenState
+  },
+  { deep: true }
+)
 
 // Si cambia el query/param del contenedor, recargar
 watch(

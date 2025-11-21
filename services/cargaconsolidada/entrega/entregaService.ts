@@ -460,4 +460,16 @@ export class  EntregaService extends BaseService {
       throw error
     }
   }
+
+  static async saveSelectedTimeSlots(data: { idContenedor: number; slots: Array<{ id: string | number; selected: boolean }> }): Promise<{ success: boolean }> {
+    try {
+      return await this.apiCall(`${this.baseUrl}/horarios/seleccion`, {
+        method: 'POST',
+        body: data
+      })
+    } catch (error) {
+      console.error('Error al guardar selección de horarios:', error)
+      throw error
+    }
+  }
 }
