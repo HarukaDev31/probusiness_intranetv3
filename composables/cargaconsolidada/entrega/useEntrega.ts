@@ -69,7 +69,7 @@ export const useEntrega = () => {
       key: 'tipo_entrega',
       label: 'Tipo de entrega',
       options: [
-        { label: 'Todos', value: '' },
+        { label: 'Todos', value: 'todos' },
         { label: 'Lima', value: 'Lima' },
         { label: 'Provincia', value: 'Provincia' }
       ]
@@ -114,11 +114,18 @@ export const useEntrega = () => {
     try {
       loading.value = true
       contenedorId.value = id
+      const cleanedFilters: any = {}
+      Object.entries(filters.value || {}).forEach(([k, v]) => {
+        if (v === null || v === undefined) return
+        if (typeof v === 'string' && (v === '' || v === 'todos')) return
+        cleanedFilters[k] = v
+      })
+
       const params = {
         page: currentPage.value,
         per_page: itemsPerPage.value,
         search: search.value,
-        filters: filters.value
+        filters: cleanedFilters
       }
       const response = await EntregaService.getEntregas(id, params)
       entregas.value = response.data
@@ -286,11 +293,18 @@ export const useEntrega = () => {
     try {
       loading.value = true
       contenedorId.value = id
+      const cleanedFilters: any = {}
+      Object.entries(filters.value || {}).forEach(([k, v]) => {
+        if (v === null || v === undefined) return
+        if (typeof v === 'string' && (v === '' || v === 'todos')) return
+        cleanedFilters[k] = v
+      })
+
       const params = {
         page: currentPage.value,
         per_page: itemsPerPage.value,
         search: search.value,
-        filters: filters.value
+        filters: cleanedFilters
       }
       const response = await EntregaService.getDelivery(id, params)
       delivery.value = (response.data as Entrega[]).map((item: any) => ({
