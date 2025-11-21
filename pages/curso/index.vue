@@ -1,6 +1,13 @@
 <template>
     <div class="p-6">
+        
         <PageHeader title="Curso" icon="" :hide-back-button="true" />
+        <WhatsappNumbersStatus 
+                    :instances="[{ instanceName: 'COURSE','key':'CURSO' }]"
+                    :auto-refresh="true"
+                    :refresh-interval="30000"
+                    :compact="true"
+                />
         <DataTable title="" icon="" :data="cursosData" :columns="columns" :loading="loading" :current-page="currentPage"
             v-if="activeTab === 'alumnos'" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="searchQuery" :show-primary-search="true"
@@ -11,7 +18,8 @@
             @items-per-page-change="handleItemsPerPageChange" @export="handleExport" @filter-change="handleFilterChange"
             :show-body-top="true">
             <template #actions>
-<!--eye icon-->
+                <!-- Estado de WhatsApp compacto -->
+               
                 <UButton icon="i-heroicons-eye" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
             </template>
             <template #body-top>
@@ -29,6 +37,15 @@
             @update:primarySearch="handleSearchPagos" @page-change="handlePageChangePagos"
             @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos"
             :show-body-top="true">
+            <template #actions>
+                <!-- Estado de WhatsApp compacto -->
+                <WhatsappNumbersStatus 
+                    :instances="[{ instanceName: 'COURSE' }]"
+                    :auto-refresh="true"
+                    :refresh-interval="30000"
+                    :compact="true"
+                />
+            </template>
             <template #body-top>
                 <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-1 w-80 h-15" />
                 <!-- Importe total removed per request -->

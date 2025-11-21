@@ -17,7 +17,16 @@
             @filter-change="handleFilterChange"
             @clear-filters="handleClearFilters"
             >
-            
+            <template #actions>
+                <UButton 
+                    icon="i-heroicons-arrow-down-tray" 
+                    label="Exportar Excel" 
+                    @click="handleExportExcel"
+                    :loading="exporting"
+                    color="success"
+                    variant="outline"
+                />
+            </template>
 
             <template #error-state>
                 <ErrorState :message="error || 'Error desconocido'" />
@@ -33,7 +42,11 @@ import type { TableColumn } from '@nuxt/ui'
 const UButton = resolveComponent('UButton')
 import { ROLES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 const { hasRole, isCoordinacion,currentRole } = useUserRole()
+const { showSuccess, showError } = useModal()
+const { withSpinner } = useSpinner()
 // Composables
 const {
     clientes,
@@ -58,6 +71,25 @@ const {
 } = useClientes()
 
 const localCurrentPage = ref(1)
+const exporting = ref(false)
+
+const handleExportExcel = async () => {
+    exporting.value = true
+    try {
+        await withSpinner(async () => {
+            const result = await exportClientes()
+            if (result.success) {
+                showSuccess('Exportación exitosa', 'El archivo Excel se ha descargado correctamente')
+            } else {
+                showError('Error al exportar', result.error || 'No se pudo exportar el archivo')
+            }
+        }, 'Exportando clientes...')
+    } catch (err: any) {
+        showError('Error al exportar', err.message || 'Error al exportar clientes')
+    } finally {
+        exporting.value = false
+    }
+}
 
 const onPageChange = (page: number) => {
   localCurrentPage.value = page

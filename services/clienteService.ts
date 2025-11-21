@@ -10,6 +10,7 @@ export interface Cliente {
   fecha: string
   empresa: string
   ruc: string
+  id_user?: number | null
   primer_servicio: {
     servicio: string
     fecha: string
@@ -311,6 +312,21 @@ export class ClienteService extends BaseService {
     } catch (error: any) {
       console.error('Error en deleteExcel:', error)
       throw new Error(error?.data?.message || 'Error al eliminar el archivo')
+    }
+  }
+
+  /**
+   * Enviar instrucciones de recuperación de contraseña
+   */
+  static async enviarInstruccionesRecuperacionContrasena(id: number): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; message?: string; error?: string }>(`${this.baseUrl}/${id}/enviar-instrucciones-recuperacion-contrasena`, {
+        method: 'POST'
+      })
+      return response
+    } catch (error: any) {
+      console.error('Error al enviar instrucciones de recuperación de contraseña:', error)
+      throw new Error('No se pudieron enviar las instrucciones de recuperación de contraseña')
     }
   }
 }
