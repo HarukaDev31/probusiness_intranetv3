@@ -20,7 +20,7 @@
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
+                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-4">
                                     <div class="flex flex-col mr-2 space-y-1">
                                         <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
                                         <div class="flex items-center gap-2">
@@ -51,7 +51,7 @@
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
+                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-4">
                                     <div class="flex flex-col mr-2 space-y-1">
                                         <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
                                         <div class="flex items-center gap-2">
@@ -83,7 +83,7 @@
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
+                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-4">
                                     <div class="flex flex-col mr-2 space-y-1">
                                         <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
                                         <div class="flex items-center gap-2">
@@ -114,7 +114,7 @@
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3">
+                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-4">
                                     <div class="flex flex-col mr-2 space-y-1">
                                         <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
                                         <div class="flex items-center gap-2">
@@ -479,12 +479,21 @@ const columns: TableColumn<any>[] = [
             const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
             const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
             const correo = String(pick(['correo', 'email', 'mail']) || '')
+            const cod_contract = String(pick(['cod_contract']) || '')
+            const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
 
-            return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
+            return h('div', { class: 'max-w-full w-full whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
-                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo')
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
+                cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
+                    cotizacion_contrato_firmado_url ? h('a', {
+                        href: cotizacion_contrato_firmado_url,
+                        target: '_blank',
+                        class: 'text-primary hover:underline'
+                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+                ]) : null  
             ])
         }
     },
@@ -591,12 +600,21 @@ const columnsCoordinacion: TableColumn<any>[] = [
             const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
             const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
             const correo = String(pick(['correo', 'email', 'mail']) || '')
+            const cod_contract = String(pick(['cod_contract']) || '')
+            const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
 
             return h('div', { class: '' }, [
-                h('div', { class: 'max-w-30 whitespace-normal break-words font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
+                h('div', { class: 'max-w-full w-full whitespace-normal break-words font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500 max-w-40 whitespace-normal break-words' }, telefono) : null,
-                correo ? h('div', { class: 'text-sm text-gray-500 max-w-40 whitespace-normal break-words' }, correo) : h('div', { class: 'text-sm text-gray-500 max-w-40 whitespace-normal break-words' }, 'Sin correo')
+                correo ? h('div', { class: 'text-sm text-gray-500 max-w-50 w-full whitespace-normal break-words' }, correo) : h('div', { class: 'text-sm text-gray-500 max-w-40 whitespace-normal break-words' }, 'Sin correo'),
+                cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
+                    cotizacion_contrato_firmado_url ? h('a', {
+                        href: cotizacion_contrato_firmado_url,
+                        target: '_blank',
+                        class: 'text-primary hover:underline'
+                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+                ]) : null  
             ])
         }
     },

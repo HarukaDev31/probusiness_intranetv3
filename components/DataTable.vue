@@ -925,10 +925,10 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 /* Fake horizontal scrollbar shown above the sticky bottom */
 .table-scrollbar {
   position: absolute;
-  top: -12px; /* place visually above the bottom sticky bar */
+  top: -16px; /* place visually above the bottom sticky bar */
   left: 0;
   right: 0;
-  height: 12px;
+  height: 16px;
   overflow-x: auto;
   overflow-y: hidden;
   z-index: 60;
@@ -936,7 +936,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 
 /* Style the fake scrollbar track & thumb (webkit) */
 .table-scrollbar::-webkit-scrollbar {
-  height: 8px;
+  height: 14px;
 }
 .table-scrollbar::-webkit-scrollbar-track {
   background: transparent;
