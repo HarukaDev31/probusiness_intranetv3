@@ -684,8 +684,17 @@ const formatDate = (date: Date) => {
 // Abre el modal usando la primera fecha seleccionada (botón "Nuevo Horario")
 const openHorarioModal = () => {
   if (selectedDates.value.length === 0) return
+  const date = selectedDates.value[0]
+  const dateKey = date.toISOString().split('T')[0]
+  const schedule = schedulesByDayComposable.value.find((s: any) => String(s.id).includes(dateKey))
+  const existingSlots = schedule?.timeSlots?.map((slot: any) => ({
+    startTime: slot.time,
+    endTime: slot.endTime ? slot.endTime : addMinutes(slot.time, 30)
+  })) ?? []
+
   modalHorario.open({
-    selectedDate: selectedDates.value[0],
+    selectedDate: date,
+    existingSlots,
     onSave: (data: any) => {
       handleSaveHorarioForSelectedDates(data)
     }
@@ -694,11 +703,19 @@ const openHorarioModal = () => {
 
 // Abre el modal directo al hacer click en un día específico
 const openHorarioModalFor = (date: Date) => {
+  const dateKey = date.toISOString().split('T')[0]
+  const schedule = schedulesByDayComposable.value.find((s: any) => String(s.id).includes(dateKey))
+  const existingSlots = schedule?.timeSlots?.map((slot: any) => ({
+    startTime: slot.time,
+    endTime: slot.endTime ? slot.endTime : addMinutes(slot.time, 30)
+  })) ?? []
+
   modalHorario.open({
     selectedDate: date,
+    existingSlots,
     onSave: (data: any) => {
       handleSaveHorarioForSelectedDates(data)
-    } 
+    }
   })
 }
 

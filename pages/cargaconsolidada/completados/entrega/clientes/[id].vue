@@ -113,6 +113,10 @@
                 <UInput class="flex-1/4" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
               </div>
               <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre de la agencia</label>
+                <UInput class="flex-1/4" v-model="form.agency_name" size="sm" :disabled="!editable" />
+              </div>
+              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4">
                 <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección inicial de entrega</label>
                 <UInput class="flex-1/4" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
               </div>

@@ -18,8 +18,8 @@
           <div class="flex items-center gap-3">
             <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
             <div class="flex gap-2 items-center">
-              <UButton size="lg" color="primary" variant="outline" label="Copiar Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
-              <UButton size="lg" color="warning" variant="outline" label="Copiar Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
+              <UButton size="lg" color="primary" variant="outline" label="Formulario Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
+              <UButton size="lg" color="warning" variant="outline" label="Formulario Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
               <transition name="fade">
                 <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm">¡Copiado!</span>
               </transition>
@@ -45,18 +45,18 @@
     <DataTable v-if="activeTab === 'entregas'" title="" :data="entregas" :columns="entregasColumns" :loading="loading"
       icon="" :show-pagination="false" :current-page="currentPage" :total-pages="totalPages"
       :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-      :show-secondary-search="false" :show-filters="false" :filter-config="filterConfig" :show-export="false"
+      :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="false" :show-primary-search="true"
       empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleSearch"
       @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-      @filter-change="handleFilterChange" :hide-back-button="false" :show-primary-search="false" :show-body-top="true"
+      @filter-change="handleFilterChange" :hide-back-button="false" :show-body-top="true"
       :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #body-top>
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-3">
             <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
             <div class="flex gap-2 items-center">
-              <UButton size="lg" color="primary" variant="outline" label="Copiar Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
-              <UButton size="lg" color="warning" variant="outline" label="Copiar Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
+              <UButton size="lg" color="primary" variant="outline" label="Formulario Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
+              <UButton size="lg" color="warning" variant="outline" label="Formulario Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
               <transition name="fade">
                 <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm">¡Copiado!</span>
               </transition>
@@ -74,8 +74,8 @@
           <div class="flex items-center gap-3">
             <SectionHeader :title="`Delivery #${carga}`" :headers="headers" :loading="loadingHeaders" />
             <div class="flex gap-2 items-center">
-              <UButton size="lg" color="primary" variant="outline" label="Copiar Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
-              <UButton size="lg" color="warning" variant="outline" label="Copiar Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
+              <UButton size="lg" color="primary" variant="outline" label="Formulario Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
+              <UButton size="lg" color="warning" variant="outline" label="Formulario Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
               <transition name="fade">
                 <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm">¡Copiado!</span>
               </transition>
