@@ -14,7 +14,7 @@
           <UFormField label="Hora de inicio" required class="w-full">
             <USelect
               v-model="formState.startTime"
-              :items="timeOptions"
+              :items="startTimeOptions"
               placeholder="Seleccionar hora"
               :disabled="loading"
               class="w-full"
@@ -69,6 +69,7 @@ interface Props {
   initialMaxBookings?: number
   mode?: 'create' | 'edit'
   submitLabel?: string
+  existingSlots?: Array<{ startTime: string; endTime: string }>
 }
 
 interface Emits {
@@ -104,20 +105,71 @@ const timeOptions = computed(() => {
   return options
 })
 
+// Helpers to work with times
+const toMinutes = (time: string) => {
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
+}
+
+const intervalsOverlap = (aStart: number, aEnd: number, bStart: number, bEnd: number) => {
+  return Math.max(aStart, bStart) < Math.min(aEnd, bEnd)
+}
+
+// Filtered start options: exclude times that are inside or equal to any existing slot
+const startTimeOptions = computed(() => {
+  const existing = props.existingSlots ?? []
+  return timeOptions.value.filter(option => {
+    const optionMinutes = toMinutes(option.value)
+
+    // allow current initialStartTime when editing
+    if (props.mode === 'edit' && props.initialStartTime === option.value) return true
+
+    // if any existing slot contains this minute (start <= option < end) hide it
+    for (const slot of existing) {
+      const s = toMinutes(slot.startTime)
+      const e = toMinutes(slot.endTime)
+      if (optionMinutes >= s && optionMinutes < e) return false
+    }
+    return true
+  })
+})
+
 // Opciones de hora de fin filtradas según la hora de inicio seleccionada
 const endTimeOptions = computed(() => {
   if (!formState.value.startTime) {
-    return timeOptions.value
+    // if no start selected, show all options except those fully inside existing slots
+    const existing = props.existingSlots ?? []
+    return timeOptions.value.filter(option => {
+      const m = toMinutes(option.value)
+      for (const slot of existing) {
+        const s = toMinutes(slot.startTime)
+        const e = toMinutes(slot.endTime)
+        if (m > s && m <= e) return false
+      }
+      return true
+    })
   }
-  
-  const startTime = formState.value.startTime
-  const [startHour, startMinute] = startTime.split(':').map(Number)
-  const startMinutes = startHour * 60 + startMinute
-  
+
+  const startMinutes = toMinutes(formState.value.startTime)
+  const existing = props.existingSlots ?? []
+
   return timeOptions.value.filter(option => {
-    const [hour, minute] = option.value.split(':').map(Number)
-    const optionMinutes = hour * 60 + minute
-    return optionMinutes > startMinutes
+    const optionMinutes = toMinutes(option.value)
+
+    // must be after start
+    if (optionMinutes <= startMinutes) return false
+
+    // allow current initialEndTime when editing
+    if (props.mode === 'edit' && props.initialEndTime === option.value) return true
+
+    // new interval [startMinutes, optionMinutes) must not overlap existing slots
+    for (const slot of existing) {
+      const s = toMinutes(slot.startTime)
+      const e = toMinutes(slot.endTime)
+      if (intervalsOverlap(startMinutes, optionMinutes, s, e)) return false
+    }
+
+    return true
   })
 })
 
