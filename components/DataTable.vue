@@ -236,6 +236,9 @@ const tableKey = ref(0)
 watch(() => props.currentPage, (newPage: number | undefined) => {
   tableKey.value += 1
 
+  // Scroll hacia arriba cuando cambia la página
+  scrollToTop()
+
   // If parent provided a prefetchNextPage callback, trigger prefetch for the next page
   try {
     const current = newPage || 1
@@ -255,6 +258,10 @@ watch(() => props.currentPage, (newPage: number | undefined) => {
 
 watch(() => props.itemsPerPage, (newLimit: number | undefined) => {
   tableKey.value += 1
+  
+  // Scroll hacia arriba cuando cambia items per page
+  scrollToTop()
+  
   // When items per page changes, also attempt to prefetch the next page using current page
   try {
     const current = props.currentPage || 1
@@ -442,6 +449,22 @@ const tableContainerRef = ref<HTMLElement | null>(null)
 // Ref to the UTable root so we can apply centering class when table doesn't scroll horizontally
 const utableRef = ref<HTMLElement | null>(null)
 const isTableNarrow = ref(false)
+
+// Función para hacer scroll hacia arriba
+const scrollToTop = () => {
+  try {
+    // Scroll del contenedor de la tabla
+    if (tableContainerRef.value) {
+      tableContainerRef.value.scrollTop = 0
+    }
+    // También scroll de la ventana si es necesario
+    if (componentRootRef.value) {
+      componentRootRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  } catch (e) {
+    // ignore errors
+  }
+}
 // Fake scrollbar refs and sync state
 const fakeScrollbarRef = ref<HTMLElement | null>(null)
 const tableScrollWidth = ref<number>(0)

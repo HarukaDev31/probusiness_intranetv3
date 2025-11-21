@@ -91,6 +91,17 @@
             <div class="text-gray-900 dark:text-gray-100">{{ cliente?.red_social }}</div>
           </div>
         </div>
+        <div v-if="cliente?.id_user" class="mt-6 w-full">
+          <UButton 
+            @click="handleEnviarInstruccionesRecuperacionContrasena" 
+            color="primary" 
+            icon="i-heroicons-key"
+            :loading="enviandoInstrucciones"
+            class="w-full"
+          >
+            Enviar mensaje de recuperación de contraseña
+          </UButton>
+        </div>
       </div>
 
       <!-- Historial de compras -->
@@ -125,6 +136,9 @@ import type { Cliente } from '~/services/clienteService'
 import type { TableColumn } from '@nuxt/ui'
 import { UButton } from '#components'
 import { ClienteService } from '~/services/clienteService'
+import { useClientes } from '~/composables/useClientes'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 // Props
 const route = useRoute()
 const clienteId = parseInt(route.params.id as string)
@@ -133,6 +147,12 @@ const clienteId = parseInt(route.params.id as string)
 const cliente = ref<Cliente | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+const enviandoInstrucciones = ref(false)
+
+// Composables
+const { enviarInstruccionesRecuperacionContrasena } = useClientes()
+const { showConfirmation, showSuccess, showError } = useModal()
+const { withSpinner } = useSpinner()
 
 // Historial de compras (datos de ejemplo basados en la imagen)
 const historialCompras = ref<any[]>([])
@@ -240,6 +260,36 @@ const handlePageChangeHistorial = (page: number) => {
 const handleItemsPerPageChangeHistorial = (items: number) => {
   itemsPerPageHistorial.value = items
   currentPageHistorial.value = 1 // Reset to first page when changing items per page
+}
+
+const handleEnviarInstruccionesRecuperacionContrasena = async () => {
+  if (!cliente.value?.id) {
+    showError('Error', 'No se pudo obtener la información del cliente.')
+    return
+  }
+
+  try {
+    await showConfirmation(
+      'Confirmación', 
+      '¿Estás seguro de querer enviar las instrucciones de recuperación de contraseña por WhatsApp y correo electrónico?', 
+      async () => {
+        enviandoInstrucciones.value = true
+        await withSpinner(async () => {
+          const response = await enviarInstruccionesRecuperacionContrasena(cliente.value!.id)
+
+          if (response.success) {
+            showSuccess('Éxito', 'Instrucciones enviadas correctamente por WhatsApp y correo electrónico')
+          } else {
+            showError('Error', response.error || 'Error al enviar las instrucciones de recuperación de contraseña')
+          }
+        }, 'Enviando instrucciones...')
+        enviandoInstrucciones.value = false
+      }
+    )
+  } catch (err) {
+    enviandoInstrucciones.value = false
+    showError('Error', 'Error al enviar las instrucciones de recuperación de contraseña')
+  }
 }
 
 

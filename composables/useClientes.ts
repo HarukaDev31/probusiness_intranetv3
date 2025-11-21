@@ -209,7 +209,9 @@ export const useClientes = () => {
   }
 
   const handlePageChange = async (currentPage: number) => {
+  await withSpinner(async () => {
     await loadClientes({ currentPage })
+  }, 'Cargando clientes...')
   }
 
   const handleItemsPerPageChange = async (itemsPerPage: number) => {
@@ -406,6 +408,21 @@ export const useClientes = () => {
     }
   }
 
+  const enviarInstruccionesRecuperacionContrasena = async (id: number) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await ClienteService.enviarInstruccionesRecuperacionContrasena(id)
+      return { success: true, message: response.message }
+    } catch (err: any) {
+      error.value = err.message || 'Error al enviar instrucciones de recuperación de contraseña'
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // State
     clientes,
@@ -438,6 +455,7 @@ export const useClientes = () => {
     uploadClientesFile,
     exportClientes,
     getClienteById,
+    enviarInstruccionesRecuperacionContrasena,
     clearError,
     resetFilters,
     handleClearFilters,

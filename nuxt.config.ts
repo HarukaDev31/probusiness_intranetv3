@@ -62,6 +62,8 @@ export default defineNuxtConfig({
       pusherAppKey: process.env.NUXT_PUSHER_APP_KEY,
       pusherAppCluster: process.env.NUXT_PUSHER_APP_CLUSTER,
       pusherWsHost: process.env.NUXT_WEBSOCKETS_URL,
+      whatsappApiUrl: process.env.NUXT_WHATSAPPV3_URL,
+      whatsappApiKey: process.env.NUXT_WHATSAPPV3_API_KEY,
     }
   },
 
