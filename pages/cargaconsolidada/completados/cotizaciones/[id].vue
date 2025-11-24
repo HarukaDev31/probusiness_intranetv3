@@ -104,7 +104,7 @@ import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
-import { formatDate, formatCurrency, formatDateTimeToDmy } from '~/utils/formatters'
+import { formatDate, formatCurrency } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
@@ -465,6 +465,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                 for (const k of keys) {
                     const v = row.original?.[k]
                     if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    // nested cliente object fallback
                     const nested = row.original?.cliente
                     if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
                 }
@@ -478,18 +479,18 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             const cod_contract = String(pick(['cod_contract']) || '')
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
 
-            return h('div', { class: 'max-w-30 whitespace-normal' }, [
-                h('div', { class: 'font-medium' }, nombre || '—'),
+            return h('div', { class: '' }, [
+                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
-                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
-                                cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null,
+                cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
                     cotizacion_contrato_firmado_url ? h('a', {
                         href: cotizacion_contrato_firmado_url,
                         target: '_blank',
                         class: 'text-primary hover:underline'
                     }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
-                ]) : null 
+                ]) : null  
             ])
         }
     },
@@ -648,15 +649,24 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
             const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
             const correo = String(pick(['correo', 'email', 'mail']) || '')
+            const cod_contract = String(pick(['cod_contract']) || '')
+            const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
 
             return h('div', { class: 'py-2' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
-                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo')
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
+                cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
+                    cotizacion_contrato_firmado_url ? h('a', {
+                        href: cotizacion_contrato_firmado_url,
+                        target: '_blank',
+                        class: 'text-primary hover:underline'
+                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+                ]) : null            
             ])
         }
-    },
+        },
     {
         accessorKey: 'estado_cliente',
         header: 'T. Cliente',
@@ -1004,10 +1014,10 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original?.nombre ? (row.original.nombre.toUpperCase ? row.original.nombre.toUpperCase() : row.original.nombre) : ''
-            const telefono = row.original?.telefono || ''
+            const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
+            const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
             return h('div', { class: 'w-70 whitespace-normal' }, [
-                h('div', { class: 'font-medium' }, nombre || '—'),
+                h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
             ])
         }
@@ -1428,10 +1438,10 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original?.nombre ? (row.original.nombre.toUpperCase ? row.original.nombre.toUpperCase() : row.original.nombre) : ''
-            const telefono = row.original?.telefono || ''
+            const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
+            const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
             return h('div', { class: 'w-70 whitespace-normal' }, [
-                h('div', { class: 'font-medium' }, nombre || '—'),
+                h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
             ])
         }
@@ -1860,10 +1870,10 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original?.nombre ? (row.original.nombre.toUpperCase ? row.original.nombre.toUpperCase() : row.original.nombre) : ''
-            const telefono = row.original?.telefono || ''
+            const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
+            const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
             return h('div', { class: 'w-70 whitespace-normal' }, [
-                h('div', { class: 'font-medium' }, nombre || '—'),
+                h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
             ])
         }
@@ -1898,7 +1908,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box,
-                    class: 'w-full',
+                    class: 'w-full w-10',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box = value
@@ -2039,7 +2049,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total_china,
-                    class: 'w-full w-12',
+                    class: 'w-full',
                     disabled: false,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total_china = value
@@ -2345,6 +2355,10 @@ const downloadFile = async (fileUrl: string) => {
 const handleSearchProspectos = (value: string) => {
     searchCotizaciones.value = value
     paginationCotizaciones.value.current_page = 1
+    // Eliminar idCotizacion de la query string cuando se usa el buscador
+    const query = { ...route.query }
+    delete query.idCotizacion
+    navigateTo({ path: route.path, query }, { replace: true })
     getCotizaciones(Number(id))
 }
 
@@ -2365,6 +2379,10 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
         [filterType]: value
     }
     paginationCotizaciones.value.current_page = 1
+    // Eliminar idCotizacion de la query string cuando se usa un filtro
+    const query = { ...route.query }
+    delete query.idCotizacion
+    navigateTo({ path: route.path, query }, { replace: true })
     await getCotizaciones(Number(id))
 }
 
@@ -2375,17 +2393,19 @@ watch(() => tab.value, async (newVal) => {
     if (newVal && newVal !== '') {
         try {
             resetFilters()
+            // Preservar idCotizacion de la query string si existe
+            const idCotizacionQuery = route.query.idCotizacion ? `&idCotizacion=${route.query.idCotizacion}` : ''
             if (newVal === 'prospectos') {
-                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos`)
+                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos${idCotizacionQuery}`)
                 // reset search to avoid sending stale query param to backend
                 try { searchCotizaciones.value = '' } catch (e) { /* ignore */ }
                 await getCotizaciones(Number(id))
             } else if (newVal === 'embarque') {
-                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=embarque`)
+                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=embarque${idCotizacionQuery}`)
                 try { search.value = '' } catch (e) { /* ignore */ }
                 await getCotizacionProveedor(Number(id))
             } else if (newVal === 'pagos') {
-                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=pagos`)
+                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=pagos${idCotizacionQuery}`)
                 try { searchPagos.value = '' } catch (e) { /* ignore */ }
                 await getCotizacionPagos(Number(id))
             }
