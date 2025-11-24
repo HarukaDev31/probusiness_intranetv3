@@ -342,16 +342,7 @@ export class  EntregaService extends BaseService {
   // --- CONFORMIDAD (fotos) ---
   static async uploadConformidad(formData: FormData): Promise<{ success: boolean; data: { id: number; photo_1: string; photo_2: string } }> {
     try {
-      
-      
-      
 
-      //print formData
-      for (let [key, value] of formData.entries()) {
-        
-      }
-
-      
       const response = await this.apiCall<{ success: boolean; data: { id: number; photo_1: string; photo_2: string } }>(`${this.baseUrl}/entregas/conformidad`, {
         method: 'POST',
         body: formData

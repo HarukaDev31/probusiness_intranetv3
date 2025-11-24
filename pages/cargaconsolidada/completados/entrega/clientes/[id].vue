@@ -33,10 +33,9 @@
                 <label class="pr-4 text-[11px] font-medium text-gray-500">Entrega:</label>
                 <UBadge :label="tipoClienteLabel" :color="isLima ? 'primary' : 'warning'" variant="soft" />
               </div>
-              <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">{{ isLima ? 'DNI - ID' : 'DNI - RUC' }}</label>
-                <UInput class="flex-1/4" v-model="form.documento" size="sm" :disabled="!editable" />
-              </div>
+           <div>
+
+           </div>
               <div class="flex items-center justify-between gap-4">
                 <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Bultos</label>
                 <UInput class="flex-1/4" v-model="form.qty_box_china" size="sm" disabled />
@@ -44,6 +43,10 @@
               <div class="flex items-center justify-between gap-4">
                 <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Peso</label>
                 <UInput class="flex-1/4" v-model="form.peso" size="sm" disabled />
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">{{ isLima ? 'DNI - ID' : 'DNI - RUC' }}</label>
+                <UInput class="flex-1/4" v-model="form.documento" size="sm" :disabled="!editable" />
               </div>
               
               <div v-if="!isLima" class="flex items-center justify-between gap-4">
@@ -224,6 +227,8 @@ import ImageModal from '~/components/ImageModal.vue'
 import { LocationService } from '@/services/commons/locationService'
 import { useRouter } from 'vue-router'
 import { EntregaService } from '@/services/cargaconsolidada/entrega/entregaService'
+import {useSpinner} from '~/composables/commons/useSpinner'
+const { withSpinner } = useSpinner()
 const router = useRouter()
 
 // Props/params
@@ -356,6 +361,7 @@ const handleSave = async () => {
     addIf('voucher_name', form.value.comp_nombre)
     addIf('voucher_email', form.value.comp_email)
   }
+  await withSpinner(async () => {
   await saveClienteDetalle(cotizacionId.value, payloadForm)
 
   // 2) Guardar fotos (create/update si hay picks nuevos)
@@ -377,8 +383,9 @@ const handleSave = async () => {
   // Refrescar y cerrar edición
   await refreshEvidencia()
   await getEntregasDetalle(cotizacionId.value)
-  initialSnapshot.value = snapshot()
-  editable.value = false
+    initialSnapshot.value = snapshot()
+    editable.value = false
+  }, 'Guardando cliente...')
 }
 
 // Preview modal state
