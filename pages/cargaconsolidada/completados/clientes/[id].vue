@@ -130,7 +130,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
-const tab = ref('general')
+const tab = ref('embarcados')
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
@@ -1263,7 +1263,7 @@ onMounted(() => {
         tabs.value = [
             {
                 label: 'Seguimiento',
-                value: 'general'
+                value: 'embarcados'
             }
         ]
     }
@@ -1271,11 +1271,11 @@ onMounted(() => {
         tabs.value = [
             {
                 label: 'Seguimiento',
-                value: 'general'
+                value: 'embarcados'
             },
             {
                 label: 'Documentacion',
-                value: 'embarcados'
+                value: 'general'
             },
             {
                 label: 'Variación',
@@ -1287,11 +1287,11 @@ onMounted(() => {
         tabs.value = [
             {
                 label: 'Seguimiento',
-                value: 'general'
+                value: 'embarcados'
             },
             {
                 label: 'Documentacion',
-                value: 'embarcados'
+                value: 'general'
             },
             {
                 label: 'Variación',
@@ -1302,7 +1302,7 @@ onMounted(() => {
         tabs.value = [
             {
                 label: 'Seguimiento',
-                value: 'general'
+                value: 'embarcados'
             },
             {
                 label: 'Variación',

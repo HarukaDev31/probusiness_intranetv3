@@ -287,7 +287,8 @@ const {
   handleSelectClose,
   handleExport,
   onPageChange,
-  onItemsPerPageChange
+  onItemsPerPageChange,
+  filtersValue
 } = useDataTable(props, emit)
 
 const router = useRouter()

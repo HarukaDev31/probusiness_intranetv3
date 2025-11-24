@@ -67,8 +67,8 @@
       </template>
     </DataTable>
     <DataTable v-if="activeTab === 'delivery'" title="" :data="delivery" :columns="deliveryColumns" :loading="loading"
-      icon="" :show-pagination="false" :hide-back-button="false" :show-primary-search="false" :show-body-top="true"
-      :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
+      icon="" :show-pagination="false" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
+      :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`" @update:primary-search="handleDeliverySearch">
       <template #body-top>
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-3">
@@ -489,6 +489,16 @@ const handleDeletePago = (row: any, pagoId: number) => {
 const onClearClientesFilters = () => {
   // reuse composable helper
   clearClientesFilters()
+}
+// Buscador específico para la pestaña Delivery
+const handleDeliverySearch = (value: string) => {
+  try {
+    search.value = value
+    pagination.value.current_page = 1
+    getDelivery(id)
+  } catch (e) {
+    // ignore
+  }
 }
 const deliveryColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'nro', header: 'N', cell: ({ row }) => row.index + 1 },
