@@ -21,3 +21,10 @@ export interface EntregaResponse {
   data: Entrega[]
   pagination: PaginationInfo
 }
+
+export interface EntregaFilters {
+  fecha_inicio?: string
+  fecha_fin?: string
+  estado_entrega?: string
+  tipo_entrega?: string
+}

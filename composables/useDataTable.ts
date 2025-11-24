@@ -8,6 +8,8 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
   const filtersPanelRef = ref<HTMLElement>()
   const filtersButtonRef = ref<HTMLElement>()
   const isSelectOpen = ref(false)
+  // Draft filter values shown in the panel. Persist across open/close unless explicitly cleared.
+  const draftFilters = ref<Record<string, any>>(props.filtersValue ? { ...(props.filtersValue as Record<string, any>) } : {})
   // When true, suppress per-filter 'filter-change' emits (used during bulk clear)
   const suppressFilterEmits = ref(false)
 
@@ -18,6 +20,13 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
   const handleFilterChange = (filterType: string, value: string) => {
     // If suppressed (e.g. during a bulk clear), don't emit per-filter events
     if ((suppressFilterEmits as any)?.value) return
+    // keep the draft in sync so the UI shows the last chosen values even if the panel is closed
+    try {
+      draftFilters.value = { ...(draftFilters.value || {}), [filterType]: value }
+    } catch (e) {
+      // ignore
+    }
+
     emit('filter-change', filterType, value)
 
   }
@@ -50,7 +59,12 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
     } catch (e) {
       // if parent doesn't listen or types mismatch, still proceed
     }
-    showFiltersPanel.value = false
+    // clear draft values so the panel shows empty when explicitly cleared
+    try {
+      draftFilters.value = {}
+    } catch (e) {
+      // ignore
+    }
 
     // Re-enable per-filter emits shortly after to allow normal interactions.
     try {
@@ -135,12 +149,24 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
     document.removeEventListener('click', handleClickOutside)
   })
 
+  // Keep draft in sync if parent provides new filters (e.g. via programmatic navigation)
+  try {
+    watch(() => props.filtersValue, (v) => {
+      draftFilters.value = v ? { ...(v as Record<string, any>) } : {}
+    })
+  } catch (e) {
+    // ignore in environments where watch may not be available
+  }
+
   return {
     // State
     showFiltersPanel,
     filtersPanelRef,
     filtersButtonRef,
     isSelectOpen,
+    // Expose draft as `filtersValue` so components using the composable (DataTable)
+    // bind to this value and preserve inputs across open/close cycles.
+    filtersValue: draftFilters,
     
     // Computed
     filteredData,
