@@ -1,6 +1,6 @@
 import type { HeaderResponse } from '~/types/data-table'
 import { BaseService } from '~/services/base/BaseService'
-import type { EntregaResponse } from '../../../types/cargaconsolidada/entrega/entrega'
+import type { EntregaResponse, EntregaFilters } from '../../../types/cargaconsolidada/entrega/entrega'
 import type { TimeSlot } from '~/types/horarios'
 
 export class  EntregaService extends BaseService {
@@ -12,7 +12,19 @@ export class  EntregaService extends BaseService {
       if (params?.page) queryParams.append('page', params.page.toString())
       if (params?.per_page) queryParams.append('per_page', params.per_page.toString())
       if (params?.search) queryParams.append('search', params.search)
-      if (params?.filters) queryParams.append('filters', JSON.stringify(params.filters))
+      if (params?.filters) {
+        const f = params.filters as any
+        // Common explicit filter keys
+        if (f.fecha_inicio) queryParams.append('fecha_inicio', f.fecha_inicio)
+        if (f.fecha_fin) queryParams.append('fecha_fin', f.fecha_fin)
+        if (f.estado_entrega) queryParams.append('estado_entrega', f.estado_entrega)
+        if (f.tipo_entrega) queryParams.append('tipo_entrega', f.tipo_entrega)
+        // Append any other simple filter entries as separate params
+        Object.entries(f).forEach(([k, v]) => {
+          if (["fecha_inicio", "fecha_fin", "estado_entrega", "tipo_entrega"].includes(k)) return
+          if (v !== undefined && v !== null && v !== '') queryParams.append(k, String(v))
+        })
+      }
       const qs = queryParams.toString()
       const response = await this.apiCall<EntregaResponse>(`${this.baseUrl}/entregas/${id}${qs ? `?${qs}` : ''}`)
       return response

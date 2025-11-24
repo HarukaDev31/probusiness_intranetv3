@@ -73,6 +73,15 @@ export const useEntrega = () => {
         { label: 'Lima', value: 'Lima' },
         { label: 'Provincia', value: 'Provincia' }
       ]
+    },
+    {
+      key: 'estado_entrega',
+      label: 'Estado de entrega',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Pendiente', value: 'PENDIENTE' },
+        { label: 'Entregado', value: 'ENTREGADO' }
+      ]
     }
   ])
   const clientesFilterConfig = ref<any>([
@@ -114,18 +123,11 @@ export const useEntrega = () => {
     try {
       loading.value = true
       contenedorId.value = id
-      const cleanedFilters: any = {}
-      Object.entries(filters.value || {}).forEach(([k, v]) => {
-        if (v === null || v === undefined) return
-        if (typeof v === 'string' && (v === '' || v === 'todos')) return
-        cleanedFilters[k] = v
-      })
-
       const params = {
         page: currentPage.value,
         per_page: itemsPerPage.value,
         search: search.value,
-        filters: cleanedFilters
+        filters: filters.value
       }
       const response = await EntregaService.getEntregas(id, params)
       entregas.value = response.data
