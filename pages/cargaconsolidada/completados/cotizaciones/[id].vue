@@ -283,7 +283,7 @@ const filterConfigProspectosCoordinacion = ref([
             { label: 'ROTULADO', value: 'ROTULADO', inrow: true },
             { label: 'DATOS PROVEEDOR', value: 'DATOS PROVEEDOR', inrow: true },
             { label: 'INSPECCIONADO', value: 'INSPECCIONADO', inrow: true },
-            { label: 'COBRANDO', value: 'COBRANDO', inrow: true },
+            { label: 'RESERVADO', value: 'RESERVADO', inrow: true}
 
         ]
     },
@@ -1048,10 +1048,6 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     disabled: true
                 },
                 {
-                    label: 'COBRANDO',
-                    value: 'COBRANDO',
-                },
-                {
                     label: 'RESERVADO',
                     value: 'RESERVADO',
                 },
@@ -1470,10 +1466,6 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     label: 'INSPECCIONADO',
                     value: 'INSPECCIONADO',
                     disabled: true
-                },
-                {
-                    label: 'COBRANDO',
-                    value: 'COBRANDO',
                 },
                 {
                     label: 'RESERVADO',

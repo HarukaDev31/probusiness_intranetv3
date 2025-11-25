@@ -1261,46 +1261,36 @@ onMounted(() => {
     if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
             {
-                label: 'Seguimiento',
+                label: 'Documentacion',
                 value: 'general'
             }
         ]
+        tab.value = 'general'
     }
     else if (currentRole.value === ROLES.COORDINACION) {
         tabs.value = [
             {
                 label: 'Seguimiento',
-                value: 'general'
+                value: 'embarcados'
             },
             {
                 label: 'Documentacion',
-                value: 'embarcados'
+                value: 'general'
             },
             {
                 label: 'Variación',
                 value: 'variacion'
             },
-         
         ]
+        tab.value = 'embarcados'
     } else if (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS) {
         tabs.value = [
             {
                 label: 'Seguimiento',
-                value: 'general'
-            },
-            {
-                label: 'Documentacion',
                 value: 'embarcados'
             },
             {
-                label: 'Variación',
-                value: 'variacion'
-            }
-        ]
-    } else {
-        tabs.value = [
-            {
-                label: 'Seguimiento',
+                label: 'Documentacion',
                 value: 'general'
             },
             {
@@ -1308,6 +1298,19 @@ onMounted(() => {
                 value: 'variacion'
             }
         ]
+        tab.value = 'embarcados'
+    } else {
+        tabs.value = [
+            {
+                label: 'Documentacion',
+                value: 'general'
+            },
+            {
+                label: 'Variación',
+                value: 'variacion'
+            }
+        ]
+        tab.value = 'general'
     }
     handleTabChange(tab.value)
 })
