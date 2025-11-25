@@ -15,7 +15,7 @@
         </div>
 
 
-        <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData"
+        <DataTable class="hidden sm:block" title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData"
         :show-pagination="false" :show-export="false"
 
             :columns="getColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
@@ -34,6 +34,35 @@
                 </template>
             </template>
         </DataTable>
+        <!-- Mobile list view: visible only on small screens -->
+        <div v-if="true" class="sm:hidden mt-4">
+            <div class="flex flex-col gap-3">
+                <template v-for="(row, idx) in consolidadoData" :key="row.id || idx">
+                    <button type="button" @click="handleViewSteps(row.id)" class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4 flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary">
+                        <div class="flex-1">
+                            <div class="text-xs text-gray-500">{{ row.mes }}</div>
+                            <div class="font-semibold text-sm">Consolidado #{{ row.carga }}</div>
+                            <div class="text-xs text-gray-400 mt-1">{{ formatDateTimeToDmy(row.f_cierre) }} • {{ row.empresa }}</div>
+                        </div>
+                        <div class="ml-4 flex items-center">
+                            <div class="min-w-[110px]">
+                                <USelect :modelValue="row.estado_china"
+                                    variant="subtle"
+                                    disabled
+                                    :items="[
+                                        { label: 'PENDIENTE', value: 'PENDIENTE' },
+                                        { label: 'RECIBIENDO', value: 'RECIBIENDO' },
+                                        { label: 'COMPLETADO', value: 'COMPLETADO' }
+                                    ]"
+                                    :class="STATUS_BG_CLASSES[(row.estado_china) as keyof typeof STATUS_BG_CLASSES]
+                                    + ' text-sm py-2 px-3 rounded-full'"
+                                />
+                            </div>
+                        </div>
+                    </button>
+                </template>
+            </div>
+        </div>
     </div>
 </template>
 
