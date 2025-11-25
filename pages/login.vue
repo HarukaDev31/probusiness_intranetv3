@@ -488,6 +488,42 @@ useHead({
   }
 }
 
+/* Mobile improvements: stack layout, center panel, hide background image, increase tap targets */
+@media (max-width: 768px) {
+  .fondo_pantalla {
+    flex-direction: column;
+    padding: 4% 6%;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+  }
+  .bg-image {
+    display: none;
+  }
+  .panel-container {
+    width: 100%;
+    max-width: 440px;
+    min-height: auto;
+    height: auto;
+    margin: 1.5rem 0;
+    border-radius: 12px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.18);
+  }
+  .panel-body {
+    padding: 1.25rem;
+  }
+  .img-logo {
+    width: 60%;
+    margin: 0 auto 0.5rem auto;
+    display: block;
+  }
+  .Welcome h2 { font-size: 22px; }
+  .Welcome p { font-size: 14px; }
+  .form-control { padding: 12px; font-size: 15px }
+  .btn-success { padding: 14px 18px; font-size: 16px; border-radius: 8px }
+  .toggle-password { padding: 10px 12px }
+}
+
 /* Font Awesome Icons */
 .fa-solid {
   font-family: 'Font Awesome 6 Free';
