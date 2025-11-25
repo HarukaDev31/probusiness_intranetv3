@@ -1282,10 +1282,11 @@ onMounted(() => {
             if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
             {
-                label: 'Seguimiento',
-                value: 'embarcados'
+                label: 'Documentacion',
+                value: 'general'
             }
         ]
+        tab.value = 'general'
     }
     else if (currentRole.value === ROLES.COORDINACION) {
         tabs.value = [
@@ -1301,8 +1302,8 @@ onMounted(() => {
                 label: 'Variación',
                 value: 'variacion'
             },
-          
         ]
+        tab.value = 'embarcados'
     } else if (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS) {
         tabs.value = [
             {
@@ -1318,6 +1319,7 @@ onMounted(() => {
                 value: 'variacion'
             }
         ]
+        tab.value = 'embarcados'
     } else {
         tabs.value = [
             {
@@ -1329,6 +1331,7 @@ onMounted(() => {
                 value: 'variacion'
             }
         ]
+        tab.value = 'embarcados'
     }
     handleTabChange(tab.value)
 })
