@@ -113,6 +113,7 @@ import { formatDate, formatCurrency } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
 import { useEmbarcados } from '~/composables/cargaconsolidada/clientes/useEmbarcados'
+import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
@@ -226,6 +227,7 @@ const { getEmbarcados,
     deleteExcelConfirmacion,
     handleUploadExcelConfirmacion
 } = useEmbarcados({ refresh: getClientes, clientsRef: clientes })
+const { updateProveedor } = useCotizacionProveedor()
 const { getClientesVariacion, 
         updateVolumenSelected, 
         clientesVariacion, 
@@ -1209,7 +1211,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
                     items: itemsWithClass,
                     class: `w-full ${cls}`,
                     variant: 'ghost',
-                    'onUpdate:modelValue': (v: string) => { p.invoice_status = v }
+                    'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'invoice_status', v) }
                 })
             }))
         }
@@ -1234,7 +1236,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
                     items: itemsWithClass,
                     class: `w-full ${cls}`,
                     variant: 'ghost',
-                    'onUpdate:modelValue': (v: string) => { p.packing_status = v }
+                    'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'packing_status', v) }
                 })
             }))
         }
@@ -1259,7 +1261,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
                     items: itemsWithClass,
                     class: `w-full ${cls}`,
                     variant: 'ghost',
-                    'onUpdate:modelValue': (v: string) => { p.excel_conf_status = v }
+                    'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'excel_conf_status', v) }
                 })
             }))
         }
@@ -1453,6 +1455,33 @@ const updateVolSelected = async (data: any) => {
         )
     } catch (err) {
         error.value = err as string
+    }
+}
+// Save a specific field for a proveedor (optimistic update, revert on failure)
+const saveProveedorField = async (proveedor: any, field: string, value: string) => {
+    if (!proveedor) return
+    const previous = proveedor[field]
+    if (previous === value) return
+    try {
+        // optimistic
+        proveedor[field] = value
+        await withSpinner(async () => {
+            const formData = new FormData()
+            formData.append('id', proveedor.id)
+            formData.append(field, value)
+            const response = await updateProveedor(formData)
+            if (response && response.success) {
+                showSuccess('Actualización Exitosa', 'El estado se ha guardado correctamente.')
+                await getEmbarcados(Number(id))
+            } else {
+                throw new Error((response && (response as any).message) || 'No se pudo actualizar el proveedor')
+            }
+        }, 'Guardando estado...')
+    } catch (err: any) {
+        // revert
+        proveedor[field] = previous
+        console.error('Error guardando estado proveedor:', err)
+        showError('Error', err?.message || 'No se pudo guardar el estado del proveedor')
     }
 }
 onMounted(() => {
