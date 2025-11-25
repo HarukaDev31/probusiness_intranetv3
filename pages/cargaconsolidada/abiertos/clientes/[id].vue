@@ -4,7 +4,7 @@
 
 
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
-                :loading="loadingGeneral" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
+                :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
                 :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersGeneral" :show-export="(currentId == ID_JEFEVENTAS) ? true : false" :show-body-top="true"
@@ -13,11 +13,11 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
                                 <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-4">
@@ -35,7 +35,7 @@
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados" :columns="columnsEmbarcados"
-                :loading="loadingEmbarcados" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
+                :loading="loadingEmbarcados || loadingHeaders" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
                 :total-records="totalRecordsEmbarcados" :items-per-page="itemsPerPageEmbarcados"
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true"
@@ -48,7 +48,7 @@
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingEmbarcados || loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
                                 
@@ -59,7 +59,7 @@
 
             </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
-                :loading="loadingVariacion" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
+                :loading="loadingVariacion || loadingHeaders" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
                 :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
                 :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersVariacion" :show-export="false" :show-body-top="true"
@@ -72,7 +72,7 @@
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingVariacion || loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
                                 
@@ -82,7 +82,7 @@
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
-                :loading="loadingPagos" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
+                :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
                 :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersPagos" :show-export="false" :hide-back-button="false"
@@ -90,12 +90,12 @@
                 :show-pagination="false" @export="exportData"
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
-                @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
-                @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
+                @update:primary-search="handleSearchPagos" @page-change="handlePagePagosChange"
+                @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
                             <div class="flex justify-between">
                                 <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
                                 
@@ -130,7 +130,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
-const tab = ref('embarcados')
+const tab = ref('general')
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
@@ -458,7 +458,7 @@ const columns: TableColumn<any>[] = [
             const cod_contract = String(pick(['cod_contract']) || '')
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
 
-            return h('div', { class: 'max-w-full w-full whitespace-normal break-words' }, [
+            return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
@@ -562,35 +562,24 @@ const columnsCoordinacion: TableColumn<any>[] = [
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const pick = (keys: string[]) => {
-                for (const k of keys) {
-                    const v = row.original?.[k]
-                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
-                    const nested = row.original?.cliente
-                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
-                }
-                return ''
-            }
-
-            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
-            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
-            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
-            const correo = String(pick(['correo', 'email', 'mail']) || '')
-            const cod_contract = String(pick(['cod_contract']) || '')
-            const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
-
-            return h('div', { class: '' }, [
-                h('div', { class: 'max-w-full w-full whitespace-normal break-words font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
-                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
-                telefono ? h('div', { class: 'text-sm text-gray-500 max-w-40 whitespace-normal break-words' }, telefono) : null,
-                correo ? h('div', { class: 'text-sm text-gray-500 max-w-50 w-full whitespace-normal break-words' }, correo) : h('div', { class: 'text-sm text-gray-500 max-w-40 whitespace-normal break-words' }, 'Sin correo'),
+            const nombre = row.original?.nombre || ''
+            const documento = row.original?.documento || ''
+            const telefono = row.original?.telefono || ''
+            const correo = row.original?.correo || ''
+            const cod_contract = row.original?.cod_contract || ''
+            const cotizacion_contrato_firmado_url = row.original?.cotizacion_contrato_firmado_url || ''
+            return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
+                h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500' }, telefono),
+                h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
                     cotizacion_contrato_firmado_url ? h('a', {
                         href: cotizacion_contrato_firmado_url,
                         target: '_blank',
                         class: 'text-primary hover:underline'
                     }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
-                ]) : null  
+                ]) : null
             ])
         }
     },
@@ -657,8 +646,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
                     { label: 'Reservado', value: 'RESERVADO' },
                     { label: 'No Reservado', value: 'NO RESERVADO' },
                     { label: 'Documentación', value: 'DOCUMENTACION' },
-                    { label: 'C Final', value: 'C FINAL' },
-                    { label: 'Facturado', value: 'FACTURADO' }
+                
                 ],
                 placeholder: 'Seleccionar estado',
                 'onUpdate:modelValue': async (value: any) => {
@@ -711,26 +699,15 @@ const columnsDocumentacion: TableColumn<any>[] = [
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const pick = (keys: string[]) => {
-                for (const k of keys) {
-                    const v = row.original?.[k]
-                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
-                    const nested = row.original?.cliente
-                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
-                }
-                return ''
-            }
-
-            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
-            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
-            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
-            const correo = String(pick(['correo', 'email', 'mail']) || '')
-
+            const nombre = row.getValue('nombre') || ''
+            const documento = row.getValue('documento') || ''
+            const correo = row.getValue('correo') || ''
+            const telefono = row.getValue('telefono') || ''
             return h('div', { class: '' }, [
-                h('div', { class: 'font-medium' }, nombre || '—'),
-                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
-                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
-                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null
+                h('div', { class: 'font-medium' }, nombre),
+                h('div', { class: 'text-sm text-gray-500' }, documento),
+                h('div', { class: 'text-sm text-gray-500' }, telefono),
+                h('div', { class: 'text-sm text-gray-500' }, correo || '')
             ])
         }
     },
@@ -1100,14 +1077,16 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                 variant: 'ghost',
                 size: 'xs',
                 onClick: () => {
+                    //generar un modal para solicitar el tipo de recordatorio de documento
+                    console.log(row.original)
                     modalAcciones.open({
                         show: true,
-                        clienteId: row.original.id,
+                        clienteId: row.original.id, 
                         clienteName: row.original.nombre,
                         onSelected: (data: any) => {
                             console.log(data)
                         },
-                        validateMaxDate:false
+                        validateMaxDate:true
                     })
                 }
             },
@@ -1134,11 +1113,11 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.original?.nombre  || ''
+            const nombre = row.original?.nombre || ''
             const documento = row.original?.documento || ''
             const telefono = row.original?.telefono || ''
-            const correo = row.original?.correo  || ''
-            return h('div', { class: 'py-2' }, [
+            const correo = row.original?.correo || ''
+            return h('div', { class: '' }, [
                 h('div', { class: 'font-medium' }, nombre),
                 h('div', { class: 'text-sm text-gray-500' }, documento),
                 h('div', { class: 'text-sm text-gray-500' }, telefono),
@@ -1279,7 +1258,7 @@ const updateVolSelected = async (data: any) => {
     }
 }
 onMounted(() => {
-            if (currentRole.value === ROLES.DOCUMENTACION) {
+    if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
             {
                 label: 'Documentacion',
@@ -1323,15 +1302,15 @@ onMounted(() => {
     } else {
         tabs.value = [
             {
-                label: 'Seguimiento',
-                value: 'embarcados'
+                label: 'Documentacion',
+                value: 'general'
             },
             {
                 label: 'Variación',
                 value: 'variacion'
             }
         ]
-        tab.value = 'embarcados'
+        tab.value = 'general'
     }
     handleTabChange(tab.value)
 })

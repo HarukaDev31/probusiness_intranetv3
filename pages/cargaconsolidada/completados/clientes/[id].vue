@@ -646,8 +646,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
                     { label: 'Reservado', value: 'RESERVADO' },
                     { label: 'No Reservado', value: 'NO RESERVADO' },
                     { label: 'Documentación', value: 'DOCUMENTACION' },
-                    { label: 'C Final', value: 'C FINAL' },
-                    { label: 'Facturado', value: 'FACTURADO' }
+                
                 ],
                 placeholder: 'Seleccionar estado',
                 'onUpdate:modelValue': async (value: any) => {
