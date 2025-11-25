@@ -10,9 +10,9 @@
 
     <!-- Cards Container -->
     <div class="flex justify-center mb-8">
-      <div class="flex flex-wrap flex-row gap-3 max-w-7xl">
+      <div class="flex flex-wrap flex-row gap-3 max-w-7xl justify-center">
         <!-- Loading state -->
-        <div v-if="loading" class="flex flex-wrap flex-row gap-3 max-w-7xl">
+        <div v-if="loading" class="flex flex-wrap flex-row gap-3 max-w-7xl justify-center">
           <!-- Skeleton genérico basado en el rol -->
           <div
             v-for="i in skeletonCount"
