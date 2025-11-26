@@ -1,6 +1,6 @@
     <!--3 tabs:general,variacion,pagos and 3 tables-->
     <template>
-        <div class="p-6">
+        <div class="p-0 md:p-6">
 
 
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
@@ -18,9 +18,9 @@
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
-                            <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-4">
+                            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 md:w-100 h-15" color="neutral" />
+                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-0 md:mb-4">
                                     <div class="flex flex-col mr-2 space-y-1">
                                         <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
                                         <div class="flex items-center gap-2">
@@ -50,7 +50,7 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingEmbarcados || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
                                 
                             </div>
                         </div>
@@ -74,7 +74,7 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingVariacion || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
                                 
                             </div>
                         </div>
