@@ -43,7 +43,7 @@
                     <div class="flex flex-col gap-1 profile-fields"
                         :class="isEditingProfile ? 'items-center' : 'items-start'">
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2 profile-field">
-                            <strong class="w-full sm:w-30 font-weight: 300; break-words">F.Nacimiento:</strong>
+                            <strong class="w-full sm:w-1/3 font-medium break-words">F.Nacimiento:</strong>
                             <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ formatDate(userProfile.fechaNacimiento) }}
                             </span>
@@ -51,7 +51,7 @@
                                 class="edit-input w-full sm:w-40" />
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
-                            <strong class="w-full sm:w-30 font-weight: 300;">País:</strong>
+                            <strong class="w-full sm:w-1/3 font-medium">País:</strong>
                             <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ getCountryName() }}
                             </span>
@@ -59,7 +59,7 @@
                                 :items="paises" placeholder="Seleccionar país" @update:modelValue="handleCountryChange" />
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
-                            <strong class="w-full sm:w-30 font-weight: 300;">Departamento:</strong>
+                            <strong class="w-full sm:w-1/3 font-medium">Departamento:</strong>
                             <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ getDepartmentName() }}
                             </span>
@@ -68,7 +68,7 @@
                                 placeholder="Seleccionar departamento" @update:modelValue="handleDepartmentChange" />
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
-                            <strong class="w-full sm:w-30 font-weight: 300;">Provincia:</strong>
+                            <strong class="w-full sm:w-1/3 font-medium">Provincia:</strong>
                             <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ getProvinceName() }}
                             </span>
@@ -77,7 +77,7 @@
                                 placeholder="Seleccionar provincia" @update:modelValue="handleProvinceChange" />
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
-                            <strong class="w-full sm:w-30 font-weight: 300;">Distrito:</strong>
+                            <strong class="w-full sm:w-1/3 font-medium">Distrito:</strong>
                             <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ getDistrictName() }}
                             </span>
@@ -86,14 +86,14 @@
                                 placeholder="Seleccionar distrito" />
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
-                            <strong class="w-full sm:w-30 font-weight: 300;">Correo:</strong>
+                            <strong class="w-full sm:w-1/3 font-medium">Correo:</strong>
                             <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ userProfile.email || '-' }}
                             </span>
                             <UInput v-else type="email" v-model="profileForm.email" class="edit-input w-full sm:w-40" />
                         </p>
                         <p class="flex w-full flex-row sm:flex-row place-content-start gap-1 sm:gap-2">
-                            <strong class="w-full sm:w-30 font-weight: 300;">Celular:</strong>
+                            <strong class="w-full sm:w-1/3 font-medium">Celular:</strong>
                             <span v-if="!isEditingProfile" class="w-full flex-1 sm:w-40 word-break break-words">
                                 {{ userProfile.phone || '-' }}
                             </span>
@@ -779,7 +779,7 @@ watch(() => props.userProfile, (newUserProfile) => {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
     padding: 1.5rem;
     min-height: fit-content;
     width: 100%;
@@ -831,6 +831,30 @@ watch(() => props.userProfile, (newUserProfile) => {
 
     .user-profile p {
         font-size: .9rem;
+    }
+}
+
+/* Force stacking of label+value on small screens to avoid horizontal overflow */
+@media (max-width: 768px) {
+    .profile-fields p {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem;
+    }
+    .profile-fields p strong {
+        width: 100% !important;
+        text-align: left !important;
+        margin-bottom: 0.25rem;
+    }
+    .profile-name {
+        text-align: center;
+        font-size: 1.25rem;
+        margin-top: 0.25rem;
+        font-weight: 600;
+    }
+    .profile-dni {
+        text-align: center;
+        margin-bottom: 0.5rem;
     }
 }
 

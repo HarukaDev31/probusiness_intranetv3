@@ -19,20 +19,20 @@
     </div>
 
     <!-- Stats Section -->
-    <div class="container w-full max-w-full flex align-middle justify-center mb-4 pt-4">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 h-full min-h-50 max-w-7xl">
-        <div v-for="stat in stats" :key="stat.id" :data-stat-id="stat.id"
+      <div class="container w-full max-w-full flex align-middle justify-center mb-4 pt-4">
+      <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 h-full min-h-50 max-w-7xl auto-rows-fr">
+          <div v-for="stat in stats" :key="stat.id" :data-stat-id="stat.id"
              class="group col-span-1 h-full px-1 transition-all duration-700"
              :class="stat.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'">
-          <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 h-40 relative overflow-hidden">
+           <div class="card stat-card bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 relative overflow-hidden flex flex-col justify-center h-full min-h-[8rem] sm:min-h-[10rem]">
             <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-orange-500/5 via-transparent to-orange-500/10 pointer-events-none" />
             <div class="card-body flex justify-between items-center px-4 h-full">
               <div class="icon-container px-2 relative">
-                <UIcon :name="stat.icon" class="w-16 h-16 text-orange-500 transition-transform duration-500 group-hover:scale-110" aria-hidden="true" />
+                <UIcon :name="stat.icon" class="w-12 h-12 sm:w-16 sm:h-16 text-orange-500 transition-transform duration-500 group-hover:scale-110" aria-hidden="true" />
                 <span class="sr-only">{{ stat.label }}</span>
               </div>
               <div class="text-container text-center">
-                <div class="counter text-5xl md:text-6xl xl:text-7xl font-bold text-gray-800 dark:text-white tabular-nums">
+                <div class="counter text-4xl md:text-6xl xl:text-7xl font-bold text-gray-800 dark:text-white tabular-nums">
                   {{ formatNumber(stat.current || 0) }}<span v-if="stat.suffix">{{ stat.suffix }}</span>
                 </div>
                 <p class="text-muted dark:text-gray-400 text-center text-sm tracking-wide font-medium">{{ stat.label }}</p>
@@ -137,8 +137,11 @@ onMounted(() => {
   z-index: 3;
 }
 
-.stat-card {
+  .stat-card {
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .stat-card:hover {
@@ -179,7 +182,7 @@ onMounted(() => {
   
   .stat-card .card-body {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
   }
   
   .icon-container {
@@ -190,6 +193,34 @@ onMounted(() => {
 @media (max-width: 640px) {
   .main-text {
     font-size: 1.75rem;
+  }
+}
+
+/* Mobile-specific tweaks to make hero and stats more compact */
+  @media (max-width: 640px) {
+  .content-header {
+    height: auto !important;
+    padding-bottom: 1.5rem;
+  }
+  .hero-section {
+    height: 40vh !important;
+    background-position: center top;
+  }
+  .stat-card {
+    min-height: 120px;
+  }
+  .stat-card .card-body {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  .counter {
+    font-size: 1.5rem !important;
+  }
+  .icon-container :where(svg, .ui-icon) {
+    width: 3rem !important;
+    height: 3rem !important;
   }
 }
 </style> 

@@ -105,8 +105,8 @@
         </div>
       </div>
 
-      <!-- Body Top Slot -->
-      <div class="flex flex-row justify-between px-4 " v-if="showBodyTop" >
+      <!-- Body Top Slot (compact on mobile) -->
+      <div class="flex flex-col sm:flex-row justify-between px-3 py-2 sm:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
         <slot name="body-top" />
       </div>
     </div>

@@ -34,7 +34,7 @@
                     </div>
                 </template>
             </DataTable>
-            <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados" :columns="columnsEmbarcados"
+            <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados" :columns="getColumnsEmbarcados()"
                 :loading="loadingEmbarcados || loadingHeaders" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
                 :total-records="totalRecordsEmbarcados" :items-per-page="itemsPerPageEmbarcados"
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
@@ -113,6 +113,7 @@ import { formatDate, formatCurrency } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
 import { useEmbarcados } from '~/composables/cargaconsolidada/clientes/useEmbarcados'
+import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
@@ -226,6 +227,7 @@ const { getEmbarcados,
     deleteExcelConfirmacion,
     handleUploadExcelConfirmacion
 } = useEmbarcados({ refresh: getClientes, clientsRef: clientes })
+const { updateProveedor } = useCotizacionProveedor()
 const { getClientesVariacion, 
         updateVolumenSelected, 
         clientesVariacion, 
@@ -775,6 +777,15 @@ const getColumnsGeneral = () => {
             return columns
     }
 }
+
+const getColumnsEmbarcados = (): TableColumn<any>[] => {
+    switch (currentRole.value) {
+        case ROLES.COORDINACION:
+            return columnsEmbarcadosCoordinacion.value
+        default:
+            return columnsEmbarcados.value
+    }
+}
 const getColorStatusDocumentacion = (status: string) => {
     //Completado,Pendiente,Incompleto
     switch (status) {
@@ -805,6 +816,14 @@ const getFileIcon = (url?: string) => {
     } catch (e) {
         return 'i-heroicons-document'
     }
+}
+// Map manual status labels to keys used in STATUS_BG_CLASSES (reuse existing color map from constants/ui)
+// Desired mapping: Pendiente (gris), Recibido (azul), Observado (rojo), Revisado (verde)
+const MANUAL_STATUS_TO_STATUS_BG_KEY: Record<string,string> = {
+    Pendiente: 'WAIT', // gray
+    Recibido: 'RECIBIENDO', // blue
+    Observado: 'Incompleto', // red
+    Revisado: 'Completado' // green
 }
 const columnsEmbarcados = ref<TableColumn<any>[]>([
     {
@@ -1094,6 +1113,187 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
         }
     }
 ])
+const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
+    {
+        accessorKey: 'index',
+        header: 'N°',
+        cell: ({ row }: { row: any }) => {
+            return row.index + 1
+        }
+    },
+    {
+        accessorKey: 'contacto',
+        header: 'Contacto',
+        cell: ({ row }: { row: any }) => {
+            const pick = (keys: string[]) => {
+                for (const k of keys) {
+                    const v = row.original?.[k]
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return v
+                    const nested = row.original?.cliente
+                    if (nested && nested[k] && String(nested[k]).trim() !== '') return nested[k]
+                }
+                return ''
+            }
+
+            const nombre = String(pick(['nombre', 'razon_social', 'name', 'cliente_nombre', 'clienteName']) || '')
+            const documento = String(pick(['documento', 'dni', 'ruc', 'numero_documento']) || '')
+            const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
+            const correo = String(pick(['correo', 'email', 'mail']) || '')
+
+            return h('div', { class: '' }, [
+                h('div', { class: 'font-medium' }, nombre),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null
+            ])
+        }
+    },
+    {
+        accessorKey: 'tipo_cliente',
+        header: 'T. Cliente',
+        cell: ({ row }: { row: any }) => {
+            return row.getValue('tipo_cliente')
+        }
+    },
+    {
+        accessorKey: 'products',
+        header: 'Productos',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.products,
+                    class: 'w-full w-40',
+                    disabled: true,
+                })
+            }))
+            return div
+        }
+    },
+    {        
+        accessorKey: 'code_supplier',
+        header: 'Code Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.code_supplier,
+                    class: 'w-full w-25',
+                    disabled: true,
+                })
+            }))
+            return div
+        }
+    },
+    {
+        accessorKey: 'invoice_status',
+        header: 'Invoice',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores || []
+            const statuses = ['Pendiente','Recibido','Observado','Revisado']
+            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
+                if (!p.invoice_status) p.invoice_status = 'Pendiente'
+                // build items including per-option class
+                const itemsWithClass = statuses.map((s: string) => {
+                    const key = MANUAL_STATUS_TO_STATUS_BG_KEY[s] ?? s
+                    const itemCls = (STATUS_BG_CLASSES as any)[key] ?? ''
+                    return { label: s, value: s, class: itemCls }
+                })
+                const mapped = MANUAL_STATUS_TO_STATUS_BG_KEY[p.invoice_status] || 'Pendiente'
+                const cls = STATUS_BG_CLASSES[mapped as keyof typeof STATUS_BG_CLASSES] ?? ''
+                return h(USelect as any, {
+                    modelValue: p.invoice_status,
+                    items: itemsWithClass,
+                    class: `w-full ${cls}`,
+                    variant: 'ghost',
+                    'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'invoice_status', v) }
+                })
+            }))
+        }
+    },
+    {
+        accessorKey: 'packing_status',
+        header: 'Packing list',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores || []
+            const statuses = ['Pendiente','Recibido','Observado','Revisado']
+                return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
+                if (!p.packing_status) p.packing_status = 'Pendiente'
+                const itemsWithClass = statuses.map((s: string) => {
+                    const key = MANUAL_STATUS_TO_STATUS_BG_KEY[s] ?? s
+                    const itemCls = (STATUS_BG_CLASSES as any)[key] ?? ''
+                    return { label: s, value: s, class: itemCls }
+                })
+                const mapped = MANUAL_STATUS_TO_STATUS_BG_KEY[p.packing_status] || 'Pendiente'
+                const cls = STATUS_BG_CLASSES[mapped as keyof typeof STATUS_BG_CLASSES] ?? ''
+                return h(USelect as any, {
+                    modelValue: p.packing_status,
+                    items: itemsWithClass,
+                    class: `w-full ${cls}`,
+                    variant: 'ghost',
+                    'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'packing_status', v) }
+                })
+            }))
+        }
+    },
+    {
+        accessorKey: 'excel_conf_status',
+        header: 'Excel Conf.',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores || []
+            const statuses = ['Pendiente','Recibido','Observado','Revisado']
+            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
+                if (!p.excel_conf_status) p.excel_conf_status = 'Pendiente'
+                const itemsWithClass = statuses.map((s: string) => {
+                    const key = MANUAL_STATUS_TO_STATUS_BG_KEY[s] ?? s
+                    const itemCls = (STATUS_BG_CLASSES as any)[key] ?? ''
+                    return { label: s, value: s, class: itemCls }
+                })
+                const mapped = MANUAL_STATUS_TO_STATUS_BG_KEY[p.excel_conf_status] || 'Pendiente'
+                const cls = STATUS_BG_CLASSES[mapped as keyof typeof STATUS_BG_CLASSES] ?? ''
+                return h(USelect as any, {
+                    modelValue: p.excel_conf_status,
+                    items: itemsWithClass,
+                    class: `w-full ${cls}`,
+                    variant: 'ghost',
+                    'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'excel_conf_status', v) }
+                })
+            }))
+        }
+    },
+
+    {
+        accessorKey: 'acciones',
+        header: 'Acciones',
+        cell: ({ row }: { row: any }) => {
+            //button view with more info
+            return h(UButton, {
+                icon: 'iconamoon:menu-burger-horizontal',
+                variant: 'ghost',
+                size: 'xs',
+                onClick: () => {
+                    //generar un modal para solicitar el tipo de recordatorio de documento
+                    console.log(row.original)
+                    modalAcciones.open({
+                        show: true,
+                        clienteId: row.original.id, 
+                        clienteName: row.original.nombre,
+                        onSelected: (data: any) => {
+                            console.log(data)
+                        },
+                        validateMaxDate:true
+                    })
+                }
+            },
+            )
+        }
+    }
+])
 const columnsVariacion = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
@@ -1255,6 +1455,33 @@ const updateVolSelected = async (data: any) => {
         )
     } catch (err) {
         error.value = err as string
+    }
+}
+// Save a specific field for a proveedor (optimistic update, revert on failure)
+const saveProveedorField = async (proveedor: any, field: string, value: string) => {
+    if (!proveedor) return
+    const previous = proveedor[field]
+    if (previous === value) return
+    try {
+        // optimistic
+        proveedor[field] = value
+        await withSpinner(async () => {
+            const formData = new FormData()
+            formData.append('id', proveedor.id)
+            formData.append(field, value)
+            const response = await updateProveedor(formData)
+            if (response && response.success) {
+                showSuccess('Actualización Exitosa', 'El estado se ha guardado correctamente.')
+                await getEmbarcados(Number(id))
+            } else {
+                throw new Error((response && (response as any).message) || 'No se pudo actualizar el proveedor')
+            }
+        }, 'Guardando estado...')
+    } catch (err: any) {
+        // revert
+        proveedor[field] = previous
+        console.error('Error guardando estado proveedor:', err)
+        showError('Error', err?.message || 'No se pudo guardar el estado del proveedor')
     }
 }
 onMounted(() => {
