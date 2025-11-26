@@ -1,5 +1,5 @@
 <template>
-  <div class="">
+  <div class="p-6">
     <!-- Header Section -->
     <PageHeader title="" subtitle="Gestión de cotizaciones" icon="" :hide-back-button="false"
       @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
@@ -31,7 +31,7 @@
         </div>
       </template>
     </DataTable>
-  <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos || loadingHeaders" title=""
+    <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos || loadingHeaders" title=""
       :icon="''" :current-page="currentPagePagos" :total-pages="totalPagesPagos" :total-records="totalRecordsPagos"
       :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos" :show-secondary-search="false"
       :show-filters="false" :filter-config="filterConfigPagos" :show-export="false"
@@ -66,7 +66,7 @@ import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
-const { general, loadingGeneral, updateEstadoCotizacionFinal, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
 const { registrarPagoFinal, deletePago } = usePagosClientes()
@@ -93,6 +93,7 @@ const handleUploadFactura = () => {
       await withSpinner(async () => {
         const formData = new FormData()
         formData.append('file', data.file)
+        // El backend ahora espera `idCotizacion` en lugar de `idContenedor`
         formData.append('idContenedor', id.toString())
         const result = await uploadFacturaComercial(formData)
         if (result.success) {
@@ -106,14 +107,34 @@ const handleUploadFactura = () => {
 }
 const handleDownloadPlantillaGeneral = () => {
   withSpinner(async () => {
-   const response = await downloadPlantillaGeneral(Number(id))
-   if (response.success) {
-    showSuccess('Éxito', 'Plantilla general descargada correctamente')
+    const response = await downloadPlantillaGeneral(Number(id))
+    if (response.success) {
+      showSuccess('Éxito', 'Plantilla general descargada correctamente')
 
-   } else {
-    showError('Error', 'Error al descargar la plantilla general')
-   }
+    } else {
+      showError('Error', 'Error al descargar la plantilla general')
+    }
   }, 'Descargando plantilla general...')
+}
+const handleUploadCotizacionFinal = (idCotizacion: any) => {
+  simpleUploadFileModal.open({
+    title: 'Subir Cotizacion Final',
+    onClose: () => simpleUploadFileModal.close(),
+    onSave: async (data: { file: File }) => {
+      await withSpinner(async () => {
+        const formData = new FormData()
+        formData.append('file', data.file)
+        const result = await uploadCotizacionFinalFile(formData, idCotizacion)
+        if (result && (result as any).success) {
+          showSuccess('Éxito', 'Cotizacion final subida correctamente')
+          //reload table general
+          await getGeneral(Number(id))
+        } else {
+          showError('Error', (result as any)?.message || 'Error al subir la plantilla final')
+        }
+      })
+    }
+  })
 }
 const handleUploadPlantillaFinal = () => {
   simpleUploadFileModal.open({
@@ -125,13 +146,15 @@ const handleUploadPlantillaFinal = () => {
         const formData = new FormData()
         formData.append('file', data.file)
         formData.append('idContenedor', id.toString())
+        // Use the new composable method to upload the cotización final file
+        // pass the cotización id as route param so backend can use the route signature
         const result = await uploadPlantillaFinal(formData)
-        if (result.success) {
+        if (result && (result as any).success) {
           showSuccess('Éxito', 'Plantilla final subida correctamente')
-          //reload table genearl
+          //reload table general
           await getGeneral(Number(id))
         } else {
-          showError('Error', 'Error al subir la plantilla final')
+          showError('Error', (result as any)?.message || 'Error al subir la plantilla final')
         }
       }, 'Subiendo plantilla final...')
     }
@@ -153,11 +176,20 @@ const generalColumns = ref<TableColumn<any>[]>([
       const documento = row.original?.documento || ''
       const telefono = row.original?.telefono || ''
       const correo = row.original?.correo || ''
+      const cod_contract = row.original?.cod_contract || ''
+      const cotizacion_contrato_firmado_url = row.original?.cotizacion_contrato_firmado_url || ''
       return h('div', { class: 'py-2' }, [
         h('div', { class: 'font-medium' }, nombre),
         h('div', { class: 'text-sm text-gray-500' }, documento),
         h('div', { class: 'text-sm text-gray-500' }, telefono),
-        h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo')
+        h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo'),
+        cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
+                    cotizacion_contrato_firmado_url ? h('a', {
+                        href: cotizacion_contrato_firmado_url,
+                        target: '_blank',
+                        class: 'text-primary hover:underline' 
+                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+                ]) : null  
       ])
     }
   },
@@ -219,8 +251,8 @@ const generalColumns = ref<TableColumn<any>[]>([
       const className = isPagadoVerificado
         ? 'bg-green-500 text-white dark:bg-green-500 dark:text-white'
         : isPendiente
-        ? 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
-        : STATUS_BG_CLASSES[initialValue as keyof typeof STATUS_BG_CLASSES]
+          ? 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+          : STATUS_BG_CLASSES[initialValue as keyof typeof STATUS_BG_CLASSES]
 
       return h(USelect as any, {
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
@@ -244,37 +276,37 @@ const generalColumns = ref<TableColumn<any>[]>([
         return h('div', {
           class: 'flex flex-row gap-2'
         }, [
-              // Send reminder button
-              h(UButton, {
-                icon: 'material-symbols:send-outline',
-                color: 'primary',
-                variant: 'ghost',
-                onClick: () => {
-                  showConfirmation(
-                    'Confirmar envío',
-                    '¿Está seguro de enviar un recordatorio de pago a este cliente?',
-                    async () => {
-                      try {
-                        await withSpinner(async () => {
-                          const nuxtApp = useNuxtApp()
-                          const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
-                          const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
-                          if (res && (res as any).success) {
-                            showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
-                            await getGeneral(Number(id))
-                            await getHeaders(Number(id))
-                          } else {
-                            showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
-                          }
-                        }, 'Enviando recordatorio...')
-                      } catch (err) {
-                        console.error('Error send reminder:', err)
-                        showError('Error', 'Error al enviar recordatorio')
+          // Send reminder button
+          h(UButton, {
+            icon: 'material-symbols:send-outline',
+            color: 'primary',
+            variant: 'ghost',
+            onClick: () => {
+              showConfirmation(
+                'Confirmar envío',
+                '¿Está seguro de enviar un recordatorio de pago a este cliente?',
+                async () => {
+                  try {
+                    await withSpinner(async () => {
+                      const nuxtApp = useNuxtApp()
+                      const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
+                      const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
+                      if (res && (res as any).success) {
+                        showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
+                        await getGeneral(Number(id))
+                        await getHeaders(Number(id))
+                      } else {
+                        showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
                       }
-                    }
-                  )
+                    }, 'Enviando recordatorio...')
+                  } catch (err) {
+                    console.error('Error send reminder:', err)
+                    showError('Error', 'Error al enviar recordatorio')
+                  }
                 }
-              }),
+              )
+            }
+          }),
           h(UButton, {
             icon: 'vscode-icons:file-type-excel',
             color: 'primary',
@@ -307,7 +339,7 @@ const generalColumns = ref<TableColumn<any>[]>([
           color: 'primary',
           variant: 'outline',
           onClick: () => {
-            handleUploadPlantillaFinal()
+            handleUploadCotizacionFinal(row.original.id_cotizacion)
           }
         })
       }
@@ -365,59 +397,59 @@ const pagosColumns = ref<TableColumn<any>[]>([
     accessorKey: 'adelantos',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
-      return       !row.original.id_contenedor_pago?
-       h(PagoGrid,
-        {
-          numberOfPagos: 4,
-          pagoDetails: JSON.parse(row.original.pagos || '[]'),
-          clienteNombre: row.original.nombre,
-          currency: 'USD',
-          showDelete: true,
-          onSave: (data) => {
-            const formData = new FormData();
-            for (const key in data) {
-              if (data[key] !== undefined && data[key] !== null) {
-                formData.append(key, data[key]);
-              }
-            }
-            formData.append('idPedido', row.original.id_cotizacion)
-            formData.append('idContenedor', row.original.id_contenedor)
-            formData.append('idCotizacion', row.original.id_cotizacion)
-            withSpinner(async () => {
-              const response = await registrarPagoFinal(formData)
-              if (response.success) {
-                showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
-                getPagos(Number(id))
-                getHeaders(Number(id))
-              } else {
-                showError('Error al registrar pago', response.error, { persistent: true })
-              }
-            }, 'registrarPagoFinal')
-
-          },
-          onDelete: (pagoId: number) => {
-            showConfirmation(
-              'Confirmar eliminación',
-              '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
-              async () => {
-                try {
-                  await withSpinner(async () => {
-                    const response = await deletePago(pagoId)
-                    if (response.success) {
-                      await getPagos(Number(id))
-                      showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
-                      getHeaders(Number(id))
-                    }
-                  }, 'Eliminando pago...')
-                } catch (error) {
-                  console.error('Error al eliminar el pago:', error)
-                  showError('Error de Eliminación', 'Error al eliminar el pago')
+      return !row.original.id_contenedor_pago ?
+        h(PagoGrid,
+          {
+            numberOfPagos: 4,
+            pagoDetails: JSON.parse(row.original.pagos || '[]'),
+            clienteNombre: row.original.nombre,
+            currency: 'USD',
+            showDelete: true,
+            onSave: (data) => {
+              const formData = new FormData();
+              for (const key in data) {
+                if (data[key] !== undefined && data[key] !== null) {
+                  formData.append(key, data[key]);
                 }
               }
-            )
+              formData.append('idPedido', row.original.id_cotizacion)
+              formData.append('idContenedor', row.original.id_contenedor)
+              formData.append('idCotizacion', row.original.id_cotizacion)
+              withSpinner(async () => {
+                const response = await registrarPagoFinal(formData)
+                if (response.success) {
+                  showSuccess('Pago registrado', 'Pago registrado correctamente', { duration: 3000 })
+                  await getPagos(Number(id))
+                  await getHeaders(Number(id))
+                } else {
+                  showError('Error al registrar pago', response.error, { persistent: true })
+                }
+              }, 'registrarPagoFinal')
+
+            },
+            onDelete: (pagoId: number) => {
+              showConfirmation(
+                'Confirmar eliminación',
+                '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
+                async () => {
+                  try {
+                    await withSpinner(async () => {
+                      const response = await deletePago(pagoId)
+                      if (response.success) {
+                        await getPagos(Number(id))
+                        showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                        await getHeaders(Number(id))
+                      }
+                    }, 'Eliminando pago...')
+                  } catch (error) {
+                    console.error('Error al eliminar el pago:', error)
+                    showError('Error de Eliminación', 'Error al eliminar el pago')
+                  }
+                }
+              )
+            }
           }
-        }
-      ):null
+        ) : null
     }
   }
 ])
@@ -447,7 +479,8 @@ const deleteCotizacionFinal = async (idCotizacion: number) => {
 const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: string) => {
   withSpinner(async () => {
     const result = await updateEstadoCotizacionFinal(idCotizacion, estado)
-    if (result.success) {
+    if (result && (result as any).success) {
+
       await getGeneral(Number(id))
       showSuccess('Éxito', 'Estado actualizado correctamente')
     } else {
@@ -459,32 +492,21 @@ const goBack = () => {
   navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)
 }
 
-// Handle save pago
-const handleSavePago = (pagoData: any) => {
-  
-  // Aquí puedes implementar la lógica para guardar el pago
-  // Por ejemplo, llamar a un servicio o actualizar el estado
-}
-watch(activeTab, async (newVal, oldVal) => {
 
-  if (oldVal === '' || !newVal) {
-    return
-  }
+watch(activeTab, async (newVal, oldVal) => {
 
   if (newVal === 'general') {
     navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=general`)
-    // reset search to avoid sending stale query param to backend
-    try { searchGeneral.value = '' } catch (e) { /* ignore */ }
     await getGeneral(Number(id))
   }
   if (newVal === 'pagos') {
     navigateTo(`/cargaconsolidada/abiertos/cotizacion-final/${id}?tab=pagos`)
-    try { searchPagos.value = '' } catch (e) { /* ignore */ }
     await getPagos(Number(id))
   }
   await getHeaders(Number(id))
 
 })
+
 
 onMounted(async () => {
   const tabQuery = route.query.tab
@@ -497,10 +519,29 @@ onMounted(async () => {
     await getGeneral(Number(id))
   }
   if (activeTab.value === 'pagos') {
-    
+
     await getPagos(Number(id))
   }
   await getHeaders(Number(id))
+})
+
+// Watch tab changes and clear searches before fetching to avoid stale query params
+import { watch } from 'vue'
+watch(() => activeTab.value, async (newVal) => {
+  if (newVal && newVal !== '') {
+    try {
+      if (newVal === 'general') {
+        try { searchGeneral.value = '' } catch (e) { /* ignore */ }
+        await getGeneral(Number(id))
+      } else if (newVal === 'pagos') {
+        try { searchPagos.value = '' } catch (e) { /* ignore */ }
+        if (typeof getPagos === 'function') await getPagos(Number(id))
+      }
+      if (typeof getHeaders === 'function') await getHeaders(Number(id))
+    } catch (error) {
+      console.error('Error en cambio de pestaña:', error)
+    }
+  }
 })
 </script>
 

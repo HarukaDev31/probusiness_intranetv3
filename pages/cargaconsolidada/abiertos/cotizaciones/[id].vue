@@ -1082,12 +1082,15 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
-                const tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
-                const formattedValue = tipoRotulado
+                let tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
+                
+                let formattedValue = tipoRotulado
                     .toUpperCase()
                     .replace(/_/g, ' ')
                     .trim() || '-'
-
+                if (formattedValue === 'ROTULADO') {
+                    formattedValue = 'GENERAL';
+                }
                 return h(UBadge as any, {
                     label: formattedValue,
                     color: 'gray',
@@ -1501,12 +1504,15 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
-                const tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
-                const formattedValue = tipoRotulado
+                let tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
+                
+                let formattedValue = tipoRotulado
                     .toUpperCase()
                     .replace(/_/g, ' ')
                     .trim() || '-'
-
+                if (formattedValue === 'ROTULADO') {
+                    formattedValue = 'GENERAL';
+                }
                 return h(UBadge as any, {
                     label: formattedValue,
                     color: 'gray',
@@ -1683,10 +1689,11 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
     {
         accessorKey: 'qty_box_supplier',
         header: 'Qty Box Supplier',
+        //apply vertical separator
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 border-l-2 border-gray-200 pl-2'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,

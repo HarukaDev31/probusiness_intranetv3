@@ -112,27 +112,30 @@
     </div>
 
     <!-- Table Section -->
-    <div 
-      ref="tableContainerRef"
-      class="overflow-x-auto relative scroll-container hide-native-scrollbar"
-      @scroll="handleScroll"
-      @mousemove="handleMouseMove"
-      @mouseleave="stopAutoScroll"
-    >
-      <!-- Sombra izquierda -->
+    <!-- Contenedor único con overflow-x-auto y overflow-y-auto para que sticky funcione -->
+    <div class="relative">
       <div 
-        v-if="showLeftShadow" 
-        class="scroll-shadow scroll-shadow-left"
-        :style="{ left: scrollLeft + 'px' }"
-      ></div>
-      <!-- Sombra derecha -->
-      <div 
-        v-if="showRightShadow" 
-        class="scroll-shadow scroll-shadow-right"
-        :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
-      ></div>
-      <UTable ref="utableRef" :key="tableKey" :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
-        :class="['bg-transparent', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="uiForTable">
+        ref="tableContainerRef"
+        class="overflow-x-auto overflow-y-auto relative scroll-container hide-native-scrollbar"
+        style="max-height: calc(100vh - 200px);"
+        @scroll="handleScroll"
+        @mousemove="handleMouseMove"
+        @mouseleave="stopAutoScroll"
+      >
+        <!-- Sombra izquierda -->
+        <div 
+          v-if="showLeftShadow" 
+          class="scroll-shadow scroll-shadow-left"
+          :style="{ left: scrollLeft + 'px' }"
+        ></div>
+        <!-- Sombra derecha -->
+        <div 
+          v-if="showRightShadow" 
+          class="scroll-shadow scroll-shadow-right"
+          :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
+        ></div>
+        <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky="header" :columns="columns" :loading="loading"
+          :class="['bg-transparent', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="uiForTable">
 
         <template #loading>
           <div v-if="props.showSkeleton">
@@ -169,6 +172,7 @@
           <pre>{{ row.original }}</pre>
         </template>
       </UTable>
+      </div>
     </div>
 
     <!-- Sticky Bottom Section - Pagination -->
@@ -523,13 +527,15 @@ const updateNarrowness = () => {
 }
 
 // Computed UI classes for UTable — switch `base` when table is narrow so inner <table> doesn't force full width
+// NO tocamos thead para que Nuxt UI maneje el sticky nativamente sin interferencias
+// Según la documentación de Nuxt UI, el sticky="header" aplica automáticamente las clases necesarias al thead
 const uiForTable = computed(() => ({
   root: 'relative overflow-visible',
   base: isTableNarrow.value ? 'min-w-[80%]' : 'min-w-full',
-  thead: 'bg-transparent',
   tbody: 'border-separate border-spacing-y-6',
   td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
-  th: 'font-normal text-xs lg:text-sm p-2 lg:p-1',
+  // NO definimos thead ni th aquí - dejamos que Nuxt UI los maneje con sticky nativo
+  // Nuxt UI aplica automáticamente: thead: 'sticky top-0 inset-x-0 bg-default/75 z-[1] backdrop-blur'
   tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
 }))
 
@@ -995,6 +1001,9 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   /* Allow very small tables to keep their natural width; page container enforces minimum instead */
   min-width: 80% !important;
 }
+
+
+/* Dejamos que Nuxt UI maneje el sticky nativamente sin interferencias */
 
 /* Mejorar la legibilidad del texto en mobile */
 @media (max-width: 640px) {
