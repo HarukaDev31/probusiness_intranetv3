@@ -11,7 +11,7 @@
   :previous-page-url="`/cargaconsolidada/abiertos/pasos/${id}`">
       <template #actions>
         <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3" icon="i-heroicons-calendar"
-          @click="navigateTo(`/cargaconsolidada/completados/entrega/fechas-horarios/${id}`)" />
+          @click="navigateTo(`/cargaconsolidada/abiertos/entrega/fechas-horarios/${id}`)" />
       </template>
       <template #body-top>
         <div class="flex flex-col gap-2">
@@ -96,11 +96,12 @@ import type { TableColumn } from '@nuxt/ui'
 import SectionHeader from '../../../../components/commons/SectionHeader.vue'
 import { useEntrega } from '../../../../composables/cargaconsolidada/entrega/useEntrega'
 import { useUserRole } from '../../../../composables/auth/useUserRole'
-import { UBadge, UButton, UInput, UTabs } from '#components'
+import { UBadge, UButton, UInput, UTabs, USelect } from '#components'
 import PagoGrid from '../../../../components/PagoGrid.vue'
 import { useModal } from '../../../../composables/commons/useModal'
 import { useSpinner } from '../../../../composables/commons/useSpinner'
 import { ROLES } from '../../../../constants/roles'
+import { STATUS_BG_CLASSES } from '~/constants/ui'
 
 const route = useRoute()
 const id = Number(route.params.id)
@@ -172,7 +173,7 @@ const handleTabChange = (value: string) => {
 const linkLima = computed(() => `https://clientes.probusiness.pe/formulario-entrega/lima/${id}`)
 const linkProvincia = computed(() => `https://clientes.probusiness.pe/formulario-entrega/provincia/${id}`)
 
-// Estados para mostrar mensaje de copiado
+// abiertos para mostrar mensaje de copiado
 const copiedLima = ref(false)
 const copiedProvincia = ref(false)
 const copyToClipboard = async (url: string, type: string) => {
@@ -260,14 +261,208 @@ const clientesColumns = ref<TableColumn<any>[]>([
   },
   {
     accessorKey: 'estado_cotizacion_final',
-    header: 'Estado',
+    header: 'Cotizacion Final',
     cell: ({ row }) => {
-      const totalPagos = Number(row.original.total_pagos ?? 0)
+      // Manejar pagos_details que puede ser null, string JSON o array
+      let pagosDetails: any[] = []
+      if (row.original.pagos_details) {
+        if (typeof row.original.pagos_details === 'string') {
+          try {
+            pagosDetails = JSON.parse(row.original.pagos_details)
+          } catch (e) {
+            pagosDetails = []
+          }
+        } else if (Array.isArray(row.original.pagos_details)) {
+          pagosDetails = row.original.pagos_details
+        }
+      }
+
+      // Si pagos_details es null o empty, mostrar Pendiente
+      if (!pagosDetails || pagosDetails.length === 0) {
+        const className = 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+        return h(USelect as any, {
+          modelValue: 'Pendiente',
+          disabled: true,
+          items: [
+            { label: 'Pendiente', value: 'Pendiente' },
+            { label: 'Pagado', value: 'Pagado' }
+          ],
+          class: className
+        })
+      }
+
+      // Calcular total de pagos confirmados
+      const totalPagosConfirmados = pagosDetails
+        .filter((pago: any) => pago.status === 'CONFIRMADO')
+        .reduce((sum: number, pago: any) => sum + Number(pago.monto ?? 0), 0)
+
+      // Calcular total de todos los pagos (confirmados y no confirmados)
+      const totalPagos = pagosDetails
+        .reduce((sum: number, pago: any) => sum + Number(pago.monto ?? 0), 0)
+
+      // Verificar si todos los pagos están confirmados
+      const todosConfirmados = pagosDetails.every((pago: any) => pago.status === 'CONFIRMADO')
+
       const totalLogImp = Number(row.original.total_logistica_impuestos ?? 0)
-      const isPagado = totalPagos >= totalLogImp
-      const label = isPagado ? 'Pagado' : 'Pendiente'
-      const color = isPagado ? 'success' : 'warning'
-      return h(UBadge, { label, color, variant: 'soft' })
+
+      // Si logistica_impuestos es 0, mostrar Pendiente
+      if (totalLogImp === 0) {
+        const className = 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+        return h(USelect as any, {
+          modelValue: 'Pendiente',
+          disabled: true,
+          items: [
+            { label: 'Pendiente', value: 'Pendiente' },
+            { label: 'Pagado', value: 'Pagado' }
+          ],
+          class: className
+        })
+      }
+
+      // Si total_pagos >= total_logistica_impuestos pero no todos están confirmados, mostrar Pagado con fondo blanco
+      if (totalPagos >= totalLogImp && !todosConfirmados) {
+        return h(USelect as any, {
+          modelValue: 'Pagado',
+          disabled: true,
+          items: [
+            { label: 'Pendiente', value: 'Pendiente' },
+            { label: 'Pagado', value: 'Pagado' }
+          ],
+          class: 'bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
+        })
+      }
+
+      // Si total_pagos_confirmados >= total_logistica_impuestos y todos están confirmados, mostrar Pagado con fondo verde
+      const isPagado = totalPagosConfirmados >= totalLogImp && totalLogImp > 0 && todosConfirmados
+      const estado = isPagado ? 'Pagado' : 'Pendiente'
+      
+      // Aplicar la misma lógica de colores que en cotizacion-final
+      const isPagadoVerificado = estado === 'Pagado' && todosConfirmados
+      const isPendiente = estado === 'Pendiente'
+      
+      const className = isPagadoVerificado
+        ? 'bg-green-500 text-white dark:bg-green-500 dark:text-white'
+        : isPendiente
+          ? 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+          : STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES] || 'bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
+
+      return h(USelect as any, {
+        modelValue: estado,
+        disabled: true,
+        items: [
+          { label: 'Pendiente', value: 'Pendiente' },
+          { label: 'Pagado', value: 'Pagado' }
+        ],
+        class: className
+      })
+    }
+  },
+  {
+    accessorKey: 'delivery',
+    header: 'Delivery',
+    cell: ({ row }) => {
+      // Manejar pagos_details_delivery que puede ser null, string JSON o array
+      let pagosDetailsDelivery: any[] = []
+      if (row.original.pagos_details_delivery) {
+        if (typeof row.original.pagos_details_delivery === 'string') {
+          try {
+            pagosDetailsDelivery = JSON.parse(row.original.pagos_details_delivery)
+          } catch (e) {
+            pagosDetailsDelivery = []
+          }
+        } else if (Array.isArray(row.original.pagos_details_delivery)) {
+          pagosDetailsDelivery = row.original.pagos_details_delivery
+        }
+      }
+
+      const totalPagoDelivery = Number(row.original.total_pago_delivery ?? 0)
+
+      // 1. "No tiene": cuando no hay importe en la sección de delivery
+      if (totalPagoDelivery === 0 || !totalPagoDelivery) {
+        return h(USelect as any, {
+          modelValue: 'No tiene',
+          disabled: true,
+          items: [
+            { label: 'No tiene', value: 'No tiene' },
+            { label: 'Pendiente', value: 'Pendiente' },
+            { label: 'Pagado', value: 'Pagado' }
+          ],
+          class: 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+        })
+      }
+
+      // Si no hay pagos, mostrar Pendiente
+      if (!pagosDetailsDelivery || pagosDetailsDelivery.length === 0) {
+        return h(USelect as any, {
+          modelValue: 'Pendiente',
+          disabled: true,
+          items: [
+            { label: 'No tiene', value: 'No tiene' },
+            { label: 'Pendiente', value: 'Pendiente' },
+            { label: 'Pagado', value: 'Pagado' }
+          ],
+          class: 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+        })
+      }
+
+      // Calcular total de pagos confirmados
+      const totalPagosConfirmados = pagosDetailsDelivery
+        .filter((pago: any) => pago.status === 'CONFIRMADO')
+        .reduce((sum: number, pago: any) => sum + Number(pago.monto ?? 0), 0)
+
+      // Calcular total de todos los pagos (confirmados y no confirmados)
+      const totalPagos = pagosDetailsDelivery
+        .reduce((sum: number, pago: any) => sum + Number(pago.monto ?? 0), 0)
+
+      // Verificar si todos los pagos están confirmados
+      const todosConfirmados = pagosDetailsDelivery.every((pago: any) => pago.status === 'CONFIRMADO')
+
+      // 2. "Pendiente": cuando tiene un importe por pagar pero no se ha cubierto
+      if (totalPagos < totalPagoDelivery) {
+        return h(USelect as any, {
+          modelValue: 'Pendiente',
+          disabled: true,
+          items: [
+            { label: 'No tiene', value: 'No tiene' },
+            { label: 'Pendiente', value: 'Pendiente' },
+            { label: 'Pagado', value: 'Pagado' }
+          ],
+          class: 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+        })
+      }
+
+      // 3. "Pagado (blanco)": cuando coordinación subió un pago pero Patricia aún no confirma
+      if (totalPagos >= totalPagoDelivery && !todosConfirmados) {
+        return h(USelect as any, {
+          modelValue: 'Pagado',
+          disabled: true,
+          items: [
+            { label: 'No tiene', value: 'No tiene' },
+            { label: 'Pendiente', value: 'Pendiente' },
+            { label: 'Pagado', value: 'Pagado' }
+          ],
+          class: 'bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
+        })
+      }
+
+      // 4. "Pagado (verde)": cuando coordinación subió un pago y Patricia confirmó
+      const isPagadoVerificado = totalPagosConfirmados >= totalPagoDelivery && todosConfirmados
+      const estado = isPagadoVerificado ? 'Pagado' : 'Pendiente'
+      
+      const className = isPagadoVerificado
+        ? 'bg-green-500 text-white dark:bg-green-500 dark:text-white'
+        : 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+
+      return h(USelect as any, {
+        modelValue: estado,
+        disabled: true,
+        items: [
+          { label: 'No tiene', value: 'No tiene' },
+          { label: 'Pendiente', value: 'Pendiente' },
+          { label: 'Pagado', value: 'Pagado' }
+        ],
+        class: className
+      })
     }
   },
   {
@@ -285,7 +480,7 @@ const clientesColumns = ref<TableColumn<any>[]>([
     ])
   }
 ])
-// Columnas actualizadas para Entregas (completados) – mismas que en 'abiertos'
+// Columnas actualizadas para Entregas (abiertos) – mismas que en 'abiertos'
 const entregasColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'nro', header: 'N', cell: ({ row }) => row.index + 1 },
     { accessorKey: 'contacto', header: 'Contacto', cell: ({ row }) => {
