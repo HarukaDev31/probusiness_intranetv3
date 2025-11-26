@@ -32,8 +32,9 @@
                 @click="showFiltersPanel = !showFiltersPanel" />
             </div>
 
-            <!-- Panel de filtros -->
-            <div ref="filtersPanelRef" v-if="showFiltersPanel && showFilters"
+            <!-- Desktop: keep inline absolute panel to preserve original behavior on large screens -->
+            <div v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && !isMobile"
+              ref="filtersPanelRef"
               class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
               @click.stop>
               <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
@@ -75,6 +76,51 @@
                 </div>
               </div>
             </div>
+
+            <!-- Mobile: teleport the filters panel to body to avoid clipping; only active when isMobile === true -->
+            <teleport to="body" v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && isMobile">
+              <div class="filters-overlay" @click="showFiltersPanel = false"></div>
+
+              <div ref="filtersPanelRef" class="filters-panel-mobile" @click.stop>
+                <div class="filters-header">
+                  <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ translations.filters }}</div>
+                  <button type="button" class="filters-close" @click="showFiltersPanel = false">✕</button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
+                  <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {{ filter.label }}
+                    </label>
+                    <UInput v-if="filter.type === 'date'"
+                      :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
+                      :placeholder="filter.placeholder" class="w-full"
+                      @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
+                    <USelect v-else :model-value="(() => {
+                        const value = filtersValue && filtersValue[filter.key]
+                        return value
+                      })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
+                        @update:model-value="(value) => {
+                          handleFilterChange(filter.key, value)
+                        }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                  </div>
+                </div>
+
+                <div class="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
+                  <div class="flex items-center justify-between">
+                    <UButton
+                      icon="i-heroicons-x-mark"
+                      class="h-8 bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 border-0"
+                      :label="translations.clearFilters"
+                      @click="handleClearFilters"
+                    />
+                    <button type="button" class="text-sm text-gray-600 dark:text-gray-300 hover:underline" @click="showFiltersPanel = false">
+                      {{ translations.close }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </teleport>
             <!-- Export Button -->
 
             <slot name="actions" />
@@ -758,6 +804,23 @@ const displayedFilterConfig = computed(() => {
     options: (f.options || []).map(o => ({ ...o, label: (dict[o.label] || o.label) }))
   }))
 })
+
+// Mobile detection reactive used to switch to teleported panel only on small screens
+const isMobile = ref(false)
+const updateIsMobile = () => {
+  try {
+    isMobile.value = window.innerWidth <= 1024
+  } catch (e) {
+    isMobile.value = false
+  }
+}
+onMounted(() => {
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
+})
+onUnmounted(() => {
+  try { window.removeEventListener('resize', updateIsMobile) } catch (e) {}
+})
 </script>
 
 <style scoped>
@@ -1079,5 +1142,60 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
     font-size: 1.5rem;
     line-height: 2rem;
   }
+}
+</style>
+
+<!-- Global styles for teleported mobile filters (must be global to affect elements teleported to body) -->
+<style>
+/* Backdrop overlay for teleported mobile panel */
+.filters-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1040;
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+/* Mobile-specific panel styling when teleported */
+.filters-panel-mobile {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  top: 12vh;
+  max-height: calc(100vh - 16vh);
+  margin: 0 auto;
+  z-index: 1050;
+  background: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 40px rgba(2,6,23,0.12);
+  overflow-y: auto;
+  padding: 0.75rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filters-panel-mobile .filters-header {
+  position: sticky;
+  top: 0;
+  background: transparent;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filters-panel-mobile .filters-close {
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+@media (min-width: 1025px) {
+  /* ensure teleported classes do not affect desktop if somehow present */
+  .filters-overlay, .filters-panel-mobile { display: none !important; }
 }
 </style>
