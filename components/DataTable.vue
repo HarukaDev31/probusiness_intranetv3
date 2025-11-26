@@ -5,16 +5,16 @@
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
   <slot name="filters" />
   <template v-if="!$slots.filters">
-    <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4 p-4">
-      <div class="w-full lg:w-full flex flex-col lg:flex-row justify-between gap-3 items-center">
+    <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4 p-2 md:p-4 ">
+      <div class="w-full lg:w-full flex flex-col lg:flex-row justify-between gap-1 md:gap-3 items-center">
         <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack" />
         <!-- Search and Actions -->
-        <div class="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full lg:w-auto">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center gap-1 md:gap-3 w-full lg:w-auto">
           <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
             <label v-if="showPrimarySearchLabel"
               class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
             <UInput :model-value="primarySearchInternal" :placeholder="primarySearchPlaceholder"
-              class="flex-1 h-10 min-w-0" :ui="{ base: 'h-11' }"
+              class="flex-1 h-5 min-w-0 md:h-10 lg:h-10" :ui="{ base: 'h-7 md:h-10 lg:h-10' }"
               @update:model-value="onPrimarySearchChange">
               <template #leading>
                 <UIcon name="i-heroicons-magnifying-glass" class="text-gray-400" />
@@ -23,18 +23,18 @@
           </div>
 
           <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
-            class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
+            class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
             @click="handleExport" />
           <div class="flex items-center gap-2 relative w-full lg:w-auto">
             <div ref="filtersButtonRef" class="w-full lg:w-auto">
               <UButton v-if="showFilters" :label="translations.filters" icon="i-heroicons-funnel"
-                class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
+                class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
                 @click="showFiltersPanel = !showFiltersPanel" />
             </div>
 
             <!-- Panel de filtros -->
             <div ref="filtersPanelRef" v-if="showFiltersPanel && showFilters"
-              class="absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
+              class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
               @click.stop>
               <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
                 <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -93,13 +93,16 @@
 
       <div v-if="showHeaders" class="bg-transparent border-b border-gray-200 dark:border-gray-700">
         <div class="px-4 lg:px-6 py-3">
-          <div class="flex flex-wrap gap-2 lg:gap-3">
-            <div v-for="header in headers" :key="header.value" class="flex items-center gap-2">
-              <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
-                {{ header.label }}:
-              </span>
-              <UBadge :label="header.value || 'N/A'" color="neutral" variant="outline" size="sm"
-                class="font-medium text-xs" />
+          <!-- Scrollable header chips on small screens -->
+          <div class="headers-scroll -mx-4 sm:mx-0 px-4 sm:px-0 overflow-x-auto sm:overflow-x-visible md:hide-native-scrollbar">
+            <div class="inline-flex items-center gap-3 whitespace-nowrap">
+              <div v-for="header in headers" :key="header.value" class="inline-flex items-center gap-2 mr-4">
+                <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                  {{ header.label }}:
+                </span>
+                <UBadge :label="header.value || 'N/A'" color="neutral" variant="outline" size="sm"
+                  class="font-medium text-xs" />
+              </div>
             </div>
           </div>
         </div>
@@ -177,7 +180,7 @@
 
     <!-- Sticky Bottom Section - Pagination -->
     <div v-if="showBottomSection"
-      class="sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 bottom-with-scrollbar">
+      class="md:sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 bottom-with-scrollbar">
       <!-- Fake horizontal scrollbar placed visually above the sticky bottom content -->
       <div ref="fakeScrollbarRef" class="table-scrollbar" @scroll.stop="onFakeScroll" v-show="true">
         <!-- inner spacer that sets the fake scroll width to the table's scrollWidth -->
@@ -526,15 +529,14 @@ const updateNarrowness = () => {
   }
 }
 
-// Computed UI classes for UTable — switch `base` when table is narrow so inner <table> doesn't force full width
-// NO tocamos thead para que Nuxt UI maneje el sticky nativamente sin interferencias
-// Según la documentación de Nuxt UI, el sticky="header" aplica automáticamente las clases necesarias al thead
+
 const uiForTable = computed(() => ({
   root: 'relative overflow-visible',
   base: isTableNarrow.value ? 'min-w-[80%]' : 'min-w-full',
   tbody: 'border-separate border-spacing-y-6',
   td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
-  // NO definimos thead ni th aquí - dejamos que Nuxt UI los maneje con sticky nativo
+  thead: 'relative bg-[#f0f4f9] dark:bg-gray-900',
+  th: 'font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5',
   // Nuxt UI aplica automáticamente: thead: 'sticky top-0 inset-x-0 bg-default/75 z-[1] backdrop-blur'
   tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
 }))
@@ -757,6 +759,31 @@ const displayedFilterConfig = computed(() => {
   }))
 })
 </script>
+
+<style scoped>
+/* Headers scroll helper: enable smooth touch scrolling and provide a subtle track/thumb for WebKit */
+.headers-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+.headers-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.headers-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 9999px;
+}
+/* hide native scrollbar for non-webkit while keeping scroll functionality */
+.hide-native-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.hide-native-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Ensure overflow is visible on larger screens */
+@media (min-width: 640px) {
+  .headers-scroll { overflow-x: visible !important; }
+}
+</style>
 <style scoped>
 tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   display: none;
@@ -931,6 +958,42 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   .gap-4 {
     gap: 1.25rem;
   }
+}
+
+/* Compact styles for filters panel on small screens */
+@media (max-width: 640px) {
+  .filters-panel {
+    padding: 0.5rem !important;
+    max-height: 70vh !important;
+    border-radius: 0.5rem !important;
+    width: calc(100% - 1rem) !important;
+    right: 0.5rem !important;
+    left: 0.5rem !important;
+  }
+
+  .filters-panel .grid {
+    gap: 0.5rem !important;
+    padding: 0 !important;
+  }
+
+  .filters-panel label {
+    font-size: 0.775rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+
+  .filters-panel input,
+  .filters-panel textarea,
+  .filters-panel select {
+    height: 2rem !important;
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  .filters-panel .h-8 { height: 2.25rem !important; }
+  .filters-panel .h-11 { height: 2.5rem !important; }
+
+  .filters-panel .mt-2 { margin-top: 0.35rem !important; }
+  .filters-panel .pt-3 { padding-top: 0.35rem !important; }
 }
 
 /* Asegurar que el overlay funcione correctamente */

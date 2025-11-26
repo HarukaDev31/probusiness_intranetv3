@@ -18,7 +18,7 @@
           
 
           <div>
-            <h1 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white flex items-center">
+            <h1 class="mt-1 text-base md:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white flex items-center">
               <UIcon v-if="icon" :name="icon" class="text-secondary mr-3 text-2xl" />
               {{ title }}
             </h1>
