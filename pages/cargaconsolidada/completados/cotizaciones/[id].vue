@@ -1700,7 +1700,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 }),
                 h('span', {
                     class: 'font-medium'
-                }, 'Qty Box Supplier')
+                }, 'Qty Box')
             ])
         },
         //apply vertical separator to all column 
@@ -1734,7 +1734,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 }),
                 h('span', {
                     class: 'font-medium'
-                }, 'CBM Total Supplier')
+                }, 'CBM')
             ])
         },
         cell: ({ row }: { row: any }) => {
