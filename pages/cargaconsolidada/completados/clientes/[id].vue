@@ -701,16 +701,33 @@ const columnsDocumentacion: TableColumn<any>[] = [
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre') || ''
-            const documento = row.getValue('documento') || ''
-            const correo = row.getValue('correo') || ''
-            const telefono = row.getValue('telefono') || ''
+            const nombre = row.original.nombre || ''
+            const documento = row.original.documento || ''
+            const correo = row.original.correo || ''
+            const telefono = row.original.telefono || ''
             return h('div', { class: '' }, [
                 h('div', { class: 'font-medium' }, nombre),
                 h('div', { class: 'text-sm text-gray-500' }, documento),
                 h('div', { class: 'text-sm text-gray-500' }, telefono),
                 h('div', { class: 'text-sm text-gray-500' }, correo || '')
             ])
+        }
+    },
+    {
+        accessorKey: 'code supplier',
+        header: 'Code Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.code_supplier,
+                    class: 'w-full w-25',
+                    disabled: true,
+                })
+            }))
+            return div
         }
     },
     {
