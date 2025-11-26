@@ -387,7 +387,21 @@ const expandActiveRoute = (route: string) => {
 onMounted(async () => {
   fetchCurrentUser()
 
-  // Escuchar cambios en auth_user desde localStorage
+  // Ocultar el sidebar por defecto en mobile (viewport < 1024px)
+  if (process.client) {
+    try {
+      if (window.innerWidth < 1024) {
+        // Asignar al computed `visible` para disparar el emit `update:modelValue`
+        visible.value = false
+      }
+    } catch (err) {
+      // si falla por alguna razón, no bloquear la inicialización
+      // eslint-disable-next-line no-console
+      console.debug('Sidebar: no se pudo auto-ocultar en mobile', err)
+    }
+  }
+
+  // Escuchar cambios en auth_user desde localStorage y cambios de tamaño
   if (process.client) {
     // Listener para eventos storage (cambios desde otras pestañas)
     const handleStorageChange = (e: StorageEvent) => {
@@ -395,19 +409,30 @@ onMounted(async () => {
         fetchCurrentUser()
       }
     }
-    
+
     // Listener para eventos personalizados (cambios desde la misma pestaña)
     const handleAuthUserUpdate = () => {
       fetchCurrentUser()
     }
-    
+
+    // Si la ventana se redimensiona a mobile, ocultamos el sidebar
+    const handleResize = () => {
+      try {
+        if (window.innerWidth < 1024) visible.value = false
+      } catch (e) {
+        // noop
+      }
+    }
+
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('auth_user_updated', handleAuthUserUpdate)
-    
+    window.addEventListener('resize', handleResize)
+
     // Cleanup
     onUnmounted(() => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('auth_user_updated', handleAuthUserUpdate)
+      window.removeEventListener('resize', handleResize)
     })
   }
 

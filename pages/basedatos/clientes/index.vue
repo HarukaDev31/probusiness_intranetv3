@@ -1,6 +1,4 @@
 <template>
-    <div class="p-6">
-
         <DataTable title="Base de datos de clientes" :show-title="true" icon="i-heroicons-users" :data="clientes" :columns="columns"
             :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalItems"
             :items-per-page="itemsPerPage" :search-query-value="search" :primary-search-value="primarySearch"
@@ -32,7 +30,6 @@
                 <ErrorState :message="error || 'Error desconocido'" />
             </template>
         </DataTable>
-    </div>
 </template>
 
 <script setup lang="ts">
@@ -167,7 +164,7 @@ const columns: TableColumn<any>[] = [
         const telefono = row.original?.telefono  || ''
         const correo = row.original?.correo  || ''
         const provincia = row.original?.provincia  || ''
-        return h('div', { class: 'text-gray-700 py-3 dark:text-gray-100' }, [
+        return h('div', { class: 'text-gray-700 py-0 md:py-3 dark:text-gray-100' }, [
           h('div', { class: 'font-medium' }, nombre),
           h('div', { class: 'text-sm text-gray-500' }, documento),
           h('div', { class: 'text-sm text-gray-500' }, telefono),
