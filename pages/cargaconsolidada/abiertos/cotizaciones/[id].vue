@@ -283,7 +283,8 @@ const filterConfigProspectosCoordinacion = ref([
             { label: 'ROTULADO', value: 'ROTULADO', inrow: true },
             { label: 'DATOS PROVEEDOR', value: 'DATOS PROVEEDOR', inrow: true },
             { label: 'INSPECCIONADO', value: 'INSPECCIONADO', inrow: true },
-            { label: 'RESERVADO', value: 'RESERVADO', inrow: true }
+            { label: 'RESERVADO', value: 'RESERVADO', inrow: true}
+
         ]
     },
     {
@@ -1083,11 +1084,12 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
                 let tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
-                
+               
                 let formattedValue = tipoRotulado
                     .toUpperCase()
                     .replace(/_/g, ' ')
                     .trim() || '-'
+                console.log(formattedValue)
                 if (formattedValue === 'ROTULADO') {
                     formattedValue = 'GENERAL';
                 }
@@ -1504,8 +1506,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
-                let tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
-                
+                const tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
                 let formattedValue = tipoRotulado
                     .toUpperCase()
                     .replace(/_/g, ' ')
@@ -1688,12 +1689,25 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
     },
     {
         accessorKey: 'qty_box_supplier',
-        header: 'Qty Box Supplier',
-        //apply vertical separator
+        header: () => {
+            return h('div', {
+                class: 'flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded'
+            }, [
+                h('img', {
+                    src: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg',
+                    alt: 'China',
+                    class: 'w-4 h-4'
+                }),
+                h('span', {
+                    class: 'font-medium'
+                }, 'Qty Box')
+            ])
+        },
+        //apply vertical separator to all column 
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2 border-l-2 border-gray-200 pl-2'
+                class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box_china,
@@ -1709,7 +1723,20 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
     },
     {
         accessorKey: 'cbm_total_supplier',
-        header: 'CBM Total Supplier',
+        header: () => {
+            return h('div', {
+                class: 'flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded'
+            }, [
+                h('img', {
+                    src: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg',
+                    alt: 'China',
+                    class: 'w-4 h-4'
+                }),
+                h('span', {
+                    class: 'font-medium'
+                }, 'CBM')
+            ])
+        },
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
@@ -1730,7 +1757,20 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
 
     {
         accessorKey: 'arrive_date',
-        header: 'Arrive Date',
+        header: () => {
+            return h('div', {
+                class: 'flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded w-full'
+            }, [
+                h('img', {
+                    src: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg',
+                    alt: 'China',
+                    class: 'w-4 h-4'
+                }),
+                h('span', {
+                    class: 'font-medium'
+                }, 'Arrive Date')
+            ])
+        },
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
