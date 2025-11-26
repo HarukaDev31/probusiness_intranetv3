@@ -1288,26 +1288,35 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         accessorKey: 'acciones',
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
-            //button view with more info
-            return h(UButton, {
-                icon: 'iconamoon:menu-burger-horizontal',
-                variant: 'ghost',
-                size: 'xs',
-                onClick: () => {
-                    //generar un modal para solicitar el tipo de recordatorio de documento
-                    console.log(row.original)
-                    modalAcciones.open({
-                        show: true,
-                        clienteId: row.original.id, 
-                        clienteName: row.original.nombre,
-                        onSelected: (data: any) => {
-                            console.log(data)
-                        },
-                        validateMaxDate:true
-                    })
-                }
-            },
-            )
+            // Render both actions: menu (modal) and eye (navigate)
+            return h('div', { class: 'flex items-center gap-1' }, [
+                h(UButton, {
+                    icon: 'iconamoon:menu-burger-horizontal',
+                    variant: 'ghost',
+                    size: 'xs',
+                    onClick: () => {
+                        // generar un modal para solicitar el tipo de recordatorio de documento
+                        modalAcciones.open({
+                            show: true,
+                            clienteId: row.original.id,
+                            clienteName: row.original.nombre,
+                            onSelected: (data: any) => {
+                                // callback cuando se selecciona una acción
+                                console.log(data)
+                            },
+                            validateMaxDate: true
+                        })
+                    }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-eye',
+                    variant: 'ghost',
+                    size: 'xs',
+                    onClick: () => {
+                        navigateTo(`/cargaconsolidada/abiertos/clientes/documentacion/${row.original.id}`)
+                    }
+                })
+            ])
         }
     }
 ])
