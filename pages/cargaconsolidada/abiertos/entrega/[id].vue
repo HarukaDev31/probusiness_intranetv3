@@ -49,11 +49,12 @@
       empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleSearch"
       @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
       @filter-change="handleFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
+      
   :previous-page-url="`/cargaconsolidada/abiertos/pasos/${id}`">
       <template #body-top>
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-3">
-            <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
+            <SectionHeader :title="`Entregas #${carga}`" :headers="headersEntregas" :loading="loadingHeaders" />
             <div class="flex gap-2 items-center">
               <UButton size="lg" color="primary" variant="outline" label="Formulario Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
               <UButton size="lg" color="warning" variant="outline" label="Formulario Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
@@ -72,7 +73,7 @@
       <template #body-top>
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-3">
-            <SectionHeader :title="`Delivery #${carga}`" :headers="headers" :loading="loadingHeaders" />
+            <SectionHeader :title="`Delivery #${carga}`" :headers="headersDelivery" :loading="loadingHeaders" />
             <div class="flex gap-2 items-center">
               <UButton size="lg" color="primary" variant="outline" label="Formulario Lima" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')" />
               <UButton size="lg" color="warning" variant="outline" label="Formulario Provincia" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')" />
@@ -87,6 +88,16 @@
         </div>
       </template>
     </DataTable>
+    
+    <!-- Modal de acciones de delivery -->
+    <DeliveryAccionesModal
+      v-if="selectedRowForModal"
+      v-model="showAccionesModal"
+      :id-cotizacion="selectedRowForModal.id_cotizacion || selectedRowForModal.id"
+      :cliente-nombre="selectedRowForModal.nombre || ''"
+      @close="closeAccionesModal"
+      @success="handleAccionesModalSuccess"
+    />
   </div>
 </template>
 
@@ -98,6 +109,7 @@ import { useEntrega } from '../../../../composables/cargaconsolidada/entrega/use
 import { useUserRole } from '../../../../composables/auth/useUserRole'
 import { UBadge, UButton, UInput, UTabs, USelect } from '#components'
 import PagoGrid from '../../../../components/PagoGrid.vue'
+import DeliveryAccionesModal from '../../../../components/cargaconsolidada/entrega/DeliveryAccionesModal.vue'
 import { useModal } from '../../../../composables/commons/useModal'
 import { useSpinner } from '../../../../composables/commons/useSpinner'
 import { ROLES } from '../../../../constants/roles'
@@ -108,7 +120,8 @@ const id = Number(route.params.id)
 const { currentRole, currentId } = useUserRole()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
-
+const overlay = useOverlay()
+const modalAcciones = overlay.create(DeliveryAccionesModal)
 const {
   entregas,
   clientes,
@@ -139,6 +152,8 @@ const {
   downloadPlantillas,
   clearFilters,
   headers,
+  headersEntregas,
+  headersDelivery,
   carga,
   loadingHeaders,
   getHeaders,
@@ -146,10 +161,12 @@ const {
   delivery,
   getDelivery,
   updateImporteDelivery,
+  updateServicioDelivery,
   registrarPagoDelivery,
   deletePagoDelivery,
   sendMessageForCotizacion,
-  deleteEntregaRegistro
+  deleteEntregaRegistro,
+  sendCobroDeliveryDelivery
 } = useEntrega()
 
 const routeQuery = useRoute()
@@ -176,6 +193,16 @@ const linkProvincia = computed(() => `https://clientes.probusiness.pe/formulario
 // abiertos para mostrar mensaje de copiado
 const copiedLima = ref(false)
 const copiedProvincia = ref(false)
+const handleCobroMessage = async (row: any) => {
+  await withSpinner(async () => {
+    const response = await sendCobroDeliveryDelivery(row.id_cotizacion || row.id, 'Cobro de delivery')
+    if (response?.success) {
+      showSuccess('Cobro enviado', 'Cobro enviado correctamente')
+    } else {
+      showError('Error', response?.error || 'No se pudo enviar el cobro')
+    }
+  }, 'Enviando cobro...')
+}
 const copyToClipboard = async (url: string, type: string) => {
   try {
     await navigator.clipboard.writeText(url)
@@ -469,13 +496,12 @@ const clientesColumns = ref<TableColumn<any>[]>([
     id: 'actions',
     header: 'Accion',
     cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
+      //replace with hamburger
       h(UButton, {
         size: 'xs',
-        icon: 'i-heroicons-paper-airplane',
-        variant: 'ghost',
-        color: 'info',
-        title: 'Enviar Mensaje',
-        onClick: () => handleEnviarMensaje(row.original.id)
+        icon: 'iconamoon:menu-burger-horizontal',
+        variant: 'ghost', color: 'neutral',
+        title: 'Acciones', onClick: () => openAccionesModal(row.original)
       })
     ])
   }
@@ -511,7 +537,7 @@ const entregasColumns = ref<TableColumn<any>[]>([
     } },
   { accessorKey: 'bultos', header: 'Bultos', cell: ({ row }) => row.original.qty_box_china ?? '—' },
   {
-    accessorKey: 'tipo_entrega', header: 'Entrega', cell: ({ row }) => {
+    accessorKey: 'tipo_entrega', header: 'Envio', cell: ({ row }) => {
       const tf = row.original.type_form
       const label = (tf === 0 || tf === '0')
         ? 'Provincia'
@@ -521,6 +547,11 @@ const entregasColumns = ref<TableColumn<any>[]>([
       const color = label === 'Lima' ? 'success' : label === 'Provincia' ? 'primary' : 'neutral'
       return h(UBadge, { label, color, variant: 'soft' })
     }
+  },
+  {
+    accessorKey: 'entregado',
+    header: 'Entregado',
+    cell: ({ row }) => h(UBadge, { label: row.original.conformidad_count ? 'Si' : 'No', color: row.original.conformidad_count ? 'success' : 'error' })
   },
   { accessorKey: 'ciudad', header: 'Ciudad', cell: ({ row }) => row.original.department_name || 'Lima' },
   { accessorKey: 'documento', header: 'Ruc o Dni', cell: ({ row }) => row.original.agency_ruc || row.original.pick_doc || '—' },
@@ -709,10 +740,91 @@ const deliveryColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'razon_social', header: 'Razon Social o Nombre', cell: ({ row }) => row.original.razon_social },
   {
     accessorKey: 'estado', header: 'Estado', cell: ({ row }) => {
-      //if pagado>= importe then return Pagado else return Pendiente
-      const estado = row.original.pagado >= row.original.importe && row.original.pagado > 0 ? 'Pagado' : 'Pendiente'
-      const color = row.original.pagado >= row.original.importe && row.original.pagado > 0 ? 'success' : 'warning'
-      return h(UBadge, { label: estado, color, variant: 'soft' })
+      // Manejar pagos_details que puede ser null, string JSON o array
+      let pagosDetails: any[] = []
+      if (row.original.pagos_details) {
+        if (typeof row.original.pagos_details === 'string') {
+          try {
+            pagosDetails = JSON.parse(row.original.pagos_details)
+          } catch (e) {
+            pagosDetails = []
+          }
+        } else if (Array.isArray(row.original.pagos_details)) {
+          pagosDetails = row.original.pagos_details
+        }
+      }
+
+      // Usar total_importe_delivery si existe, sino usar importe como fallback
+      const totalImporteDelivery = Number(row.original.total_importe_delivery ?? row.original.importe ?? 0)
+
+      // 1. "No tiene": cuando no hay importe en la sección de delivery y no hay pagos
+      if (totalImporteDelivery === 0 && (!pagosDetails || pagosDetails.length === 0)) {
+        return h(USelect as any, {
+          modelValue: 'No tiene',
+          disabled: true,
+          items: [
+            { label: 'No tiene', value: 'No tiene' },
+            { label: 'Pendiente', value: 'Pendiente' },
+            { label: 'Pagado', value: 'Pagado' }
+          ],
+          class: 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+        })
+      }
+
+      // Calcular total de pagos confirmados
+      const totalPagosConfirmados = pagosDetails
+        .filter((pago: any) => pago.status === 'CONFIRMADO')
+        .reduce((sum: number, pago: any) => sum + Number(pago.monto ?? 0), 0)
+
+      // Calcular total de todos los pagos (confirmados y no confirmados)
+      const totalPagos = pagosDetails
+        .reduce((sum: number, pago: any) => sum + Number(pago.monto ?? 0), 0)
+
+      // Verificar si todos los pagos están confirmados
+      const todosConfirmados = pagosDetails.length > 0 && pagosDetails.every((pago: any) => pago.status === 'CONFIRMADO')
+
+      // 2. "Pagado" (verde): si totalPagosConfirmados >= totalImporteDelivery
+      const isPagadoVerificado = totalImporteDelivery > 0 && totalPagosConfirmados >= totalImporteDelivery
+
+      // 3. "Pagado" (blanco): si totalPagos >= totalImporteDelivery pero totalPagosConfirmados < totalImporteDelivery
+      // (hay pagos suficientes pero no todos están confirmados)
+      const tienePagosNoConfirmados = totalImporteDelivery > 0 && 
+                                       totalPagos >= totalImporteDelivery && 
+                                       totalPagosConfirmados < totalImporteDelivery &&
+                                       pagosDetails.length > 0
+
+      // 4. "Pendiente": en todos los demás casos (con fondo rojo)
+      const estado = isPagadoVerificado ? 'Pagado' : tienePagosNoConfirmados ? 'Pagado' : 'Pendiente'
+      
+      const className = isPagadoVerificado
+        ? 'bg-green-500 text-white dark:bg-green-500 dark:text-white'
+        : tienePagosNoConfirmados
+          ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
+          : 'bg-red-500 text-white dark:bg-red-500 dark:text-white'
+
+      return h(USelect as any, {
+        modelValue: estado,
+        disabled: true,
+        items: [
+          { label: 'No tiene', value: 'No tiene' },
+          { label: 'Pendiente', value: 'Pendiente' },
+          { label: 'Pagado', value: 'Pagado' }
+        ],
+        class: className
+      })
+    }
+  },
+  {
+    accessorKey: 'servicio', header: 'Servicio', cell: ({ row }) => {
+      const servicioValue = row.original.tipo_servicio||'Sin servicio';
+      return h(USelect as any, {
+        modelValue: servicioValue,
+        items: [
+          {label: 'Sin servicio', value: 'Sin servicio' ,disabled: true},
+          { label: 'Delivery', value: 'DELIVERY' },
+          { label: 'Montacarga', value: 'MONTACARGA' }
+        ],
+        size: 'xs', class: 'w-32', 'onUpdate:modelValue': (v: string) => { row.original.tipo_servicio = v; handleUpdateServicio(row.original) } })
     }
   },
   {
@@ -743,6 +855,7 @@ const deliveryColumns = ref<TableColumn<any>[]>([
       }) : null
     }
   },
+ 
   //div with button with icon save
   {
     accessorKey: 'actions', header: 'Acciones', cell: ({ row }) => {
@@ -753,6 +866,13 @@ const deliveryColumns = ref<TableColumn<any>[]>([
           icon: 'material-symbols:save-sharp',
           variant: 'ghost', color: 'primary',
           title: 'Guardar', onClick: () => handleUpdate(row.original)
+        }),
+        //arrow with only cobro message
+        h(UButton, {
+          size: 'xs',
+          icon: 'i-heroicons-paper-airplane',
+          variant: 'ghost', color: 'primary',
+          title: 'Cobro', onClick: () => handleCobroMessage(row.original)
         })
       ])
     }
@@ -779,7 +899,45 @@ const handleUpdate = (row: any) => {
   }
 
 }
+const handleUpdateServicio = (row: any) => {
+  try {
+    const data = {
+      id_cotizacion: row.id_cotizacion || row.id,
+      tipo_servicio: row.tipo_servicio || 'DELIVERY'
+    }
+    withSpinner(async () => {
+      const response = await updateServicioDelivery(data)
+      if (response?.success) {
+        showSuccess('Servicio actualizado', 'Servicio actualizado correctamente')
+      } else {
+        showError('Error', response?.error || 'No se pudo actualizar el servicio')
+      }
+    }, 'Actualizando servicio...')
+  } catch (error) {
+    showError('Error', error as string)
+  }
+}
 watch(entregas, () => { if (activeTab.value === 'delivery') getDelivery(id) })
+
+// Modal de acciones
+const showAccionesModal = ref(false)
+const selectedRowForModal = ref<any>(null)
+
+const openAccionesModal = (row: any) => {
+  modalAcciones.open({
+    idCotizacion: row.id_cotizacion || row.id,
+    clienteNombre: row.nombre || '',
+  })
+}
+
+const closeAccionesModal = () => {
+  showAccionesModal.value = false
+  selectedRowForModal.value = null
+}
+
+const handleAccionesModalSuccess = () => {
+  getDelivery(id)
+}
 </script>
 
 <style scoped>
