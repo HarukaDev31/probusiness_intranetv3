@@ -486,7 +486,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null,
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
                     (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
-                        href: cotizacion_contrato_firmado_url,
+                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
                         target: '_blank',
                         class: 'text-primary hover:underline'
                     }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
@@ -659,7 +659,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
                     (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
-                        href: cotizacion_contrato_firmado_url,
+                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
                         target: '_blank',
                         class: 'text-primary hover:underline'
                     }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
