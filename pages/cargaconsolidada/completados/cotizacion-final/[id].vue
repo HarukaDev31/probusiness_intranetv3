@@ -175,13 +175,14 @@ const generalColumns = ref<TableColumn<any>[]>([
       const correo = row.original?.correo || ''
       const cod_contract = row.original?.cod_contract || ''
       const cotizacion_contrato_firmado_url = row.original?.cotizacion_contrato_firmado_url || ''
+      const cotizacion_contrato_url = row.original?.cotizacion_contrato_url || ''
       return h('div', { class: 'py-2' }, [
         h('div', { class: 'font-medium' }, nombre),
         h('div', { class: 'text-sm text-gray-500' }, documento),
         h('div', { class: 'text-sm text-gray-500' }, telefono),
         h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo'),
         cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    cotizacion_contrato_firmado_url ? h('a', {
+                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
                         href: cotizacion_contrato_firmado_url,
                         target: '_blank',
                         class: 'text-primary hover:underline' 

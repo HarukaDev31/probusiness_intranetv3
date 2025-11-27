@@ -325,6 +325,18 @@ export class  EntregaService extends BaseService {
       throw error
     }
   }
+  static async updateServicioDelivery(data: any): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/servicio`, {
+        method: 'POST',
+        body: data
+      })
+      return response
+    } catch (error) {
+      console.error('Error al actualizar servicio de delivery:', error)
+      throw error
+    }
+  }
   static async sendMessageForCotizacion(id_cotizacion: number): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
       const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/send-message/${id_cotizacion}`, {
@@ -334,6 +346,42 @@ export class  EntregaService extends BaseService {
       return response
     } catch (error) {
       console.error('Error al enviar mensaje para cotización:', error)
+      throw error
+    }
+  }
+  static async sendRecordatorioFormularioDelivery(idCotizacion: number, message: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/recordatorio-formulario/${idCotizacion}`, {
+        method: 'POST',
+        body: { message }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al enviar recordatorio de formulario:', error)
+      throw error
+    }
+  }
+  static async sendCobroCotizacionFinalDelivery(idCotizacion: number, message: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/cobro-cotizacion-final/${idCotizacion}`, {
+        method: 'POST',
+        body: { message }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al enviar cobro de cotización final:', error)
+      throw error
+    }
+  }
+  static async sendCobroDeliveryDelivery(idCotizacion: number, message: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/cobro-delivery/${idCotizacion}`, {
+        method: 'POST',
+        body: { message }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al enviar cobro de delivery:', error)
       throw error
     }
   }

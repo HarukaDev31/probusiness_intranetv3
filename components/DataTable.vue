@@ -1,4 +1,4 @@
-<template>
+  <template>
   <div ref="componentRootRef" class="">
 
     <!-- Sticky Top Section -->
@@ -186,12 +186,12 @@
     </div>
 
     <!-- Table Section -->
-    <!-- Contenedor único con overflow-x-auto y overflow-y-auto para que sticky funcione -->
-    <div class="relative">
+    <!-- Contenedor con max-height y overflow para que sticky funcione -->
+    <div class="relative" ref="tableWrapperRef">
       <div 
         ref="tableContainerRef"
         class="overflow-x-auto overflow-y-auto relative scroll-container hide-native-scrollbar"
-        style="max-height: calc(100vh - 200px);"
+        style="max-height: calc(100vh - 250px);"
         @scroll="handleScroll"
         @mousemove="handleMouseMove"
         @mouseleave="stopAutoScroll"
@@ -208,7 +208,7 @@
           class="scroll-shadow scroll-shadow-right"
           :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
         ></div>
-        <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky="header" :columns="columns" :loading="loading"
+        <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky :columns="columns" :loading="loading"
           :class="['bg-transparent', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="uiForTable">
 
         <template #loading>
@@ -282,7 +282,7 @@
 </template>
 
 <script setup lang="ts">
-import { h, resolveComponent, computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { h, resolveComponent, computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { DataTableProps, DataTableEmits } from '../types/data-table'
 import { useDataTable } from '../composables/useDataTable'
 import { DATA_TABLE_DEFAULTS, PAGINATION_OPTIONS } from '../constants/data-table'
@@ -525,9 +525,12 @@ onUnmounted(() => {
 
 // Scroll automático y sombras laterales
 const tableContainerRef = ref<HTMLElement | null>(null)
+const tableWrapperRef = ref<HTMLElement | null>(null)
 // Ref to the UTable root so we can apply centering class when table doesn't scroll horizontally
 const utableRef = ref<HTMLElement | null>(null)
 const isTableNarrow = ref(false)
+// Estado para manejar sticky header cuando el padre se scrollea
+const headerTopOffset = ref(0)
 
 // Función para hacer scroll hacia arriba
 const scrollToTop = () => {
@@ -700,6 +703,7 @@ const stopAutoScroll = () => {
 
 onMounted(() => {
   updateScrollPosition()
+  
   // Observar cambios de tamaño
   if (tableContainerRef.value) {
     // Update both scroll position and the fake scrollbar width
@@ -1141,6 +1145,17 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   z-index: 60;
 }
 
+/* Asegurar que el sticky header funcione al viewport, no solo al contenedor con scroll */
+.scroll-container {
+  position: relative;
+}
+
+/* El thead debe ser sticky al viewport, no solo al contenedor */
+.scroll-container table thead {
+  position: sticky;
+  z-index: 30;
+}
+
 /* Style the fake scrollbar track & thumb (webkit) */
 .table-scrollbar::-webkit-scrollbar {
   height: 14px;
@@ -1200,7 +1215,12 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 }
 
 
-/* Dejamos que Nuxt UI maneje el sticky nativamente sin interferencias */
+/* Sticky header simple - dejar que Nuxt UI lo maneje */
+.scroll-container table thead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
 
 /* Mejorar la legibilidad del texto en mobile */
 @media (max-width: 640px) {

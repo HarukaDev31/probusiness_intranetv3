@@ -465,14 +465,14 @@ const columns: TableColumn<any>[] = [
             const correo = String(pick(['correo', 'email', 'mail']) || '')
             const cod_contract = String(pick(['cod_contract']) || '')
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
-
+            const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    cotizacion_contrato_firmado_url ? h('a', {
+                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
                         href: cotizacion_contrato_firmado_url,
                         target: '_blank',
                         class: 'text-primary hover:underline'
@@ -576,13 +576,14 @@ const columnsCoordinacion: TableColumn<any>[] = [
             const correo = row.original?.correo || ''
             const cod_contract = row.original?.cod_contract || ''
             const cotizacion_contrato_firmado_url = row.original?.cotizacion_contrato_firmado_url || ''
+            const cotizacion_contrato_url = row.original?.cotizacion_contrato_url || ''
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
                 h('div', { class: 'text-sm text-gray-500' }, documento),
                 h('div', { class: 'text-sm text-gray-500' }, telefono),
                 h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    cotizacion_contrato_firmado_url ? h('a', {
+                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
                         href: cotizacion_contrato_firmado_url,
                         target: '_blank',
                         class: 'text-primary hover:underline'
