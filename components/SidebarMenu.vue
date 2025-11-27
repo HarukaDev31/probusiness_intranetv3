@@ -307,16 +307,30 @@ const isActiveRoute = (route: string) => {
   return useRoute().path === route
 }
 
-const handleNavigation = (route: string) => {
-  // Usar el navigateTo de Nuxt, no la función local
-  return navigateTo(route)
+// Helper: ocultar sidebar en mobile (dispara emit vía computed `visible`)
+const hideSidebarOnMobile = () => {
+  if (!process.client) return
+  try {
+    if (window.innerWidth < 1024) {
+      visible.value = false
+    }
+  } catch (e) {
+    // noop
+  }
 }
 
-const navigateOrToggle = (item: any) => {
+const handleNavigation = async (route: string) => {
+  if (!route) return
+  await navigateTo(route)
+  hideSidebarOnMobile()
+}
+
+const navigateOrToggle = async (item: any) => {
   // si tiene ruta válida, navegamos; si no, toggle
   const route = item?.route
   if (route && route !== '' && route !== '#') {
-    navigateTo(route)
+    await navigateTo(route)
+    hideSidebarOnMobile()
   } else {
     toggleParent(item.id)
   }
@@ -325,12 +339,14 @@ const navigateOrToggle = (item: any) => {
 const logout = async () => {
   const { logout } = useAuth()
   await logout()
+  hideSidebarOnMobile()
 }
 
 const openNotifications = async () => {
   // Refrescar contador antes de navegar
   await fetchUnreadCount()
   await navigateTo('/notificaciones')
+  hideSidebarOnMobile()
 }
 
 /**

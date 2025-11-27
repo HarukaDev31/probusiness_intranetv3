@@ -1,8 +1,6 @@
     <!--3 tabs:general,variacion,pagos and 3 tables-->
     <template>
         <div class="p-0 md:p-6">
-
-
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
                 :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
@@ -20,19 +18,12 @@
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
                             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
                                 <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 md:w-100 h-15" color="neutral" />
-                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-0 md:mb-4">
-                                    <div class="flex flex-col mr-2 space-y-1">
-                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
-                                        <div class="flex items-center gap-2">
-                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
-                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
-                                        </div>
-                                    </div>
-                                </div>
+                                
                             </div>
                         </div>
                     </div>
                 </template>
+
             </DataTable>
             <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados" :columns="getColumnsEmbarcados()"
                 :loading="loadingEmbarcados || loadingHeaders" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
@@ -50,13 +41,28 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingEmbarcados || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
+                                <div class="hidden md:flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-0 md:mb-4">
+                                    <div class="flex flex-col mr-2 space-y-1">
+                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
+                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
+                                        </div>
+                                    </div>
+                                </div> 
                             </div>
                         </div>
                     </div>
                 </template>
-
+                <!-- Mobile: compact date control next to back button -->
+                <template #back-extra>
+                    <div class="flex items-center gap-2">
+                        <div class="text-xs font-semibold text-orange-600">F. Max. Doc</div>
+                        <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none border border-gray-200 dark:border-gray-700 rounded px-2 py-1 w-28" />
+                        <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" aria-label="Guardar fecha" @click="handleSaveFMaxDocumentacion"/>
+                    </div>
+                </template>
             </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
                 :loading="loadingVariacion || loadingHeaders" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
@@ -74,7 +80,7 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingVariacion || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
                                 
                             </div>
                         </div>
@@ -97,7 +103,7 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
                                 
                             </div>
                         </div>

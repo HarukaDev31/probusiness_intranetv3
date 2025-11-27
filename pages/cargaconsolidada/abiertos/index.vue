@@ -35,7 +35,7 @@
             </template>
         </DataTable>
         <!-- Mobile list view: visible only on small screens -->
-        <div v-if="true" class="sm:hidden mt-4">
+        <div v-if="currentRole!==ROLES.DOCUMENTACION" class="sm:hidden mt-4">
             <div class="flex flex-col gap-3">
                 <template v-for="(row, idx) in consolidadoData" :key="row.id || idx">
                     <button type="button" @click="handleViewSteps(row.id)" class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4 flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary">
@@ -44,7 +44,7 @@
                             <div class="font-semibold text-sm">Consolidado #{{ row.carga }}</div>
                             <div class="text-xs text-gray-400 mt-1">{{ formatDateTimeToDmy(row.f_cierre) }} • {{ row.empresa }}</div>
                         </div>
-                        <div class="ml-4 flex items-center">
+                        <div class="ml-4 flex flex-col items-end">
                             <div class="min-w-[110px]">
                                 <USelect :modelValue="row.estado_china"
                                     variant="subtle"
@@ -57,6 +57,16 @@
                                     :class="STATUS_BG_CLASSES[(row.estado_china) as keyof typeof STATUS_BG_CLASSES]
                                     + ' text-sm py-2 px-3 rounded-full'"
                                 />
+                            </div>
+                            <div class="mt-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-300">
+                                <div class="flex items-center gap-2">
+                                    <img data-v-f8957c9e="" src="https://upload.wikimedia.org/wikipedia/commons/c/cf/Flag_of_Peru.svg" alt="icon" class="w-4 h-2.5">
+                                    <span class="whitespace-nowrap">{{ safeCbm(row, 'cbm_total_peru') }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <img data-v-f8957c9e="" src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg" alt="icon" class="w-4 h-2.5">
+                                    <span class="whitespace-nowrap">{{ safeCbm(row, 'cbm_total_china') }}</span>
+                                </div>
                             </div>
                         </div>
                     </button>
@@ -181,6 +191,15 @@ const handleCreateConsolidado = async (data: any) => {
         await getConsolidadoData()
     } catch (error) {
         showError('Error al crear carga consolidada', error as string)
+    }
+}
+
+const safeCbm = (r: any, key: string) => {
+    try {
+        const val = (r && (r as any)[key]) ?? (r && (r as any).original && (r as any).original[key])
+        return val != null ? formatNumber(val, 2) : 'N/A'
+    } catch (e) {
+        return 'N/A'
     }
 }
 const columns: TableColumn<any>[] = [

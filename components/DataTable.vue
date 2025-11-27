@@ -5,11 +5,31 @@
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
   <slot name="filters" />
   <template v-if="!$slots.filters">
-    <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4 p-2 md:p-4 ">
+    <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4 p-0 md:p-4 ">
       <div class="w-full lg:w-full flex flex-col lg:flex-row justify-between gap-1 md:gap-3 items-center">
-        <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack" />
+        <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
+          <template v-if="$slots['back-extra']" #back-extra>
+            <slot name="back-extra" />
+          </template>
+        </PageHeader>
+
+        <!-- Headers: show below title and above search/actions -->
+        <div v-if="showHeaders" class="bg-transparent border-b border-gray-200 dark:border-gray-700 w-full lg:mt-0 block lg:hidden">
+          <div class="overflow-visible">
+            <div class="flex flex-wrap items-center md:gap-3 justify-center">
+              <div v-for="header in headers" :key="header.value" class="inline-flex items-center gap-1 mr-3">
+                <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
+                  {{ header.label }}:
+                </span>
+                <UBadge :label="header.value || 'N/A'" color="neutral" variant="outline" size="sm"
+                  class="font-medium text-xs" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Search and Actions -->
-        <div class="flex flex-col lg:flex-row items-start lg:items-center gap-1 md:gap-3 w-full lg:w-auto">
+        <div class="flex lg:flex-row items-center lg:items-center gap-1 md:gap-3 w-full lg:w-auto">
           <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
             <label v-if="showPrimarySearchLabel"
               class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
@@ -23,12 +43,16 @@
           </div>
 
           <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
-            class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
+            class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
             @click="handleExport" />
-          <div class="flex items-center gap-2 relative w-full lg:w-auto">
-            <div ref="filtersButtonRef" class="w-full lg:w-auto">
-              <UButton v-if="showFilters" :label="translations.filters" icon="i-heroicons-funnel"
-                class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
+            <div class="flex items-center gap-2 relative md:w-full lg:w-auto">
+            <div ref="filtersButtonRef" class="w-auto lg:w-auto">
+              <UButton v-if="showFilters"
+                :label="isMobile ? '' : translations.filters"
+                :title="translations.filters"
+                icon="i-heroicons-funnel"
+                class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
+                :class="isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto'"
                 @click="showFiltersPanel = !showFiltersPanel" />
             </div>
 
@@ -79,12 +103,15 @@
 
             <!-- Mobile: teleport the filters panel to body to avoid clipping; only active when isMobile === true -->
             <teleport to="body" v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && isMobile">
-              <div class="filters-overlay" @click="showFiltersPanel = false"></div>
+              <!-- Overlay: usando utilidades Tailwind para color y backdrop; mantenemos la clase antigua para compatibilidad -->
+              <div class="filters-overlay fixed inset-0 bg-black/40 backdrop-blur-sm z-[990]" @click="showFiltersPanel = false"></div>
 
-              <div ref="filtersPanelRef" class="filters-panel-mobile" @click.stop>
-                <div class="filters-header">
+              <!-- Panel móvil: utilidades Tailwind para fondo, dark-mode, tamaño y scroll; mantenemos la clase antigua para reglas legacy -->
+              <div ref="filtersPanelRef" class="filters-panel-mobile fixed left-4 right-4 top-[12vh] max-h-[calc(100vh-16vh)] mx-auto z-[1000] bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-lg overflow-y-auto p-3" @click.stop>
+                <!-- Nota: este panel usa utilidades Tailwind (bg / dark:bg / z-index / spacing) para asegurar comportamiento claro/oscuro -->
+                <div class="sticky top-0 bg-transparent pb-2 mb-2 z-10 flex items-center justify-between">
                   <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ translations.filters }}</div>
-                  <button type="button" class="filters-close" @click="showFiltersPanel = false">✕</button>
+                  <button type="button" class="filters-close bg-transparent border-0 text-lg p-1" @click="showFiltersPanel = false">✕</button>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
@@ -135,27 +162,25 @@
         </div>
       </div>
     </div>
-  </template>
+    </template>
 
-      <div v-if="showHeaders" class="bg-transparent border-b border-gray-200 dark:border-gray-700">
+      <!-- Desktop headers (only on lg and up) - keep original placement for PC layout -->
+      <div v-if="showHeaders" class="hidden lg:block bg-transparent border-b border-gray-200 dark:border-gray-700">
         <div class="px-4 lg:px-6 py-3">
-          <!-- Scrollable header chips on small screens -->
-          <div class="headers-scroll -mx-4 sm:mx-0 px-4 sm:px-0 overflow-x-auto sm:overflow-x-visible md:hide-native-scrollbar">
-            <div class="inline-flex items-center gap-3 whitespace-nowrap">
-              <div v-for="header in headers" :key="header.value" class="inline-flex items-center gap-2 mr-4">
-                <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                  {{ header.label }}:
-                </span>
-                <UBadge :label="header.value || 'N/A'" color="neutral" variant="outline" size="sm"
-                  class="font-medium text-xs" />
-              </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <div v-for="header in headers" :key="header.value" class="inline-flex items-center gap-2 mr-4">
+              <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
+                {{ header.label }}:
+              </span>
+              <UBadge :label="header.value || 'N/A'" color="neutral" variant="outline" size="sm"
+                class="font-medium text-xs" />
             </div>
           </div>
         </div>
       </div>
 
       <!-- Body Top Slot (compact on mobile) -->
-      <div class="flex flex-col sm:flex-row justify-between px-3 py-2 sm:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
+      <div class="flex flex-col sm:flex-row justify-center px-0 py-0 sm:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
         <slot name="body-top" />
       </div>
     </div>
@@ -240,7 +265,7 @@
           {{ translations.de }} {{ totalRecords }} {{ translations.resultados }}
         </div>
         <div class="flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto" v-if="showPagination">
-          <div class="flex items-center gap-2 justify-center lg:justify-start">
+          <div class="flex items-center gap-2 justify-center lg:justify-start hidden md:flex">
             <label class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.perPage }}</label>
             <USelect :model-value="itemsPerPage" :items="PAGINATION_OPTIONS" placeholder="10" class="w-20"
               @update:model-value="(value: any) => onItemsPerPageChange(Number(value))" />
@@ -581,10 +606,11 @@ const uiForTable = computed(() => ({
   base: isTableNarrow.value ? 'min-w-[80%]' : 'min-w-full',
   tbody: 'border-separate border-spacing-y-6',
   td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
-  thead: 'relative bg-[#f0f4f9] dark:bg-gray-900',
   th: 'font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5',
   // Nuxt UI aplica automáticamente: thead: 'sticky top-0 inset-x-0 bg-default/75 z-[1] backdrop-blur'
-  tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
+  // Make the thead have a thicker bottom border colored like the header background
+  thead: 'top-0 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15',
+  tr: 'border-[#f0f4f9] dark:border-gray-900',
 }))
 
 const handleScroll = () => {
@@ -1049,11 +1075,36 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   .filters-panel select {
     height: 2rem !important;
     padding: 0.35rem 0.5rem !important;
-    font-size: 0.875rem !important;
+    box-shadow: 0 12px 40px rgba(2,6,23,0.12);
   }
 
   .filters-panel .h-8 { height: 2.25rem !important; }
   .filters-panel .h-11 { height: 2.5rem !important; }
+
+  /* Dark mode tweaks for mobile filters panel to improve contrast and harmony */
+  .dark .filters-panel-mobile {
+    background: #0f1724; /* deep dark to match app dark background */
+    color: #e6eef8;
+    border: 1px solid rgba(255,255,255,0.04);
+    box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+  }
+
+  /* Make header/close text lighter in dark mode */
+  .dark .filters-panel-mobile .filters-header,
+  .dark .filters-panel-mobile .filters-header * {
+    color: #cbd5e1;
+  }
+
+  /* Ensure inputs / selects inside the panel inherit dark styling if they don't already */
+  .dark .filters-panel-mobile input,
+  .dark .filters-panel-mobile select,
+  .dark .filters-panel-mobile .u-input,
+  .dark .filters-panel-mobile .u-select,
+  .dark .filters-panel-mobile .combobox-content {
+    background: #0b1220 !important;
+    color: #e6eef8 !important;
+    border-color: rgba(255,255,255,0.06) !important;
+  }
 
   .filters-panel .mt-2 { margin-top: 0.35rem !important; }
   .filters-panel .pt-3 { padding-top: 0.35rem !important; }
@@ -1128,6 +1179,26 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   min-width: 80% !important;
 }
 
+/* Add small vertical spacing between tbody rows to make rows breathe */
+/* Use ::v-deep to reach the actual <table> rendered by UTable */
+.utable-narrow ::v-deep table,
+.min-w-full ::v-deep table {
+  border-collapse: separate !important;
+  /* vertical spacing: 0.5rem (8px) - adjust to taste */
+  border-spacing: 0 0.5rem !important;
+}
+
+/* When using separate border mode, ensure rows look like separate blocks */
+.utable-narrow ::v-deep tbody tr,
+.min-w-full ::v-deep tbody tr {
+  background: transparent; /* keep default, cells already have bg */
+}
+
+/* Add rounded corners to row cells so spacing looks like gaps between cards */
+.min-w-full ::v-deep tbody tr td {
+  border-radius: 0.375rem; /* 6px */
+}
+
 
 /* Dejamos que Nuxt UI maneje el sticky nativamente sin interferencias */
 
@@ -1152,7 +1223,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.35);
-  z-index: 1040;
+  z-index: auto; /* lowered so selects/portals with higher z-index can appear above */
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
 }
@@ -1165,7 +1236,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   top: 12vh;
   max-height: calc(100vh - 16vh);
   margin: 0 auto;
-  z-index: 1050;
+  z-index: auto; /* lowered from 1050 to avoid overlapping select portals */
   background: #ffffff;
   border-radius: 0.75rem;
   box-shadow: 0 12px 40px rgba(2,6,23,0.12);

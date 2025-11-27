@@ -12,7 +12,7 @@
         <div v-for="index in numberOfPagos - computedCountPagosDetails" :key="index" class="pago-item"
           @click="openCreatePagoModal(index)">
           <div class="pago-content">
-            <UIcon name="i-heroicons-plus" class="w-6 h-6" />
+            <UIcon name="i-heroicons-plus" class="md:w-6 md:h-6 w-4 h-4" />
 
           </div>
         </div>
@@ -98,6 +98,7 @@ const openPagoDetailsModal = (pago: PagosDetails) => {
   display: flex;
   flex-direction: row;
   padding: 1rem;
+  gap: .5rem;
 }
 
 .pago-item:hover {
@@ -138,13 +139,14 @@ const openPagoDetailsModal = (pago: PagosDetails) => {
 @media (max-width: 768px) {
   .grid-container {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 0.75rem;
-    padding: 0.75rem;
+    gap: 0.2rem;
+    padding: 0.2rem;
+    align-items: center;
   }
 
   .pago-item {
-    padding: 1rem;
-    min-height: 100px;
+    padding: 0.2rem;
+    min-height: 50px;
   }
 
   .pago-icon {
