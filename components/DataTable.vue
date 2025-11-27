@@ -714,6 +714,7 @@ onMounted(() => {
         tableScrollWidth.value = tableContainerRef.value?.scrollWidth || 0
         // ensure fake scrollbar initial position follows table
         if (fakeScrollbarRef.value) fakeScrollbarRef.value.scrollLeft = tableContainerRef.value?.scrollLeft || 0
+        // ignore
       } catch (e) {
         // ignore
       }
