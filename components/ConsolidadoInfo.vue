@@ -10,7 +10,7 @@
               <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-24"></div>
             </template>
             <template v-else>
-              <label class="text-lg font-semibold text-gray-900 dark:text-white">{{ consolidado.numero }}</label>
+              <label class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">{{ consolidado.numero }}</label>
             </template>
           
         </div>
@@ -24,7 +24,7 @@
             <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32"></div>
           </template>
           <template v-else>
-            <span class="text-lg font-semibold text-gray-900 dark:text-white truncate">{{ cliente.nombre }}</span>
+            <span class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white truncate">{{ cliente.nombre }}</span>
           </template>
         </div>
       </div>
@@ -36,7 +36,7 @@
             <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-20"></div>
           </template>
           <template v-else>
-            <span class="text-lg font-semibold text-gray-900 dark:text-white">{{ codigoProveedor }}</span>
+            <span class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">{{ codigoProveedor }}</span>
           </template>
         </div>
       </div>

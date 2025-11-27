@@ -15,20 +15,20 @@
 
         <!-- Contenido real cuando no está cargando -->
         <div v-else>
-            <!-- Scroll container: horizontal on small screens, visible overflow on larger -->
-            <div class="section-headers-scroll -mx-2 px-2 overflow-x-auto sm:overflow-x-visible">
-                <div class="inline-flex items-center gap-2 whitespace-nowrap">
-                    <div v-if="title" class="flex items-center pr-4 pl-2 py-3"
+            <!-- Headers container: show all data without horizontal scroll -->
+            <div class="md:px-2 ">
+                <div class="flex flex-wrap items-center md:justify-start">
+                    <div v-if="title" class="flex items-center px-1 py-3 md:py-3 md:px-2"
                         style="border-bottom: 1px solid #e0e0e0;border-right: 1px solid #e0e0e0;">
-                        {{ title }}
+                        <div class="flex items-center gap-2 h-4 md:h-6">{{ title }}</div>
                     </div>
-                    <div v-for="header in headers" :key="header.value" class="flex items-center px-2 py-3 gap-1"
+                    <div v-for="header in headers" :key="header.value" class="flex items-center px-1 py-2 md:py-3 md:px-2 gap-1 mt-1"
                         style="border-bottom: 1px solid #e0e0e0;">
-                        <div v-if="isUrl(header.icon)" class="flex items-center gap-2">
+                        <div v-if="isUrl(header.icon)" class="flex items-center justify-center align-middle gap-2 ">
                             <img :src="header.icon" alt="icon" class="w-5 h-4" />
                         </div>
                         <div v-else>
-                            <UIcon :name="header.icon" class="w-5 h-4 mt-1" />
+                            <UIcon :name="header.icon" class="w-5 h-4" />
                         </div>
                         <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
                             {{ header.label }}:
@@ -41,8 +41,8 @@
                             </button>
                         </template>
                         <template v-else>
-                            <UBadge :label="header.value || 'N/A'" color="neutral" variant="soft" size="sm"
-                                class="font-medium text-xs" />
+                                <UBadge :label="header.value || 'N/A'" color="neutral" variant="soft" size="xs"
+                                    class="font-medium text-xs truncate max-w-[8rem] px-0" />
                         </template>
                     </div>
                 </div>
@@ -128,18 +128,5 @@ const openPerUsuarioModal = (header: any) => {
     }
 }
 
-/* Scroll helper for section headers on small screens */
-.section-headers-scroll {
-    -webkit-overflow-scrolling: touch;
-}
-.section-headers-scroll::-webkit-scrollbar {
-    height: 6px;
-}
-.section-headers-scroll::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.08);
-    border-radius: 9999px;
-}
-@media (min-width: 640px) {
-    .section-headers-scroll { overflow-x: visible !important; }
-}
+/* Removed scroll helper: headers must be fully visible without horizontal scrolling */
 </style>

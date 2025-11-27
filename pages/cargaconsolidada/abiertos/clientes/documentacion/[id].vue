@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6">
+    <div class="md:p-6">
         <PageHeader title="" subtitle="" icon="" :hide-back-button="false"
             @back="navigateTo(`/cargaconsolidada/abiertos/clientes/${cliente?.id_contenedor}`)">
             <template #actions>
@@ -44,7 +44,7 @@
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                     <div class="space-y-6">
                         <!-- Header skeleton -->
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
                                 <div class="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                                 <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 animate-pulse"></div>
@@ -219,11 +219,11 @@
                 <!-- Sección de Documentación -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md " :class="{ 'col-span-2': currentRole === ROLES.COORDINACION }">
                     <template #header>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
                                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
 
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
                                     Documentación {{ currentRole === ROLES.DOCUMENTACION ? 'Perú' : '' }} - {{ proveedorActivo?.products }}
                                     
                                 </h3>
@@ -335,10 +335,10 @@
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
                     v-if="currentRole === ROLES.DOCUMENTACION">
                     <template #header>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
                                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
                                     Documentación China
                                 </h3>
                                 <img  v-if="currentRole === ROLES.DOCUMENTACION" :src="CUSTOMIZED_ICONS_URL['CHINA']" alt="Flag" class="w-5 h-5" />
@@ -376,10 +376,10 @@
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
                     v-if="currentRole === ROLES.DOCUMENTACION">
                     <template #header>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
                                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
                                     Inspección
                                 </h3>
                                 <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">

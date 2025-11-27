@@ -1,20 +1,17 @@
 <template>
-  <div class="p-6">
+  <div class="md:p-6">
     <!-- Header Section -->
-    <PageHeader title="" subtitle="Gestión de cotizaciones" icon="" :hide-back-button="false"
-      @back="navigateTo(`/cargaconsolidada/completados/pasos/${id}`)" />
-    <!-- add 3 buttons 
- Subir Factura
- Plantilla General
- Plantilla Final
--->
-    <div class="flex justify-end gap-3 mb-4">
-      <UButton label="Subir Factura" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
-        @click="handleUploadFactura" />
-      <UButton label="Plantilla General" icon="i-heroicons-arrow-down-tray" color="primary" variant="outline"
-        @click="handleDownloadPlantillaGeneral" />
-      <UButton label="Plantilla Final" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
-        @click="handleUploadPlantillaFinal" />
+    <div class="flex flex-col md:flex-row">
+      <PageHeader title="" subtitle="" icon="" :hide-back-button="false" class="w-full"
+        @back="navigateTo(`/cargaconsolidada/completados/pasos/${id}`)" />
+      <div class="flex items-center gap-3 flex-wrap md:mb-4 w-full md:justify-end">
+        <UButton label="Subir Factura" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
+          @click="handleUploadFactura" class="whitespace-nowrap" />
+        <UButton label="Plantilla General" icon="i-heroicons-arrow-down-tray" color="primary" variant="outline"
+          @click="handleDownloadPlantillaGeneral" class="whitespace-nowrap" />
+        <UButton label="Plantilla Final" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
+          @click="handleUploadPlantillaFinal" class="whitespace-nowrap" />
+      </div>
     </div>
     <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
       :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"

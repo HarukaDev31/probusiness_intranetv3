@@ -23,6 +23,7 @@
                     :loading="exporting"
                     color="success"
                     variant="outline"
+                    class="hidden md:flex"
                 />
             </template>
 
@@ -147,7 +148,7 @@ const columns: TableColumn<any>[] = [
         header: 'N°',
         cell: ({ row }) => {
             const index = clientes.value.indexOf(row.original)
-            return h('div', { class: 'text-gray-700 py-3 dark:text-gray-300' }, index + 1)
+            return h('div', { class: 'text-gray-700 py-3 dark:text-gray-300 text-center' }, index + 1)
         }
     },
     {
