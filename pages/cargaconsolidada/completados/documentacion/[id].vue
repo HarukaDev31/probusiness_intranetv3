@@ -280,7 +280,7 @@ const handleDownloadFactura = async () => {
             if (response.success) {
                 showSuccess('Éxito', 'Factura comercial descargada correctamente')
             } else {
-                showError('Error', response.error || 'Error al descargar la factura comercial')
+                showError('Error', 'Error al descargar la factura comercial')
             }
         }, 'Descargando factura comercial...')
     } catch (error: any) {
