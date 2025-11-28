@@ -2,9 +2,7 @@
   <div class="md:p-6">
     <!-- Header Section -->
     <div class="flex flex-col md:flex-row">
-      <PageHeader title="" subtitle="" icon="" :hide-back-button="false" class="w-full"
-        @back="navigateTo(`/cargaconsolidada/abiertos/pasos/${id}`)" />
-      <div class="flex items-center gap-3 flex-wrap md:mb-4 w-full md:justify-end">
+      <div class="hidden md:flex items-center gap-3 flex-wrap md:mb-4 w-full md:justify-end">
         <UButton label="Subir Factura" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
           @click="handleUploadFactura" class="whitespace-nowrap" />
         <UButton label="Plantilla General" icon="i-heroicons-arrow-down-tray" color="primary" variant="outline"
@@ -13,32 +11,32 @@
           @click="handleUploadPlantillaFinal" class="whitespace-nowrap" />
       </div>
     </div>
-    <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
+    <DataTable title="" subtitle="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
       :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
   :show-primary-search="true" :show-pagination="false" :show-secondary-search="false" :show-filters="false"
-      :filter-config="filterConfigGeneral" :show-export="false"
+      :filter-config="filterConfigGeneral" :show-export="false" :hide-back-button="false" :previous-page-url="`/cargaconsolidada/abiertos/pasos/${id}`"
       empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
       @filter-change="handleFilterChangeGeneral" :show-body-top="true">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 md:w-80 md:h-15 w-60 h-12" size="md"/>
         </div>
       </template>
     </DataTable>
     <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos || loadingHeaders" title=""
       :icon="''" :current-page="currentPagePagos" :total-pages="totalPagesPagos" :total-records="totalRecordsPagos"
       :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos" :show-secondary-search="false"
-      :show-filters="false" :filter-config="filterConfigPagos" :show-export="false"
+      :show-filters="false" :filter-config="filterConfigPagos" :show-export="false" :hide-back-button="false" :previous-page-url="`/cargaconsolidada/abiertos/pasos/${id}`"
       empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
       :show-pagination="false" @filter-change="handleFilterChangePagos" :show-body-top="true">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 md:w-80 md:h-15 w-60 h-12" size="md" />
         </div>
 
       </template>

@@ -34,7 +34,7 @@ export interface Header {
 }
 export interface DataTableProps {
   // Basic props
-  title: string|null
+  title?: string|null
   subtitle?: string|null
   icon?: string|null
   showTitle?: boolean

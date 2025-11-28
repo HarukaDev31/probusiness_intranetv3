@@ -2,10 +2,10 @@
   <UCard class="space-y-6">
     <!-- Header -->
    
-    <div class="flex justify-between items-center">
+    <div class="flex justify-between items-center py-2 md:py-0">
       <div>
-        <h2 class="text-2xl font-bold ">Administración de Horarios</h2>
-        <p class=" mt-1">Gestiona los horarios disponibles para las citas</p>
+        <h2 class="md:text-2xl font-bold ">Administración de Horarios</h2>
+        <p class="md:flex hidden mt-1">Gestiona los horarios disponibles para las citas</p>
       </div>
       <UButton
         @click="openHorarioModal"
@@ -13,6 +13,7 @@
         color="primary"
         size="lg"
         :disabled="selectedDates.length === 0"
+        class="md:text-sm text-xs"
       >
         Nuevo Horario ({{ selectedDates.length }})
       </UButton>
@@ -21,9 +22,9 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Calendario -->
       <div class="space-y-4">
-        <h3 class="text-lg font-semibold ">Calendario</h3>
+        <h3 class="text-lg  md:font-semibold">Calendario</h3>
         <UCard class="">
-          <div class="p-4">
+          <div class="md:p-4">
             <!-- Navegación del calendario -->
             <div class="flex items-center justify-between mb-4">
               <UButton 
