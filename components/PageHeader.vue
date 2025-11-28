@@ -1,7 +1,7 @@
 <template>
   <div class="mb-2">
     <div class="w-full flex flex-col md:flex-row gap-2 md:gap-4">
-      <div class="flex items-center mr-4">
+      <div class="flex items-center md:mr-4 justify-between md:justify-start w-full md:w-auto">
         <UButton
           v-if="!hideBackButton"
           @click="$emit('back')"
@@ -14,15 +14,13 @@
           <span class=" md:inline whitespace-nowrap">Regresar</span>
         </UButton>
 
-        <!-- Mobile-only small controls inserted next to the back button; styled like the desktop card -->
-        <div v-if="$slots['back-extra']" class="ml-2 md:hidden bg-white dark:bg-gray-800 shadow-sm rounded px-3 py-2 flex items-center gap-2">
+        <!-- Small controls inserted next to the back button. One variant for mobile, another for md+ -->
+        <div v-if="$slots['back-extra']" class="ml-2 md:hidden px-3 py-0 flex items-center gap-2">
           <slot name="back-extra" />
         </div>
       </div>
-      <div class="flex items-center flex-1" :class="classAdd">
+      <div v-if="title || subtitle" class="flex items-center flex-1" :class="classAdd">
         <div class="flex flex-row items-center gap-4">
-          
-
           <div>
             <h1 class="mt-1 text-base md:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white flex items-center">
               <UIcon v-if="icon" :name="icon" class="text-secondary mr-3 text-2xl" />

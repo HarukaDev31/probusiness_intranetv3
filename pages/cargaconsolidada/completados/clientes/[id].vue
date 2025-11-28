@@ -57,7 +57,7 @@
                 </template>
                 <!-- Mobile: compact date control next to back button -->
                 <template #back-extra>
-                    <div class="flex items-center gap-2">
+                    <div class="bg-white dark:bg-gray-800 flex items-center gap-2 p-2 rounded shadow-sm md:hidden">
                         <div class="text-xs font-semibold text-orange-600">F. Max. Doc</div>
                         <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none border border-gray-200 dark:border-gray-700 rounded px-2 py-1 w-28" />
                         <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" aria-label="Guardar fecha" @click="handleSaveFMaxDocumentacion"/>
