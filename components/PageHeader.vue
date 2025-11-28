@@ -1,14 +1,14 @@
 <template>
   <div class="mb-2">
-    <div class="w-full flex flex-col md:flex-row gap-0 md:gap-4">
+    <div class="w-full flex flex-col md:flex-row gap-2 md:gap-4">
       <div class="flex items-center mr-4">
         <UButton
           v-if="!hideBackButton"
           @click="$emit('back')"
           aria-label="Regresar"
-          color="neutral"
-          variant="outline"
-          class="flex items-center gap-2 px-2 py-1 md:px-4 md:py-2 text-sm md:text-base w-fit md:w-auto"
+          color="primary"
+          variant="subtle"
+          class="flex items-center gap-3 px-2 py-2 md:px-4 md:py-2 text-sm md:text-base w-fit md:w-auto"
         >
           <UIcon name="i-heroicons-arrow-left" class="w-4 h-4 md:w-5 md:h-5 text-gray-500" />
           <span class=" md:inline whitespace-nowrap">Regresar</span>

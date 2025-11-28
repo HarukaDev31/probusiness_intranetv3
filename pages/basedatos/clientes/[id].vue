@@ -8,7 +8,7 @@
     <div v-if="loading" class="space-y-6">
       <!-- Skeleton para la información básica -->
       <UCard>
-        <div class="flex items-start space-x-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 w-full md:w-1/3 flex flex-col items-center">
           <!-- Skeleton foto de perfil -->
           <div class="flex-shrink-0">
             <div class="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
@@ -16,15 +16,15 @@
 
           <!-- Skeleton información -->
           <div class="flex-1">
-            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse w-1/3"></div>
+            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse md:w-1/3 w-full"></div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-6">
               <!-- Columna izquierda -->
               <div class="space-y-4">
                 <div v-for="i in 5" :key="`left-${i}`"
                   class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse w-1/4"></div>
-                  <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse md:w-1/4 w-full"></div>
+                  <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse md:w-3/4 w-full"></div>
                 </div>
               </div>
 
@@ -32,8 +32,8 @@
               <div class="space-y-4">
                 <div v-for="i in 5" :key="`right-${i}`"
                   class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse w-1/4"></div>
-                  <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse md:w-1/4 w-full"></div>
+                <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse md:w-3/4 w-full"></div>
                 </div>
               </div>
             </div>
@@ -68,7 +68,7 @@
         </div>
         <h2 class="text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 text-center">{{ cliente?.nombre }}</h2>
         <div class="w-full">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-y-2 text-sm">
+          <div class="grid grid-cols-2 md:grid-cols-2 gap-y-2 text-sm">
             <div class="font-medium text-gray-500 dark:text-gray-400">País:</div>
               <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.pais || 'Perú' }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">Ciudad:</div>

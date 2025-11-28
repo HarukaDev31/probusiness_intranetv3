@@ -1210,11 +1210,6 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   background: transparent; /* keep default, cells already have bg */
 }
 
-/* Add rounded corners to row cells so spacing looks like gaps between cards */
-.min-w-full ::v-deep tbody tr td {
-  border-radius: 0.375rem; /* 6px */
-}
-
 
 /* Sticky header simple - dejar que Nuxt UI lo maneje */
 .scroll-container table thead {
