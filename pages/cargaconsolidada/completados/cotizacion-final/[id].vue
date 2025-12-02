@@ -4,7 +4,8 @@
     <div class="flex flex-col md:flex-row">
       <PageHeader title="" subtitle="" icon="" :hide-back-button="false" class="w-full"
         @back="navigateTo(`/cargaconsolidada/completados/pasos/${id}`)" />
-      <div class=" hidden md:flex items-center gap-3 flex-wrap md:mb-4 w-full md:justify-end">
+      <div class=" hidden md:flex items-center gap-3 flex-wrap md:mb-4 w-full md:justify-end"
+        v-if="currentRole === ROLES.COORDINACION">
         <UButton label="Subir Factura" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
           @click="handleUploadFactura" class="whitespace-nowrap" />
         <UButton label="Plantilla General" icon="i-heroicons-arrow-down-tray" color="primary" variant="outline"
@@ -13,31 +14,34 @@
           @click="handleUploadPlantillaFinal" class="whitespace-nowrap" />
       </div>
     </div>
-    <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="generalColumns" :icon="''"
+    <DataTable title="" v-if="activeTab === 'general'" :data="general" :columns="getGeneralColumns()" :icon="''"
       :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
       :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral"
-  :show-primary-search="true" :show-pagination="false" :show-secondary-search="false" :show-filters="false"
+      :show-primary-search="true" :show-pagination="false" :show-secondary-search="false" :show-filters="false"
       :filter-config="filterConfigGeneral" :show-export="false"
       empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
       @filter-change="handleFilterChangeGeneral" :show-body-top="true">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
+          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers"
+            :loading="loadingGeneral || loadingHeaders" />
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
       </template>
     </DataTable>
-    <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns" :loading="loadingPagos || loadingHeaders" title=""
-      :icon="''" :current-page="currentPagePagos" :total-pages="totalPagesPagos" :total-records="totalRecordsPagos"
-      :items-per-page="itemsPerPagePagos" :search-query-value="searchPagos" :show-secondary-search="false"
-      :show-filters="false" :filter-config="filterConfigPagos" :show-export="false"
+    <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns"
+      :loading="loadingPagos || loadingHeaders" title="" :icon="''" :current-page="currentPagePagos"
+      :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
+      :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
+      :filter-config="filterConfigPagos" :show-export="false"
       empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
       :show-pagination="false" @filter-change="handleFilterChangePagos" :show-body-top="true">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
+          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers"
+            :loading="loadingPagos || loadingHeaders" />
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
 
@@ -61,8 +65,12 @@ import PagoGrid from '~/components/PagoGrid.vue'
 import type { TableColumn } from '@nuxt/ui'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
+import { UTooltip } from '#components'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
+const { currentRole } = useUserRole()
 const { general, loadingGeneral, updateEstadoCotizacionFinal, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
@@ -157,6 +165,14 @@ const handleUploadPlantillaFinal = () => {
     }
   })
 }
+const getGeneralColumns = () => {
+  switch (currentRole.value) {
+    case ROLES.ADMINISTRACION:
+      return generalColumnsAdministrador.value
+    default:
+      return generalColumns.value
+  }
+}
 const generalColumns = ref<TableColumn<any>[]>([
   {
     accessorKey: 'nro',
@@ -182,12 +198,12 @@ const generalColumns = ref<TableColumn<any>[]>([
         h('div', { class: 'text-sm text-gray-500' }, telefono),
         h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo'),
         cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
-                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
-                        target: '_blank',
-                        class: 'text-primary hover:underline' 
-                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
-                ]) : null  
+          (cotizacion_contrato_firmado_url || cotizacion_contrato_url) ? h('a', {
+            href: (cotizacion_contrato_firmado_url || cotizacion_contrato_url),
+            target: '_blank',
+            class: 'text-primary hover:underline'
+          }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+        ]) : null
       ])
     }
   },
@@ -341,6 +357,208 @@ const generalColumns = ref<TableColumn<any>[]>([
           }
         })
       }
+    }
+  }
+])
+const generalColumnsAdministrador = ref<TableColumn<any>[]>([
+  {
+    accessorKey: 'nro',
+    header: 'N°',
+    cell: ({ row }: { row: any }) => {
+      return row.index + 1
+    }
+  },
+  {
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const telefono = row.original?.telefono || ''
+      const correo = row.original?.correo || ''
+      const cod_contract = row.original?.cod_contract || ''
+      const cotizacion_contrato_firmado_url = row.original?.cotizacion_contrato_firmado_url || ''
+      const cotizacion_contrato_url = row.original?.cotizacion_contrato_url || ''
+      return h('div', { class: 'py-2' }, [
+        h('div', { class: 'font-medium' }, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo'),
+        cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
+          (cotizacion_contrato_firmado_url || cotizacion_contrato_url) ? h('a', {
+            href: (cotizacion_contrato_firmado_url || cotizacion_contrato_url),
+            target: '_blank',
+            class: 'text-primary hover:underline'
+          }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+        ]) : null
+      ])
+    }
+  },
+
+  {
+    accessorKey: 'tipo_cliente',
+    header: 'T. Cliente'
+  },
+
+  {
+    accessorKey: 'volumen_final',
+    header: 'Volumen',
+    cell: ({ row }: { row: any }) => {
+      return row.original.volumen_final || 'N/A'
+    }
+  },
+
+  {
+    accessorKey: 'fob_final',
+    header: 'Fob',
+    cell: ({ row }: { row: any }) => {
+      return `$${row.original.fob_final}`
+    }
+  },
+
+  {
+    accessorKey: 'logistica_final',
+    header: 'Logística',
+    cell: ({ row }: { row: any }) => {
+      return formatCurrency(row.original.logistica_final)
+    }
+  },
+
+  {
+    accessorKey: 'impuestos_final',
+    header: 'Impuesto',
+    cell: ({ row }: { row: any }) => {
+      return formatCurrency(row.original.impuestos_final)
+    }
+  },
+
+  {
+    accessorKey: 'tarifa_final',
+    header: 'Tarifa',
+    cell: ({ row }: { row: any }) => {
+      return formatCurrency(row.original.tarifa_final)
+    }
+  },
+  {
+    accessorKey: 'estado_cotizacion_final',
+    header: 'Estados',
+    cell: ({ row }: { row: any }) => {
+      const initialValue = row.original.estado_cotizacion_final
+      // If estado is PAGADO and pagado_verificado is true, use explicit green class
+      const isPagadoVerificado = initialValue === 'PAGADO' && row.original.pagado_verificado === true
+      // If estado is PENDIENTE use gray class
+      const isPendiente = initialValue === 'PENDIENTE'
+
+      const className = isPagadoVerificado
+        ? 'bg-green-500 text-white dark:bg-green-500 dark:text-white'
+        : isPendiente
+          ? 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+          : STATUS_BG_CLASSES[initialValue as keyof typeof STATUS_BG_CLASSES]
+
+      return h(USelect as any, {
+        items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
+        class: [className],
+        modelValue: initialValue,
+        'onUpdate:modelValue': async (value: any) => {
+          if (value && value !== initialValue) {
+            await handleUpdateEstadoCotizacionFinal(row.original.id_cotizacion, value)
+          }
+        }
+      })
+    }
+  },
+  {
+    accessorKey: 'c_final',
+    header: 'C Final',
+    cell: ({ row }: { row: any }) => {
+      //if cotizacion_final_url exists show excel button to download else upload button
+      if (row.original.cotizacion_final_url) {
+        //div with button excel ,pdf and delete button
+        return h('div', {
+          class: 'flex flex-row gap-2'
+        }, [
+          // Send reminder button
+
+          h(UButton, {
+            icon: 'vscode-icons:file-type-excel',
+            color: 'primary',
+            variant: 'ghost',
+            onClick: () => {
+              window.open(row.original.cotizacion_final_url, '_blank')
+            }
+          }),
+          h(UButton, {
+            icon: 'vscode-icons:file-type-pdf2',
+            color: 'primary',
+            variant: 'ghost',
+            onClick: () => {
+              handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)
+            }
+          }),
+
+        ])
+
+
+      }
+    }
+  },
+  {
+    //ADD COLUMN ACCIONES 
+    accessorKey: 'acciones',
+    header: 'Acciones',
+    cell: ({ row }: { row: any }) => {
+      return h('div', { class: 'flex flex-row gap-2' }, [
+        h(UTooltip, {
+          text: 'Enviar recordatorio de pago',
+          placement: 'top'
+        }, {
+          default: () => h(UButton, {
+          icon: 'material-symbols:send-outline',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => {
+            showConfirmation(
+              'Confirmar envío',
+              '¿Está seguro de enviar un recordatorio de pago a este cliente?',
+              async () => {
+                try {
+                  await withSpinner(async () => {
+                    const nuxtApp = useNuxtApp()
+                    const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
+                    const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
+                    if (res && (res as any).success) {
+                      showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
+                      await getGeneral(Number(id))
+                      await getHeaders(Number(id))
+                    } else {
+                      showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
+                    }
+                  }, 'Enviando recordatorio...')
+                } catch (err) {
+                  console.error('Error send reminder:', err)
+                  showError('Error', 'Error al enviar recordatorio')
+                }
+              }
+            )
+          }
+          }
+          )}),
+        //ADD ICON ARROW WITH TOOLTIP VER EN VERIFICACION QUE REDIRIGA A ver verificacion?idCotizacion=row.original.id_cotizacion
+        h(UTooltip, {
+          text: 'Ver en Verificación',
+          placement: 'top'
+        }, {
+          default: () => h(UButton, {
+            icon: 'i-heroicons-arrow-trending-up',
+            color: 'info',
+            variant: 'ghost',
+            size: 'xs',
+            onClick: () => {
+              navigateTo(`/verificacion?idCotizacion=${row.original.id_cotizacion}`)
+            }
+          })
+        })
+      ])
     }
   }
 ])

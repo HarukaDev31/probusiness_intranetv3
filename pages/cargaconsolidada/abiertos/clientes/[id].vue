@@ -18,10 +18,12 @@
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
                             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
                                 <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 md:w-100 h-15" color="neutral" />
+                                
                             </div>
                         </div>
                     </div>
                 </template>
+
             </DataTable>
             <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados" :columns="getColumnsEmbarcados()"
                 :loading="loadingEmbarcados || loadingHeaders" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
@@ -48,7 +50,7 @@
                                             <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
                                         </div>
                                     </div>
-                                </div>
+                                </div> 
                             </div>
                         </div>
                     </div>
@@ -101,7 +103,7 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
                                 
                             </div>
                         </div>
@@ -118,6 +120,7 @@ import { formatDateForInput } from '~/utils/data-table'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
 import { useEmbarcados } from '~/composables/cargaconsolidada/clientes/useEmbarcados'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
+import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
@@ -135,7 +138,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
-const tab = ref('general')
+const tab = ref('embarcados')
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
@@ -232,6 +235,7 @@ const { getEmbarcados,
     handleUploadExcelConfirmacion
 } = useEmbarcados({ refresh: getClientes, clientsRef: clientes })
 const { updateProveedor } = useCotizacionProveedor()
+const { sendRecordatorioFirmaContrato } = useCotizacion()
 const { getClientesVariacion, 
         updateVolumenSelected, 
         clientesVariacion, 
@@ -673,16 +677,26 @@ const columnsCoordinacion: TableColumn<any>[] = [
         accessorKey: 'acciones',
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
-            //button view with more info
-            return h(UButton, {
-                icon: 'i-heroicons-eye',
-                variant: 'ghost',
-                size: 'xs',
-                onClick: () => {
-                    navigateTo(`/cargaconsolidada/abiertos/clientes/documentacion/${row.original.id_cotizacion}`)
-                }
-            },
-            )
+            return h('div', { class: 'flex gap-2' }, [
+                h(UButton, {
+                    icon: 'i-heroicons-document-text',
+                    variant: 'ghost',
+                    color: 'primary',
+                    size: 'xs',
+                    title: 'Enviar recordatorio de firma',
+                    onClick: () => {
+                        handleSendRecordatorioFirma(row.original.id_cotizacion)
+                    }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-eye',
+                    variant: 'ghost',
+                    size: 'xs',
+                    onClick: () => {
+                        navigateTo(`/cargaconsolidada/abiertos/clientes/documentacion/${row.original.id_cotizacion}`)
+                    }
+                })
+            ])
         }
     }
 ]
@@ -1451,6 +1465,23 @@ const columnsVariacion = ref<TableColumn<any>[]>([
     }
 ])
 
+const handleSendRecordatorioFirma = async (idCotizacion: number) => {
+    try {
+        showConfirmation('¿Deseas enviar el recordatorio de firma de contrato?', 'Se enviará un mensaje de WhatsApp al cliente.', async () => {
+            await withSpinner(async () => {
+                const response = await sendRecordatorioFirmaContrato(idCotizacion)
+                if (response?.success) {
+                    showSuccess('Recordatorio enviado', 'El recordatorio de firma se ha enviado correctamente.')
+                } else {
+                    showError('Error', response?.error || 'No se pudo enviar el recordatorio')
+                }
+            }, 'Enviando recordatorio...')
+        })
+    } catch (error) {
+        showError('Error al enviar recordatorio', error)
+    }
+}
+
 const handleUpdateEstadoCliente = async (data: any) => {
     try {
         await withSpinner(async () => {
@@ -1523,7 +1554,6 @@ onMounted(() => {
                 value: 'general'
             }
         ]
-        tab.value = 'general'
     }
     else if (currentRole.value === ROLES.COORDINACION) {
         tabs.value = [
@@ -1539,8 +1569,8 @@ onMounted(() => {
                 label: 'Variación',
                 value: 'variacion'
             },
+         
         ]
-        tab.value = 'embarcados'
     } else if (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS) {
         tabs.value = [
             {
@@ -1556,7 +1586,6 @@ onMounted(() => {
                 value: 'variacion'
             }
         ]
-        tab.value = 'embarcados'
     } else {
         tabs.value = [
             {
@@ -1568,7 +1597,6 @@ onMounted(() => {
                 value: 'variacion'
             }
         ]
-        tab.value = 'general'
     }
     handleTabChange(tab.value)
 })

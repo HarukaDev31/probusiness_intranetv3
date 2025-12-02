@@ -1,6 +1,6 @@
 <template>
     <div class="">
-        <DataTable v-if="tab === 'prospectos'" :data="cotizaciones" :columns="getProespectosColumns()"
+        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
             :show-pagination="true" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
@@ -26,7 +26,7 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-            <DataTable v-if="tab === 'embarque'" :data="cotizacionProveedor" :show-pagination="false"
+            <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
             :columns="getEmbarqueColumns()" :loading="loading || loadingHeaders" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
@@ -75,7 +75,7 @@
                     label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'pagos'" :data="cotizacionPagos" :columns="getPagosColumns()"
+        <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
             :show-pagination="false" :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos"
             :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
             :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
@@ -151,6 +151,7 @@ const { cotizaciones,
     refreshCotizacionFile,
     deleteCotizacion,
     deleteCotizacionFile,
+    sendRecordatorioFirmaContrato,
     updateEstadoCotizacionCotizador,
     loading: loadingCotizaciones,
     error: errorCotizaciones,
@@ -602,15 +603,27 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'action',
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
-            return h(UButton, {
-                icon: 'i-heroicons-trash',
-                variant: 'ghost',
-                activeColor: 'error',
-                size: 'xs',
-                onClick: () => {
-                    handleDelete(row.original.id)
-                }
-            })
+            return h('div', { class: 'flex gap-2' }, [
+                h(UButton, {
+                    icon: 'i-heroicons-document-text',
+                    variant: 'ghost',
+                    color: 'primary',
+                    size: 'xs',
+                    title: 'Enviar recordatorio de firma',
+                    onClick: () => {
+                        handleSendRecordatorioFirma(row.original.id)
+                    }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-trash',
+                    variant: 'ghost',
+                    activeColor: 'error',
+                    size: 'xs',
+                    onClick: () => {
+                        handleDelete(row.original.id)
+                    }
+                })
+            ])
         }
     }
 ])
@@ -2324,6 +2337,23 @@ const handleDelete = async (idCotizacion: number) => {
         })
     } catch (error) {
         showError('Error al eliminar cotización', error)
+    }
+}
+
+const handleSendRecordatorioFirma = async (idCotizacion: number) => {
+    try {
+        showConfirmation('¿Deseas enviar el recordatorio de firma de contrato?', 'Se enviará un mensaje de WhatsApp al cliente.', async () => {
+            await withSpinner(async () => {
+                const response = await sendRecordatorioFirmaContrato(idCotizacion)
+                if (response?.success) {
+                    showSuccess('Recordatorio enviado', 'El recordatorio de firma se ha enviado correctamente.')
+                } else {
+                    showError('Error', response?.error || 'No se pudo enviar el recordatorio')
+                }
+            }, 'Enviando recordatorio...')
+        })
+    } catch (error) {
+        showError('Error al enviar recordatorio', error)
     }
 }
 const getProespectosColumns = () => {

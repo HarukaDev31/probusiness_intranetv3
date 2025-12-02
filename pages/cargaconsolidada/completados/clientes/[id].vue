@@ -120,6 +120,7 @@ import { formatDateForInput } from '~/utils/data-table'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
 import { useEmbarcados } from '~/composables/cargaconsolidada/clientes/useEmbarcados'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
+import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
@@ -234,6 +235,7 @@ const { getEmbarcados,
     handleUploadExcelConfirmacion
 } = useEmbarcados({ refresh: getClientes, clientsRef: clientes })
 const { updateProveedor } = useCotizacionProveedor()
+const { sendRecordatorioFirmaContrato } = useCotizacion()
 const { getClientesVariacion, 
         updateVolumenSelected, 
         clientesVariacion, 
@@ -675,16 +677,26 @@ const columnsCoordinacion: TableColumn<any>[] = [
         accessorKey: 'acciones',
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
-            //button view with more info
-            return h(UButton, {
-                icon: 'i-heroicons-eye',
-                variant: 'ghost',
-                size: 'xs',
-                onClick: () => {
-                    navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
-                }
-            },
-            )
+            return h('div', { class: 'flex gap-2' }, [
+                h(UButton, {
+                    icon: 'i-heroicons-document-text',
+                    variant: 'ghost',
+                    color: 'primary',
+                    size: 'xs',
+                    title: 'Enviar recordatorio de firma',
+                    onClick: () => {
+                        handleSendRecordatorioFirma(row.original.id_cotizacion)
+                    }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-eye',
+                    variant: 'ghost',
+                    size: 'xs',
+                    onClick: () => {
+                        navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
+                    }
+                })
+            ])
         }
     }
 ]
@@ -1452,6 +1464,23 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         }
     }
 ])
+
+const handleSendRecordatorioFirma = async (idCotizacion: number) => {
+    try {
+        showConfirmation('¿Deseas enviar el recordatorio de firma de contrato?', 'Se enviará un mensaje de WhatsApp al cliente.', async () => {
+            await withSpinner(async () => {
+                const response = await sendRecordatorioFirmaContrato(idCotizacion)
+                if (response?.success) {
+                    showSuccess('Recordatorio enviado', 'El recordatorio de firma se ha enviado correctamente.')
+                } else {
+                    showError('Error', response?.error || 'No se pudo enviar el recordatorio')
+                }
+            }, 'Enviando recordatorio...')
+        })
+    } catch (error) {
+        showError('Error al enviar recordatorio', error)
+    }
+}
 
 const handleUpdateEstadoCliente = async (data: any) => {
     try {

@@ -116,6 +116,16 @@ export const useCotizacion = () => {
             console.error('Error en deleteCotizacionFile:', error)
         }
     }
+    const sendRecordatorioFirmaContrato = async (cotizacion_id: number) => {
+        try {
+            const response = await CotizacionService.sendRecordatorioFirmaContrato(cotizacion_id)
+            return response
+        } catch (error) {
+            console.error('Error en sendRecordatorioFirmaContrato:', error)
+            error.value = error as string
+            return { success: false, error: error as string }
+        }
+    }
     const createProspecto = async (data: any) => {
         try {
             const formData = new FormData()
@@ -247,6 +257,7 @@ export const useCotizacion = () => {
         refreshCotizacionFile,
         deleteCotizacion,
         deleteCotizacionFile,
+        sendRecordatorioFirmaContrato,
         createProspecto,
         updateCotizacion,
         updateEstadoCotizacionCotizador,
