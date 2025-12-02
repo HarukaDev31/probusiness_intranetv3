@@ -1,20 +1,20 @@
 <template>
-    <div class="p-6">
+    <div class="md:p-6">
         <!-- Header (normal vs skeleton) -->
         <template v-if="!isActiveTabLoading">
-            <div class="mb-6">
+            <div class="md:mb-6">
                 <div class="flex items-center">
                     <UIcon name="i-heroicons-shield-check" class="text-2xl mr-3 text-gray-700 dark:text-gray-300" />
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Regulación aduanera</h1>
+                    <h1 class="md:text-2xl font-bold text-gray-900 dark:text-white">Regulación aduanera</h1>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400 mt-2">
+                <p class="text-gray-600 md:text-base text-xs dark:text-gray-400 mt-2">
                     Gestiona las regulaciones de antidumping, permisos, etiquetado y documentos especiales
                 </p>
             </div>
             <div class="border-t border-gray-300 my-4"></div>
         </template>
         <template v-else>
-            <div class="mb-6">
+            <div class="md:mb-6">
                 <div class="flex items-center mb-3">
                     <div class="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mr-3" />
                     <div class="h-7 w-64 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
@@ -25,7 +25,7 @@
         </template>
 
         <!-- Navigation Tabs / Skeleton -->
-        <div class="mb-6 flex items-center justify-between">
+        <div class="md:mb-6 flex items-center justify-between overflow-x-auto">
             <div class="flex gap-2 p-2 rounded-lg">
                 <template v-if="!isActiveTabLoading">
                     <button
@@ -33,7 +33,7 @@
                         :key="tab.id"
                         @click="activeTab = tab.id"
                         :class="[
-                            'px-5 py-2 rounded-md text-sm font-medium transition-colors',
+                            'px-5 py-2 rounded-md md:text-sm text-xs font-medium transition-colors inline-flex flex-shrink-0 snap-start',
                             activeTab === tab.id
                             ? 'bg-white dark:bg-gray-400 text-gray-900 shadow-sm'
                             : 'bg-transparent text-gray-500 hover:bg-white hover:text-gray-900 dark:hover:bg-gray-400 dark:hover:text-gray-900 outline outline-gray-300'
@@ -44,7 +44,7 @@
                     </button>
                 </template>
                 <template v-else>
-                    <div v-for="tab in tabs" :key="'skel-tab-'+tab.id" class="h-9 w-28 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                    <div v-for="tab in tabs" :key="'skel-tab-'+tab.id" class="h-9 w-28 rounded bg-gray-200 dark:bg-gray-700 animate-pulse inline-block flex-shrink-0" />
                 </template>
             </div>
             <template v-if="hasRole('Documentacion')">
@@ -120,12 +120,12 @@
                         </div>
                     </template>
                     <template v-else>
-                        <div class="flex gap-8 max-w-full">
+                        <div class="flex flex-col md:flex-row gap-6 max-w-full">
                             <!-- Lista de rubros/productos -->
-                            <div class="w-100 flex flex-col gap-4">
+                            <div class="md:w-96 w-full flex flex-col gap-4">
                                 <!-- Encabezados -->
                                 <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
-                                    <span class="w-14 mr-10 text-center">N°</span>
+                                    <span class="w-10 mr-4 md:w-14 md:mr-10 text-center">N°</span>
                                     <span class="flex-1">{{ listLabel }}</span>
                                     <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
                                 </div>
@@ -134,12 +134,12 @@
                                  :key="rubro.id"
                                  @click="selectedRubroId = rubro.id"
                                  :class="[
-                                     'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
+                                     'flex  md:flex-row items-start md:items-center justify-between px-4 py-4 md:py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
                                      selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
                                      'hover:border-orange-300 hover:shadow'
                                  ]"
                                  >
-                                <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                                <span class="font-bold text-gray-500 w-10 mr-4 md:w-14 md:mr-10 text-center">{{ idx + 1 }}</span>
                                 <div class="flex-1">
                                     <template v-if="editingRubroId === rubro.id">
                                         <input
@@ -153,7 +153,7 @@
                                         <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
                                     </template>
                                 </div>
-                                <div v-if="hasRole('Documentacion')" class="flex gap-2 items-center">
+                                <div v-if="hasRole('Documentacion')" class="flex gap-2 items-center mt-3 md:mt-0">
                                     <!-- Inline edit controls: only show buttons here; input is rendered in the name column -->
                                     <template v-if="editingRubroId === rubro.id">
                                         <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
@@ -179,7 +179,7 @@
                                 </div>
                             </div>
                             <!-- Tabla de regulaciones del rubro seleccionado -->
-                            <div v-if="selectedRubro" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                            <div v-if="selectedRubro" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:h-fit">
                                 <!-- use table-fixed and wrapping to prevent horizontal expansion -->
                                 <UTable
                                 v-if="selectedRubro"
@@ -224,19 +224,19 @@
                                     ])
                                     }
                                 ]"
-                                :ui="{ root: 'w-full table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
+                                :ui="{ root: 'w-full md:table-fixed', td: 'py-2 px-3 break-words whitespace-normal' }"
                                 />
                             </div>
                         </div>
                         <!-- Detalle de regulación debajo de la tabla -->
-                        <div class="flex gap-8">
-                            <div class="w-100">
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <div class="w-full md:w-24">
                             </div>
                             <div
                             v-if="regulationDetail"
-                            class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex-1 flex">
+                            class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex-1 flex flex-col md:flex-row">
                                 <!-- Imágenes -->
-                                <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
+                                <div class="w-full md:w-1/2 pr-0 md:pr-6 md:border-r md:border-gray-200">
                                     <h4 class="font-semibold mb-4">Imágenes de producto</h4>
                                     <div v-if="regulationDetail.imagenes && regulationDetail.imagenes.length">
                                         <div class="grid grid-cols-3 gap-4 mt-2">
@@ -248,7 +248,7 @@
                                     <div v-else class="text-gray-400 text-sm">Sin imagenes</div>
                                 </div>
                                 <!-- Comentarios -->
-                                <div class="w-1/2 pl-6 flex flex-col justify-start">
+                                <div class="w-full md:w-1/2 pl-0 md:pl-6 flex flex-col justify-start mt-4 md:mt-0">
                                     <h4 class="font-semibold mb-4">Observaciones:</h4>
                                     <div class="bg-gray-50 dark:bg-gray-900 rounded p-3 text-gray-800 dark:text-gray-200 min-h-[80px]">
                                     {{ regulationDetail.observaciones || 'Sin observaciones' }}
@@ -282,12 +282,12 @@
                         </div>
                     </template>
                     <template v-else>
-                        <div class="flex gap-8">
+                        <div class="flex flex-col md:flex-row gap-6">
                         <!-- Lista de entidades/rubros -->
-                        <div class="w-120 flex flex-col gap-4">
+                        <div class="md:w-96 w-full flex flex-col gap-4">
                             <!-- Encabezados -->
                             <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
-                            <span class="w-14 mr-10 text-center">N°</span>
+                            <span class="w-10 mr-4 md:w-14 md:mr-10 text-center">N°</span>
                             <span class="flex-1">Entidad</span>
                             <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
                             </div>
@@ -296,12 +296,12 @@
                             :key="entidad.id"
                             @click="selectedRubroId = entidad.id"
                             :class="[
-                                'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
+                                'flex md:flex-row items-start md:items-center justify-between px-4 py-4 md:py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
                                 selectedRubroId === entidad.id ? 'border border-orange-500 shadow' : 'border border-transparent',
                                 'hover:border-orange-300 hover:shadow'
                             ]"
                             >
-                            <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                            <span class="font-bold text-gray-500 w-10 mr-4 md:w-14 md:mr-10 text-center">{{ idx + 1 }}</span>
                             <div class="flex-1">
                                 <template v-if="editingRubroId === entidad.id">
                                     <input
@@ -315,7 +315,7 @@
                                     <span class="font-semibold text-gray-800 dark:text-gray-200">{{ entidad.nombre }}</span>
                                 </template>
                             </div>
-                            <div class="flex gap-2" v-if="hasRole('Documentacion')">
+                            <div class="flex gap-2 mt-3 md:mt-0" v-if="hasRole('Documentacion')">
                                 <template v-if="editingRubroId === entidad.id">
                                     <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
                                     <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
@@ -340,7 +340,7 @@
                             </div>
                         </div>
                         <!-- Tabla de regulaciones de la entidad seleccionada -->
-                        <div v-if="selectedEntidad" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                        <div v-if="selectedEntidad" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:h-fit">
                             <UTable
                             v-if="selectedEntidad"
                             :data="selectedEntidad.regulaciones"
@@ -385,14 +385,14 @@
                         </div>
                         </div>
                         <!-- Detalle de regulación debajo de la tabla -->
-                        <div class="flex gap-8">
-                            <div class="w-120">
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <div class="w-full md:w-24">
                             </div>
                             <div
                             v-if="permisoDetail"
-                            class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex-1 flex">
+                            class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex-1 flex flex-col md:flex-row">
                                 <!-- Documentos a presentar -->
-                                <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
+                                <div class="w-full md:w-1/2 pr-0 md:pr-6 md:border-r md:border-gray-200">
                                     <h4 class="font-semibold mb-4">Documentos a presentar</h4>
                                     <div v-if="permisoDetail.documentos && permisoDetail.documentos.length">
                                         <div v-for="(doc, idx) in permisoDetail.documentos" :key="idx" class="flex items-center gap-3 mb-3 p-2 rounded bg-gray-50 dark:bg-gray-900">
@@ -415,7 +415,7 @@
                                     <div v-else class="text-gray-400 text-sm">Sin documentos</div>
                                 </div>
                                     <!-- Comentarios -->
-                                <div class="w-1/2 pl-6 flex flex-col justify-start">
+                                <div class="w-full md:w-1/2 pl-0 md:pl-6 flex flex-col justify-start mt-4 md:mt-0">
                                     <h4 class="font-semibold mb-4">Comentarios</h4>
                                     <div class="bg-gray-50 dark:bg-gray-900 rounded p-3 text-gray-800 dark:text-gray-200 min-h-[80px]">
                                     {{ permisoDetail.observaciones || 'Sin observaciones' }}
@@ -448,12 +448,12 @@
                         </div>
                     </template>
                     <template v-else>
-                        <div class="flex gap-8">
+                        <div class="flex flex-col md:flex-row gap-6">
                             <!-- Lista de rubros/productos -->
-                            <div class="w-120 flex flex-col gap-4">
+                            <div class="md:w-96 w-full flex flex-col gap-4">
                                 <!-- Encabezados -->
                                 <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
-                                    <span class="w-14 mr-10 text-center">N°</span>
+                                    <span class="w-10 mr-4 md:w-14 md:mr-10 text-center">N°</span>
                                     <span class="flex-1">Producto</span>
                                     <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
                                 </div>
@@ -462,12 +462,12 @@
                                     :key="rubro.id"
                                     @click="selectedRubroId = rubro.id"
                                     :class="[
-                                    'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
+                                    'flex md:flex-row items-start md:items-center justify-between px-4 py-4 md:py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
                                     selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
                                     'hover:border-orange-300 hover:shadow'
                                     ]"
                                 >
-                                    <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                                    <span class="font-bold text-gray-500 w-10 mr-4 md:w-14 md:mr-10 text-center">{{ idx + 1 }}</span>
                                     <div class="flex-1">
                                         <template v-if="editingRubroId === rubro.id">
                                             <input
@@ -481,7 +481,7 @@
                                             <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
                                         </template>
                                     </div>
-                                    <div class="flex gap-2">
+                                    <div class="flex gap-2 mt-3 md:mt-0">
                                         <template v-if="editingRubroId === rubro.id">
                                             <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
                                             <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
@@ -499,7 +499,7 @@
                                 </div>
                             </div>
                             <!-- Tabla de regulaciones del rubro seleccionado -->
-                            <div v-if="selectedEtiquetado" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                            <div v-if="selectedEtiquetado" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:h-fit">
                                 <UTable
                                     v-if="selectedEtiquetado"
                                     :data="selectedEtiquetado.regulaciones"
@@ -531,7 +531,7 @@
                                             accessorKey: 'observaciones',
                                             header: () => h('div', { class: 'flex items-center justify-between' }, [
                                                 h('span', { class: 'font-semibold' }, 'Descripciones mínimas'),
-                                                hasRole('Documentacion') ? h('div', { class: 'flex gap-2' }, [
+                                                hasRole('Documentacion') ? h('div', { class: 'flex gap-2 w-full' }, [
                                                     h(UButton, {
                                                         icon: 'i-heroicons-pencil-square',
                                                         variant: 'ghost',
@@ -553,7 +553,7 @@
                                             cell: ({ row }) => {
                                                 const observaciones = row.getValue('observaciones')
                                                 return h('div', {
-                                                class: 'whitespace-pre-line break-words max-w-[400px]'
+                                                class: 'whitespace-pre-line break-words w-[400px] md:w-full max-w-[400px]'
                                                 }, observaciones)
                                             }
                                         }
@@ -587,12 +587,12 @@
                         </div>
                     </template>
                     <template v-else>
-                        <div class="flex gap-8">
+                        <div class="flex flex-col md:flex-row gap-6">
                             <!-- lista de rubros/productos-->
-                            <div class="w-120 flex flex-col gap-4">
+                            <div class="md:w-96 w-full flex flex-col gap-4">
                                 <!-- Encabezados -->
                                 <div class="flex items-center px-4 py-2 text-gray-500 font-medium gap-4">
-                                    <span class="w-14 mr-10 text-center">N°</span>
+                                    <span class="w-10 mr-4 md:w-14 md:mr-10 text-center">N°</span>
                                     <span class="flex-1">Producto</span>
                                     <span v-if="hasRole('Documentacion')" class="w-20 text-right">Acción</span>
                                 </div>
@@ -601,12 +601,12 @@
                                     :key="rubro.id"
                                     @click="selectedRubroId = rubro.id"
                                     :class="[
-                                    'flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
+                                    'flex md:flex-row items-start md:items-center justify-between px-4 py-4 md:py-6 rounded-lg bg-white dark:bg-gray-800 cursor-pointer transition-all',
                                     selectedRubroId === rubro.id ? 'border border-orange-500 shadow' : 'border border-transparent',
                                     'hover:border-orange-300 hover:shadow'
                                     ]"
                                 >
-                                    <span class="font-bold text-gray-500 w-14 text-center mr-10">{{ idx + 1 }}</span>
+                                    <span class="font-bold text-gray-500 w-10 mr-4 md:w-14 md:mr-10 text-center">{{ idx + 1 }}</span>
                                     <div class="flex-1">
                                         <template v-if="editingRubroId === rubro.id">
                                             <input
@@ -620,7 +620,7 @@
                                             <span class="font-semibold text-gray-800 dark:text-gray-200">{{ rubro.nombre }}</span>
                                         </template>
                                     </div>
-                                    <div class="flex gap-2">
+                                    <div class="flex gap-2 mt-3 md:mt-0">
                                         <template v-if="editingRubroId === rubro.id">
                                             <UButton :title="saveLabel" :aria-label="saveLabel" icon="ic:baseline-save" variant="ghost" size="xs" color="primary" @click.stop="confirmEdit" />
                                             <UButton title="Cancelar" aria-label="Cancelar" icon="ic:outline-close" variant="ghost" size="xs" color="neutral" @click.stop="cancelEdit" />
@@ -638,9 +638,9 @@
                                 </div>
                             </div>
                             <!-- Detalles de Documentos Especiales-->
-                             <div v-if="selectedDocumentos && selectedDocumentos.regulaciones.length" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex gap-8">
+                             <div v-if="selectedDocumentos && selectedDocumentos.regulaciones.length" class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col md:flex-row md:h-fit gap-6">
                                 <!-- Documentos a presentar -->
-                                <div class="w-1/2 pr-6 border-r border-gray-200 dark:border-gray-700">
+                                <div class="w-full md:w-1/2 pr-0 md:pr-6 md:border-r md:border-gray-200">
                                     <h4 class="font-semibold mb-4">Documentos a presentar</h4>
                                     <div v-if="(selectedDocumentos.regulaciones[0].media && selectedDocumentos.regulaciones[0].media.length) || 
                                         (selectedDocumentos.regulaciones[0].documentos && selectedDocumentos.regulaciones[0].documentos.length)">
@@ -685,7 +685,7 @@
                                 <div v-else class="text-gray-400 text-sm">Sin documentos</div>
                                 </div>
                                 <!-- Comentarios -->
-                                <div class="w-1/2 pl-6 flex flex-col justify-start">
+                                <div class="w-full md:w-1/2 pl-0 md:pl-6 flex flex-col justify-start mt-4 md:mt-0">
                                     <div class="flex items-center justify-between mb-4">
                                     <h4 class="font-semibold">Comentarios</h4>
                                     <div v-if="hasRole('Documentacion')" class="flex gap-1">
