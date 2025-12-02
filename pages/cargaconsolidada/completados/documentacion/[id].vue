@@ -1,20 +1,19 @@
 <template>
     <div class="">
         <!-- Header con botones de acción -->
-        <div class="flex items-center justify-between mb-6 p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col md:flex-row justify-between mb-2 p-2 md:mb-6 md:p-6 border-b border-gray-200 dark:border-gray-700">
             <PageHeader :title="''" :subtitle="''" :icon="''" :hide-back-button="false" @back="goBack" />
-
-            <div class="flex items-center gap-3" v-if="currentRole === ROLES.COORDINACION">
-                <UButton label="Factura General" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary"
-                    :loading="downloadingFactura" @click="handleDownloadFactura" />
-                <UButton label="Descargar plantillas" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary"
-                    @click="handleDownloadAll" />
-                <UButton label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning"
-                    @click="handleNuevoDocumento" />
+            <div class="hidden md:flex items-center gap-3 flex-row flex-wrap w-full md:justify-end" v-if="currentRole === ROLES.COORDINACION">
+                <UButton label="Factura General" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
+                    :loading="downloadingFactura" @click="handleDownloadFactura" class="whitespace-nowrap" />
+                <UButton label="Descargar plantillas" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
+                    @click="handleDownloadAll" class="whitespace-nowrap" />
+                <UButton label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning" size="sm"
+                    @click="handleNuevoDocumento" class="whitespace-nowrap" />
             </div>
-             <div class="flex items-center gap-3" v-if="currentRole === ROLES.ADMINISTRACION">
+             <div class="flex items-center gap-3 flex-wrap" v-if="currentRole === ROLES.ADMINISTRACION">
                 <UButton label="Descargar plantillas"
-                    variant="solid" icon="i-heroicons-arrow-down-tray" color="primary"
+                    variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
                     @click="handleDownloadAllAdministracion" />
             </div>
         </div>
@@ -281,7 +280,7 @@ const handleDownloadFactura = async () => {
             if (response.success) {
                 showSuccess('Éxito', 'Factura comercial descargada correctamente')
             } else {
-                showError('Error', response.error || 'Error al descargar la factura comercial')
+                showError('Error', 'Error al descargar la factura comercial')
             }
         }, 'Descargando factura comercial...')
     } catch (error: any) {

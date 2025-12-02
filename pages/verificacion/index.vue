@@ -477,14 +477,37 @@ const consolidadoColumns: TableColumn<any>[] = [
     header: 'Estado',
     cell: ({ row }: { row: any }) => {
       const estado = row.getValue('estado_pago')
+      
+      // Calcular suma de pagos confirmados y total de pagos
+      const pagosDetalle = row.original.pagos_detalle || []
+      const totalPagosConfirmados = pagosDetalle
+        .filter((pago: any) => pago.status === 'CONFIRMADO')
+        .reduce((sum: number, pago: any) => sum + Number(pago.monto || 0), 0)
+      
+      const totalPagos = pagosDetalle
+        .reduce((sum: number, pago: any) => sum + Number(pago.monto || 0), 0)
+      
+      const montoAPagar = Number(row.original.monto_a_pagar || 0)
+      
+      // Verde: si estado es PAGADO y total confirmados >= monto a pagar
+      const isPagadoVerificado = estado === 'PAGADO' && totalPagosConfirmados >= montoAPagar && montoAPagar > 0
+      
+      // Blanco: si total pagos >= monto a pagar pero confirmados < monto a pagar
+      const isPagadoPendiente = estado === 'PAGADO' && totalPagos >= montoAPagar && totalPagosConfirmados < montoAPagar && montoAPagar > 0
+      
+      const className = isPagadoVerificado
+        ? 'bg-green-500 text-white dark:bg-green-500 dark:text-white'
+        : isPagadoPendiente
+          ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
+          : `py-1 text-xs font-medium border ${getEstadoColor(estado)}`
 
       return h('div', [
         h(USelect as any, {
-          class: `py-1 text-xs font-medium border ${getEstadoColor(estado)}`,
+          class: className,
           modelValue: estado,
           items: ESTADOS_PAGO,
           disabled: true
-        },)
+        })
       ])
     }
   },

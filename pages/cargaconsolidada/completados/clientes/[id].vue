@@ -1,8 +1,6 @@
     <!--3 tabs:general,variacion,pagos and 3 tables-->
     <template>
-        <div class="p-6">
-
-
+        <div class="p-0 md:p-6">
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
                 :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
                 :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
@@ -18,21 +16,14 @@
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
-                            <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                <div class="flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-4">
-                                    <div class="flex flex-col mr-2 space-y-1">
-                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
-                                        <div class="flex items-center gap-2">
-                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
-                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 md:w-100 h-15" color="neutral" />
+                                
                             </div>
                         </div>
                     </div>
                 </template>
+
             </DataTable>
             <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados" :columns="getColumnsEmbarcados()"
                 :loading="loadingEmbarcados || loadingHeaders" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
@@ -50,13 +41,28 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingEmbarcados || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
-                                
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
+                                <div class="hidden md:flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-0 md:mb-4">
+                                    <div class="flex flex-col mr-2 space-y-1">
+                                        <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
+                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
+                                        </div>
+                                    </div>
+                                </div> 
                             </div>
                         </div>
                     </div>
                 </template>
-
+                <!-- Mobile: compact date control next to back button -->
+                <template #back-extra>
+                    <div class="bg-white dark:bg-gray-800 flex items-center gap-2 p-2 rounded shadow-sm md:hidden">
+                        <div class="text-xs font-semibold text-orange-600">F. Max. Doc</div>
+                        <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none border border-gray-200 dark:border-gray-700 rounded px-2 py-1 w-28" />
+                        <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" aria-label="Guardar fecha" @click="handleSaveFMaxDocumentacion"/>
+                    </div>
+                </template>
             </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
                 :loading="loadingVariacion || loadingHeaders" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
@@ -74,7 +80,7 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingVariacion || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
                                 
                             </div>
                         </div>
@@ -97,7 +103,7 @@
                         <div class="flex flex-col gap-2 w-full">
                             <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="md" variant="pill" class="mb-4 w-100 h-15" color="neutral" />
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
                                 
                             </div>
                         </div>
@@ -114,6 +120,7 @@ import { formatDateForInput } from '~/utils/data-table'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
 import { useEmbarcados } from '~/composables/cargaconsolidada/clientes/useEmbarcados'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
+import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { useVariacion } from '~/composables/cargaconsolidada/clientes/useVariacion'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
@@ -228,6 +235,7 @@ const { getEmbarcados,
     handleUploadExcelConfirmacion
 } = useEmbarcados({ refresh: getClientes, clientsRef: clientes })
 const { updateProveedor } = useCotizacionProveedor()
+const { sendRecordatorioFirmaContrato } = useCotizacion()
 const { getClientesVariacion, 
         updateVolumenSelected, 
         clientesVariacion, 
@@ -459,15 +467,15 @@ const columns: TableColumn<any>[] = [
             const correo = String(pick(['correo', 'email', 'mail']) || '')
             const cod_contract = String(pick(['cod_contract']) || '')
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
-
+            const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    cotizacion_contrato_firmado_url ? h('a', {
-                        href: cotizacion_contrato_firmado_url,
+                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
+                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
                         target: '_blank',
                         class: 'text-primary hover:underline'
                     }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
@@ -570,14 +578,15 @@ const columnsCoordinacion: TableColumn<any>[] = [
             const correo = row.original?.correo || ''
             const cod_contract = row.original?.cod_contract || ''
             const cotizacion_contrato_firmado_url = row.original?.cotizacion_contrato_firmado_url || ''
+            const cotizacion_contrato_url = row.original?.cotizacion_contrato_url || ''
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
                 h('div', { class: 'text-sm text-gray-500' }, documento),
                 h('div', { class: 'text-sm text-gray-500' }, telefono),
                 h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    cotizacion_contrato_firmado_url ? h('a', {
-                        href: cotizacion_contrato_firmado_url,
+                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
+                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
                         target: '_blank',
                         class: 'text-primary hover:underline'
                     }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
@@ -668,16 +677,26 @@ const columnsCoordinacion: TableColumn<any>[] = [
         accessorKey: 'acciones',
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
-            //button view with more info
-            return h(UButton, {
-                icon: 'i-heroicons-eye',
-                variant: 'ghost',
-                size: 'xs',
-                onClick: () => {
-                    navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
-                }
-            },
-            )
+            return h('div', { class: 'flex gap-2' }, [
+                h(UButton, {
+                    icon: 'i-heroicons-document-text',
+                    variant: 'ghost',
+                    color: 'primary',
+                    size: 'xs',
+                    title: 'Enviar recordatorio de firma',
+                    onClick: () => {
+                        handleSendRecordatorioFirma(row.original.id_cotizacion)
+                    }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-eye',
+                    variant: 'ghost',
+                    size: 'xs',
+                    onClick: () => {
+                        navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id_cotizacion}`)
+                    }
+                })
+            ])
         }
     }
 ]
@@ -701,16 +720,33 @@ const columnsDocumentacion: TableColumn<any>[] = [
         accessorKey: 'contacto',
         header: 'Contacto',
         cell: ({ row }: { row: any }) => {
-            const nombre = row.getValue('nombre') || ''
-            const documento = row.getValue('documento') || ''
-            const correo = row.getValue('correo') || ''
-            const telefono = row.getValue('telefono') || ''
+            const nombre = row.original.nombre || ''
+            const documento = row.original.documento || ''
+            const correo = row.original.correo || ''
+            const telefono = row.original.telefono || ''
             return h('div', { class: '' }, [
                 h('div', { class: 'font-medium' }, nombre),
                 h('div', { class: 'text-sm text-gray-500' }, documento),
                 h('div', { class: 'text-sm text-gray-500' }, telefono),
                 h('div', { class: 'text-sm text-gray-500' }, correo || '')
             ])
+        }
+    },
+    {
+        accessorKey: 'code supplier',
+        header: 'Code Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores
+            const div = h('div', {
+                class: 'flex flex-col gap-2'
+            }, proveedores.map((proveedor: any) => {
+                return h(UInput as any, {
+                    modelValue: proveedor.code_supplier,
+                    class: 'w-full w-25',
+                    disabled: true,
+                })
+            }))
+            return div
         }
     },
     {
@@ -1271,26 +1307,35 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         accessorKey: 'acciones',
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
-            //button view with more info
-            return h(UButton, {
-                icon: 'iconamoon:menu-burger-horizontal',
-                variant: 'ghost',
-                size: 'xs',
-                onClick: () => {
-                    //generar un modal para solicitar el tipo de recordatorio de documento
-                    console.log(row.original)
-                    modalAcciones.open({
-                        show: true,
-                        clienteId: row.original.id, 
-                        clienteName: row.original.nombre,
-                        onSelected: (data: any) => {
-                            console.log(data)
-                        },
-                        validateMaxDate:true
-                    })
-                }
-            },
-            )
+            // Render both actions: menu (modal) and eye (navigate)
+            return h('div', { class: 'flex items-center gap-1' }, [
+                h(UButton, {
+                    icon: 'iconamoon:menu-burger-horizontal',
+                    variant: 'ghost',
+                    size: 'xs',
+                    onClick: () => {
+                        // generar un modal para solicitar el tipo de recordatorio de documento
+                        modalAcciones.open({
+                            show: true,
+                            clienteId: row.original.id,
+                            clienteName: row.original.nombre,
+                            onSelected: (data: any) => {
+                                // callback cuando se selecciona una acción
+                                console.log(data)
+                            },
+                            validateMaxDate: true
+                        })
+                    }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-eye',
+                    variant: 'ghost',
+                    size: 'xs',
+                    onClick: () => {
+                        navigateTo(`/cargaconsolidada/completados/clientes/documentacion/${row.original.id}`)
+                    }
+                })
+            ])
         }
     }
 ])
@@ -1419,6 +1464,23 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         }
     }
 ])
+
+const handleSendRecordatorioFirma = async (idCotizacion: number) => {
+    try {
+        showConfirmation('¿Deseas enviar el recordatorio de firma de contrato?', 'Se enviará un mensaje de WhatsApp al cliente.', async () => {
+            await withSpinner(async () => {
+                const response = await sendRecordatorioFirmaContrato(idCotizacion)
+                if (response?.success) {
+                    showSuccess('Recordatorio enviado', 'El recordatorio de firma se ha enviado correctamente.')
+                } else {
+                    showError('Error', response?.error || 'No se pudo enviar el recordatorio')
+                }
+            }, 'Enviando recordatorio...')
+        })
+    } catch (error) {
+        showError('Error al enviar recordatorio', error)
+    }
+}
 
 const handleUpdateEstadoCliente = async (data: any) => {
     try {

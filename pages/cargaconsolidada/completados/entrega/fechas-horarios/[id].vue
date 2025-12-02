@@ -1,5 +1,5 @@
 <template>
-  <div class="py-6">
+  <div class="md:py-6">
     <PageHeader 
       :title="`Configuración de Horarios - Contenedor #${carga}`"
       subtitle="Gestiona los horarios disponibles para las citas de recogida"

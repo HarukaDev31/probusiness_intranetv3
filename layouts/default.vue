@@ -8,7 +8,7 @@
       <!-- Top Header -->
       <header 
       class="bg-[#f0f4f9] dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 lg:hidden">
-        <div class="px-6 py-4">
+        <div class="px-6 py-4 md:px-4 md:py-3">
 
           <div class="flex items-center justify-between">
             <div class="flex items-center">

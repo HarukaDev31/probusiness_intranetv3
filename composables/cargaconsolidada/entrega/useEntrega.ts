@@ -115,6 +115,8 @@ export const useEntrega = () => {
   ])
 
   const headers = ref<any[]>([])
+  const headersEntregas = ref<any[]>([])
+  const headersDelivery = ref<any[]>([])
   const carga = ref<string | null>(null)
   const loadingHeaders = ref(false)
   const contenedorId = ref<number | null>(null)
@@ -129,9 +131,22 @@ export const useEntrega = () => {
         search: search.value,
         filters: filters.value
       }
-      const response = await EntregaService.getEntregas(id, params)
+      const response = await EntregaService.getEntregas(id, params) as any
       entregas.value = response.data
       pagination.value = response.pagination
+      // Extraer headers si vienen en la respuesta
+      if (response.headers && Array.isArray(response.headers)) {
+        headersEntregas.value = response.headers
+      } else if (response.headers && typeof response.headers === 'object') {
+        // Transformar objeto a array de headers
+        headersEntregas.value = Object.entries(response.headers).map(([k, v]) => ({
+          label: k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          value: typeof v === 'number' ? v.toLocaleString('es-PE') : (v ?? 'N/A'),
+          icon: 'i-heroicons-information-circle'
+        })) as Header[]
+      } else {
+        headersEntregas.value = []
+      }
     } catch (err: any) {
       error.value = err?.message || 'Error al cargar entregas'
     } finally {
@@ -308,7 +323,7 @@ export const useEntrega = () => {
         search: search.value,
         filters: cleanedFilters
       }
-      const response = await EntregaService.getDelivery(id, params)
+      const response = await EntregaService.getDelivery(id, params) as any
       delivery.value = (response.data as Entrega[]).map((item: any) => ({
         id_cotizacion: item.id,
         nombre: item.nombre,
@@ -323,9 +338,24 @@ export const useEntrega = () => {
         pagos_details: item.pagos_details ?? [],
         id_contenedor: item.id_contenedor,
         id_contenedor_pago: item.id_contenedor_pago ?? null,
-        entrega: item.entrega ?? null
+        entrega: item.entrega ?? null,
+        total_importe_delivery: item.total_importe_delivery ?? item.importe ?? 0,
+        tipo_servicio: item.tipo_servicio ?? 'Sin servicio'
       }))
       pagination.value = response.pagination
+      // Extraer headers si vienen en la respuesta
+      if (response.headers && Array.isArray(response.headers)) {
+        headersDelivery.value = response.headers
+      } else if (response.headers && typeof response.headers === 'object') {
+        // Transformar objeto a array de headers
+        headersDelivery.value = Object.entries(response.headers).map(([k, v]) => ({
+          label: k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          value: typeof v === 'number' ? v.toLocaleString('es-PE') : (v ?? 'N/A'),
+          icon: 'i-heroicons-information-circle'
+        })) as Header[]
+      } else {
+        headersDelivery.value = []
+      }
     } catch (err: any) {
       error.value = err?.message || 'Error al cargar delivery'
     } finally {
@@ -344,10 +374,6 @@ export const useEntrega = () => {
       loadingHeaders.value = true
       const response = await EntregaService.getHeaders(id) as any
 
-      // Casos:
-      // 1. data es un array de headers -> lo usamos directo
-      // 2. data es un objeto con 'carga' únicamente -> sólo seteamos carga y dejamos headers vacíos
-      // 3. data es objeto con varias claves -> convertimos a headers
       const respData = response?.data
       if (Array.isArray(respData)) {
         headers.value = respData as Header[]
@@ -540,6 +566,41 @@ export const useEntrega = () => {
       return response
     } catch (err) {
       error.value = err as string
+    }
+  }
+  const updateServicioDelivery = async (data: any) => {
+    try {
+      const response = await EntregaService.updateServicioDelivery(data)
+      return response
+    } catch (err) {
+      error.value = err as string
+    }
+  }
+  const sendRecordatorioFormularioDelivery = async (idCotizacion: number, message: string) => {
+    try {
+      const response = await EntregaService.sendRecordatorioFormularioDelivery(idCotizacion, message)
+      return response
+    } catch (err) {
+      error.value = err as string
+      return { success: false, error: err as string }
+    }
+  }
+  const sendCobroCotizacionFinalDelivery = async (idCotizacion: number, message: string) => {
+    try {
+      const response = await EntregaService.sendCobroCotizacionFinalDelivery(idCotizacion, message)
+      return response
+    } catch (err) {
+      error.value = err as string
+      return { success: false, error: err as string }
+    }
+  }
+  const sendCobroDeliveryDelivery = async (idCotizacion: number, message: string) => {
+    try {
+      const response = await EntregaService.sendCobroDeliveryDelivery(idCotizacion, message)
+      return response
+    } catch (err) {
+      error.value = err as string
+      return { success: false, error: err as string }
     }
   }
   const registrarPagoDelivery = async (row: DeliveryRow, data: any) => {
@@ -735,6 +796,8 @@ export const useEntrega = () => {
   clearClientesFilters,
   clearFilters,
     headers,
+    headersEntregas,
+    headersDelivery,
     carga,
     loadingHeaders,
   getHeaders,
@@ -742,9 +805,13 @@ export const useEntrega = () => {
     // delivery
     getDelivery,
     updateImporteDelivery,
+    updateServicioDelivery,
     registrarPagoDelivery,
     deletePagoDelivery,
-    sendMessageForCotizacion
+    sendMessageForCotizacion,
+    sendRecordatorioFormularioDelivery,
+    sendCobroCotizacionFinalDelivery,
+    sendCobroDeliveryDelivery
     , uploadConformidad
     , updateConformidad
     , deleteConformidad

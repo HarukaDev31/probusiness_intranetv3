@@ -8,7 +8,7 @@
     <div v-if="loading" class="space-y-6">
       <!-- Skeleton para la información básica -->
       <UCard>
-        <div class="flex items-start space-x-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 w-full md:w-1/3 flex flex-col items-center">
           <!-- Skeleton foto de perfil -->
           <div class="flex-shrink-0">
             <div class="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
@@ -16,15 +16,15 @@
 
           <!-- Skeleton información -->
           <div class="flex-1">
-            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse w-1/3"></div>
+            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse md:w-1/3 w-full"></div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-6">
               <!-- Columna izquierda -->
               <div class="space-y-4">
                 <div v-for="i in 5" :key="`left-${i}`"
                   class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse w-1/4"></div>
-                  <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse md:w-1/4 w-full"></div>
+                  <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse md:w-3/4 w-full"></div>
                 </div>
               </div>
 
@@ -32,8 +32,8 @@
               <div class="space-y-4">
                 <div v-for="i in 5" :key="`right-${i}`"
                   class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse w-1/4"></div>
-                  <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse md:w-1/4 w-full"></div>
+                <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse md:w-3/4 w-full"></div>
                 </div>
               </div>
             </div>
@@ -62,33 +62,33 @@
     <!-- Cliente details -->
     <div v-else-if="cliente" class="flex flex-col md:flex-row gap-8 items-start">
       <!-- Card de información del cliente -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 w-1/4 md:w-1/3 flex flex-col items-center">
-        <div class="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center mb-4 overflow-hidden">
-          <UIcon name="i-heroicons-user" class="w-20 h-20 text-gray-400" />
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 w-full md:w-1/3 flex flex-col items-center">
+        <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gray-200 flex items-center justify-center mb-4 overflow-hidden">
+          <UIcon name="i-heroicons-user" class="w-14 h-14 md:w-20 md:h-20 text-gray-400" />
         </div>
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 text-center">{{ cliente?.nombre }}</h2>
-        <div class="w-3/4">
-          <div class="grid grid-cols-2 gap-y-2 text-sm">
+        <h2 class="text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 text-center">{{ cliente?.nombre }}</h2>
+        <div class="w-full">
+          <div class="grid grid-cols-2 md:grid-cols-2 gap-y-2 text-sm">
             <div class="font-medium text-gray-500 dark:text-gray-400">País:</div>
-            <div class="text-gray-900 dark:text-gray-100">{{ cliente?.pais || 'Perú' }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.pais || 'Perú' }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">Ciudad:</div>
-            <div class="text-gray-900 dark:text-gray-100">{{ cliente?.ciudad || 'Lima' }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.ciudad || 'Lima' }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">DNI:</div>
-            <div class="text-gray-900 dark:text-gray-100">{{ cliente?.documento }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.documento }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">WhatsApp:</div>
-            <div class="text-gray-900 dark:text-gray-100">{{ cliente?.telefono }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.telefono }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">Correo:</div>
-            <div class="text-gray-900 dark:text-gray-100">{{ cliente?.correo }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full" :title="cliente?.correo">{{ cliente?.correo }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">Empresa:</div>
-            <div class="text-gray-900 dark:text-gray-100">{{ cliente?.empresa }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.empresa }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">RUC:</div>
-            <div class="text-gray-900 dark:text-gray-100">{{ cliente?.ruc }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.ruc }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">Capacidad comercial:</div>
-            <div class="text-gray-900 dark:text-gray-100">{{ cliente?.capacidad_comercial }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.capacidad_comercial }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">Rubro:</div>
-            <div class="text-gray-900 dark:text-gray-100">{{ cliente?.rubro }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.rubro }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">Red social:</div>
-            <div class="text-gray-900 dark:text-gray-100">{{ cliente?.red_social }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.red_social }}</div>
           </div>
         </div>
         <div v-if="cliente?.id_user" class="mt-6 w-full">
@@ -105,7 +105,7 @@
       </div>
 
       <!-- Historial de compras -->
-      <div class="flex-1 max-w-3xl mx-auto">
+      <div class="flex-1 w-full max-w-3xl mx-auto">
         <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Historial de compras</h3>
         <div class="overflow-x-auto">
           <DataTable

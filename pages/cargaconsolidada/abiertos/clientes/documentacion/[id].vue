@@ -1,10 +1,15 @@
 <template>
-    <div class="p-6">
-        <PageHeader title="" subtitle="" icon="" :hide-back-button="false"
+    <div class="md:p-6">
+        <PageHeader :hide-back-button="false"
             @back="navigateTo(`/cargaconsolidada/abiertos/clientes/${cliente?.id_contenedor}`)">
+            <template #back-extra>
+                <!--button save placed next to the back button-->
+                <UButton label="Guardar cambios" color="primary" variant="solid" icon="i-heroicons-arrow-down-tray"
+                    size="sm" @click="handleSaveChanges" v-if="isCoordinacion" />
+            </template>
             <template #actions>
                 <!--button save-->
-                <UButton label="Guardar cambios" color="primary" variant="solid" icon="i-heroicons-arrow-down-tray"
+                <UButton label="Guardar cambios" color="primary" variant="solid" icon="i-heroicons-arrow-down-tray" class="hidden md:flex"
                     size="sm" @click="handleSaveChanges" v-if="isCoordinacion" />
             </template>
         </PageHeader>
@@ -44,7 +49,7 @@
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                     <div class="space-y-6">
                         <!-- Header skeleton -->
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
                                 <div class="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                                 <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 animate-pulse"></div>
@@ -172,8 +177,8 @@
         </div>
 
         <!-- Main content -->
-        <div v-else-if="hasData" class="mt-6 ">
-            <div class="mb-6  border-gray-200 rounded-lg p-6 border-b-2 border-gray-200">
+        <div v-else-if="hasData" class="md:mt-6">
+            <div class="md:mb-6 mb-3 border-gray-200 rounded-lg p-3 md:p-6 border-b-2 border-gray-200">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <div class="group inline-flex items-center">
@@ -194,21 +199,23 @@
                 </div>
             </div>
             <!-- Tabs de proveedores -->
-                    <div v-if="hasProveedores" class="mb-6">
-                <UTabs v-model="activeTab" :items="tabs" size="md" variant="pill"
-                    :class="{ 'w-200': tabs.length >=3, 'w-50': tabs.length <3, 'w-300': tabs.length >= 5 }"
-                    color="neutral"
-                    @update:model-value="handleTabChange">
-                    <template #default="{ item, index }">
-                        <div class="inline-flex items-center group">
-                            <span>{{ item.label }}</span>
-                            <button v-if="isDocumentacion" @click.prevent="copyTab(item, index)" class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-gray-400 hover:text-gray-600" title="Copiar proveedor">
-                                <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4" />
-                            </button>
-                            <span v-if="copiedTabIndex === index" class="ml-2 text-sm text-green-400">Copiado</span>
-                        </div>
-                    </template>
-                </UTabs>
+            <div v-if="hasProveedores" class="md:mb-6 mb-3">
+                <div :class="tabs.length >= 5 ? '-mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto whitespace-nowrap' : ''">
+                    <UTabs v-model="activeTab" :items="tabs" size="md" variant="pill"
+                        :class="[ { 'md:w-200': tabs.length >=3, 'w-50': tabs.length <3, 'md:w-300': tabs.length >= 5 }, 'inline-flex' ]"
+                        color="neutral"
+                        @update:model-value="handleTabChange">
+                        <template #default="{ item, index }">
+                            <div class="inline-flex items-center group">
+                                <span>{{ item.label }}</span>
+                                <button v-if="isDocumentacion" @click.prevent="copyTab(item, index)" class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-gray-400 hover:text-gray-600" title="Copiar proveedor">
+                                    <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4" />
+                                </button>
+                                <span v-if="copiedTabIndex === index" class="ml-2 text-sm text-green-400">Copiado</span>
+                            </div>
+                        </template>
+                    </UTabs>
+                </div>
             </div>
 
             <!-- Información del cliente -->
@@ -219,11 +226,11 @@
                 <!-- Sección de Documentación -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md " :class="{ 'col-span-2': currentRole === ROLES.COORDINACION }">
                     <template #header>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
                                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
 
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
                                     Documentación {{ currentRole === ROLES.DOCUMENTACION ? 'Perú' : '' }} - {{ proveedorActivo?.products }}
                                     
                                 </h3>
@@ -335,10 +342,10 @@
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
                     v-if="currentRole === ROLES.DOCUMENTACION">
                     <template #header>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
                                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
                                     Documentación China
                                 </h3>
                                 <img  v-if="currentRole === ROLES.DOCUMENTACION" :src="CUSTOMIZED_ICONS_URL['CHINA']" alt="Flag" class="w-5 h-5" />
@@ -376,10 +383,10 @@
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
                     v-if="currentRole === ROLES.DOCUMENTACION">
                     <template #header>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
                                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
                                     Inspección
                                 </h3>
                                 <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">

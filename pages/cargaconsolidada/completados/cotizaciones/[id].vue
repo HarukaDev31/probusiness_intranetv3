@@ -72,7 +72,7 @@
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3" />
                 <UButton v-if="currentRole === ROLES.COORDINACION" icon="i-heroicons-arrow-down-tray" color="success"
-                    label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3" />
+                    label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
@@ -151,6 +151,7 @@ const { cotizaciones,
     refreshCotizacionFile,
     deleteCotizacion,
     deleteCotizacionFile,
+    sendRecordatorioFirmaContrato,
     updateEstadoCotizacionCotizador,
     loading: loadingCotizaciones,
     error: errorCotizaciones,
@@ -478,15 +479,15 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             const correo = String(pick(['correo', 'email', 'mail']) || '')
             const cod_contract = String(pick(['cod_contract']) || '')
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
-
+            const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             return h('div', { class: '' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null,
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    cotizacion_contrato_firmado_url ? h('a', {
-                        href: cotizacion_contrato_firmado_url,
+                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
+                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
                         target: '_blank',
                         class: 'text-primary hover:underline'
                     }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
@@ -602,15 +603,27 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'action',
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
-            return h(UButton, {
-                icon: 'i-heroicons-trash',
-                variant: 'ghost',
-                activeColor: 'error',
-                size: 'xs',
-                onClick: () => {
-                    handleDelete(row.original.id)
-                }
-            })
+            return h('div', { class: 'flex gap-2' }, [
+                h(UButton, {
+                    icon: 'i-heroicons-document-text',
+                    variant: 'ghost',
+                    color: 'primary',
+                    size: 'xs',
+                    title: 'Enviar recordatorio de firma',
+                    onClick: () => {
+                        handleSendRecordatorioFirma(row.original.id)
+                    }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-trash',
+                    variant: 'ghost',
+                    activeColor: 'error',
+                    size: 'xs',
+                    onClick: () => {
+                        handleDelete(row.original.id)
+                    }
+                })
+            ])
         }
     }
 ])
@@ -651,15 +664,15 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             const correo = String(pick(['correo', 'email', 'mail']) || '')
             const cod_contract = String(pick(['cod_contract']) || '')
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
-
+            const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             return h('div', { class: 'py-2' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    cotizacion_contrato_firmado_url ? h('a', {
-                        href: cotizacion_contrato_firmado_url,
+                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
+                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
                         target: '_blank',
                         class: 'text-primary hover:underline'
                     }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
@@ -1083,12 +1096,16 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
-                const tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
-                const formattedValue = tipoRotulado
+                let tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
+               
+                let formattedValue = tipoRotulado
                     .toUpperCase()
                     .replace(/_/g, ' ')
                     .trim() || '-'
-
+                console.log(formattedValue)
+                if (formattedValue === 'ROTULADO') {
+                    formattedValue = 'GENERAL';
+                }
                 return h(UBadge as any, {
                     label: formattedValue,
                     color: 'gray',
@@ -1503,11 +1520,13 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
                 const tipoRotulado = proveedor.tipo_rotulado || proveedor.tipo_rotulacion || ''
-                const formattedValue = tipoRotulado
+                let formattedValue = tipoRotulado
                     .toUpperCase()
                     .replace(/_/g, ' ')
                     .trim() || '-'
-
+                if (formattedValue === 'ROTULADO') {
+                    formattedValue = 'GENERAL';
+                }
                 return h(UBadge as any, {
                     label: formattedValue,
                     color: 'gray',
@@ -1683,7 +1702,21 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
     },
     {
         accessorKey: 'qty_box_supplier',
-        header: 'Qty Box Supplier',
+        header: () => {
+            return h('div', {
+                class: 'flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded'
+            }, [
+                h('img', {
+                    src: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg',
+                    alt: 'China',
+                    class: 'w-4 h-4'
+                }),
+                h('span', {
+                    class: 'font-medium'
+                }, 'Qty Box')
+            ])
+        },
+        //apply vertical separator to all column 
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
@@ -1703,7 +1736,20 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
     },
     {
         accessorKey: 'cbm_total_supplier',
-        header: 'CBM Total Supplier',
+        header: () => {
+            return h('div', {
+                class: 'flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded'
+            }, [
+                h('img', {
+                    src: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg',
+                    alt: 'China',
+                    class: 'w-4 h-4'
+                }),
+                h('span', {
+                    class: 'font-medium'
+                }, 'CBM')
+            ])
+        },
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
@@ -1724,7 +1770,20 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
 
     {
         accessorKey: 'arrive_date',
-        header: 'Arrive Date',
+        header: () => {
+            return h('div', {
+                class: 'flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded w-full'
+            }, [
+                h('img', {
+                    src: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg',
+                    alt: 'China',
+                    class: 'w-4 h-4'
+                }),
+                h('span', {
+                    class: 'font-medium'
+                }, 'Arrive Date')
+            ])
+        },
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
@@ -2278,6 +2337,23 @@ const handleDelete = async (idCotizacion: number) => {
         })
     } catch (error) {
         showError('Error al eliminar cotización', error)
+    }
+}
+
+const handleSendRecordatorioFirma = async (idCotizacion: number) => {
+    try {
+        showConfirmation('¿Deseas enviar el recordatorio de firma de contrato?', 'Se enviará un mensaje de WhatsApp al cliente.', async () => {
+            await withSpinner(async () => {
+                const response = await sendRecordatorioFirmaContrato(idCotizacion)
+                if (response?.success) {
+                    showSuccess('Recordatorio enviado', 'El recordatorio de firma se ha enviado correctamente.')
+                } else {
+                    showError('Error', response?.error || 'No se pudo enviar el recordatorio')
+                }
+            }, 'Enviando recordatorio...')
+        })
+    } catch (error) {
+        showError('Error al enviar recordatorio', error)
     }
 }
 const getProespectosColumns = () => {

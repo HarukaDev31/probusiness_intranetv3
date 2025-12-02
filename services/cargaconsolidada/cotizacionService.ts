@@ -117,4 +117,15 @@ export class CotizacionService extends BaseService {
             throw new Error(error?.data?.message || 'Error al exportar clientes')
         }
     }
+    static async sendRecordatorioFirmaContrato(cotizacion_id: number): Promise<{ success: boolean; message?: string; error?: string }> {
+        try {
+            const response = await this.apiCall<{ success: boolean; message?: string; error?: string }>(`${this.baseUrl}/cotizaciones/${cotizacion_id}/send-recordatorio-firma`, {
+                method: 'POST'
+            })
+            return response
+        } catch (error) {
+            console.error('Error al enviar recordatorio de firma:', error)
+            throw new Error('No se pudo enviar el recordatorio de firma')
+        }
+    }
 }

@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6">
+    <div class="md:p-6 p-4">
         <!-- Header con botones de navegación -->
         <PageHeader title="" subtitle="" 
             icon="" :hide-back-button="false" @back="navigateBack">

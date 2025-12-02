@@ -1,20 +1,40 @@
-<template>
+  <template>
   <div ref="componentRootRef" class="">
 
     <!-- Sticky Top Section -->
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
   <slot name="filters" />
   <template v-if="!$slots.filters">
-    <div class="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4 p-4">
-      <div class="w-full lg:w-full flex flex-col lg:flex-row justify-between gap-3 items-center">
-        <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack" />
+    <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 ">
+      <div class="w-full lg:w-full flex flex-col md:flex-row items-start md:items-center md:justify-between gap-1 md:gap-3 items-center">
+        <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
+          <template v-if="$slots['back-extra']" #back-extra>
+            <slot name="back-extra" />
+          </template>
+        </PageHeader>
+
+        <!-- Headers: show below title and above search/actions -->
+        <div v-if="showHeaders" class="bg-transparent border-b border-gray-200 dark:border-gray-700 w-full lg:mt-0 block lg:hidden">
+          <div class="overflow-visible">
+            <div class="flex flex-wrap items-center md:gap-3 justify-center">
+              <div v-for="header in headers" :key="header.value" class="inline-flex items-center gap-1 mr-3">
+                <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
+                  {{ header.label }}:
+                </span>
+                <UBadge :label="header.value || 'N/A'" color="neutral" variant="outline" size="sm"
+                  class="font-medium text-xs" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Search and Actions -->
-        <div class="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full lg:w-auto">
+        <div class="flex lg:flex-row items-center lg:items-center gap-1 md:gap-3 w-full lg:w-auto">
           <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
             <label v-if="showPrimarySearchLabel"
               class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
             <UInput :model-value="primarySearchInternal" :placeholder="primarySearchPlaceholder"
-              class="flex-1 h-10 min-w-0" :ui="{ base: 'h-11' }"
+              class="flex-1 h-5 min-w-0 md:h-10 lg:h-10" :ui="{ base: 'h-7 md:h-10 lg:h-10' }"
               @update:model-value="onPrimarySearchChange">
               <template #leading>
                 <UIcon name="i-heroicons-magnifying-glass" class="text-gray-400" />
@@ -23,18 +43,23 @@
           </div>
 
           <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
-            class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
+            class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
             @click="handleExport" />
-          <div class="flex items-center gap-2 relative w-full lg:w-auto">
-            <div ref="filtersButtonRef" class="w-full lg:w-auto">
-              <UButton v-if="showFilters" :label="translations.filters" icon="i-heroicons-funnel"
-                class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
+            <div class="flex items-center gap-2 relative md:w-full lg:w-auto">
+            <div ref="filtersButtonRef" class="w-auto lg:w-auto">
+              <UButton v-if="showFilters"
+                :label="isMobile ? '' : translations.filters"
+                :title="translations.filters"
+                icon="i-heroicons-funnel"
+                class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
+                :class="isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto'"
                 @click="showFiltersPanel = !showFiltersPanel" />
             </div>
 
-            <!-- Panel de filtros -->
-            <div ref="filtersPanelRef" v-if="showFiltersPanel && showFilters"
-              class="absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
+            <!-- Desktop: keep inline absolute panel to preserve original behavior on large screens -->
+            <div v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && !isMobile"
+              ref="filtersPanelRef"
+              class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
               @click.stop>
               <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
                 <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -75,6 +100,54 @@
                 </div>
               </div>
             </div>
+
+            <!-- Mobile: teleport the filters panel to body to avoid clipping; only active when isMobile === true -->
+            <teleport to="body" v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && isMobile">
+              <!-- Overlay: usando utilidades Tailwind para color y backdrop; mantenemos la clase antigua para compatibilidad -->
+              <div class="filters-overlay fixed inset-0 bg-black/40 backdrop-blur-sm z-[990]" @click="showFiltersPanel = false"></div>
+
+              <!-- Panel móvil: utilidades Tailwind para fondo, dark-mode, tamaño y scroll; mantenemos la clase antigua para reglas legacy -->
+              <div ref="filtersPanelRef" class="filters-panel-mobile fixed left-4 right-4 top-[12vh] max-h-[calc(100vh-16vh)] mx-auto z-[1000] bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-lg overflow-y-auto p-3" @click.stop>
+                <!-- Nota: este panel usa utilidades Tailwind (bg / dark:bg / z-index / spacing) para asegurar comportamiento claro/oscuro -->
+                <div class="sticky top-0 bg-transparent pb-2 mb-2 z-10 flex items-center justify-between">
+                  <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ translations.filters }}</div>
+                  <button type="button" class="filters-close bg-transparent border-0 text-lg p-1" @click="showFiltersPanel = false">✕</button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
+                  <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {{ filter.label }}
+                    </label>
+                    <UInput v-if="filter.type === 'date'"
+                      :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
+                      :placeholder="filter.placeholder" class="w-full"
+                      @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
+                    <USelect v-else :model-value="(() => {
+                        const value = filtersValue && filtersValue[filter.key]
+                        return value
+                      })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
+                        @update:model-value="(value) => {
+                          handleFilterChange(filter.key, value)
+                        }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                  </div>
+                </div>
+
+                <div class="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
+                  <div class="flex items-center justify-between">
+                    <UButton
+                      icon="i-heroicons-x-mark"
+                      class="h-8 bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 border-0"
+                      :label="translations.clearFilters"
+                      @click="handleClearFilters"
+                    />
+                    <button type="button" class="text-sm text-gray-600 dark:text-gray-300 hover:underline" @click="showFiltersPanel = false">
+                      {{ translations.close }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </teleport>
             <!-- Export Button -->
 
             <slot name="actions" />
@@ -89,12 +162,13 @@
         </div>
       </div>
     </div>
-  </template>
+    </template>
 
-      <div v-if="showHeaders" class="bg-transparent border-b border-gray-200 dark:border-gray-700">
+      <!-- Desktop headers (only on lg and up) - keep original placement for PC layout -->
+      <div v-if="showHeaders" class="hidden lg:block bg-transparent border-b border-gray-200 dark:border-gray-700">
         <div class="px-4 lg:px-6 py-3">
-          <div class="flex flex-wrap gap-2 lg:gap-3">
-            <div v-for="header in headers" :key="header.value" class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-3">
+            <div v-for="header in headers" :key="header.value" class="inline-flex items-center gap-2 mr-4">
               <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
                 {{ header.label }}:
               </span>
@@ -106,33 +180,36 @@
       </div>
 
       <!-- Body Top Slot (compact on mobile) -->
-      <div class="flex flex-col sm:flex-row justify-between px-3 py-2 sm:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
+      <div class="flex flex-col sm:flex-row justify-center md:justify-between px-0 py-0 md:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
         <slot name="body-top" />
       </div>
     </div>
 
     <!-- Table Section -->
-    <div 
-      ref="tableContainerRef"
-      class="overflow-x-auto relative scroll-container hide-native-scrollbar"
-      @scroll="handleScroll"
-      @mousemove="handleMouseMove"
-      @mouseleave="stopAutoScroll"
-    >
-      <!-- Sombra izquierda -->
+    <!-- Contenedor con max-height y overflow para que sticky funcione -->
+    <div class="relative" ref="tableWrapperRef">
       <div 
-        v-if="showLeftShadow" 
-        class="scroll-shadow scroll-shadow-left"
-        :style="{ left: scrollLeft + 'px' }"
-      ></div>
-      <!-- Sombra derecha -->
-      <div 
-        v-if="showRightShadow" 
-        class="scroll-shadow scroll-shadow-right"
-        :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
-      ></div>
-      <UTable ref="utableRef" :key="tableKey" :data="filteredData" :sticky="true" :columns="columns" :loading="loading"
-        :class="['bg-transparent', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="uiForTable">
+        ref="tableContainerRef"
+        class="overflow-x-auto overflow-y-auto relative scroll-container hide-native-scrollbar"
+        style="max-height: calc(100vh - 250px);"
+        @scroll="handleScroll"
+        @mousemove="handleMouseMove"
+        @mouseleave="stopAutoScroll"
+      >
+        <!-- Sombra izquierda -->
+        <div 
+          v-if="showLeftShadow" 
+          class="scroll-shadow scroll-shadow-left"
+          :style="{ left: scrollLeft + 'px' }"
+        ></div>
+        <!-- Sombra derecha -->
+        <div 
+          v-if="showRightShadow" 
+          class="scroll-shadow scroll-shadow-right"
+          :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
+        ></div>
+        <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky :columns="columns" :loading="loading"
+          :class="['bg-transparent', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="uiForTable">
 
         <template #loading>
           <div v-if="props.showSkeleton">
@@ -169,11 +246,12 @@
           <pre>{{ row.original }}</pre>
         </template>
       </UTable>
+      </div>
     </div>
 
     <!-- Sticky Bottom Section - Pagination -->
     <div v-if="showBottomSection"
-      class="sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 bottom-with-scrollbar">
+      class="md:sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 bottom-with-scrollbar">
       <!-- Fake horizontal scrollbar placed visually above the sticky bottom content -->
       <div ref="fakeScrollbarRef" class="table-scrollbar" @scroll.stop="onFakeScroll" v-show="true">
         <!-- inner spacer that sets the fake scroll width to the table's scrollWidth -->
@@ -187,7 +265,7 @@
           {{ translations.de }} {{ totalRecords }} {{ translations.resultados }}
         </div>
         <div class="flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto" v-if="showPagination">
-          <div class="flex items-center gap-2 justify-center lg:justify-start">
+          <div class="flex items-center gap-2 justify-center lg:justify-start hidden md:flex">
             <label class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.perPage }}</label>
             <USelect :model-value="itemsPerPage" :items="PAGINATION_OPTIONS" placeholder="10" class="w-20"
               @update:model-value="(value: any) => onItemsPerPageChange(Number(value))" />
@@ -204,7 +282,7 @@
 </template>
 
 <script setup lang="ts">
-import { h, resolveComponent, computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { h, resolveComponent, computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { DataTableProps, DataTableEmits } from '../types/data-table'
 import { useDataTable } from '../composables/useDataTable'
 import { DATA_TABLE_DEFAULTS, PAGINATION_OPTIONS } from '../constants/data-table'
@@ -447,9 +525,12 @@ onUnmounted(() => {
 
 // Scroll automático y sombras laterales
 const tableContainerRef = ref<HTMLElement | null>(null)
+const tableWrapperRef = ref<HTMLElement | null>(null)
 // Ref to the UTable root so we can apply centering class when table doesn't scroll horizontally
 const utableRef = ref<HTMLElement | null>(null)
 const isTableNarrow = ref(false)
+// Estado para manejar sticky header cuando el padre se scrollea
+const headerTopOffset = ref(0)
 
 // Función para hacer scroll hacia arriba
 const scrollToTop = () => {
@@ -522,15 +603,17 @@ const updateNarrowness = () => {
   }
 }
 
-// Computed UI classes for UTable — switch `base` when table is narrow so inner <table> doesn't force full width
+
 const uiForTable = computed(() => ({
   root: 'relative overflow-visible',
   base: isTableNarrow.value ? 'min-w-[80%]' : 'min-w-full',
-  thead: 'bg-transparent',
   tbody: 'border-separate border-spacing-y-6',
   td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
-  th: 'font-normal text-xs lg:text-sm p-2 lg:p-1',
-  tr: 'border-b border-10 border-[#f0f4f9] dark:border-gray-900'
+  th: 'font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5',
+  // Nuxt UI aplica automáticamente: thead: 'sticky top-0 inset-x-0 bg-default/75 z-[1] backdrop-blur'
+  // Make the thead have a thicker bottom border colored like the header background
+  thead: 'top-0 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15',
+  tr: 'border-[#f0f4f9] dark:border-gray-900',
 }))
 
 const handleScroll = () => {
@@ -620,6 +703,7 @@ const stopAutoScroll = () => {
 
 onMounted(() => {
   updateScrollPosition()
+  
   // Observar cambios de tamaño
   if (tableContainerRef.value) {
     // Update both scroll position and the fake scrollbar width
@@ -630,6 +714,7 @@ onMounted(() => {
         tableScrollWidth.value = tableContainerRef.value?.scrollWidth || 0
         // ensure fake scrollbar initial position follows table
         if (fakeScrollbarRef.value) fakeScrollbarRef.value.scrollLeft = tableContainerRef.value?.scrollLeft || 0
+        // ignore
       } catch (e) {
         // ignore
       }
@@ -750,7 +835,49 @@ const displayedFilterConfig = computed(() => {
     options: (f.options || []).map(o => ({ ...o, label: (dict[o.label] || o.label) }))
   }))
 })
+
+// Mobile detection reactive used to switch to teleported panel only on small screens
+const isMobile = ref(false)
+const updateIsMobile = () => {
+  try {
+    isMobile.value = window.innerWidth <= 1024
+  } catch (e) {
+    isMobile.value = false
+  }
+}
+onMounted(() => {
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
+})
+onUnmounted(() => {
+  try { window.removeEventListener('resize', updateIsMobile) } catch (e) {}
+})
 </script>
+
+<style scoped>
+/* Headers scroll helper: enable smooth touch scrolling and provide a subtle track/thumb for WebKit */
+.headers-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+.headers-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.headers-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 9999px;
+}
+/* hide native scrollbar for non-webkit while keeping scroll functionality */
+.hide-native-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.hide-native-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Ensure overflow is visible on larger screens */
+@media (min-width: 640px) {
+  .headers-scroll { overflow-x: visible !important; }
+}
+</style>
 <style scoped>
 tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   display: none;
@@ -927,6 +1054,67 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   }
 }
 
+/* Compact styles for filters panel on small screens */
+@media (max-width: 640px) {
+  .filters-panel {
+    padding: 0.5rem !important;
+    max-height: 70vh !important;
+    border-radius: 0.5rem !important;
+    width: calc(100% - 1rem) !important;
+    right: 0.5rem !important;
+    left: 0.5rem !important;
+  }
+
+  .filters-panel .grid {
+    gap: 0.5rem !important;
+    padding: 0 !important;
+  }
+
+  .filters-panel label {
+    font-size: 0.775rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+
+  .filters-panel input,
+  .filters-panel textarea,
+  .filters-panel select {
+    height: 2rem !important;
+    padding: 0.35rem 0.5rem !important;
+    box-shadow: 0 12px 40px rgba(2,6,23,0.12);
+  }
+
+  .filters-panel .h-8 { height: 2.25rem !important; }
+  .filters-panel .h-11 { height: 2.5rem !important; }
+
+  /* Dark mode tweaks for mobile filters panel to improve contrast and harmony */
+  .dark .filters-panel-mobile {
+    background: #0f1724; /* deep dark to match app dark background */
+    color: #e6eef8;
+    border: 1px solid rgba(255,255,255,0.04);
+    box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+  }
+
+  /* Make header/close text lighter in dark mode */
+  .dark .filters-panel-mobile .filters-header,
+  .dark .filters-panel-mobile .filters-header * {
+    color: #cbd5e1;
+  }
+
+  /* Ensure inputs / selects inside the panel inherit dark styling if they don't already */
+  .dark .filters-panel-mobile input,
+  .dark .filters-panel-mobile select,
+  .dark .filters-panel-mobile .u-input,
+  .dark .filters-panel-mobile .u-select,
+  .dark .filters-panel-mobile .combobox-content {
+    background: #0b1220 !important;
+    color: #e6eef8 !important;
+    border-color: rgba(255,255,255,0.06) !important;
+  }
+
+  .filters-panel .mt-2 { margin-top: 0.35rem !important; }
+  .filters-panel .pt-3 { padding-top: 0.35rem !important; }
+}
+
 /* Asegurar que el overlay funcione correctamente */
 .fixed.inset-0 {
   position: fixed;
@@ -956,6 +1144,17 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   overflow-x: auto;
   overflow-y: hidden;
   z-index: 60;
+}
+
+/* Asegurar que el sticky header funcione al viewport, no solo al contenedor con scroll */
+.scroll-container {
+  position: relative;
+}
+
+/* El thead debe ser sticky al viewport, no solo al contenedor */
+.scroll-container table thead {
+  position: sticky;
+  z-index: 30;
 }
 
 /* Style the fake scrollbar track & thumb (webkit) */
@@ -996,6 +1195,29 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   min-width: 80% !important;
 }
 
+/* Add small vertical spacing between tbody rows to make rows breathe */
+/* Use ::v-deep to reach the actual <table> rendered by UTable */
+.utable-narrow ::v-deep table,
+.min-w-full ::v-deep table {
+  border-collapse: separate !important;
+  /* vertical spacing: 0.5rem (8px) - adjust to taste */
+  border-spacing: 0 0.5rem !important;
+}
+
+/* When using separate border mode, ensure rows look like separate blocks */
+.utable-narrow ::v-deep tbody tr,
+.min-w-full ::v-deep tbody tr {
+  background: transparent; /* keep default, cells already have bg */
+}
+
+
+/* Sticky header simple - dejar que Nuxt UI lo maneje */
+.scroll-container table thead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
 /* Mejorar la legibilidad del texto en mobile */
 @media (max-width: 640px) {
   .text-xl {
@@ -1007,5 +1229,60 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
     font-size: 1.5rem;
     line-height: 2rem;
   }
+}
+</style>
+
+<!-- Global styles for teleported mobile filters (must be global to affect elements teleported to body) -->
+<style>
+/* Backdrop overlay for teleported mobile panel */
+.filters-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: auto; /* lowered so selects/portals with higher z-index can appear above */
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+/* Mobile-specific panel styling when teleported */
+.filters-panel-mobile {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  top: 12vh;
+  max-height: calc(100vh - 16vh);
+  margin: 0 auto;
+  z-index: auto; /* lowered from 1050 to avoid overlapping select portals */
+  background: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 40px rgba(2,6,23,0.12);
+  overflow-y: auto;
+  padding: 0.75rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filters-panel-mobile .filters-header {
+  position: sticky;
+  top: 0;
+  background: transparent;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filters-panel-mobile .filters-close {
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+@media (min-width: 1025px) {
+  /* ensure teleported classes do not affect desktop if somehow present */
+  .filters-overlay, .filters-panel-mobile { display: none !important; }
 }
 </style>

@@ -111,16 +111,16 @@
       <div 
         v-for="notification in notifications" 
         :key="notification.id"
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-sm transition-shadow"
+        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4 hover:shadow-sm transition-shadow overflow-hidden"
         :class="{ 
           'border-l-4 border-l-blue-500': !notification.estado_usuario.leida,
           'opacity-75': navigatingToId === notification.id
         }"
       >
-        <div class="flex items-start justify-between">
+        <div class="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-3">
           <!-- Área de contenido (sin navegación) -->
           <div 
-            class="flex-1 relative"
+            class="md:flex-1 relative min-w-0 w-full overflow-hidden"
           >
             <!-- Loading overlay cuando está navegando -->
             <div 
@@ -141,7 +141,7 @@
                   `text-${getTypeColor(notification.tipo)}-500`
                 ]"
               />
-              <h3 class="font-semibold text-gray-900 dark:text-white">
+              <h3 class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white break-all sm:break-words">
                 {{ notification.titulo }}
               </h3>
               <UBadge 
@@ -154,28 +154,27 @@
               </UBadge>
             </div>
             
-            <p class="text-gray-600 dark:text-gray-400 mb-2">
+            <p class="text-gray-600 dark:text-gray-400 mb-2 text-xs sm:text-base break-all sm:break-words">
               {{ notification.mensaje }}
             </p>
             
-            <div v-if="notification.descripcion" class="text-sm text-gray-500 dark:text-gray-500 mb-2">
+            <div v-if="notification.descripcion" class="text-xs text-gray-500 dark:text-gray-500 mb-2 break-all sm:break-words">
               {{ notification.descripcion }}
             </div>
             
-            <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+            <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-xs text-gray-500 dark:text-gray-400 break-all sm:break-words">
               <span>{{ notification.modulo }}</span>
               <span>{{ formatDateTimeToDmy(notification.fecha_creacion) }}</span>
               <span>{{ notification.creador.nombre }}</span>
-              
-              <!-- Mostrar parámetros de navegación si existen -->
-              <span v-if="notification.navigate_to" class="text-blue-500">
-                <UIcon name="i-heroicons-link" class="w-3 h-3 inline mr-1" />
-                {{ getNavigationPreview(notification) }}
-              </span>
+            </div>
+
+            <div v-if="notification.navigate_to" class="text-blue-500 break-all sm:break-words mt-2 text-xs flex items-center">
+              <UIcon name="i-heroicons-link" class="w-3 h-3 mr-2" />
+              <span class="break-all sm:break-words">{{ getNavigationPreview(notification) }}</span>
             </div>
           </div>
           
-          <div class="flex items-center gap-2 ml-4">
+          <div class="flex items-center gap-2 sm:ml-4 ml-0">
             <!-- Botón de navegación: marca como leída Y navega -->
             <UButton
               v-if="notification.navigate_to"

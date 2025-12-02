@@ -1,10 +1,10 @@
 <template>
-  <div class="p-6">
+  <div class="p-0 md:p-6">
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div class="flex items-center">
         <UIcon name="i-heroicons-truck" class="text-2xl mr-3 text-gray-700 dark:text-gray-300" />
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Pasos de Carga Consolidada</h1>
+        <h1 class="text-base md:text-2xl font-bold text-gray-900 dark:text-white">Pasos de Carga Consolidada</h1>
       </div>
     </div>
 
@@ -17,7 +17,7 @@
           <div
             v-for="i in skeletonCount"
             :key="`skeleton-${i}`"
-            class="bg-white min-w-40 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6 text-center animate-pulse"
+            class="bg-white min-w-40 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-3 text-center animate-pulse"
           >
             <div class="flex flex-col items-center space-y-4">
               <!-- Icono skeleton -->
@@ -33,12 +33,12 @@
         <!-- Cards reales cuando no está cargando -->
         <div
           v-else
-          class="rounded-2xl border border-gray-300 dark:border-gray-700 hover:bg-gray-50 hover:dark:bg-gray-800 hover:shadow-md transition-shadow cursor-pointer p-3 text-center"
+          class="min-w-40 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 hover:dark:bg-gray-800 hover:shadow-md transition-shadow cursor-pointer p-3 text-center"
           v-for="paso in pasos" 
           @click="handleNavigateToStep(paso.name)" 
           :key="paso.id"
         >
-          <div class="flex flex-col items-center space-y-4 min-w-40">
+          <div class="flex flex-col items-center space-y-4 ">
             <div class="w-14 h-14 rounded-full flex items-center justify-center">
               <!--load image from url-->
               <img :src="paso.iconURL"/>
