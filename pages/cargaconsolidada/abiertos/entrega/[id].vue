@@ -11,7 +11,7 @@
   :previous-page-url="`/cargaconsolidada/abiertos/pasos/${id}`">
       <template #actions>
         <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3 hidden md:flex" icon="i-heroicons-calendar"
-          @click="navigateTo(`/cargaconsolidada/completados/entrega/fechas-horarios/${id}`)" />
+          @click="navigateTo(`/cargaconsolidada/abiertos/entrega/fechas-horarios/${id}`)" />
       </template>
       <template #body-top>
         <div class="flex flex-col gap-2">
@@ -49,7 +49,7 @@
       </template>
       <template #back-extra>
         <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3 md:hidden flex" icon="i-heroicons-calendar"
-          @click="navigateTo(`/cargaconsolidada/completados/entrega/fechas-horarios/${id}`)" />
+          @click="navigateTo(`/cargaconsolidada/abiertos/entrega/fechas-horarios/${id}`)" />
       </template>
     </DataTable>
     <DataTable v-if="activeTab === 'entregas'" title="" :data="entregas" :columns="entregasColumns" :loading="loading"
@@ -570,11 +570,7 @@ const entregasColumns = ref<TableColumn<any>[]>([
       return h(UBadge, { label, color, variant: 'soft' })
     }
   },
-  {
-    accessorKey: 'entregado',
-    header: 'Entregado',
-    cell: ({ row }) => h(UBadge, { label: row.original.conformidad_count ? 'Si' : 'No', color: row.original.conformidad_count ? 'success' : 'error' })
-  },
+
   { accessorKey: 'ciudad', header: 'Ciudad', cell: ({ row }) => row.original.department_name || 'Lima' },
   { accessorKey: 'documento', header: 'Ruc o Dni', cell: ({ row }) => row.original.agency_ruc || row.original.pick_doc || '—' },
   { accessorKey: 'razon_social', header: 'Razon social o Nombre', cell: ({ row }) => row.original.agency_name || row.original.pick_name || '—' },
@@ -614,7 +610,7 @@ const entregasColumns = ref<TableColumn<any>[]>([
     }
   },
   {
-    id: 'estado', header: 'Estado', cell: ({ row }) => {
+    id: 'estado', header: 'Entregado', cell: ({ row }) => {
       const estado = row.original.estado_entrega || (row.original.conformidad_count ? 'ENTREGADO' : 'PENDIENTE')
       const color = estado === 'ENTREGADO' ? 'success' : estado === 'PROGRAMADA' ? 'warning' : 'neutral'
       return h(UBadge, { label: estado, color, variant: 'soft' })

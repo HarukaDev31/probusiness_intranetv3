@@ -151,6 +151,7 @@ const { cotizaciones,
     refreshCotizacionFile,
     deleteCotizacion,
     deleteCotizacionFile,
+    sendRecordatorioFirmaContrato,
     updateEstadoCotizacionCotizador,
     loading: loadingCotizaciones,
     error: errorCotizaciones,
@@ -602,15 +603,27 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'action',
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
-            return h(UButton, {
-                icon: 'i-heroicons-trash',
-                variant: 'ghost',
-                activeColor: 'error',
-                size: 'xs',
-                onClick: () => {
-                    handleDelete(row.original.id)
-                }
-            })
+            return h('div', { class: 'flex gap-2' }, [
+                h(UButton, {
+                    icon: 'i-heroicons-document-text',
+                    variant: 'ghost',
+                    color: 'primary',
+                    size: 'xs',
+                    title: 'Enviar recordatorio de firma',
+                    onClick: () => {
+                        handleSendRecordatorioFirma(row.original.id)
+                    }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-trash',
+                    variant: 'ghost',
+                    activeColor: 'error',
+                    size: 'xs',
+                    onClick: () => {
+                        handleDelete(row.original.id)
+                    }
+                })
+            ])
         }
     }
 ])
@@ -2324,6 +2337,23 @@ const handleDelete = async (idCotizacion: number) => {
         })
     } catch (error) {
         showError('Error al eliminar cotización', error)
+    }
+}
+
+const handleSendRecordatorioFirma = async (idCotizacion: number) => {
+    try {
+        showConfirmation('¿Deseas enviar el recordatorio de firma de contrato?', 'Se enviará un mensaje de WhatsApp al cliente.', async () => {
+            await withSpinner(async () => {
+                const response = await sendRecordatorioFirmaContrato(idCotizacion)
+                if (response?.success) {
+                    showSuccess('Recordatorio enviado', 'El recordatorio de firma se ha enviado correctamente.')
+                } else {
+                    showError('Error', response?.error || 'No se pudo enviar el recordatorio')
+                }
+            }, 'Enviando recordatorio...')
+        })
+    } catch (error) {
+        showError('Error al enviar recordatorio', error)
     }
 }
 const getProespectosColumns = () => {
