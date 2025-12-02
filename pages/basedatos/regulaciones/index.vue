@@ -16,17 +16,17 @@
         <template v-else>
             <div class="md:mb-6">
                 <div class="flex items-center mb-3">
-                    <div class="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mr-3" />
-                    <div class="h-7 w-64 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                    <div class="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mr-3"></div>
+                    <div class="h-7 w-64 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                 </div>
-                <div class="h-4 w-96 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <div class="h-4 w-96 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
             </div>
             <div class="border-t border-gray-300 my-4"></div>
         </template>
 
         <!-- Navigation Tabs / Skeleton -->
         <div class="md:mb-6 flex items-center justify-between overflow-x-auto">
-            <div class="flex gap-2 p-2 rounded-lg">
+            <div class="flex gap-2 p-2 rounded-lg whitespace-nowrap snap-x snap-mandatory overflow-x-auto">
                 <template v-if="!isActiveTabLoading">
                     <button
                         v-for="tab in tabs"
@@ -43,8 +43,8 @@
                         {{ tab.label }}
                     </button>
                 </template>
-                <template v-else>
-                    <div v-for="tab in tabs" :key="'skel-tab-'+tab.id" class="h-9 w-28 rounded bg-gray-200 dark:bg-gray-700 animate-pulse inline-block flex-shrink-0" />
+                    <template v-else>
+                    <div v-for="tab in tabs" :key="'skel-tab-'+tab.id" class="h-9 w-28 rounded bg-gray-200 dark:bg-gray-700 animate-pulse inline-block flex-shrink-0"></div>
                 </template>
             </div>
             <template v-if="hasRole('Documentacion')">
@@ -56,7 +56,7 @@
                     class="px-6"
                     @click="navigateToCreate(activeTab)"
                 />
-                <div v-else class="h-9 w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <div v-else class="h-9 w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
             </template>
         </div>
         <!-- Modal de crear rubro-->
@@ -107,14 +107,14 @@
                         <div class="flex gap-8 max-w-full">
                             <div class="w-100 flex flex-col gap-4">
                                 <div class="flex items-center px-4 py-2 gap-4">
-                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                                 </div>
                                 <div v-for="n in 7" :key="'ant-skel-'+n" class="flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800 border border-transparent">
-                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                                 </div>
                             </div>
                         </div>
@@ -188,7 +188,8 @@
                                     { accessorKey: 'id', header: 'N°', cell: ({ row }) => row.index + 1 },
                                     { accessorKey: 'descripcion', header: 'Descripción', cell: ({ row }) => {
                                         const val = row.getValue('descripcion')
-                                        return (typeof val === 'string' ? (val.length > 120 ? val.slice(0, 117) + '...' : val) : '')
+                                        if (typeof val !== 'string') return ''
+                                        return h('div', { class: 'max-w-[640px] w-[640px] md:w-full md:max-w-none break-words text-sm text-gray-700 dark:text-gray-300' }, val)
                                     } },
                                     { accessorKey: 'partida', header: 'Partida' },
                                     { accessorKey: 'precio_declarado', header: 'P. Declaración', cell: ({ row }) => `$${row.getValue('precio_declarado')}` },
@@ -269,14 +270,14 @@
                         <div class="flex gap-8">
                             <div class="w-120 flex flex-col gap-4">
                                 <div class="flex items-center px-4 py-2 gap-4">
-                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                                 </div>
                                 <div v-for="n in 7" :key="'perm-skel-'+n" class="flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800">
-                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                                 </div>
                             </div>
                         </div>
@@ -435,14 +436,14 @@
                         <div class="flex gap-8">
                             <div class="w-120 flex flex-col gap-4">
                                 <div class="flex items-center px-4 py-2 gap-4">
-                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                                 </div>
                                 <div v-for="n in 7" :key="'etiq-skel-'+n" class="flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800">
-                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                                 </div>
                             </div>
                         </div>
@@ -553,7 +554,7 @@
                                             cell: ({ row }) => {
                                                 const observaciones = row.getValue('observaciones')
                                                 return h('div', {
-                                                class: 'whitespace-pre-line break-words w-[400px] md:w-full max-w-[400px]'
+                                                class: 'whitespace-pre-line break-words w-[400px] md:w-full max-w-[400px] md:max-w-none'
                                                 }, observaciones)
                                             }
                                         }
@@ -574,14 +575,14 @@
                         <div class="flex gap-8">
                             <div class="w-120 flex flex-col gap-4">
                                 <div class="flex items-center px-4 py-2 gap-4">
-                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                                 </div>
                                 <div v-for="n in 7" :key="'doc-skel-'+n" class="flex items-center justify-between px-4 py-6 rounded-lg bg-white dark:bg-gray-800">
-                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div class="font-bold w-14 mr-10 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div class="flex-1 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                    <div v-if="hasRole('Documentacion')" class="w-20 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                                 </div>
                             </div>
                         </div>
