@@ -192,6 +192,7 @@ const tableColumns = computed(() => [
   { header: 'Unidad Com.', accessorKey: 'unidadComercial' },
   { header: 'Subpartida', accessorKey: 'subpartida' },
   { header: 'Campaña', accessorKey: 'cargaContenedor', cell: ({ row }: any) => `#${row.original.cargaContenedor}` },
+  { header: 'Año', accessorKey: 'anio' },
   {
     header: 'Acciones',
     accessorKey: 'acciones',

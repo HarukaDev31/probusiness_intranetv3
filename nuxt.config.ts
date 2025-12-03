@@ -17,7 +17,13 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'ProBusiness - Intranet | Sistema de gestion Interna',
-      
+      meta: [
+        // Structured Data
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
+        { name: 'apple-mobile-web-app-title', content: 'ProBusiness' },
+        { name: 'format-detection', content: 'telephone=no' }
+      ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
