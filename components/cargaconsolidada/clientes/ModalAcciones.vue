@@ -285,7 +285,8 @@ const categorias = [
   { label: 'Tecnologia', value: 'TECNOLOGIA' },
   { label: 'Tela', value: 'TELA' },
   { label: 'Automotriz', value: 'AUTOMOTRIZ' },
-  { label: 'Movilidad personal', value: 'MOVILIDAD PERSONAL' }
+  { label: 'Movilidad personal', value: 'MOVILIDAD PERSONAL' },
+  { label: 'Maquinaria', value: 'MAQUINARIA' }
 ]
 
 // Computed
