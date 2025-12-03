@@ -1,87 +1,104 @@
 <template>
   <div class="flex h-screen bg-white dark:bg-gray-900">
-    <!-- Sidebar -->
-    <CalendarSidebar
-      :selected-date="currentDate as CalendarDate"
-      @date-select="handleSidebarDateSelect"
-      @date-double-click="handleSidebarDateDoubleClick"
-      @create="handleSidebarCreate"
-    />
+    <!-- Sidebar - Oculto en móvil, visible en desktop -->
+    <div class="hidden md:block">
+      <CalendarSidebar
+        :selected-date="currentDate as CalendarDate"
+        @date-select="handleSidebarDateSelect"
+        @date-double-click="handleSidebarDateDoubleClick"
+        @create="handleSidebarCreate"
+      />
+    </div>
+
+    <!-- Sidebar móvil como drawer - z-index más bajo que la sidebar principal -->
+    <div
+      v-if="isSidebarOpen"
+      class="fixed inset-0 z-30 md:hidden"
+      @click="isSidebarOpen = false"
+    >
+      <div class="absolute inset-0 bg-black/50" />
+      <div
+        class="absolute left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl"
+        @click.stop
+      >
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Calendario</h2>
+          <UButton
+            icon="i-heroicons-x-mark"
+            variant="ghost"
+            size="sm"
+            @click="isSidebarOpen = false"
+          />
+        </div>
+        <CalendarSidebar
+          :selected-date="currentDate as CalendarDate"
+          @date-select="handleSidebarDateSelect"
+          @date-double-click="handleSidebarDateDoubleClick"
+          @create="handleSidebarCreate"
+        />
+      </div>
+    </div>
 
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Header -->
-      <div class="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3">
-        <div class="flex items-center justify-between">
+      <div class="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 md:px-6 py-2 md:py-3">
+        <div class="flex items-center justify-between gap-2">
           <!-- Left: Logo and Navigation -->
-          <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
-              <div class="w-10 h-10 bg-primary-500 rounded flex items-center justify-center text-white font-bold">
+          <div class="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+            <div class="flex items-center gap-1 md:gap-2">
+              <div class="w-8 h-8 md:w-10 md:h-10 bg-primary-500 rounded flex items-center justify-center text-white font-bold text-sm md:text-base">
                 C
               </div>
-              <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Calendario</h1>
+              <h1 class="text-base md:text-xl font-semibold text-gray-900 dark:text-white hidden sm:block">Calendario</h1>
             </div>
             
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1 md:gap-2 flex-1 min-w-0">
               <UButton
                 label="Hoy"
                 variant="outline"
-                size="sm"
+                size="xs"
+                class="hidden sm:inline-flex"
                 @click="goToToday"
               />
               <UButton
                 icon="i-heroicons-chevron-left"
                 variant="ghost"
-                size="sm"
+                size="xs"
                 @click="previousPeriod"
               />
               <UButton
                 icon="i-heroicons-chevron-right"
                 variant="ghost"
-                size="sm"
+                size="xs"
                 @click="nextPeriod"
               />
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white min-w-[180px]">
-                {{ currentPeriodTitle }}
+              <h2 class="text-sm md:text-lg font-semibold text-gray-900 dark:text-white truncate min-w-0">
+                <span class="hidden md:inline">{{ currentPeriodTitle }}</span>
+                <span class="md:hidden">{{ currentPeriodTitleShort }}</span>
               </h2>
             </div>
           </div>
 
-          <!-- Right: View Selector -->
-          <div class="flex items-center gap-2">
-            <UPopover>
-              <UButton
-                :label="viewMode === 'month' ? 'Mes' : viewMode === 'week' ? 'Semana' : 'Día'"
-                variant="outline"
-                size="sm"
-                trailing-icon="i-heroicons-chevron-down"
-              />
-              <template #content>
-                <div class="p-2 space-y-1">
-                  <UButton
-                    label="Día"
-                    variant="ghost"
-                    class="w-full justify-start"
-                    :class="{ 'bg-gray-100 dark:bg-gray-700': viewMode === 'day' }"
-                    @click="() => { viewMode = 'day'; updateUrl(); pendingLoadEvents = true }"
-                  />
-                  <UButton
-                    label="Semana"
-                    variant="ghost"
-                    class="w-full justify-start"
-                    :class="{ 'bg-gray-100 dark:bg-gray-700': viewMode === 'week' }"
-                    @click="() => { viewMode = 'week'; updateUrl(); pendingLoadEvents = true }"
-                  />
-                  <UButton
-                    label="Mes"
-                    variant="ghost"
-                    class="w-full justify-start"
-                    :class="{ 'bg-gray-100 dark:bg-gray-700': viewMode === 'month' }"
-                    @click="() => { viewMode = 'month'; updateUrl(); pendingLoadEvents = true }"
-                  />
-                </div>
-              </template>
-            </UPopover>
+          <!-- Right: View Selector and Calendar Sidebar Toggle -->
+          <div class="flex items-center gap-1 md:gap-2 flex-shrink-0">
+            <!-- Botón para abrir sidebar del calendario en móvil -->
+            <UButton
+              v-if="!isSidebarOpen"
+              icon="i-heroicons-squares-2x2"
+              variant="ghost"
+              size="xs"
+              class="md:hidden"
+              title="Abrir calendario"
+              @click="isSidebarOpen = true"
+            />
+            <USelect
+              v-model="viewMode"
+              :items="viewOptions"
+              size="xs"
+              class="w-[100px] sm:w-[120px]"
+              @update:model-value="handleViewModeChange"
+            />
           </div>
         </div>
       </div>
@@ -112,9 +129,10 @@
         <div
           v-for="day in weekDays"
           :key="day"
-          class="p-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900"
+          class="p-1 md:p-3 text-center text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900"
         >
-          {{ day }}
+          <span class="hidden sm:inline">{{ day }}</span>
+          <span class="sm:hidden">{{ day.charAt(0) }}</span>
         </div>
       </div>
 
@@ -123,7 +141,7 @@
         <div
           v-for="(day, index) in calendarDays"
           :key="index"
-          class="min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-1.5"
+          class="min-h-[60px] md:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-0.5 md:p-1.5"
           :class="{
             'bg-gray-50/50 dark:bg-gray-900/50': !day.isCurrentMonth,
             'bg-white dark:bg-gray-800': day.isCurrentMonth,
@@ -143,13 +161,13 @@
             </span>
           </div>
           <div 
-            class="space-y-0.5 max-h-[80px] overflow-y-auto min-h-[60px] cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded transition-colors"
+            class="space-y-0.5 max-h-[50px] md:max-h-[80px] overflow-y-auto min-h-[40px] md:min-h-[60px] cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded transition-colors"
             @click="handleDayClick(day.date)"
           >
             <div
               v-for="event in day.events"
               :key="event.id"
-              class="text-xs px-1.5 py-0.5 rounded cursor-pointer hover:opacity-90 transition-opacity mb-0.5 text-left"
+              class="text-[10px] md:text-xs px-1 md:px-1.5 py-0.5 rounded cursor-pointer hover:opacity-90 transition-opacity mb-0.5 text-left truncate"
               :style="{ 
                 backgroundColor: event.color || '#3b82f6', 
                 color: '#ffffff',
@@ -177,20 +195,20 @@
             </div>
             <!-- Contenido del calendario -->
             <div v-show="!loading">
-      <div class="grid grid-cols-8 border-b border-gray-200 dark:border-gray-700">
-        <div class="p-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900"></div>
+      <div class="grid grid-cols-8 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <div class="p-2 md:p-3 text-center text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900"></div>
         <div
           v-for="day in weekDaysData"
           :key="day.date"
-          class="p-3 text-center border-l border-gray-200 dark:border-gray-700"
+          class="p-2 md:p-3 text-center border-l border-gray-200 dark:border-gray-700 min-w-[80px] md:min-w-0"
           :class="{
             'bg-primary-50 dark:bg-primary-900/20': day.isToday,
             'bg-gray-50 dark:bg-gray-900': !day.isToday
           }"
         >
-          <div class="text-xs text-gray-500 dark:text-gray-400">{{ day.dayName }}</div>
+          <div class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400">{{ day.dayName }}</div>
           <div
-            class="text-lg font-semibold"
+            class="text-sm md:text-lg font-semibold"
             :class="{
               'text-primary-600 dark:text-primary-400': day.isToday,
               'text-gray-900 dark:text-white': !day.isToday
@@ -200,30 +218,31 @@
           </div>
         </div>
       </div>
-      <div class="grid grid-cols-8">
+      <div class="grid grid-cols-8 overflow-x-auto">
         <div class="border-r border-gray-200 dark:border-gray-700">
           <div
             v-for="hour in hours"
             :key="hour"
-            class="h-16 border-b border-gray-200 dark:border-gray-700 p-2 text-xs text-gray-500 dark:text-gray-400"
+            class="h-12 md:h-16 border-b border-gray-200 dark:border-gray-700 p-1 md:p-2 text-[10px] md:text-xs text-gray-500 dark:text-gray-400"
           >
-            {{ hour }}
+            <span class="hidden sm:inline">{{ hour }}</span>
+            <span class="sm:hidden">{{ hour.split(':')[0] }}</span>
           </div>
         </div>
         <div
           v-for="day in weekDaysData"
           :key="day.date"
-          class="border-r border-b border-gray-200 dark:border-gray-700 relative"
+          class="border-r border-b border-gray-200 dark:border-gray-700 relative min-w-[80px] md:min-w-0"
         >
           <div
             v-for="hour in hours"
             :key="hour"
-            class="h-16 border-b border-gray-200 dark:border-gray-700"
+            class="h-12 md:h-16 border-b border-gray-200 dark:border-gray-700"
           ></div>
           <div
             v-for="event in day.events"
             :key="event.id"
-            class="absolute left-1 right-1 text-xs px-2 py-1 rounded cursor-pointer hover:opacity-80 transition-opacity"
+            class="absolute left-0.5 md:left-1 right-0.5 md:right-1 text-[10px] md:text-xs px-1 md:px-2 py-0.5 md:py-1 rounded cursor-pointer hover:opacity-80 transition-opacity"
             :style="{
               backgroundColor: event.color || '#3b82f6',
               color: '#ffffff',
@@ -252,13 +271,13 @@
             <!-- Contenido del calendario -->
             <div v-show="!loading" class="h-full flex flex-col">
           <!-- Header del día -->
-          <div class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
+          <div class="border-b border-gray-200 dark:border-gray-700 p-3 md:p-4 bg-gray-50 dark:bg-gray-900">
             <div class="flex items-center justify-between">
               <div>
-                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
+                <h2 class="text-lg md:text-2xl font-semibold text-gray-900 dark:text-white">
                   {{ formatDayHeader(currentDate as CalendarDate) }}
                 </h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {{ formatDaySubheader(currentDate as CalendarDate) }}
                 </p>
               </div>
@@ -266,26 +285,27 @@
           </div>
 
           <!-- Horas del día -->
-          <div class="flex-1 overflow-y-auto">
-            <div class="grid grid-cols-12">
+          <div class="flex-1 overflow-y-auto overflow-x-auto">
+            <div class="grid grid-cols-12 min-w-[600px]">
               <!-- Columna de horas -->
-              <div class="col-span-1 border-r border-gray-200 dark:border-gray-700">
+              <div class="col-span-2 md:col-span-1 border-r border-gray-200 dark:border-gray-700">
                 <div
                   v-for="hour in hours"
                   :key="hour"
-                  class="h-16 border-b border-gray-200 dark:border-gray-700 p-2 text-xs text-gray-500 dark:text-gray-400"
+                  class="h-12 md:h-16 border-b border-gray-200 dark:border-gray-700 p-1 md:p-2 text-[10px] md:text-xs text-gray-500 dark:text-gray-400"
                 >
-                  {{ hour }}
+                  <span class="hidden sm:inline">{{ hour }}</span>
+                  <span class="sm:hidden">{{ hour.split(':')[0] }}</span>
                 </div>
               </div>
 
               <!-- Columna de eventos -->
-              <div class="col-span-11 relative">
+              <div class="col-span-10 md:col-span-11 relative">
                 <!-- Grid de horas -->
                 <div
                   v-for="hour in hours"
                   :key="hour"
-                  class="h-16 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  class="h-12 md:h-16 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   @click="handleHourClick(hour)"
                 ></div>
 
@@ -293,7 +313,7 @@
                 <div
                   v-for="event in dayEvents"
                   :key="event.id"
-                  class="absolute left-2 right-2 text-xs px-2 py-1 rounded cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
+                  class="absolute left-1 md:left-2 right-1 md:right-2 text-[10px] md:text-xs px-1 md:px-2 py-0.5 md:py-1 rounded cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
                   :style="{
                     backgroundColor: event.color || '#3b82f6',
                     color: '#ffffff',
@@ -396,6 +416,19 @@ const currentDate = ref<CalendarDate>(today(getLocalTimeZone()))
 const isDeleteModalOpen = ref(false)
 const selectedEvent = ref<CalendarEvent | null>(null)
 const pendingLoadEvents = ref(false)
+const isSidebarOpen = ref(false)
+
+const viewOptions = [
+  { label: 'Día', value: 'day' },
+  { label: 'Semana', value: 'week' },
+  { label: 'Mes', value: 'month' }
+]
+
+const handleViewModeChange = (value: 'month' | 'week' | 'day') => {
+  viewMode.value = value
+  updateUrl()
+  pendingLoadEvents.value = true
+}
 
 // Inicializar desde la ruta
 initializeFromRoute()
@@ -441,6 +474,35 @@ const currentPeriodTitle = computed(() => {
       return `${monday.day} - ${sunday.day} de ${months[monday.month - 1]} ${monday.year}`
     } else {
       return `${monday.day} de ${months[monday.month - 1]} - ${sunday.day} de ${months[sunday.month - 1]} ${monday.year}`
+    }
+  } else {
+    return `${months[currentDate.value.month - 1]} ${currentDate.value.year}`
+  }
+})
+
+const currentPeriodTitleShort = computed(() => {
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+  
+  if (viewMode.value === 'day') {
+    try {
+      const jsDate = new Date(currentDate.value.year, currentDate.value.month - 1, currentDate.value.day)
+      const dayOfWeek = jsDate.getDay()
+      const dayName = days[dayOfWeek] || days[0]
+      return `${dayName} ${currentDate.value.day}/${currentDate.value.month}`
+    } catch {
+      return `${currentDate.value.day}/${currentDate.value.month}`
+    }
+  } else if (viewMode.value === 'week') {
+    const currentDay = parseDate(`${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`)
+    const dayOfWeek = (currentDay as any).dayOfWeek % 7
+    const monday = currentDay.subtract({ days: dayOfWeek === 0 ? 6 : dayOfWeek - 1 })
+    const sunday = monday.add({ days: 6 })
+    
+    if (monday.month === sunday.month) {
+      return `${monday.day}-${sunday.day} ${months[monday.month - 1]}`
+    } else {
+      return `${monday.day} ${months[monday.month - 1]}-${sunday.day} ${months[sunday.month - 1]}`
     }
   } else {
     return `${months[currentDate.value.month - 1]} ${currentDate.value.year}`
@@ -731,6 +793,7 @@ const handleSidebarDateSelect = (date: CalendarDate) => {
   // Mantener la vista actual (no cambiar automáticamente a mes)
   updateUrl()
   pendingLoadEvents.value = true
+  isSidebarOpen.value = false
   // La petición se hará después de la animación
 }
 
@@ -739,6 +802,7 @@ const handleSidebarDateDoubleClick = (date: CalendarDate) => {
   viewMode.value = 'day'
   updateUrl()
   pendingLoadEvents.value = true
+  isSidebarOpen.value = false
   // La petición se hará después de la animación
 }
 
