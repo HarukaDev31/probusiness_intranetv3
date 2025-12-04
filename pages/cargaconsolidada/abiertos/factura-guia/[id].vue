@@ -59,7 +59,7 @@ const tabs = [
 const generalColumnsByRole =(): TableColumn<any>[] => {
   switch (currentRole.value) {
     case ROLES.ADMINISTRACION:
-      return generalColumnsAdministrador
+      return generalColumnsAdministrador.value
     default:
       return generalColumns.value
   }
