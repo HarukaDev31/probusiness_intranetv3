@@ -217,23 +217,20 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
   },
   {
     accessorKey: 'whatsapp',
-    header: 'WhatsApp',
+    header: 'Acciones',
     cell: ({ row }: { row: any }) => {
       const hasFactura = !!row.original.factura_comercial
       const hasGuia = !!row.original.guia_remision_url
       const clienteNombre = row.original?.nombre || 'Cliente'
       
-      // Solo mostrar el botón si hay al menos un documento disponible
-      if (!hasFactura && !hasGuia) {
-        return null
-      }
+    
       
       return h(UTooltip, {
         text: 'Enviar documento por WhatsApp',
         placement: 'top'
       }, {
         default: () => h(UButton, {
-          icon: 'i-heroicons-chat-bubble-left-right',
+          icon: 'iconamoon:menu-burger-horizontal',
           color: 'success',
           variant: 'ghost',
           onClick: () => {
