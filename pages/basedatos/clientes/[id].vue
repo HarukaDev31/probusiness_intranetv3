@@ -79,7 +79,7 @@
               <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.red_social }}</div>
           </div>
         </div>
-        <div v-if="cliente?.id_user" class="mt-6 w-full">
+        <div v-if="cliente?.id_user || cliente?.primer_servicio?.servicio == 'Curso'" class="mt-6 w-full">
           <UButton 
             @click="handleEnviarInstruccionesRecuperacionContrasena" 
             color="primary" 

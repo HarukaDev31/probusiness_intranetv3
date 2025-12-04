@@ -613,10 +613,15 @@ const pagosColumns = ref<TableColumn<any>[]>([
     accessorKey: 'adelantos',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
+      let MAX_PAYMENTS = 4;
+      //IF apagar > MAX_PAYMENTS and length(pagos) > MAX_PAYMENTS then MAX_PAYMENTS ++
+      if (row.original.total_logistica_impuestos > row.original.total_pagos && JSON.parse(row.original.pagos || '[]').length >= MAX_PAYMENTS) {
+        MAX_PAYMENTS++; 
+      }
       return !row.original.id_contenedor_pago ?
         h(PagoGrid,
           {
-            numberOfPagos: 4,
+            numberOfPagos: MAX_PAYMENTS,
             pagoDetails: JSON.parse(row.original.pagos || '[]'),
             clienteNombre: row.original.nombre,
             currency: 'USD',
