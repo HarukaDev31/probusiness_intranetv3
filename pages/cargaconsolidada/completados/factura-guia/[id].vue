@@ -3,7 +3,7 @@
     <!-- Header Section -->
 
 
-  <DataTable title="" :show-pagination="false" :data="general" :columns="generalColumnsByRole()" :loading="loadingGeneral || loadingHeaders"
+  <DataTable title="" :show-pagination="false" :data="general" :columns="generalColumnsByRole" :loading="loadingGeneral || loadingHeaders"
       icon="" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
       :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
       :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"
@@ -11,7 +11,7 @@
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
       @filter-change="handleFilterChangeGeneral" :hide-back-button="false" :show-primary-search="false"
       :show-body-top="true"
-      :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
+      :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useGeneral } from '~/composables/cargaconsolidada/factura-guia/useGeneral'
 import { USelect, UBadge, UButton, UTooltip } from '#components'
 import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/SimpleUploadFile.vue'
@@ -56,14 +56,14 @@ const tabs = [
   { value: 'pagos', label: 'Pagos' }
 ]
 
-const generalColumnsByRole =(): TableColumn<any>[] => {
+const generalColumnsByRole = computed<TableColumn<any>[]>(() => {
   switch (currentRole.value) {
     case ROLES.ADMINISTRACION:
-      return generalColumnsAdministrador
+      return generalColumnsAdministrador.value || []
     default:
-      return generalColumns.value
+      return generalColumns.value || []
   }
-}
+})
 const generalColumnsAdministrador = ref<TableColumn<any>[]>([
   {
     accessorKey: 'nro',
