@@ -15,7 +15,8 @@
         </div>
 
 
-        <DataTable class="hidden md:block" title="Carga Consolidada Completada"  :show-pagination="false"   icon="" :show-title="true" :data="consolidadoData" :columns="getColumns()" :loading="loading"
+        <div v-if="isDesktop">
+            <DataTable title="Carga Consolidada Completada"  :show-pagination="false"   icon="" :show-title="true" :data="consolidadoData" :columns="getColumns()" :loading="loading"
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
             :show-filters="false" :filter-config="filterConfig" :filters-value="(() => {
@@ -33,6 +34,7 @@
                 </template>
             </template>
         </DataTable>
+        </div>
         <!-- Mobile list view: visible only on small screens -->
         <div v-if="currentRole!==ROLES.DOCUMENTACION" class="md:hidden mt-4">
             <div class="flex flex-col gap-3">
@@ -76,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, resolveComponent, onMounted, watch } from 'vue'
+import { ref, h, resolveComponent, onMounted, watch, onUnmounted } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
@@ -115,6 +117,23 @@ const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
 const currentConsolidado = ref<number | null>(null)
 const textModal = overlay.create(TextModal)
+
+// Desktop detection: keep DataTable out of DOM on small screens to avoid flicker
+const isDesktop = ref(false)
+const updateIsDesktop = () => {
+    try {
+        isDesktop.value = window.innerWidth >= 768 // tailwind md breakpoint
+    } catch (e) {
+        isDesktop.value = true
+    }
+}
+onMounted(() => {
+    updateIsDesktop()
+    window.addEventListener('resize', updateIsDesktop)
+})
+onUnmounted(() => {
+    try { window.removeEventListener('resize', updateIsDesktop) } catch (e) {}
+})
 
 // Components
 const UButton = resolveComponent('UButton')
