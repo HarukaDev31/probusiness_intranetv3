@@ -30,6 +30,7 @@ export const useProducts = () => {
       subpartida: product.subpartida,
       campana: product.tipo || 'Sin campaña', // Usar tipo como campaña
       entidad_id: parseInt(product.entidad_id) || 0,
+      anio: product.anio,
       tipo_etiquetado_id: parseInt(product.tipo_etiquetado_id) || 0,
       antidumping_value: product.antidumping_value || '',
       cargaContenedor: product.carga_contenedor,

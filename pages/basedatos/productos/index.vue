@@ -12,7 +12,7 @@
   :loading="loading"
       :showPrimarySearch="true"
       :primarySearchPlaceholder="'Buscar producto'"
-      :search-debounce-ms="1000"
+      :search-debounce-ms="300"
   :primarySearchValue="searchQuery"
   @update:primarySearch="onPrimarySearchUpdate"
   :filterConfig="filterConfig"
