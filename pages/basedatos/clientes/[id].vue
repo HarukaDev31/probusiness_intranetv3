@@ -4,53 +4,41 @@
     <PageHeader title="Detalles del Cliente" subtitle="Información completa del cliente" icon="i-heroicons-user"
       :loading="loading" @back="navigateBack" :hideBackButton="false" />
 
-    <!-- Loading state -->
-    <div v-if="loading" class="space-y-6">
-      <!-- Skeleton para la información básica -->
-      <UCard>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 w-full md:w-1/3 flex flex-col items-center">
-          <!-- Skeleton foto de perfil -->
-          <div class="flex-shrink-0">
-            <div class="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+    <!-- Loading state (improved skeleton: left column ~md:1/3, right content flex-1) -->
+    <div v-if="loading" class="flex flex-col md:flex-row gap-8 items-start">
+      <!-- Skeleton para la información básica (columna izquierda) -->
+      <UCard class="w-full md:w-1/3">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 w-full flex flex-col">
+          <div class="flex items-center mb-4 flex-col">
+            <div class="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mr-4"></div>
+            <div class="flex-1">
+              <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse w-3/4"></div>
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-1/2"></div>
+            </div>
           </div>
 
-          <!-- Skeleton información -->
-          <div class="flex-1">
-            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse md:w-1/3 w-full"></div>
-
-            <div class="grid grid-cols-2 md:grid-cols-2 gap-6">
-              <!-- Columna izquierda -->
-              <div class="space-y-4">
-                <div v-for="i in 5" :key="`left-${i}`"
-                  class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse md:w-1/4 w-full"></div>
-                  <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse md:w-3/4 w-full"></div>
-                </div>
+          <div class="mt-4 space-y-3">
+            <div v-for="i in 5" :key="`right-${i}`"
+                  class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex gap-4 items-center justify-between align-middle">
+                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse md:w-1/4 items-center"></div>
+                <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse md:w-3/4 items-center"></div>
               </div>
-
-              <!-- Columna derecha -->
-              <div class="space-y-4">
-                <div v-for="i in 5" :key="`right-${i}`"
-                  class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse md:w-1/4 w-full"></div>
-                <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse md:w-3/4 w-full"></div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </UCard>
 
-      <!-- Skeleton para el historial -->
-      <UCard>
-        <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse w-1/4"></div>
-        <div class="space-y-3">
-          <div v-for="i in 3" :key="`row-${i}`" class="flex space-x-4">
-            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-8"></div>
-            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-20"></div>
-            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32"></div>
-            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-24"></div>
-            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-8"></div>
+      <!-- Skeleton para el historial (columna derecha) -->
+      <UCard class="w-full md:flex-1 bg-transparent shadow-none">
+        <div class="p-6">
+          <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse w-1/4"></div>
+          <div class="space-y-3 w-full">
+            <div v-for="i in 4" :key="`row-${i}`" class="flex space-x-4">
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-30"></div>
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-30"></div>
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-42"></div>
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-34"></div>
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-30"></div>
+            </div>
           </div>
         </div>
       </UCard>

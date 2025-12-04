@@ -1,9 +1,9 @@
 <template>
-  <div class="p-6 max-w-6xl mx-auto">
+  <div class="md:p-6 max-w-6xl mx-auto">
     <!-- Header -->
     <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Noticias y Actualizaciones</h1>
-      <p class="text-gray-600 dark:text-gray-400 mt-2">
+      <h1 class="md:text-3xl text-2xl font-bold text-gray-900 dark:text-white">Noticias y Actualizaciones</h1>
+      <p class="text-gray-600 dark:text-gray-400 text-xs md:text-base mt-2">
         Mantente informado sobre las últimas actualizaciones y mejoras del sistema
       </p>
     </div>
@@ -59,7 +59,7 @@
 
             <!-- Content -->
             <div class="flex-1 min-w-0">
-              <div class="flex items-start justify-between gap-4 mb-2">
+              <div class="flex items-start justify-between gap-4 mb-2 flex-wrap">
                 <div class="flex items-center gap-2 flex-wrap">
                   <UBadge
                     :color="getTypeColor(item.type) as any"
@@ -76,17 +76,17 @@
                     {{ getSolicitadaPorLabel(item.solicitada_por) }}
                   </UBadge>
                 </div>
-                <div class="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
+                <div class="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 flex-wrap md:flex-shrink-0">
                   <UIcon name="i-heroicons-calendar" class="w-4 h-4" />
                   <span>{{ formatDate(item.published_at || item.created_at) }}</span>
                 </div>
               </div>
 
-              <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              <h2 class="md:text-xl text-md font-semibold text-gray-900 dark:text-white mb-2">
                 {{ item.title }}
               </h2>
 
-              <p v-if="item.summary" class="text-gray-600 dark:text-gray-400 mb-4">
+              <p v-if="item.summary" class="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-4">
                 {{ item.summary }}
               </p>
             </div>
@@ -94,7 +94,7 @@
 
           <!-- Content -->
           <div class="prose dark:prose-invert max-w-none mb-4">
-            <div v-html="item.content" class="text-gray-700 dark:text-gray-300"></div>
+            <div v-html="item.content" class="text-gray-700 dark:text-gray-300 text-xs md:text-sm"></div>
           </div>
 
           <!-- Footer with author and redirect button -->

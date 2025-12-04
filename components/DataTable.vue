@@ -190,21 +190,21 @@
     <div class="relative" ref="tableWrapperRef">
       <div 
         ref="tableContainerRef"
-        class="overflow-x-auto overflow-y-auto relative scroll-container hide-native-scrollbar"
+        :class="['overflow-x-auto overflow-y-auto relative scroll-container', !isMobile ? 'hide-native-scrollbar' : '']"
         style="max-height: calc(100vh - 250px);"
         @scroll="handleScroll"
         @mousemove="handleMouseMove"
         @mouseleave="stopAutoScroll"
       >
-        <!-- Sombra izquierda -->
+        <!-- Sombra izquierda (disabled on mobile) -->
         <div 
-          v-if="showLeftShadow" 
+          v-if="showLeftShadow && !isMobile"
           class="scroll-shadow scroll-shadow-left"
           :style="{ left: scrollLeft + 'px' }"
         ></div>
-        <!-- Sombra derecha -->
+        <!-- Sombra derecha (disabled on mobile) -->
         <div 
-          v-if="showRightShadow" 
+          v-if="showRightShadow && !isMobile"
           class="scroll-shadow scroll-shadow-right"
           :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
         ></div>
@@ -253,7 +253,7 @@
     <div v-if="showBottomSection"
       class="md:sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 bottom-with-scrollbar">
       <!-- Fake horizontal scrollbar placed visually above the sticky bottom content -->
-      <div ref="fakeScrollbarRef" class="table-scrollbar" @scroll.stop="onFakeScroll" v-show="true">
+      <div v-if="!isMobile" ref="fakeScrollbarRef" class="table-scrollbar" @scroll.stop="onFakeScroll">
         <!-- inner spacer that sets the fake scroll width to the table's scrollWidth -->
         <div :style="{ width: tableScrollWidth + 'px', height: '1px' }"></div>
       </div>
@@ -622,10 +622,13 @@ const handleScroll = () => {
   try { updateNarrowness() } catch (e) {}
   // Sync to fake scrollbar (avoid re-entrancy)
   try {
-    if (!isSyncing.value && fakeScrollbarRef.value && tableContainerRef.value) {
-      isSyncing.value = true
-      fakeScrollbarRef.value.scrollLeft = tableContainerRef.value.scrollLeft
-      requestAnimationFrame(() => { isSyncing.value = false })
+    // Only sync fake scrollbar on non-mobile devices
+    if (!isMobile.value) {
+      if (!isSyncing.value && fakeScrollbarRef.value && tableContainerRef.value) {
+        isSyncing.value = true
+        fakeScrollbarRef.value.scrollLeft = tableContainerRef.value.scrollLeft
+        requestAnimationFrame(() => { isSyncing.value = false })
+      }
     }
   } catch (e) {
     // ignore
@@ -634,6 +637,8 @@ const handleScroll = () => {
 }
 
 const onFakeScroll = (e?: Event) => {
+  // Do not respond to fake scrollbar events on mobile (we don't render it there)
+  if (isMobile.value) return
   if (!fakeScrollbarRef.value || !tableContainerRef.value) return
   if (isSyncing.value) return
   try {
@@ -646,6 +651,8 @@ const onFakeScroll = (e?: Event) => {
 }
 
 const handleMouseMove = (event: MouseEvent) => {
+  // Ignore mouse-based auto-scroll on mobile/touch devices
+  if (isMobile.value) return
   if (!tableContainerRef.value) return
   
   updateScrollPosition()
@@ -675,6 +682,8 @@ const handleMouseMove = (event: MouseEvent) => {
 }
 
 const startAutoScroll = (direction: 'left' | 'right') => {
+  // Do not start auto-scroll on touch devices
+  if (isMobile.value) return
   if (autoScrollInterval.value) return // Ya está corriendo
   
   autoScrollInterval.value = window.setInterval(() => {
@@ -713,7 +722,7 @@ onMounted(() => {
       try {
         tableScrollWidth.value = tableContainerRef.value?.scrollWidth || 0
         // ensure fake scrollbar initial position follows table
-        if (fakeScrollbarRef.value) fakeScrollbarRef.value.scrollLeft = tableContainerRef.value?.scrollLeft || 0
+        if (!isMobile.value && fakeScrollbarRef.value) fakeScrollbarRef.value.scrollLeft = tableContainerRef.value?.scrollLeft || 0
         // ignore
       } catch (e) {
         // ignore
@@ -1011,7 +1020,6 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   /* Asegurar que las celdas de la tabla no se corten */
   .overflow-x-auto {
     scrollbar-width: thin;
-    scrollbar-color: #cbd5e0 #f7fafc;
   }
 
   .overflow-x-auto::-webkit-scrollbar {
