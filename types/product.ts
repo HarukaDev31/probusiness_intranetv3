@@ -18,6 +18,7 @@ export interface Product {
   subpartida: string
   link?: string
   unidad_comercial: string  
+  anio: number
   arancel_sunat: string
   arancel_tlc?: string | null
   antidumping?: string | null
@@ -48,6 +49,7 @@ export interface ProductMapped {
   entidad_id: number
   tipo_etiquetado_id: number
   antidumping_value: string
+  anio: number
   cargaContenedor?: string
   createdAt?: string
   updatedAt?: string
