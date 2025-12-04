@@ -210,17 +210,21 @@ const createChart = () => {
     chartInstance.destroy()
   }
 
-  // Establecer el tamaño del canvas basado en el contenedor
-  const container = chartCanvas.value.parentElement
-  if (container) {
-    chartCanvas.value.width = container.clientWidth
-    chartCanvas.value.height = container.clientHeight
-  }
+  // Usar requestAnimationFrame para leer dimensiones y evitar forced reflow
+  requestAnimationFrame(() => {
+    if (!chartCanvas.value) return
+    
+    const container = chartCanvas.value.parentElement
+    if (container) {
+      chartCanvas.value.width = container.clientWidth
+      chartCanvas.value.height = container.clientHeight
+    }
 
-  chartInstance = new ChartJS(chartCanvas.value, {
-    type: 'bar',
-    data: chartData.value,
-    options: chartOptions
+    chartInstance = new ChartJS(chartCanvas.value, {
+      type: 'bar',
+      data: chartData.value,
+      options: chartOptions
+    })
   })
 }
 

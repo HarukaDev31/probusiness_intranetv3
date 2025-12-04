@@ -10,6 +10,24 @@ export default defineNuxtConfig({
   },
   ssr: false,
   
+  // Configuración del router para SPA
+  router: {
+    options: {
+      hashMode: false
+    }
+  },
+
+  // Configuración de Nitro para SPA
+  nitro: {
+    preset: 'static',
+    serveStatic: true
+  },
+
+  // Deshabilitar generación de payload
+  experimental: {
+    payloadExtraction: false
+  },
+  
   // Configuración de CSS
   css: [
     '../assets/css/tailwind.css'

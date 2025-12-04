@@ -559,48 +559,97 @@ const autoScrollInterval = ref<number | null>(null)
 const SCROLL_SPEED = 20 // píxeles por frame
 const EDGE_THRESHOLD = 100 // píxeles desde el borde para activar auto-scroll
 
+// Cache para evitar lecturas repetidas
+let scrollMetricsCache = {
+  scrollLeft: 0,
+  scrollWidth: 0,
+  clientWidth: 0,
+  timestamp: 0
+}
+const CACHE_DURATION = 16 // ~1 frame a 60fps
+
+const getScrollMetrics = () => {
+  const now = Date.now()
+  if (now - scrollMetricsCache.timestamp < CACHE_DURATION) {
+    return scrollMetricsCache
+  }
+
+  if (!tableContainerRef.value) {
+    return { scrollLeft: 0, scrollWidth: 0, clientWidth: 0, timestamp: now }
+  }
+
+  const element = tableContainerRef.value
+  scrollMetricsCache = {
+    scrollLeft: element.scrollLeft,
+    scrollWidth: element.scrollWidth,
+    clientWidth: element.clientWidth,
+    timestamp: now
+  }
+  return scrollMetricsCache
+}
+
 const canScrollLeft = () => {
-  if (!tableContainerRef.value) return false
-  return tableContainerRef.value.scrollLeft > 0
+  const metrics = getScrollMetrics()
+  return metrics.scrollLeft > 0
 }
 
 const canScrollRight = () => {
-  if (!tableContainerRef.value) return false
-  const element = tableContainerRef.value
-  const scrollLeft = element.scrollLeft
-  const scrollWidth = element.scrollWidth
-  const clientWidth = element.clientWidth
-  return scrollLeft < (scrollWidth - clientWidth - 1)
+  const metrics = getScrollMetrics()
+  return metrics.scrollLeft < (metrics.scrollWidth - metrics.clientWidth - 1)
 }
 
+// Usar RAF para batching de lecturas de layout
+let updateScrollPositionScheduled = false
 const updateScrollPosition = () => {
-  if (!tableContainerRef.value) return
-  scrollLeft.value = tableContainerRef.value.scrollLeft
-  containerWidth.value = tableContainerRef.value.clientWidth
+  if (updateScrollPositionScheduled) return
+  updateScrollPositionScheduled = true
+  
+  requestAnimationFrame(() => {
+    updateScrollPositionScheduled = false
+    if (!tableContainerRef.value) return
+    
+    // Batching: leer todas las propiedades de layout juntas
+    const metrics = getScrollMetrics()
+    scrollLeft.value = metrics.scrollLeft
+    containerWidth.value = metrics.clientWidth
+  })
 }
 
+// Usar RAF para batching de lecturas de layout
+let updateNarrownessScheduled = false
 const updateNarrowness = () => {
-  try {
-    const container = tableContainerRef.value
-    if (!container) {
+  if (updateNarrownessScheduled) return
+  updateNarrownessScheduled = true
+  
+  requestAnimationFrame(() => {
+    updateNarrownessScheduled = false
+    
+    try {
+      const container = tableContainerRef.value
+      if (!container) {
+        isTableNarrow.value = false
+        return
+      }
+      
+      // Batching: leer todas las propiedades de layout juntas
+      const innerTable = container.querySelector && container.querySelector('table')
+      const contentWidth = innerTable ? (innerTable.scrollWidth || (innerTable as HTMLElement).offsetWidth) : (container.scrollWidth || 0)
+      const containerWidth = container.clientWidth
+      
+      // Ahora hacer las escrituras
+      const hasHorizontal = contentWidth > (containerWidth + 1)
+      isTableNarrow.value = !hasHorizontal
+      
+      // propagate to page-level layout
+      try {
+        setContentNarrow(isTableNarrow.value)
+      } catch (e) {
+        // ignore if composable not available
+      }
+    } catch (e) {
       isTableNarrow.value = false
-      return
     }
-    // Prefer the actual <table> width if present (UTable may render table inside)
-    const innerTable = container.querySelector && container.querySelector('table')
-    const contentWidth = innerTable ? (innerTable.scrollWidth || (innerTable as HTMLElement).offsetWidth) : (container.scrollWidth || 0)
-    // If content width is greater than container clientWidth => has horizontal scroll
-    const hasHorizontal = contentWidth > (container.clientWidth + 1)
-    isTableNarrow.value = !hasHorizontal
-  } catch (e) {
-    isTableNarrow.value = false
-  }
-  // propagate to page-level layout so the outer layout can center content
-  try {
-    setContentNarrow(isTableNarrow.value)
-  } catch (e) {
-    // ignore if composable not available
-  }
+  })
 }
 
 
@@ -616,24 +665,37 @@ const uiForTable = computed(() => ({
   tr: 'border-[#f0f4f9] dark:border-gray-900',
 }))
 
+// Usar throttling para handleScroll para reducir frecuencia
+let handleScrollScheduled = false
 const handleScroll = () => {
-  updateScrollPosition()
-  // Re-evaluate narrowness whenever the user scrolls (in case scroll state changed)
-  try { updateNarrowness() } catch (e) {}
-  // Sync to fake scrollbar (avoid re-entrancy)
-  try {
-    // Only sync fake scrollbar on non-mobile devices
-    if (!isMobile.value) {
-      if (!isSyncing.value && fakeScrollbarRef.value && tableContainerRef.value) {
-        isSyncing.value = true
-        fakeScrollbarRef.value.scrollLeft = tableContainerRef.value.scrollLeft
-        requestAnimationFrame(() => { isSyncing.value = false })
+  if (handleScrollScheduled) return
+  handleScrollScheduled = true
+  
+  requestAnimationFrame(() => {
+    handleScrollScheduled = false
+    
+    // Invalidar cache para forzar nueva lectura
+    scrollMetricsCache.timestamp = 0
+    
+    updateScrollPosition()
+    // Re-evaluate narrowness whenever the user scrolls (in case scroll state changed)
+    try { updateNarrowness() } catch (e) {}
+    
+    // Sync to fake scrollbar (avoid re-entrancy)
+    try {
+      // Only sync fake scrollbar on non-mobile devices
+      if (!isMobile.value) {
+        if (!isSyncing.value && fakeScrollbarRef.value && tableContainerRef.value) {
+          isSyncing.value = true
+          fakeScrollbarRef.value.scrollLeft = tableContainerRef.value.scrollLeft
+          requestAnimationFrame(() => { isSyncing.value = false })
+        }
       }
+    } catch (e) {
+      // ignore
+      isSyncing.value = false
     }
-  } catch (e) {
-    // ignore
-    isSyncing.value = false
-  }
+  })
 }
 
 const onFakeScroll = (e?: Event) => {
@@ -650,35 +712,47 @@ const onFakeScroll = (e?: Event) => {
   }
 }
 
+// Throttle handleMouseMove para reducir forced reflows
+let handleMouseMoveScheduled = false
 const handleMouseMove = (event: MouseEvent) => {
   // Ignore mouse-based auto-scroll on mobile/touch devices
   if (isMobile.value) return
   if (!tableContainerRef.value) return
   
-  updateScrollPosition()
+  if (handleMouseMoveScheduled) return
+  handleMouseMoveScheduled = true
   
-  const rect = tableContainerRef.value.getBoundingClientRect()
-  const mouseX = event.clientX - rect.left
-  const width = rect.width
-  
-  // Detectar si el mouse está cerca del borde izquierdo
-  if (mouseX < EDGE_THRESHOLD && canScrollLeft()) {
-    showLeftShadow.value = true
-    showRightShadow.value = false
-    startAutoScroll('left')
-  }
-  // Detectar si el mouse está cerca del borde derecho
-  else if (mouseX > width - EDGE_THRESHOLD && canScrollRight()) {
-    showRightShadow.value = true
-    showLeftShadow.value = false
-    startAutoScroll('right')
-  }
-  // Si está en el medio, ocultar sombras y detener auto-scroll
-  else {
-    showLeftShadow.value = false
-    showRightShadow.value = false
-    stopAutoScroll()
-  }
+  requestAnimationFrame(() => {
+    handleMouseMoveScheduled = false
+    
+    if (!tableContainerRef.value) return
+    
+    // Batching: leer todas las propiedades de layout juntas
+    const rect = tableContainerRef.value.getBoundingClientRect()
+    const mouseX = event.clientX - rect.left
+    const width = rect.width
+    
+    updateScrollPosition()
+    
+    // Detectar si el mouse está cerca del borde izquierdo
+    if (mouseX < EDGE_THRESHOLD && canScrollLeft()) {
+      showLeftShadow.value = true
+      showRightShadow.value = false
+      startAutoScroll('left')
+    }
+    // Detectar si el mouse está cerca del borde derecho
+    else if (mouseX > width - EDGE_THRESHOLD && canScrollRight()) {
+      showRightShadow.value = true
+      showLeftShadow.value = false
+      startAutoScroll('right')
+    }
+    // Si está en el medio, ocultar sombras y detener auto-scroll
+    else {
+      showLeftShadow.value = false
+      showRightShadow.value = false
+      stopAutoScroll()
+    }
+  })
 }
 
 const startAutoScroll = (direction: 'left' | 'right') => {
