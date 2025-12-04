@@ -1020,7 +1020,6 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   /* Asegurar que las celdas de la tabla no se corten */
   .overflow-x-auto {
     scrollbar-width: thin;
-    scrollbar-color: #cbd5e0 #f7fafc;
   }
 
   .overflow-x-auto::-webkit-scrollbar {
