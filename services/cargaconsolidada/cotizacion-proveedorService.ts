@@ -262,7 +262,7 @@ export class CotizacionProveedorService extends BaseService {
         }
     }
 
-    static async sendRotulado(data: { idCotizacion: number, proveedores: Array<{ id: number, tipo_rotulado: string }> }): Promise<any> {
+    static async sendRotulado(data: { idCotizacion: number, proveedores: Array<{ id: number, tipo_rotulado: string, force_send: number }> }): Promise<any> {
         try {
             const response = await this.apiCall<any>(
                 `${this.baseUrl}/proveedor/send-rotulado`,
