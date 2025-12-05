@@ -422,7 +422,7 @@ useHead({
 }
 
 .toggle-password {
-  padding: 10px 12px;
+  padding: 14px;
   background-color: #f8f9fa;
   border-left: 1px solid #ddd;
   color: #666;
@@ -521,7 +521,7 @@ useHead({
   .Welcome p { font-size: 14px; }
   .form-control { padding: 12px; font-size: 15px }
   .btn-success { padding: 14px 18px; font-size: 16px; border-radius: 8px }
-  .toggle-password { padding: 10px 12px }
+  .toggle-password { padding: 14px }
 }
 
 /* Font Awesome Icons */

@@ -15,7 +15,7 @@
         </div>
 
 
-        <div v-if="isDesktop">
+        <div v-if="isDesktop || currentRole==ROLES.DOCUMENTACION">
             <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData"
         :show-pagination="false" :show-export="false"
 
