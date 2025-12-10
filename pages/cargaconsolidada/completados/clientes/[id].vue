@@ -138,7 +138,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
-const tab = ref('embarcados')
+const tab = ref<string>(isCoordinacion.value || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
