@@ -26,15 +26,6 @@
                 <span class="hidden md:inline">Formulario Provincia</span>
                 <span class="inline md:hidden">Provincia</span>
               </UButton>
-              <transition name="fade">
-                <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm hidden md:inline">¡Copiado!</span>
-              </transition>
-            </div>
-          </div>
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
-        </div>
-        <div class="flex-col gap-2 hidden md::flex">
-          <div class="flex items-center gap-2">
               <UButton
               size="md"
               color="neutral"
@@ -44,7 +35,12 @@
               label="Descargar Plantillas"
               @click="async (e) => { await downloadPlantillas(); }"
             />
+              <transition name="fade">
+                <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm hidden md:inline">¡Copiado!</span>
+              </transition>
+            </div>
           </div>
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
       </template>
       <template #back-extra>
