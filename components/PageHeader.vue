@@ -19,7 +19,7 @@
           <slot name="back-extra" />
         </div>
       </div>
-      <div v-if="title || subtitle" class="flex items-center flex-1" :class="classAdd">
+      <div v-if="title || subtitle || $slots['actions']" class="flex items-center flex-1" :class="classAdd">
         <div class="flex flex-row items-center gap-4">
           <div>
             <h1 class="mt-1 text-base md:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white flex items-center">

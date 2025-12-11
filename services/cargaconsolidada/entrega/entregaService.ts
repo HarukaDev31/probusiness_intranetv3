@@ -19,9 +19,10 @@ export class  EntregaService extends BaseService {
         if (f.fecha_fin) queryParams.append('fecha_fin', f.fecha_fin)
         if (f.estado_entrega) queryParams.append('estado_entrega', f.estado_entrega)
         if (f.tipo_entrega) queryParams.append('tipo_entrega', f.tipo_entrega)
+        if (f.tipo_servicio) queryParams.append('tipo_servicio', f.tipo_servicio)
         // Append any other simple filter entries as separate params
         Object.entries(f).forEach(([k, v]) => {
-          if (["fecha_inicio", "fecha_fin", "estado_entrega", "tipo_entrega"].includes(k)) return
+          if (["fecha_inicio", "fecha_fin", "estado_entrega", "tipo_entrega", "tipo_servicio"].includes(k)) return
           if (v !== undefined && v !== null && v !== '') queryParams.append(k, String(v))
         })
       }
