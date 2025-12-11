@@ -1,13 +1,10 @@
 <template>
-  <!-- Modo compacto: solo icono con punto verde si está conectado -->
 
-  
-  <!-- Modo completo: lista de instancias -->
-  <div class="space-y-3 w-50">
+  <div class="space-y-3 w-50 grid grid-cols-2 lg:grid-cols-7 gap-2 w-full h-full">
     <div
       v-for="(item, index) in instances"
       :key="index"
-      class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+      class="flex items-center justify-between p-3 h-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
     >
       <div class="flex items-center gap-3">
         <UIcon 
