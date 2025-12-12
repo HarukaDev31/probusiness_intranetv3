@@ -34,6 +34,15 @@
           size="sm"
         >
           {{ getStatusBadge(item.instanceName) }}
+          <!- if state is not open, show a button to resync -->
+          <UButton
+            v-if="getStatusBadge(item.instanceName) === 'Desconectado'"
+            icon="i-heroicons-arrow-path-rounded-square"
+            size="xs"
+            color="primary"
+            variant="ghost"
+            @click="redirectToManager"
+          />
         </UBadge>
       </div>
     </div>
@@ -94,7 +103,11 @@ const isLoading = computed(() => {
   if (!firstInstance.value) return false
   return loadingStates.value[firstInstance.value.instanceName] === true
 })
-
+const redirectToManager = () => {
+  if (whatsappApiUrl) {
+    window.open(`${whatsappApiUrl}/manager`, '_blank')
+  }
+}
 const fetchInstanceStatus = async (instanceName: string) => {
   if (!whatsappApiUrl) {
     console.error('whatsappApiUrl no está configurado')
