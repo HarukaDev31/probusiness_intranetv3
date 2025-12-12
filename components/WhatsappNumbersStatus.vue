@@ -1,13 +1,10 @@
 <template>
-  <!-- Modo compacto: solo icono con punto verde si está conectado -->
 
-  
-  <!-- Modo completo: lista de instancias -->
-  <div class="space-y-3 w-50">
+  <div class="space-y-3 w-50 grid grid-cols-2 lg:grid-cols-7 gap-2 w-full h-full">
     <div
       v-for="(item, index) in instances"
       :key="index"
-      class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+      class="flex items-center justify-between p-3 h-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
     >
       <div class="flex items-center gap-3">
         <UIcon 
@@ -37,6 +34,15 @@
           size="sm"
         >
           {{ getStatusBadge(item.instanceName) }}
+          <!- if state is not open, show a button to resync -->
+          <UButton
+            v-if="getStatusBadge(item.instanceName) === 'Desconectado'"
+            icon="i-heroicons-arrow-path-rounded-square"
+            size="xs"
+            color="primary"
+            variant="ghost"
+            @click="redirectToManager"
+          />
         </UBadge>
       </div>
     </div>
@@ -97,7 +103,11 @@ const isLoading = computed(() => {
   if (!firstInstance.value) return false
   return loadingStates.value[firstInstance.value.instanceName] === true
 })
-
+const redirectToManager = () => {
+  if (whatsappApiUrl) {
+    window.open(`${whatsappApiUrl}/manager`, '_blank')
+  }
+}
 const fetchInstanceStatus = async (instanceName: string) => {
   if (!whatsappApiUrl) {
     console.error('whatsappApiUrl no está configurado')
