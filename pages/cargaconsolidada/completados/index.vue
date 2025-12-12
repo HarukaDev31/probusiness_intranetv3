@@ -227,6 +227,11 @@ const columns: TableColumn<any>[] = [
         cell: ({ row }) => row.getValue('mes')
     },
     {
+        accessorKey: 'anio',
+        header: 'Año',
+        cell: ({ row }) => row.getValue('anio')
+    },
+    {
         accessorKey: 'pais',
         header: 'País',
         cell: ({ row }) => row.original.pais?.No_Pais || 'N/A'
