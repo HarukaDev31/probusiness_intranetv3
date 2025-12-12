@@ -2,10 +2,11 @@
     <template>
         <div class="p-0 md:p-6">
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
-                :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral"
-                :total-records="totalRecordsGeneral" :items-per-page="itemsPerPageGeneral"
-                :search-query-value="searchGeneral" :show-secondary-search="false" :show-filters="false"
-                :filters-value="filtersGeneral" :show-export="(currentId == ID_JEFEVENTAS) ? true : false" :show-body-top="true"
+                :loading="loadingGeneral || loadingHeaders" :current-page="currentPageGeneral"
+                :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
+                :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
+                :show-filters="false" :filters-value="filtersGeneral"
+                :show-export="(currentId == ID_JEFEVENTAS) ? true : false" :show-body-top="true"
                 :show-pagination="false" @export="exportData"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
@@ -15,42 +16,51 @@
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers"
+                                :loading="loadingGeneral || loadingHeaders" />
                             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 md:w-100 h-15" color="neutral" />
-                                
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="mb-4 md:w-100 h-15"
+                                    color="neutral" />
+
                             </div>
                         </div>
                     </div>
                 </template>
 
             </DataTable>
-            <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados" :columns="getColumnsEmbarcados()"
-                :loading="loadingEmbarcados || loadingHeaders" :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
+            <DataTable v-if="tab === 'embarcados'" title="" icon="" :data="clientesEmbarcados"
+                :columns="getColumnsEmbarcados()" :loading="loadingEmbarcados || loadingHeaders"
+                :current-page="currentPageEmbarcados" :total-pages="totalPagesEmbarcados"
                 :total-records="totalRecordsEmbarcados" :items-per-page="itemsPerPageEmbarcados"
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
-                :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true"
-                :hide-back-button="false"
+                :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true" :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
                 :previous-page-url="(currentRole == ROLES.COORDINACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
-                @items-per-page-change="handleItemsPerPageChangeEmbarcados" @filter-change="handleFilterChangeEmbarcados">
+                @items-per-page-change="handleItemsPerPageChangeEmbarcados"
+                @filter-change="handleFilterChangeEmbarcados">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingEmbarcados || loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers"
+                                :loading="loadingEmbarcados || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
-                                <div class="hidden md:flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-0 md:mb-4">
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15"
+                                    color="neutral" />
+                                <div
+                                    class="hidden md:flex flex-row items-center gap-2 bg-white dark:bg-gray-800 shadow-sm rounded p-3 mb-0 md:mb-4">
                                     <div class="flex flex-col mr-2 space-y-1">
                                         <div class="text-xs font-semibold text-orange-600">F. Max. Documentacion</div>
                                         <div class="flex items-center gap-2">
-                                            <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
-                                            <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" @click="handleSaveFMaxDocumentacion"/>
+                                            <input type="date" v-model="fMaxDocumentacion"
+                                                class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none" />
+                                            <UButton size="xs" variant="outline" color="primary"
+                                                icon="material-symbols:save-outline"
+                                                @click="handleSaveFMaxDocumentacion" />
                                         </div>
                                     </div>
-                                </div> 
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -59,18 +69,20 @@
                 <template #back-extra>
                     <div class="bg-white dark:bg-gray-800 flex items-center gap-2 p-2 rounded shadow-sm md:hidden">
                         <div class="text-xs font-semibold text-orange-600">F. Max. Doc</div>
-                        <input type="date" v-model="fMaxDocumentacion" class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none border border-gray-200 dark:border-gray-700 rounded px-2 py-1 w-28" />
-                        <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline" aria-label="Guardar fecha" @click="handleSaveFMaxDocumentacion"/>
+                        <input type="date" v-model="fMaxDocumentacion"
+                            class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none border border-gray-200 dark:border-gray-700 rounded px-2 py-1 w-28" />
+                        <UButton size="xs" variant="outline" color="primary" icon="material-symbols:save-outline"
+                            aria-label="Guardar fecha" @click="handleSaveFMaxDocumentacion" />
                     </div>
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
-                :loading="loadingVariacion || loadingHeaders" :current-page="currentPageVariacion" :total-pages="totalPagesVariacion"
-                :total-records="totalRecordsVariacion" :items-per-page="itemsPerPageVariacion"
-                :search-query-value="searchVariacion" :show-secondary-search="false" :show-filters="false"
-                :filters-value="filtersVariacion" :show-export="false" :show-body-top="true"
-                :hide-back-button="false"
-                :show-pagination="false" @export="exportData"
+                :loading="loadingVariacion || loadingHeaders" :current-page="currentPageVariacion"
+                :total-pages="totalPagesVariacion" :total-records="totalRecordsVariacion"
+                :items-per-page="itemsPerPageVariacion" :search-query-value="searchVariacion"
+                :show-secondary-search="false" :show-filters="false" :filters-value="filtersVariacion"
+                :show-export="false" :show-body-top="true" :hide-back-button="false" :show-pagination="false"
+                @export="exportData"
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
@@ -78,21 +90,22 @@
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingVariacion || loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers"
+                                :loading="loadingVariacion || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
-                                
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15"
+                                    color="neutral" />
+
                             </div>
                         </div>
                     </div>
                 </template>
             </DataTable>
             <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
-                :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
-                :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
+                :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos"
+                :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
-                :filters-value="filtersPagos" :show-export="false" :hide-back-button="false"
-                :show-body-top="true"
+                :filters-value="filtersPagos" :show-export="false" :hide-back-button="false" :show-body-top="true"
                 :show-pagination="false" @export="exportData"
                 :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
@@ -101,10 +114,12 @@
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
-                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers" :loading="loadingPagos || loadingHeaders" />
+                            <SectionHeader :title="`Clientes #${carga}`" :headers="headers"
+                                :loading="loadingPagos || loadingHeaders" />
                             <div class="flex justify-between">
-                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15" color="neutral" />
-                                
+                                <UTabs v-model="tab" :items="tabs" size="xs" variant="pill" class="md:mb-4 w-100 h-15"
+                                    color="neutral" />
+
                             </div>
                         </div>
                     </div>
@@ -185,42 +200,42 @@ const handleSaveFMaxDocumentacion = async () => {
         showError('Error', 'Error al actualizar la fecha de documentación')
     }
 }
-const { getClientes, 
-        clientes, 
-        updateEstadoCliente, 
-        totalRecordsGeneral, 
-        loadingGeneral, 
-        error, 
-        paginationGeneral, 
-        searchGeneral, 
-        itemsPerPageGeneral, 
-        totalPagesGeneral, 
-        currentPageGeneral, 
-        filtersGeneral, 
-        handlePageGeneralChange, 
-        handleItemsPerPageChangeGeneral, 
-        handleFilterChangeGeneral, 
-        handleSearchGeneral, 
-        getHeaders, 
-        headers, 
-        carga, 
-        fecha_documentacion_max,
-        loadingHeaders, 
-        handleUpdateStatusClienteDoc,
-        exportData: exportGeneralData } = useGeneral()
-const { getEmbarcados, 
-    clientesEmbarcados, 
-    totalRecordsEmbarcados, 
-    loadingEmbarcados, 
-    paginationEmbarcados, 
-    searchEmbarcados, 
-    itemsPerPageEmbarcados, 
-    totalPagesEmbarcados, 
-    currentPageEmbarcados, 
-    filtersEmbarcados, 
-    handlePageEmbarcadosChange, 
-    handleItemsPerPageChangeEmbarcados, 
-    handleFilterChangeEmbarcados, 
+const { getClientes,
+    clientes,
+    updateEstadoCliente,
+    totalRecordsGeneral,
+    loadingGeneral,
+    error,
+    paginationGeneral,
+    searchGeneral,
+    itemsPerPageGeneral,
+    totalPagesGeneral,
+    currentPageGeneral,
+    filtersGeneral,
+    handlePageGeneralChange,
+    handleItemsPerPageChangeGeneral,
+    handleFilterChangeGeneral,
+    handleSearchGeneral,
+    getHeaders,
+    headers,
+    carga,
+    fecha_documentacion_max,
+    loadingHeaders,
+    handleUpdateStatusClienteDoc,
+    exportData: exportGeneralData } = useGeneral()
+const { getEmbarcados,
+    clientesEmbarcados,
+    totalRecordsEmbarcados,
+    loadingEmbarcados,
+    paginationEmbarcados,
+    searchEmbarcados,
+    itemsPerPageEmbarcados,
+    totalPagesEmbarcados,
+    currentPageEmbarcados,
+    filtersEmbarcados,
+    handlePageEmbarcadosChange,
+    handleItemsPerPageChangeEmbarcados,
+    handleFilterChangeEmbarcados,
     handleSearchEmbarcados,
     // helpers and handlers
     findCliente,
@@ -236,39 +251,39 @@ const { getEmbarcados,
 } = useEmbarcados({ refresh: getClientes, clientsRef: clientes })
 const { updateProveedor } = useCotizacionProveedor()
 const { sendRecordatorioFirmaContrato } = useCotizacion()
-const { getClientesVariacion, 
-        updateVolumenSelected, 
-        clientesVariacion, 
-        totalRecordsVariacion, 
-        loadingVariacion, 
-        paginationVariacion, 
-        searchVariacion, 
-        itemsPerPageVariacion, 
-        totalPagesVariacion, 
-        currentPageVariacion, 
-        filtersVariacion, 
-        handlePageVariacionChange, 
-        handleItemsPerPageChangeVariacion, 
-        handleFilterChangeVariacion, 
-        handleSearchVariacion,
-        exportData: exportVariacionData } = useVariacion()
-const { getClientesPagos, 
-        clientesPagos, 
-        totalRecordsPagos, 
-        loadingPagos, 
-        paginationPagos, 
-        searchPagos, 
-        itemsPerPagePagos, 
-        totalPagesPagos, 
-        currentPagePagos, 
-        filtersPagos, 
-        handlePagePagosChange, 
-        handleItemsPerPageChangePagos, 
-        handleFilterChangePagos, 
-        handleSearchPagos, 
-        registrarPago, 
-        deletePago,
-        exportData: exportPagosData } = usePagos()
+const { getClientesVariacion,
+    updateVolumenSelected,
+    clientesVariacion,
+    totalRecordsVariacion,
+    loadingVariacion,
+    paginationVariacion,
+    searchVariacion,
+    itemsPerPageVariacion,
+    totalPagesVariacion,
+    currentPageVariacion,
+    filtersVariacion,
+    handlePageVariacionChange,
+    handleItemsPerPageChangeVariacion,
+    handleFilterChangeVariacion,
+    handleSearchVariacion,
+    exportData: exportVariacionData } = useVariacion()
+const { getClientesPagos,
+    clientesPagos,
+    totalRecordsPagos,
+    loadingPagos,
+    paginationPagos,
+    searchPagos,
+    itemsPerPagePagos,
+    totalPagesPagos,
+    currentPagePagos,
+    filtersPagos,
+    handlePagePagosChange,
+    handleItemsPerPageChangePagos,
+    handleFilterChangePagos,
+    handleSearchPagos,
+    registrarPago,
+    deletePago,
+    exportData: exportPagosData } = usePagos()
 const tabs = ref()
 const handleTabChange = (value: string) => {
     if (tab.value === 'general') {
@@ -281,13 +296,13 @@ const handleTabChange = (value: string) => {
 }
 
 const exportData = async () => {
-  if (tab.value === 'general') {
-    await exportGeneralData()
-  } else if (tab.value === 'variacion') {
-    await exportVariacionData()
-  } else if (tab.value === 'pagos') {
-    await exportPagosData()
-  }
+    if (tab.value === 'general') {
+        await exportGeneralData()
+    } else if (tab.value === 'variacion') {
+        await exportVariacionData()
+    } else if (tab.value === 'pagos') {
+        await exportPagosData()
+    }
 }
 
 
@@ -378,10 +393,10 @@ const columnsPagos = ref<TableColumn<any>[]>([
         header: 'Adelantos',
         cell: ({ row }: { row: any }) => {
             const pagos = JSON.parse(row.original.pagos_details ?? '[]');
-            return !row.original.id_contenedor_pago?h(PagoGrid, {
+            return !row.original.id_contenedor_pago ? h(PagoGrid, {
                 pagoDetails: pagos,
                 currency: 'USD',
-                numberOfPagos: currentRole.value == ROLES.COORDINACION ? 4 :pagos.length,
+                numberOfPagos: currentRole.value == ROLES.COORDINACION ? 4 : pagos.length,
                 clienteNombre: row.original.nombre,
                 onSave: (data) => {
                     const formData = new FormData();
@@ -426,7 +441,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
                     )
                 },
                 showDelete: currentRole.value == ROLES.COORDINACION,
-            }):null
+            }) : null
         }
     }
 ])
@@ -468,18 +483,37 @@ const columns: TableColumn<any>[] = [
             const cod_contract = String(pick(['cod_contract']) || '')
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
             const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
+            const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
-                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
-                        target: '_blank',
-                        class: 'text-primary hover:underline'
-                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
-                ]) : null  
+                    //nueva condicion: si cotizacion_contrato_firmado_url existe entonces que aparezca contrato con texto primary, si no existe cotizacion_contrato_firmado_url pero si cotizacion_contrato_url entonces que aparezca contrato con texto secondary:
+                    (cotizacion_contrato_firmado_url
+                        ? h('a', { 
+                            href: cotizacion_contrato_firmado_url,
+                            target: '_blank',
+                            class: 'text-success-400 font-medium hover:underline' 
+                        }, `Contrato: ${cod_contract}`)
+                        : (cotizacion_contrato_autosigned_url
+                            ? h('a', { 
+                                href: cotizacion_contrato_autosigned_url,
+                                target: '_blank',
+                                class: 'text-warning-400 font-medium hover:underline' 
+                            }, `Contrato: ${cod_contract}`)
+                            : (cotizacion_contrato_url
+                                ? h('a', { 
+                                    href: cotizacion_contrato_url,
+                                    target: '_blank',
+                                    class: 'text-secondary-700 dark:text-secondary-400 font-medium hover:underline' 
+                                }, `Contrato: ${cod_contract}`)
+                                : `Contrato: ${cod_contract}`
+                            )
+                        )
+                    )
+                ]) : null
             ])
         }
     },
@@ -579,17 +613,36 @@ const columnsCoordinacion: TableColumn<any>[] = [
             const cod_contract = row.original?.cod_contract || ''
             const cotizacion_contrato_firmado_url = row.original?.cotizacion_contrato_firmado_url || ''
             const cotizacion_contrato_url = row.original?.cotizacion_contrato_url || ''
+            const cotizacion_contrato_autosigned_url = row.original?.cotizacion_contrato_autosigned_url || ''
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
                 h('div', { class: 'text-sm text-gray-500' }, documento),
                 h('div', { class: 'text-sm text-gray-500' }, telefono),
                 h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
-                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
-                        target: '_blank',
-                        class: 'text-primary hover:underline'
-                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+                    //nueva condicion: si cotizacion_contrato_firmado_url existe entonces que aparezca contrato con texto primary, si no existe cotizacion_contrato_firmado_url pero si cotizacion_contrato_url entonces que aparezca contrato con texto secondary:
+                    (cotizacion_contrato_firmado_url
+                        ? h('a', { 
+                            href: cotizacion_contrato_firmado_url,
+                            target: '_blank',
+                            class: 'text-success-400 font-medium hover:underline' 
+                        }, `Contrato: ${cod_contract}`)
+                        : (cotizacion_contrato_autosigned_url
+                            ? h('a', { 
+                                href: cotizacion_contrato_autosigned_url,
+                                target: '_blank',
+                                class: 'text-warning-400 font-medium hover:underline' 
+                            }, `Contrato: ${cod_contract}`)
+                            : (cotizacion_contrato_url
+                                ? h('a', { 
+                                    href: cotizacion_contrato_url,
+                                    target: '_blank',
+                                    class: 'text-secondary-700 dark:text-secondary-400 font-medium hover:underline' 
+                                }, `Contrato: ${cod_contract}`)
+                                : `Contrato: ${cod_contract}`
+                            )
+                        )
+                    )
                 ]) : null
             ])
         }
@@ -657,7 +710,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
                     { label: 'Reservado', value: 'RESERVADO' },
                     { label: 'No Reservado', value: 'NO RESERVADO' },
                     { label: 'Documentación', value: 'DOCUMENTACION' },
-                
+
                 ],
                 placeholder: 'Seleccionar estado',
                 'onUpdate:modelValue': async (value: any) => {
@@ -855,7 +908,7 @@ const getFileIcon = (url?: string) => {
 }
 // Map manual status labels to keys used in STATUS_BG_CLASSES (reuse existing color map from constants/ui)
 // Desired mapping: Pendiente (gris), Recibido (azul), Observado (rojo), Revisado (verde)
-const MANUAL_STATUS_TO_STATUS_BG_KEY: Record<string,string> = {
+const MANUAL_STATUS_TO_STATUS_BG_KEY: Record<string, string> = {
     Pendiente: 'WAIT', // gray
     Recibido: 'RECIBIENDO', // blue
     Observado: 'Incompleto', // red
@@ -938,7 +991,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
             return div
         }
     },
-    {        
+    {
         accessorKey: 'code_supplier',
         header: 'Code Supplier',
         cell: ({ row }: { row: any }) => {
@@ -999,36 +1052,36 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                 if (url) {
                     const icon = getFileIcon(url)
                     return h('div', {
-                    class: 'flex flex-row gap-2'
+                        class: 'flex flex-row gap-2'
                     }, [
-                    h(UButton, {
-                        icon,
-                        color: 'primary',
-                        variant: 'ghost',
-                        onClick: () => {
-                        // Abrir la URL del proveedor directamente
-                        window.open(url, '_blank')
-                        }
-                    }),
-                    h(UButton, {
-                        icon: 'i-heroicons-trash',
-                        color: 'error',
-                        variant: 'ghost',
-                        onClick: () => {
-                        // Usar id del proveedor para eliminar
-                        deleteFacturaComercial(proveedor.id)
-                        }
-                    })
+                        h(UButton, {
+                            icon,
+                            color: 'primary',
+                            variant: 'ghost',
+                            onClick: () => {
+                                // Abrir la URL del proveedor directamente
+                                window.open(url, '_blank')
+                            }
+                        }),
+                        h(UButton, {
+                            icon: 'i-heroicons-trash',
+                            color: 'error',
+                            variant: 'ghost',
+                            onClick: () => {
+                                // Usar id del proveedor para eliminar
+                                deleteFacturaComercial(proveedor.id)
+                            }
+                        })
                     ])
                 } else {
                     return h(UButton, {
-                    icon: 'i-heroicons-arrow-up-tray',
-                    color: 'primary',
-                    variant: 'outline',
-                    label: 'Subir',
-                    onClick: () => {
-                        handleUploadFacturaComercial(proveedor.id)
-                    }
+                        icon: 'i-heroicons-arrow-up-tray',
+                        color: 'primary',
+                        variant: 'outline',
+                        label: 'Subir',
+                        onClick: () => {
+                            handleUploadFacturaComercial(proveedor.id)
+                        }
                     })
                 }
             }))
@@ -1044,35 +1097,35 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                 if (url) {
                     const icon = getFileIcon(url)
                     return h('div', {
-                    class: 'flex flex-row gap-2'
+                        class: 'flex flex-row gap-2'
                     }, [
-                    h(UButton, {
-                        icon,
-                        color: 'primary',
-                        variant: 'ghost',
-                        onClick: () => {
-                        // Abrir la URL del proveedor directamente
-                        window.open(url, '_blank')
-                        }
-                    }),
-                    h(UButton, {
-                        icon: 'i-heroicons-trash',
-                        color: 'error',
-                        variant: 'ghost',
-                        onClick: () => {
-                        deletePackingList(proveedor.id)
-                        }
-                    })
+                        h(UButton, {
+                            icon,
+                            color: 'primary',
+                            variant: 'ghost',
+                            onClick: () => {
+                                // Abrir la URL del proveedor directamente
+                                window.open(url, '_blank')
+                            }
+                        }),
+                        h(UButton, {
+                            icon: 'i-heroicons-trash',
+                            color: 'error',
+                            variant: 'ghost',
+                            onClick: () => {
+                                deletePackingList(proveedor.id)
+                            }
+                        })
                     ])
                 } else {
                     return h(UButton, {
-                    icon: 'i-heroicons-arrow-up-tray',
-                    color: 'primary',
-                    variant: 'outline',
-                    label: 'Subir',
-                    onClick: () => {
-                        handleUploadPackingList(proveedor.id)
-                    }
+                        icon: 'i-heroicons-arrow-up-tray',
+                        color: 'primary',
+                        variant: 'outline',
+                        label: 'Subir',
+                        onClick: () => {
+                            handleUploadPackingList(proveedor.id)
+                        }
                     })
                 }
             }))
@@ -1085,17 +1138,17 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
             const proveedores = row.original.proveedores ?? []
             return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any, idx: number) => {
                 const url = proveedor.excel_confirmacion
-                    if (url) {
-                        const icon = getFileIcon(url)
-                        return h('div', {
-                            class: 'flex flex-row gap-2'
-                        }, [
+                if (url) {
+                    const icon = getFileIcon(url)
+                    return h('div', {
+                        class: 'flex flex-row gap-2'
+                    }, [
                         h(UButton, {
                             icon,
                             color: 'primary',
                             variant: 'ghost',
                             onClick: () => {
-                            window.open(url, '_blank')
+                                window.open(url, '_blank')
                             }
                         }),
                         h(UButton, {
@@ -1103,13 +1156,13 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                             color: 'error',
                             variant: 'ghost',
                             onClick: () => {
-                            deleteExcelConfirmacion(proveedor.id)
+                                deleteExcelConfirmacion(proveedor.id)
                             }
                         })
-                        ])
+                    ])
 
-                    } else {
-                        return h(UButton, {
+                } else {
+                    return h(UButton, {
                         icon: 'i-heroicons-arrow-up-tray',
                         color: 'primary',
                         variant: 'outline',
@@ -1117,8 +1170,8 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                         onClick: () => {
                             handleUploadExcelConfirmacion(proveedor.id)
                         }
-                        })
-                    }
+                    })
+                }
             }))
         }
     },
@@ -1136,12 +1189,12 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                     console.log(row.original)
                     modalAcciones.open({
                         show: true,
-                        clienteId: row.original.id, 
+                        clienteId: row.original.id,
                         clienteName: row.original.nombre,
                         onSelected: (data: any) => {
                             console.log(data)
                         },
-                        validateMaxDate:true
+                        validateMaxDate: true
                     })
                 }
             },
@@ -1209,7 +1262,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
             return div
         }
     },
-    {        
+    {
         accessorKey: 'code_supplier',
         header: 'Code Supplier',
         cell: ({ row }: { row: any }) => {
@@ -1231,7 +1284,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         header: 'Invoice',
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores || []
-            const statuses = ['Pendiente','Recibido','Observado','Revisado']
+            const statuses = ['Pendiente', 'Recibido', 'Observado', 'Revisado']
             return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
                 if (!p.invoice_status) p.invoice_status = 'Pendiente'
                 // build items including per-option class
@@ -1257,8 +1310,8 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         header: 'Packing list',
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores || []
-            const statuses = ['Pendiente','Recibido','Observado','Revisado']
-                return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
+            const statuses = ['Pendiente', 'Recibido', 'Observado', 'Revisado']
+            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
                 if (!p.packing_status) p.packing_status = 'Pendiente'
                 const itemsWithClass = statuses.map((s: string) => {
                     const key = MANUAL_STATUS_TO_STATUS_BG_KEY[s] ?? s
@@ -1282,7 +1335,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         header: 'Excel Conf.',
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores || []
-            const statuses = ['Pendiente','Recibido','Observado','Revisado']
+            const statuses = ['Pendiente', 'Recibido', 'Observado', 'Revisado']
             return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
                 if (!p.excel_conf_status) p.excel_conf_status = 'Pendiente'
                 const itemsWithClass = statuses.map((s: string) => {
@@ -1569,7 +1622,7 @@ onMounted(() => {
                 label: 'Variación',
                 value: 'variacion'
             },
-         
+
         ]
     } else if (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS) {
         tabs.value = [
