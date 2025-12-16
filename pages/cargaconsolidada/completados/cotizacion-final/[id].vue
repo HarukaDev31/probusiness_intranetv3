@@ -616,7 +616,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
       let MAX_PAYMENTS = 4;
       //IF apagar > MAX_PAYMENTS and length(pagos) > MAX_PAYMENTS then MAX_PAYMENTS ++
       if (row.original.total_logistica_impuestos > row.original.total_pagos && JSON.parse(row.original.pagos || '[]').length >= MAX_PAYMENTS) {
-        MAX_PAYMENTS=JSON.parse(row.original.pagos || '[]').length;
+        MAX_PAYMENTS=JSON.parse(row.original.pagos || '[]').length+1;
       }
       return !row.original.id_contenedor_pago ?
         h(PagoGrid,

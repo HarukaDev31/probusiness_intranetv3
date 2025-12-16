@@ -33,28 +33,48 @@
                   :key="itemId"
                   class=" border border-gray-200 rounded-lg p-3"
                 >
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                      <span class="font-medium">{{ getItemName(itemId) }}</span>
-                      <span class="text-sm text-gray-600">Products: {{ getItemProducts(itemId) }}</span>
-                      <UBadge 
-                        v-if="getItemSendStatus(itemId) === 'SENDED'"
-                        color="success" 
-                        variant="soft" 
-                        size="xs"
-                      >
-                        Enviado
-                      </UBadge>
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3">
+                        <span class="font-medium">{{ getItemName(itemId) }}</span>
+                        <span class="text-sm text-gray-600">Products: {{ getItemProducts(itemId) }}</span>
+                        <UBadge 
+                          v-if="getItemSendStatus(itemId) === 'SENDED'"
+                          color="success" 
+                          variant="soft" 
+                          size="xs"
+                        >
+                          Enviado
+                        </UBadge>
+                      </div>
+                      <USelect
+                        v-model="itemTipoCarga[itemId]"
+                        :items="tiposCarga"
+                        item-value="value"
+                        item-title="label"
+                        placeholder="Seleccionar tipo"
+                        size="sm"
+                        class="min-w-40"
+                      />
                     </div>
-                    <USelect
-                      v-model="itemTipoCarga[itemId]"
-                      :items="tiposCarga"
-                      item-value="value"
-                      item-title="label"
-                      placeholder="Seleccionar tipo"
-                      size="sm"
-                      class="min-w-40"
-                    />
+                    
+                    <!-- Checkbox para forzar envío si ya fue enviado -->
+                    <div 
+                      v-if="getItemSendStatus(itemId) === 'SENDED'" 
+                      class="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-md p-2"
+                    >
+                      <UCheckbox
+                        v-model="itemForceSend[itemId]"
+                        :id="`force-send-${itemId}`"
+                        size="sm"
+                      />
+                      <label 
+                        :for="`force-send-${itemId}`" 
+                        class="text-sm text-yellow-800 cursor-pointer select-none"
+                      >
+                        Forzar reenvío (Ya se ha enviado el rotulado a este proveedor)
+                      </label>
+                    </div>
                   </div>
                   <div
                     v-if="itemTipoCarga[itemId] === 'movilidad_personal' && getMovilidadItems(itemId).length"
@@ -161,6 +181,7 @@ const availableItems = ref<any[]>([])
 const selectedItems = ref<string[]>([])
 const itemTipoCarga = ref<Record<string, string>>({})
 const movilidadItemsSeleccionados = ref<Record<string, string[]>>({})
+const itemForceSend = ref<Record<string, boolean>>({})
 
 // Computed para crear los items del checkbox en el formato correcto
 const checkboxItems = computed(() => {
@@ -224,6 +245,7 @@ const loadItems = async () => {
         availableItems.value.forEach(item => {
           itemTipoCarga.value[item.id.toString()] = ''
           movilidadItemsSeleccionados.value[item.id.toString()] = []
+          itemForceSend.value[item.id.toString()] = false
         })
       }
     }, 'Cargando items...')
@@ -242,6 +264,7 @@ watch(selectedItems, (newValue, oldValue) => {
       if (!newValue.includes(itemId)) {
         itemTipoCarga.value[itemId] = ''
         movilidadItemsSeleccionados.value[itemId] = []
+        itemForceSend.value[itemId] = false
       }
     })
   }
@@ -358,6 +381,7 @@ const closeModal = () => {
   selectedItems.value = []
   itemTipoCarga.value = {}
   movilidadItemsSeleccionados.value = {}
+  itemForceSend.value = {}
   emit('close')
 }
 
@@ -366,15 +390,18 @@ const handleSelect = () => {
 
   loading.value = true
   try {
-    // Crear array de proveedores con id y tipo de rotulado
+    // Crear array de proveedores con id, tipo de rotulado y force_send
     const proveedores = selectedItems.value.map(itemId => {
       const tipoRotulado = itemTipoCarga.value[itemId]
       const totalMovilidadQty = tipoRotulado === 'movilidad_personal'
         ? getSelectedMovilidadQtySum(itemId)
         : 0
+      const forceSend = itemForceSend.value[itemId] === true ? 1 : 0
+      
       return {
         id: parseInt(itemId),
         tipo_rotulado: tipoRotulado,
+        force_send: forceSend,
         ...(tipoRotulado === 'movilidad_personal' ? { total_initial_qty_movilidad_personal: totalMovilidadQty } : {})
       }
     })

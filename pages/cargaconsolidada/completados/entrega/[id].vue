@@ -26,15 +26,6 @@
                 <span class="hidden md:inline">Formulario Provincia</span>
                 <span class="inline md:hidden">Provincia</span>
               </UButton>
-              <transition name="fade">
-                <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm hidden md:inline">¡Copiado!</span>
-              </transition>
-            </div>
-          </div>
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
-        </div>
-        <div class="flex-col gap-2 hidden md::flex">
-          <div class="flex items-center gap-2">
               <UButton
               size="md"
               color="neutral"
@@ -44,8 +35,15 @@
               label="Descargar Plantillas"
               @click="async (e) => { await downloadPlantillas(); }"
             />
+         
+              <transition name="fade">
+                <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm hidden md:inline">¡Copiado!</span>
+              </transition>
+            </div>
           </div>
+          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
+    
       </template>
       <template #back-extra>
         <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3 md:hidden flex" icon="i-heroicons-calendar"
@@ -84,7 +82,10 @@
       </template>
     </DataTable>
     <DataTable v-if="activeTab === 'delivery'" title="" :data="delivery" :columns="deliveryColumns" :loading="loading"
-      icon="" :show-pagination="false" :hide-back-button="false" :show-primary-search="false" :show-body-top="true"
+      icon="" :show-pagination="false" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
+      :show-filters="true" :filter-config="deliveryFilterConfig" :search-query-value="search"
+      @update:primary-search="handleDeliverySearch" @filter-change="handleDeliveryFilterChange"
+      @clear-filters="clearDeliveryFilters"
   :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #body-top>
         <div class="flex flex-col gap-2">
@@ -182,6 +183,13 @@ const {
   // delivery
   delivery,
   getDelivery,
+  deliveryFilterConfig,
+  deliveryFilters,
+  handleDeliveryFilterChange,
+  handleDeliverySearch,
+  handleDeliveryPageChange,
+  handleDeliveryItemsPerPageChange,
+  clearDeliveryFilters,
   updateImporteDelivery,
   updateServicioDelivery,
   registrarPagoDelivery,
@@ -583,7 +591,30 @@ const entregasColumns = ref<TableColumn<any>[]>([
     }
   },
   {
-    id: 'hora_programada', header: 'Hora', cell: ({ row }) => {
+    id: 'hora_recojo', header: 'Hora de Recojo', cell: ({ row }) => {
+      // Para Lima: usar los mismos campos de entrega (el horario de recojo es el mismo)
+      // Para Provincia: podría no aplicar, pero mostramos el mismo horario
+      const start = row.original.delivery_start_time
+      const end = row.original.delivery_end_time
+      const fmt = (t: any) => {
+        if (!t || typeof t !== 'string') return null
+        const parts = t.split(':')
+        if (parts.length >= 2) {
+          const hh = (parts[0] ?? '').padStart(2, '0')
+          const mm = (parts[1] ?? '').padStart(2, '0')
+          return `${hh}:${mm}`
+        }
+        return t
+      }
+      const s = fmt(start)
+      const e = fmt(end)
+      if (s && e) return `${s} - ${e}`
+      if (s) return s
+      return '—'
+    }
+  },
+  {
+    id: 'hora_programada', header: 'Hora de Entrega', cell: ({ row }) => {
       // Preferir tiempos dedicados en formato HH:MM:SS y formatear a HH:MM
       const start = row.original.delivery_start_time
       const end = row.original.delivery_end_time
@@ -751,6 +782,39 @@ const deliveryColumns = ref<TableColumn<any>[]>([
         color: row.original.entrega === 'LIMA' ? 'success' : row.original.entrega === 'PROVINCIA' ? 'primary' : 'neutral',
         variant: 'soft'
       })
+    }
+  },
+  {
+    accessorKey: 'fecha_recojo', header: 'Fecha', cell: ({ row }) => {
+      // Solo para Lima, para Provincia estará vacío
+      if (row.original.entrega !== 'LIMA') return '—'
+      const fp = formatDateTimeToDmy(row.original.delivery_date)
+      if (!fp) return '—'
+      const date = fp.includes(' ') ? fp.split(' ')[0] : fp.split('T')[0]
+      return date || '—'
+    }
+  },
+  {
+    id: 'hora_recojo_delivery', header: 'Hora de Recojo', cell: ({ row }) => {
+      // Solo para Lima, para Provincia estará vacío
+      if (row.original.entrega !== 'LIMA') return '—'
+      const start = row.original.delivery_start_time
+      const end = row.original.delivery_end_time
+      const fmt = (t: any) => {
+        if (!t || typeof t !== 'string') return null
+        const parts = t.split(':')
+        if (parts.length >= 2) {
+          const hh = (parts[0] ?? '').padStart(2, '0')
+          const mm = (parts[1] ?? '').padStart(2, '0')
+          return `${hh}:${mm}`
+        }
+        return t
+      }
+      const s = fmt(start)
+      const e = fmt(end)
+      if (s && e) return `${s} - ${e}`
+      if (s) return s
+      return '—'
     }
   },
   { accessorKey: 'ciudad', header: 'Ciudad', cell: ({ row }) => row.original.ciudad || '—' },

@@ -1,21 +1,15 @@
 <template>
     <div class="">
-        <!-- Navegación superior -->
-        <div class="flex items-center space-x-6 ">
-            <div class="flex items-center space-x-4">
-                <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Coordinación</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Ventas</span>
-                </div>
-            </div>
-        </div>
+        <WhatsappNumbersStatus 
+        :instances="[{ instanceName: 'COORDINATION', key: 'Coordinación' },
+            { instanceName: 'SELLS', key: 'Ventas' }
+        ]"
+        :auto-refresh="true"
+        :refresh-interval="30000"
+        :compact="true"
+        />
 
-
-        <div v-if="isDesktop">
+        <div v-if="isDesktop || currentRole==ROLES.DOCUMENTACION">
             <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData"
         :show-pagination="false" :show-export="false"
 
@@ -231,6 +225,11 @@ const columns: TableColumn<any>[] = [
         accessorKey: 'mes',
         header: 'Mes',
         cell: ({ row }) => row.getValue('mes')
+    },
+    {
+        accessorKey: 'anio',
+        header: 'Año',
+        cell: ({ row }) => row.getValue('anio')
     },
     {
         accessorKey: 'pais',

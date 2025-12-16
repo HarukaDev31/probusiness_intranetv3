@@ -54,6 +54,7 @@ export const useEntrega = () => {
   const currentPage = computed(() => pagination.value.current_page)
   const filters = ref<any>({})
   const clientesFilters = ref<any>({})
+  const deliveryFilters = ref<any>({})
   const filterConfig = ref<any>([
     {
       key: 'fecha_inicio',
@@ -72,6 +73,15 @@ export const useEntrega = () => {
         { label: 'Todos', value: 'todos' },
         { label: 'Lima', value: 'Lima' },
         { label: 'Provincia', value: 'Provincia' }
+      ]
+    },
+    {
+      key: 'tipo_servicio',
+      label: 'Tipo de servicio',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Delivery', value: 'DELIVERY' },
+        { label: 'Montacarga', value: 'MONTACARGA' }
       ]
     },
     {
@@ -110,6 +120,37 @@ export const useEntrega = () => {
         { label: 'Todos', value: 'todos' },
         { label: 'Pagado', value: 'Pagado' },
         { label: 'Pendiente', value: 'Pendiente' }
+      ]
+    }
+  ])
+
+  const deliveryFilterConfig = ref<any>([
+    {
+      key: 'fecha_inicio',
+      label: 'Fecha inicio',
+      type: 'date'
+    },
+    {
+      key: 'fecha_fin',
+      label: 'Fecha fin',
+      type: 'date'
+    },
+    {
+      key: 'tipo_entrega',
+      label: 'Tipo de entrega',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Lima', value: 'LIMA' },
+        { label: 'Provincia', value: 'PROVINCIA' }
+      ]
+    },
+    {
+      key: 'tipo_servicio',
+      label: 'Tipo de servicio',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Delivery', value: 'DELIVERY' },
+        { label: 'Montacarga', value: 'MONTACARGA' }
       ]
     }
   ])
@@ -311,7 +352,7 @@ export const useEntrega = () => {
       loading.value = true
       contenedorId.value = id
       const cleanedFilters: any = {}
-      Object.entries(filters.value || {}).forEach(([k, v]) => {
+      Object.entries(deliveryFilters.value || {}).forEach(([k, v]) => {
         if (v === null || v === undefined) return
         if (typeof v === 'string' && (v === '' || v === 'todos')) return
         cleanedFilters[k] = v
@@ -340,7 +381,13 @@ export const useEntrega = () => {
         id_contenedor_pago: item.id_contenedor_pago ?? null,
         entrega: item.entrega ?? null,
         total_importe_delivery: item.total_importe_delivery ?? item.importe ?? 0,
-        tipo_servicio: item.tipo_servicio ?? 'Sin servicio'
+        tipo_servicio: item.tipo_servicio ?? 'Sin servicio',
+        // Campos de fecha y hora de recojo
+        delivery_date: item.delivery_date ?? null,
+        delivery_start_time: item.delivery_start_time ?? null,
+        delivery_end_time: item.delivery_end_time ?? null,
+        delivery_date_id: item.delivery_date_id ?? null,
+        delivery_range_id: item.delivery_range_id ?? null
       }))
       pagination.value = response.pagination
       // Extraer headers si vienen en la respuesta
@@ -533,6 +580,32 @@ export const useEntrega = () => {
     pagination.value.current_page = 1
     if (contenedorId.value) getEntregas(contenedorId.value)
   }
+  const clearDeliveryFilters = () => {
+    deliveryFilters.value = {}
+    pagination.value.current_page = 1
+    if (contenedorId.value) getDelivery(contenedorId.value)
+  }
+
+  // Handlers para delivery filters
+  const handleDeliveryFilterChange = (key: string, value: any) => {
+    deliveryFilters.value[key] = value
+    pagination.value.current_page = 1
+    if (contenedorId.value) getDelivery(contenedorId.value)
+  }
+  const handleDeliverySearch = (value: string) => {
+    search.value = value
+    pagination.value.current_page = 1
+    if (contenedorId.value) getDelivery(contenedorId.value)
+  }
+  const handleDeliveryPageChange = (value: number) => {
+    pagination.value.current_page = value
+    if (contenedorId.value) getDelivery(contenedorId.value)
+  }
+  const handleDeliveryItemsPerPageChange = (value: number) => {
+    itemsPerPage.value = value
+    pagination.value.current_page = 1
+    if (contenedorId.value) getDelivery(contenedorId.value)
+  }
 
   // Global clear handler: clear both delivery and client filters and refetch
   if (typeof window !== 'undefined') {
@@ -540,10 +613,12 @@ export const useEntrega = () => {
       try {
         clientesFilters.value = {}
         filters.value = {}
+        deliveryFilters.value = {}
         pagination.value.current_page = 1
         if (contenedorId.value) {
           getClientes(contenedorId.value)
           getEntregas(contenedorId.value)
+          getDelivery(contenedorId.value)
         }
       } catch (err) {
         console.error('Error handling global clear for entrega composable', err)
@@ -789,21 +864,28 @@ export const useEntrega = () => {
     handlePageChange,
     handleItemsPerPageChange,
     handleFilterChange,
-  handleClientesSearch,
-  handleClientesFilterChange,
-  handleClientesPageChange,
-  handleClientesItemsPerPageChange,
-  clearClientesFilters,
-  clearFilters,
+    handleClientesSearch,
+    handleClientesFilterChange,
+    handleClientesPageChange,
+    handleClientesItemsPerPageChange,
+    clearClientesFilters,
+    clearFilters,
     headers,
     headersEntregas,
     headersDelivery,
     carga,
     loadingHeaders,
-  getHeaders,
-  downloadPlantillas,
+    getHeaders,
+    downloadPlantillas,
     // delivery
     getDelivery,
+    deliveryFilterConfig,
+    deliveryFilters,
+    handleDeliveryFilterChange,
+    handleDeliverySearch,
+    handleDeliveryPageChange,
+    handleDeliveryItemsPerPageChange,
+    clearDeliveryFilters,
     updateImporteDelivery,
     updateServicioDelivery,
     registrarPagoDelivery,
@@ -811,16 +893,16 @@ export const useEntrega = () => {
     sendMessageForCotizacion,
     sendRecordatorioFormularioDelivery,
     sendCobroCotizacionFinalDelivery,
-    sendCobroDeliveryDelivery
-    , uploadConformidad
-    , updateConformidad
-    , deleteConformidad
-    , deleteEntregaRegistro
-    , saveClienteDetalle
-    , getAllDeliveryData
-    , fetchDeliveryData
-    , updateFiltersDelivery
-    , clearFiltersDelivery
-    , cargasDisponiblesDelivery
+    sendCobroDeliveryDelivery,
+    uploadConformidad,
+    updateConformidad,
+    deleteConformidad,
+    deleteEntregaRegistro,
+    saveClienteDetalle,
+    getAllDeliveryData,
+    fetchDeliveryData,
+    updateFiltersDelivery,
+    clearFiltersDelivery,
+    cargasDisponiblesDelivery
   }
 }

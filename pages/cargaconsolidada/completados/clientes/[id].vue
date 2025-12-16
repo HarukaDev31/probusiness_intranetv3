@@ -138,7 +138,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
-const tab = ref('embarcados')
+const tab = ref<string>(isCoordinacion.value || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
@@ -466,6 +466,7 @@ const columns: TableColumn<any>[] = [
             const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
             const correo = String(pick(['correo', 'email', 'mail']) || '')
             const cod_contract = String(pick(['cod_contract']) || '')
+            const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
             const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
@@ -474,11 +475,28 @@ const columns: TableColumn<any>[] = [
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
-                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
-                        target: '_blank',
-                        class: 'text-primary hover:underline'
-                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+                    (cotizacion_contrato_firmado_url
+                        ? h('a', { 
+                            href: cotizacion_contrato_firmado_url,
+                            target: '_blank',
+                            class: 'text-success-400 font-medium hover:underline' 
+                        }, `Contrato: ${cod_contract}`)
+                        : (cotizacion_contrato_autosigned_url
+                            ? h('a', { 
+                                href: cotizacion_contrato_autosigned_url,
+                                target: '_blank',
+                                class: 'text-warning-400 font-medium hover:underline' 
+                            }, `Contrato: ${cod_contract}`)
+                            : (cotizacion_contrato_url
+                                ? h('a', { 
+                                    href: cotizacion_contrato_url,
+                                    target: '_blank',
+                                    class: 'text-secondary-700 dark:text-secondary-400 font-medium hover:underline' 
+                                }, `Contrato: ${cod_contract}`)
+                                : `Contrato: ${cod_contract}`
+                            )
+                        )
+                    )
                 ]) : null  
             ])
         }
@@ -579,17 +597,35 @@ const columnsCoordinacion: TableColumn<any>[] = [
             const cod_contract = row.original?.cod_contract || ''
             const cotizacion_contrato_firmado_url = row.original?.cotizacion_contrato_firmado_url || ''
             const cotizacion_contrato_url = row.original?.cotizacion_contrato_url || ''
+            const cotizacion_contrato_autosigned_url = row.original?.cotizacion_contrato_autosigned_url || ''
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
                 h('div', { class: 'text-sm text-gray-500' }, documento),
                 h('div', { class: 'text-sm text-gray-500' }, telefono),
                 h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo'),
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
-                    (cotizacion_contrato_firmado_url || cotizacion_contrato_url ) ? h('a', {
-                        href: ( cotizacion_contrato_firmado_url || cotizacion_contrato_url),
-                        target: '_blank',
-                        class: 'text-primary hover:underline'
-                    }, `Contrato: ${cod_contract}`) : `Contrato: ${cod_contract}`
+                    (cotizacion_contrato_firmado_url
+                        ? h('a', { 
+                            href: cotizacion_contrato_firmado_url,
+                            target: '_blank',
+                            class: 'text-success-400 font-medium hover:underline' 
+                        }, `Contrato: ${cod_contract}`)
+                        : (cotizacion_contrato_autosigned_url
+                            ? h('a', { 
+                                href: cotizacion_contrato_autosigned_url,
+                                target: '_blank',
+                                class: 'text-warning-400 font-medium hover:underline' 
+                            }, `Contrato: ${cod_contract}`)
+                            : (cotizacion_contrato_url
+                                ? h('a', { 
+                                    href: cotizacion_contrato_url,
+                                    target: '_blank',
+                                    class: 'text-secondary-700 dark:text-secondary-400 font-medium hover:underline' 
+                                }, `Contrato: ${cod_contract}`)
+                                : `Contrato: ${cod_contract}`
+                            )
+                        )
+                    )
                 ]) : null
             ])
         }

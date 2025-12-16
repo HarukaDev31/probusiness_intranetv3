@@ -464,7 +464,7 @@ export const    useCotizacionProveedor = () => {
         }
     }
 
-    const sendRotulado = async (data: { idCotizacion: number, proveedores: Array<{ id: number, tipo_rotulado: string }> }) => {
+    const sendRotulado = async (data: { idCotizacion: number, proveedores: Array<{ id: number, tipo_rotulado: string, force_send: number }> }) => {
         if (!data.idCotizacion || !data.proveedores.length) return
         loading.value = true
         error.value = null
