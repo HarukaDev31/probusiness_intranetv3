@@ -11,7 +11,9 @@
     </template>
 
     <FileUploader ref="fileUploaderRef" :disabled="disabled" :loading="loading" :multiple="true" @files-selected="handleFilesSelected" :initial-files="files"
-      @file-removed="handleFileRemoved" :show-remove-button="showRemoveButton" />
+      @file-removed="handleFileRemoved" :show-remove-button="showRemoveButton"
+      :accepted-types="['.jpg', '.jpeg', '.png', '.gif','.mp4','.mov','.avi','.mkv','.webm','.wmv','.flv','.vob','.m4v','.3gp','.3g2','.mj2','.m2ts','.m2t','.m2v','.m4v','.m4p','.m4b','.m4r','.m4v','.m4p','.m4b','.m4r']"
+      />
   </UCard>
 </template>
 

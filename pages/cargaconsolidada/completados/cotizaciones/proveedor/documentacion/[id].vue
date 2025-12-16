@@ -118,8 +118,10 @@ const handleInspeccionFiles = async (files: File[]) => {
         files: files
     }
     loadingInspeccion.value = true
+    await withSpinner(async () => {
     await saveInspeccionChina(data)
     await getInspeccionChina(id)
+    }, 'Guardando inspección...')
     loadingInspeccion.value = false
 
 }
