@@ -43,17 +43,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import { isContentNarrow, setContentNarrow } from '~/composables/usePageLayout'
 import { useAuth } from '../composables/auth/useAuth'
 import { useWebSocketNotifications } from '../composables/useWebSocketNotifications'
 import { useWebSocketRole } from '../composables/websocket/useWebSocketRole'
-import SidebarMenu from '../components/SidebarMenu.vue'
-import Breadcrumbs from '../components/Breadcrumbs.vue'
-import SessionExpiredModal from '../components/SessionExpiredModal.vue'
-import GlobalNotifications from '../components/GlobalNotifications.vue'
-import ModalContainer from '../components/ModalContainer.vue'
-import GlobalSpinner from '../components/GlobalSpinner.vue'
+// Lazy load componentes pesados para mejorar tiempo de carga inicial
+const SidebarMenu = defineAsyncComponent(() => import('../components/SidebarMenu.vue'))
+const Breadcrumbs = defineAsyncComponent(() => import('../components/Breadcrumbs.vue'))
+const SessionExpiredModal = defineAsyncComponent(() => import('../components/SessionExpiredModal.vue'))
+const GlobalNotifications = defineAsyncComponent(() => import('../components/GlobalNotifications.vue'))
+const ModalContainer = defineAsyncComponent(() => import('../components/ModalContainer.vue'))
+const GlobalSpinner = defineAsyncComponent(() => import('../components/GlobalSpinner.vue'))
 import type { AuthMenu } from '../services/authService'
 import type { SidebarCategory } from '../types/module'
 

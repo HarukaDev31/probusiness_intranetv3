@@ -10,6 +10,31 @@ export default defineNuxtConfig({
   },
   ssr: false,
   
+  // Optimizaciones de rendimiento
+  experimental: {
+    payloadExtraction: false, // Mejora tiempos de carga inicial
+  },
+  
+  // Code splitting y optimización de bundles
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'chart': ['chart.js', 'vue-chartjs'],
+            'xlsx': ['xlsx'],
+            'vendor': ['vue', 'vue-router'],
+          }
+        }
+      },
+      chunkSizeWarningLimit: 1000,
+    },
+    optimizeDeps: {
+      include: ['vue', 'vue-router'],
+      exclude: ['chart.js', 'xlsx'], // Cargar bajo demanda
+    }
+  },
+  
   // Configuración de CSS
   css: [
     '../assets/css/tailwind.css'
@@ -30,7 +55,9 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'manifest', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
-       
+        // Preconnect para recursos externos
+        { rel: 'preconnect', href: 'https://intranet.probusiness.pe' },
+        { rel: 'dns-prefetch', href: 'https://intranet.probusiness.pe' },
       ],
 
     },
