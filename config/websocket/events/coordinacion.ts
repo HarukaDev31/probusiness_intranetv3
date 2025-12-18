@@ -66,6 +66,5 @@ export const registerCoordinacionEvents = () => {
     'private'
   )
 
-  console.log('✅ Eventos del rol Coordinación registrados')
 }
 

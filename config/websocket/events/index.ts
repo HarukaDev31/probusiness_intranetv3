@@ -20,8 +20,6 @@ import { registerUserEvents } from './user'
  * Esta función se ejecuta antes de la suscripción a los canales
  */
 export const registerAllRoleEvents = () => {
-  console.log('📡 Registrando eventos de WebSocket por rol...')
-  
   registerAdminEvents()
   registerCotizadorEvents()
   registerDocumentacionEvents()
@@ -29,7 +27,5 @@ export const registerAllRoleEvents = () => {
   registerContenedorAlmacenEvents()
   registerCoordinacionEvents()
   registerUserEvents()
-  
-  console.log('✅ Todos los eventos de roles registrados')
 }
 

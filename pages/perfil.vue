@@ -61,7 +61,6 @@
             // Emitir evento personalizado para que el sidebar se actualice
             window.dispatchEvent(new CustomEvent('auth_user_updated'))
             
-            console.log('✅ auth_user actualizado en localStorage:', userData)
           }
         } catch (e) {
           console.error('Error al actualizar auth_user en localStorage:', e)

@@ -178,7 +178,6 @@ const provinciasForSelect = computed(() => {
     if (!provincias.value || provincias.value.length === 0) {
         return [];
     }
-    console.log('🔍 Provincias disponibles:', provincias.value);
     return provincias.value;
 });
 
@@ -233,11 +232,8 @@ const loadProfileWithFilter = async () => {
         const fechaInicioStr = formatCalendarDateToString(fechaInicio.value);
         const fechaFinStr = formatCalendarDateToString(fechaFin.value);
         
-        console.log('🔍 Aplicando filtros:', { fechaInicioStr, fechaFinStr });
-        
         const response = await getProfileData(fechaInicioStr, fechaFinStr);
         if (response && response.success) {
-            console.log('✅ Perfil cargado con filtros:', response.user);
             userProfile.value = response.user;
             // No emitir evento para evitar que el padre recargue sin filtros
             // Los datos filtrados vienen directamente del backend
@@ -265,7 +261,6 @@ const clearDateRange = async () => {
     // Recargar perfil sin filtros (sin parámetros)
     try {
         loadingProfile.value = true;
-        console.log('🔍 Limpiando filtros, recargando perfil sin parámetros');
         const response = await getProfileData(undefined, undefined);
         if (response && response.success) {
             userProfile.value = response.user;
@@ -440,7 +435,6 @@ const getDistrictName = (): string => {
 };
 
 const handleCountryChange = async (value: number | null) => {
-    console.log('🔍 País cambiado:', value);
     profileForm.value.country = value;
     
     // Si cambia el país, limpiar selects dependientes
@@ -456,9 +450,7 @@ const handleCountryChange = async (value: number | null) => {
     // Si se selecciona Perú (ID = 1), cargar departamentos
     if (value === 1) {
         try {
-            console.log('🔍 Cargando departamentos para Perú');
             await fetchDepartamentos();
-            console.log('🔍 Departamentos cargados:', departamentos.value.length);
             
             // Si el departamento del perfil coincide con el país seleccionado, mantenerlo
             if (profileForm.value.department && userProfile.value.idDepartment === profileForm.value.department) {
@@ -478,16 +470,13 @@ const handleCountryChange = async (value: number | null) => {
 };
 
 const handleDepartmentChange = async (value: number | null) => {
-    console.log('🔍 Departamento cambiado:', value);
     profileForm.value.city = null;
     profileForm.value.district = null;
     profileForm.value.department = value;
 
     if (value) {
         try {
-            console.log('🔍 Cargando provincias para departamento:', value);
             await fetchProvincias(value);
-            console.log('🔍 Provincias cargadas:', provincias.value.length);
             
             // Si ya hay una provincia en el perfil y corresponde a este departamento, cargar sus distritos
             if (userProfile.value.idProvince) {
@@ -508,15 +497,12 @@ const handleDepartmentChange = async (value: number | null) => {
 };
 
 const handleProvinceChange = async (value: number | null) => {
-    console.log('🔍 Provincia cambiada:', value);
     profileForm.value.district = null;
     profileForm.value.city = value;
 
     if (value) {
         try {
-            console.log('🔍 Cargando distritos para provincia:', value);
             await fetchDistritos(value);
-            console.log('🔍 Distritos cargados:', distritos.value.length);
         } catch (error) {
             console.error('Error al cargar distritos:', error);
         }

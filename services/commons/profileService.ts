@@ -6,10 +6,7 @@ export class ProfileService extends BaseService {
     
     // Función auxiliar para debug del FormData
     private static debugFormData(formData: FormData) {
-        console.log('FormData contents:');
-        for (const [key, value] of formData.entries()) {
-            console.log(`${key}:`, value);
-        }
+        // Debug deshabilitado en producción
     }
     
     static async getProfile(fechaInicio?: string, fechaFin?: string): Promise<UserProfileResponse> {
@@ -26,9 +23,6 @@ export class ProfileService extends BaseService {
             
             if (params.length > 0) {
                 url += `?${params.join('&')}`
-                console.log('🔍 Llamando a getProfile con parámetros:', url)
-            } else {
-                console.log('🔍 Llamando a getProfile sin parámetros:', url)
             }
             
             const response = await this.apiCall<UserProfileResponse>(url)
@@ -71,11 +65,7 @@ export class ProfileService extends BaseService {
                 formData.append('photo', photoFile)
             }
 
-            // Debug: mostrar contenido del FormData
-            console.log('🔍 Debug SERVICE - FormData contents:');
-            for (const [key, value] of formData.entries()) {
-                console.log(`${key}:`, value);
-            }
+            // Debug deshabilitado en producción
 
             const response = await this.apiCall<UserProfileResponse>(`${this.baseUrl}/profile`, {
                 method: 'POST',

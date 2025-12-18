@@ -33,8 +33,8 @@ export const useEcho = () => {
           const PusherJs = await import('pusher-js')
           ;(window as any).Pusher = PusherJs.default
 
-          // Habilitar logs de Pusher
-          ;(window as any).Pusher.logToConsole = true
+          // Deshabilitar logs de Pusher en producción
+          ;(window as any).Pusher.logToConsole = false
           
         } catch (error) {
           console.error('❌ Error importando Pusher:', error)
@@ -42,11 +42,6 @@ export const useEcho = () => {
         }
       }
       
-      console.log('🔄 Iniciando Echo con config:', {
-        ...echoConfig,
-        key: config.public.pusherAppKey,
-        cluster: config.public.pusherAppCluster
-      })
 
       const finalConfig = {
         broadcaster: 'pusher',
@@ -66,13 +61,6 @@ export const useEcho = () => {
         const pusher = (echoInstance as any).connector.pusher
         const connection = pusher.connection
         
-        console.log('🔍 Verificando métodos de conexión Pusher:', {
-          hasConnection: !!connection,
-          connectionType: typeof connection,
-          hasBind: typeof connection?.bind === 'function',
-          hasOn: typeof connection?.on === 'function',
-          hasAddEventListener: typeof connection?.addEventListener === 'function'
-        })
         
         // Intentar diferentes métodos para registrar eventos de conexión
         if (connection && typeof connection === 'object') {
@@ -80,7 +68,7 @@ export const useEcho = () => {
           if (typeof connection.bind === 'function') {
             
             connection.bind('connected', () => {
-              console.log('🔗 Pusher: Conexión establecida')
+              // Conexión establecida
             })
 
             connection.bind('disconnected', () => {
