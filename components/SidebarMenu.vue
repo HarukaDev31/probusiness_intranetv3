@@ -311,9 +311,12 @@ const isActiveRoute = (route: string) => {
 const hideSidebarOnMobile = () => {
   if (!process.client) return
   try {
-    if (window.innerWidth < 1024) {
-      visible.value = false
-    }
+    // Usar requestAnimationFrame para evitar forced reflow
+    requestAnimationFrame(() => {
+      if (window.innerWidth < 1024) {
+        visible.value = false
+      }
+    })
   } catch (e) {
     // noop
   }
@@ -406,10 +409,13 @@ onMounted(async () => {
   // Ocultar el sidebar por defecto en mobile (viewport < 1024px)
   if (process.client) {
     try {
-      if (window.innerWidth < 1024) {
-        // Asignar al computed `visible` para disparar el emit `update:modelValue`
-        visible.value = false
-      }
+      // Usar requestAnimationFrame para evitar forced reflow
+      requestAnimationFrame(() => {
+        if (window.innerWidth < 1024) {
+          // Asignar al computed `visible` para disparar el emit `update:modelValue`
+          visible.value = false
+        }
+      })
     } catch (err) {
       // si falla por alguna razón, no bloquear la inicialización
       // eslint-disable-next-line no-console
@@ -432,12 +438,18 @@ onMounted(async () => {
     }
 
     // Si la ventana se redimensiona a mobile, ocultamos el sidebar
+    // Usar throttling con requestAnimationFrame para evitar forced reflows
+    let resizeRafId: number | null = null
     const handleResize = () => {
-      try {
-        if (window.innerWidth < 1024) visible.value = false
-      } catch (e) {
-        // noop
-      }
+      if (resizeRafId) return
+      resizeRafId = requestAnimationFrame(() => {
+        resizeRafId = null
+        try {
+          if (window.innerWidth < 1024) visible.value = false
+        } catch (e) {
+          // noop
+        }
+      })
     }
 
     window.addEventListener('storage', handleStorageChange)

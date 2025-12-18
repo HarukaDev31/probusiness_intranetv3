@@ -20,10 +20,36 @@ export default defineNuxtConfig({
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            'chart': ['chart.js', 'vue-chartjs'],
-            'xlsx': ['xlsx'],
-            'vendor': ['vue', 'vue-router'],
+          manualChunks: (id) => {
+            // Separar vendor libraries
+            if (id.includes('node_modules')) {
+              // Chart.js y sus dependencias
+              if (id.includes('chart.js') || id.includes('vue-chartjs')) {
+                return 'chart'
+              }
+              // XLSX
+              if (id.includes('xlsx')) {
+                return 'xlsx'
+              }
+              // Pusher y Laravel Echo (WebSockets)
+              if (id.includes('pusher') || id.includes('laravel-echo')) {
+                return 'websocket'
+              }
+              // Vue core
+              if (id.includes('vue') && !id.includes('vue-router')) {
+                return 'vendor-vue'
+              }
+              // Vue Router
+              if (id.includes('vue-router')) {
+                return 'vendor-router'
+              }
+              // Nuxt UI y otras UI libraries
+              if (id.includes('@nuxt/ui') || id.includes('@headlessui')) {
+                return 'ui'
+              }
+              // Otras dependencias grandes
+              return 'vendor'
+            }
           }
         }
       },
@@ -31,7 +57,7 @@ export default defineNuxtConfig({
     },
     optimizeDeps: {
       include: ['vue', 'vue-router'],
-      exclude: ['chart.js', 'xlsx'], // Cargar bajo demanda
+      exclude: ['chart.js', 'xlsx', 'pusher-js'], // Cargar bajo demanda
     }
   },
   

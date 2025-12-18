@@ -114,19 +114,30 @@ const currentConsolidado = ref<number | null>(null)
 
 // Desktop detection: keep DataTable out of DOM on small screens to avoid flicker
 const isDesktop = ref(false)
+let resizeRafId: number | null = null
 const updateIsDesktop = () => {
-    try {
-        isDesktop.value = window.innerWidth >= 640 // sm breakpoint used in this page
-    } catch (e) {
-        isDesktop.value = true
-    }
+    if (resizeRafId) return
+    resizeRafId = requestAnimationFrame(() => {
+        resizeRafId = null
+        try {
+            isDesktop.value = window.innerWidth >= 640 // sm breakpoint used in this page
+        } catch (e) {
+            isDesktop.value = true
+        }
+    })
 }
 onMounted(() => {
     updateIsDesktop()
-    window.addEventListener('resize', updateIsDesktop)
+    window.addEventListener('resize', updateIsDesktop, { passive: true })
 })
 onUnmounted(() => {
-    try { window.removeEventListener('resize', updateIsDesktop) } catch (e) {}
+    try { 
+        window.removeEventListener('resize', updateIsDesktop)
+        if (resizeRafId) {
+            cancelAnimationFrame(resizeRafId)
+            resizeRafId = null
+        }
+    } catch (e) {}
 })
 
 // Components
