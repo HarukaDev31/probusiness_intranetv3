@@ -18,6 +18,15 @@ export default defineNuxtConfig({
   // Code splitting y optimización de bundles
   vite: {
     build: {
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: false,
+        },
+        format: {
+          comments: false,
+        },
+      },
       rollupOptions: {
         output: {
           manualChunks: (id) => {
@@ -47,20 +56,28 @@ export default defineNuxtConfig({
               if (id.includes('vue-router')) {
                 return 'vendor-router'
               }
-              // Nuxt UI y otras UI libraries
-              if (id.includes('@nuxt/ui') || id.includes('@headlessui')) {
+              // Nuxt UI y otras UI libraries - mantener juntas para evitar problemas de inicialización
+              if (id.includes('@nuxt/ui') || id.includes('@headlessui') || id.includes('defu') || id.includes('unimport')) {
                 return 'ui'
               }
               // Otras dependencias grandes
               return 'vendor'
             }
+          },
+          // Asegurar que los chunks se carguen en el orden correcto
+          chunkFileNames: (chunkInfo) => {
+            // Priorizar chunks críticos
+            if (chunkInfo.name === 'ui' || chunkInfo.name === 'icon') {
+              return 'assets/[name]-[hash].js'
+            }
+            return 'assets/[name]-[hash].js'
           }
         }
       },
       chunkSizeWarningLimit: 1000,
     },
     optimizeDeps: {
-      include: ['vue', 'vue-router', '@nuxt/icon'],
+      include: ['vue', 'vue-router', '@nuxt/icon', 'defu'],
       exclude: ['chart.js', 'xlsx', 'pusher-js'], // Cargar bajo demanda
     }
   },
