@@ -4,13 +4,23 @@
       :title="`Consolidado #${carga || ''}`"
       :subtitle="clienteNombre || ''"
       icon=""
-      class-add="justify-around mr-20"
+      class-add="justify-between md:justify-around mr-0 md:mr-20"
       :hide-back-button="false"
       @back="handleBack"
     >
       <template #actions>
-        <div class="flex gap-2">
-          <UButton v-if="!editable" size="xl" color="primary" variant="solid" icon="i-heroicons-pencil-square" @click="toggleEdit">Editar</UButton>
+        <div class="flex gap-2 items-center">
+          <template v-if="!editable">
+            <UButton size="xl" color="primary" variant="solid" icon="i-heroicons-pencil-square" @click="toggleEdit">Editar</UButton>
+            <USelect
+              v-if="currentRole===ROLES.ADMINISTRACION"
+              :items="[{ label: 'No verificado', value: false }, { label: 'Verificado', value: true }]"
+              :model-value="isVerified"
+              size="sm"
+              class="w-36"
+              @update:model-value="handleVerifiedChange"
+            />
+          </template>
           <template v-else>
             <UButton size="xl" color="primary" variant="solid" icon="ic:baseline-save" :disabled="!canSave" @click="handleSave">Guardar</UButton>
             <UButton size="xl" color="neutral" variant="outline" icon="i-heroicons-x-mark" @click="toggleEdit">Cancelar</UButton>
@@ -19,8 +29,9 @@
       </template>
     </PageHeader>
 
-    <div class="flex flex-col lg:flex-row gap-8 p-4 w-full justify-center">
-      <div class="space-y-2 bg-white dark:bg-gray-800 p-4 rounded-lg shadow w-240">
+      <div class="flex flex-col lg:flex-row gap-8 p-4 w-full justify-center">
+        <EntregaFormSkeleton v-if="!readyToRender" class="w-full md:max-w-4xl" />
+        <div v-else class="space-y-2 bg-white dark:bg-gray-800 p-4 rounded-lg shadow w-full md:max-w-4xl">
         <h2 class="font-semibold text-xl p-4">{{ clienteNombre }}</h2>
         <!-- Información de entrega -->
         <div class="border-t border-gray-200" />
@@ -33,98 +44,97 @@
                 <UBadge :label="tipoClienteLabel" :color="isLima ? 'primary' : 'warning'" variant="soft" />
               </div>
               <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">{{ isLima ? 'DNI - ID' : 'DNI - RUC' }}</label>
-                <UInput class="flex-1/4" v-model="form.documento" size="sm" :disabled="!editable" />
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">{{ isLima ? 'DNI - ID' : 'DNI - RUC' }}</label>
+                <UInput class="w-full md:w-1/4" v-model="form.documento" size="sm" :disabled="!editable" />
               </div>
               <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Bultos</label>
-                <UInput class="flex-1/4" v-model="form.qty_box_china" size="sm" disabled />
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Bultos</label>
+                <UInput class="w-full md:w-1/4" v-model="form.qty_box_china" size="sm" disabled />
               </div>
               <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Peso</label>
-                <UInput class="flex-1/4" v-model="form.peso" size="sm" disabled />
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Peso</label>
+                <UInput class="w-full md:w-1/4" v-model="form.peso" size="sm" disabled />
               </div>
               
               <div v-if="!isLima" class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Tipo</label>
-                <USelect class="flex-1/4" :items="tipoReceptorOptions" v-model="form.r_type" size="sm" :disabled="!editable" placeholder="Seleccione" />
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Tipo</label>
+                <USelect class="w-full md:w-1/4" :items="tipoReceptorOptions" v-model="form.r_type" size="sm" :disabled="!editable" placeholder="Seleccione" />
               </div>
               
               <div v-if="isLima" class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Licencia</label>
-                <UInput class="flex-1/4" v-model="form.licencia" size="sm" :disabled="!editable" />
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Licencia</label>
+                <UInput class="w-full md:w-1/4" v-model="form.licencia" size="sm" :disabled="!editable" />
               </div>
               <div v-if="isLima" class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Placa de vehículo</label>
-                <UInput class="flex-1/4" v-model="form.placa" size="sm" :disabled="!editable" />
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Placa de vehículo</label>
+                <UInput class="w-full md:w-1/4" v-model="form.placa" size="sm" :disabled="!editable" />
               </div>
             </div>
-            <div class="flex items-center flex-1 justify-between">
-              <label class="flex-1 pr-4 text-[11px] font-medium text-gray-500 mb-1">Productos</label>
-              <UInput class="flex-1/2" v-model="form.productos" size="sm" :disabled="!editable" />
+            <div class="flex items-center w-full justify-between">
+              <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Productos</label>
+              <UInput class="w-full md:w-1/2" v-model="form.productos" size="sm" :disabled="!editable" />
             </div>
 
             <!-- Campos específicos por tipo -->
             <div v-if="isLima" class="flex flex-col gap-2">
-              <div class="flex items-center flex-1 justify-between">
-                <label class="flex-1 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre completo del chofer</label>
-                <UInput class="flex-1/2" v-model="form.nombre_chofer" size="sm" :disabled="!editable" />
+              <div class="flex flex-col md:flex-row items-start md:items-center w-full justify-between gap-2">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre completo del chofer</label>
+                <UInput class="w-full md:w-1/2" v-model="form.nombre_chofer" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex items-center flex-1 justify-between">
-                <label class="flex-1 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito del destino final</label>
-                <UInput class="flex-1/2" v-model="form.distrito" size="sm" :disabled="!editable" />
+              <div class="flex flex-col md:flex-row items-start md:items-center w-full justify-between gap-2">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito del destino final</label>
+                <UInput class="w-full md:w-1/2" v-model="form.distrito" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex items-center flex-1 justify-between">
-                <label class="flex-1 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección final de destino</label>
-                <UInput class="flex-1/2" v-model="form.direccion_final" size="sm" :disabled="!editable" />
+              <div class="flex flex-col md:flex-row items-start md:items-center w-full justify-between gap-2">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección final de destino</label>
+                <UInput class="w-full md:w-1/2" v-model="form.direccion_final" size="sm" :disabled="!editable" />
               </div>
             </div>
 
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
-              <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
-                <UInput class="flex-1/4" v-model="form.r_name" size="sm" :disabled="!editable" />
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
+                <UInput class="w-full md:w-1/4" v-model="form.r_name" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Celular</label>
-                <UInput class="flex-1/4" v-model="form.r_phone" size="sm" :disabled="!editable" />
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Celular</label>
+                <UInput class="w-full md:w-1/4" v-model="form.r_phone" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Departamento</label>
-                <USelect class="flex-1/4" :items="departamentos" v-model="form.departamento_id" :disabled="!editable" placeholder="Seleccione" @update:model-value="onDepartamentoChange" />
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Departamento</label>
+                <USelect class="w-full md:w-1/4" :items="departamentos" v-model="form.departamento_id" :disabled="!editable" placeholder="Seleccione" @update:model-value="onDepartamentoChange" />
               </div>
-              <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Provincia</label>
-                <USelect class="flex-1/4" :items="provincias" v-model="form.provincia_id" :disabled="!editable || !form.departamento_id" placeholder="Seleccione" @update:model-value="onProvinciaChange" />
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Provincia</label>
+                <USelect class="w-full md:w-1/4" :items="provincias" v-model="form.provincia_id" :disabled="!editable || !form.departamento_id" placeholder="Seleccione" @update:model-value="onProvinciaChange" />
               </div>
-              <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito</label>
-                <USelect class="flex-1/4" :items="distritos" v-model="form.distrito_id" :disabled="!editable || !form.provincia_id" placeholder="Seleccione" />
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito</label>
+                <USelect class="w-full md:w-1/4" :items="distritos" v-model="form.distrito_id" :disabled="!editable || !form.provincia_id" placeholder="Seleccione" />
               </div>
-              <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Agencia</label>
-                <USelect class="flex-1/4" :items="agencias" v-model="form.id_agency" :disabled="!editable" placeholder="Seleccione"
-                  @update:model-value="onAgenciaChange" />
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Agencia</label>
+                <USelect class="w-full md:w-1/4" :items="agencias" v-model="form.id_agency" :disabled="!editable" placeholder="Seleccione" @update:model-value="onAgenciaChange" />
               </div>
-              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">RUC de la agencia</label>
-                <UInput class="flex-1/4" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
+              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">RUC de la agencia</label>
+                <UInput class="w-full md:w-1/4" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
               </div>
-              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre de la agencia</label>
-                <UInput class="flex-1/4" v-model="form.agency_name" size="sm" :disabled="!editable" />
+              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre de la agencia</label>
+                <UInput class="w-full md:w-1/4" v-model="form.agency_name" size="sm" :disabled="!editable" />
               </div>
-              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección inicial de entrega</label>
-                <UInput class="flex-1/4" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
+              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección inicial de entrega</label>
+                <UInput class="w-full md:w-1/4" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección final de entrega</label>
-                <UInput class="flex-1/4" v-model="form.agency_address_final_delivery" size="sm" :disabled="!editable" />
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección final de entrega</label>
+                <UInput class="w-full md:w-1/4" v-model="form.agency_address_final_delivery" size="sm" :disabled="!editable" />
               </div>
-              <div v-if="form.home_adress_delivery" class="flex items-center justify-between gap-4">
-                <label class="flex-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección a domicilio</label>
-                <UInput class="flex-1/4" v-model="form.home_adress_delivery" size="sm" :disabled="!editable" />
+              <div v-if="form.home_adress_delivery" class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección a domicilio</label>
+                <UInput class="w-full md:w-1/4" v-model="form.home_adress_delivery" size="sm" :disabled="!editable" />
               </div>
             </div>
           </div>
@@ -212,16 +222,21 @@
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useEntrega } from '@/composables/cargaconsolidada/entrega/useEntrega'
 import { UInput, USelect, UButton, UIcon, UBadge } from '#components'
 import PageHeader from '~/components/PageHeader.vue'
+import EntregaFormSkeleton from '~/components/EntregaFormSkeleton.vue'
 import FileUploader from '@/components/commons/FileUploader.vue'
 import ImageModal from '~/components/ImageModal.vue'
 import { LocationService } from '@/services/commons/locationService'
 import { useRouter } from 'vue-router'
 import { EntregaService } from '@/services/cargaconsolidada/entrega/entregaService'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
+import { useModal } from '~/composables/commons/useModal'
+import {useSpinner} from '~/composables/commons/useSpinner'
 const router = useRouter()
 
 // Props/params
@@ -231,7 +246,10 @@ const id = Number(route.params.id) // id de cotizacion
 let contenedorId: number | null = null
 const cotizacionId = ref<number | null>(isNaN(id) ? null : id)
 // Obtener detalle desde composable (cache si se navegó desde listado)
-const { getEntregasDetalle, entregaDetalle, loading, getHeaders, carga, uploadConformidad, updateConformidad, deleteConformidad, saveClienteDetalle } = useEntrega()
+const { getEntregasDetalle, entregaDetalle, loading, getHeaders, carga, uploadConformidad, updateConformidad, deleteConformidad, saveClienteDetalle, setIsVerified } = useEntrega()
+const { currentRole } = useUserRole()
+const { showSuccess, showError } = useModal()
+const { withSpinner } = useSpinner()
 // Nombre del cliente (razon_social si existe, sino nombre)
 const clienteNombre = computed(() => (entregaDetalle.value as any)?.form_user || entregaDetalle.value?.nombre || '')
 // Back handler: go to parent Entregas tab when possible
@@ -296,7 +314,34 @@ const form = ref<any>({
   comp_email: ''
 })
 
+// Verificación local: estado mostrado en la UI y sincronizado con `entregaDetalle`
+const isVerified = ref<boolean>(false)
+
+// Normaliza distintos formatos a booleano: true/false, 1/0, '1'/'0', 'true'/'false'
+const normalizeToBool = (v: any): boolean => {
+  if (v === true) return true
+  if (v === false) return false
+  if (v === 1 || v === '1') return true
+  if (v === 0 || v === '0') return false
+  const s = ('' + v).trim().toLowerCase()
+  if (s === 'true') return true
+  if (s === 'false') return false
+  return Boolean(v)
+}
+
+// Mantener `isVerified` en sincronía cuando cambie el detalle (por ejemplo, tras refetch)
+watch(() => entregaDetalle.value, (n) => {
+  try {
+    const raw = (n as any)?.is_verified ?? (n as any)?.isVerified
+    isVerified.value = normalizeToBool(raw)
+  } catch (e) {
+    isVerified.value = false
+  }
+}, { immediate: true })
+
 const initialSnapshot = ref<string>('')
+// Control para renderizar skeleton hasta que el form esté inicializado
+const readyToRender = ref<boolean>(false)
 type EvidenceItem = { url: string; key?: 'photo_1_url' | 'photo_2_url' }
 const evidencia = ref<EvidenceItem[]>([])
 const conformidadId = computed<number | null>(() => (entregaDetalle.value as any)?.conformidad_id ?? null)
@@ -376,6 +421,29 @@ const handleSave = async () => {
   await getEntregasDetalle(cotizacionId.value)
   initialSnapshot.value = snapshot()
   editable.value = false
+}
+
+const handleVerifiedChange = async (val: boolean | number | string) => {
+  let newVal: boolean
+  if (typeof val === 'boolean') newVal = val
+  else if (typeof val === 'string') {
+    const s = val.trim().toLowerCase()
+    if (s === 'true') newVal = true
+    else if (s === 'false') newVal = false
+    else newVal = Boolean(Number(val))
+  } else {
+    newVal = Boolean(Number(val))
+  }
+  isVerified.value = newVal
+  if (!cotizacionId.value) return
+  try {
+    await withSpinner(async () => {
+      await setIsVerified(cotizacionId.value as number, newVal)
+    }, 'Actualizando verificación...')
+    try { showSuccess('Verificación actualizada', newVal ? 'Marcado como verificado' : 'Marcado como no verificado') } catch (e) { /* noop */ }
+  } catch (err: any) {
+    try { showError('Error', err?.message || 'No se pudo actualizar la verificación') } catch (e) { /* noop */ }
+  }
 }
 
 // Preview modal state
@@ -627,6 +695,8 @@ onMounted(async () => {
     evidencia.value = []
     if (form.value.photo_1_url) evidencia.value.push({ url: form.value.photo_1_url, key: 'photo_1_url' })
     if (form.value.photo_2_url) evidencia.value.push({ url: form.value.photo_2_url, key: 'photo_2_url' })
+    // Inicializar estado de verificación desde el detalle (puede venir como isVerified o is_verified)
+    isVerified.value = normalizeToBool(d.isVerified ?? d.is_verified ?? false)
   }
   initialSnapshot.value = snapshot()
   // cargar departamentos y, si hay valores, intentar preseleccionar sin resetear ids
@@ -647,5 +717,6 @@ onMounted(async () => {
       distritos.value = listD.map((d: any) => ({ label: d.nombre ?? d.name ?? String(d.id), value: Number(d.id), id_provincia: Number(d.id_provincia) }))
     }
   } catch (e) { /* noop */ }
+  readyToRender.value = true
 })
 </script>

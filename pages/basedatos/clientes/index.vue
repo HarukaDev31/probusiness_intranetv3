@@ -7,7 +7,7 @@
             :filter-config="filterConfig" :filters-value="filters" :show-export="currentRole===ROLES.ADMINISTRACION"
             :show-headers="true" :headers="headers"
             empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
-            :show-new-button="currentRole===ROLES.ADMINISTRACION"
+            :show-new-button="currentRole===ROLES.ADMINISTRACION && isDesktop"
             new-button-label="Cargar Cliente"
             :on-new-button-click="goToArchivos"
             @update:search-query="handleSearch" @update:primary-search="handleSearch"
@@ -45,6 +45,8 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 const { hasRole, isCoordinacion,currentRole } = useUserRole()
 const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
+import { useIsDesktop } from '~/composables/useResponsive'
+const { isDesktop } = useIsDesktop()
 // Composables
 const {
     clientes,

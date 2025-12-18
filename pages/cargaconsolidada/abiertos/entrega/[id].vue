@@ -576,10 +576,20 @@ const entregasColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'razon_social', header: 'Razon social o Nombre', cell: ({ row }) => row.original.agency_name || row.original.pick_name || '—' },
   {
     accessorKey: 'fecha_programada', header: 'Fecha', cell: ({ row }) => {
-      const fp = formatDateTimeToDmy(row.original.delivery_date)
-      if (!fp) return '—'
-      const date = fp.includes(' ') ? fp.split(' ')[0] : fp.split('T')[0]
-      return date || '—'
+      const tf = row.original?.type_form
+      const isLima = (tf === 1 || tf === '1')
+      if (isLima) {
+        const fp = formatDateTimeToDmy(row.original.delivery_date)
+        if (!fp) return '—'
+        const date = fp.includes(' ') ? fp.split(' ')[0] : fp.split('T')[0]
+        return date || '—'
+      }
+      // Provincia: usar fecha_creacion_formulario si existe, si no fallback a created_at
+      const fcRaw = row.original.fecha_creacion_formulario ?? row.original.created_at ?? row.original.form_created_at ?? row.original.createdAt
+      const fc = formatDateTimeToDmy(fcRaw)
+      if (!fc) return '—'
+      const dateProv = fc.includes(' ') ? fc.split(' ')[0] : fc.split('T')[0]
+      return dateProv || '—'
     }
   },
   {

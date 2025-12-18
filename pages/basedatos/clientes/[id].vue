@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="md:p-6">
     <!-- Header -->
     <PageHeader title="Detalles del Cliente" subtitle="Información completa del cliente" icon="i-heroicons-user"
       :loading="loading" @back="navigateBack" :hideBackButton="false" />
@@ -48,7 +48,7 @@
     <ErrorState v-else-if="error" :message="error || 'Error desconocido'" />
 
     <!-- Cliente details -->
-    <div v-else-if="cliente" class="flex flex-col md:flex-row gap-8 items-start">
+    <div v-else-if="cliente" class="flex flex-col md:flex-row gap-8 items-start w-full">
       <!-- Card de información del cliente -->
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 w-full md:w-1/3 flex flex-col items-center">
         <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gray-200 flex items-center justify-center mb-4 overflow-hidden">

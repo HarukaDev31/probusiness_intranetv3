@@ -45,7 +45,7 @@
           <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
             class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
             @click="handleExport" />
-            <div class="flex items-center gap-2 relative md:w-full lg:w-auto">
+            <div class="flex items-center md:gap-2 relative md:w-full lg:w-auto">
             <div ref="filtersButtonRef" class="w-auto lg:w-auto">
               <UButton v-if="showFilters"
                 :label="isMobile ? '' : translations.filters"

@@ -79,6 +79,7 @@
 
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted, watch, onUnmounted } from 'vue'
+import { useIsDesktop } from '~/composables/useResponsive'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
@@ -118,22 +119,8 @@ const modal = overlay.create(CreateConsolidadoModal)
 const currentConsolidado = ref<number | null>(null)
 const textModal = overlay.create(TextModal)
 
-// Desktop detection: keep DataTable out of DOM on small screens to avoid flicker
-const isDesktop = ref(false)
-const updateIsDesktop = () => {
-    try {
-        isDesktop.value = window.innerWidth >= 768 // tailwind md breakpoint
-    } catch (e) {
-        isDesktop.value = true
-    }
-}
-onMounted(() => {
-    updateIsDesktop()
-    window.addEventListener('resize', updateIsDesktop)
-})
-onUnmounted(() => {
-    try { window.removeEventListener('resize', updateIsDesktop) } catch (e) {}
-})
+// Desktop detection: shared composable to keep DataTable out of DOM on small screens
+const { isDesktop } = useIsDesktop(768)
 
 // Components
 const UButton = resolveComponent('UButton')

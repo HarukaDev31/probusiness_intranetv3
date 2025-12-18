@@ -20,7 +20,7 @@
       </header>
 
       <!-- Page Content -->
-      <main ref="mainContentRef" :class="['flex-1 p-3 bg-[#f0f4f9] dark:bg-gray-900']" :style="isContentNarrow ? { minWidth: '640px', width: '100%' } : {}">
+      <main ref="mainContentRef" :class="['flex-1 p-3 bg-[#f0f4f9] dark:bg-gray-900']" :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}">
         <div class="">
           <!-- <Breadcrumbs /> -->
         </div>
