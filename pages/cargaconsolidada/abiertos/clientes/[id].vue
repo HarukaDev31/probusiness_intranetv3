@@ -1058,6 +1058,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                             icon,
                             color: 'primary',
                             variant: 'ghost',
+                            'aria-label': 'Ver factura comercial',
                             onClick: () => {
                                 // Abrir la URL del proveedor directamente
                                 window.open(url, '_blank')
@@ -1067,6 +1068,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                             icon: 'i-heroicons-trash',
                             color: 'error',
                             variant: 'ghost',
+                            'aria-label': 'Eliminar factura comercial',
                             onClick: () => {
                                 // Usar id del proveedor para eliminar
                                 deleteFacturaComercial(proveedor.id)
@@ -1103,6 +1105,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                             icon,
                             color: 'primary',
                             variant: 'ghost',
+                            'aria-label': 'Ver packing list',
                             onClick: () => {
                                 // Abrir la URL del proveedor directamente
                                 window.open(url, '_blank')
@@ -1112,6 +1115,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                             icon: 'i-heroicons-trash',
                             color: 'error',
                             variant: 'ghost',
+                            'aria-label': 'Eliminar packing list',
                             onClick: () => {
                                 deletePackingList(proveedor.id)
                             }
@@ -1147,6 +1151,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                             icon,
                             color: 'primary',
                             variant: 'ghost',
+                            'aria-label': 'Ver excel de confirmación',
                             onClick: () => {
                                 window.open(url, '_blank')
                             }
@@ -1155,6 +1160,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                             icon: 'i-heroicons-trash',
                             color: 'error',
                             variant: 'ghost',
+                            'aria-label': 'Eliminar excel de confirmación',
                             onClick: () => {
                                 deleteExcelConfirmacion(proveedor.id)
                             }
@@ -1184,6 +1190,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                 icon: 'iconamoon:menu-burger-horizontal',
                 variant: 'ghost',
                 size: 'xs',
+                'aria-label': 'Acciones del cliente',
                 onClick: () => {
                     //generar un modal para solicitar el tipo de recordatorio de documento
                     console.log(row.original)

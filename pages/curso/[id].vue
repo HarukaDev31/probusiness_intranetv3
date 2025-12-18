@@ -26,14 +26,16 @@
               v-model="form.dni" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
-            <span class="w-48 font-medium">Correo:</span>
+            <label for="correo-input" class="w-48 font-medium">Correo:</label>
             <input
+              id="correo-input"
               :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
               v-model="form.correo" :readonly="!editMode" />
           </div>
           <div class="flex items-center">
-            <span class="w-48 font-medium">WhatsApp:</span>
+            <label for="whatsapp-input" class="w-48 font-medium">WhatsApp:</label>
             <input
+              id="whatsapp-input"
               :class="[editMode ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-800', 'rounded px-3 py-1 w-full']"
               v-model="form.whatsapp" :readonly="!editMode" />
           </div>

@@ -49,6 +49,7 @@
             <div ref="filtersButtonRef" class="w-auto lg:w-auto">
               <UButton v-if="showFilters"
                 :label="isMobile ? '' : translations.filters"
+                :aria-label="translations.filters"
                 :title="translations.filters"
                 icon="i-heroicons-funnel"
                 class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
@@ -807,8 +808,8 @@ onMounted(() => {
     // compute initial narrowness
     updateNarrowness()
 
-    // keep narrowness updated on window resize too
-    window.addEventListener('resize', updateNarrowness)
+    // keep narrowness updated on window resize too (con throttling)
+    window.addEventListener('resize', updateNarrowness, { passive: true })
 
     // Also observe the UTable's rendered DOM for content width changes (columns/data may change scrollWidth)
     let utableResizeObserver: ResizeObserver | null = null
@@ -921,19 +922,30 @@ const displayedFilterConfig = computed(() => {
 
 // Mobile detection reactive used to switch to teleported panel only on small screens
 const isMobile = ref(false)
+let resizeRafId: number | null = null
 const updateIsMobile = () => {
-  try {
-    isMobile.value = window.innerWidth <= 1024
-  } catch (e) {
-    isMobile.value = false
-  }
+  if (resizeRafId) return
+  resizeRafId = requestAnimationFrame(() => {
+    resizeRafId = null
+    try {
+      isMobile.value = window.innerWidth <= 1024
+    } catch (e) {
+      isMobile.value = false
+    }
+  })
 }
 onMounted(() => {
   updateIsMobile()
-  window.addEventListener('resize', updateIsMobile)
+  window.addEventListener('resize', updateIsMobile, { passive: true })
 })
 onUnmounted(() => {
-  try { window.removeEventListener('resize', updateIsMobile) } catch (e) {}
+  try { 
+    window.removeEventListener('resize', updateIsMobile)
+    if (resizeRafId) {
+      cancelAnimationFrame(resizeRafId)
+      resizeRafId = null
+    }
+  } catch (e) {}
 })
 </script>
 

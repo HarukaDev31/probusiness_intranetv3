@@ -51,6 +51,5 @@ export const registerAdminEvents = () => {
     'presence'
   )
 
-  console.log('✅ Eventos del rol Admin registrados')
 }
 

@@ -41,6 +41,5 @@ export const registerUserEvents = () => {
     'private'
   )
 
-  console.log('✅ Eventos del rol User registrados')
 }
 

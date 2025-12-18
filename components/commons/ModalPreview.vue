@@ -216,7 +216,6 @@
 
 <script setup lang="ts">
 import type { FileItem } from '../types/commons/file'
-import * as XLSX from 'xlsx'
 import { useSpinner } from '../composables/commons/useSpinner'
 import { useModal } from '../composables/commons/useModal'
 const { withSpinner } = useSpinner()
@@ -334,6 +333,9 @@ const loadExcelFile = async () => {
     try {
         isLoadingExcel.value = true
         excelData.value = null
+        
+        // Lazy load xlsx solo cuando sea necesario
+        const XLSX = await import('xlsx')
         
         const response = await fetch(props.file.file_url)
         if (!response.ok) throw new Error('Error al cargar archivo Excel')

@@ -33,14 +33,7 @@ export const useClientes = () => {
   // Debug: ver qué se cargó desde storage
   
   if (savedState) {
-    console.log('🔄 Estado restaurado desde sessionStorage:', {
-      search: savedState.search,
-      primarySearch: savedState.primarySearch,
-      filters: savedState.filters,
-      pagination: savedState.pagination
-    })
-  } else {
-    
+    // Estado restaurado desde sessionStorage
   }
   
   // State

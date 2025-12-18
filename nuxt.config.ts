@@ -10,15 +10,67 @@ export default defineNuxtConfig({
   },
   ssr: false,
   
+  // Optimizaciones de rendimiento
+  experimental: {
+    payloadExtraction: false, // Mejora tiempos de carga inicial
+  },
+  
+  // Code splitting y optimización de bundles
+  vite: {
+    build: {
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: false,
+        },
+        format: {
+          comments: false,
+        },
+      },
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            // Separar vendor libraries
+            if (id.includes('node_modules')) {
+              // Chart.js y sus dependencias
+              if (id.includes('chart.js') || id.includes('vue-chartjs')) {
+                return 'chart'
+              }
+              // XLSX
+              if (id.includes('xlsx')) {
+                return 'xlsx'
+              }
+              // Pusher y Laravel Echo (WebSockets)
+              if (id.includes('pusher') || id.includes('laravel-echo')) {
+                return 'websocket'
+              }
+              // Otras dependencias grandes - dejar que Nuxt maneje Vue y UI por defecto
+              return 'vendor'
+            }
+          }
+        }
+      },
+      chunkSizeWarningLimit: 1000,
+    },
+    optimizeDeps: {
+      include: ['vue', 'vue-router', '@nuxt/icon', 'defu'],
+      exclude: ['chart.js', 'xlsx', 'pusher-js'], // Cargar bajo demanda
+    }
+  },
+  
   // Configuración de CSS
   css: [
     '../assets/css/tailwind.css'
   ],
   app: {
     head: {
+      htmlAttrs: {
+        lang: 'es'
+      },
       title: 'ProBusiness - Intranet | Sistema de gestion Interna',
       meta: [
         // Structured Data
+        { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
         { name: 'apple-mobile-web-app-title', content: 'ProBusiness' },
@@ -29,8 +81,10 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
-        { rel: 'manifest', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
-       
+        { rel: 'manifest', href: '/manifest.json' },
+        // Preconnect para recursos externos
+        { rel: 'preconnect', href: 'https://intranet.probusiness.pe' },
+        { rel: 'dns-prefetch', href: 'https://intranet.probusiness.pe' },
       ],
 
     },
@@ -52,7 +106,10 @@ export default defineNuxtConfig({
   // Configuración de iconos
   icon: {
     // Usar iconos locales instalados
-    collections: ['heroicons', 'fa', 'vscode-icons', 'mdi', 'tabler']
+    collections: ['heroicons', 'fa', 'vscode-icons', 'mdi', 'tabler'],
+    provider: 'iconify',
+    fallbackToApi: true,
+    mode: 'css'
   },
  
   // Configuración de variables de entorno

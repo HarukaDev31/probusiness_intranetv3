@@ -1167,6 +1167,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                 icon: 'iconamoon:menu-burger-horizontal',
                 variant: 'ghost',
                 size: 'xs',
+                'aria-label': 'Acciones del cliente',
                 onClick: () => {
                     //generar un modal para solicitar el tipo de recordatorio de documento
                     console.log(row.original)
