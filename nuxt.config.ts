@@ -32,10 +32,6 @@ export default defineNuxtConfig({
           manualChunks: (id) => {
             // Separar vendor libraries
             if (id.includes('node_modules')) {
-              // @nuxt/icon debe estar en un chunk separado para evitar problemas de inicialización
-              if (id.includes('@nuxt/icon')) {
-                return 'icon'
-              }
               // Chart.js y sus dependencias
               if (id.includes('chart.js') || id.includes('vue-chartjs')) {
                 return 'chart'
@@ -48,29 +44,9 @@ export default defineNuxtConfig({
               if (id.includes('pusher') || id.includes('laravel-echo')) {
                 return 'websocket'
               }
-              // Vue core
-              if (id.includes('vue') && !id.includes('vue-router')) {
-                return 'vendor-vue'
-              }
-              // Vue Router
-              if (id.includes('vue-router')) {
-                return 'vendor-router'
-              }
-              // Nuxt UI y otras UI libraries - mantener juntas para evitar problemas de inicialización
-              if (id.includes('@nuxt/ui') || id.includes('@headlessui') || id.includes('defu') || id.includes('unimport')) {
-                return 'ui'
-              }
-              // Otras dependencias grandes
+              // Otras dependencias grandes - dejar que Nuxt maneje Vue y UI por defecto
               return 'vendor'
             }
-          },
-          // Asegurar que los chunks se carguen en el orden correcto
-          chunkFileNames: (chunkInfo) => {
-            // Priorizar chunks críticos
-            if (chunkInfo.name === 'ui' || chunkInfo.name === 'icon') {
-              return 'assets/[name]-[hash].js'
-            }
-            return 'assets/[name]-[hash].js'
           }
         }
       },
