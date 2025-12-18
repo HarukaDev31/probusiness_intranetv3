@@ -23,6 +23,10 @@ export default defineNuxtConfig({
           manualChunks: (id) => {
             // Separar vendor libraries
             if (id.includes('node_modules')) {
+              // @nuxt/icon debe estar en un chunk separado para evitar problemas de inicialización
+              if (id.includes('@nuxt/icon')) {
+                return 'icon'
+              }
               // Chart.js y sus dependencias
               if (id.includes('chart.js') || id.includes('vue-chartjs')) {
                 return 'chart'
@@ -56,7 +60,7 @@ export default defineNuxtConfig({
       chunkSizeWarningLimit: 1000,
     },
     optimizeDeps: {
-      include: ['vue', 'vue-router'],
+      include: ['vue', 'vue-router', '@nuxt/icon'],
       exclude: ['chart.js', 'xlsx', 'pusher-js'], // Cargar bajo demanda
     }
   },
@@ -109,7 +113,10 @@ export default defineNuxtConfig({
   // Configuración de iconos
   icon: {
     // Usar iconos locales instalados
-    collections: ['heroicons', 'fa', 'vscode-icons', 'mdi', 'tabler']
+    collections: ['heroicons', 'fa', 'vscode-icons', 'mdi', 'tabler'],
+    provider: 'iconify',
+    fallbackToApi: true,
+    mode: 'css'
   },
  
   // Configuración de variables de entorno
