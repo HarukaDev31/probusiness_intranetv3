@@ -359,7 +359,7 @@ const filterConfigProspectos = ref([
     },
     {
         key: 'estado_cotizador',
-        label: 'Estado',
+        label: 'Estado Cotizador',
         type: 'select',
         placeholder: 'Seleccionar estado',
         options: [
@@ -384,6 +384,20 @@ const filterConfigProspectos = ref([
             { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
             { label: 'LOADED', value: 'LOADED', inrow: true },
             { label: 'NO LOADED', value: 'NO LOADED', inrow: true }
+        ]
+    },
+    {
+        key: 'estado_coordinacion',
+        label: 'Estado',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'ROTULADO', value: 'ROTULADO', inrow: true },
+            { label: 'DATOS PROVEEDOR', value: 'DATOS PROVEEDOR', inrow: true },
+            { label: 'INSPECCIONADO', value: 'INSPECCIONADO', inrow: true },
+            { label: 'RESERVADO', value: 'RESERVADO', inrow: true}
+
         ]
     }
 
