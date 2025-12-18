@@ -49,6 +49,7 @@
             <div ref="filtersButtonRef" class="w-auto lg:w-auto">
               <UButton v-if="showFilters"
                 :label="isMobile ? '' : translations.filters"
+                :aria-label="translations.filters"
                 :title="translations.filters"
                 icon="i-heroicons-funnel"
                 class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"

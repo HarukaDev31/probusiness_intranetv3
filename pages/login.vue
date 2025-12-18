@@ -4,7 +4,7 @@
       <div class="justify-between items-center flex w-full">
         <!-- Background Image -->
         <div class="bg-image" alt="Portada ProBusiness" title="Portada ProBusiness">
-          <img src="/assets/img/backgrounds/portada_probusiness.png" class="image" alt="Portada ProBusiness" title="Portada ProBusiness">
+          <img src="/assets/img/backgrounds/portada_probusiness.png" width="1920" height="1080" class="image" alt="Portada ProBusiness" title="Portada ProBusiness">
         </div>
         
         <!-- Login Panel -->
@@ -13,7 +13,7 @@
             <div class="panel-heading">
               <div class="row row-login-logo">
                 <div class="col-md-12 col-lg-12 text-center">
-                  <img class="img-logo" :src="logoSrc" alt="Logo ProBusiness" title="Logo ProBusiness">
+                  <img class="img-logo" :src="logoSrc" width="200" height="200" alt="Logo ProBusiness" title="Logo ProBusiness">
                 </div>
               </div>
             </div>

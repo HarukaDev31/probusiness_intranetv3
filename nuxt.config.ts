@@ -41,6 +41,9 @@ export default defineNuxtConfig({
   ],
   app: {
     head: {
+      htmlAttrs: {
+        lang: 'es'
+      },
       title: 'ProBusiness - Intranet | Sistema de gestion Interna',
       meta: [
         // Structured Data
