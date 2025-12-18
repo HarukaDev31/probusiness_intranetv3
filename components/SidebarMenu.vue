@@ -215,9 +215,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { SidebarCategory } from '../types/module'
 import { ROLES } from '~/constants/roles'
+import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar'
 import { useUserRole } from '../composables/auth/useUserRole'
 import { useAuth } from '../composables/auth/useAuth'
 import { useNotifications } from '../composables/useNotifications'
@@ -263,7 +264,6 @@ const {
   fetchUnreadCount
 } = useNotifications()
 
-import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar'
 // Dark mode
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
