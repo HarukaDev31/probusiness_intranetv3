@@ -52,6 +52,7 @@
                 :aria-label="translations.filters"
                 :title="translations.filters"
                 icon="i-heroicons-funnel"
+
                 class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
                 :class="isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto'"
                 @click="showFiltersPanel = !showFiltersPanel" />
@@ -210,8 +211,8 @@
           :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
         ></div>
         <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky :columns="columns" :loading="loading"
-          :class="['bg-transparent', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="uiForTable">
-
+          :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta">
+         
         <template #loading>
           <div v-if="props.showSkeleton">
             <slot name="skeleton">
@@ -1299,10 +1300,6 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 }
 
 /* When using separate border mode, ensure rows look like separate blocks */
-.utable-narrow ::v-deep tbody tr,
-.min-w-full ::v-deep tbody tr {
-  background: transparent; /* keep default, cells already have bg */
-}
 
 
 /* Sticky header simple - dejar que Nuxt UI lo maneje */

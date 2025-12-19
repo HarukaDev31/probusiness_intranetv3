@@ -38,8 +38,8 @@ export const DATA_TABLE_DEFAULTS = {
   itemsPerPage: 10,
   emptyStateMessage: translations.value.emptyStateMessage,
   hideBackButton: true,
-  showBodyTop: false
-  ,
+  showBodyTop: false,
+  tableMeta: () => [],
   // By default debounce search input by 300ms to avoid frequent network calls while typing
   searchDebounceMs: 300
 } as const

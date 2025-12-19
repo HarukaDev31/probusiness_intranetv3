@@ -12,7 +12,7 @@
         <div v-if="isDesktop || currentRole==ROLES.DOCUMENTACION">
             <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData"
         :show-pagination="false" :show-export="false"
-
+            :table-meta="tableMeta"
             :columns="getColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
@@ -79,7 +79,7 @@
 
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted, watch, onUnmounted } from 'vue'
-import type { TableColumn } from '@nuxt/ui'
+import type { TableColumn, TableRow } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { ROLES } from '~/constants/roles'
@@ -119,6 +119,13 @@ const currentConsolidado = ref<number | null>(null)
 
 // Desktop detection: keep DataTable out of DOM on small screens to avoid flicker
 const isDesktop = ref(false)
+const tableMeta = {
+  class: {
+    tr: (row: TableRow<{ value: number }>) => {
+      return row.original.isVerified ? "bg-green-500" : "bg-white dark:bg-gray-800";
+    },
+  },
+};
 let resizeRafId: number | null = null
 const updateIsDesktop = () => {
     if (resizeRafId) return

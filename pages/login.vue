@@ -1,117 +1,136 @@
 <template>
   <div class="fondo_pantalla">
-    <div class="">
-      <div class="justify-between items-center flex w-full">
-        <!-- Background Image -->
-        <div class="bg-image" alt="Portada ProBusiness" title="Portada ProBusiness">
-          <img src="/assets/img/backgrounds/portada_probusiness.png" width="1920" height="1080" class="image" alt="Portada ProBusiness" title="Portada ProBusiness">
-        </div>
-        
-        <!-- Login Panel -->
-        <div class="panel-container">
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              <div class="row row-login-logo">
-                <div class="col-md-12 col-lg-12 text-center">
-                  <img class="img-logo" :src="logoSrc" width="200" height="200" alt="Logo ProBusiness" title="Logo ProBusiness">
-                </div>
-              </div>
+    <div class="login-wrapper">
+      <!-- Background Image -->
+      <div class="bg-image">
+        <img 
+          src="/assets/img/backgrounds/portada_probusiness.png" 
+          width="1920" 
+          height="1080" 
+          class="image" 
+          alt=""
+          role="presentation"
+          loading="lazy"
+        />
+      </div>
+      
+      <!-- Login Panel -->
+      <div class="panel-container">
+        <div class="panel">
+          <div class="panel-heading">
+            <div class="logo-container">
+              <img 
+                class="img-logo" 
+                :src="logoSrc" 
+                width="200" 
+                height="200" 
+                alt="Logo ProBusiness"
+                loading="eager"
+              />
             </div>
-            <div class="panel-body">
-              <!-- Login Form -->
-              <form @submit.prevent="handleLogin" id="form-login">
-                <div id="div-login" class="row">
-                  <div class="Welcome" style="text-align: center;">
-                    <div><h2>¡Bienvenido de nuevo!</h2></div>
-                    <p>Ingresa tu correo y contraseña para acceder a tu cuenta</p><br>
-                  </div>
-                  
-                  <!-- Email Field -->
-                  <div class="col-xs-12 col-sm-6 col-md-12 col-lg-12">
-                    <div class="form-group">
-                      <div class="input-group">
-                        <span class="input-group-addon">
-                          <i class="fa-solid fa-user fa-lg" aria-hidden="true"></i>
-                        </span>
-                        <input
-                          v-model="email"
-                          type="text"
-                          id="txt-usuario"
-                          name="No_Usuario"
-                          inputmode="email"
-                          class="form-control inputBgOpaque input-Minuscula input-username"
-                          autocomplete="on"
-                          autocorrect="off"
-                          autocapitalize="none"
-                          placeholder="Ingresa tu correo"
-                          required
-                        />
-                      </div>
-                      <span class="help-block" id="error"></span>
-                    </div>
-                  </div>
-
-                  <!-- Password Field -->
-                  <div class="col-xs-12 col-sm-6 col-md-12 col-lg-12">
-                    <div class="form-group">
-                      <div class="input-group">
-                        <span class="input-group-addon">
-                          <i class="fa-solid fa-lock fa-lg" aria-hidden="true"></i>
-                        </span>
-                        <input
-                          v-model="password"
-                          :type="showPassword ? 'text' : 'password'"
-                          id="txt-password"
-                          name="No_Password"
-                          class="form-control pwd inputBgOpaque"
-                          autocomplete="on"
-                          placeholder="Ingresa tu contraseña"
-                          required
-                        />
-                        <span 
-                          @click="showPassword = !showPassword"
-                          :class="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
-                          class="field-icon toggle-password"
-                          style="cursor: pointer;"
-                        ></span>
-                      </div>
-                      <span class="help-block" id="error"></span>
-                    </div>
-                  </div>
-
-                  <!-- Forgot Password Link -->
-                  <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-                    <div class="form-group">
-                      <div class="div-msg"></div>
-                      <button type="button" id="btn-recuperar_cuenta" class="btn btn-link btn-md btn-block">
-                        Recuperar contraseña
-                      </button><br>
-                    </div>
-                  </div>
-
-                  <!-- Login Button -->
-                  <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-                    <div class="form-group">
-                      <button 
-                        type="submit" 
-                        id="btn-login" 
-                        class="btn btn-success btn-md btn-block"
-                        :disabled="loading"
-                      >
-                        <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
-                        {{ loading ? 'Iniciando sesión...' : 'Iniciar sesión' }}
-                      </button>
-                    </div>
-                  </div>
+          </div>
+          <div class="panel-body">
+            <!-- Login Form -->
+            <form @submit.prevent="handleLogin" id="form-login" novalidate>
+              <div class="welcome-section">
+                <h2>¡Bienvenido de nuevo!</h2>
+                <p>Ingresa tu correo y contraseña para acceder a tu cuenta</p>
+              </div>
+              
+              <!-- Email Field -->
+              <div class="form-group">
+                <label for="txt-usuario" class="sr-only">Correo electrónico</label>
+                <div class="input-group">
+                  <span class="input-group-addon" aria-hidden="true">
+                    <i class="fa-solid fa-user fa-lg"></i>
+                  </span>
+                  <input
+                    v-model="email"
+                    type="email"
+                    id="txt-usuario"
+                    name="No_Usuario"
+                    class="form-control"
+                    autocomplete="email"
+                    autocorrect="off"
+                    autocapitalize="none"
+                    placeholder="Ingresa tu correo"
+                    required
+                    aria-required="true"
+                    :aria-invalid="error ? 'true' : 'false'"
+                  />
                 </div>
-              </form>
-
-              <!-- Error Message -->
-              <div v-if="error" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800">
-                <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                <span v-if="error" class="help-block" role="alert">{{ error }}</span>
               </div>
 
-             
+              <!-- Password Field -->
+              <div class="form-group">
+                <label for="txt-password" class="sr-only">Contraseña</label>
+                <div class="input-group">
+                  <span class="input-group-addon" aria-hidden="true">
+                    <i class="fa-solid fa-lock fa-lg"></i>
+                  </span>
+                  <input
+                    v-model="password"
+                    :type="showPassword ? 'text' : 'password'"
+                    id="txt-password"
+                    name="No_Password"
+                    class="form-control"
+                    autocomplete="current-password"
+                    placeholder="Ingresa tu contraseña"
+                    required
+                    aria-required="true"
+                    :aria-invalid="error ? 'true' : 'false'"
+                  />
+                  <button
+                    type="button"
+                    @click="showPassword = !showPassword"
+                    :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                    :aria-pressed="showPassword"
+                    class="toggle-password"
+                    tabindex="0"
+                  >
+                    <i :class="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Forgot Password Link -->
+              <div class="form-group">
+                <button 
+                  type="button" 
+                  id="btn-recuperar_cuenta" 
+                  class="btn btn-link"
+                  aria-label="Recuperar contraseña"
+                >
+                  Recuperar contraseña
+                </button>
+              </div>
+
+              <!-- Login Button -->
+              <div class="form-group">
+                <button 
+                  type="submit" 
+                  id="btn-login" 
+                  class="btn btn-success btn-block"
+                  :disabled="loading"
+                  :aria-busy="loading"
+                >
+                  <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  <span :aria-live="loading ? 'polite' : 'off'">
+                    {{ loading ? 'Iniciando sesión...' : 'Iniciar sesión' }}
+                  </span>
+                </button>
+              </div>
+            </form>
+
+            <!-- Error Message -->
+            <div 
+              v-if="error" 
+              class="error-message" 
+              role="alert"
+              aria-live="assertive"
+            >
+              <p>{{ error }}</p>
             </div>
           </div>
         </div>
@@ -194,10 +213,6 @@ const handleLogin = async () => {
   }
 }
 
-// Theme toggle handler
-const toggleTheme = () => {
-  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
-}
 
 // Set page title
 useHead({
@@ -217,6 +232,14 @@ useHead({
   justify-content: space-between;
   align-items: center;
   padding: 0 5%;
+}
+
+.login-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
 }
 
 .bg-image {
@@ -265,9 +288,12 @@ useHead({
   border-bottom: 1px solid #eee;
 }
 
-/* Dark mode styles for panel heading */
 .dark .panel-heading {
   border-bottom: 1px solid #374151;
+}
+
+.logo-container {
+  text-align: center;
 }
 
 .panel-body {
@@ -282,27 +308,43 @@ useHead({
   height: auto;
 }
 
-.Welcome h2 {
+.welcome-section {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.welcome-section h2 {
   color: #333;
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 8px;
 }
 
-/* Dark mode styles for welcome text */
-.dark .Welcome h2 {
+.dark .welcome-section h2 {
   color: #f9fafb;
 }
 
-.Welcome p {
+.welcome-section p {
   color: #666;
   font-size: 14px;
   margin-bottom: 0;
 }
 
-/* Dark mode styles for welcome paragraph */
-.dark .Welcome p {
+.dark .welcome-section p {
   color: #d1d5db;
+}
+
+/* Screen reader only class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 .form-group {
@@ -426,13 +468,31 @@ useHead({
   background-color: #f8f9fa;
   border-left: 1px solid #ddd;
   color: #666;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
 }
 
-/* Dark mode styles for toggle password */
+.toggle-password:hover {
+  background-color: #e9ecef;
+}
+
+.toggle-password:focus {
+  outline: 2px solid #FF6700;
+  outline-offset: -2px;
+}
+
 .dark .toggle-password {
   background-color: #374151;
   border-left: 1px solid #4b5563;
   color: #d1d5db;
+}
+
+.dark .toggle-password:hover {
+  background-color: #4b5563;
 }
 
 .help-block {
@@ -446,50 +506,38 @@ useHead({
   color: #f87171;
 }
 
-.div-msg {
-  min-height: 20px;
+.error-message {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+}
+
+.dark .error-message {
+  background-color: rgba(127, 29, 29, 0.2);
+  border-color: #991b1b;
+}
+
+.error-message p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #dc2626;
+}
+
+.dark .error-message p {
+  color: #f87171;
 }
 
 /* Responsive Design */
 @media (min-width: 992px) and (max-width: 1199px) {
   .panel-container {
     width: 40%;
-    right: 5%;
   }
 }
 
-@media (min-width: 768px) and (max-width: 991px) {
-  .panel-container {
-    width: 100%;
-    right: 0%;
-    top: 0%;
-    height: 100%;
-    border-radius: 0;
-  }
-}
-
-@media (min-width: 576px) and (max-width: 767px) {
-  .panel-container {
-    width: 100%;
-    right: 0%;
-    top: 0%;
-    height: 100%;
-    border-radius: 0;
-  }
-}
-
-@media (max-width: 575px) {
-  .panel-container {
-    width: 100%;
-    right: 0%;
-    top: 0%;
-    height: 100%;
-    border-radius: 0;
-  }
-}
-
-/* Mobile improvements: stack layout, center panel, hide background image, increase tap targets */
-@media (max-width: 768px) {
+/* Tablet and below */
+@media (max-width: 991px) {
   .fondo_pantalla {
     flex-direction: column;
     padding: 4% 6%;
@@ -497,9 +545,16 @@ useHead({
     justify-content: flex-start;
     min-height: 100vh;
   }
+
+  .login-wrapper {
+    flex-direction: column;
+    width: 100%;
+  }
+
   .bg-image {
     display: none;
   }
+
   .panel-container {
     width: 100%;
     max-width: 440px;
@@ -509,19 +564,39 @@ useHead({
     border-radius: 12px;
     box-shadow: 0 12px 36px rgba(0,0,0,0.18);
   }
+
   .panel-body {
     padding: 1.25rem;
   }
+
   .img-logo {
     width: 60%;
     margin: 0 auto 0.5rem auto;
     display: block;
   }
-  .Welcome h2 { font-size: 22px; }
-  .Welcome p { font-size: 14px; }
-  .form-control { padding: 12px; font-size: 15px }
-  .btn-success { padding: 14px 18px; font-size: 16px; border-radius: 8px }
-  .toggle-password { padding: 14px }
+
+  .welcome-section h2 { 
+    font-size: 22px; 
+  }
+
+  .welcome-section p { 
+    font-size: 14px; 
+  }
+
+  .form-control { 
+    padding: 12px; 
+    font-size: 15px;
+  }
+
+  .btn-success { 
+    padding: 14px 18px; 
+    font-size: 16px; 
+    border-radius: 8px;
+  }
+
+  .toggle-password { 
+    padding: 14px;
+  }
 }
 
 /* Font Awesome Icons */
