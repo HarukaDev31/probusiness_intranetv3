@@ -56,7 +56,7 @@
       :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="false"
       empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleSearch"
       @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-      @filter-change="handleFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
+      @filter-change="handleFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true" :table-meta="tableMeta"
       
   :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #body-top>
@@ -126,7 +126,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, h, watch } from 'vue'
-import type { TableColumn } from '@nuxt/ui'
+import type { TableColumn, TableRow } from '@nuxt/ui'
 import SectionHeader from '../../../../components/commons/SectionHeader.vue'
 import { useEntrega } from '../../../../composables/cargaconsolidada/entrega/useEntrega'
 import { useUserRole } from '../../../../composables/auth/useUserRole'
@@ -198,6 +198,18 @@ const {
   deleteEntregaRegistro,
   sendCobroDeliveryDelivery
 } = useEntrega()
+
+const tableMeta = {
+  class: {
+    tr: (row?: TableRow<any>) => {
+      if (!row || !('original' in row) || !row.original) return ''
+      return row.original.isVerified
+        ? 'bg-green-500 border-[#f0f4f9] dark:border-gray-900'
+        : 'bg-white dark:bg-gray-800 border-[#f0f4f9] dark:border-gray-900'
+    },
+    td: 'bg-transparent',
+  },
+}
 
 const routeQuery = useRoute()
 const initialTab = (routeQuery.query.tab as string) || 'clientes'
@@ -659,8 +671,8 @@ const entregasColumns = ref<TableColumn<any>[]>([
   },
   {
     id: 'accion', header: 'Accion', cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
-      h(UButton, { size: 'xs', icon: 'i-heroicons-eye', variant: 'ghost', color: 'neutral', title: 'Ver detalle', onClick: async () => goToClienteDetalle(row.original) }),
-      h(UButton, { size: 'xs', icon: 'i-heroicons-trash', variant: 'ghost', color: 'error', title: 'Eliminar registro', onClick: () => handleEliminarRegistro(row.original) })
+      h(UButton, { size: 'xs', icon: 'i-heroicons-eye', variant: 'ghost', color: 'neutral', 'aria-label': 'Ver detalle', title: 'Ver detalle', onClick: async () => goToClienteDetalle(row.original) }),
+      h(UButton, { size: 'xs', icon: 'i-heroicons-trash', variant: 'ghost', color: 'error', 'aria-label': 'Eliminar registro', title: 'Eliminar registro', onClick: () => handleEliminarRegistro(row.original) })
     ])
   }
 ])

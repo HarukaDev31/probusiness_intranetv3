@@ -34,11 +34,6 @@ export default defineNuxtPlugin(async () => {
     const authToken = localStorage.getItem('auth_token')
     const authUser = localStorage.getItem('auth_user')
     
-    console.log('🔌 Verificando autenticación:', {
-      hasToken: !!authToken,
-      hasUser: !!authUser,
-      tokenLength: authToken?.length || 0
-    })
     
     if (!authToken || !authUser) {
       
@@ -50,12 +45,6 @@ export default defineNuxtPlugin(async () => {
     // Obtener configuración de Nuxt
     const config = useRuntimeConfig()
     
-    // Debug: Mostrar valores de configuración
-    console.log('🔧 Configuración WebSocket:', {
-      pusherWsHost: config.public.pusherWsHost,
-      pusherAppCluster: config.public.pusherAppCluster,
-      pusherAppKey: config.public.pusherAppKey
-    })
     
     // Configuración de Echo para Pusher
     const echoConfig = {

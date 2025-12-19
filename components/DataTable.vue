@@ -49,8 +49,10 @@
             <div ref="filtersButtonRef" class="w-auto lg:w-auto">
               <UButton v-if="showFilters"
                 :label="isMobile ? '' : translations.filters"
+                :aria-label="translations.filters"
                 :title="translations.filters"
                 icon="i-heroicons-funnel"
+
                 class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
                 :class="isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto'"
                 @click="showFiltersPanel = !showFiltersPanel" />
@@ -209,8 +211,7 @@
           :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
         ></div>
         <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky :columns="columns" :loading="loading"
-          :class="['bg-transparent', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="uiForTable">
-
+          :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="utableUi" :meta="utableMeta">
         <template #loading>
           <div v-if="props.showSkeleton">
             <slot name="skeleton">
@@ -665,6 +666,36 @@ const uiForTable = computed(() => ({
   tr: 'border-[#f0f4f9] dark:border-gray-900',
 }))
 
+// Always pass the UI defaults; however if the parent provided a `tableMeta.class.td`
+// we want that to affect the rendered `td` cells. Some UTable implementations
+// prefer `ui.td` for cell classes, so copy `tableMeta.class.td` into `ui.td`
+// and remove it from the meta we pass to avoid duplication/conflict.
+const utableUi = computed(() => {
+  const base = { ...uiForTable.value }
+  try {
+    const parentTd = props.tableMeta && (props.tableMeta as any).class && (props.tableMeta as any).class.td
+    // Only copy into ui.td when parent provided a static string class.
+    // If parentTd is a function (per-cell logic), keep it in meta so UTable can call it.
+    if (parentTd && typeof parentTd === 'string') base.td = parentTd
+  } catch (e) {
+    // ignore
+  }
+  return base
+})
+
+const utableMeta = computed(() => {
+  if (!props.tableMeta) return undefined
+  // clone to avoid mutating the prop object
+  const metaClone: Record<string, any> = { ...props.tableMeta }
+  if (metaClone.class) {
+    const cls = { ...metaClone.class }
+    // remove td only when it's a static string (we moved that into ui.td)
+    if ('td' in cls && typeof cls.td === 'string') delete cls.td
+    metaClone.class = Object.keys(cls).length ? cls : undefined
+  }
+  return metaClone
+})
+
 // Usar throttling para handleScroll para reducir frecuencia
 let handleScrollScheduled = false
 const handleScroll = () => {
@@ -807,8 +838,8 @@ onMounted(() => {
     // compute initial narrowness
     updateNarrowness()
 
-    // keep narrowness updated on window resize too
-    window.addEventListener('resize', updateNarrowness)
+    // keep narrowness updated on window resize too (con throttling)
+    window.addEventListener('resize', updateNarrowness, { passive: true })
 
     // Also observe the UTable's rendered DOM for content width changes (columns/data may change scrollWidth)
     let utableResizeObserver: ResizeObserver | null = null
@@ -921,19 +952,30 @@ const displayedFilterConfig = computed(() => {
 
 // Mobile detection reactive used to switch to teleported panel only on small screens
 const isMobile = ref(false)
+let resizeRafId: number | null = null
 const updateIsMobile = () => {
-  try {
-    isMobile.value = window.innerWidth <= 1024
-  } catch (e) {
-    isMobile.value = false
-  }
+  if (resizeRafId) return
+  resizeRafId = requestAnimationFrame(() => {
+    resizeRafId = null
+    try {
+      isMobile.value = window.innerWidth <= 1024
+    } catch (e) {
+      isMobile.value = false
+    }
+  })
 }
 onMounted(() => {
   updateIsMobile()
-  window.addEventListener('resize', updateIsMobile)
+  window.addEventListener('resize', updateIsMobile, { passive: true })
 })
 onUnmounted(() => {
-  try { window.removeEventListener('resize', updateIsMobile) } catch (e) {}
+  try { 
+    window.removeEventListener('resize', updateIsMobile)
+    if (resizeRafId) {
+      cancelAnimationFrame(resizeRafId)
+      resizeRafId = null
+    }
+  } catch (e) {}
 })
 </script>
 
@@ -1287,11 +1329,6 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 }
 
 /* When using separate border mode, ensure rows look like separate blocks */
-.utable-narrow ::v-deep tbody tr,
-.min-w-full ::v-deep tbody tr {
-  background: transparent; /* keep default, cells already have bg */
-}
-
 
 /* Sticky header simple - dejar que Nuxt UI lo maneje */
 .scroll-container table thead {

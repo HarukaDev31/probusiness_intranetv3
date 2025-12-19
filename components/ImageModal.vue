@@ -6,6 +6,7 @@
                 icon="i-heroicons-x-mark" 
                 variant="ghost" 
                 size="sm"
+                aria-label="Cerrar modal"
                 class="absolute top-4 right-4 z-10 bg-white dark:bg-gray-800 rounded-full shadow-lg"
                 @click="closeModal" 
             />
@@ -15,6 +16,8 @@
                 <img 
                     :src="imageUrl" 
                     :alt="altText"
+                    width="800"
+                    height="600"
                     class="max-w-full max-h-[80vh] min-h-[50vh] object-contain select-none"
                     @mousedown="handleMouseDown"
                     @mousemove="handleMouseMove"
@@ -38,6 +41,7 @@
                     icon="i-heroicons-minus"
                     variant="ghost"
                     size="sm"
+                    aria-label="Alejar imagen"
                     @click="zoomOut"
                     :disabled="imageScale <= 0.5"
                 />
@@ -48,6 +52,7 @@
                     icon="i-heroicons-plus"
                     variant="ghost"
                     size="sm"
+                    aria-label="Acercar imagen"
                     @click="zoomIn"
                     :disabled="imageScale >= 3"
                 />
@@ -55,6 +60,7 @@
                     icon="i-heroicons-arrow-path"
                     variant="ghost"
                     size="sm"
+                    aria-label="Restablecer zoom"
                     @click="resetImage"
                 />
             </div>

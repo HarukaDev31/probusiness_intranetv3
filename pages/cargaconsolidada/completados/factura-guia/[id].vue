@@ -146,6 +146,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
             icon: 'i-heroicons-trash',
             color: 'error',
             variant: 'outline',
+            'aria-label': 'Eliminar factura comercial',
             onClick: () => {
               handleDeleteFacturaComercial(row.original.id_cotizacion)
             }
@@ -182,7 +183,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
             icon: 'i-heroicons-arrow-down-tray',
             color: 'primary',
             variant: 'outline',
-
+            'aria-label': 'Descargar guía de remisión',
             onClick: () => {
               window.open(row.original.guia_remision_url, '_blank')
             }
@@ -191,6 +192,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
             icon: 'i-heroicons-trash',
             color: 'error',
             variant: 'outline',
+            'aria-label': 'Eliminar guía de remisión',
             onClick: () => {
               handleDeleteGuiaRemision(row.original.id_cotizacion)
             }
@@ -233,6 +235,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
           icon: 'iconamoon:menu-burger-horizontal',
           color: 'success',
           variant: 'ghost',
+          'aria-label': 'Enviar documento por WhatsApp',
           onClick: () => {
             sendDocumentModal.open({
               idCotizacion: row.original.id_cotizacion,
@@ -332,6 +335,7 @@ const generalColumns = ref<TableColumn<any>[]>([
             icon: 'i-heroicons-trash',
             color: 'error',
             variant: 'outline',
+            'aria-label': 'Eliminar factura comercial',
             onClick: () => {
               handleDeleteFacturaComercial(row.original.id_cotizacion)
             }
@@ -368,7 +372,7 @@ const generalColumns = ref<TableColumn<any>[]>([
             icon: 'i-heroicons-arrow-down-tray',
             color: 'primary',
             variant: 'outline',
-
+            'aria-label': 'Descargar guía de remisión',
             onClick: () => {
               window.open(row.original.guia_remision_url, '_blank')
             }
@@ -377,6 +381,7 @@ const generalColumns = ref<TableColumn<any>[]>([
             icon: 'i-heroicons-trash',
             color: 'error',
             variant: 'outline',
+            'aria-label': 'Eliminar guía de remisión',
             onClick: () => {
               handleDeleteGuiaRemision(row.original.id_cotizacion)
             }
@@ -420,6 +425,7 @@ const generalColumns = ref<TableColumn<any>[]>([
           icon: 'iconamoon:menu-burger-horizontal',
           color: 'success',
           variant: 'ghost',
+          'aria-label': 'Enviar documento por WhatsApp',
           onClick: () => {
             sendDocumentModal.open({
               idCotizacion: row.original.id_cotizacion,

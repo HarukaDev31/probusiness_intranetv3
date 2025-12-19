@@ -43,6 +43,5 @@ export const registerContenedorConsolidadoEvents = () => {
 
 
 
-  console.log('✅ Eventos del rol Contenedor Consolidado registrados')
 }
 

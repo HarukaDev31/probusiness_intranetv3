@@ -376,11 +376,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, shallowRef } from 'vue'
+import { ref, computed, onMounted, shallowRef, defineAsyncComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useDashboardUsuario } from '~/composables/useDashboardUsuario'
-import VolumeBarChart from '~/components/charts/VolumeBarChart.vue'
-import DailyProgressChart from '~/components/charts/DailyProgressChart.vue'
+
+// Lazy load componentes de gráficos para mejorar tiempo de carga inicial
+const VolumeBarChart = defineAsyncComponent(() => import('~/components/charts/VolumeBarChart.vue'))
+const DailyProgressChart = defineAsyncComponent(() => import('~/components/charts/DailyProgressChart.vue'))
 import { CalendarDate } from '@internationalized/date'
 import { DateFormatter, getLocalTimeZone } from '@internationalized/date'
 

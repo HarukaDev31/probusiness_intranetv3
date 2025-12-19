@@ -6,8 +6,9 @@
     <!-- Top: centered logo -->
     <div class="py-3 px-3 flex items-center gap-3" :class="[collapsed ? 'justify-center' : 'justify-start']">
       <NuxtLink to="/" class="flex items-center gap-3">
-        <img src="https://intranet.probusiness.pe/assets/img/logos/probusiness.png" alt="Probusiness"
-          class="w-10 h-auto" />
+        <img src="https://intranet.probusiness.pe/assets/img/logos/probusiness.png" 
+          :alt="collapsed ? 'Logo Probusiness' : ''"
+          width="40" height="40" class="w-10 h-auto" />
         <h1 v-if="!collapsed" class="text-2xl font-bold text-gray-900 dark:text-white">probusiness</h1>
       </NuxtLink>
     </div>
@@ -21,7 +22,9 @@
       <div class="absolute right-[-12px] top-1/2 transform -translate-y-1/2 z-50 hidden lg:block">
         <button type="button"
           class="p-1 rounded-md text-gray-500 bg-white dark:bg-gray-800 shadow hover:bg-gray-100 dark:hover:bg-gray-700"
-          @click="toggleCollapsed" :title="collapsed ? 'Expandir menú' : 'Minimizar menú'">
+          @click="toggleCollapsed" 
+          :aria-label="collapsed ? 'Expandir menú' : 'Minimizar menú'"
+          :title="collapsed ? 'Expandir menú' : 'Minimizar menú'">
           <UIcon :name="collapsed ? 'i-heroicons-chevron-right' : 'i-heroicons-chevron-left'" class="w-5 h-5" />
         </button>
       </div>
@@ -49,7 +52,8 @@
                     <!-- Left: clickable area (navega si tiene route, sino actúa como toggle) -->
                     <button type="button" class="flex-1 flex items-center gap-3 rounded-md text-sm focus:outline-none"
                       :class="[isParentActive(item) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'text-left px-3 py-2']"
-                      @click="navigateOrToggle(item)">
+                      @click="navigateOrToggle(item)"
+                      :aria-label="collapsed ? item.name : undefined">
                       <UIcon :name="item.icon || 'i-heroicons-archive-box'" class="w-5 h-5 text-gray-400" />
                       <span v-if="!collapsed" class="truncate">{{ item.name }} </span>
                     </button>
@@ -57,7 +61,9 @@
                     <!-- Right: chevron toggle (stop propagation para no navegar) -->
                     <button type="button"
                       class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      @click.stop="toggleParent(item.id)">
+                      @click.stop="toggleParent(item.id)"
+                      :aria-label="expanded[String(item.id)] ? `Colapsar ${item.name}` : `Expandir ${item.name}`"
+                      :aria-expanded="expanded[String(item.id)]">
                       <UIcon name="i-heroicons-chevron-down" class="w-4 h-4 transform"
                         :class="expanded[String(item.id)] ? 'rotate-180' : ''" />
                     </button>
@@ -75,7 +81,8 @@
                             <button type="button"
                               class="flex-1 flex items-center gap-2 rounded-md text-sm focus:outline-none"
                               :class="[isParentActive(child) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'text-left px-2']"
-                              @click="navigateOrToggle(child)">
+                              @click="navigateOrToggle(child)"
+                              :aria-label="collapsed ? child.name : undefined">
                               <template v-if="child.icon">
                                 <UIcon :name="child.icon" class="w-4 h-4 text-gray-400" />
                               </template>
@@ -90,7 +97,9 @@
 
                             <button type="button"
                               class="ml-2 p-2 rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              @click.stop="toggleParent(child.id)">
+                              @click.stop="toggleParent(child.id)"
+                              :aria-label="expanded[String(child.id)] ? `Colapsar ${child.name}` : `Expandir ${child.name}`"
+                              :aria-expanded="expanded[String(child.id)]">
                               <UIcon name="i-heroicons-chevron-down" class="w-3 h-3 transform"
                                 :class="expanded[String(child.id)] ? 'rotate-180' : ''" />
                             </button>
@@ -100,7 +109,8 @@
                             <template v-for="sub in child.children" :key="sub.id">
                               <UButton variant="ghost" class="w-full text-sm gap-2 py-1 rounded-md"
                                 :class="[isActiveRoute(sub.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0' : 'justify-start px-2']"
-                                @click="handleNavigation(sub.route)">
+                                @click="handleNavigation(sub.route)"
+                                :aria-label="collapsed ? sub.name : undefined">
                                 <template #default>
                                   <span v-if="sub.icon">
                                     <UIcon :name="sub.icon" class="w-4 h-4 text-gray-400 mr-2" />
@@ -122,7 +132,8 @@
                         <div v-else>
                           <UButton variant="ghost" class="w-full text-sm gap-2 py-2 px-2 rounded-md"
                             :class="[isActiveRoute(child.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'justify-start px-2']"
-                            @click="handleNavigation(child.route)">
+                            @click="handleNavigation(child.route)"
+                            :aria-label="collapsed ? getCustomMenuName(item.name, child.name) : undefined">
                             <template #default>
                               <span v-if="child.icon">
                                 <UIcon :name="child.icon" class="w-4 h-4 text-gray-400 mr-2" />
@@ -147,6 +158,7 @@
                   <UButton :label="collapsed ? '' : item.name" :icon="item.icon || 'i-heroicons-home'" variant="ghost"
                     class="w-full text-sm gap-3 py-2 rounded-md"
                     :class="[isActiveRoute(item.route) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0 gap-0' : 'justify-start px-3']"
+                    :aria-label="collapsed ? item.name : undefined"
                     @click="handleNavigation(item.route)" />
                 </div>
               </template>
@@ -215,9 +227,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { SidebarCategory } from '../types/module'
 import { ROLES } from '~/constants/roles'
+import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar'
 import { useUserRole } from '../composables/auth/useUserRole'
 import { useAuth } from '../composables/auth/useAuth'
 import { useNotifications } from '../composables/useNotifications'
@@ -263,7 +276,6 @@ const {
   fetchUnreadCount
 } = useNotifications()
 
-import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar'
 // Dark mode
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
@@ -311,9 +323,12 @@ const isActiveRoute = (route: string) => {
 const hideSidebarOnMobile = () => {
   if (!process.client) return
   try {
-    if (window.innerWidth < 1024) {
-      visible.value = false
-    }
+    // Usar requestAnimationFrame para evitar forced reflow
+    requestAnimationFrame(() => {
+      if (window.innerWidth < 1024) {
+        visible.value = false
+      }
+    })
   } catch (e) {
     // noop
   }
@@ -406,10 +421,13 @@ onMounted(async () => {
   // Ocultar el sidebar por defecto en mobile (viewport < 1024px)
   if (process.client) {
     try {
-      if (window.innerWidth < 1024) {
-        // Asignar al computed `visible` para disparar el emit `update:modelValue`
-        visible.value = false
-      }
+      // Usar requestAnimationFrame para evitar forced reflow
+      requestAnimationFrame(() => {
+        if (window.innerWidth < 1024) {
+          // Asignar al computed `visible` para disparar el emit `update:modelValue`
+          visible.value = false
+        }
+      })
     } catch (err) {
       // si falla por alguna razón, no bloquear la inicialización
       // eslint-disable-next-line no-console
@@ -432,12 +450,18 @@ onMounted(async () => {
     }
 
     // Si la ventana se redimensiona a mobile, ocultamos el sidebar
+    // Usar throttling con requestAnimationFrame para evitar forced reflows
+    let resizeRafId: number | null = null
     const handleResize = () => {
-      try {
-        if (window.innerWidth < 1024) visible.value = false
-      } catch (e) {
-        // noop
-      }
+      if (resizeRafId) return
+      resizeRafId = requestAnimationFrame(() => {
+        resizeRafId = null
+        try {
+          if (window.innerWidth < 1024) visible.value = false
+        } catch (e) {
+          // noop
+        }
+      })
     }
 
     window.addEventListener('storage', handleStorageChange)

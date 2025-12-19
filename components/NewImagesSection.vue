@@ -27,10 +27,13 @@
           <img 
             :src="slot.preview || ''" 
             :alt="`Imagen ${index + 1}`"
+            width="128"
+            height="128"
             class="w-full h-full object-cover rounded-lg"
           />
           <button
             @click.stop="$emit('remove-slot', index)"
+            aria-label="Eliminar imagen"
             class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
             title="Eliminar imagen"
           >

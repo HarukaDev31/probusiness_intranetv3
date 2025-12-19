@@ -36,6 +36,5 @@ export const registerContenedorAlmacenEvents = () => {
     'private'
   )
 
-  console.log('✅ Eventos del rol Contenedor Almacen registrados')
 }
 

@@ -110,7 +110,9 @@ const redirectToManager = () => {
 }
 const fetchInstanceStatus = async (instanceName: string) => {
   if (!whatsappApiUrl) {
-    console.error('whatsappApiUrl no está configurado')
+    if (process.dev) {
+      console.error('whatsappApiUrl no está configurado')
+    }
     errorStates.value[instanceName] = 'URL no configurada'
     return
   }

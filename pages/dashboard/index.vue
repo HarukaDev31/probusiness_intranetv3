@@ -402,12 +402,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useDashboard } from '~/composables/useDashboard'
-import VolumeBarChart from '~/components/charts/VolumeBarChart.vue'
-import SalesPieChart from '~/components/charts/SalesPieChart.vue'
-import DailyProgressChart from '~/components/charts/DailyProgressChart.vue'
+
+// Lazy load componentes de gráficos para mejorar tiempo de carga inicial
+const VolumeBarChart = defineAsyncComponent(() => import('~/components/charts/VolumeBarChart.vue'))
+const SalesPieChart = defineAsyncComponent(() => import('~/components/charts/SalesPieChart.vue'))
+const DailyProgressChart = defineAsyncComponent(() => import('~/components/charts/DailyProgressChart.vue'))
 
 // Composables
 const {

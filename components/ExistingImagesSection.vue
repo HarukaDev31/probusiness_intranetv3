@@ -37,6 +37,8 @@
         <img 
           :src="getImageUrl(image.ruta)" 
           :alt="image.nombre_original"
+          width="128"
+          height="128"
           class="w-full h-full object-cover"
         />
         <div class="absolute inset-0 bg-opacity-0 hover:bg-opacity-20 transition-all flex items-center justify-center">
