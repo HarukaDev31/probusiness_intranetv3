@@ -188,30 +188,42 @@
     </div>
 
     <!-- Table Section -->
-    <!-- Contenedor con max-height y overflow para que sticky funcione -->
     <div class="relative" ref="tableWrapperRef">
+      <!-- Indicador de scroll izquierdo -->
+      <div 
+        v-if="showLeftIndicator && !isMobile" 
+        class="scroll-indicator scroll-indicator-left"
+      >
+        <UIcon name="i-heroicons-chevron-left" class="w-5 h-5 text-gray-500 animate-pulse" />
+      </div>
+      <!-- Indicador de scroll derecho -->
+      <div 
+        v-if="showRightIndicator && !isMobile" 
+        class="scroll-indicator scroll-indicator-right"
+      >
+        <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-gray-500 animate-pulse" />
+      </div>
+      
       <div 
         ref="tableContainerRef"
-        :class="['overflow-x-auto overflow-y-auto relative scroll-container', !isMobile ? 'hide-native-scrollbar' : '']"
+        class="table-scroll-container"
         style="max-height: calc(100vh - 250px);"
-        @scroll="handleScroll"
-        @mousemove="handleMouseMove"
-        @mouseleave="stopAutoScroll"
+        @mousemove="onTableMouseMove"
+        @mouseleave="onTableMouseLeave"
+        @scroll="onTableScroll"
       >
-        <!-- Sombra izquierda (disabled on mobile) -->
-        <div 
-          v-if="showLeftShadow && !isMobile"
-          class="scroll-shadow scroll-shadow-left"
-          :style="{ left: scrollLeft + 'px' }"
-        ></div>
-        <!-- Sombra derecha (disabled on mobile) -->
-        <div 
-          v-if="showRightShadow && !isMobile"
-          class="scroll-shadow scroll-shadow-right"
-          :style="{ left: (scrollLeft + containerWidth - 80) + 'px' }"
-        ></div>
         <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky :columns="columns" :loading="loading"
-          :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']" :ui="utableUi" :meta="utableMeta">
+          :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
+          :ui="Object.keys(tableMeta).length>0?{}:{
+            base: 'min-w-full',
+            tbody: 'border-separate border-spacing-y-6',
+            td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
+            th: 'font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5',
+            thead: 'sticky top-0 z-30 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15',
+            tr: 'border-[#f0f4f9] dark:border-gray-900',
+          }"
+          >
+         
         <template #loading>
           <div v-if="props.showSkeleton">
             <slot name="skeleton">
@@ -252,14 +264,8 @@
 
     <!-- Sticky Bottom Section - Pagination -->
     <div v-if="showBottomSection"
-      class="md:sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900 bottom-with-scrollbar">
-      <!-- Fake horizontal scrollbar placed visually above the sticky bottom content -->
-      <div v-if="!isMobile" ref="fakeScrollbarRef" class="table-scrollbar" @scroll.stop="onFakeScroll">
-        <!-- inner spacer that sets the fake scroll width to the table's scrollWidth -->
-        <div :style="{ width: tableScrollWidth + 'px', height: '1px' }"></div>
-      </div>
-
-      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4 bottom-inner">
+      class="md:sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
           {{ translations.showing }} {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} {{translations.a}} {{ Math.min((currentPage || 1) *
             (itemsPerPage || 100), totalRecords) }}
@@ -524,96 +530,165 @@ onUnmounted(() => {
   }
 })
 
-// Scroll automático y sombras laterales
+// Referencias de la tabla
 const tableContainerRef = ref<HTMLElement | null>(null)
 const tableWrapperRef = ref<HTMLElement | null>(null)
-// Ref to the UTable root so we can apply centering class when table doesn't scroll horizontally
 const utableRef = ref<HTMLElement | null>(null)
 const isTableNarrow = ref(false)
-// Estado para manejar sticky header cuando el padre se scrollea
-const headerTopOffset = ref(0)
+
+// Mobile detection - DEBE estar antes de las funciones de auto-scroll
+const isMobileForScroll = ref(false)
+
+// ============================================================================
+// AUTO-SCROLL HORIZONTAL - Solo desktop
+// ============================================================================
+const autoScrollTimer = ref<ReturnType<typeof setInterval> | null>(null)
+const SCROLL_SPEED = 12
+const EDGE_ZONE = 100 // Zona de activación en píxeles desde el borde
+
+const startAutoScroll = (direction: 'left' | 'right') => {
+  // Detener cualquier scroll anterior
+  stopAutoScroll()
+  
+  autoScrollTimer.value = setInterval(() => {
+    const scrollableEl = findScrollableElement()
+    if (!scrollableEl) return
+    
+    const maxScroll = scrollableEl.scrollWidth - scrollableEl.clientWidth
+    const currentScroll = scrollableEl.scrollLeft
+    
+    if (direction === 'right' && currentScroll < maxScroll) {
+      scrollableEl.scrollLeft = Math.min(currentScroll + SCROLL_SPEED, maxScroll)
+    } else if (direction === 'left' && currentScroll > 0) {
+      scrollableEl.scrollLeft = Math.max(currentScroll - SCROLL_SPEED, 0)
+    } else {
+      stopAutoScroll()
+    }
+  }, 16) // ~60fps
+}
+
+const stopAutoScroll = () => {
+  if (autoScrollTimer.value) {
+    clearInterval(autoScrollTimer.value)
+    autoScrollTimer.value = null
+  }
+}
+
+// Función para encontrar el elemento con scroll horizontal real
+const findScrollableElement = (): HTMLElement | null => {
+  const container = tableContainerRef.value
+  if (!container) return null
+  
+  // Primero verificar el contenedor directo
+  if (container.scrollWidth > container.clientWidth) {
+    return container
+  }
+  
+  // Buscar en hijos: el div interno de UTable
+  const innerDiv = container.querySelector('[data-slot="table-root"]') as HTMLElement
+  if (innerDiv && innerDiv.scrollWidth > innerDiv.clientWidth) {
+    return innerDiv
+  }
+  
+  // Buscar cualquier elemento con overflow-x: auto/scroll
+  const scrollable = container.querySelector('.overflow-x-auto, .overflow-auto') as HTMLElement
+  if (scrollable && scrollable.scrollWidth > scrollable.clientWidth) {
+    return scrollable
+  }
+  
+  // Buscar la tabla directamente
+  const table = container.querySelector('table') as HTMLElement
+  if (table && table.parentElement) {
+    const parent = table.parentElement
+    if (parent.scrollWidth > parent.clientWidth) {
+      return parent
+    }
+  }
+  
+  return container
+}
+
+const onTableMouseMove = (e: MouseEvent) => {
+  // Solo en desktop (pantallas > 768px)
+  if (isMobileForScroll.value) return
+  
+  const scrollableEl = findScrollableElement()
+  if (!scrollableEl) {
+    console.log('[AutoScroll] No se encontró elemento scrollable')
+    return
+  }
+  
+  // Verificar si hay scroll horizontal disponible
+  const hasScroll = scrollableEl.scrollWidth > scrollableEl.clientWidth
+  if (!hasScroll) {
+    // Debug: mostrar todos los elementos y sus dimensiones
+    const container = tableContainerRef.value
+    console.log('[AutoScroll] Debug dimensiones:', {
+      container: container ? { scrollWidth: container.scrollWidth, clientWidth: container.clientWidth } : null,
+      scrollableEl: { scrollWidth: scrollableEl.scrollWidth, clientWidth: scrollableEl.clientWidth, tagName: scrollableEl.tagName }
+    })
+    stopAutoScroll()
+    return
+  }
+  
+  const rect = scrollableEl.getBoundingClientRect()
+  const mouseX = e.clientX - rect.left
+  const containerWidth = rect.width
+  const maxScroll = scrollableEl.scrollWidth - scrollableEl.clientWidth
+  
+  // Zona izquierda
+  if (mouseX < EDGE_ZONE && scrollableEl.scrollLeft > 0) {
+    console.log('[AutoScroll] ✅ Zona IZQUIERDA')
+    if (!autoScrollTimer.value) startAutoScroll('left')
+  }
+  // Zona derecha
+  else if (mouseX > containerWidth - EDGE_ZONE && scrollableEl.scrollLeft < maxScroll) {
+    console.log('[AutoScroll] ✅ Zona DERECHA')
+    if (!autoScrollTimer.value) startAutoScroll('right')
+  }
+  // Zona central - detener
+  else {
+    stopAutoScroll()
+  }
+}
+
+const onTableMouseLeave = () => {
+  stopAutoScroll()
+}
+
+// Indicadores de scroll
+const showLeftIndicator = ref(false)
+const showRightIndicator = ref(false)
+
+const updateScrollIndicators = () => {
+  const container = tableContainerRef.value
+  if (!container) {
+    showLeftIndicator.value = false
+    showRightIndicator.value = false
+    return
+  }
+  
+  const maxScroll = container.scrollWidth - container.clientWidth
+  showLeftIndicator.value = container.scrollLeft > 10
+  showRightIndicator.value = container.scrollLeft < maxScroll - 10
+}
+
+const onTableScroll = () => {
+  updateScrollIndicators()
+}
 
 // Función para hacer scroll hacia arriba
 const scrollToTop = () => {
   try {
-    // Scroll del contenedor de la tabla
     if (tableContainerRef.value) {
       tableContainerRef.value.scrollTop = 0
     }
-    // También scroll de la ventana si es necesario
     if (componentRootRef.value) {
       componentRootRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   } catch (e) {
     // ignore errors
   }
-}
-// Fake scrollbar refs and sync state
-const fakeScrollbarRef = ref<HTMLElement | null>(null)
-const tableScrollWidth = ref<number>(0)
-const isSyncing = ref(false)
-const showLeftShadow = ref(false)
-const showRightShadow = ref(false)
-const scrollLeft = ref(0)
-const containerWidth = ref(0)
-const autoScrollInterval = ref<number | null>(null)
-const SCROLL_SPEED = 20 // píxeles por frame
-const EDGE_THRESHOLD = 100 // píxeles desde el borde para activar auto-scroll
-
-// Cache para evitar lecturas repetidas
-let scrollMetricsCache = {
-  scrollLeft: 0,
-  scrollWidth: 0,
-  clientWidth: 0,
-  timestamp: 0
-}
-const CACHE_DURATION = 16 // ~1 frame a 60fps
-
-const getScrollMetrics = () => {
-  const now = Date.now()
-  if (now - scrollMetricsCache.timestamp < CACHE_DURATION) {
-    return scrollMetricsCache
-  }
-
-  if (!tableContainerRef.value) {
-    return { scrollLeft: 0, scrollWidth: 0, clientWidth: 0, timestamp: now }
-  }
-
-  const element = tableContainerRef.value
-  scrollMetricsCache = {
-    scrollLeft: element.scrollLeft,
-    scrollWidth: element.scrollWidth,
-    clientWidth: element.clientWidth,
-    timestamp: now
-  }
-  return scrollMetricsCache
-}
-
-const canScrollLeft = () => {
-  const metrics = getScrollMetrics()
-  return metrics.scrollLeft > 0
-}
-
-const canScrollRight = () => {
-  const metrics = getScrollMetrics()
-  return metrics.scrollLeft < (metrics.scrollWidth - metrics.clientWidth - 1)
-}
-
-// Usar RAF para batching de lecturas de layout
-let updateScrollPositionScheduled = false
-const updateScrollPosition = () => {
-  if (updateScrollPositionScheduled) return
-  updateScrollPositionScheduled = true
-  
-  requestAnimationFrame(() => {
-    updateScrollPositionScheduled = false
-    if (!tableContainerRef.value) return
-    
-    // Batching: leer todas las propiedades de layout juntas
-    const metrics = getScrollMetrics()
-    scrollLeft.value = metrics.scrollLeft
-    containerWidth.value = metrics.clientWidth
-  })
 }
 
 // Usar RAF para batching de lecturas de layout
@@ -666,217 +741,40 @@ const uiForTable = computed(() => ({
   tr: 'border-[#f0f4f9] dark:border-gray-900',
 }))
 
-// Always pass the UI defaults; however if the parent provided a `tableMeta.class.td`
-// we want that to affect the rendered `td` cells. Some UTable implementations
-// prefer `ui.td` for cell classes, so copy `tableMeta.class.td` into `ui.td`
-// and remove it from the meta we pass to avoid duplication/conflict.
-const utableUi = computed(() => {
-  const base = { ...uiForTable.value }
-  try {
-    const parentTd = props.tableMeta && (props.tableMeta as any).class && (props.tableMeta as any).class.td
-    // Only copy into ui.td when parent provided a static string class.
-    // If parentTd is a function (per-cell logic), keep it in meta so UTable can call it.
-    if (parentTd && typeof parentTd === 'string') base.td = parentTd
-  } catch (e) {
-    // ignore
-  }
-  return base
-})
-
-const utableMeta = computed(() => {
-  if (!props.tableMeta) return undefined
-  // clone to avoid mutating the prop object
-  const metaClone: Record<string, any> = { ...props.tableMeta }
-  if (metaClone.class) {
-    const cls = { ...metaClone.class }
-    // remove td only when it's a static string (we moved that into ui.td)
-    if ('td' in cls && typeof cls.td === 'string') delete cls.td
-    metaClone.class = Object.keys(cls).length ? cls : undefined
-  }
-  return metaClone
-})
-
-// Usar throttling para handleScroll para reducir frecuencia
-let handleScrollScheduled = false
-const handleScroll = () => {
-  if (handleScrollScheduled) return
-  handleScrollScheduled = true
-  
-  requestAnimationFrame(() => {
-    handleScrollScheduled = false
-    
-    // Invalidar cache para forzar nueva lectura
-    scrollMetricsCache.timestamp = 0
-    
-    updateScrollPosition()
-    // Re-evaluate narrowness whenever the user scrolls (in case scroll state changed)
-    try { updateNarrowness() } catch (e) {}
-    
-    // Sync to fake scrollbar (avoid re-entrancy)
-    try {
-      // Only sync fake scrollbar on non-mobile devices
-      if (!isMobile.value) {
-        if (!isSyncing.value && fakeScrollbarRef.value && tableContainerRef.value) {
-          isSyncing.value = true
-          fakeScrollbarRef.value.scrollLeft = tableContainerRef.value.scrollLeft
-          requestAnimationFrame(() => { isSyncing.value = false })
-        }
-      }
-    } catch (e) {
-      // ignore
-      isSyncing.value = false
-    }
-  })
-}
-
-const onFakeScroll = (e?: Event) => {
-  // Do not respond to fake scrollbar events on mobile (we don't render it there)
-  if (isMobile.value) return
-  if (!fakeScrollbarRef.value || !tableContainerRef.value) return
-  if (isSyncing.value) return
-  try {
-    isSyncing.value = true
-    tableContainerRef.value.scrollLeft = fakeScrollbarRef.value.scrollLeft
-    requestAnimationFrame(() => { isSyncing.value = false })
-  } catch (err) {
-    isSyncing.value = false
-  }
-}
-
-// Throttle handleMouseMove para reducir forced reflows
-let handleMouseMoveScheduled = false
-const handleMouseMove = (event: MouseEvent) => {
-  // Ignore mouse-based auto-scroll on mobile/touch devices
-  if (isMobile.value) return
-  if (!tableContainerRef.value) return
-  
-  if (handleMouseMoveScheduled) return
-  handleMouseMoveScheduled = true
-  
-  requestAnimationFrame(() => {
-    handleMouseMoveScheduled = false
-    
-    if (!tableContainerRef.value) return
-    
-    // Batching: leer todas las propiedades de layout juntas
-    const rect = tableContainerRef.value.getBoundingClientRect()
-    const mouseX = event.clientX - rect.left
-    const width = rect.width
-    
-    updateScrollPosition()
-    
-    // Detectar si el mouse está cerca del borde izquierdo
-    if (mouseX < EDGE_THRESHOLD && canScrollLeft()) {
-      showLeftShadow.value = true
-      showRightShadow.value = false
-      startAutoScroll('left')
-    }
-    // Detectar si el mouse está cerca del borde derecho
-    else if (mouseX > width - EDGE_THRESHOLD && canScrollRight()) {
-      showRightShadow.value = true
-      showLeftShadow.value = false
-      startAutoScroll('right')
-    }
-    // Si está en el medio, ocultar sombras y detener auto-scroll
-    else {
-      showLeftShadow.value = false
-      showRightShadow.value = false
-      stopAutoScroll()
-    }
-  })
-}
-
-const startAutoScroll = (direction: 'left' | 'right') => {
-  // Do not start auto-scroll on touch devices
-  if (isMobile.value) return
-  if (autoScrollInterval.value) return // Ya está corriendo
-  
-  autoScrollInterval.value = window.setInterval(() => {
-    if (!tableContainerRef.value) return
-    
-    const scrollAmount = direction === 'left' ? -SCROLL_SPEED : SCROLL_SPEED
-    tableContainerRef.value.scrollLeft += scrollAmount
-    
-    // Verificar si llegamos al límite y detener
-    if ((direction === 'left' && !canScrollLeft()) ||
-        (direction === 'right' && !canScrollRight())) {
-      stopAutoScroll()
-    }
-  }, 16) // ~60fps
-}
-
-const stopAutoScroll = () => {
-  if (autoScrollInterval.value) {
-    clearInterval(autoScrollInterval.value)
-    autoScrollInterval.value = null
-  }
-  // Ocultar sombras cuando se detiene el auto-scroll
-  showLeftShadow.value = false
-  showRightShadow.value = false
-}
 
 onMounted(() => {
-  updateScrollPosition()
+  // Inicializar detección de mobile para auto-scroll
+  isMobileForScroll.value = window.innerWidth <= 768
   
-  // Observar cambios de tamaño
+  // Observar cambios de tamaño para actualizar narrowness
   if (tableContainerRef.value) {
-    // Update both scroll position and the fake scrollbar width
     const resizeObserver = new ResizeObserver(() => {
-      updateScrollPosition()
       updateNarrowness()
-      try {
-        tableScrollWidth.value = tableContainerRef.value?.scrollWidth || 0
-        // ensure fake scrollbar initial position follows table
-        if (!isMobile.value && fakeScrollbarRef.value) fakeScrollbarRef.value.scrollLeft = tableContainerRef.value?.scrollLeft || 0
-        // ignore
-      } catch (e) {
-        // ignore
-      }
+      updateScrollIndicators()
+      // Actualizar detección de mobile
+      isMobileForScroll.value = window.innerWidth <= 768
     })
     resizeObserver.observe(tableContainerRef.value)
 
     // compute initial narrowness
+    updateScrollIndicators()
     updateNarrowness()
 
-    // keep narrowness updated on window resize too (con throttling)
+    // keep narrowness updated on window resize too
     window.addEventListener('resize', updateNarrowness, { passive: true })
-
-    // Also observe the UTable's rendered DOM for content width changes (columns/data may change scrollWidth)
-    let utableResizeObserver: ResizeObserver | null = null
-    try {
-      if (typeof ResizeObserver !== 'undefined') {
-        // If ref points to a component instance, prefer its $el
-        const maybeComponent = (utableRef as any).value
-        const utableEl = maybeComponent && maybeComponent.$el ? maybeComponent.$el as HTMLElement : maybeComponent as HTMLElement
-        const targetToObserve = utableEl || tableContainerRef.value
-        if (targetToObserve) {
-          utableResizeObserver = new ResizeObserver(() => {
-            try {
-              tableScrollWidth.value = tableContainerRef.value?.scrollWidth || 0
-              updateNarrowness()
-            } catch (e) {
-              // ignore
-            }
-          })
-          utableResizeObserver.observe(targetToObserve)
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
 
     onUnmounted(() => {
       resizeObserver.disconnect()
       window.removeEventListener('resize', updateNarrowness)
-      try { if (utableResizeObserver) utableResizeObserver.disconnect() } catch (e) {}
     })
   }
 })
 
 onUnmounted(() => {
-  stopAutoScroll()
   // reset global page narrow state when component unmounts
   try { setContentNarrow(false) } catch (e) {}
+  // Limpiar auto-scroll
+  stopAutoScroll()
 })
 
 const goBack = () => {
@@ -1008,47 +906,6 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   display: none;
 }
 
-/* Contenedor de scroll */
-.scroll-container {
-  position: relative;
-}
-
-/* Sombras laterales para indicar scroll horizontal */
-.scroll-shadow {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 80px;
-  pointer-events: none;
-  z-index: 30;
-  animation: fadeIn 0.15s ease-in-out;
-}
-
-.scroll-shadow-left {
-  background: linear-gradient(to right, rgba(59, 130, 246, 0.5) 0%, rgba(59, 130, 246, 0.3) 40%, transparent 100%);
-}
-
-.scroll-shadow-right {
-  background: linear-gradient(to left, rgba(59, 130, 246, 0.5) 0%, rgba(59, 130, 246, 0.3) 40%, transparent 100%);
-}
-
-/* Sombras para modo oscuro */
-.dark .scroll-shadow-left {
-  background: linear-gradient(to right, rgba(96, 165, 250, 0.6) 0%, rgba(96, 165, 250, 0.4) 40%, transparent 100%);
-}
-
-.dark .scroll-shadow-right {
-  background: linear-gradient(to left, rgba(96, 165, 250, 0.6) 0%, rgba(96, 165, 250, 0.4) 40%, transparent 100%);
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
 
 /* Estilos para mejorar la responsividad */
 @media (max-width: 1024px) {
@@ -1061,6 +918,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
 }
+
 
 /* Mejorar la legibilidad en mobile */
 @media (max-width: 768px) {
@@ -1248,58 +1106,6 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   left: 0;
 }
 
-/* Container marker for bottom area; do NOT change its position (keep sticky) */
-.bottom-with-scrollbar {
-  pointer-events: auto; /* keep rule non-empty without affecting layout */
-}
-
-/* Inner wrapper inside the sticky bottom that provides a positioning context */
-.bottom-with-scrollbar .bottom-inner {
-  position: relative;
-}
-
-/* Fake horizontal scrollbar shown above the sticky bottom */
-.table-scrollbar {
-  position: absolute;
-  top: -16px; /* place visually above the bottom sticky bar */
-  left: 0;
-  right: 0;
-  height: 16px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  z-index: 60;
-}
-
-/* Asegurar que el sticky header funcione al viewport, no solo al contenedor con scroll */
-.scroll-container {
-  position: relative;
-}
-
-/* El thead debe ser sticky al viewport, no solo al contenedor */
-.scroll-container table thead {
-  position: sticky;
-  z-index: 30;
-}
-
-/* Style the fake scrollbar track & thumb (webkit) */
-.table-scrollbar::-webkit-scrollbar {
-  height: 14px;
-}
-.table-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.table-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(107,114,128,0.6);
-  border-radius: 9999px;
-}
-
-/* Hide native horizontal scrollbar in the table container */
-.hide-native-scrollbar {
-  scrollbar-width: none; /* firefox */
-}
-.hide-native-scrollbar::-webkit-scrollbar {
-  height: 0px; /* hide horizontal scrollbar for webkit browsers */
-}
 
 /* When table is narrow (no horizontal scroll), center it by applying flex on the UTable root */
 .utable-narrow {
@@ -1328,14 +1134,6 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   border-spacing: 0 0.5rem !important;
 }
 
-/* When using separate border mode, ensure rows look like separate blocks */
-
-/* Sticky header simple - dejar que Nuxt UI lo maneje */
-.scroll-container table thead {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-}
 
 /* Mejorar la legibilidad del texto en mobile */
 @media (max-width: 640px) {
@@ -1403,5 +1201,119 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 @media (min-width: 1025px) {
   /* ensure teleported classes do not affect desktop if somehow present */
   .filters-overlay, .filters-panel-mobile { display: none !important; }
+}
+
+/* ==========================================================================
+   TABLE SCROLL CONTAINER - Estilos globales para scroll horizontal
+   ========================================================================== */
+
+/* Contenedor principal de scroll */
+.table-scroll-container {
+  position: relative;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #e5e7eb;
+}
+
+/* Forzar que la tabla tenga ancho mínimo para scroll */
+.table-scroll-container table {
+  min-width: 800px;
+}
+
+/* Webkit scrollbar (Chrome, Safari, Edge) */
+.table-scroll-container::-webkit-scrollbar {
+  width: 10px;
+  height: 14px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 7px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 7px;
+  border: 2px solid #e5e7eb;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.table-scroll-container::-webkit-scrollbar-corner {
+  background: #e5e7eb;
+}
+
+/* Dark mode */
+.dark .table-scroll-container {
+  scrollbar-color: #6b7280 #1f2937;
+}
+
+.dark .table-scroll-container::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.dark .table-scroll-container::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-color: #1f2937;
+}
+
+.dark .table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark .table-scroll-container::-webkit-scrollbar-corner {
+  background: #1f2937;
+}
+
+/* Headers sticky */
+.table-scroll-container table thead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: #f0f4f9;
+}
+
+.dark .table-scroll-container table thead {
+  background: #111827;
+}
+
+/* Indicadores de scroll */
+.scroll-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  width: 40px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.scroll-indicator-left {
+  left: 0;
+  background: linear-gradient(to right, rgba(240, 244, 249, 0.95), transparent);
+  border-radius: 0 8px 8px 0;
+}
+
+.scroll-indicator-right {
+  right: 0;
+  background: linear-gradient(to left, rgba(240, 244, 249, 0.95), transparent);
+  border-radius: 8px 0 0 8px;
+}
+
+.dark .scroll-indicator-left {
+  background: linear-gradient(to right, rgba(17, 24, 39, 0.95), transparent);
+}
+
+.dark .scroll-indicator-right {
+  background: linear-gradient(to left, rgba(17, 24, 39, 0.95), transparent);
 }
 </style>

@@ -12,6 +12,7 @@
         <div v-if="isDesktop || currentRole==ROLES.DOCUMENTACION">
             <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData"
         :show-pagination="false" :show-export="false"
+           
             :columns="getColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
@@ -78,7 +79,6 @@
 
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted, watch, onUnmounted } from 'vue'
-import { useIsDesktop } from '~/composables/useResponsive'
 import type { TableColumn, TableRow } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
@@ -117,8 +117,40 @@ const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
 const currentConsolidado = ref<number | null>(null)
 
-// Desktop detection: shared composable (page uses sm breakpoint)
-const { isDesktop } = useIsDesktop(640)
+// Desktop detection: keep DataTable out of DOM on small screens to avoid flicker
+const isDesktop = ref(false)
+const tableMeta = {
+  class: {
+    tr: (row: TableRow<{ value: number }>) => {
+      return row.original.isVerified ? "bg-green-500" : "bg-white dark:bg-gray-800";
+    },
+  },
+};
+let resizeRafId: number | null = null
+const updateIsDesktop = () => {
+    if (resizeRafId) return
+    resizeRafId = requestAnimationFrame(() => {
+        resizeRafId = null
+        try {
+            isDesktop.value = window.innerWidth >= 640 // sm breakpoint used in this page
+        } catch (e) {
+            isDesktop.value = true
+        }
+    })
+}
+onMounted(() => {
+    updateIsDesktop()
+    window.addEventListener('resize', updateIsDesktop, { passive: true })
+})
+onUnmounted(() => {
+    try { 
+        window.removeEventListener('resize', updateIsDesktop)
+        if (resizeRafId) {
+            cancelAnimationFrame(resizeRafId)
+            resizeRafId = null
+        }
+    } catch (e) {}
+})
 
 // Components
 const UButton = resolveComponent('UButton')

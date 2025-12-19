@@ -39,7 +39,7 @@ export const DATA_TABLE_DEFAULTS = {
   emptyStateMessage: translations.value.emptyStateMessage,
   hideBackButton: true,
   showBodyTop: false,
-  tableMeta: undefined,
+  tableMeta: () => [],
   // By default debounce search input by 300ms to avoid frequent network calls while typing
   searchDebounceMs: 300
 } as const
