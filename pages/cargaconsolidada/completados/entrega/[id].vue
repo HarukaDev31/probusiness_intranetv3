@@ -56,7 +56,7 @@
       :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="false"
       empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleSearch"
       @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-      @filter-change="handleFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
+      @filter-change="handleFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true" :table-meta="tableMeta"
       
   :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #body-top>
@@ -126,7 +126,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, h, watch } from 'vue'
-import type { TableColumn } from '@nuxt/ui'
+import type { TableColumn, TableRow } from '@nuxt/ui'
 import SectionHeader from '../../../../components/commons/SectionHeader.vue'
 import { useEntrega } from '../../../../composables/cargaconsolidada/entrega/useEntrega'
 import { useUserRole } from '../../../../composables/auth/useUserRole'
@@ -198,6 +198,18 @@ const {
   deleteEntregaRegistro,
   sendCobroDeliveryDelivery
 } = useEntrega()
+
+const tableMeta = {
+  class: {
+    tr: (row?: TableRow<any>) => {
+      if (!row || !('original' in row) || !row.original) return ''
+      return row.original.isVerified
+        ? 'bg-green-500 border-[#f0f4f9] dark:border-gray-900'
+        : 'bg-white dark:bg-gray-800 border-[#f0f4f9] dark:border-gray-900'
+    },
+    td: 'bg-transparent',
+  },
+}
 
 const routeQuery = useRoute()
 const initialTab = (routeQuery.query.tab as string) || 'clientes'
@@ -584,10 +596,20 @@ const entregasColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'razon_social', header: 'Razon social o Nombre', cell: ({ row }) => row.original.agency_name || row.original.pick_name || '—' },
   {
     accessorKey: 'fecha_programada', header: 'Fecha', cell: ({ row }) => {
-      const fp = formatDateTimeToDmy(row.original.delivery_date)
-      if (!fp) return '—'
-      const date = fp.includes(' ') ? fp.split(' ')[0] : fp.split('T')[0]
-      return date || '—'
+      const tf = row.original?.type_form
+      const isLima = (tf === 1 || tf === '1')
+      if (isLima) {
+        const fp = formatDateTimeToDmy(row.original.delivery_date)
+        if (!fp) return '—'
+        const date = fp.includes(' ') ? fp.split(' ')[0] : fp.split('T')[0]
+        return date || '—'
+      }
+      // Provincia: usar fecha_creacion_formulario si existe, si no fallback a created_at
+      const fcRaw = row.original.fecha_creacion_formulario ?? row.original.created_at 
+      const fc = formatDateTimeToDmy(fcRaw)
+      if (!fc) return '—'
+      const dateProv = fc.includes(' ') ? fc.split(' ')[0] : fc.split('T')[0]
+      return dateProv || '—'
     }
   },
   {

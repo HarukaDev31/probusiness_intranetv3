@@ -22,7 +22,7 @@
             </template>
             <template #actions>
 
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" class="py-3"
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" class="py-3 md:flex hidden"
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
@@ -70,7 +70,7 @@
                     </div>
                 </div>
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
-                    @click="handleAddProspecto" class="py-3" />
+                    @click="handleAddProspecto" class="py-3 md:flex hidden" />
                 <UButton v-if="currentRole === ROLES.COORDINACION" icon="i-heroicons-arrow-down-tray" color="success"
                     label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
             </template>

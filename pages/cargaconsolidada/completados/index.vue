@@ -79,6 +79,7 @@
 
 <script setup lang="ts">
 import { ref, h, resolveComponent, onMounted, watch, onUnmounted } from 'vue'
+import { useIsDesktop } from '~/composables/useResponsive'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
