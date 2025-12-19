@@ -57,7 +57,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, h, resolveComponent } from 'vue'
 import DataTable from '~/components/DataTable.vue'
-import LazyImage from '~/components/LazyImage.vue'
+import ImageLazy from '~/components/ImageLazy.vue'
 import { ProductService } from '~/services/productService'
 import type { ProductMapped } from '~/types/product'
 import DynamicModal from '~/components/DynamicModal.vue'
@@ -176,7 +176,7 @@ const tableColumns = computed(() => [
     cell: ({ row }: any) => {
       const url = row.original.foto
       if (!url) return 'Sin foto'
-      return h(LazyImage, {
+      return h(ImageLazy, {
         src: url,
         alt: row.original.nombreComercial,
         width: 80,

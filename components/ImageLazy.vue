@@ -33,7 +33,7 @@ const onLoad = () => {
 }
 const onError = (e: Event) => {
   failed.value = true
-  console.warn('LazyImage failed to load', src, e)
+  console.warn('ImageLazy failed to load', src, e)
 }
 
 const imgClass = computed(() => imgClassProp || '')
@@ -79,3 +79,4 @@ img {
   100% { background-position: 200% 0 }
 }
 </style>
+
