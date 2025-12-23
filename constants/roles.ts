@@ -8,6 +8,7 @@ export const ROLES = {
     COTIZADOR: 'Cotizador',
     DOCUMENTACION: 'Documentacion',
     ADMINISTRACION: 'Administración',
+    SUB_ADMINISTRACION: 'SUB_ADMINISTRACION'
 } as const
 export const ID_JEFEVENTAS = 28791
 export const COTIZADORES_WITH_PRIVILEGES = [28911]
