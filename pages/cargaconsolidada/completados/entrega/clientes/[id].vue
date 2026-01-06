@@ -13,7 +13,7 @@
           <template v-if="!editable">
             <UButton size="xl" color="primary" variant="solid" icon="i-heroicons-pencil-square" @click="toggleEdit">Editar</UButton>
             <USelect
-              v-if="currentRole===ROLES.ADMINISTRACION"
+              v-if="currentRole===ROLES.ADMINISTRACION || currentRole===ROLES.SUB_ADMINISTRACION"
               :items="[{ label: 'No verificado', value: false }, { label: 'Verificado', value: true }]"
               :model-value="isVerified"
               size="sm"

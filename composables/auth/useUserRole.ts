@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { ROLES } from '../constants/roles'
+import { ROLES } from '../../constants/roles'
 
 interface UserGroup {
   id: number

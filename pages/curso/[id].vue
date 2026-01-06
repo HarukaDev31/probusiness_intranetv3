@@ -42,7 +42,7 @@
           <div class="flex items-center">
             <span class="w-48 font-medium">Fecha de nacimiento:</span>
             <div v-if="!editMode" class="bg-gray-200 dark:bg-gray-800 rounded px-3 py-1 w-full">
-              {{ form.nacimiento ? formatDateDisplay(form.nacimiento) : 'No especificada' }}
+              {{ form.nacimiento ? formatDateTimeToDmy(form.nacimiento) : 'No especificada' }}
             </div>
             <UPopover v-else>
               <UButton color="neutral" variant="subtle" icon="i-lucide-calendar" class="w-full justify-start">

@@ -207,7 +207,13 @@ const tableMeta = {
         ? 'bg-green-500 border-[#f0f4f9] dark:border-gray-900'
         : 'bg-white dark:bg-gray-800 border-[#f0f4f9] dark:border-gray-900'
     },
-    td: 'bg-transparent',
+    td: (row?: TableRow<any>) => {
+      if (!row || !('original' in row) || !row.original) return ''
+      return row.original.isVerified
+        ? 'text-white dark:text-white font-normal'
+        : 'text-gray-800 dark:text-gray-200'
+    },
+    th: () => 'font-normal',
   },
 }
 

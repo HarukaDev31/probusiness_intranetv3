@@ -188,21 +188,17 @@
     </div>
 
     <!-- Table Section -->
-    <div class="relative" ref="tableWrapperRef">
-      <!-- Indicador de scroll izquierdo -->
+    <div class="relative overflow-hidden" ref="tableWrapperRef" style="width: 100%;">
+      <!-- Sombra izquierda -->
       <div 
-        v-if="showLeftIndicator && !isMobile" 
-        class="scroll-indicator scroll-indicator-left"
-      >
-        <UIcon name="i-heroicons-chevron-left" class="w-5 h-5 text-gray-500 animate-pulse" />
-      </div>
-      <!-- Indicador de scroll derecho -->
+        v-if="showLeftIndicator"
+        class="scroll-shadow scroll-shadow-left"
+      ></div>
+      <!-- Sombra derecha -->
       <div 
-        v-if="showRightIndicator && !isMobile" 
-        class="scroll-indicator scroll-indicator-right"
-      >
-        <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-gray-500 animate-pulse" />
-      </div>
+        v-if="showRightIndicator"
+        class="scroll-shadow scroll-shadow-right"
+      ></div>
       
       <div 
         ref="tableContainerRef"
@@ -214,7 +210,7 @@
       >
         <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky :columns="columns" :loading="loading"
           :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
-          :ui="Object.keys(tableMeta).length>0?{}:{
+          :ui="Object.keys(tableMeta).length>0?{th: 'font-normal text-xs lg:text-sm px-2 py-1 md:px-4 md:py-3.5'}:{
             base: 'min-w-full',
             tbody: 'border-separate border-spacing-y-6',
             td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
@@ -377,6 +373,57 @@ const {
 } = useDataTable(props, emit)
 
 const router = useRouter()
+
+// Aplicar clases dinámicas de tableMeta a TD y TH
+const applyTableMetaClasses = () => {
+  if (!props.tableMeta?.class) return
+  
+  nextTick(() => {
+    const table = tableContainerRef.value?.querySelector('table')
+    if (!table) return
+    
+    const { td: tdClassFn, th: thClassFn, tr: trClassFn } = props.tableMeta.class
+    
+    // Aplicar a TH (headers)
+    if (typeof thClassFn === 'function') {
+      table.querySelectorAll('thead th').forEach((th) => {
+        const classes = thClassFn?.()
+        if (classes && typeof classes === 'string') {
+          th.className = classes + ' ' + th.className
+        }
+      })
+    }
+    
+    // Aplicar a TD (celdas)
+    if (typeof tdClassFn === 'function') {
+      table.querySelectorAll('tbody tr').forEach((row, rowIdx) => {
+        const rowData = filteredData.value?.[rowIdx]
+        row.querySelectorAll('td').forEach((td) => {
+          const classes = tdClassFn?.({ original: rowData, index: rowIdx })
+          if (classes && typeof classes === 'string') {
+            td.className = classes + ' ' + td.className
+          }
+        })
+      })
+    }
+    
+    // Aplicar a TR (filas) si aún no está aplicado
+    if (typeof trClassFn === 'function') {
+      table.querySelectorAll('tbody tr').forEach((row, rowIdx) => {
+        const rowData = filteredData.value?.[rowIdx]
+        const classes = trClassFn?.({ original: rowData, index: rowIdx })
+        if (classes && typeof classes === 'string' && !row.className.includes(classes.split(' ')[0])) {
+          row.className = classes + ' ' + row.className
+        }
+      })
+    }
+  })
+}
+
+// Observar cambios en filteredData y applicar meta clases
+watch(() => [filteredData.value, props.tableMeta], () => {
+  applyTableMetaClasses()
+}, { deep: true })
 
 // Root ref for visibility detection
 const componentRootRef = ref<HTMLElement | null>(null)
@@ -628,6 +675,8 @@ const onTableMouseMove = (e: MouseEvent) => {
       scrollableEl: { scrollWidth: scrollableEl.scrollWidth, clientWidth: scrollableEl.clientWidth, tagName: scrollableEl.tagName }
     })
     stopAutoScroll()
+    showLeftIndicator.value = false
+    showRightIndicator.value = false
     return
   }
   
@@ -639,15 +688,21 @@ const onTableMouseMove = (e: MouseEvent) => {
   // Zona izquierda
   if (mouseX < EDGE_ZONE && scrollableEl.scrollLeft > 0) {
     console.log('[AutoScroll] ✅ Zona IZQUIERDA')
+    showLeftIndicator.value = true
+    showRightIndicator.value = false
     if (!autoScrollTimer.value) startAutoScroll('left')
   }
   // Zona derecha
   else if (mouseX > containerWidth - EDGE_ZONE && scrollableEl.scrollLeft < maxScroll) {
     console.log('[AutoScroll] ✅ Zona DERECHA')
+    showLeftIndicator.value = false
+    showRightIndicator.value = true
     if (!autoScrollTimer.value) startAutoScroll('right')
   }
   // Zona central - detener
   else {
+    showLeftIndicator.value = false
+    showRightIndicator.value = false
     stopAutoScroll()
   }
 }
@@ -656,9 +711,11 @@ const onTableMouseLeave = () => {
   stopAutoScroll()
 }
 
-// Indicadores de scroll
+// Indicadores de scroll - Sombras laterales
 const showLeftIndicator = ref(false)
 const showRightIndicator = ref(false)
+const scrollLeft = ref(0)
+const containerWidth = ref(0)
 
 const updateScrollIndicators = () => {
   const container = tableContainerRef.value
@@ -668,9 +725,17 @@ const updateScrollIndicators = () => {
     return
   }
   
-  const maxScroll = container.scrollWidth - container.clientWidth
-  showLeftIndicator.value = container.scrollLeft > 10
-  showRightIndicator.value = container.scrollLeft < maxScroll - 10
+  const scrollLeft = container.scrollLeft
+  const scrollWidth = container.scrollWidth
+  const clientWidth = container.clientWidth
+  const hasScroll = scrollWidth > clientWidth
+  const maxScroll = scrollWidth - clientWidth
+  
+  // Mostrar sombra izquierda: solo si hay scroll disponible Y ya hemos hecho scroll
+  showLeftIndicator.value = hasScroll && scrollLeft > 0
+  
+  // Mostrar sombra derecha: solo si hay scroll disponible Y no estamos al final
+  showRightIndicator.value = hasScroll && scrollLeft < maxScroll
 }
 
 const onTableScroll = () => {
@@ -750,15 +815,17 @@ onMounted(() => {
   if (tableContainerRef.value) {
     const resizeObserver = new ResizeObserver(() => {
       updateNarrowness()
-      updateScrollIndicators()
+      nextTick(() => updateScrollIndicators())
       // Actualizar detección de mobile
       isMobileForScroll.value = window.innerWidth <= 768
     })
     resizeObserver.observe(tableContainerRef.value)
 
-    // compute initial narrowness
-    updateScrollIndicators()
-    updateNarrowness()
+    // compute initial narrowness and scroll indicators after render
+    nextTick(() => {
+      updateScrollIndicators()
+      updateNarrowness()
+    })
 
     // keep narrowness updated on window resize too
     window.addEventListener('resize', updateNarrowness, { passive: true })
@@ -1282,38 +1349,42 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   background: #111827;
 }
 
-/* Indicadores de scroll */
-.scroll-indicator {
+/* Sombras laterales para indicar scroll horizontal */
+.scroll-shadow {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 40;
-  width: 40px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 0;
+  bottom: 0;
+  width: 80px;
   pointer-events: none;
-  opacity: 0.8;
+  z-index: 40;
+  animation: fadeIn 0.15s ease-in-out;
 }
 
-.scroll-indicator-left {
+.scroll-shadow-left {
   left: 0;
-  background: linear-gradient(to right, rgba(240, 244, 249, 0.95), transparent);
-  border-radius: 0 8px 8px 0;
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.5) 0%, rgba(59, 130, 246, 0.3) 40%, transparent 100%);
 }
 
-.scroll-indicator-right {
+.scroll-shadow-right {
   right: 0;
-  background: linear-gradient(to left, rgba(240, 244, 249, 0.95), transparent);
-  border-radius: 8px 0 0 8px;
+  background: linear-gradient(to left, rgba(59, 130, 246, 0.5) 0%, rgba(59, 130, 246, 0.3) 40%, transparent 100%);
 }
 
-.dark .scroll-indicator-left {
-  background: linear-gradient(to right, rgba(17, 24, 39, 0.95), transparent);
+/* Sombras para modo oscuro */
+.dark .scroll-shadow-left {
+  background: linear-gradient(to right, rgba(96, 165, 250, 0.6) 0%, rgba(96, 165, 250, 0.4) 40%, transparent 100%);
 }
 
-.dark .scroll-indicator-right {
-  background: linear-gradient(to left, rgba(17, 24, 39, 0.95), transparent);
+.dark .scroll-shadow-right {
+  background: linear-gradient(to left, rgba(96, 165, 250, 0.6) 0%, rgba(96, 165, 250, 0.4) 40%, transparent 100%);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 </style>
