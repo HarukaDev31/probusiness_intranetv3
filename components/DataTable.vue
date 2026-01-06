@@ -33,7 +33,7 @@
           <div v-if="showPrimarySearch" class="flex items-center gap-2 h-10 w-full lg:w-auto">
             <label v-if="showPrimarySearchLabel"
               class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.primarySearchLabel }}:</label>
-            <UInput :model-value="primarySearchInternal" :placeholder="primarySearchPlaceholder"
+            <UInput :model-value="primarySearchInternal" :placeholder="translations.primarySearchPlaceholder"
               class="flex-1 h-5 min-w-0 md:h-10 lg:h-10" :ui="{ base: 'h-7 md:h-10 lg:h-10' }"
               @update:model-value="onPrimarySearchChange">
               <template #leading>
@@ -870,7 +870,8 @@ const translations = computed(() => {
       a: 'to',
       resultados: 'results',
       de: 'of',
-      primarySearchLabel: 'Search for'
+      primarySearchLabel: 'Search for',
+      primarySearchPlaceholder: 'Search for'
     }
   }
   return {
@@ -888,7 +889,8 @@ const translations = computed(() => {
     a: 'a',
     resultados: 'resultados',
     de: 'de',
-    primarySearchLabel: 'Buscar por'
+    primarySearchLabel: 'Buscar por',
+    primarySearchPlaceholder: 'Buscar por'
   }
 })
 

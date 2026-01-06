@@ -1,12 +1,17 @@
 <template>
-    <div class="md:p-6 p-4">
+    <div class="md:p-6 p-0">
         <!-- Header con botones de navegación -->
         <PageHeader title="" subtitle="" 
             icon="" :hide-back-button="false" @back="navigateBack">
+            <template #back-extra>
+                <UButton
+                v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
+                label="Guardar" icon="material-symbols:save" color="primary" @click="saveAll" :loading="saving" size="lg" class="ml-[9rem]" />
+            </template>
             <template #actions>
                 <UButton
                 v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
-                label="Guardar" icon="i-heroicons-save" color="primary" @click="saveAll" :loading="saving" />
+                label="Guardar" icon="material-symbols:save" color="primary" @click="saveAll" :loading="saving" class="hidden md:flex" />
             </template>
         </PageHeader>
 
