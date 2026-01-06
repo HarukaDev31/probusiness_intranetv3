@@ -1973,7 +1973,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
             const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
-            return h('div', { class: 'w-70 whitespace-normal' }, [
+            return h('div', { class: 'w-40 whitespace-normal' }, [
                 h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
             ])
@@ -1990,6 +1990,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.products,
                     class: 'w-full w-40',
+                    variant: 'none',
                     disabled: currentRole.value !== ROLES.COTIZADOR,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.products = value
@@ -2010,6 +2011,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box,
                     class: 'w-full w-10',
+                    variant: 'none',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box = value
@@ -2030,6 +2032,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total,
                     class: 'w-full',
+                    variant: 'none',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -2050,6 +2053,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.peso,
                     class: 'w-full',
+                    variant: 'none',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.peso = value
@@ -2071,6 +2075,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full',
+                    variant: 'none',
                     disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: string) => {
                         proveedor.supplier = value
@@ -2091,6 +2096,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
                     class: 'w-full',
+                    variant: 'none',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
@@ -2106,11 +2112,12 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 w-35'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full',
+                    variant: 'none',
                     disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
