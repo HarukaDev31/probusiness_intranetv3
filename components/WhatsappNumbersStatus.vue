@@ -1,6 +1,6 @@
 <template>
 
-  <div class="space-y-3 w-full grid grid-cols-2 lg:grid-cols-7 gap-2 h-auto min-h-0">
+  <div v-if="currentRole !== ROLES.CONTENEDOR_ALMACEN" class="space-y-3 w-full grid grid-cols-2 lg:grid-cols-7 gap-2 h-auto min-h-0">
     <div
       v-for="(item, index) in instances"
       :key="index"
@@ -56,6 +56,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
+
+const { currentRole } = useUserRole()
 
 interface InstanceItem {
   instanceName: string

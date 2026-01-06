@@ -29,7 +29,7 @@
             <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
             :columns="getEmbarqueColumns()" :loading="loading || loadingHeaders" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
+            :show-secondary-search="false" :show-filters="currentRole !== ROLES.CONTENEDOR_ALMACEN" :filter-config="getFilterPerRole()" :show-export="false"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
@@ -48,7 +48,7 @@
 
                     <div ref="filtersButtonRef" class="w-full lg:w-auto">
                         <UButton label="Upload" icon="i-heroicons-arrow-up-tray" v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
-                            class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
+                            class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
                             @click="showUploadPanel = !showUploadPanel" />
                     </div>
                     <div ref="filtersPanelRef" v-if="showUploadPanel && currentRole === ROLES.CONTENEDOR_ALMACEN"
