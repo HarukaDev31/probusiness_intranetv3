@@ -646,6 +646,16 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         handleSendRecordatorioFirma(row.original.id)
                     }
                 }),
+                row.original.cotizacion_contrato_url ? h(UButton, {
+                    icon: 'i-heroicons-document-duplicate',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'info',
+                    title: 'Copiar enlace del contrato',
+                    onClick: () => {
+                        copyToClipboard(row.original.cotizacion_contrato_url, 'Enlace del contrato copiado')
+                    }
+                }) : null,
                 h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
@@ -865,6 +875,16 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     handleDelete(row.original.id)
                 }
             }) : null,
+                row.original.cotizacion_contrato_url ? h(UButton, {
+                    icon: 'i-heroicons-document-duplicate',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'info',
+                    title: 'Copiar enlace del contrato',
+                    onClick: () => {
+                        copyToClipboard(row.original.cotizacion_contrato_url, 'Enlace del contrato copiado')
+                    }
+                }) : null,
                 h(UButton, {
                     icon: 'i-heroicons-arrow-right',
                     variant: 'ghost',
@@ -2474,6 +2494,15 @@ const downloadFile = async (fileUrl: string) => {
         }, 'Descargando archivo...')
     } catch (error) {
         showError('Error al descargar archivo', error as string)
+    }
+}
+
+const copyToClipboard = async (text: string, successMessage: string = 'Copiado al portapapeles') => {
+    try {
+        await navigator.clipboard.writeText(text)
+        showSuccess('Éxito', successMessage)
+    } catch (error) {
+        showError('Error al copiar', 'No se pudo copiar al portapapeles')
     }
 }
 // Manejadores para prospectos
