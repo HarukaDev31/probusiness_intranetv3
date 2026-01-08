@@ -161,6 +161,18 @@ const modalAcciones = overlay.create(ModalAcciones)
 const fMaxDocumentacion = ref<string | null>(null)
 const fMaxDocumentacionDisplay = computed(() => fMaxDocumentacion.value ?? '00/00/0000')
 
+// Función para completar URLs incompletas
+const completeUrl = (url: string): string => {
+    if (!url) return ''
+    // Si ya tiene http:// o https://, devolver como está
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url
+    }
+    // Si es una ruta relativa (ej: contratos/filename.pdf), agregar la URL completa del backend
+    const backendUrl = 'https://intranetback.probusiness.pe/files/'
+    return backendUrl + url
+}
+
 const handleSaveFMaxDocumentacion = async () => {
     if (!fMaxDocumentacion.value) {
         showError('Fecha requerida', 'Por favor selecciona una fecha válida')
@@ -481,9 +493,9 @@ const columns: TableColumn<any>[] = [
             const telefono = String(pick(['telefono', 'whatsapp', 'celular', 'phone']) || '')
             const correo = String(pick(['correo', 'email', 'mail']) || '')
             const cod_contract = String(pick(['cod_contract']) || '')
-            const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
-            const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
-            const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
+            const cotizacion_contrato_firmado_url = completeUrl(String(pick(['cotizacion_contrato_firmado_url']) || ''))
+            const cotizacion_contrato_url = completeUrl(String(pick(['cotizacion_contrato_url']) || ''))
+            const cotizacion_contrato_autosigned_url = completeUrl(String(pick(['cotizacion_contrato_autosigned_url']) || ''))
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
@@ -611,9 +623,9 @@ const columnsCoordinacion: TableColumn<any>[] = [
             const telefono = row.original?.telefono || ''
             const correo = row.original?.correo || ''
             const cod_contract = row.original?.cod_contract || ''
-            const cotizacion_contrato_firmado_url = row.original?.cotizacion_contrato_firmado_url || ''
-            const cotizacion_contrato_url = row.original?.cotizacion_contrato_url || ''
-            const cotizacion_contrato_autosigned_url = row.original?.cotizacion_contrato_autosigned_url || ''
+            const cotizacion_contrato_firmado_url = completeUrl(row.original?.cotizacion_contrato_firmado_url || '')
+            const cotizacion_contrato_url = completeUrl(row.original?.cotizacion_contrato_url || '')
+            const cotizacion_contrato_autosigned_url = completeUrl(row.original?.cotizacion_contrato_autosigned_url || '')
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
                 h('div', { class: 'font-medium' }, nombre?.toUpperCase()),
                 h('div', { class: 'text-sm text-gray-500' }, documento),
