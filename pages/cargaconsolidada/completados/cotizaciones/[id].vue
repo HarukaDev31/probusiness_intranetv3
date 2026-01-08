@@ -245,6 +245,13 @@ const loadTabs = () => {
             break
     }
 }
+
+// Función para construir el URL de firma usando el UUID
+const getSignUrl = (uuid: string): string => {
+    if (!uuid) return ''
+    return 'https://clientes.probusiness.pe/firma-acuerdo-servicio/' + uuid
+}
+
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
@@ -646,14 +653,14 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         handleSendRecordatorioFirma(row.original.id)
                     }
                 }),
-                row.original.cotizacion_contrato_url ? h(UButton, {
+                (row.original.cotizacion_contrato_url || row.original.cotizacion_contrato_autosigned_url || row.original.cotizacion_contrato_firmado_url) ? h(UButton, {
                     icon: 'i-heroicons-document-duplicate',
                     variant: 'ghost',
                     size: 'xs',
                     color: 'info',
-                    title: 'Copiar enlace del contrato',
+                    title: 'Copiar enlace de firma',
                     onClick: () => {
-                        copyToClipboard(row.original.cotizacion_contrato_url, 'Enlace del contrato copiado')
+                        copyToClipboard(getSignUrl(row.original.uuid), 'Enlace de firma copiado')
                     }
                 }) : null,
                 h(UButton, {
@@ -875,14 +882,14 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     handleDelete(row.original.id)
                 }
             }) : null,
-                row.original.cotizacion_contrato_url ? h(UButton, {
+                (row.original.cotizacion_contrato_url || row.original.cotizacion_contrato_autosigned_url || row.original.cotizacion_contrato_firmado_url) ? h(UButton, {
                     icon: 'i-heroicons-document-duplicate',
                     variant: 'ghost',
                     size: 'xs',
                     color: 'info',
-                    title: 'Copiar enlace del contrato',
+                    title: 'Copiar enlace de firma',
                     onClick: () => {
-                        copyToClipboard(row.original.cotizacion_contrato_url, 'Enlace del contrato copiado')
+                        copyToClipboard(getSignUrl(row.original.uuid), 'Enlace de firma copiado')
                     }
                 }) : null,
                 h(UButton, {
