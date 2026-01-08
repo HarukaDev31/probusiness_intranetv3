@@ -67,8 +67,15 @@
 
                     <!-- Video -->
                     <div v-else-if="isVideo" class="w-full flex justify-center">
-                        <video :src="file?.file_url || ''" controls
-                            class="max-w-full max-h-[45vh] rounded-lg shadow-lg">
+                        <video 
+                            :src="file?.file_url || ''" 
+                            controls
+                            playsinline
+                            webkit-playsinline="true"
+                            preload="metadata"
+                            class="max-w-full max-h-[45vh] rounded-lg shadow-lg"
+                            crossorigin="anonymous">
+                            <source :src="file?.file_url || ''" :type="getVideoMimeType">
                             Tu navegador no soporta el elemento de video.
                         </video>
                     </div>
@@ -267,6 +274,20 @@ const isExcelFile = computed(() => {
     if (!props.file?.file_name) return false
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
     return ['xls', 'xlsx', 'xlsm'].includes(extension || '')
+})
+
+const getVideoMimeType = computed(() => {
+    if (!props.file?.file_name) return 'video/mp4'
+    const extension = props.file.file_name.split('.').pop()?.toLowerCase()
+    const mimeTypes: Record<string, string> = {
+        'mp4': 'video/mp4',
+        'avi': 'video/avi',
+        'mov': 'video/quicktime',
+        'wmv': 'video/x-ms-wmv',
+        'flv': 'video/x-flv',
+        'webm': 'video/webm'
+    }
+    return mimeTypes[extension || ''] || 'video/mp4'
 })
 
 const getFileExtension = computed(() => {
