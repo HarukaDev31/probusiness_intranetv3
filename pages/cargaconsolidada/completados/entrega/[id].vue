@@ -407,8 +407,9 @@ const clientesColumns = ref<TableColumn<any>[]>([
         })
       }
 
-      // Si total_pagos_confirmados >= total_logistica_impuestos y todos están confirmados, mostrar Pagado con fondo verde
-      const isPagado = totalPagosConfirmados >= totalLogImp && totalLogImp > 0 && todosConfirmados
+      // Si total_pagos_confirmados >= total_logistica_impuestos y todos están confirmados, mostrar Pagado con fondo verde,in each comparision convert to 2 decimal places
+      const isPagado = Number(totalPagosConfirmados.toFixed(2)) >= Number(totalLogImp.toFixed(2)) && Number(totalLogImp.toFixed(2)) > 0 && todosConfirmados
+      console.log('isPagado', totalPagosConfirmados, totalLogImp, todosConfirmados)
       const estado = isPagado ? 'Pagado' : 'Pendiente'
       
       // Aplicar la misma lógica de colores que en cotizacion-final
