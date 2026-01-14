@@ -16,27 +16,32 @@
         <div class="flex items-center justify-center">
           <div class="flex items-center space-x-4">
             <div v-for="step in totalSteps" :key="step" class="flex items-center">
-              <!-- Step Circle -->
-              <div :class="[
-                'w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold transition-colors',
-                currentStep >= step
-                  ? 'bg-green-600 '
-                  : 'bg-gray-200 text-gray-500'
-              ]">
-                {{ step }}
-              </div>
-
-              <!-- Step Label -->
-              <div :class="[
-                'ml-3 text-sm font-medium transition-colors',
-                currentStep >= step ? 'text-green-600' : 'text-gray-500'
-              ]">
-                {{ getStepLabel(step) }}
+              <div 
+                @click="handleStepClick(step)" 
+                class="flex flex-col items-center cursor-pointer group"
+                :class="{ 'cursor-not-allowed opacity-50': !canGoToStep(step) }"
+              >
+                <!-- Step Label -->
+                <div :class="[
+                  'text-sm font-medium transition-colors mb-2 group-hover:text-green-700',
+                  currentStep >= step ? 'text-green-600' : 'text-gray-500'
+                ]">
+                  {{ getStepLabel(step) }}
+                </div>
+                <!-- Step Circle -->
+                <div :class="[
+                  'w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold transition-all',
+                  currentStep >= step
+                    ? 'bg-green-600 text-white group-hover:bg-green-700 group-hover:scale-110'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 group-hover:bg-gray-300 dark:group-hover:bg-gray-600 group-hover:scale-110'
+                ]">
+                  {{ step }}
+                </div>
               </div>
 
               <!-- Connector Line -->
               <div v-if="step < totalSteps" :class="[
-                'w-16 h-0.5 transition-colors',
+                'w-16 h-0.5 transition-colors mx-4 mt-6',
                 currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
               ]"></div>
             </div>
@@ -52,39 +57,113 @@
             Información del Cliente
           </h2>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Selección de tipo de cliente -->
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4">Escoge el tipo de cliente:</h3>
+            <div class="flex gap-4">
+              <button 
+                @click="clienteInfo.tipoDocumento = 'DNI'"
+                :class="[
+                  'px-8 py-3 rounded-full font-semibold transition-all',
+                  clienteInfo.tipoDocumento === 'DNI' 
+                    ? 'bg-orange-500 text-white shadow-lg' 
+                    : 'bg-white text-gray-700 border border-gray-300 hover:border-orange-500'
+                ]"
+              >
+                DNI
+              </button>
+              <button 
+                @click="clienteInfo.tipoDocumento = 'RUC'"
+                :class="[
+                  'px-8 py-3 rounded-full font-semibold transition-all',
+                  clienteInfo.tipoDocumento === 'RUC' 
+                    ? 'bg-orange-500 text-white shadow-lg' 
+                    : 'bg-white text-gray-700 border border-gray-300 hover:border-orange-500'
+                ]"
+              >
+                RUC
+              </button>
+            </div>
+          </div>
+
+          <!-- Campos para DNI -->
+          <div v-if="clienteInfo.tipoDocumento === 'DNI'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <UFormField label="Nombre del cliente" name="nombre">
-                <UInput v-model="clienteInfo.nombre" type="text" placeholder="Ingrese el nombre completo" required
+              <UFormField label="Nombre completo:" name="nombre">
+                <UInput v-model="clienteInfo.nombre" type="text" placeholder="Miguel Villegas Perez" required
                   class="w-full" />
               </UFormField>
             </div>
 
             <div>
-              <UFormField label="DNI" name="dni">
-                <UInput class="w-full" v-model="clienteInfo.dni" type="text" />
+              <UFormField label="Dni:" name="dni">
+                <UInput class="w-full" v-model="clienteInfo.dni" type="text" placeholder="54646456" />
               </UFormField>
             </div>
 
             <div>
               <UFormField label="WhatsApp" name="whatsapp">
-                <UInputMenu v-model="clienteInfo.whatsapp" required :items="clientes" placeholder="Buscar whatsapp..."
+                <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
                   class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
-                  @update:model-value="onClienteSelected" />
-
+                  @update:model-value="onClienteSelected">
+                  <template #default>
+                    {{ displayWhatsapp }}
+                  </template>
+                </UInputMenu>
               </UFormField>
             </div>
 
             <div>
-              <UFormField label="Correo" name="correo">
-                <UInput class="w-full" v-model="clienteInfo.correo" type="email" />
+              <UFormField label="Correo:" name="correo">
+                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="mvillegas@probusiness.pe" />
               </UFormField>
             </div>
 
             <div>
               <UFormField label="Qty Proveedores" name="qtyProveedores">
                 <UInput class="w-full" v-model="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
-                  placeholder="1-6 proveedores" size="md" variant="outline" />
+                  placeholder="2" size="md" variant="outline" />
+              </UFormField>
+            </div>
+          </div>
+
+          <!-- Campos para RUC -->
+          <div v-else-if="clienteInfo.tipoDocumento === 'RUC'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <UFormField label="Empresa:" name="empresa">
+                <UInput v-model="clienteInfo.empresa" type="text" placeholder="Grupo Chijuakay SAC" required
+                  class="w-full" />
+              </UFormField>
+            </div>
+
+            <div>
+              <UFormField label="Ruc:" name="ruc">
+                <UInput class="w-full" v-model="clienteInfo.ruc" type="text" placeholder="20603287721" />
+              </UFormField>
+            </div>
+
+            <div>
+              <UFormField label="WhatsApp" name="whatsapp">
+                <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
+                  class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
+                  @update:model-value="onClienteSelected">
+                  <template #default>
+                    {{ displayWhatsapp }}
+                  </template>
+                </UInputMenu>
+              </UFormField>
+            </div>
+
+            <div>
+              <UFormField label="Correo:" name="correo">
+                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="mvillegas@probusiness.pe" />
+              </UFormField>
+            </div>
+
+            <div>
+              <UFormField label="Qty Proveedores" name="qtyProveedores">
+                <UInput class="w-full" v-model="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
+                  placeholder="2" size="md" variant="outline" />
               </UFormField>
             </div>
           </div>
@@ -103,6 +182,9 @@
               <div class="px-3 py-1 rounded-md">
                 <span class="font-medium">Total Items:</span> {{ totalItems }}
               </div>
+              <div class="px-3 py-1 rounded-md">
+                <span class="font-medium">Total Cajas:</span> {{ totalCajas }}
+              </div>
             </div>
           </div>
 
@@ -110,14 +192,14 @@
             <div v-for="(proveedor, index) in proveedores" :key="proveedor.id" class="border-t pt-6">
               <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold ">
-                  <span>{{ proveedor.id }} Proveedor</span>
+                  <span>Proveedor #{{ proveedor.id }} </span>
                   <UButton v-if="index + 1 > MAX_PROVEEDORES" color="warning" variant="soft" size="sm"
                     @click="proveedor.extraProveedor = 1" class="ml-2">
                     <UIcon name="i-heroicons-plus" class="w-5 h-5" />
                     {{ formatCurrency(TARIFA_EXTRA_PROVEEDOR) }}
                   </UButton>
                 </h3>
-                <UButton @click="removeProveedor(proveedor.id)" color="error" variant="outline"
+                <UButton v-if="proveedores.length > 1" @click="confirmDeleteProveedor(proveedor.id)" color="error" variant="outline"
                   title="Eliminar proveedor">
                   <UIcon name="i-heroicons-trash" class="w-5 h-5" />
                 </UButton>
@@ -178,7 +260,11 @@
                       Precio <span class="text-red-500">*</span>
                     </label>
                     <UInput class="w-full" v-model.number="producto.precio" type="number" step="0.01" min="0"
-                      placeholder="0.00" size="md" variant="outline" />
+                      placeholder="0.00" size="md" variant="outline">
+                      <template #leading>
+                        <span class="text-gray-500">$</span>
+                      </template>
+                    </UInput>
                   </div>
                   <div class="col-span-2">
                     <label class="block text-sm font-medium  mb-2">
@@ -195,8 +281,12 @@
                       <label class="block text-sm font-medium  mb-2">
                         P.Ajuste
                       </label>
-                      <UInput class="w-full" v-model.number="producto.valoracion" type="number" min="0" placeholder="0"
-                        size="md" variant="outline" />
+                      <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0" placeholder="0.00"
+                        size="md" variant="outline">
+                        <template #leading>
+                          <span class="text-gray-500">$</span>
+                        </template>
+                      </UInput>
                     </div>
 
                   </div>
@@ -205,7 +295,7 @@
 
                       <UButton @click="producto.showValoracion = !producto.showValoracion" color="primary"
                         variant="soft" size="sm" icon="i-heroicons-cog-6-tooth" />
-                      <UButton @click="removeProducto(proveedor.id, producto.id)" color="error" variant="soft" size="sm"
+                      <UButton v-if="proveedor.productos.length > 1" @click="confirmDeleteProducto(proveedor.id, producto.id)" color="error" variant="soft" size="sm"
                         icon="i-heroicons-trash" title="Eliminar producto" />
                     </div>
                   </div>
@@ -228,7 +318,18 @@
         <!-- Step 3: Resumen -->
         <div v-if="currentStep === 3">
           <h2 class="text-2xl font-bold mb-6">Resumen</h2>
-
+          
+          <!-- Información del Cliente -->
+          <div class="flex gap-8 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-gray-700 dark:text-gray-300">Cliente:</span>
+              <span class="text-gray-900 dark:text-white">{{ clienteInfo.tipoDocumento === 'RUC' ? clienteInfo.empresa : clienteInfo.nombre }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-gray-700 dark:text-gray-300">WhatsApp:</span>
+              <span class="text-gray-900 dark:text-white">{{ clienteInfo.whatsapp }}</span>
+            </div>
+          </div>
 
         </div>
 
@@ -239,207 +340,211 @@
 
           <!-- Tabla de Cálculos -->
           <div class="overflow-x-auto">
-            <table class="w-ful ">
+            <table class="w-full">
               <thead>
 
               </thead>
               <tbody>
                 <tr>
-                  <td class=" ">Tipo de cliente</td>
-                  <td class=" text-center px-4 py-2 " :colspan="proveedores.length">
-                    <USelect v-model="clienteInfo.tipoCliente" :items="tarifasSelect" item-value="value"
-                      item-title="label" placeholder="Selecciona un tipo de cliente" class="w-full" />
+                  <td class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2">Tipo de cliente:</td>
+                  <td class="text-center px-4 py-2" :colspan="proveedores.length">
+                    <div class="flex items-center gap-4">
+                      <USelect v-model="clienteInfo.tipoCliente" :items="tarifasSelect" item-value="value"
+                        item-title="label" placeholder="Selecciona un tipo de cliente" class="flex-1 max-w-xs" />
+                    </div>
                   </td>
                 </tr>
                 <tr>
-                  <td class=" ">N. Proveedor</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center px-4 py-2"
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">N. Proveedor</td>
+                  <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center px-4 py-2"
                     :colspan="proveedor.productos.length">
                     {{ proveedor.id }}
                   </td>
-                  <td class=" text-center ">
-                    {{ proveedores.length }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class=" ">Qty Cajas</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center"
-                    :colspan="proveedor.productos.length">
-                    <UInput class="w-full" v-model.number="proveedor.qtyCaja" type="number" min="0" placeholder="0"
-                      size="md" variant="outline" />
-                  </td>
-                  <td class=" text-center ">
-                    {{ totalCajas }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class=" ">Peso</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center"
-                    :colspan="proveedor.productos.length">
-                    <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0"
-                      size="md" variant="outline" />
-                  </td>
-                  <td class=" text-center ">
-                    {{ totalPeso }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class=" ">Vol. x Prov.</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center"
-                    :colspan="proveedor.productos.length">
-                    <UInput class="w-full" v-model.number="proveedor.cbm" type="number" min="0" placeholder="0"
-                      size="md" variant="outline" />
-                  </td>
-                  <td class=" text-center ">
-                    {{ totalCbm }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class=" ">Nombre</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
-                      <UInput class="w-full" v-model="producto.nombre" type="text" placeholder="Nombre del producto"
-                        size="md" variant="outline" />
-                    </td>
-                  </template>
-                  <td class=" text-center ">
+                  <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2">
                     Total
                   </td>
                 </tr>
                 <tr>
-                  <td class=" ">Valor unitario</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
-                      <UInput class="w-full" v-model.number="producto.precio" type="number" step="0.01" min="0"
-                        placeholder="0.00" size="md" variant="outline" />
-                    </td>
-                  </template>
-                  <td class=" text-center ">
-                    -
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">Qty Cajas</td>
+                  <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
+                    :colspan="proveedor.productos.length">
+                    <UInput class="w-full" v-model.number="proveedor.qtyCaja" type="number" min="0" placeholder="0"
+                      size="md" variant="outline" :ui="{ base: 'text-center'}" />
                   </td>
-                </tr>
-                <tr v-if="existsValoracion">
-                  <td class=" ">Valor Ajustado</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
-                      <UInput class="w-full" v-model.number="producto.valoracion" type="number" min="0" placeholder="0"
-                        size="md" variant="outline" />
-                    </td>
-                  </template>
-                  <td class=" text-center ">
-                    -
+                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2">
+                    {{ totalCajas }}
                   </td>
                 </tr>
                 <tr>
-                  <td class=" ">Cantidad</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
-                      <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0" placeholder="0"
-                        size="md" variant="outline" />
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">Peso</td>
+                  <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
+                    :colspan="proveedor.productos.length">
+                    <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0"
+                      size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                  </td>
+                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2">
+                    {{ totalPeso }}
+                  </td>
+                </tr>
+                <tr>
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">Vol. x Prov.</td>
+                  <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
+                    :colspan="proveedor.productos.length">
+                    <UInput class="w-full" v-model.number="proveedor.cbm" type="number" min="0" placeholder="0"
+                      size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                  </td>
+                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2">
+                    {{ totalCbm }}
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2">Productos</td>
+                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center">
+                      <UInput class="w-full" v-model="producto.nombre" type="text" placeholder="Nombre del producto"
+                        size="md" variant="outline" :ui="{ base: 'text-center'}" />
                     </td>
                   </template>
-                  <td class=" text-center ">
+                  <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2">
+                    Total
+                  </td>
+                </tr>
+                <tr>
+                  <td class="bg-primary text-white font-semibold px-4 py-2">Valor unitario</td>
+                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center">
+                      <UInput class="w-full" v-model.number="producto.precio" type="number" step="0.01" min="0"
+                        placeholder="0.00" size="md" variant="outline" :ui="{ base: 'text-center'}">
+                        <template #leading>
+                          <span class="text-gray-500">$</span>
+                        </template>
+                      </UInput>
+                    </td>
+                  </template>
+                </tr>
+                <tr v-if="existsValoracion">
+                  <td class="bg-primary text-white font-semibold px-4 py-2">Valor Ajustado</td>
+                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
+                      <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0" placeholder="0.00"
+                        size="md" variant="outline" :ui="{ base: 'text-center'}">
+                        <template #leading>
+                          <span class="text-gray-500">$</span>
+                        </template>
+                      </UInput>
+                    </td>
+                  </template>
+                </tr>
+                <tr>
+                  <td class="bg-primary text-white font-semibold px-4 py-2">Cantidad</td>
+                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center">
+                      <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0" placeholder="0"
+                        size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                    </td>
+                  </template>
+                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2">
                     {{ totalItems }}
                   </td>
                 </tr>
                 <tr>
-                  <td class=" ">Valor FOB</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center ">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center ">
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">Valor FOB</td>
+                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center">
                       {{ (producto.precio * producto.cantidad || 0).toFixed(2) }}
                     </td>
                   </template>
-                  <td class=" text-center ">
+                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2">
                     {{ totalValorFOB.toFixed(2) }}
                   </td>
                 </tr>
                 <tr v-if="existsValoracion">
-                  <td class=" ">Ajustado FOB</td>
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">Ajustado FOB</td>
 
                   <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                     <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
                       {{ (producto.valoracion * producto.cantidad || 0).toFixed(2) }}
                     </td>
                   </template>
-                  <td class=" text-center ">
+                  <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2">
                     {{ totalValorFOBAjustado.toFixed(2) }}
                   </td>
                 </tr>
                 <tr>
-                  <td class=" ">Distribución %</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
+                  <td class="px-4 py-2">Distribución %</td>
+                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center">
                       {{ totalValorFOB > 0 ? ((producto.precio * producto.cantidad || 0) / totalValorFOB *
                         100).toFixed(0) : 0 }}%
                     </td>
                   </template>
-                  <td class=" text-center ">
+                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2">
                     100%
                   </td>
                 </tr>
                 <tr>
-                  <td class=" px-4 py-2">Flete</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
+                  <td class="bg-primary text-white font-semibold px-4 py-2">Flete</td>
+                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center">
                       {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).flete) }}
                     </td>
                   </template>
-                  <td class=" text-center">
+                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2">
                     {{ formatCurrency(getTotals(proveedores, selectedTarifa).flete) }}
                   </td>
                 </tr>
                 <tr>
-                  <td class=" ">Valor CFR</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center ">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center ">
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">Valor CFR</td>
+                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center">
                       {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cfr) }}
                     </td>
                   </template>
-                  <td class=" text-center ">
+                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2">
                     {{ formatCurrency(getTotals(proveedores, selectedTarifa).cfr) }}
                   </td>
                 </tr>
                 <tr v-if="existsValoracion">
-                  <td class=" ">Ajustado CFR</td>
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">Ajustado CFR</td>
                   <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center ">
                     <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center ">
                       {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cfrAjustado) }}
                     </td>
                   </template>
-                  <td class=" text-center ">
+                  <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2">
                     {{ formatCurrency(getTotals(proveedores, selectedTarifa).cfrAjustado) }}
                   </td>
                 </tr>
                 <tr>
-                  <td class=" px-4 py-2">Seguro</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
+                  <td class="bg-primary text-white font-semibold px-4 py-2">Seguro</td>
+                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center">
                       {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).seguro) }}
                     </td>
                   </template>
-                  <td class=" text-center">
+                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2">
                     {{ formatCurrency(totalSeguro) }}
                   </td>
                 </tr>
                 <tr>
-                  <td class=" ">Valor CIF</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">Valor CIF</td>
+                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center">
                       {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cif) }}
                     </td>
                   </template>
-                  <td class=" text-center ">
+                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2">
                     {{ formatCurrency(getTotals(proveedores, selectedTarifa).cif) }}
                   </td>
                 </tr>
                 <tr v-if="existsValoracion">
-                  <td class=" ">Ajustado CIF</td>
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">Ajustado CIF</td>
                   <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                     <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
                       {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cifAjustado) }}
                     </td>
                   </template>
-                  <td class=" text-center ">
+                  <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2">
                     {{ formatCurrency(getTotals(proveedores, selectedTarifa).cifAjustado) }}
                   </td>
                 </tr>
@@ -457,8 +562,12 @@
                     <th class=" text-left"></th>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                       <th v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
-                        <UInput class="w-full" v-model.number="producto.antidumpingCU" type="number" min="0"
-                          placeholder="0" size="md" variant="outline" />
+                        <UInput class="w-full text-center" v-model.number="producto.antidumpingCU" type="number" min="0"
+                          placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center', input: 'text-white placeholder-white/70' }" >
+                          <template #leading>
+                            <span class="text-white">$</span>
+                          </template>
+                        </UInput>
                       </th>
                     </template>
                     <th class=" text-center"></th>
@@ -482,8 +591,12 @@
                     <td class=" "></td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                       <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
-                        <UInput class="w-full" v-model.number="producto.adValoremP" type="number" min="0"
-                          placeholder="0" size="md" variant="outline" />
+                        <UInput class="w-full text-white" v-model.number="producto.adValoremP" type="number" min="0"
+                          placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center', input: 'text-white placeholder-white/70' }" >
+                          <template #leading>
+                            <span class="text-white">%</span>
+                          </template>
+                        </UInput>
                       </td>
                     </template>
                     <td class=" text-center ">
@@ -534,13 +647,13 @@
                     </td>
                   </tr>
                   <tr>
-                    <td class=" ">Total</td>
+                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2">Total</td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center ">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center ">
+                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-gray-200 dark:bg-gray-700 font-semibold">
                         {{ formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).total) }}
                       </td>
                     </template>
-                    <td class=" text-center ">
+                    <td class=" text-center bg-gray-200 dark:bg-gray-700 font-semibold">
                       {{ formatCurrency(getTributos(proveedores, selectedTarifa).total) }}
                     </td>
                   </tr>
@@ -558,17 +671,17 @@
                   <tr>
                     <td class=" "></td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
+                      <td v-for="producto in proveedor.productos" :key="producto.id" class="bg-gray-200 dark:bg-gray-700 text-center">
                         {{ (getPorDistribucion(proveedores, selectedTarifa, producto).distribucion * 100).toFixed(2)
                         }}%
                       </td>
                     </template>
-                    <td class=" text-center">100%</td>
+                    <td class=" text-center bg-gray-200 dark:bg-gray-700">100%</td>
                   </tr>
                   <tr>
                     <td class=" ">Item</td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
+                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg">
                         {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoDestino) }}
                       </td>
 
@@ -623,31 +736,111 @@
                     </td>
                   </tr>
                   <tr>
-                    <td class=" ">Costo unit. usd</td>
+                    <td class="bg-gray-200 dark:bg-gray-700">Costo unit. usd</td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
+                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-gray-200 dark:bg-gray-700">
                         {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoUSD) }}
                       </td>
 
                     </template>
-                    <td class=" text-center">
+                    <td class=" text-center bg-gray-200 dark:bg-gray-700">
                       {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoUSD) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class=" ">Costo unit. pen</td>
+                    <td class="bg-primary text-white">Costo unit. pen</td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
+                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-primary text-white">
                         {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoPEN) }}
                       </td>
 
                     </template>
-                    <td class=" text-center">
+                    <td class=" text-center bg-primary text-white">
                       {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoPEN) }}
                     </td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Terminar -->
+        <div v-if="currentStep === 4">
+          <h2 class="text-2xl font-bold mb-6">Terminar</h2>
+
+          <div class="space-y-6">
+            <!-- Cantidad proveedores -->
+            <div class="grid grid-cols-2 gap-4 items-center">
+              <div>
+                <label class="block text-sm font-medium mb-2">
+                  Cantidad proveedores:
+                </label>
+                <UInput :modelValue="proveedores.length" type="number" disabled class="w-full" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">
+                  Tarifa adicional (opcional):
+                </label>
+                <UInput v-model.number="tarifaExtraProveedorManual" type="number" step="0.01" min="0"
+                  placeholder="0.00" class="w-full">
+                  <template #leading>
+                    <span class="text-gray-500">$</span>
+                  </template>
+                </UInput>
+              </div>
+            </div>
+
+            <!-- Cantidad Items -->
+            <div class="grid grid-cols-2 gap-4 items-center">
+              <div>
+                <label class="block text-sm font-medium mb-2">
+                  Cantidad items:
+                </label>
+                <UInput :modelValue="totalItems" type="number" disabled class="w-full" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">
+                  Tarifa adicional (opcional):
+                </label>
+                <UInput v-model.number="tarifaExtraItemManual" type="number" step="0.01" min="0"
+                  placeholder="0.00" class="w-full">
+                  <template #leading>
+                    <span class="text-gray-500">$</span>
+                  </template>
+                </UInput>
+              </div>
+            </div>
+
+            <!-- Descuento -->
+            <div>
+              <label class="block text-sm font-medium mb-2">
+                Descuento (opcional):
+              </label>
+              <UInput v-model.number="tarifaDescuento" type="number" step="0.01" min="0"
+                placeholder="0.00" class="w-full max-w-md">
+                <template #leading>
+                  <span class="text-gray-500">$</span>
+                </template>
+              </UInput>
+            </div>
+
+            <!-- Selecciona el vendedor -->
+            <div>
+              <label class="block text-sm font-medium mb-2">
+                Selecciona el vendedor: <span class="text-red-500">*</span>
+              </label>
+              <USelect v-model="selectedVendedor" :items="vendedores" placeholder="Seleccionar" 
+                class="w-full max-w-md" />
+            </div>
+
+            <!-- Selecciona el consolidado -->
+            <div>
+              <label class="block text-sm font-medium mb-2">
+                Selecciona el consolidado: <span class="text-red-500">*</span>
+              </label>
+              <USelect v-model="selectedContenedor" :items="contenedores" placeholder="Seleccionar"
+                class="w-full max-w-md" />
             </div>
           </div>
         </div>
@@ -684,7 +877,12 @@ import type { Proveedor, Tarifa, ProductoItem } from '~/types/calculadora-import
 import { useSpinner } from '@/composables/commons/useSpinner'
 import { useModal } from '@/composables/commons/useModal'
 const { withSpinner } = useSpinner()
-const { showSuccess, showError } = useModal()
+const { showSuccess, showError, showConfirmation } = useModal()
+
+const selectedCliente = ref<any>(null)
+const displayWhatsapp = computed(() => {
+  return clienteInfo.value.whatsapp || ''
+})
 
 const {
   currentStep,
@@ -715,6 +913,14 @@ const {
   TARIFA_EXTRA_PROVEEDOR,
   TARIFAS_EXTRA_ITEM_PER_CBM,
   handleEndFormulario,
+  handleChangeToStep2,
+  vendedores,
+  contenedores,
+  tarifaDescuento,
+  tarifaExtraProveedorManual,
+  tarifaExtraItemManual,
+  selectedVendedor,
+  selectedContenedor
 } = useCalculadoraImportacion()
 const saveCotizacion = async () => {
   try {
@@ -733,22 +939,99 @@ const saveCotizacion = async () => {
 }
 
 const onClienteSelected = (cliente: any) => {
-  clienteInfo.value.nombre = cliente.nombre || ''
-  clienteInfo.value.dni = cliente.documento || ''
-  clienteInfo.value.correo = cliente.correo || ''
+  if (cliente && typeof cliente === 'object') {
+    clienteInfo.value.nombre = cliente.nombre || ''
+    clienteInfo.value.dni = cliente.documento || ''
+    clienteInfo.value.correo = cliente.correo || ''
+    clienteInfo.value.empresa = cliente.razon_social || cliente.empresa || ''
+    clienteInfo.value.ruc = cliente.ruc || ''
+    
+    // Guardar el whatsapp como string
+    const whatsappValue = cliente.whatsapp || cliente.celular || cliente.label || ''
+    clienteInfo.value.whatsapp = whatsappValue
+    selectedCliente.value = cliente
+  }
 }
 const getStepLabel = (step: number): string => {
   switch (step) {
     case 1:
-      return 'Información Cliente'
+      return 'Datos'
     case 2:
-      return 'Información Carga'
+      return 'Carga'
     case 3:
-      return 'Calculos'
-
+      return 'Costo'
+    case 4:
+      return 'Terminar'
     default:
       return ''
   }
+}
+
+const canGoToStep = (step: number): boolean => {
+  // Siempre puedes ir al paso 1
+  if (step === 1) return true
+  
+  // Para ir al paso 2, debes completar el paso 1
+  if (step === 2) return isStepValid(1)
+  
+  // Para ir al paso 3, debes completar los pasos 1 y 2
+  if (step === 3) return isStepValid(1) && isStepValid(2)
+  
+  // Para ir al paso 4, debes completar los pasos 1, 2 y 3
+  if (step === 4) return isStepValid(1) && isStepValid(2) && isStepValid(3)
+  
+  return false
+}
+
+const handleStepClick = (step: number) => {
+  // No permitir navegar si no se puede ir a ese step
+  if (!canGoToStep(step)) {
+    return
+  }
+  
+  // Si estamos en el paso 1 y queremos ir al 2, ejecutar la lógica de cambio
+  if (currentStep.value === 1 && step === 2) {
+    if (!isStepValid(1)) {
+      showError('Por favor complete todos los campos requeridos', 'error')
+      return
+    }
+    handleChangeToStep2()
+  }
+  
+  // Si estamos en el paso 2 y queremos ir al 3, validar
+  if (currentStep.value === 2 && step === 3) {
+    if (!isStepValid(2)) {
+      showError('Por favor complete la información de la carga correctamente', 'error')
+      return
+    }
+  }
+  
+  // Si estamos en el paso 3 y queremos ir al 4, validar
+  if (currentStep.value === 3 && step === 4) {
+    if (!isStepValid(3)) {
+      showError('Por favor complete los cálculos correctamente', 'error')
+      return
+    }
+  }
+  
+  // Navegar al step
+  goToStep(step)
+}
+
+const confirmDeleteProveedor = (proveedorId: string) => {
+  showConfirmation(
+    'Eliminar Proveedor',
+    '¿Está seguro que desea eliminar este proveedor? Esta acción no se puede deshacer.',
+    () => removeProveedor(proveedorId)
+  )
+}
+
+const confirmDeleteProducto = (proveedorId: string, productoId: string) => {
+  showConfirmation(
+    'Eliminar Producto',
+    '¿Está seguro que desea eliminar este producto? Esta acción no se puede deshacer.',
+    () => removeProducto(proveedorId, productoId)
+  )
 }
 
 
@@ -1089,13 +1372,16 @@ onMounted(async () => {
 <style scoped>
 /**style table add spacing between rows */
 table {
-  border-spacing: 0 10px;
+  border-spacing: 8px 4px;
+  border-collapse: separate;
 }
 table td {
   padding: 10px;
+  border-radius: 8px;
 }
 table th {
   padding: 10px;
+  border-radius: 8px;
 }
 
 </style>

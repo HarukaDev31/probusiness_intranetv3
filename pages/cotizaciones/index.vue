@@ -92,9 +92,24 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => formatCurrency(row.original.tarifa)
   },
   {
+    accessorKey: 'descuento',
+    header: 'Desct.',
+    cell: ({ row }: { row: any }) => formatCurrency(row.original.descuento || 0)
+  },
+  {
     accessorKey: 'campania',
     header: 'Campaña',
     cell: ({ row }: { row: any }) => `${row.original.contenedor?.carga ? `Contenedor #${row.original.contenedor?.carga}` : ''}`
+  },
+  {
+    accessorKey: 'cotizador',
+    header: 'Cotizador',
+    cell: ({ row }: { row: any }) => row.original.cotizador?.name || row.original.cotizador || 'Jose'
+  },
+  {
+    accessorKey: 'vendedor',
+    header: 'Vendedor',
+    cell: ({ row }: { row: any }) => row.original.vendedor?.name || row.original.vendedor || '-'
   },
   {
     accessorKey: 'cotizacion',
