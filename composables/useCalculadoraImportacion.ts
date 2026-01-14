@@ -7,7 +7,7 @@ import { CotizacionService } from '~/services/cargaconsolidada/cotizacionService
 export const useCalculadoraImportacion = () => {
   const currentStep = ref(1)
   const ISDEBUG = false;
-  const totalSteps = 3
+  const totalSteps = 4
   const MAX_PROVEEDORES = 3;
   const MAX_PROVEEDORES_EXTRA = 3;
   const TARIFA_EXTRA_PROVEEDOR = 50;
@@ -41,6 +41,13 @@ export const useCalculadoraImportacion = () => {
   const tarifas = ref<Tarifa[]>([])
   const cotizaciones = ref<any[]>([])
   const loading = ref(false)
+  const vendedores = ref<any[]>([])
+  const contenedores = ref<any[]>([])
+  const tarifaDescuento = ref(0)
+  const tarifaExtraProveedorManual = ref(0)
+  const tarifaExtraItemManual = ref(0)
+  const selectedVendedor = ref<number | null>(null)
+  const selectedContenedor = ref<number | null>(null)
   const estadoCotizaciones = ref<any[]>([
     {
       label: 'Todos',
@@ -112,7 +119,10 @@ export const useCalculadoraImportacion = () => {
     whatsapp: null,
     correo: '',
     qtyProveedores: 0,
-    tipoCliente: 'NUEVO'
+    tipoCliente: 'NUEVO',
+    tipoDocumento: 'DNI',
+    empresa: '',
+    ruc: ''
   })
   //computed totalItems
   const totalItems = computed(() => {
@@ -210,8 +220,11 @@ export const useCalculadoraImportacion = () => {
           adValoremP: producto.adValoremP
         }))
       })),
-      tarifaTotalExtraProveedor: tarifaTotalExtraProveedor,
-      tarifaTotalExtraItem: tarifaTotalExtraItem,
+      tarifaTotalExtraProveedor: tarifaTotalExtraProveedor + tarifaExtraProveedorManual.value,
+      tarifaTotalExtraItem: tarifaTotalExtraItem + tarifaExtraItemManual.value,
+      tarifaDescuento: tarifaDescuento.value,
+      id_usuario: selectedVendedor.value,
+      id_carga_consolidada_contenedor: selectedContenedor.value,
       tarifa: selectedTarifa.value,
     }
 
@@ -360,10 +373,23 @@ export const useCalculadoraImportacion = () => {
   const isStepValid = (step: number): boolean => {
     switch (step) {
       case 1:
-        return clienteInfo.value.nombre.trim() !== '' && clienteInfo.value.whatsapp !== null
+        // Validar campos comunes
+        if (!clienteInfo.value.whatsapp || !clienteInfo.value.correo || clienteInfo.value.qtyProveedores < 1) {
+          return false
+        }
+        
+        // Validar según tipo de documento
+        if (clienteInfo.value.tipoDocumento === 'DNI') {
+          return clienteInfo.value.nombre.trim() !== '' && clienteInfo.value.dni.trim() !== ''
+        } else if (clienteInfo.value.tipoDocumento === 'RUC') {
+          return clienteInfo.value.empresa.trim() !== '' && clienteInfo.value.ruc.trim() !== ''
+        }
+        return false
+        
       case 2:
-        return proveedores.value.every(proveedor =>
+        return proveedores.value.length > 0 && proveedores.value.every(proveedor =>
           proveedor.cbm > 0 &&
+          proveedor.productos.length > 0 &&
           proveedor.productos.every(producto =>
             producto.nombre.trim() !== '' &&
             producto.precio > 0 &&
@@ -515,6 +541,7 @@ export const useCalculadoraImportacion = () => {
     TARIFA_EXTRA_PROVEEDOR,
     TARIFAS_EXTRA_ITEM_PER_CBM,
     handleEndFormulario,
+    handleChangeToStep2,
     getCotizaciones,
     cotizaciones,
     loading,
@@ -535,6 +562,13 @@ export const useCalculadoraImportacion = () => {
     estadoCotizaciones,
     deleteCotizacionCalculadora,
     duplicateCotizacionCalculadora,
-    changeEstadoCotizacionCalculadora
+    changeEstadoCotizacionCalculadora,
+    vendedores,
+    contenedores,
+    tarifaDescuento,
+    tarifaExtraProveedorManual,
+    tarifaExtraItemManual,
+    selectedVendedor,
+    selectedContenedor
   }
 }

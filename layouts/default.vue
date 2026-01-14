@@ -277,6 +277,8 @@ const convertIconToHeroicons = (faIcon: string): string => {
     'fas fa-graduation-cap': 'i-heroicons-academic-cap',
     'fa fa-dashboard': 'i-heroicons-chart-bar-square',
     'fa fa-chart-line': 'i-heroicons-chart-bar-square',
+    'fa fa-newspaper': 'i-heroicons-newspaper',
+    'fa fa-calculator': 'i-heroicons-calculator',
   }
 
   return iconMap[faIcon] || ''
