@@ -545,6 +545,56 @@ export const useCalculadoraImportacion = () => {
     }
   }
 
+  // Obtener una cotización por id y mapearla al estado de la calculadora
+  const loadCotizacionById = async (id: number) => {
+    try {
+      const response = await CalculadoraImportacionService.getCotizacionById(id)
+      const payload = response?.data?.calculadora || response?.data || response
+      if (!payload) return null
+
+      const cliente = payload.cliente || {}
+      clienteInfo.value.nombre = cliente.nombre || payload.nombre_cliente || ''
+      clienteInfo.value.dni = cliente.documento || payload.dni_cliente || ''
+      clienteInfo.value.ruc = cliente.ruc || payload.ruc_cliente || ''
+      clienteInfo.value.empresa = cliente.empresa || payload.razon_social || ''
+      clienteInfo.value.correo = cliente.correo || payload.correo_cliente || ''
+      clienteInfo.value.whatsapp = cliente.telefono || payload.whatsapp_cliente || ''
+      clienteInfo.value.tipoCliente = payload.tipo_cliente || clienteInfo.value.tipoCliente
+      clienteInfo.value.qtyProveedores = Number(payload.qty_proveedores || payload.qtyProveedores || 0)
+      clienteInfo.value.tipoDocumento = cliente.tipo_documento || payload.tipo_documento || 'DNI'
+
+      proveedores.value = (payload.proveedores || []).map((p: any, idx: number) => ({
+        id: (idx + 1).toString(),
+        cbm: Number(p.cbm) || 0,
+        peso: Number(p.peso) || 0,
+        qtyCaja: Number(p.qty_caja || p.qtyCaja || 0),
+        productos: (p.productos || []).map((prod: any, j: number) => ({
+          id: `${idx + 1}-${j + 1}`,
+          nombre: prod.nombre || '',
+          precio: Number(prod.precio) || 0,
+          valoracion: Number(prod.valoracion) || 0,
+          cantidad: Number(prod.cantidad) || 0,
+          antidumpingCU: Number(prod.antidumping_cu || prod.antidumpingCU) || 0,
+          adValoremP: Number(prod.ad_valorem_p || prod.adValoremP) || 0,
+          showValoracion: !!(prod.valoracion && Number(prod.valoracion) > 0),
+          extraItem: 0
+        })),
+        extraProveedor: 0
+      }))
+
+      tarifaDescuento.value = Number(payload.tarifa_descuento || payload.tarifaDescuento || 0)
+      tarifaExtraProveedorManual.value = Number(payload.tarifa_total_extra_proveedor || payload.tarifaTotalExtraProveedor || 0)
+      tarifaExtraItemManual.value = Number(payload.tarifa_total_extra_item || payload.tarifaTotalExtraItem || 0)
+      selectedVendedor.value = payload.id_usuario || payload.vendedor || null
+      selectedContenedor.value = payload.id_carga_consolidada_contenedor || payload.id_carga_consolidada_contenedor || null
+
+      return payload
+    } catch (error) {
+      console.error('Error al cargar cotización por id:', error)
+      throw error
+    }
+  }
+
   return {
     currentStep,
     totalSteps,
@@ -604,6 +654,7 @@ export const useCalculadoraImportacion = () => {
     selectedVendedor,
     selectedContenedor,
     fetchVendedores,
-    fetchContenedores
+    fetchContenedores,
+    loadCotizacionById
   }
 }

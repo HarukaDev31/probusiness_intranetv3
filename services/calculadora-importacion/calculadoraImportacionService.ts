@@ -48,6 +48,16 @@ export class CalculadoraImportacionService extends BaseService {
             throw new Error('No se pudieron obtener las cotizaciones')
         }
     }
+    // get cotizacion by id (show)
+    static async getCotizacionById(id: number): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/${id}`)
+            return response
+        } catch (error) {
+            console.error('Error al obtener la cotización por id:', error)
+            throw new Error('No se pudo obtener la cotización')
+        }
+    }
     static async deleteCotizacion(id: number): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/${id}`, {
