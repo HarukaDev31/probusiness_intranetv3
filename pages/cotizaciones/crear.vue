@@ -255,7 +255,7 @@
                     <label class="block text-sm font-medium  mb-2">
                       Precio <span class="text-red-500">*</span>
                     </label>
-                    <UInput class="w-full" v-model.number="producto.precio" type="number" step="0.01" min="0"
+                    <UInput class="w-full" v-model.number="producto.precio" type="number" step
                       placeholder="0.00" size="md" variant="outline">
                       <template #leading>
                         <span class="text-gray-500">$</span>
@@ -347,6 +347,12 @@
                     <div class="flex items-center gap-4">
                       <USelect v-model="clienteInfo.tipoCliente" :items="tarifasSelect" item-value="value"
                         item-title="label" placeholder="Selecciona un tipo de cliente" class="flex-1 max-w-xs" />
+                      <template v-if="selectedTarifa && selectedTarifa.label === 'MANUAL'">
+                        <div class="flex flex-col items-start">
+                          <UInput v-model.number="selectedTarifa.tarifa" type="number" min="0" placeholder="Tarifa manual" class="w-32" required />
+                          <span v-if="!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0" class="text-red-500 text-xs">La tarifa manual es obligatoria</span>
+                        </div>
+                      </template>
                     </div>
                   </td>
                 </tr>
@@ -853,13 +859,31 @@
           <span class="">Paso {{ currentStep }} de {{ totalSteps }}</span>
         </div>
 
-        <UButton v-if="currentStep < totalSteps" @click="nextStep" :disabled="!canGoNext" color="primary" size="lg"
-          icon="i-heroicons-arrow-right" :label="'Siguiente'">
+        <UButton v-if="currentStep < totalSteps" 
+          @click="nextStep" 
+          :disabled="
+            (currentStep === 3 && selectedTarifa && selectedTarifa.label === 'MANUAL' && (!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0)) ||
+            !canGoNext
+          "
+          color="primary" 
+          size="lg"
+          icon="i-heroicons-arrow-right" 
+          :label="'Siguiente'">
 
         </UButton>
 
-        <UButton v-else @click="saveCotizacion()" color="primary" size="lg" icon="i-heroicons-arrow-right"
-          :label="'Finalizar'">
+        <UButton v-else 
+          @click="saveCotizacion()" 
+          color="primary" 
+          size="lg" 
+          icon="i-heroicons-arrow-right"
+          :label="'Finalizar'"
+          :disabled="
+            !selectedVendedor || 
+            !selectedContenedor || 
+            (selectedTarifa && selectedTarifa.label === 'MANUAL' && (!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0))
+          "
+        >
           Finalizar
         </UButton>
       </div>
@@ -922,6 +946,18 @@ const {
   fetchContenedores
 } = useCalculadoraImportacion()
 const saveCotizacion = async () => {
+  if (selectedTarifa && selectedTarifa.value && selectedTarifa.value.label === 'MANUAL' && (!selectedTarifa.value.tarifa || selectedTarifa.value.tarifa <= 0)) {
+    showError('La tarifa manual es obligatoria y debe ser mayor a 0', 'error')
+    return
+  }
+  if (!selectedVendedor) {
+    showError('Debes seleccionar un vendedor', 'error')
+    return
+  }
+  if (!selectedContenedor) {
+    showError('Debes seleccionar un consolidado', 'error')
+    return
+  }
   try {
     await withSpinner(async () => {
       const response = await handleEndFormulario()
@@ -969,17 +1005,20 @@ const getStepLabel = (step: number): string => {
 const canGoToStep = (step: number): boolean => {
   // Siempre puedes ir al paso 1
   if (step === 1) return true
-  
-  // Para ir al paso 2, debes completar el paso 1
-  if (step === 2) return isStepValid(1)
-  
-  // Para ir al paso 3, debes completar los pasos 1 y 2
-  if (step === 3) return isStepValid(1) && isStepValid(2)
-  
-  // Para ir al paso 4, debes completar los pasos 1, 2 y 3
-  if (step === 4) return isStepValid(1) && isStepValid(2) && isStepValid(3)
-  
-  return false
+
+  // Solo puedes ir a un paso si todos los pasos anteriores están completos
+  for (let i = 1; i < step; i++) {
+    if (!isStepValid(i)) {
+      return false
+    }
+  }
+
+  // Para el paso 4, validar también la tarifa manual si corresponde
+  if (step === 4 && selectedTarifa && selectedTarifa.label === 'MANUAL' && (!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0)) {
+    return false
+  }
+
+  return true
 }
 
 const handleStepClick = (step: number) => {
@@ -1147,6 +1186,21 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
 
   const cbm = proveedores.reduce((sum, proveedor) => sum + proveedor.cbm, 0);
 
+  // Validación defensiva
+  if (!tarifa || typeof tarifa !== 'object') {
+    return {
+      flete: 0,
+      cbm,
+      cfr: 0,
+      cif: 0,
+      costoDestino: 0,
+      costoServicio: 0,
+      cfrAjustado: 0,
+      cifAjustado: 0,
+      seguro: 0
+    };
+  }
+
   let costoServicio = 0;
   if (tarifa.type === 'STANDARD') {
     costoServicio = cbm * tarifa.tarifa;
@@ -1157,9 +1211,10 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
   const fleteTotal = costoServicio * FLETE_PORCENTAJE;
   const cfr = totalValorFOB.value + fleteTotal;
   const cfrAjustado = totalValorFOBAjustado.value + fleteTotal;
-  const cif = cfr + totalSeguro.value;
+  const seguro = totalSeguro.value;
+  const cif = cfr + seguro;
   const costoDestino = totalValorFOB.value * COSTO_DESTINO_PORCENTAJE;
-  const cifAjustado = cfrAjustado + totalSeguro.value;
+  const cifAjustado = cfrAjustado + seguro;
   return {
     flete: fleteTotal,
     cbm,
@@ -1169,7 +1224,7 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
     costoServicio,
     cfrAjustado,
     cifAjustado,
-    seguro: totalSeguro.value
+    seguro
   };
 };
 

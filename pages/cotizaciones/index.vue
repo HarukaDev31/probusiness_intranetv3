@@ -8,8 +8,8 @@
       :show-filters="true" :filter-config="filterConfig" :filters-value="filters" :show-export="true" :show-headers="true" :headers="headers"
       empty-state-message="No se encontraron cotizaciones que coincidan con los criterios de búsqueda."
       :show-new-button="true" new-button-label="Crear Cotización" :on-new-button-click="handleNewButtonClick"
-      @update:search-query="handleSearch" @update:primary-search="handleSearch" @page-change="handlePageChange"
-      @items-per-page-change="handleItemsPerPageChange" @filter-change="handleFilterChange">
+      @update:search-query="handleSearch" @update:primary-search="handleSearch"
+      @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @filter-change="handleFilterChange">
 
 
       <template #error-state>
@@ -19,6 +19,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { ref, watch, onMounted, computed } from 'vue'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora } = useCalculadoraImportacion()
 import type { TableColumn } from '@nuxt/ui'
@@ -99,17 +100,17 @@ const columns: TableColumn<any>[] = [
   {
     accessorKey: 'campania',
     header: 'Campaña',
-    cell: ({ row }: { row: any }) => `${row.original.contenedor?.carga ? `Contenedor #${row.original.contenedor?.carga}` : ''}`
+    cell: ({ row }: { row: any }) => `${row.original.carga_contenedor}` || '-'
   },
   {
     accessorKey: 'cotizador',
     header: 'Cotizador',
-    cell: ({ row }: { row: any }) => row.original.cotizador?.name || row.original.cotizador || 'Jose'
+    cell: ({ row }: { row: any }) => row.original.nombre_creador || '-'
   },
   {
     accessorKey: 'vendedor',
     header: 'Vendedor',
-    cell: ({ row }: { row: any }) => row.original.vendedor?.name || row.original.vendedor || '-'
+    cell: ({ row }: { row: any }) => row.original.nombre_vendedor || '-'
   },
   {
     accessorKey: 'cotizacion',
@@ -119,9 +120,9 @@ const columns: TableColumn<any>[] = [
       return (h('div', [
         row.original.url_cotizacion ? h(UButton, {
           color: 'success',
-          size: 'sm',
+          size: 'xl',
           variant: 'ghost',
-          icon: 'i-heroicons-arrow-down-tray',
+          icon: 'vscode-icons:file-type-excel',
           label: '',
           onClick: (event: MouseEvent) => {
             window.open(row.original.url_cotizacion, '_blank')
@@ -129,9 +130,9 @@ const columns: TableColumn<any>[] = [
         }) : null,
         row.original.url_cotizacion_pdf ? h(UButton, {
           color: 'error',
-          size: 'sm',
+          size: 'xl',
           variant: 'ghost',
-          icon: 'i-heroicons-arrow-down-tray',
+          icon: 'vscode-icons:file-type-pdf2',
           label: '',
           onClick: (event: MouseEvent) => {
             window.open(row.original.url_cotizacion_pdf, '_blank')
@@ -327,5 +328,4 @@ const filterConfig = computed<FilterConfig[]>(() => [
     ]
   }
 ])
-
 </script>
