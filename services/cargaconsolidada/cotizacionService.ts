@@ -3,6 +3,31 @@ import { BaseService } from "../base/BaseService"
 import type { CotizacionFilters , Cotizacion, CotizacionResponse } from "~/types/cargaconsolidada/cotizaciones"
 export class CotizacionService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor'
+            // Obtener cargas disponibles para dropdown
+        static async getCargasDisponiblesDropdown(): Promise<any> {
+            try {
+                const response = await this.apiCall<any>(`${this.baseUrl}/cargas-disponibles-dropdown`, {
+                    method: 'GET'
+                })
+                return response
+            } catch (error) {
+                console.error('Error en getCargasDisponiblesDropdown:', error)
+                throw error
+            }
+        }
+    
+        // Obtener vendedores para dropdown
+        static async getVendedoresDropdown(): Promise<any> {
+            try {
+                const response = await this.apiCall<any>(`${this.baseUrl}/vendedores-dropdown`, {
+                    method: 'GET'
+                })
+                return response
+            } catch (error) {
+                console.error('Error en getVendedoresDropdown:', error)
+                throw error
+            }
+        }
     static async getCotizaciones(id: number, filters: CotizacionFilters) {
         try {
             const response = await this.apiCall<CotizacionResponse>(`${this.baseUrl}/cotizaciones/${id}`, {

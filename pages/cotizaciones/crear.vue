@@ -104,12 +104,10 @@
             <div>
               <UFormField label="WhatsApp" name="whatsapp">
                 <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
-                  class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
-                  @update:model-value="onClienteSelected">
-                  <template #default>
+                    class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
+                    @update:model-value="onClienteSelected">
                     {{ displayWhatsapp }}
-                  </template>
-                </UInputMenu>
+                  </UInputMenu>
               </UFormField>
             </div>
 
@@ -147,9 +145,7 @@
                 <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
                   class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
                   @update:model-value="onClienteSelected">
-                  <template #default>
-                    {{ displayWhatsapp }}
-                  </template>
+                  {{ displayWhatsapp }}
                 </UInputMenu>
               </UFormField>
             </div>
@@ -563,11 +559,11 @@
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                       <th v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
                         <UInput class="w-full text-center" v-model.number="producto.antidumpingCU" type="number" min="0"
-                          placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center', input: 'text-white placeholder-white/70' }" >
-                          <template #leading>
-                            <span class="text-white">$</span>
-                          </template>
-                        </UInput>
+                                                  placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }" >
+                                                  <template #leading>
+                                                    <span class="text-white">$</span>
+                                                  </template>
+                                                </UInput>
                       </th>
                     </template>
                     <th class=" text-center"></th>
@@ -592,11 +588,11 @@
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                       <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center">
                         <UInput class="w-full text-white" v-model.number="producto.adValoremP" type="number" min="0"
-                          placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center', input: 'text-white placeholder-white/70' }" >
-                          <template #leading>
-                            <span class="text-white">%</span>
-                          </template>
-                        </UInput>
+                                                  placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }" >
+                                                  <template #leading>
+                                                    <span class="text-white">%</span>
+                                                  </template>
+                                                </UInput>
                       </td>
                     </template>
                     <td class=" text-center ">
@@ -847,7 +843,7 @@
       </UCard>
 
       <!-- Navigation -->
-      <div class="flex justify-between items-center">
+      <div class="flex justify-between items-center my-6">
         <UButton @click="prevStep" :disabled="!canGoPrev" color="primary" size="lg" icon="i-heroicons-arrow-left"
           :label="'Anterior'">
 
@@ -872,6 +868,7 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, watch } from 'vue'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 import type { Proveedor, Tarifa, ProductoItem } from '~/types/calculadora-importacion'
 import { useSpinner } from '@/composables/commons/useSpinner'
@@ -920,7 +917,9 @@ const {
   tarifaExtraProveedorManual,
   tarifaExtraItemManual,
   selectedVendedor,
-  selectedContenedor
+  selectedContenedor,
+  fetchVendedores,
+  fetchContenedores
 } = useCalculadoraImportacion()
 const saveCotizacion = async () => {
   try {
@@ -1367,6 +1366,15 @@ watch(() => clienteInfo.value.qtyProveedores, (newValue) => {
 onMounted(async () => {
   await getClientesByWhatsapp('')
   await getTarifas()
+  // fetchVendedores y fetchContenedores solo en step 4
+})
+
+// Solo cargar vendedores y contenedores al llegar al paso 4
+watch(currentStep, async (step) => {
+  if (step === 4) {
+    await fetchVendedores()
+    await fetchContenedores()
+  }
 })
 </script>
 <style scoped>
