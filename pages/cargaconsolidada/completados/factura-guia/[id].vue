@@ -27,10 +27,11 @@ import { useGeneral } from '~/composables/cargaconsolidada/factura-guia/useGener
 import { USelect, UBadge, UButton, UTooltip } from '#components'
 import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/SimpleUploadFile.vue'
 import SendDocumentModal from '~/components/cargaconsolidada/factura-guia/SendDocumentModal.vue'
+import FacturasComercialesModal from '~/components/cargaconsolidada/factura-guia/FacturasComercialesModal.vue'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import type { TableColumn } from '@nuxt/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, uploadFacturaComercial, uploadGuiaRemision, headers, carga, loadingHeaders, getHeaders, deleteFacturaComercial, deleteGuiaRemision } = useGeneral()
+const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, uploadFacturaComercial, uploadGuiaRemision, headers, carga, loadingHeaders, getHeaders, deleteFacturaComercial, deleteGuiaRemision, getFacturasComerciales } = useGeneral()
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useWhatsapp } from '~/composables/cargaconsolidada/factura-guia/useWhatsapp'
@@ -43,6 +44,7 @@ const id = Number(route.params.id)
 const overlay = useOverlay()
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 const sendDocumentModal = overlay.create(SendDocumentModal)
+const facturasComercialesModal = overlay.create(FacturasComercialesModal)
 // Modal state for creating pagos
 const { currentRole, currentId } = useUserRole()
 const selectedCliente = ref('')
@@ -131,13 +133,14 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
     accessorKey: 'factura_c_',
     header: 'Factura E.',
     cell: ({ row }: { row: any }) => {
-      // if factura_comercial exist show download icon else show button to open modal to upload and button delete
+      // Si tiene factura_comercial antiguo (legacy), mostrar botones antiguos
       if (row.original.factura_comercial) {
         return h('div', { class: 'flex space-x-2' }, [
           h(UButton, {
             icon: 'i-heroicons-arrow-down-tray',
             color: 'primary',
             variant: 'outline',
+            'aria-label': 'Descargar factura comercial',
             onClick: () => {
               window.open(row.original.factura_comercial, '_blank')
             }
@@ -153,21 +156,14 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
           })
         ])
       } else {
+        // Si no tiene factura_comercial antiguo, mostrar botón de ojo para ver facturas en modal
         return h(UButton, {
-          icon: 'i-heroicons-arrow-up-tray',
+          icon: 'i-heroicons-eye',
           color: 'primary',
-          label: 'Subir',
-
           variant: 'outline',
-          onClick: () => {
-            simpleUploadFileModal.open({
-              title: 'Subir Facturas Electronicas',
-              multiple: true,
-              onClose: () => simpleUploadFileModal.close(),
-              onSave: async (data: { file?: File, files?: File[] }) => {
-                await handleUploadFacturaComercial(data, row.original.id_cotizacion)
-              }
-            })
+          'aria-label': 'Ver facturas comerciales',
+          onClick: async () => {
+            await handleViewFacturasComerciales(row.original.id_cotizacion)
           }
         })
       }
@@ -321,13 +317,14 @@ const generalColumns = ref<TableColumn<any>[]>([
     accessorKey: 'factura_c_',
     header: 'Factura E.',
     cell: ({ row }: { row: any }) => {
-      // if factura_comercial exist show download icon else show button to open modal to upload and button delete
+      // Si tiene factura_comercial antiguo (legacy), mostrar botones antiguos
       if (row.original.factura_comercial) {
         return h('div', { class: 'flex space-x-2' }, [
           h(UButton, {
             icon: 'i-heroicons-arrow-down-tray',
             color: 'primary',
             variant: 'outline',
+            'aria-label': 'Descargar factura comercial',
             onClick: () => {
               window.open(row.original.factura_comercial, '_blank')
             }
@@ -343,21 +340,14 @@ const generalColumns = ref<TableColumn<any>[]>([
           })
         ])
       } else {
+        // Si no tiene factura_comercial antiguo, mostrar botón de ojo para ver facturas en modal
         return h(UButton, {
-          icon: 'i-heroicons-arrow-up-tray',
+          icon: 'i-heroicons-eye',
           color: 'primary',
-          label: 'Subir',
-
           variant: 'outline',
-          onClick: () => {
-            simpleUploadFileModal.open({
-              title: 'Subir Facturas Electronicas',
-              multiple: true,
-              onClose: () => simpleUploadFileModal.close(),
-              onSave: async (data: { file?: File, files?: File[] }) => {
-                await handleUploadFacturaComercial(data, row.original.id_cotizacion)
-              }
-            })
+          'aria-label': 'Ver facturas comerciales',
+          onClick: async () => {
+            await handleViewFacturasComerciales(row.original.id_cotizacion)
           }
         })
       }
@@ -508,6 +498,105 @@ const handleUploadFacturaComercial = async (data: { file?: File, files?: File[] 
     }
   })
 }
+  const handleViewFacturasComerciales = async (idCotizacion: number) => {
+  await withSpinner(async () => {
+    try {
+      const response = await getFacturasComerciales(idCotizacion)
+      if (response.success) {
+        facturasComercialesModal.open({
+          facturas: response.data || [],
+          idCotizacion: idCotizacion,
+          onClose: () => facturasComercialesModal.close(),
+          onDelete: async (id: number) => {
+            await handleDeleteFacturaComercialById(id, idCotizacion)
+          },
+          onUpload: async (files: File[], idCotizacion: number) => {
+            await handleUploadFacturaComercialInModal(files, idCotizacion)
+          },
+          onRefresh: async (idCotizacion: number) => {
+            const refreshResponse = await getFacturasComerciales(idCotizacion)
+            if (refreshResponse.success && refreshResponse.data) {
+              return refreshResponse.data
+            }
+            return []
+          }
+        })
+      } else {
+        showError('No se encontraron facturas comerciales', 'error')
+      }
+    } catch (error) {
+      console.error('Error al obtener facturas comerciales:', error)
+      showError('Error al cargar las facturas comerciales', 'error')
+    }
+  })
+}
+
+const handleDeleteFacturaComercialById = async (idFactura: number, idCotizacion: number) => {
+  showConfirmation(
+    'Confirmar eliminación',
+    '¿Está seguro de que desea eliminar esta factura comercial? Esta acción no se puede deshacer.',
+    async () => {
+      try {
+        await withSpinner(async () => {
+          const response = await deleteFacturaComercial(idFactura)
+          if (response.success) {
+            showSuccess('Factura comercial eliminada correctamente', 'success')
+            // Refrescar la lista de facturas en el modal
+            const refreshResponse = await getFacturasComerciales(idCotizacion)
+            if (refreshResponse.success && refreshResponse.data) {
+              facturasComercialesModal.patch({
+                facturas: refreshResponse.data
+              })
+            }
+            await getGeneral(Number(id))
+          } else {
+            showError('Error al eliminar la factura comercial', 'error')
+          }
+        }, 'Eliminando factura...')
+      } catch (error) {
+        console.error('Error al eliminar factura comercial:', error)
+        showError('Error al eliminar la factura comercial', 'error')
+      }
+    }
+  )
+}
+
+const handleUploadFacturaComercialInModal = async (files: File[], idCotizacion: number) => {
+  await withSpinner(async () => {
+    try {
+      const response = await uploadFacturaComercial({
+        idCotizacion: idCotizacion,
+        files: files
+      })
+
+      if (response.success) {
+        const count = files.length
+        const message = (response as any).message || 
+          (count === 1 
+            ? 'Factura comercial subida correctamente' 
+            : `${count} factura(s) comercial(es) subida(s) correctamente`)
+        showSuccess(message, 'success')
+        
+        // Refrescar la lista de facturas en el modal
+        const refreshResponse = await getFacturasComerciales(idCotizacion)
+        if (refreshResponse.success && refreshResponse.data) {
+          facturasComercialesModal.patch({
+            facturas: refreshResponse.data
+          })
+        }
+        
+        await getGeneral(Number(id))
+      } else {
+        const errorMessage = (response as any).message || 'Error al subir las facturas comerciales'
+        showError(errorMessage, 'error')
+      }
+    } catch (error) {
+      console.error('Error al subir facturas comerciales:', error)
+      showError('Error al subir las facturas comerciales', 'error')
+    }
+  })
+}
+
 const handleDeleteFacturaComercial = async (idCotizacion: number) => {
   showConfirmation(
     'Confirmar eliminación',

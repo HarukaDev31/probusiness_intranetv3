@@ -141,6 +141,14 @@ export const useGeneral  = () => {
             error.value = err as string
         }
     }
+    const getFacturasComerciales = async (idCotizacion: number) => {
+        try {
+            const response = await GeneralService.getFacturasComerciales(idCotizacion)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
     return {
         general,
         loadingGeneral,
@@ -161,6 +169,7 @@ export const useGeneral  = () => {
         loadingHeaders,
         getHeaders,
         deleteFacturaComercial,
-        deleteGuiaRemision
+        deleteGuiaRemision,
+        getFacturasComerciales
     }
 }   
