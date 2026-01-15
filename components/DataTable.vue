@@ -493,7 +493,7 @@ onMounted(() => {
         primarySearchInternal.value = ''
         // Emit both typed variants and kebab-case variants so parents listening to any of them receive the update
         emit('update:primarySearch', '')
-        emit('update:searchQuery', '')
+        ;(emit as any)('update:searchQuery', '')
         ;(emit as any)('update:primary-search', '')
         ;(emit as any)('update:search-query', '')
       }
