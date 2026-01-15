@@ -558,11 +558,7 @@ export const useCalculadoraImportacion = () => {
       clienteInfo.value.ruc = cliente.ruc || payload.ruc_cliente || ''
       clienteInfo.value.empresa = cliente.empresa || payload.razon_social || ''
       clienteInfo.value.correo = cliente.correo || payload.correo_cliente || ''
-      // Aceptar múltiples variantes posibles para el campo whatsapp/telefono
-      clienteInfo.value.whatsapp = (
-        cliente.whatsapp || cliente.telefono || cliente.celular ||
-        payload.whatsapp_cliente || payload.whatsappCliente || payload.whatsapp || ''
-      )
+      clienteInfo.value.whatsapp = cliente.telefono || payload.whatsapp_cliente || ''
       clienteInfo.value.tipoCliente = payload.tipo_cliente || clienteInfo.value.tipoCliente
       clienteInfo.value.qtyProveedores = Number(payload.qty_proveedores || payload.qtyProveedores || 0)
       clienteInfo.value.tipoDocumento = cliente.tipo_documento || payload.tipo_documento || 'DNI'
