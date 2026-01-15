@@ -131,9 +131,10 @@ export const useCalculadoraImportacion = () => {
     }, 0)
   })
   const totalCbm = computed(() => {
-    return proveedores.value.reduce((acc, proveedor) => {
-      return acc + proveedor.cbm
+    const value = proveedores.value.reduce((acc, proveedor) => {
+      return acc + (typeof proveedor.cbm === 'number' ? proveedor.cbm : 0)
     }, 0)
+    return isNaN(value) ? 0 : value
   })
   const proveedores = ref<Proveedor[]>([
 
@@ -205,6 +206,11 @@ export const useCalculadoraImportacion = () => {
       return acc + proveedor.productos.reduce((acc, producto) => acc + producto.extraItem, 0)
     }, 0)
     //create saveCotizacionRequest
+    let tarifaToSend = selectedTarifa.value
+    // Si es MANUAL, usar el valor del input
+    if (tarifaToSend && tarifaToSend.label === 'MANUAL') {
+      tarifaToSend = { ...tarifaToSend, tarifa: Number(tarifaToSend.tarifa) }
+    }
     const saveCotizacionRequest: saveCotizacionRequest = {
       clienteInfo: clienteInfo.value,
       proveedores: proveedores.value.map(proveedor => ({
@@ -225,7 +231,7 @@ export const useCalculadoraImportacion = () => {
       tarifaDescuento: tarifaDescuento.value,
       id_usuario: selectedVendedor.value,
       id_carga_consolidada_contenedor: selectedContenedor.value,
-      tarifa: selectedTarifa.value,
+      tarifa: tarifaToSend,
     }
 
     const response = await CalculadoraImportacionService.saveCotizacion(saveCotizacionRequest)
@@ -237,10 +243,10 @@ export const useCalculadoraImportacion = () => {
         handleChangeToStep2()
         break
       case 2:
-
+        // No guardar aquí
         break
       case 3:
-        handleEndFormulario()
+        // No guardar aquí, solo avanzar de paso
         break
       default:
 
@@ -377,7 +383,6 @@ export const useCalculadoraImportacion = () => {
         if (!clienteInfo.value.whatsapp || !clienteInfo.value.correo || clienteInfo.value.qtyProveedores < 1) {
           return false
         }
-        
         // Validar según tipo de documento
         if (clienteInfo.value.tipoDocumento === 'DNI') {
           return clienteInfo.value.nombre.trim() !== '' && clienteInfo.value.dni.trim() !== ''
@@ -385,7 +390,6 @@ export const useCalculadoraImportacion = () => {
           return clienteInfo.value.empresa.trim() !== '' && clienteInfo.value.ruc.trim() !== ''
         }
         return false
-        
       case 2:
         return proveedores.value.length > 0 && proveedores.value.every(proveedor =>
           proveedor.cbm > 0 &&
@@ -396,6 +400,14 @@ export const useCalculadoraImportacion = () => {
             producto.cantidad > 0
           )
         )
+      case 3:
+        // Validar que se haya seleccionado un tipo de cliente (tarifa)
+        if (!selectedTarifa.value) return false
+        // Si es MANUAL, la tarifa debe ser válida
+        if (selectedTarifa.value.label === 'MANUAL') {
+          return !!selectedTarifa.value.tarifa && selectedTarifa.value.tarifa > 0
+        }
+        return true
       default:
         return true
     }

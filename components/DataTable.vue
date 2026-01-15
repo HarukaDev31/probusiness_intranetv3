@@ -1,4 +1,4 @@
-  <template>
+<template>
   <div ref="componentRootRef" class="">
 
     <!-- Sticky Top Section -->
@@ -302,7 +302,7 @@ const UButton = resolveComponent('UButton')
 const props = withDefaults(defineProps<DataTableProps>(), DATA_TABLE_DEFAULTS)
 
 // Emits
-const emit = defineEmits<DataTableEmits>()
+const emit = defineEmits(['update:primarySearch'])
 
 // Computed writable para v-model:page
 const currentPageModel = computed({
@@ -436,11 +436,7 @@ const primarySearchTimer = ref<number | null>(null)
 const debounceMs = computed(() => (props.searchDebounceMs ?? 300))
 
 const emitSearchNow = (value: string) => {
-  // emit both camelCase variants (typed) and kebab-case variants (some parents listen that way)
   emit('update:primarySearch', value)
-  emit('update:searchQuery', value)
-  ;(emit as any)('update:primary-search', value)
-  ;(emit as any)('update:search-query', value)
 }
 
 const onPrimarySearchChange = (value: string) => {
