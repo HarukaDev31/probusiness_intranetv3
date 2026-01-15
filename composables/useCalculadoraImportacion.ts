@@ -512,6 +512,27 @@ export const useCalculadoraImportacion = () => {
       throw new Error('No se pudo cambiar el estado de la cotización')
     }
   }
+
+  // Función para obtener vendedores desde el backend
+  const fetchVendedores = async () => {
+    try {
+      const response = await CotizacionService.getVendedoresDropdown()
+      vendedores.value = response.data || response
+    } catch (error) {
+      console.error('Error al obtener vendedores:', error)
+    }
+  }
+
+  // Función para obtener cargas disponibles desde el backend
+  const fetchContenedores = async () => {
+    try {
+      const response = await CotizacionService.getCargasDisponiblesDropdown()
+      contenedores.value = response.data || response
+    } catch (error) {
+      console.error('Error al obtener cargas disponibles:', error)
+    }
+  }
+
   return {
     currentStep,
     totalSteps,
@@ -569,6 +590,8 @@ export const useCalculadoraImportacion = () => {
     tarifaExtraProveedorManual,
     tarifaExtraItemManual,
     selectedVendedor,
-    selectedContenedor
+    selectedContenedor,
+    fetchVendedores,
+    fetchContenedores
   }
 }
