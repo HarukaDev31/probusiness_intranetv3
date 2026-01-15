@@ -251,7 +251,7 @@ const handleDelete = (id: string) => {
   )
 }
 const handleEdit = (id: string) => {
-  
+  navigateTo(`/cotizaciones/${id}`)
 }
 const handleDuplicate = (id: string) => {
   showConfirmation('Duplicar Cotización', '¿Estás seguro de que deseas duplicar esta cotización?',

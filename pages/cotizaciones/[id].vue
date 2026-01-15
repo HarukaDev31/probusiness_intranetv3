@@ -7,7 +7,7 @@
           Calculadora de Importación
         </h1>
         <p class="text-lg ">
-          Complete todos los pasos para obtener su cotización de importación
+          Edite todos los pasos para guardar su cotización de importación
         </p>
       </div>
 
@@ -892,7 +892,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { navigateTo } from '#imports'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 import type { Proveedor, Tarifa, ProductoItem } from '~/types/calculadora-importacion'
 import { useSpinner } from '@/composables/commons/useSpinner'
@@ -944,6 +946,7 @@ const {
   selectedContenedor,
   fetchVendedores,
   fetchContenedores
+  , loadCotizacionById
 } = useCalculadoraImportacion()
 const saveCotizacion = async () => {
   if (selectedTarifa && selectedTarifa.value && selectedTarifa.value.label === 'MANUAL' && (!selectedTarifa.value.tarifa || selectedTarifa.value.tarifa <= 0)) {
@@ -1418,9 +1421,38 @@ watch(() => clienteInfo.value.qtyProveedores, (newValue) => {
     clienteInfo.value.qtyProveedores = 6
   }
 })
+const route = useRoute()
+const rawId = route.params.id
+const cotizacionId = Number(Array.isArray(rawId) ? rawId[0] : (rawId ?? 0))
+
 onMounted(async () => {
   await getClientesByWhatsapp('')
   await getTarifas()
+  // Si hay un id, cargar la cotización desde el composable
+  if (cotizacionId) {
+    try {
+      await withSpinner(async () => {
+        await loadCotizacionById(cotizacionId)
+      })
+    } catch (err) {
+      showError('Error al cargar la cotización')
+    }
+  }
+      // Si el composable cargó el whatsapp pero no hay cliente seleccionado,
+      // intentar encontrar el objeto correspondiente en `clientes` para
+      // que `UInputMenu` muestre la opción correcta.
+      if (clienteInfo.value.whatsapp && !selectedCliente.value) {
+        const w = String(clienteInfo.value.whatsapp)
+        const found = (clientes.value || []).find((c: any) => {
+          const cand = String(c.whatsapp || c.telefono || c.celular || c.label || c.whatsapp_cliente || '')
+          return cand === w || cand.includes(w)
+        })
+        if (found) {
+          selectedCliente.value = found
+        } else {
+          selectedCliente.value = { label: w, whatsapp: w }
+        }
+      }
   // fetchVendedores y fetchContenedores solo en step 4
 })
 
