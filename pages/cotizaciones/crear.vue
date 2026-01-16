@@ -90,37 +90,50 @@
           <div v-if="clienteInfo.tipoDocumento === 'DNI'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <UFormField label="Nombre completo:" name="nombre">
-                <UInput v-model="clienteInfo.nombre" type="text" placeholder="Miguel Villegas Perez" required
+                <UInput v-model="clienteInfo.nombre" type="text" placeholder="" required
                   class="w-full" />
               </UFormField>
             </div>
 
             <div>
               <UFormField label="Dni:" name="dni">
-                <UInput class="w-full" v-model="clienteInfo.dni" type="text" placeholder="54646456" />
+                <UInput class="w-full" v-model="clienteInfo.dni" type="text" placeholder="" />
               </UFormField>
             </div>
 
             <div>
               <UFormField label="WhatsApp" name="whatsapp">
-                <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
-                    class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
-                    @update:model-value="onClienteSelected">
-                    {{ displayWhatsapp }}
-                  </UInputMenu>
+                <div class="relative">
+                  <UInput
+                    class="w-full"
+                    v-model="whatsappInput"
+                    type="text"
+                    placeholder="51 999999999"
+                    @update:model-value="handleWhatsappInput"
+                    @blur="handleWhatsappBlur"
+                  />
+
+                  <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white shadow-lg rounded max-h-48 overflow-auto">
+                    <ul>
+                      <li v-for="(c, i) in clientes" :key="i" class="px-3 py-2 hover:bg-gray-100 cursor-pointer" @mousedown.prevent="selectClienteFromList(c)">
+                        {{ c.whatsapp || c.celular || c.label }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </UFormField>
             </div>
 
             <div>
               <UFormField label="Correo:" name="correo">
-                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="mvillegas@probusiness.pe" />
+                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="" />
               </UFormField>
             </div>
 
             <div>
               <UFormField label="Qty Proveedores" name="qtyProveedores">
                 <UInput class="w-full" v-model="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
-                  placeholder="2" size="md" variant="outline" />
+                  placeholder="" size="md" variant="outline" />
               </UFormField>
             </div>
           </div>
@@ -142,11 +155,24 @@
 
             <div>
               <UFormField label="WhatsApp" name="whatsapp">
-                <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
-                  class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
-                  @update:model-value="onClienteSelected">
-                  {{ displayWhatsapp }}
-                </UInputMenu>
+                <div class="relative">
+                  <UInput
+                    class="w-full"
+                    v-model="whatsappInput"
+                    type="text"
+                    placeholder="51 934 958 839"
+                    @update:model-value="handleWhatsappInput"
+                    @blur="handleWhatsappBlur"
+                  />
+
+                  <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white shadow-lg rounded max-h-48 overflow-auto">
+                    <ul>
+                      <li v-for="(c, i) in clientes" :key="i" class="px-3 py-2 hover:bg-gray-100 cursor-pointer" @mousedown.prevent="selectClienteFromList(c)">
+                        {{ c.whatsapp || c.celular || c.label }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </UFormField>
             </div>
 
@@ -185,123 +211,135 @@
           </div>
 
           <div class="space-y-6">
-            <div v-for="(proveedor, index) in proveedores" :key="proveedor.id" class="border-t pt-6">
+            <div v-for="(proveedor, pIndex) in proveedores" :key="proveedor.id" class="border-t pt-6">
               <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold ">
-                  <span>Proveedor #{{ proveedor.id }} </span>
-                  <UButton v-if="index + 1 > MAX_PROVEEDORES" color="warning" variant="soft" size="sm"
+                <div class="flex items-center space-x-2">
+                  <h3 class="text-lg font-semibold ">
+                    <span>Proveedor #{{ proveedor.id }} </span>
+                  </h3>
+                  <UButton v-if="pIndex + 1 > MAX_PROVEEDORES" color="warning" variant="soft" size="sm"
                     @click="proveedor.extraProveedor = 1" class="ml-2">
                     <UIcon name="i-heroicons-plus" class="w-5 h-5" />
                     {{ formatCurrency(TARIFA_EXTRA_PROVEEDOR) }}
                   </UButton>
-                </h3>
-                <UButton v-if="proveedores.length > 1" @click="confirmDeleteProveedor(proveedor.id)" color="error" variant="outline"
-                  title="Eliminar proveedor">
-                  <UIcon name="i-heroicons-trash" class="w-5 h-5" />
-                </UButton>
-                <div>
-                  <label class="block text-sm font-medium  mb-2">
-                    CBM Total <span class="text-red-500">*</span>
-                  </label>
-                  <UInput class="w-full" v-model.number="proveedor.cbm" type="number" step="0.1" min="0"
-                    placeholder="0.0" size="md" variant="outline" />
                 </div>
 
-                <div>
-                  <label class="block text-sm font-medium  mb-2">
-                    Peso Total
-                  </label>
-                  <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0" size="md"
-                    variant="outline" />
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium  mb-2">
-                    Qty Cajas
-                  </label>
-                  <UInput class="w-full" v-model.number="proveedor.qtyCaja" type="number" min="0" placeholder="0"
-                    size="md" variant="outline" />
+                <div class="flex items-center space-x-2">
+                  <UButton v-if="proveedores.length > 1" @click="confirmDeleteProveedor(proveedor.id)" color="error" variant="outline"
+                    title="Eliminar proveedor">
+                    <UIcon name="i-heroicons-trash" class="w-5 h-5" />
+                  </UButton>
+                  <UButton size="sm" variant="outline" @click="proveedor.collapsed = !proveedor.collapsed">
+                    <UIcon :name="!proveedor.collapsed ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" class="w-5 h-5" />
+                  </UButton>
                 </div>
               </div>
 
+              <transition name="slide-fade">
+                <div v-show="!proveedor.collapsed">
+                  <div class="flex justify-start space-x-4 items-center mb-4">
+                    <div>
+                      <label class="block text-sm font-medium  mb-2">
+                        CBM Total <span class="text-red-500">*</span>
+                      </label>
+                      <UInput class="w-full" v-model.number="proveedor.cbm" type="number" step="0.1" min="0"
+                        placeholder="0.0" size="md" variant="outline" />
+                    </div>
 
-              <!-- Lista de Productos -->
-              <div class="space-y-4">
-                <h4 class="text-md font-medium ">Productos del Proveedor</h4>
+                    <div>
+                      <label class="block text-sm font-medium  mb-2">
+                        Peso Total
+                      </label>
+                      <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0" size="md"
+                        variant="outline" />
+                    </div>
 
-                <div v-for="(producto, index) in proveedor.productos" :key="producto.id"
-                  class="grid grid-cols-1 gap-4 p-4 rounded-lg items-center" :class="{
-                    'md:grid-cols-11': !producto.showValoracion,
-                    'md:grid-cols-12': producto.showValoracion
-                  }">
-                  <div class="col-span-1">
-                    <label class="block text-sm font-medium  mb-2">
-                      <UBadge color="warning" variant="soft" size="sm">
-                        {{ index + 1 }}
-                        {{ index + 1 > getExtraItem(proveedor.cbm).item_base ? 'Extra ' +
-                          formatCurrency(getExtraItem(proveedor.cbm).tarifa) : '' }}
-                      </UBadge>
-                    </label>
-                  </div>
-                  <div class="col-span-4">
-
-                    <label class="block text-sm font-medium  mb-2">
-                      Nombre del producto <span class="text-red-500">*</span>
-                    </label>
-                    <UInput class="w-full" v-model="producto.nombre" type="text" placeholder="Nombre del producto"
-                      size="md" variant="outline" />
-                  </div>
-                  <div class="col-span-2">
-                    <label class="block text-sm font-medium  mb-2">
-                      Precio <span class="text-red-500">*</span>
-                    </label>
-                    <UInput class="w-full" v-model.number="producto.precio" type="number" step
-                      placeholder="0.00" size="md" variant="outline">
-                      <template #leading>
-                        <span class="text-gray-500">$</span>
-                      </template>
-                    </UInput>
-                  </div>
-                  <div class="col-span-2">
-                    <label class="block text-sm font-medium  mb-2">
-                      Cantidad <span class="text-red-500">*</span>
-                    </label>
-                    <div class="flex space-x-2">
-                      <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0" placeholder="0"
+                    <div>
+                      <label class="block text-sm font-medium  mb-2">
+                        Qty Cajas
+                      </label>
+                      <UInput class="w-full" v-model.number="proveedor.qtyCaja" type="number" min="0" placeholder="0"
                         size="md" variant="outline" />
                     </div>
                   </div>
 
-                  <div v-if="producto.showValoracion" class="col-span-2">
-                    <div>
-                      <label class="block text-sm font-medium  mb-2">
-                        P.Ajuste
-                      </label>
-                      <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0" placeholder="0.00"
-                        size="md" variant="outline">
-                        <template #leading>
-                          <span class="text-gray-500">$</span>
-                        </template>
-                      </UInput>
-                    </div>
+                  <!-- Lista de Productos -->
+                  <div class="space-y-4">
+                    <h4 class="text-md font-medium ">Productos del Proveedor</h4>
 
-                  </div>
-                  <div class="flex justify-end">
-                    <div class="flex space-x-2">
+                    <transition-group name="list" tag="div">
+                      <div v-for="(producto, prodIndex) in proveedor.productos" :key="producto.id"
+                        :class="['grid grid-cols-1 gap-4 p-2 rounded-lg items-center', producto.showValoracion ? 'md:grid-cols-12' : 'md:grid-cols-12']">
 
-                      <UButton @click="producto.showValoracion = !producto.showValoracion" color="primary"
-                        variant="soft" size="sm" icon="i-heroicons-cog-6-tooth" />
-                      <UButton v-if="proveedor.productos.length > 1" @click="confirmDeleteProducto(proveedor.id, producto.id)" color="error" variant="soft" size="sm"
-                        icon="i-heroicons-trash" title="Eliminar producto" />
-                    </div>
+                        <!-- Badge (índice global) -->
+                        <div class="col-span-1 flex items-center justify-center md:mt-6">
+                          <UBadge color="warning" variant="soft" size="sm" class="text-xs py-1 px-2">
+                            {{ getGlobalProductIndex(pIndex, prodIndex) }}
+                          </UBadge>
+                        </div>
+
+                        <!-- Nombre (ajusta su span según si existe valoracion) -->
+                        <div :class="['col-span-4', producto.showValoracion ? 'md:col-span-4' : 'md:col-span-5']">
+                          <label class="block text-sm font-medium  mb-2">
+                            Nombre del producto <span class="text-red-500">*</span>
+                          </label>
+                          <UInput class="w-full" v-model="producto.nombre" type="text" placeholder="Nombre del producto"
+                            size="md" variant="outline" />
+                        </div>
+
+                        <!-- Precio -->
+                        <div class="col-span-2 md:col-span-2">
+                          <label class="block text-sm font-medium  mb-2">
+                            Precio <span class="text-red-500">*</span>
+                          </label>
+                          <UInput class="w-full" v-model.number="producto.precio" type="number" step
+                            placeholder="0.00" size="md" variant="outline">
+                            <template #leading>
+                              <span class="text-gray-500">$</span>
+                            </template>
+                          </UInput>
+                        </div>
+
+                        <!-- Cantidad -->
+                        <div class="col-span-2 md:col-span-2">
+                          <label class="block text-sm font-medium  mb-2">
+                            Cantidad <span class="text-red-500">*</span>
+                          </label>
+                          <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0" placeholder="0"
+                            size="md" variant="outline" />
+                        </div>
+
+                        <!-- Valoración (opcional) -->
+                        <div v-if="producto.showValoracion" class="col-span-2 md:col-span-2">
+                          <label class="block text-sm font-medium  mb-2">
+                            P.Ajuste
+                          </label>
+                          <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0" placeholder="0.00"
+                            size="md" variant="outline">
+                            <template #leading>
+                              <span class="text-gray-500">$</span>
+                            </template>
+                          </UInput>
+                        </div>
+
+                        <!-- Acciones: al final, alineadas verticalmente -->
+                        <div class="col-span-1 flex items-center justify-end space-x-2 md:mt-6">
+                          <UButton @click="producto.showValoracion = !producto.showValoracion" color="primary"
+                            variant="soft" size="sm" icon="i-heroicons-cog-6-tooth" />
+                          <UButton v-if="proveedor.productos.length > 1" @click="confirmDeleteProducto(proveedor.id, producto.id)" color="error" variant="soft" size="sm"
+                            icon="i-heroicons-trash" title="Eliminar producto" />
+                        </div>
+
+                      </div>
+              </transition-group>
+
+                    <UButton @click="addProducto(proveedor.id)" :disabled="getDisabledByRangeItem(proveedor)"
+                      class="bg-orange-500  rounded-md hover:bg-orange-600 transition-colors">
+                      + item
+                    </UButton>
                   </div>
                 </div>
-              </div>
-
-              <UButton @click="addProducto(proveedor.id)" :disabled="getDisabledByRangeItem(proveedor)"
-                class="bg-orange-500  rounded-md hover:bg-orange-600 transition-colors">
-                + item
-              </UButton>
+              </transition>
             </div>
 
             <UButton @click="addProveedor" color="success" size="sm"
@@ -900,11 +938,7 @@ import { useModal } from '@/composables/commons/useModal'
 const { withSpinner } = useSpinner()
 const { showSuccess, showError, showConfirmation } = useModal()
 
-const selectedCliente = ref<any>(null)
-const displayWhatsapp = computed(() => {
-  return clienteInfo.value.whatsapp || ''
-})
-
+// Desestructurar composable antes de usar `clienteInfo` y watchers
 const {
   currentStep,
   totalSteps,
@@ -945,6 +979,69 @@ const {
   fetchVendedores,
   fetchContenedores
 } = useCalculadoraImportacion()
+
+// `useCalculadoraImportacion` moved up; ya está declarado más arriba
+
+const selectedCliente = ref<any>(null)
+const displayWhatsapp = computed(() => {
+  return clienteInfo.value.whatsapp || ''
+})
+
+// Local input state for Whatsapp (para mantener solo input sin autocompletar automáticamente)
+const whatsappInput = ref<string>('')
+const showSuggestions = ref<boolean>(false)
+
+const handleWhatsappInput = (e: Event | string) => {
+  const value = typeof e === 'string' ? e : (e.target as HTMLInputElement).value
+  whatsappInput.value = value
+  if ((value || '').toString().trim().length > 0) {
+    getClientesByWhatsapp(value.toString())
+    showSuggestions.value = true
+  } else {
+    showSuggestions.value = false
+  }
+}
+
+const selectClienteFromList = (cliente: any) => {
+  onClienteSelected(cliente)
+  whatsappInput.value = cliente.whatsapp || cliente.celular || cliente.label || ''
+  showSuggestions.value = false
+}
+
+const handleWhatsappBlur = () => {
+  // esperar un tick para permitir click en la lista
+  setTimeout(() => {
+    showSuggestions.value = false
+    const match = clientes.value.find(c => {
+      const w = (c.whatsapp || c.celular || c.label || '').toString()
+      return w === (whatsappInput.value || '').toString()
+    })
+    if (match) {
+      onClienteSelected(match)
+    } else {
+      // No existe: tomar como número nuevo y no autocompletar otros campos
+      selectedCliente.value = null
+      clienteInfo.value.whatsapp = whatsappInput.value || ''
+      clienteInfo.value.nombre = ''
+      clienteInfo.value.dni = ''
+      clienteInfo.value.correo = ''
+      clienteInfo.value.empresa = ''
+      clienteInfo.value.ruc = ''
+    }
+  }, 150)
+}
+
+// Mantener el input sincronizado si clienteInfo cambia programáticamente
+watch(() => clienteInfo.value.whatsapp, (val) => {
+  whatsappInput.value = val || ''
+})
+
+const getGlobalProductIndex = (pIndex: number, prodIndex: number) => {
+  const before = proveedores.value.slice(0, pIndex).reduce((acc, p) => {
+    return acc + (Array.isArray(p.productos) ? p.productos.length : 0)
+  }, 0)
+  return before + prodIndex + 1
+}
 const saveCotizacion = async () => {
   if (selectedTarifa && selectedTarifa.value && selectedTarifa.value.label === 'MANUAL' && (!selectedTarifa.value.tarifa || selectedTarifa.value.tarifa <= 0)) {
     showError('La tarifa manual es obligatoria y debe ser mayor a 0', 'error')
@@ -1445,6 +1542,42 @@ table td {
 table th {
   padding: 10px;
   border-radius: 8px;
+}
+
+/* Transitions for collapsing provider panels */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 240ms cubic-bezier(.4,0,.2,1);
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.slide-fade-enter-to,
+.slide-fade-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Transitions for list items (add/remove product) */
+.list-enter-active,
+.list-leave-active {
+  transition: all 200ms ease;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+.list-enter-to,
+.list-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.provider-toggle-button {
+  opacity: 0.9;
 }
 
 </style>

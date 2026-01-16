@@ -39,6 +39,7 @@ export interface Proveedor {
   qtyCaja: number
   productos: ProductoItem[]
   extraProveedor: number
+  collapsed?: boolean
 }
 
 

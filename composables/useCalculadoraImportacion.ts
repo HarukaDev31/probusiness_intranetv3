@@ -126,8 +126,9 @@ export const useCalculadoraImportacion = () => {
   })
   //computed totalItems
   const totalItems = computed(() => {
+    // Contar la cantidad de items (entradas de producto), no la suma de cantidades por producto
     return proveedores.value.reduce((acc, proveedor) => {
-      return acc + proveedor.productos.reduce((acc, producto) => acc + producto.cantidad, 0)
+      return acc + (Array.isArray(proveedor.productos) ? proveedor.productos.length : 0)
     }, 0)
   })
   const totalCbm = computed(() => {
@@ -286,7 +287,7 @@ export const useCalculadoraImportacion = () => {
       productos: [
         {
           id: `${newId}-1`,
-          nombre: `Producto ${newId}`,
+          nombre: '',
           precio: ISDEBUG ? 10 : 0,
           cantidad: ISDEBUG ? 100 : 0,
           antidumpingCU: 0,
@@ -306,8 +307,10 @@ export const useCalculadoraImportacion = () => {
           extraItem: 0
         }
       ],
-      extraProveedor: isExtra ? TARIFA_EXTRA_PROVEEDOR : 0
-    })
+      extraProveedor: isExtra ? TARIFA_EXTRA_PROVEEDOR : 0,
+      // estado de colapso del panel del proveedor
+      collapsed: false
+    } as any)
     clienteInfo.value.qtyProveedores = proveedores.value.length
   }
 
@@ -334,12 +337,14 @@ export const useCalculadoraImportacion = () => {
   const addProducto = (proveedorId: string) => {
     const proveedor = proveedores.value.find(p => p.id === proveedorId)
     if (proveedor) {
+      // asegurar que el panel esté abierto al agregar un producto
+      ;(proveedor as any).collapsed = false
       const newId = `${proveedorId}-${proveedor.productos.length + 1}`
       const tarifaExtra = getExtraItem(proveedor.cbm)
       const isExtra = proveedor.productos.length + 1 > tarifaExtra?.item_base
       proveedor.productos.push({
         id: newId,
-        nombre: `Producto ${newId}`,
+        nombre: '',
         precio: ISDEBUG ? 10 : 0,
         cantidad: ISDEBUG ? 100 : 0,
         antidumpingCU: 0,
@@ -421,7 +426,9 @@ export const useCalculadoraImportacion = () => {
       clientes.value = response.data
     } catch (error) {
       console.error('Error al obtener clientes por whatsapp:', error)
-      throw new Error('No se pudieron obtener los clientes')
+      // No lanzar para evitar romper el flujo de montaje; dejar lista vacía
+      clientes.value = []
+      return null
     }
   }
   const getTarifas = async () => {
@@ -430,7 +437,9 @@ export const useCalculadoraImportacion = () => {
       tarifas.value = response.data
     } catch (error) {
       console.error('Error al obtener tarifas:', error)
-      throw new Error('No se pudieron obtener las tarifas')
+      // No lanzar para evitar que onMounted falle; usar lista vacía como fallback
+      tarifas.value = []
+      return null
     }
   }
   const getCotizaciones = async () => {

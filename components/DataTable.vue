@@ -666,10 +666,10 @@ const onTableMouseMove = (e: MouseEvent) => {
   if (!hasScroll) {
     // Debug: mostrar todos los elementos y sus dimensiones
     const container = tableContainerRef.value
-    console.log('[AutoScroll] Debug dimensiones:', {
-      container: container ? { scrollWidth: container.scrollWidth, clientWidth: container.clientWidth } : null,
-      scrollableEl: { scrollWidth: scrollableEl.scrollWidth, clientWidth: scrollableEl.clientWidth, tagName: scrollableEl.tagName }
-    })
+    // console.log('[AutoScroll] Debug dimensiones:', {
+    //   container: container ? { scrollWidth: container.scrollWidth, clientWidth: container.clientWidth } : null,
+    //   scrollableEl: { scrollWidth: scrollableEl.scrollWidth, clientWidth: scrollableEl.clientWidth, tagName: scrollableEl.tagName }
+    // })
     stopAutoScroll()
     showLeftIndicator.value = false
     showRightIndicator.value = false
