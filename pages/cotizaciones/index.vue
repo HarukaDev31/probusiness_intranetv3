@@ -172,7 +172,7 @@ const columns: TableColumn<any>[] = [
             handleDelete(row.original.id)
           }
         }),
-        h(UButton, {
+        !row.original.id_cotizacion ? h(UButton, {
           color: 'warning',
           size: 'sm',
           variant: 'ghost',
@@ -181,7 +181,7 @@ const columns: TableColumn<any>[] = [
           onClick: (event: MouseEvent) => {
             handleEdit(row.original.id)
           }
-        }),
+        }) : null,
         h(UButton, {
           color: 'secondary',
           size: 'sm',
@@ -192,16 +192,7 @@ const columns: TableColumn<any>[] = [
             handleDuplicate(row.original.id)
           }
         }),
-        h(UButton, {
-          color: 'success',
-          size: 'sm',
-          variant: 'ghost',
-          icon: 'i-heroicons-envelope',
-          label: '',
-          onClick: (event: MouseEvent) => {
-            handleSend(row.original.id)
-          }
-        })
+       
       ])
     }
   }

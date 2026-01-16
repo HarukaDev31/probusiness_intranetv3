@@ -141,16 +141,49 @@ export const useCalculadoraImportacion = () => {
 
   ])
   const selectedTarifa = computed(() => {
-    let tarifa = tarifas.value.find(tarifa => {
-      const limitInferior = parseFloat(tarifa.limit_inf.replace(',', '.'))
-      const limitSuperior = parseFloat(tarifa.limit_sup.replace(',', '.'))
-      const totalCbmValue = parseFloat(totalCbm.value.toFixed(2))
-      return totalCbmValue >= limitInferior && totalCbmValue <= limitSuperior &&
-        tarifa.label === clienteInfo.value.tipoCliente
+    const tipoCliente = clienteInfo.value.tipoCliente
+    const totalCbmValue = parseFloat(totalCbm.value.toFixed(2))
+    
+    // Filtrar tarifas del tipo de cliente actual
+    const tarifasDelTipo = tarifas.value.filter(t => t.label === tipoCliente)
+    
+    // 1. Buscar tarifa exacta donde el CBM cae en el rango
+    let tarifa = tarifasDelTipo.find(t => {
+      const limitInferior = parseFloat(t.limit_inf.replace(',', '.'))
+      const limitSuperior = parseFloat(t.limit_sup.replace(',', '.'))
+      return totalCbmValue >= limitInferior && totalCbmValue <= limitSuperior
     })
-    if (typeof tarifa === 'undefined') {
-      tarifa = tarifas.value.find(tarifa => tarifa.label === 'NUEVO')
+    
+    // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
+    if (!tarifa) {
+      const cbmRedondeado = Math.round(totalCbmValue * 10) / 10
+      tarifa = tarifasDelTipo.find(t => {
+        const limitInferior = parseFloat(t.limit_inf.replace(',', '.'))
+        const limitSuperior = parseFloat(t.limit_sup.replace(',', '.'))
+        return cbmRedondeado >= limitInferior && cbmRedondeado <= limitSuperior
+      })
     }
+    
+    // 3. Si aún no encuentra, buscar la tarifa más cercana del mismo tipo
+    if (!tarifa && tarifasDelTipo.length > 0) {
+      tarifa = tarifasDelTipo.reduce((closest, current) => {
+        const limitInfCurrent = parseFloat(current.limit_inf.replace(',', '.'))
+        const limitSupCurrent = parseFloat(current.limit_sup.replace(',', '.'))
+        const limitInfClosest = parseFloat(closest.limit_inf.replace(',', '.'))
+        const limitSupClosest = parseFloat(closest.limit_sup.replace(',', '.'))
+        
+        const distCurrent = Math.min(Math.abs(totalCbmValue - limitInfCurrent), Math.abs(totalCbmValue - limitSupCurrent))
+        const distClosest = Math.min(Math.abs(totalCbmValue - limitInfClosest), Math.abs(totalCbmValue - limitSupClosest))
+        
+        return distCurrent < distClosest ? current : closest
+      })
+    }
+    
+    // 4. Fallback: si no hay tarifas del tipo, usar NUEVO
+    if (!tarifa) {
+      tarifa = tarifas.value.find(t => t.label === 'NUEVO')
+    }
+    
     return tarifa
   })
 

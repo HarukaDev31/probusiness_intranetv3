@@ -76,4 +76,13 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+    static async getFacturasComerciales(idCotizacion: number): Promise<{ success: boolean, data: any[] }> {
+        try {
+            const response = await this.apiCall<{ success: boolean, data: any[] }>(`${this.baseUrl}/get-facturas-comerciales/${idCotizacion}`)
+            return response
+        } catch (error) {
+            console.error('Error al obtener facturas comerciales:', error)
+            throw error
+        }
+    }
 }
