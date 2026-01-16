@@ -325,6 +325,11 @@
               <span class="font-semibold text-gray-700 dark:text-gray-300">WhatsApp:</span>
               <span class="text-gray-900 dark:text-white">{{ clienteInfo.whatsapp }}</span>
             </div>
+            <!--tarifa actual-->
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-gray-700 dark:text-gray-300">Tarifa actual:</span>
+              <span class="text-gray-900 dark:text-white">{{ formatCurrency(selectedTarifa?.tarifa || 0) }}</span>
+            </div>
           </div>
 
         </div>
@@ -1152,18 +1157,40 @@ const seguroPorProducto = computed(() => {
   )
 })
 
+// Función para encontrar la tarifa más cercana cuando el CBM cae en un hueco entre rangos
+const findTarifaByCbm = (cbm: number) => {
+  // Primero intentar encontrar una tarifa exacta
+  let tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => cbm >= t.limit_inf && cbm <= t.limit_sup)
+  
+  if (!tarifa) {
+    // Si no encuentra, redondear a 1 decimal y buscar de nuevo
+    const cbmRedondeado = Math.round(cbm * 10) / 10
+    tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => cbmRedondeado >= t.limit_inf && cbmRedondeado <= t.limit_sup)
+    
+    if (!tarifa) {
+      // Si aún no encuentra, buscar la tarifa más cercana
+      // Ordenar tarifas por proximidad al CBM
+      const tarifasOrdenadas = [...TARIFAS_EXTRA_ITEM_PER_CBM].sort((a, b) => {
+        const distA = Math.min(Math.abs(cbm - a.limit_inf), Math.abs(cbm - a.limit_sup))
+        const distB = Math.min(Math.abs(cbm - b.limit_inf), Math.abs(cbm - b.limit_sup))
+        return distA - distB
+      })
+      tarifa = tarifasOrdenadas[0]
+    }
+  }
+  
+  return tarifa
+}
+
 const getDisabledByRangeItem = (proveedor: Proveedor) => {
   const totalCbm = proveedor.cbm;
-  const tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(tarifa => {
-    
-    return totalCbm >= tarifa.limit_inf && totalCbm <= tarifa.limit_sup
-  })
-  return proveedor.productos.length >= tarifa?.item_base + tarifa?.item_extra ? true : false
+  const tarifa = findTarifaByCbm(totalCbm)
+  if (!tarifa) return false
+  return proveedor.productos.length >= tarifa.item_base + tarifa.item_extra
 }
+
 const getExtraItem = (cbm: number) => {
-  const tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(tarifa => {
-    return cbm >= tarifa.limit_inf && cbm <= tarifa.limit_sup
-  })
+  const tarifa = findTarifaByCbm(cbm)
   return {
     item_base: tarifa?.item_base,
     item_extra: tarifa?.item_extra,
@@ -1179,12 +1206,14 @@ const totalSeguro = computed(() => {
 })
 // Total de seguro
 
+const round2 = (value: number) => Math.round(value * 100) / 100;
+
 const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
   const TC = 3.7;
   const FLETE_PORCENTAJE = 0.6;
   const COSTO_DESTINO_PORCENTAJE = 0.4;
 
-  const cbm = proveedores.reduce((sum, proveedor) => sum + proveedor.cbm, 0);
+  const cbm = round2(proveedores.reduce((sum, proveedor) => sum + proveedor.cbm, 0));
 
   // Validación defensiva
   if (!tarifa || typeof tarifa !== 'object') {
@@ -1203,18 +1232,18 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
 
   let costoServicio = 0;
   if (tarifa.type === 'STANDARD') {
-    costoServicio = cbm * tarifa.tarifa;
+    costoServicio = round2(cbm * tarifa.tarifa);
   } else if (tarifa.type === 'PLAIN') {
-    costoServicio = tarifa.tarifa;
+    costoServicio = round2(tarifa.tarifa);
   }
 
-  const fleteTotal = costoServicio * FLETE_PORCENTAJE;
-  const cfr = totalValorFOB.value + fleteTotal;
-  const cfrAjustado = totalValorFOBAjustado.value + fleteTotal;
-  const seguro = totalSeguro.value;
-  const cif = cfr + seguro;
-  const costoDestino = totalValorFOB.value * COSTO_DESTINO_PORCENTAJE;
-  const cifAjustado = cfrAjustado + seguro;
+  const fleteTotal = round2(costoServicio * FLETE_PORCENTAJE);
+  const cfr = round2(totalValorFOB.value + fleteTotal);
+  const cfrAjustado = round2(totalValorFOBAjustado.value + fleteTotal);
+  const seguro = round2(totalSeguro.value);
+  const cif = round2(cfr + seguro);
+  const costoDestino = round2(costoServicio * COSTO_DESTINO_PORCENTAJE);
+  const cifAjustado = round2(cfrAjustado + seguro);
   return {
     flete: fleteTotal,
     cbm,
@@ -1236,20 +1265,20 @@ const getTributosPorProducto = (proveedores: Proveedor[], tarifa: Tarifa, produc
 
   // Calculamos la distribución base una sola vez
   const { cif, flete, seguro } = calcularDistribucionBase(proveedores, tarifa);
-  const valorFob = producto.precio * producto.cantidad;
-  const valorFobAjustado = producto.valoracion * producto.cantidad;
-  const distribucion = valorFob / totalValorFOB.value;
-  const fleteDistribuido = flete * distribucion;
-  const cifDistribuido = cif * distribucion;
-  const seguroDistribuido = seguro * distribucion;
-  const cifAjustadoDistribuido = valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido;
-  const maxCif = Math.max(cifDistribuido, cifAjustadoDistribuido);
-  const antidumping = producto.antidumpingCU * producto.cantidad;
-  const adValorem = maxCif * producto.adValoremP / 100;
-  const igv = (maxCif * IGV) + (adValorem * IGV);
-  const ipm = (maxCif * IPM) + (adValorem * IPM);
-  const percepcion = (maxCif * PERCEPCION) + (adValorem * PERCEPCION) + (igv * PERCEPCION) + (ipm * PERCEPCION);
-  const total = adValorem + igv + ipm + percepcion;
+  const valorFob = round2(producto.precio * producto.cantidad);
+  const valorFobAjustado = round2(producto.valoracion * producto.cantidad);
+  const distribucion = round2(totalValorFOB.value > 0 ? valorFob / totalValorFOB.value : 0);
+  const fleteDistribuido = round2(flete * distribucion);
+  const cifDistribuido = round2(cif * distribucion);
+  const seguroDistribuido = round2(seguro * distribucion);
+  const cifAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
+  const maxCif = round2(Math.max(cifDistribuido, cifAjustadoDistribuido));
+  const antidumping = round2(producto.antidumpingCU * producto.cantidad);
+  const adValorem = round2(maxCif * producto.adValoremP / 100);
+  const igv = round2((maxCif * IGV) + (adValorem * IGV));
+  const ipm = round2((maxCif * IPM) + (adValorem * IPM));
+  const percepcion = round2((maxCif * PERCEPCION) + (adValorem * PERCEPCION) + (igv * PERCEPCION) + (ipm * PERCEPCION));
+  const total = round2(adValorem + igv + ipm + percepcion);
 
   return {
     antidumping,
@@ -1263,9 +1292,9 @@ const getTributosPorProducto = (proveedores: Proveedor[], tarifa: Tarifa, produc
 
 // Función para obtener totales de tributos
 const getTributos = (proveedores: Proveedor[], tarifa: Tarifa) => {
-  const sumAntidumping = proveedores.reduce((sum, proveedor) =>
+  const sumAntidumping = round2(proveedores.reduce((sum, proveedor) =>
     sum + proveedor.productos.reduce((sumProd, prod) =>
-      sumProd + prod.antidumpingCU * prod.cantidad, 0), 0);
+      sumProd + prod.antidumpingCU * prod.cantidad, 0), 0));
 
   // Calculamos tributos por producto
   const tributosPorProducto = proveedores.flatMap(proveedor =>
@@ -1274,11 +1303,11 @@ const getTributos = (proveedores: Proveedor[], tarifa: Tarifa) => {
 
   return {
     totalAntidumping: sumAntidumping,
-    totalAdValorem: tributosPorProducto.reduce((sum, item) => sum + item.adValorem, 0),
-    totalIGV: tributosPorProducto.reduce((sum, item) => sum + item.igv, 0),
-    totalIPM: tributosPorProducto.reduce((sum, item) => sum + item.ipm, 0),
-    totalPercepcion: tributosPorProducto.reduce((sum, item) => sum + item.percepcion, 0),
-    total: tributosPorProducto.reduce((sum, item) => sum + item.total, 0)
+    totalAdValorem: round2(tributosPorProducto.reduce((sum, item) => sum + item.adValorem, 0)),
+    totalIGV: round2(tributosPorProducto.reduce((sum, item) => sum + item.igv, 0)),
+    totalIPM: round2(tributosPorProducto.reduce((sum, item) => sum + item.ipm, 0)),
+    totalPercepcion: round2(tributosPorProducto.reduce((sum, item) => sum + item.percepcion, 0)),
+    total: round2(tributosPorProducto.reduce((sum, item) => sum + item.total, 0))
   };
 };
 //computed exists valoracion
@@ -1297,21 +1326,21 @@ const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: 
   // Calculamos tributos para este producto específico
   const { antidumping, total } = getTributosPorProducto(proveedores, tarifa, producto);
 
-  const valorFob = producto.precio * producto.cantidad;
-  const valorFobAjustado = producto.valoracion * producto.cantidad;
-  const distribucion = valorFob / totalValorFOB.value;
+  const valorFob = round2(producto.precio * producto.cantidad);
+  const valorFobAjustado = round2(producto.valoracion * producto.cantidad);
+  const distribucion = round2(totalValorFOB.value > 0 ? valorFob / totalValorFOB.value : 0);
 
   // Distribución proporcional
-  const cfrDistribuido = cfr * distribucion;
-  const cifDistribuido = cif * distribucion;
-  const costoDestinoDistribuido = costoDestino * distribucion;
-  const seguroDistribuido = totalSeguro.value * distribucion;
-  const fleteDistribuido = flete * distribucion;
-  const cfrAjustadoDistribuido = valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido : cfrDistribuido;
-  const cifAjustadoDistribuido = valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido;
-  const costoTotal = cfrDistribuido + antidumping + total;
-  const costoUSD = producto.cantidad === 0 ? 0 : costoTotal / producto.cantidad;
-  const costoPEN = costoUSD * TC;
+  const cfrDistribuido = round2(cfr * distribucion);
+  const cifDistribuido = round2(cif * distribucion);
+  const costoDestinoDistribuido = round2(costoDestino * distribucion);
+  const seguroDistribuido = round2(totalSeguro.value * distribucion);
+  const fleteDistribuido = round2(flete * distribucion);
+  const cfrAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido : cfrDistribuido);
+  const cifAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
+  const costoTotal = round2(cfrDistribuido + antidumping + total);
+  const costoUSD = round2(producto.cantidad === 0 ? 0 : costoTotal / producto.cantidad);
+  const costoPEN = round2(costoUSD * TC);
 
   return {
     flete: fleteDistribuido,
@@ -1335,9 +1364,9 @@ const getTotals = (proveedores: Proveedor[], tarifa: Tarifa) => {
   const { totalAntidumping, total } = getTributos(proveedores, tarifa);
   const { flete, cbm, cfr, cif, costoDestino, cfrAjustado, cifAjustado } = calcularDistribucionBase(proveedores, tarifa);
 
-  const costoTotal = cfr + totalAntidumping + total;
-  const costoUSD = totalItems.value === 0 ? 0 : costoTotal / totalItems.value;
-  const costoPEN = costoUSD * TC;
+  const costoTotal = round2(cfr + totalAntidumping + total);
+  const costoUSD = round2(totalItems.value === 0 ? 0 : costoTotal / totalItems.value);
+  const costoPEN = round2(costoUSD * TC);
   return {
     flete,
     cbm,
