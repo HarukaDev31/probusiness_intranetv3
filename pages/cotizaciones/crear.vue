@@ -113,9 +113,9 @@
                     @blur="handleWhatsappBlur"
                   />
 
-                  <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white shadow-lg rounded max-h-48 overflow-auto">
+                  <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded max-h-48 overflow-auto">
                     <ul>
-                      <li v-for="(c, i) in clientes" :key="i" class="px-3 py-2 hover:bg-gray-100 cursor-pointer" @mousedown.prevent="selectClienteFromList(c)">
+                      <li v-for="(c, i) in clientes" :key="i" class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" @mousedown.prevent="selectClienteFromList(c)">
                         {{ c.whatsapp || c.celular || c.label }}
                       </li>
                     </ul>
