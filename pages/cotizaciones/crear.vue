@@ -379,13 +379,13 @@
         </div>
 
         <!-- Step 4: Cálculos Finales -->
-        <div v-if="currentStep === 3">
+        <div v-if="currentStep === 3" class="overflow-x-auto">
 
 
 
           <!-- Tabla de Cálculos -->
-          <div class="overflow-x-auto">
-            <table class="w-full">
+          <div>
+            <table class="min-w-max w-full">
               <thead>
 
               </thead>
@@ -605,8 +605,8 @@
           <!-- Tributos Aplicables -->
           <div class="mt-8">
             <h3 class="text-lg font-semibold  mb-4">Tributos Aplicables</h3>
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse ">
+            <div>
+              <table class="min-w-max w-full border-collapse ">
                 <thead>
                   <tr>
                     <th class=" text-left"></th>
@@ -713,8 +713,8 @@
           <!-- Costos destinos -->
           <div class="mt-8">
             <h3 class="text-lg font-semibold  mb-4">Costos Destinos</h3>
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse ">
+            <div>
+              <table class="min-w-max w-full border-collapse ">
 
                 <tbody>
                   <tr>
@@ -747,8 +747,8 @@
           <!-- Costos total de Importacion -->
           <div class="mt-8">
             <h3 class="text-lg font-semibold  mb-4">Costos Total de Importacion</h3>
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse ">
+            <div>
+              <table class="min-w-max w-full border-collapse ">
 
                 <tbody>
                   <tr>
