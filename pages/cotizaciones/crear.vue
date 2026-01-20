@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen ">
-    <div class="max-w-6xl mx-auto ">
+    <div class="max-w-9/10 mx-auto px-">
       <!-- Header -->
       <div class="text-center mb-8">
         <h1 class="text-4xl font-bold mb-2">
@@ -89,7 +89,10 @@
           <!-- Campos para DNI -->
           <div v-if="clienteInfo.tipoDocumento === 'DNI'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <UFormField label="Nombre completo:" name="nombre">
+              <UFormField name="nombre">
+                <template #label>
+                  Nombre completo: <span class="text-red-500">*</span>
+                </template>
                 <UInput v-model="clienteInfo.nombre" type="text" placeholder="" required
                   class="w-full" />
               </UFormField>
@@ -102,7 +105,10 @@
             </div>
 
             <div>
-              <UFormField label="WhatsApp" name="whatsapp">
+              <UFormField name="whatsapp">
+                <template #label>
+                  WhatsApp <span class="text-red-500">*</span>
+                </template>
                 <div class="relative">
                   <UInput
                     class="w-full"
@@ -111,6 +117,7 @@
                     placeholder="51 999999999"
                     @update:model-value="handleWhatsappInput"
                     @blur="handleWhatsappBlur"
+                    required
                   />
 
                   <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded max-h-48 overflow-auto">
@@ -131,9 +138,12 @@
             </div>
 
             <div>
-              <UFormField label="Qty Proveedores" name="qtyProveedores">
-                <UInput class="w-full" v-model="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
-                  placeholder="" size="md" variant="outline" />
+              <UFormField name="qtyProveedores">
+                <template #label>
+                  Qty Proveedores <span class="text-red-500">*</span>
+                </template>
+                <UInput class="w-full" v-model.number="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
+                  placeholder="" size="md" variant="outline" @blur="() => { if (!clienteInfo.qtyProveedores || clienteInfo.qtyProveedores < 1) clienteInfo.qtyProveedores = 1 }" />
               </UFormField>
             </div>
           </div>
@@ -141,7 +151,10 @@
           <!-- Campos para RUC -->
           <div v-else-if="clienteInfo.tipoDocumento === 'RUC'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <UFormField label="Empresa:" name="empresa">
+              <UFormField name="empresa">
+                <template #label>
+                  Empresa: <span class="text-red-500">*</span>
+                </template>
                 <UInput v-model="clienteInfo.empresa" type="text" placeholder="Grupo Chijuakay SAC" required
                   class="w-full" />
               </UFormField>
@@ -154,7 +167,10 @@
             </div>
 
             <div>
-              <UFormField label="WhatsApp" name="whatsapp">
+              <UFormField name="whatsapp">
+                <template #label>
+                  WhatsApp <span class="text-red-500">*</span>
+                </template>
                 <div class="relative">
                   <UInput
                     class="w-full"
@@ -163,11 +179,12 @@
                     placeholder="51 934 958 839"
                     @update:model-value="handleWhatsappInput"
                     @blur="handleWhatsappBlur"
+                    required
                   />
 
-                  <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white shadow-lg rounded max-h-48 overflow-auto">
+                  <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded max-h-48 overflow-auto">
                     <ul>
-                      <li v-for="(c, i) in clientes" :key="i" class="px-3 py-2 hover:bg-gray-100 cursor-pointer" @mousedown.prevent="selectClienteFromList(c)">
+                      <li v-for="(c, i) in clientes" :key="i" class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" @mousedown.prevent="selectClienteFromList(c)">
                         {{ c.whatsapp || c.celular || c.label }}
                       </li>
                     </ul>
@@ -183,9 +200,12 @@
             </div>
 
             <div>
-              <UFormField label="Qty Proveedores" name="qtyProveedores">
-                <UInput class="w-full" v-model="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
-                  placeholder="2" size="md" variant="outline" />
+              <UFormField name="qtyProveedores">
+                <template #label>
+                  Qty Proveedores <span class="text-red-500">*</span>
+                </template>
+                <UInput class="w-full" v-model.number="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
+                  placeholder="" size="md" variant="outline" @blur="() => { if (!clienteInfo.qtyProveedores || clienteInfo.qtyProveedores < 1) clienteInfo.qtyProveedores = 1 }" />
               </UFormField>
             </div>
           </div>
@@ -374,18 +394,36 @@
                 <UInput :value="formatCurrency(selectedTarifa?.tarifa || 0)" class="w-full" disabled size="md" variant="outline" />
               </div>
             </div>
+            <!--tipo de cambio-->
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-gray-700 dark:text-gray-300">T.C.: <span class="text-red-500">*</span></span>
+              <div class="w-24">
+                <UInput v-model.number="tipoCambio" type="number" step="0.01" min="0" placeholder="3.70" class="w-full" size="md" variant="outline" />
+              </div>
+            </div>
           </div>
 
         </div>
 
         <!-- Step 4: Cálculos Finales -->
         <div v-if="currentStep === 3" class="overflow-x-auto">
-
-
-
-          <!-- Tabla de Cálculos -->
-          <div>
-            <table class="min-w-max w-full">
+          <!-- Sección: Cálculos Base -->
+          <section class="mb-6">
+            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2" @click="collapsedSections.calculos = !collapsedSections.calculos">
+              <div class="flex items-center gap-6 flex-1">
+                <h3 class="text-lg font-semibold">Cálculos Base</h3>
+                <div v-if="collapsedSections.calculos" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <span><strong>CBM:</strong> {{ totalCbm.toFixed(2) }}</span>
+                  <span><strong>CIF:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).cif) }}</span>
+                  <span><strong>Flete:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).flete) }}</span>
+                </div>
+              </div>
+              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
+                :class="{ 'rotate-180': !collapsedSections.calculos }" class="transition-transform" />
+            </div>
+            <transition name="slide-fade">
+              <div v-show="!collapsedSections.calculos">
+                <table class="min-w-max w-full">
               <thead>
 
               </thead>
@@ -599,14 +637,31 @@
                   </td>
                 </tr>
               </tbody>
-            </table>
-          </div>
+                </table>
+              </div>
+            </transition>
+          </section>
 
           <!-- Tributos Aplicables -->
-          <div class="mt-8">
-            <h3 class="text-lg font-semibold  mb-4">Tributos Aplicables</h3>
-            <div>
-              <table class="min-w-max w-full border-collapse ">
+          <section class="mb-6">
+            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2" @click="collapsedSections.tributos = !collapsedSections.tributos">
+              <div class="flex items-center gap-6 flex-1 flex-wrap">
+                <h3 class="text-lg font-semibold">Tributos Aplicables</h3>
+                <div v-if="collapsedSections.tributos" class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
+                  <span><strong>Ad Valorem:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAdValorem) }}</span>
+                  <span><strong>Antidumping:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAntidumping) }}</span>
+                  <span><strong>IGV:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalIGV) }}</span>
+                  <span><strong>IPM:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalIPM || 0) }}</span>
+                  <span><strong>Percepción:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalPercepcion) }}</span>
+                  <span class="font-bold text-gray-900 dark:text-gray-100"><strong>Total:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).total) }}</span>
+                </div>
+              </div>
+              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
+                :class="{ 'rotate-180': !collapsedSections.tributos }" class="transition-transform" />
+            </div>
+            <transition name="slide-fade">
+              <div v-show="!collapsedSections.tributos">
+                <table class="min-w-max w-full border-collapse ">
                 <thead>
                   <tr>
                     <th class=" text-left"></th>
@@ -707,14 +762,25 @@
                     </td>
                   </tr>
                 </tbody>
-              </table>
-            </div>
-          </div>
+                </table>
+              </div>
+            </transition>
+          </section>
           <!-- Costos destinos -->
-          <div class="mt-8">
-            <h3 class="text-lg font-semibold  mb-4">Costos Destinos</h3>
-            <div>
-              <table class="min-w-max w-full border-collapse ">
+          <section class="mb-6">
+            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2" @click="collapsedSections.costosDestino = !collapsedSections.costosDestino">
+              <div class="flex items-center gap-6 flex-1">
+                <h3 class="text-lg font-semibold">Costos Destinos</h3>
+                <div v-if="collapsedSections.costosDestino" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <span><strong>Total:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoDestino) }}</span>
+                </div>
+              </div>
+              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
+                :class="{ 'rotate-180': !collapsedSections.costosDestino }" class="transition-transform" />
+            </div>
+            <transition name="slide-fade">
+              <div v-show="!collapsedSections.costosDestino">
+                <table class="min-w-max w-full border-collapse ">
 
                 <tbody>
                   <tr>
@@ -741,14 +807,26 @@
                     </td>
                   </tr>
                 </tbody>
-              </table>
-            </div>
-          </div>
+                </table>
+              </div>
+            </transition>
+          </section>
           <!-- Costos total de Importacion -->
-          <div class="mt-8">
-            <h3 class="text-lg font-semibold  mb-4">Costos Total de Importacion</h3>
-            <div>
-              <table class="min-w-max w-full border-collapse ">
+          <section class="mb-6">
+            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2" @click="collapsedSections.costosTotal = !collapsedSections.costosTotal">
+              <div class="flex items-center gap-6 flex-1">
+                <h3 class="text-lg font-semibold">Costos Total de Importación</h3>
+                <div v-if="collapsedSections.costosTotal" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <span><strong>USD:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoTotal) }}</span>
+                  <span><strong>PEN:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoPEN) }}</span>
+                </div>
+              </div>
+              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
+                :class="{ 'rotate-180': !collapsedSections.costosTotal }" class="transition-transform" />
+            </div>
+            <transition name="slide-fade">
+              <div v-show="!collapsedSections.costosTotal">
+                <table class="min-w-max w-full border-collapse ">
 
                 <tbody>
                   <tr>
@@ -801,7 +879,7 @@
                     <td class="bg-primary text-white">Costo unit. pen</td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                       <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-primary text-white">
-                        {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoPEN) }}
+                        {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoPEN,'PEN') }}
                       </td>
 
                     </template>
@@ -810,9 +888,10 @@
                     </td>
                   </tr>
                 </tbody>
-              </table>
-            </div>
-          </div>
+                </table>
+              </div>
+            </transition>
+          </section>
         </div>
 
         <!-- Step 4: Terminar -->
@@ -821,7 +900,7 @@
 
           <div class="space-y-6">
             <!-- Cantidad proveedores -->
-            <div class="grid grid-cols-2 gap-4 items-center">
+            <div class="grid grid-cols-3 gap-4 items-center">
               <div>
                 <label class="block text-sm font-medium mb-2">
                   Cantidad proveedores:
@@ -830,10 +909,16 @@
               </div>
               <div>
                 <label class="block text-sm font-medium mb-2">
-                  Tarifa adicional (opcional):
+                  Extra calculado:
+                </label>
+                <UInput :modelValue="formatCurrency(calculatedExtraProveedores)" disabled class="w-full bg-gray-100 dark:bg-gray-700" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">
+                  Tarifa adicional (modificable):
                 </label>
                 <UInput v-model.number="tarifaExtraProveedorManual" type="number" step="0.01" min="0"
-                  placeholder="0.00" class="w-full">
+                  :placeholder="calculatedExtraProveedores.toString()" class="w-full">
                   <template #leading>
                     <span class="text-gray-500">$</span>
                   </template>
@@ -842,7 +927,7 @@
             </div>
 
             <!-- Cantidad Items -->
-            <div class="grid grid-cols-2 gap-4 items-center">
+            <div class="grid grid-cols-3 gap-4 items-center">
               <div>
                 <label class="block text-sm font-medium mb-2">
                   Cantidad items:
@@ -851,10 +936,16 @@
               </div>
               <div>
                 <label class="block text-sm font-medium mb-2">
-                  Tarifa adicional (opcional):
+                  Extra calculado:
+                </label>
+                <UInput :modelValue="formatCurrency(calculatedExtraItems)" disabled class="w-full bg-gray-100 dark:bg-gray-700" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">
+                  Tarifa adicional (modificable):
                 </label>
                 <UInput v-model.number="tarifaExtraItemManual" type="number" step="0.01" min="0"
-                  placeholder="0.00" class="w-full">
+                  :placeholder="calculatedExtraItems.toString()" class="w-full">
                   <template #leading>
                     <span class="text-gray-500">$</span>
                   </template>
@@ -984,6 +1075,9 @@ const {
   tarifaDescuento,
   tarifaExtraProveedorManual,
   tarifaExtraItemManual,
+  tipoCambio,
+  calculatedExtraProveedores,
+  calculatedExtraItems,
   selectedVendedor,
   selectedContenedor,
   fetchVendedores,
@@ -1032,11 +1126,7 @@ const handleWhatsappBlur = () => {
       // No existe: tomar como número nuevo y no autocompletar otros campos
       selectedCliente.value = null
       clienteInfo.value.whatsapp = whatsappInput.value || ''
-      clienteInfo.value.nombre = ''
-      clienteInfo.value.dni = ''
-      clienteInfo.value.correo = ''
-      clienteInfo.value.empresa = ''
-      clienteInfo.value.ruc = ''
+ 
     }
   }, 150)
 }
@@ -1044,6 +1134,14 @@ const handleWhatsappBlur = () => {
 // Mantener el input sincronizado si clienteInfo cambia programáticamente
 watch(() => clienteInfo.value.whatsapp, (val) => {
   whatsappInput.value = val || ''
+})
+
+// Estados de colapso para las secciones del paso 3
+const collapsedSections = ref({
+  calculos: false,
+  tributos: false,
+  costosDestino: false,
+  costosTotal: false
 })
 
 const getGlobalProductIndex = (pIndex: number, prodIndex: number) => {
@@ -1311,7 +1409,6 @@ const totalSeguro = computed(() => {
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
 const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
-  const TC = 3.7;
   const FLETE_PORCENTAJE = 0.6;
   const COSTO_DESTINO_PORCENTAJE = 0.4;
 
@@ -1420,8 +1517,6 @@ const existsValoracion = computed(() => {
 })
 // Función principal refactorizada
 const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: ProductoItem) => {
-  const TC = 3.7;
-
   // Obtenemos los valores base sin dependencias circulares
   const { flete, cfr, cif, costoDestino, cfrAjustado } = calcularDistribucionBase(proveedores, tarifa);
 
@@ -1442,7 +1537,7 @@ const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: 
   const cifAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
   const costoTotal = round2(cfrDistribuido + antidumping + total);
   const costoUSD = round2(producto.cantidad === 0 ? 0 : costoTotal / producto.cantidad);
-  const costoPEN = round2(costoUSD * TC);
+  const costoPEN = round2(costoUSD * tipoCambio.value);
 
   return {
     flete: fleteDistribuido,
@@ -1461,14 +1556,12 @@ const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: 
 
 // Función getTotals actualizada
 const getTotals = (proveedores: Proveedor[], tarifa: Tarifa) => {
-  const TC = 3.7;
-
   const { totalAntidumping, total } = getTributos(proveedores, tarifa);
   const { flete, cbm, cfr, cif, costoDestino, cfrAjustado, cifAjustado } = calcularDistribucionBase(proveedores, tarifa);
 
   const costoTotal = round2(cfr + totalAntidumping + total);
   const costoUSD = round2(totalItems.value === 0 ? 0 : costoTotal / totalItems.value);
-  const costoPEN = round2(costoUSD * TC);
+  const costoPEN = round2(costoUSD * tipoCambio.value);
   return {
     flete,
     cbm,
@@ -1541,8 +1634,13 @@ const finalizarCalculadora = () => {
   alert('Calculadora finalizada exitosamente!')
 }
 
-// Validar cantidad de proveedores
+// Validar cantidad de proveedores - solo cuando el valor es numérico válido
 watch(() => clienteInfo.value.qtyProveedores, (newValue) => {
+  // Solo validar si el valor es un número válido (no null, undefined, o NaN)
+  if (newValue === null || newValue === undefined || typeof newValue !== 'number' || isNaN(newValue)) {
+    return // Permitir valores inválidos mientras se escribe
+  }
+  
   if (newValue < 1) {
     clienteInfo.value.qtyProveedores = 1
   } else if (newValue > 6) {
@@ -1560,6 +1658,13 @@ watch(currentStep, async (step) => {
   if (step === 4) {
     await fetchVendedores()
     await fetchContenedores()
+    // Inicializar los valores de extras con los calculados si no han sido modificados
+    if (tarifaExtraProveedorManual.value === 0) {
+      tarifaExtraProveedorManual.value = calculatedExtraProveedores.value
+    }
+    if (tarifaExtraItemManual.value === 0) {
+      tarifaExtraItemManual.value = calculatedExtraItems.value
+    }
   }
 })
 </script>

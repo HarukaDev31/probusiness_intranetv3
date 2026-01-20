@@ -89,20 +89,26 @@
           <!-- Campos para DNI -->
           <div v-if="clienteInfo.tipoDocumento === 'DNI'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <UFormField label="Nombre completo:" name="nombre">
-                <UInput v-model="clienteInfo.nombre" type="text" placeholder="Miguel Villegas Perez" required
+              <UFormField name="nombre">
+                <template #label>
+                  Nombre completo: <span class="text-red-500">*</span>
+                </template>
+                <UInput v-model="clienteInfo.nombre" type="text" placeholder="" required
                   class="w-full" />
               </UFormField>
             </div>
 
             <div>
               <UFormField label="Dni:" name="dni">
-                <UInput class="w-full" v-model="clienteInfo.dni" type="text" placeholder="54646456" />
+                <UInput class="w-full" v-model="clienteInfo.dni" type="text" placeholder="" />
               </UFormField>
             </div>
 
             <div>
-              <UFormField label="WhatsApp" name="whatsapp">
+              <UFormField name="whatsapp">
+                <template #label>
+                  WhatsApp <span class="text-red-500">*</span>
+                </template>
                 <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
                     class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
                     @update:model-value="onClienteSelected">
@@ -113,14 +119,17 @@
 
             <div>
               <UFormField label="Correo:" name="correo">
-                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="mvillegas@probusiness.pe" />
+                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="" />
               </UFormField>
             </div>
 
             <div>
-              <UFormField label="Qty Proveedores" name="qtyProveedores">
-                <UInput class="w-full" v-model="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
-                  placeholder="2" size="md" variant="outline" />
+              <UFormField name="qtyProveedores">
+                <template #label>
+                  Qty Proveedores <span class="text-red-500">*</span>
+                </template>
+                <UInput class="w-full" v-model.number="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
+                  placeholder="" size="md" variant="outline" @blur="() => { if (!clienteInfo.qtyProveedores || clienteInfo.qtyProveedores < 1) clienteInfo.qtyProveedores = 1 }" />
               </UFormField>
             </div>
           </div>
@@ -128,7 +137,10 @@
           <!-- Campos para RUC -->
           <div v-else-if="clienteInfo.tipoDocumento === 'RUC'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <UFormField label="Empresa:" name="empresa">
+              <UFormField name="empresa">
+                <template #label>
+                  Empresa: <span class="text-red-500">*</span>
+                </template>
                 <UInput v-model="clienteInfo.empresa" type="text" placeholder="Grupo Chijuakay SAC" required
                   class="w-full" />
               </UFormField>
@@ -136,12 +148,15 @@
 
             <div>
               <UFormField label="Ruc:" name="ruc">
-                <UInput class="w-full" v-model="clienteInfo.ruc" type="text" placeholder="20603287721" />
+                <UInput class="w-full" v-model="clienteInfo.ruc" type="text" placeholder="" />
               </UFormField>
             </div>
 
             <div>
-              <UFormField label="WhatsApp" name="whatsapp">
+              <UFormField name="whatsapp">
+                <template #label>
+                  WhatsApp <span class="text-red-500">*</span>
+                </template>
                 <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
                   class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
                   @update:model-value="onClienteSelected">
@@ -152,14 +167,17 @@
 
             <div>
               <UFormField label="Correo:" name="correo">
-                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="mvillegas@probusiness.pe" />
+                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="" />
               </UFormField>
             </div>
 
             <div>
-              <UFormField label="Qty Proveedores" name="qtyProveedores">
-                <UInput class="w-full" v-model="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
-                  placeholder="2" size="md" variant="outline" />
+              <UFormField name="qtyProveedores">
+                <template #label>
+                  Qty Proveedores <span class="text-red-500">*</span>
+                </template>
+                <UInput class="w-full" v-model.number="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
+                  placeholder="" size="md" variant="outline" @blur="() => { if (!clienteInfo.qtyProveedores || clienteInfo.qtyProveedores < 1) clienteInfo.qtyProveedores = 1 }" />
               </UFormField>
             </div>
           </div>
@@ -316,7 +334,7 @@
           <h2 class="text-2xl font-bold mb-6">Resumen</h2>
           
           <!-- Información del Cliente -->
-          <div class="flex gap-8 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex gap-8 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700 flex-wrap">
             <div class="flex items-center gap-2">
               <span class="font-semibold text-gray-700 dark:text-gray-300">Cliente:</span>
               <div class="w-72">
@@ -327,6 +345,20 @@
               <span class="font-semibold text-gray-700 dark:text-gray-300">WhatsApp:</span>
               <div class="w-48">
                 <UInput :value="clienteInfo.whatsapp" class="w-full" disabled size="md" variant="outline" />
+              </div>
+            </div>
+            <!--tarifa actual-->
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-gray-700 dark:text-gray-300">Tarifa actual:</span>
+              <div class="w-32">
+                <UInput :value="formatCurrency(selectedTarifa?.tarifa || 0)" class="w-full" disabled size="md" variant="outline" />
+              </div>
+            </div>
+            <!--tipo de cambio-->
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-gray-700 dark:text-gray-300">T.C.: <span class="text-red-500">*</span></span>
+              <div class="w-24">
+                <UInput v-model.number="tipoCambio" type="number" step="0.01" min="0" placeholder="3.70" class="w-full" size="md" variant="outline" />
               </div>
             </div>
           </div>
@@ -945,6 +977,9 @@ const {
   tarifaDescuento,
   tarifaExtraProveedorManual,
   tarifaExtraItemManual,
+  tipoCambio,
+  calculatedExtraProveedores,
+  calculatedExtraItems,
   selectedVendedor,
   selectedContenedor,
   fetchVendedores,
@@ -1158,6 +1193,14 @@ const seguroPorProducto = computed(() => {
   )
 })
 
+// Estados de colapso para las secciones del paso 3
+const collapsedSections = ref({
+  calculos: false,
+  tributos: false,
+  costosDestino: false,
+  costosTotal: false
+})
+
 const getDisabledByRangeItem = (proveedor: Proveedor) => {
   const totalCbm = proveedor.cbm;
   const tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(tarifa => {
@@ -1185,8 +1228,9 @@ const totalSeguro = computed(() => {
 })
 // Total de seguro
 
+const round2 = (value: number) => Math.round(value * 100) / 100;
+
 const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
-  const TC = 3.7;
   const FLETE_PORCENTAJE = 0.6;
   const COSTO_DESTINO_PORCENTAJE = 0.4;
 
@@ -1214,20 +1258,20 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
     costoServicio = tarifa.tarifa;
   }
 
-  const fleteTotal = costoServicio * FLETE_PORCENTAJE;
-  const cfr = totalValorFOB.value + fleteTotal;
-  const cfrAjustado = totalValorFOBAjustado.value + fleteTotal;
-  const seguro = totalSeguro.value;
-  const cif = cfr + seguro;
-  const costoDestino = totalValorFOB.value * COSTO_DESTINO_PORCENTAJE;
-  const cifAjustado = cfrAjustado + seguro;
+  const fleteTotal = round2(costoServicio * FLETE_PORCENTAJE);
+  const cfr = round2(totalValorFOB.value + fleteTotal);
+  const cfrAjustado = round2(totalValorFOBAjustado.value + fleteTotal);
+  const seguro = round2(totalSeguro.value);
+  const cif = round2(cfr + seguro);
+  const costoDestino = round2(costoServicio * COSTO_DESTINO_PORCENTAJE);
+  const cifAjustado = round2(cfrAjustado + seguro);
   return {
     flete: fleteTotal,
-    cbm,
+    cbm: round2(cbm),
     cfr,
     cif,
     costoDestino,
-    costoServicio,
+    costoServicio: round2(costoServicio),
     cfrAjustado,
     cifAjustado,
     seguro
@@ -1242,20 +1286,20 @@ const getTributosPorProducto = (proveedores: Proveedor[], tarifa: Tarifa, produc
 
   // Calculamos la distribución base una sola vez
   const { cif, flete, seguro } = calcularDistribucionBase(proveedores, tarifa);
-  const valorFob = producto.precio * producto.cantidad;
-  const valorFobAjustado = producto.valoracion * producto.cantidad;
-  const distribucion = valorFob / totalValorFOB.value;
-  const fleteDistribuido = flete * distribucion;
-  const cifDistribuido = cif * distribucion;
-  const seguroDistribuido = seguro * distribucion;
-  const cifAjustadoDistribuido = valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido;
-  const maxCif = Math.max(cifDistribuido, cifAjustadoDistribuido);
-  const antidumping = producto.antidumpingCU * producto.cantidad;
-  const adValorem = maxCif * producto.adValoremP / 100;
-  const igv = (maxCif * IGV) + (adValorem * IGV);
-  const ipm = (maxCif * IPM) + (adValorem * IPM);
-  const percepcion = (maxCif * PERCEPCION) + (adValorem * PERCEPCION) + (igv * PERCEPCION) + (ipm * PERCEPCION);
-  const total = adValorem + igv + ipm + percepcion;
+  const valorFob = round2(producto.precio * producto.cantidad);
+  const valorFobAjustado = round2(producto.valoracion * producto.cantidad);
+  const distribucion = totalValorFOB.value > 0 ? round2(valorFob / totalValorFOB.value) : 0;
+  const fleteDistribuido = round2(flete * distribucion);
+  const cifDistribuido = round2(cif * distribucion);
+  const seguroDistribuido = round2(seguro * distribucion);
+  const cifAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
+  const maxCif = round2(Math.max(cifDistribuido, cifAjustadoDistribuido));
+  const antidumping = round2(producto.antidumpingCU * producto.cantidad);
+  const adValorem = round2(maxCif * producto.adValoremP / 100);
+  const igv = round2((maxCif * IGV) + (adValorem * IGV));
+  const ipm = round2((maxCif * IPM) + (adValorem * IPM));
+  const percepcion = round2((maxCif * PERCEPCION) + (adValorem * PERCEPCION) + (igv * PERCEPCION) + (ipm * PERCEPCION));
+  const total = round2(adValorem + igv + ipm + percepcion);
 
   return {
     antidumping,
@@ -1269,9 +1313,9 @@ const getTributosPorProducto = (proveedores: Proveedor[], tarifa: Tarifa, produc
 
 // Función para obtener totales de tributos
 const getTributos = (proveedores: Proveedor[], tarifa: Tarifa) => {
-  const sumAntidumping = proveedores.reduce((sum, proveedor) =>
+  const sumAntidumping = round2(proveedores.reduce((sum, proveedor) =>
     sum + proveedor.productos.reduce((sumProd, prod) =>
-      sumProd + prod.antidumpingCU * prod.cantidad, 0), 0);
+      sumProd + prod.antidumpingCU * prod.cantidad, 0), 0));
 
   // Calculamos tributos por producto
   const tributosPorProducto = proveedores.flatMap(proveedor =>
@@ -1280,11 +1324,11 @@ const getTributos = (proveedores: Proveedor[], tarifa: Tarifa) => {
 
   return {
     totalAntidumping: sumAntidumping,
-    totalAdValorem: tributosPorProducto.reduce((sum, item) => sum + item.adValorem, 0),
-    totalIGV: tributosPorProducto.reduce((sum, item) => sum + item.igv, 0),
-    totalIPM: tributosPorProducto.reduce((sum, item) => sum + item.ipm, 0),
-    totalPercepcion: tributosPorProducto.reduce((sum, item) => sum + item.percepcion, 0),
-    total: tributosPorProducto.reduce((sum, item) => sum + item.total, 0)
+    totalAdValorem: round2(tributosPorProducto.reduce((sum, item) => sum + item.adValorem, 0)),
+    totalIGV: round2(tributosPorProducto.reduce((sum, item) => sum + item.igv, 0)),
+    totalIPM: round2(tributosPorProducto.reduce((sum, item) => sum + item.ipm, 0)),
+    totalPercepcion: round2(tributosPorProducto.reduce((sum, item) => sum + item.percepcion, 0)),
+    total: round2(tributosPorProducto.reduce((sum, item) => sum + item.total, 0))
   };
 };
 //computed exists valoracion
@@ -1295,29 +1339,27 @@ const existsValoracion = computed(() => {
 })
 // Función principal refactorizada
 const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: ProductoItem) => {
-  const TC = 3.7;
-
   // Obtenemos los valores base sin dependencias circulares
   const { flete, cfr, cif, costoDestino, cfrAjustado } = calcularDistribucionBase(proveedores, tarifa);
 
   // Calculamos tributos para este producto específico
   const { antidumping, total } = getTributosPorProducto(proveedores, tarifa, producto);
 
-  const valorFob = producto.precio * producto.cantidad;
-  const valorFobAjustado = producto.valoracion * producto.cantidad;
-  const distribucion = valorFob / totalValorFOB.value;
+  const valorFob = round2(producto.precio * producto.cantidad);
+  const valorFobAjustado = round2(producto.valoracion * producto.cantidad);
+  const distribucion = totalValorFOB.value > 0 ? round2(valorFob / totalValorFOB.value) : 0;
 
   // Distribución proporcional
-  const cfrDistribuido = cfr * distribucion;
-  const cifDistribuido = cif * distribucion;
-  const costoDestinoDistribuido = costoDestino * distribucion;
-  const seguroDistribuido = totalSeguro.value * distribucion;
-  const fleteDistribuido = flete * distribucion;
-  const cfrAjustadoDistribuido = valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido : cfrDistribuido;
-  const cifAjustadoDistribuido = valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido;
-  const costoTotal = cfrDistribuido + antidumping + total;
-  const costoUSD = producto.cantidad === 0 ? 0 : costoTotal / producto.cantidad;
-  const costoPEN = costoUSD * TC;
+  const cfrDistribuido = round2(cfr * distribucion);
+  const cifDistribuido = round2(cif * distribucion);
+  const costoDestinoDistribuido = round2(costoDestino * distribucion);
+  const seguroDistribuido = round2(totalSeguro.value * distribucion);
+  const fleteDistribuido = round2(flete * distribucion);
+  const cfrAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido : cfrDistribuido);
+  const cifAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
+  const costoTotal = round2(cfrDistribuido + antidumping + total);
+  const costoUSD = round2(producto.cantidad === 0 ? 0 : costoTotal / producto.cantidad);
+  const costoPEN = round2(costoUSD * tipoCambio.value);
 
   return {
     flete: fleteDistribuido,
@@ -1336,14 +1378,12 @@ const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: 
 
 // Función getTotals actualizada
 const getTotals = (proveedores: Proveedor[], tarifa: Tarifa) => {
-  const TC = 3.7;
-
   const { totalAntidumping, total } = getTributos(proveedores, tarifa);
   const { flete, cbm, cfr, cif, costoDestino, cfrAjustado, cifAjustado } = calcularDistribucionBase(proveedores, tarifa);
 
-  const costoTotal = cfr + totalAntidumping + total;
-  const costoUSD = totalItems.value === 0 ? 0 : costoTotal / totalItems.value;
-  const costoPEN = costoUSD * TC;
+  const costoTotal = round2(cfr + totalAntidumping + total);
+  const costoUSD = round2(totalItems.value === 0 ? 0 : costoTotal / totalItems.value);
+  const costoPEN = round2(costoUSD * tipoCambio.value);
   return {
     flete,
     cbm,
@@ -1416,8 +1456,13 @@ const finalizarCalculadora = () => {
   alert('Calculadora finalizada exitosamente!')
 }
 
-// Validar cantidad de proveedores
+// Validar cantidad de proveedores - solo cuando el valor es numérico válido
 watch(() => clienteInfo.value.qtyProveedores, (newValue) => {
+  // Solo validar si el valor es un número válido (no null, undefined, o NaN)
+  if (newValue === null || newValue === undefined || typeof newValue !== 'number' || isNaN(newValue)) {
+    return // Permitir valores inválidos mientras se escribe
+  }
+  
   if (newValue < 1) {
     clienteInfo.value.qtyProveedores = 1
   } else if (newValue > 6) {
@@ -1438,7 +1483,7 @@ onMounted(async () => {
         await loadCotizacionById(cotizacionId)
       })
     } catch (err) {
-      showError('Error al cargar la cotización')
+      showError('Error al cargar la cotización', 'error')
     }
   }
       // Si el composable cargó el whatsapp pero no hay cliente seleccionado,

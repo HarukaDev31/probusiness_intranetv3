@@ -15,25 +15,65 @@ export const useCalculadoraImportacion = () => {
     {
       id: 1,
       limit_inf: 0.1,
-      limit_sup: 1,
+      limit_sup: 1.0,
       item_base: 6,
-      item_extra: 4,
+      item_extra: 4, // item_max: 10
       tarifa: 20
     },
     {
       id: 2,
-      limit_inf: 1.1,
-      limit_sup: 2,
+      limit_inf: 1.01,
+      limit_sup: 2.0,
       item_base: 8,
-      item_extra: 7,
+      item_extra: 7, // item_max: 15
       tarifa: 10
     },
     {
       id: 3,
       limit_inf: 2.1,
-      limit_sup: 3,
+      limit_sup: 3.0,
       item_base: 10,
-      item_extra: 5,
+      item_extra: 5, // item_max: 15
+      tarifa: 10
+    },
+    {
+      id: 4,
+      limit_inf: 3.1,
+      limit_sup: 6.0,
+      item_base: 13,
+      item_extra: 7, // item_max: 20
+      tarifa: 10
+    },
+    {
+      id: 5,
+      limit_inf: 6.1,
+      limit_sup: 9.0,
+      item_base: 15,
+      item_extra: 5, // item_max: 20
+      tarifa: 10
+    },
+    {
+      id: 6,
+      limit_inf: 9.1,
+      limit_sup: 12.0,
+      item_base: 17,
+      item_extra: 8, // item_max: 25
+      tarifa: 10
+    },
+    {
+      id: 7,
+      limit_inf: 12.1,
+      limit_sup: 15.0,
+      item_base: 19,
+      item_extra: 6, // item_max: 25
+      tarifa: 10
+    },
+    {
+      id: 8,
+      limit_inf: 15.1,
+      limit_sup: 9999, // 20 o más
+      item_base: 20,
+      item_extra: 10, // item_max: 30
       tarifa: 10
     }
   ]
@@ -46,6 +86,7 @@ export const useCalculadoraImportacion = () => {
   const tarifaDescuento = ref(0)
   const tarifaExtraProveedorManual = ref(0)
   const tarifaExtraItemManual = ref(0)
+  const tipoCambio = ref(3.7)
   const selectedVendedor = ref<number | null>(null)
   const selectedContenedor = ref<number | null>(null)
   const estadoCotizaciones = ref<any[]>([
@@ -137,6 +178,29 @@ export const useCalculadoraImportacion = () => {
     }, 0)
     return isNaN(value) ? 0 : value
   })
+
+  // Calcular extras automáticamente según las tarifas
+  const calculatedExtraProveedores = computed(() => {
+    // Proveedores extra son los que superan MAX_PROVEEDORES
+    const extraCount = Math.max(0, proveedores.value.length - MAX_PROVEEDORES)
+    return extraCount * TARIFA_EXTRA_PROVEEDOR
+  })
+
+  const calculatedExtraItems = computed(() => {
+    // Para cada proveedor, calcular cuántos items extra hay según su CBM
+    return proveedores.value.reduce((total, proveedor) => {
+      const tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
+        proveedor.cbm >= t.limit_inf && proveedor.cbm <= t.limit_sup
+      ) || TARIFAS_EXTRA_ITEM_PER_CBM[TARIFAS_EXTRA_ITEM_PER_CBM.length - 1]
+      
+      if (!tarifa) return total
+      
+      const itemsDelProveedor = proveedor.productos?.length || 0
+      const itemsExtra = Math.max(0, itemsDelProveedor - tarifa.item_base)
+      return total + (itemsExtra * tarifa.tarifa)
+    }, 0)
+  })
+
   const proveedores = ref<Proveedor[]>([
 
   ])
@@ -266,6 +330,7 @@ export const useCalculadoraImportacion = () => {
       id_usuario: selectedVendedor.value,
       id_carga_consolidada_contenedor: selectedContenedor.value,
       tarifa: tarifaToSend,
+      tipo_cambio: tipoCambio.value,
     }
 
     const response = await CalculadoraImportacionService.saveCotizacion(saveCotizacionRequest)
@@ -417,15 +482,15 @@ export const useCalculadoraImportacion = () => {
   const isStepValid = (step: number): boolean => {
     switch (step) {
       case 1:
-        // Validar campos comunes
-        if (!clienteInfo.value.whatsapp || !clienteInfo.value.correo || clienteInfo.value.qtyProveedores < 1) {
+        // Validar campos obligatorios: whatsapp y qtyProveedores
+        if (!clienteInfo.value.whatsapp || clienteInfo.value.qtyProveedores < 1) {
           return false
         }
-        // Validar según tipo de documento
+        // Validar según tipo de documento (solo nombre/empresa es obligatorio)
         if (clienteInfo.value.tipoDocumento === 'DNI') {
-          return clienteInfo.value.nombre.trim() !== '' && clienteInfo.value.dni.trim() !== ''
+          return clienteInfo.value.nombre.trim() !== ''
         } else if (clienteInfo.value.tipoDocumento === 'RUC') {
-          return clienteInfo.value.empresa.trim() !== '' && clienteInfo.value.ruc.trim() !== ''
+          return clienteInfo.value.empresa.trim() !== ''
         }
         return false
       case 2:
@@ -693,6 +758,9 @@ export const useCalculadoraImportacion = () => {
     tarifaDescuento,
     tarifaExtraProveedorManual,
     tarifaExtraItemManual,
+    tipoCambio,
+    calculatedExtraProveedores,
+    calculatedExtraItems,
     selectedVendedor,
     selectedContenedor,
     fetchVendedores,
