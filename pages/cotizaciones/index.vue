@@ -49,13 +49,14 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.created_at)
   },
   {
+    //show in two rows the contacto with the name, dni and whatsapp
     accessorKey: 'contacto',
     header: 'Contacto',
     cell: ({ row }: { row: any }) => {
       const nombre = row.original?.nombre_cliente || row.original?.nombre || ''
       const telefono = row.original?.whatsapp_cliente || row.original?.whatsapp || ''
       const dni = row.original?.dni_cliente || row.original?.dni || ''
-      return h('div', { class: 'py-2' }, [
+      return h('div', { class: 'py-2 w-30 whitespace-normal' }, [
         h('div', { class: 'font-medium' }, nombre),
         h('div', { class: 'text-sm text-gray-500' }, dni),
         h('div', { class: 'text-sm text-gray-500' }, telefono)
@@ -65,7 +66,11 @@ const columns: TableColumn<any>[] = [
   {
     accessorKey: 'volumen',
     header: 'Volumen',
-    cell: ({ row }: { row: any }) => row.original.totales.total_cbm
+    cell: ({ row }: { row: any }) => {
+      return h('div', { class: 'py-2 w-10 whitespace-normal' }, [
+        h('div', { class: 'font-medium' }, row.original.totales.total_cbm),
+      ])
+    }
   },
   {
     accessorKey: 'qty_item',
