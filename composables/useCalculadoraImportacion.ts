@@ -187,16 +187,27 @@ export const useCalculadoraImportacion = () => {
   })
 
   const calculatedExtraItems = computed(() => {
-    // Para cada proveedor, calcular cuántos items extra hay según su CBM
-    return proveedores.value.reduce((total, proveedor) => {
-      const tarifa = findTarifaByCbm(proveedor.cbm)
-      
-      if (!tarifa) return total
-      
-      const itemsDelProveedor = proveedor.productos?.length || 0
-      const itemsExtra = Math.max(0, itemsDelProveedor - tarifa.item_base)
-      return total + (itemsExtra * tarifa.tarifa)
-    }, 0)
+    // Calcular tarifa adicional basada en el CBM TOTAL y el TOTAL de ítems
+    // La tarifa se cobra SOLO por los ítems que exceden el item_base hasta el item_max
+    // Ejemplo: Si item_base=6, item_max=10, y tienes 8 ítems:
+    //   - Los primeros 6 ítems son gratis (item_base)
+    //   - Los ítems 7 y 8 (2 ítems extra) se cobran con la tarifa
+    const cbmTotal = totalCbm.value
+    const itemsTotal = totalItems.value
+    const tarifa = findTarifaByCbm(cbmTotal)
+    
+    if (!tarifa) return 0
+    
+    const itemMax = tarifa.item_base + tarifa.item_extra
+    // Calcular cuántos ítems exceden el item_base
+    const itemsExtra = Math.max(0, itemsTotal - tarifa.item_base)
+    
+    // Limitar a los ítems extra permitidos (hasta item_max)
+    // itemsExtraACobrar = cantidad de ítems extra que se cobrarán
+    const itemsExtraACobrar = Math.min(itemsExtra, itemMax - tarifa.item_base)
+    
+    // Multiplicar por la tarifa por ítem extra
+    return itemsExtraACobrar * tarifa.tarifa
   })
 
   const proveedores = ref<Proveedor[]>([
@@ -298,9 +309,8 @@ export const useCalculadoraImportacion = () => {
     const tarifaTotalExtraProveedor = proveedores.value.reduce((acc, proveedor) => {
       return acc + proveedor.extraProveedor
     }, 0)
-    const tarifaTotalExtraItem = proveedores.value.reduce((acc, proveedor) => {
-      return acc + proveedor.productos.reduce((acc, producto) => acc + producto.extraItem, 0)
-    }, 0)
+    // Usar calculatedExtraItems que calcula basado en CBM total y total de ítems
+    const tarifaTotalExtraItem = calculatedExtraItems.value
     //create saveCotizacionRequest
     let tarifaToSend = selectedTarifa.value
     // Si es MANUAL, usar el valor del input
@@ -372,8 +382,15 @@ export const useCalculadoraImportacion = () => {
 
   const addProveedor = () => {
     if (proveedores.value.length >= MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA) {
-      return
+      return false
     }
+    
+    // Validar límite de ítems: un nuevo proveedor siempre agrega al menos 1 ítem
+    // Verificar si agregar 1 ítem más excedería el límite
+    if (!canAddMoreItems()) {
+      return false
+    }
+
     const newId = (proveedores.value.length + 1).toString()
     const isExtra = proveedores.value.length + 1 > MAX_PROVEEDORES
     proveedores.value.push({
@@ -409,6 +426,7 @@ export const useCalculadoraImportacion = () => {
       collapsed: false
     } as any)
     clienteInfo.value.qtyProveedores = proveedores.value.length
+    return true
   }
 
   const removeProveedor = (proveedorId: string) => {
@@ -464,14 +482,38 @@ export const useCalculadoraImportacion = () => {
   const getExtraItem = (cbm: number) => {
     return findTarifaByCbm(cbm)
   }
+
+  // Función helper para obtener el límite máximo de ítems basado en CBM total
+  const getMaxItemsByTotalCbm = () => {
+    const cbmTotal = totalCbm.value
+    const tarifa = findTarifaByCbm(cbmTotal)
+    if (!tarifa) return Infinity
+    return tarifa.item_base + tarifa.item_extra
+  }
+
+  // Función helper para verificar si se puede agregar más ítems
+  const canAddMoreItems = () => {
+    const maxItems = getMaxItemsByTotalCbm()
+    return totalItems.value < maxItems
+  }
+
   const addProducto = (proveedorId: string) => {
+    // Validar límite de ítems basado en CBM total
+    if (!canAddMoreItems()) {
+      // Retornar false para que el componente pueda mostrar el modal de error
+      return false
+    }
+
     const proveedor = proveedores.value.find(p => p.id === proveedorId)
     if (proveedor) {
       // asegurar que el panel esté abierto al agregar un producto
       ;(proveedor as any).collapsed = false
       const newId = `${proveedorId}-${proveedor.productos.length + 1}`
-      const tarifaExtra = getExtraItem(proveedor.cbm)
-      const isExtra = proveedor.productos.length + 1 > tarifaExtra?.item_base
+      const cbmTotal = totalCbm.value
+      const tarifaExtra = getExtraItem(cbmTotal)
+      // Calcular si este ítem será extra basándose en el total de ítems después de agregarlo
+      const itemsTotalDespues = totalItems.value + 1
+      const isExtra = itemsTotalDespues > tarifaExtra?.item_base
       proveedor.productos.push({
         id: newId,
         nombre: '',
@@ -493,7 +535,9 @@ export const useCalculadoraImportacion = () => {
         showValoracion: false,
         extraItem: isExtra ? tarifaExtra?.tarifa || 0 : 0
       })
+      return true
     }
+    return false
   }
 
   const removeProducto = (proveedorId: string, productoId: string) => {
@@ -726,6 +770,12 @@ export const useCalculadoraImportacion = () => {
       tarifaExtraItemManual.value = Number(payload.tarifa_total_extra_item || payload.tarifaTotalExtraItem || 0)
       selectedVendedor.value = payload.id_usuario || payload.vendedor || null
       selectedContenedor.value = payload.id_carga_consolidada_contenedor || payload.id_carga_consolidada_contenedor || null
+      // Cargar tipo de cambio, usar 3.7 como valor por defecto si es null o undefined
+      // Intentar diferentes nombres posibles del campo (incluyendo "tc")
+      const tipoCambioValue = payload.tipo_cambio ?? payload.tipoCambio ?? payload.tipo_de_cambio ?? payload.tipoDeCambio ?? payload.tc ?? payload.TC ?? null
+      tipoCambio.value = tipoCambioValue !== null && tipoCambioValue !== undefined && tipoCambioValue !== ''
+        ? Number(tipoCambioValue) 
+        : 3.7
 
       return payload
     } catch (error) {
@@ -797,6 +847,8 @@ export const useCalculadoraImportacion = () => {
     selectedContenedor,
     fetchVendedores,
     fetchContenedores,
-    loadCotizacionById
+    loadCotizacionById,
+    getMaxItemsByTotalCbm,
+    canAddMoreItems
   }
 }

@@ -263,7 +263,9 @@
                         CBM Total <span class="text-red-500">*</span>
                       </label>
                       <UInput class="w-full" v-model.number="proveedor.cbm" type="number" step="0.1" min="0"
-                        placeholder="0.0" size="md" variant="outline" />
+                        placeholder="0.0" size="md" variant="outline" 
+                        @focus="() => { cbmAnteriorPorProveedor[proveedor.id] = proveedor.cbm || 0 }"
+                        @blur="(e) => handleCbmChange(proveedor.id, parseFloat((e.target as HTMLInputElement).value) || 0)" />
                     </div>
 
                     <div>
@@ -293,8 +295,11 @@
 
                         <!-- Badge (índice global) -->
                         <div class="col-span-1 flex items-center justify-center md:mt-6">
-                          <UBadge color="warning" variant="soft" size="sm" class="text-xs py-1 px-2">
+                          <UBadge :color="isProductoExtra(getGlobalProductIndex(pIndex, prodIndex)) ? 'error' : 'warning'" variant="soft" size="sm" class="text-xs py-1 px-2">
                             {{ getGlobalProductIndex(pIndex, prodIndex) }}
+                            <span v-if="isProductoExtra(getGlobalProductIndex(pIndex, prodIndex))" class="ml-1">
+                              Extra {{ formatCurrency(getTarifaExtraItem()) }}
+                            </span>
                           </UBadge>
                         </div>
 
@@ -353,7 +358,7 @@
                       </div>
               </transition-group>
 
-                    <UButton @click="addProducto(proveedor.id)" :disabled="getDisabledByRangeItem(proveedor)"
+                    <UButton @click="handleAddProducto(proveedor.id)" :disabled="getDisabledByRangeItem(proveedor)"
                       class="bg-orange-500  rounded-md hover:bg-orange-600 transition-colors">
                       + item
                     </UButton>
@@ -362,8 +367,8 @@
               </transition>
             </div>
 
-            <UButton @click="addProveedor" color="success" size="sm"
-              :disabled="proveedores.length >= MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA">
+            <UButton @click="handleAddProveedor" color="success" size="sm"
+              :disabled="proveedores.length >= MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA || !canAddMoreItems()">
               + Agregar Proveedor
             </UButton>
           </div>
@@ -484,7 +489,9 @@
                   <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
                     :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
                     <UInput class="w-full" v-model.number="proveedor.cbm" type="number" min="0" placeholder="0"
-                      size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                      size="md" variant="outline" :ui="{ base: 'text-center'}"
+                      @focus="() => { cbmAnteriorPorProveedor[proveedor.id] = proveedor.cbm || 0 }"
+                      @blur="(e) => handleCbmChange(proveedor.id, parseFloat((e.target as HTMLInputElement).value) || 0)" />
                   </td>
                   <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
                     {{ totalCbm }}
@@ -1049,6 +1056,7 @@ import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportaci
 import type { Proveedor, Tarifa, ProductoItem } from '~/types/calculadora-importacion'
 import { useSpinner } from '@/composables/commons/useSpinner'
 import { useModal } from '@/composables/commons/useModal'
+import { formatCurrency } from '~/utils/formatters'
 const { withSpinner } = useSpinner()
 const { showSuccess, showError, showConfirmation } = useModal()
 
@@ -1094,7 +1102,9 @@ const {
   selectedVendedor,
   selectedContenedor,
   fetchVendedores,
-  fetchContenedores
+  fetchContenedores,
+  getMaxItemsByTotalCbm,
+  canAddMoreItems
 } = useCalculadoraImportacion()
 
 // `useCalculadoraImportacion` moved up; ya está declarado más arriba
@@ -1299,6 +1309,54 @@ const confirmDeleteProducto = (proveedorId: string, productoId: string) => {
   )
 }
 
+const handleAddProducto = (proveedorId: string) => {
+  if (!canAddMoreItems()) {
+    const maxItems = getMaxItemsByTotalCbm()
+    showError(
+      `No se puede agregar más ítems. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      'error'
+    )
+    return
+  }
+  
+  const success = addProducto(proveedorId)
+  if (!success) {
+    const maxItems = getMaxItemsByTotalCbm()
+    showError(
+      `No se puede agregar más ítems. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      'error'
+    )
+  }
+}
+
+const handleAddProveedor = () => {
+  if (proveedores.value.length >= MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA) {
+    showError(
+      `No se pueden agregar más proveedores. El límite máximo es de ${MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA} proveedores.`,
+      'error'
+    )
+    return
+  }
+  
+  if (!canAddMoreItems()) {
+    const maxItems = getMaxItemsByTotalCbm()
+    showError(
+      `No se puede agregar un nuevo proveedor. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      'error'
+    )
+    return
+  }
+  
+  const success = addProveedor()
+  if (!success) {
+    const maxItems = getMaxItemsByTotalCbm()
+    showError(
+      `No se puede agregar un nuevo proveedor. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      'error'
+    )
+  }
+}
+
 
 // Computed para cálculos de proveedores
 const proveedoresResumen = computed(() => {
@@ -1416,10 +1474,13 @@ const findTarifaByCbm = (cbm: number) => {
 }
 
 const getDisabledByRangeItem = (proveedor: Proveedor) => {
-  const totalCbm = proveedor.cbm;
-  const tarifa = findTarifaByCbm(totalCbm)
+  // Usar CBM total y total de ítems para validar el límite
+  const cbmTotal = totalCbm.value
+  const itemsTotal = totalItems.value
+  const tarifa = findTarifaByCbm(cbmTotal)
   if (!tarifa) return false
-  return proveedor.productos.length >= tarifa.item_base + tarifa.item_extra
+  const itemMax = tarifa.item_base + tarifa.item_extra
+  return itemsTotal >= itemMax
 }
 
 const getExtraItem = (cbm: number) => {
@@ -1429,6 +1490,73 @@ const getExtraItem = (cbm: number) => {
     item_extra: tarifa?.item_extra,
     tarifa: tarifa?.tarifa
   }
+}
+
+// Determinar si un producto es "extra" basándose en su índice global y el CBM total
+const isProductoExtra = (indexGlobal: number) => {
+  const cbmTotal = totalCbm.value
+  const tarifa = findTarifaByCbm(cbmTotal)
+  if (!tarifa) return false
+  // Un producto es "extra" si su índice global excede el item_base
+  return indexGlobal > tarifa.item_base
+}
+
+// Obtener la tarifa del ítem extra basándose en el CBM total
+const getTarifaExtraItem = () => {
+  const cbmTotal = totalCbm.value
+  const tarifa = findTarifaByCbm(cbmTotal)
+  return tarifa?.tarifa || 0
+}
+
+// Almacenar el CBM anterior de cada proveedor para poder revertir cambios
+const cbmAnteriorPorProveedor = ref<Record<string, number>>({})
+
+// Handler para validar cambios en el CBM
+const handleCbmChange = (proveedorId: string, nuevoCbm: number) => {
+  const proveedor = proveedores.value.find(p => p.id === proveedorId)
+  if (!proveedor) return
+
+  // Obtener el CBM anterior guardado (se guarda en @focus)
+  const cbmAnterior = cbmAnteriorPorProveedor.value[proveedorId] ?? (proveedor.cbm || 0)
+  
+  // Si el nuevo valor es igual al anterior, no hacer nada
+  if (Math.abs(nuevoCbm - cbmAnterior) < 0.01) {
+    return true
+  }
+  
+  // Calcular el nuevo CBM total si se aplica este cambio
+  // Usar el nuevoCbm directamente porque v-model ya actualizó proveedor.cbm
+  const nuevoCbmTotal = proveedores.value.reduce((sum, p) => {
+    return sum + (p.cbm || 0)
+  }, 0)
+
+  // Obtener el límite máximo de ítems para el nuevo CBM total
+  const tarifa = findTarifaByCbm(nuevoCbmTotal)
+  if (!tarifa) {
+    // Si no hay tarifa, permitir el cambio
+    return true
+  }
+
+  const itemMax = tarifa.item_base + tarifa.item_extra
+  const itemsActuales = totalItems.value
+
+  // Si el nuevo CBM total permitiría menos ítems de los que ya existen, mostrar error
+  if (itemsActuales > itemMax) {
+    // Revertir el cambio
+    proveedor.cbm = cbmAnterior
+    
+    // Mostrar modal de error
+    const itemsAeliminar = itemsActuales - itemMax
+    const message = `No se puede reducir el CBM a ${nuevoCbm.toFixed(2)}. El nuevo CBM total (${nuevoCbmTotal.toFixed(2)} CBM) solo permite un máximo de ${itemMax} ítems, pero actualmente tienes ${itemsActuales} ítems. Por favor, elimina ${itemsAeliminar} ítem(s) o proveedor(es) antes de reducir el CBM.`
+    showError(
+      `No se puede reducir el CBM`,
+      message
+    )
+    return false
+  }
+
+  // Si el cambio es válido, no hacer nada más (el valor ya está actualizado por v-model)
+  return true
 }
 // Total de flete
 const totalFlete = computed(() => {

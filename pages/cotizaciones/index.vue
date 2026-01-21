@@ -65,7 +65,7 @@ const columns: TableColumn<any>[] = [
   },
   {
     accessorKey: 'volumen',
-    header: 'Volumen',
+    header: 'Vol',
     cell: ({ row }: { row: any }) => {
       return h('div', { class: 'py-2 w-10 whitespace-normal' }, [
         h('div', { class: 'font-medium' }, row.original.totales.total_cbm),
@@ -74,7 +74,7 @@ const columns: TableColumn<any>[] = [
   },
   {
     accessorKey: 'qty_item',
-    header: 'Qty Item',
+    header: 'Item',
     cell: ({ row }: { row: any }) => row.original.totales.total_productos
   },
   {
@@ -100,7 +100,7 @@ const columns: TableColumn<any>[] = [
   {
     accessorKey: 'descuento',
     header: 'Desct.',
-    cell: ({ row }: { row: any }) => formatCurrency(row.original.descuento || 0)
+    cell: ({ row }: { row: any }) => formatCurrency(row.original.tarifa_descuento || 0)
   },
   {
     accessorKey: 'campania',
@@ -188,10 +188,10 @@ const columns: TableColumn<any>[] = [
           }
         }) : null,
         h(UButton, {
-          color: 'secondary',
+          color: 'primary',
           size: 'sm',
           variant: 'ghost',
-          icon: 'i-heroicons-arrow-path',
+          icon: 'i-heroicons-document-duplicate',
           label: '',
           onClick: (event: MouseEvent) => {
             handleDuplicate(row.original.id)
