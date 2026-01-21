@@ -68,6 +68,7 @@ export interface ProductoItemRequest {
  
 }
 export interface saveCotizacionRequest {
+  id?: number
   clienteInfo: ClienteInfo
   proveedores: ProveedorRequest[]
   tarifaTotalExtraProveedor: number

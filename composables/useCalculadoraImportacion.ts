@@ -189,9 +189,7 @@ export const useCalculadoraImportacion = () => {
   const calculatedExtraItems = computed(() => {
     // Para cada proveedor, calcular cuántos items extra hay según su CBM
     return proveedores.value.reduce((total, proveedor) => {
-      const tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
-        proveedor.cbm >= t.limit_inf && proveedor.cbm <= t.limit_sup
-      ) || TARIFAS_EXTRA_ITEM_PER_CBM[TARIFAS_EXTRA_ITEM_PER_CBM.length - 1]
+      const tarifa = findTarifaByCbm(proveedor.cbm)
       
       if (!tarifa) return total
       
@@ -295,7 +293,7 @@ export const useCalculadoraImportacion = () => {
 
   }
 
-  const handleEndFormulario = async () => {
+  const handleEndFormulario = async (id?: number) => {
     //get extra per proveedor and item from proveedores
     const tarifaTotalExtraProveedor = proveedores.value.reduce((acc, proveedor) => {
       return acc + proveedor.extraProveedor
@@ -310,6 +308,7 @@ export const useCalculadoraImportacion = () => {
       tarifaToSend = { ...tarifaToSend, tarifa: Number(tarifaToSend.tarifa) }
     }
     const saveCotizacionRequest: saveCotizacionRequest = {
+      ...(id ? { id } : {}),
       clienteInfo: clienteInfo.value,
       proveedores: proveedores.value.map(proveedor => ({
         cbm: proveedor.cbm,
@@ -426,11 +425,44 @@ export const useCalculadoraImportacion = () => {
       })
     }
   }
+  // Función helper para encontrar tarifa por CBM con manejo de casos edge
+  const findTarifaByCbm = (cbm: number) => {
+    if (!cbm || isNaN(cbm) || cbm <= 0) {
+      return TARIFAS_EXTRA_ITEM_PER_CBM[0] // Devolver primera tarifa por defecto
+    }
+    
+    const cbmValue = parseFloat(cbm.toFixed(2))
+    
+    // 1. Buscar tarifa exacta donde el CBM cae en el rango
+    let tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
+      cbmValue >= t.limit_inf && cbmValue <= t.limit_sup
+    )
+    
+    // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
+    if (!tarifa) {
+      const cbmRedondeado = Math.round(cbmValue * 10) / 10
+      tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
+        cbmRedondeado >= t.limit_inf && cbmRedondeado <= t.limit_sup
+      )
+    }
+    
+    // 3. Si aún no encuentra, buscar la tarifa más cercana
+    if (!tarifa) {
+      // Buscar el rango más cercano comparando distancias
+      const distancias = TARIFAS_EXTRA_ITEM_PER_CBM.map(t => {
+        const centro = (t.limit_inf + t.limit_sup) / 2
+        return { tarifa: t, distancia: Math.abs(cbmValue - centro) }
+      })
+      distancias.sort((a, b) => a.distancia - b.distancia)
+      tarifa = distancias[0]?.tarifa
+    }
+    
+    // 4. Si aún no hay tarifa, usar la última (mayor rango)
+    return tarifa || TARIFAS_EXTRA_ITEM_PER_CBM[TARIFAS_EXTRA_ITEM_PER_CBM.length - 1]
+  }
+
   const getExtraItem = (cbm: number) => {
-    const tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(tarifa => {
-      return cbm >= tarifa.limit_inf && cbm <= tarifa.limit_sup
-    })
-    return tarifa
+    return findTarifaByCbm(cbm)
   }
   const addProducto = (proveedorId: string) => {
     const proveedor = proveedores.value.find(p => p.id === proveedorId)
