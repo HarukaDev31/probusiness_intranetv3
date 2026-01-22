@@ -1,18 +1,18 @@
 <template>
 
-  <div class="space-y-3 w-50 grid grid-cols-2 lg:grid-cols-7 gap-2 w-full h-full">
+  <div v-if="currentRole !== ROLES.CONTENEDOR_ALMACEN" class="space-y-3 w-full grid grid-cols-2 lg:grid-cols-7 gap-2 h-auto min-h-0">
     <div
       v-for="(item, index) in instances"
       :key="index"
-      class="flex items-center justify-between p-3 h-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+      class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 min-h-0 min-w-0 m-0"
     >
-      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 min-w-0">
         <UIcon 
           name="i-heroicons-device-phone-mobile" 
           class="w-5 h-5 text-gray-500"
         />
         <div>
-          <p class="text-sm font-medium text-gray-900 dark:text-white">
+          <p class="md:text-sm text-xs font-medium text-gray-900 dark:text-white truncate">
             {{ item.key }}
           </p>
           
@@ -56,6 +56,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
+
+const { currentRole } = useUserRole()
 
 interface InstanceItem {
   instanceName: string

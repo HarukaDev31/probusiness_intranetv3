@@ -8,13 +8,13 @@
 
 
                 <div class="space-y-4">
-                 
-
                     <!-- Uploader -->
                     <div>
-                        <FileUploader ref="fileUploaderRef" :multiple="false" @file-added="handleFileAdded"
+                        <FileUploader ref="fileUploaderRef" :multiple="props.multiple??false" @file-added="handleFileAdded"
                             @file-removed="handleFileRemoved" />
                     </div>
+                    
+                   
                 </div>
             </div>
         </template>
@@ -37,34 +37,75 @@ import FileUploader from '~/components/commons/FileUploader.vue'
 
 const emit = defineEmits<{
     (e: 'close'): void
-    (e: 'save', data: {  file: File }): void
+    (e: 'save', data: { file?: File, files?: File[] }): void
 }>()
 
-const props = defineProps<{
+interface Props {
     title: string
-}>()
+    multiple?: boolean
+}
+const props = withDefaults(defineProps<Props>(), {
+    title: 'Subir archivo',
+    multiple: false
+})
+
 const selectedFile = ref<File | null>(null)
+const selectedFiles = ref<File[]>([])
 const fileUploaderRef = ref<InstanceType<typeof FileUploader> | null>(null)
 
 // Validación
 const isValid = computed(() => {
-    return  selectedFile.value !== null
+    if (props.multiple) {
+        return selectedFiles.value.length > 0
+    }
+    return selectedFile.value !== null
 })
 
 // Manejadores de eventos
 const handleFileAdded = (file: File) => {
-    selectedFile.value = file
+    if (props.multiple) {
+        // Evitar duplicados
+        if (!selectedFiles.value.some(f => f.name === file.name && f.size === file.size)) {
+            selectedFiles.value.push(file)
+        }
+    } else {
+        selectedFile.value = file
+    }
 }
 
-const handleFileRemoved = () => {
-    selectedFile.value = null
+const handleFileRemoved = (index?: number) => {
+    if (props.multiple) {
+        if (index !== undefined) {
+            selectedFiles.value.splice(index, 1)
+        } else {
+            selectedFiles.value = []
+        }
+    } else {
+        selectedFile.value = null
+    }
+}
+
+const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
 
 const handleSave = () => {
-    if (!isValid.value || !selectedFile.value) return
+    if (!isValid.value) return
 
-    emit('save', {
-        file: selectedFile.value
-    })
+    if (props.multiple) {
+        if (selectedFiles.value.length === 0) return
+        emit('save', {
+            files: selectedFiles.value
+        })
+    } else {
+        if (!selectedFile.value) return
+        emit('save', {
+            file: selectedFile.value
+        })
+    }
 }
 </script>

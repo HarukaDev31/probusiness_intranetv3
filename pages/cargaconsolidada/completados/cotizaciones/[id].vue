@@ -22,14 +22,14 @@
             </template>
             <template #actions>
 
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" class="py-3"
+                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" class="py-3 md:flex hidden"
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
             <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
             :columns="getEmbarqueColumns()" :loading="loading || loadingHeaders" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
+            :show-secondary-search="false" :show-filters="currentRole !== ROLES.CONTENEDOR_ALMACEN" :filter-config="getFilterPerRole()" :show-export="false"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
@@ -48,7 +48,7 @@
 
                     <div ref="filtersButtonRef" class="w-full lg:w-auto">
                         <UButton label="Upload" icon="i-heroicons-arrow-up-tray" v-if="currentRole === ROLES.CONTENEDOR_ALMACEN"
-                            class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto"
+                            class="h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
                             @click="showUploadPanel = !showUploadPanel" />
                     </div>
                     <div ref="filtersPanelRef" v-if="showUploadPanel && currentRole === ROLES.CONTENEDOR_ALMACEN"
@@ -70,7 +70,7 @@
                     </div>
                 </div>
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
-                    @click="handleAddProspecto" class="py-3" />
+                    @click="handleAddProspecto" class="py-3 md:flex hidden" />
                 <UButton v-if="currentRole === ROLES.COORDINACION" icon="i-heroicons-arrow-down-tray" color="success"
                     label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
             </template>
@@ -245,6 +245,13 @@ const loadTabs = () => {
             break
     }
 }
+
+// Función para construir el URL de firma usando el UUID
+const getSignUrl = (uuid: string): string => {
+    if (!uuid) return ''
+    return 'https://clientes.probusiness.pe/firma-acuerdo-servicio/' + uuid
+}
+
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
@@ -359,7 +366,7 @@ const filterConfigProspectos = ref([
     },
     {
         key: 'estado_cotizador',
-        label: 'Estado',
+        label: 'Estado Cotizador',
         type: 'select',
         placeholder: 'Seleccionar estado',
         options: [
@@ -384,6 +391,20 @@ const filterConfigProspectos = ref([
             { label: 'INSPECTION', value: 'INSPECTION', inrow: true },
             { label: 'LOADED', value: 'LOADED', inrow: true },
             { label: 'NO LOADED', value: 'NO LOADED', inrow: true }
+        ]
+    },
+    {
+        key: 'estado_coordinacion',
+        label: 'Estado',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: false },
+            { label: 'ROTULADO', value: 'ROTULADO', inrow: true },
+            { label: 'DATOS PROVEEDOR', value: 'DATOS PROVEEDOR', inrow: true },
+            { label: 'INSPECCIONADO', value: 'INSPECCIONADO', inrow: true },
+            { label: 'RESERVADO', value: 'RESERVADO', inrow: true}
+
         ]
     }
 
@@ -632,6 +653,16 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         handleSendRecordatorioFirma(row.original.id)
                     }
                 }),
+                (row.original.cotizacion_contrato_url || row.original.cotizacion_contrato_autosigned_url || row.original.cotizacion_contrato_firmado_url) ? h(UButton, {
+                    icon: 'i-heroicons-document-duplicate',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'info',
+                    title: 'Copiar enlace de firma',
+                    onClick: () => {
+                        copyToClipboard(getSignUrl(row.original.uuid), 'Enlace de firma copiado')
+                    }
+                }) : null,
                 h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
@@ -851,6 +882,16 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     handleDelete(row.original.id)
                 }
             }) : null,
+                (row.original.cotizacion_contrato_url || row.original.cotizacion_contrato_autosigned_url || row.original.cotizacion_contrato_firmado_url) ? h(UButton, {
+                    icon: 'i-heroicons-document-duplicate',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'info',
+                    title: 'Copiar enlace de firma',
+                    onClick: () => {
+                        copyToClipboard(getSignUrl(row.original.uuid), 'Enlace de firma copiado')
+                    }
+                }) : null,
                 h(UButton, {
                     icon: 'i-heroicons-arrow-right',
                     variant: 'ghost',
@@ -1959,7 +2000,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
             const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
-            return h('div', { class: 'w-70 whitespace-normal' }, [
+            return h('div', { class: 'w-40 whitespace-normal' }, [
                 h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
             ])
@@ -1976,6 +2017,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.products,
                     class: 'w-full w-40',
+                    variant: 'none',
                     disabled: currentRole.value !== ROLES.COTIZADOR,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.products = value
@@ -1996,6 +2038,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.qty_box,
                     class: 'w-full w-10',
+                    variant: 'none',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.qty_box = value
@@ -2016,6 +2059,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.cbm_total,
                     class: 'w-full',
+                    variant: 'none',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.cbm_total = value
@@ -2036,6 +2080,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.peso,
                     class: 'w-full',
+                    variant: 'none',
                     disabled: true,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.peso = value
@@ -2057,6 +2102,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full',
+                    variant: 'none',
                     disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: string) => {
                         proveedor.supplier = value
@@ -2077,6 +2123,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
                     class: 'w-full',
+                    variant: 'none',
                     disabled: currentRole.value !== ROLES.COORDINACION,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
@@ -2092,11 +2139,12 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
-                class: 'flex flex-col gap-2'
+                class: 'flex flex-col gap-2 w-35'
             }, proveedores.map((proveedor: any) => {
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full',
+                    variant: 'none',
                     disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
@@ -2453,6 +2501,15 @@ const downloadFile = async (fileUrl: string) => {
         }, 'Descargando archivo...')
     } catch (error) {
         showError('Error al descargar archivo', error as string)
+    }
+}
+
+const copyToClipboard = async (text: string, successMessage: string = 'Copiado al portapapeles') => {
+    try {
+        await navigator.clipboard.writeText(text)
+        showSuccess('Éxito', successMessage)
+    } catch (error) {
+        showError('Error al copiar', 'No se pudo copiar al portapapeles')
     }
 }
 // Manejadores para prospectos

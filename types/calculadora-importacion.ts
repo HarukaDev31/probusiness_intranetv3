@@ -1,10 +1,13 @@
 export interface ClienteInfo {
   nombre: string
   dni: string
-  whatsapp: string
+  whatsapp: string | null
   correo: string
   qtyProveedores: number
   tipoCliente: string
+  tipoDocumento?: string
+  empresa?: string
+  ruc?: string
 }
 
 export interface ProductoItem {
@@ -36,6 +39,7 @@ export interface Proveedor {
   qtyCaja: number
   productos: ProductoItem[]
   extraProveedor: number
+  collapsed?: boolean
 }
 
 
@@ -64,11 +68,16 @@ export interface ProductoItemRequest {
  
 }
 export interface saveCotizacionRequest {
+  id?: number
   clienteInfo: ClienteInfo
   proveedores: ProveedorRequest[]
   tarifaTotalExtraProveedor: number
   tarifaTotalExtraItem: number
+  tarifaDescuento: number
+  id_usuario: number | null
+  id_carga_consolidada_contenedor: number | null
   tarifa: Tarifa
+  tipo_cambio: number
 }
 
 export interface CotizacionFilters {

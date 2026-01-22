@@ -56,6 +56,7 @@
       icon="" :show-pagination="false" :current-page="currentPage" :total-pages="totalPages"
       :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
       :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="false"
+      :table-meta="tableMeta"
       empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleSearch"
       @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
       @filter-change="handleFilterChange" :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
@@ -136,6 +137,7 @@ import { useModal } from '../../../../composables/commons/useModal'
 import { useSpinner } from '../../../../composables/commons/useSpinner'
 import { ROLES } from '../../../../constants/roles'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
+import type { TableRow } from '@nuxt/ui'
 
 const route = useRoute()
 const id = Number(route.params.id)
@@ -208,6 +210,13 @@ const handleTabChange = (value: string) => {
     getDelivery(id)
   }
 }
+const tableMeta = {
+  class: {
+    tr: (row: TableRow<{ value: number }>) => {
+      return row.original.isVerified ? "bg-green-500" : "bg-white dark:bg-gray-800";
+    },
+  },
+};
 // Links externos por contenedor (usa el id del contenedor)
 const linkLima = computed(() => `https://clientes.probusiness.pe/formulario-entrega/lima/${id}`)
 const linkProvincia = computed(() => `https://clientes.probusiness.pe/formulario-entrega/provincia/${id}`)
@@ -576,10 +585,20 @@ const entregasColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'razon_social', header: 'Razon social o Nombre', cell: ({ row }) => row.original.agency_name || row.original.pick_name || '—' },
   {
     accessorKey: 'fecha_programada', header: 'Fecha', cell: ({ row }) => {
-      const fp = formatDateTimeToDmy(row.original.delivery_date)
-      if (!fp) return '—'
-      const date = fp.includes(' ') ? fp.split(' ')[0] : fp.split('T')[0]
-      return date || '—'
+      const tf = row.original?.type_form
+      const isLima = (tf === 1 || tf === '1')
+      if (isLima) {
+        const fp = formatDateTimeToDmy(row.original.delivery_date)
+        if (!fp) return '—'
+        const date = fp.includes(' ') ? fp.split(' ')[0] : fp.split('T')[0]
+        return date || '—'
+      }
+      // Provincia: usar fecha_creacion_formulario si existe, si no fallback a created_at
+      const fcRaw = row.original.fecha_creacion_formulario ?? row.original.created_at ?? row.original.form_created_at ?? row.original.createdAt
+      const fc = formatDateTimeToDmy(fcRaw)
+      if (!fc) return '—'
+      const dateProv = fc.includes(' ') ? fc.split(' ')[0] : fc.split('T')[0]
+      return dateProv || '—'
     }
   },
   {

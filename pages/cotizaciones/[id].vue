@@ -1,13 +1,13 @@
 <template>
   <div class="min-h-screen ">
-    <div class="max-w-9/10 mx-auto px-">
+    <div class="max-w-9/10 mx-auto px-4 ">
       <!-- Header -->
       <div class="text-center mb-8">
         <h1 class="text-4xl font-bold mb-2">
           Calculadora de Importación
         </h1>
         <p class="text-lg ">
-          Complete todos los pasos para obtener su cotización de importación
+          Edite todos los pasos para guardar su cotización de importación
         </p>
       </div>
 
@@ -109,25 +109,11 @@
                 <template #label>
                   WhatsApp <span class="text-red-500">*</span>
                 </template>
-                <div class="relative">
-                  <UInput
-                    class="w-full"
-                    v-model="whatsappInput"
-                    type="text"
-                    placeholder="51 999999999"
-                    @update:model-value="handleWhatsappInput"
-                    @blur="handleWhatsappBlur"
-                    required
-                  />
-
-                  <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded max-h-48 overflow-auto">
-                    <ul>
-                      <li v-for="(c, i) in clientes" :key="i" class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" @mousedown.prevent="selectClienteFromList(c)">
-                        {{ c.whatsapp || c.celular || c.label }}
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+                <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
+                    class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
+                    @update:model-value="onClienteSelected">
+                    {{ displayWhatsapp }}
+                  </UInputMenu>
               </UFormField>
             </div>
 
@@ -162,7 +148,7 @@
 
             <div>
               <UFormField label="Ruc:" name="ruc">
-                <UInput class="w-full" v-model="clienteInfo.ruc" type="text" placeholder="20603287721" />
+                <UInput class="w-full" v-model="clienteInfo.ruc" type="text" placeholder="" />
               </UFormField>
             </div>
 
@@ -171,31 +157,17 @@
                 <template #label>
                   WhatsApp <span class="text-red-500">*</span>
                 </template>
-                <div class="relative">
-                  <UInput
-                    class="w-full"
-                    v-model="whatsappInput"
-                    type="text"
-                    placeholder="51 934 958 839"
-                    @update:model-value="handleWhatsappInput"
-                    @blur="handleWhatsappBlur"
-                    required
-                  />
-
-                  <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded max-h-48 overflow-auto">
-                    <ul>
-                      <li v-for="(c, i) in clientes" :key="i" class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" @mousedown.prevent="selectClienteFromList(c)">
-                        {{ c.whatsapp || c.celular || c.label }}
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+                <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
+                  class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
+                  @update:model-value="onClienteSelected">
+                  {{ displayWhatsapp }}
+                </UInputMenu>
               </UFormField>
             </div>
 
             <div>
               <UFormField label="Correo:" name="correo">
-                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="mvillegas@probusiness.pe" />
+                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="" />
               </UFormField>
             </div>
 
@@ -231,140 +203,126 @@
           </div>
 
           <div class="space-y-6">
-            <div v-for="(proveedor, pIndex) in proveedores" :key="proveedor.id" class="border-t pt-6">
+            <div v-for="(proveedor, index) in proveedores" :key="proveedor.id" class="border-t pt-6">
               <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center space-x-2">
-                  <h3 class="text-lg font-semibold ">
-                    <span>Proveedor #{{ proveedor.id }} </span>
-                  </h3>
-                  <UButton v-if="pIndex + 1 > MAX_PROVEEDORES" color="warning" variant="soft" size="sm"
+                <h3 class="text-lg font-semibold ">
+                  <span>Proveedor #{{ proveedor.id }} </span>
+                  <UButton v-if="index + 1 > MAX_PROVEEDORES" color="warning" variant="soft" size="sm"
                     @click="proveedor.extraProveedor = 1" class="ml-2">
                     <UIcon name="i-heroicons-plus" class="w-5 h-5" />
                     {{ formatCurrency(TARIFA_EXTRA_PROVEEDOR) }}
                   </UButton>
+                </h3>
+                <UButton v-if="proveedores.length > 1" @click="confirmDeleteProveedor(proveedor.id)" color="error" variant="outline"
+                  title="Eliminar proveedor">
+                  <UIcon name="i-heroicons-trash" class="w-5 h-5" />
+                </UButton>
+                <div>
+                  <label class="block text-sm font-medium  mb-2">
+                    CBM Total <span class="text-red-500">*</span>
+                  </label>
+                  <UInput class="w-full" v-model.number="proveedor.cbm" type="number" step="0.1" min="0"
+                    placeholder="0.0" size="md" variant="outline" 
+                    @focus="() => { cbmAnteriorPorProveedor[proveedor.id] = proveedor.cbm || 0 }"
+                    @blur="(e) => handleCbmChange(proveedor.id, parseFloat((e.target as HTMLInputElement).value) || 0)" />
                 </div>
 
-                <div class="flex items-center space-x-2">
-                  <UButton v-if="proveedores.length > 1" @click="confirmDeleteProveedor(proveedor.id)" color="error" variant="outline"
-                    title="Eliminar proveedor">
-                    <UIcon name="i-heroicons-trash" class="w-5 h-5" />
-                  </UButton>
-                  <UButton size="sm" variant="outline" @click="proveedor.collapsed = !proveedor.collapsed">
-                    <UIcon :name="!proveedor.collapsed ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" class="w-5 h-5" />
-                  </UButton>
+                <div>
+                  <label class="block text-sm font-medium  mb-2">
+                    Peso Total
+                  </label>
+                  <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0" size="md"
+                    variant="outline" />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium  mb-2">
+                    Qty Cajas
+                  </label>
+                  <UInput class="w-full" v-model.number="proveedor.qtyCaja" type="number" min="0" placeholder="0"
+                    size="md" variant="outline" />
                 </div>
               </div>
 
-              <transition name="slide-fade">
-                <div v-show="!proveedor.collapsed">
-                  <div class="flex justify-start space-x-4 items-center mb-4">
-                    <div>
-                      <label class="block text-sm font-medium  mb-2">
-                        CBM Total <span class="text-red-500">*</span>
-                      </label>
-                      <UInput class="w-full" v-model.number="proveedor.cbm" type="number" step="0.1" min="0"
-                        placeholder="0.0" size="md" variant="outline" 
-                        @focus="() => { cbmAnteriorPorProveedor[proveedor.id] = proveedor.cbm || 0 }"
-                        @blur="(e) => handleCbmChange(proveedor.id, parseFloat((e.target as HTMLInputElement).value) || 0)" />
-                    </div>
 
-                    <div>
-                      <label class="block text-sm font-medium  mb-2">
-                        Peso Total
-                      </label>
-                      <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0" size="md"
-                        variant="outline" />
-                    </div>
+              <!-- Lista de Productos -->
+              <div class="space-y-4">
+                <h4 class="text-md font-medium ">Productos del Proveedor</h4>
 
-                    <div>
-                      <label class="block text-sm font-medium  mb-2">
-                        Qty Cajas
-                      </label>
-                      <UInput class="w-full" v-model.number="proveedor.qtyCaja" type="number" min="0" placeholder="0"
+                <div v-for="(producto, prodIndex) in proveedor.productos" :key="producto.id"
+                  class="grid grid-cols-1 gap-4 p-4 rounded-lg items-center" :class="{
+                    'md:grid-cols-11': !producto.showValoracion,
+                    'md:grid-cols-12': producto.showValoracion
+                  }">
+                  <div class="col-span-1">
+                    <label class="block text-sm font-medium  mb-2">
+                      <UBadge :color="isProductoExtra(getGlobalProductIndex(index, prodIndex)) ? 'error' : 'warning'" variant="soft" size="sm" class="text-xs py-1 px-2">
+                        {{ getGlobalProductIndex(index, prodIndex) }}
+                        <span v-if="isProductoExtra(getGlobalProductIndex(index, prodIndex))" class="ml-1">
+                          Extra {{ formatCurrency(getTarifaExtraItem()) }}
+                        </span>
+                      </UBadge>
+                    </label>
+                  </div>
+                  <div class="col-span-4">
+
+                    <label class="block text-sm font-medium  mb-2">
+                      Nombre del producto <span class="text-red-500">*</span>
+                    </label>
+                    <UInput class="w-full" v-model="producto.nombre" type="text" placeholder="Nombre del producto"
+                      size="md" variant="outline" />
+                  </div>
+                  <div class="col-span-2">
+                    <label class="block text-sm font-medium  mb-2">
+                      Precio <span class="text-red-500">*</span>
+                    </label>
+                    <UInput class="w-full" v-model.number="producto.precio" type="number" step
+                      placeholder="0.00" size="md" variant="outline">
+                      <template #leading>
+                        <span class="text-gray-500">$</span>
+                      </template>
+                    </UInput>
+                  </div>
+                  <div class="col-span-2">
+                    <label class="block text-sm font-medium  mb-2">
+                      Cantidad <span class="text-red-500">*</span>
+                    </label>
+                    <div class="flex space-x-2">
+                      <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0" placeholder="0"
                         size="md" variant="outline" />
                     </div>
                   </div>
 
-                  <!-- Lista de Productos -->
-                  <div class="space-y-4">
-                    <h4 class="text-md font-medium ">Productos del Proveedor</h4>
+                  <div v-if="producto.showValoracion" class="col-span-2">
+                    <div>
+                      <label class="block text-sm font-medium  mb-2">
+                        P.Ajuste
+                      </label>
+                      <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0" placeholder="0.00"
+                        size="md" variant="outline">
+                        <template #leading>
+                          <span class="text-gray-500">$</span>
+                        </template>
+                      </UInput>
+                    </div>
 
-                    <transition-group name="list" tag="div">
-                      <div v-for="(producto, prodIndex) in proveedor.productos" :key="producto.id"
-                        :class="['grid grid-cols-1 gap-4 p-2 rounded-lg items-center', producto.showValoracion ? 'md:grid-cols-12' : 'md:grid-cols-12']">
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="flex space-x-2">
 
-                        <!-- Badge (índice global) -->
-                        <div class="col-span-1 flex items-center justify-center md:mt-6">
-                          <UBadge :color="isProductoExtra(getGlobalProductIndex(pIndex, prodIndex)) ? 'error' : 'warning'" variant="soft" size="sm" class="text-xs py-1 px-2">
-                            {{ getGlobalProductIndex(pIndex, prodIndex) }}
-                            <span v-if="isProductoExtra(getGlobalProductIndex(pIndex, prodIndex))" class="ml-1">
-                              Extra {{ formatCurrency(getTarifaExtraItem()) }}
-                            </span>
-                          </UBadge>
-                        </div>
-
-                        <!-- Nombre (ajusta su span según si existe valoracion) -->
-                        <div :class="['col-span-4', producto.showValoracion ? 'md:col-span-4' : 'md:col-span-5']">
-                          <label class="block text-sm font-medium  mb-2">
-                            Nombre del producto <span class="text-red-500">*</span>
-                          </label>
-                          <UInput class="w-full" v-model="producto.nombre" type="text" placeholder="Nombre del producto"
-                            size="md" variant="outline" />
-                        </div>
-
-                        <!-- Precio -->
-                        <div class="col-span-2 md:col-span-2">
-                          <label class="block text-sm font-medium  mb-2">
-                            Precio <span class="text-red-500">*</span>
-                          </label>
-                          <UInput class="w-full" v-model.number="producto.precio" type="number" step
-                            placeholder="0.00" size="md" variant="outline">
-                            <template #leading>
-                              <span class="text-gray-500">$</span>
-                            </template>
-                          </UInput>
-                        </div>
-
-                        <!-- Cantidad -->
-                        <div class="col-span-2 md:col-span-2">
-                          <label class="block text-sm font-medium  mb-2">
-                            Cantidad <span class="text-red-500">*</span>
-                          </label>
-                          <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0" placeholder="0"
-                            size="md" variant="outline" />
-                        </div>
-
-                        <!-- Valoración (opcional) -->
-                        <div v-if="producto.showValoracion" class="col-span-2 md:col-span-2">
-                          <label class="block text-sm font-medium  mb-2">
-                            P.Ajuste
-                          </label>
-                          <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0" placeholder="0.00"
-                            size="md" variant="outline">
-                            <template #leading>
-                              <span class="text-gray-500">$</span>
-                            </template>
-                          </UInput>
-                        </div>
-
-                        <!-- Acciones: al final, alineadas verticalmente -->
-                        <div class="col-span-1 flex items-center justify-end space-x-2 md:mt-6">
-                          <UButton @click="producto.showValoracion = !producto.showValoracion" color="primary"
-                            variant="soft" size="sm" icon="i-heroicons-cog-6-tooth" />
-                          <UButton v-if="proveedor.productos.length > 1" @click="confirmDeleteProducto(proveedor.id, producto.id)" color="error" variant="soft" size="sm"
-                            icon="i-heroicons-trash" title="Eliminar producto" />
-                        </div>
-
-                      </div>
-              </transition-group>
-
-                    <UButton @click="handleAddProducto(proveedor.id)" :disabled="getDisabledByRangeItem(proveedor)"
-                      class="bg-orange-500  rounded-md hover:bg-orange-600 transition-colors">
-                      + item
-                    </UButton>
+                      <UButton @click="producto.showValoracion = !producto.showValoracion" color="primary"
+                        variant="soft" size="sm" icon="i-heroicons-cog-6-tooth" />
+                      <UButton v-if="proveedor.productos.length > 1" @click="confirmDeleteProducto(proveedor.id, producto.id)" color="error" variant="soft" size="sm"
+                        icon="i-heroicons-trash" title="Eliminar producto" />
+                    </div>
                   </div>
                 </div>
-              </transition>
+              </div>
+
+              <UButton @click="handleAddProducto(proveedor.id)" :disabled="getDisabledByRangeItem(proveedor)"
+                class="bg-orange-500  rounded-md hover:bg-orange-600 transition-colors">
+                + item
+              </UButton>
             </div>
 
             <UButton @click="handleAddProveedor" color="success" size="sm"
@@ -379,7 +337,7 @@
           <h2 class="text-2xl font-bold mb-6">Resumen</h2>
           
           <!-- Información del Cliente -->
-          <div class="flex gap-8 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex gap-8 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700 flex-wrap">
             <div class="flex items-center gap-2">
               <span class="font-semibold text-gray-700 dark:text-gray-300">Cliente:</span>
               <div class="w-72">
@@ -431,37 +389,35 @@
                 <!-- Contenedor con scroll horizontal -->
                 <div class="overflow-x-auto" style="scrollbar-width: thin;" :style="{ '--total-items': totalItems }">
                   <table class="w-full" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
-                    <thead>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2 sticky-left min-w-[200px]">Tipo de cliente:</td>
-                        <td class="text-center px-4 py-2" :colspan="totalItems">
-                          <div class="flex items-center gap-4">
-                            <USelect v-model="clienteInfo.tipoCliente" :items="tarifasSelect" item-value="value"
-                              item-title="label" placeholder="Selecciona un tipo de cliente" class="flex-1 max-w-xs" />
-                            <template v-if="selectedTarifa && selectedTarifa.label === 'MANUAL'">
-                              <div class="flex flex-col items-start">
-                                <UInput v-model.number="selectedTarifa.tarifa" type="number" min="0" placeholder="Tarifa manual" class="w-32" required />
-                                <span v-if="!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0" class="text-red-500 text-xs">La tarifa manual es obligatoria</span>
-                              </div>
-                            </template>
-                          </div>
-                        </td>
-                        <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right min-w-[120px]">
-                          Total
-                        </td>
-                      </tr>
-                      <tr>
-                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">N. Proveedor</td>
-                        <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center px-4 py-2"
-                          :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
-                          {{ proveedor.id }}
-                        </td>
-                        <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
-                          Total
-                        </td>
-                      </tr>
+              <thead>
+
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2 sticky-left min-w-[200px]">Tipo de cliente:</td>
+                  <td class="text-center px-4 py-2" :colspan="totalItems">
+                    <div class="flex items-center gap-4">
+                      <USelect v-model="clienteInfo.tipoCliente" :items="tarifasSelect" item-value="value"
+                        item-title="label" placeholder="Selecciona un tipo de cliente" class="flex-1 max-w-xs" />
+                      <template v-if="selectedTarifa && selectedTarifa.label === 'MANUAL'">
+                        <div class="flex flex-col items-start">
+                          <UInput v-model.number="selectedTarifa.tarifa" type="number" min="0" placeholder="Tarifa manual" class="w-32" required />
+                          <span v-if="!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0" class="text-red-500 text-xs">La tarifa manual es obligatoria</span>
+                        </div>
+                      </template>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">N. Proveedor</td>
+                  <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center px-4 py-2"
+                    :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
+                    {{ proveedor.id }}
+                  </td>
+                  <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
+                    Total
+                  </td>
+                </tr>
                 <tr>
                   <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Qty Cajas</td>
                   <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
@@ -799,26 +755,26 @@
 
                 <tbody>
                   <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Item</td>
+                    <td class="sticky-left"></td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                       <td v-for="producto in proveedor.productos" :key="producto.id" class="bg-gray-200 dark:bg-gray-700 text-center producto-column">
                         {{ (getPorDistribucion(proveedores, selectedTarifa, producto).distribucion * 100).toFixed(2) + '%' }}
                       </td>
                     </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                    <td class=" text-center bg-gray-200 dark:bg-gray-700 sticky-right">
                       100%
                     </td>
                   </tr>
                   <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Item</td>
+                    <td class="sticky-left">Item</td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                       <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
                         <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoDestino)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                       </td>
 
                     </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoDestino) }}
+                    <td class=" text-center sticky-right">
+                      <UInput :value="formatCurrency(getTotals(proveedores, selectedTarifa).costoDestino)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                     </td>
                   </tr>
                 </tbody>
@@ -886,8 +842,8 @@
                     <td class="bg-gray-200 dark:bg-gray-700 sticky-left">Costo unit. usd</td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                       <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-gray-200 dark:bg-gray-700 producto-column">
-                        {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoUSD) }}
-                      </td>
+                          {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoUSD) }}
+                        </td>
 
                     </template>
                     <td class=" text-center bg-gray-200 dark:bg-gray-700 sticky-right">
@@ -1051,7 +1007,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { navigateTo } from '#imports'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 import type { Proveedor, Tarifa, ProductoItem } from '~/types/calculadora-importacion'
 import { useSpinner } from '@/composables/commons/useSpinner'
@@ -1060,7 +1018,11 @@ import { formatCurrency } from '~/utils/formatters'
 const { withSpinner } = useSpinner()
 const { showSuccess, showError, showConfirmation } = useModal()
 
-// Desestructurar composable antes de usar `clienteInfo` y watchers
+const selectedCliente = ref<any>(null)
+const displayWhatsapp = computed(() => {
+  return clienteInfo.value.whatsapp || ''
+})
+
 const {
   currentStep,
   totalSteps,
@@ -1103,85 +1065,10 @@ const {
   selectedContenedor,
   fetchVendedores,
   fetchContenedores,
+  loadCotizacionById,
   getMaxItemsByTotalCbm,
   canAddMoreItems
 } = useCalculadoraImportacion()
-
-// `useCalculadoraImportacion` moved up; ya está declarado más arriba
-
-const selectedCliente = ref<any>(null)
-const displayWhatsapp = computed(() => {
-  return clienteInfo.value.whatsapp || ''
-})
-
-// Local input state for Whatsapp (para mantener solo input sin autocompletar automáticamente)
-const whatsappInput = ref<string>('')
-const showSuggestions = ref<boolean>(false)
-
-const handleWhatsappInput = (e: Event | string) => {
-  const value = typeof e === 'string' ? e : (e.target as HTMLInputElement).value
-  whatsappInput.value = value
-  if ((value || '').toString().trim().length > 0) {
-    getClientesByWhatsapp(value.toString())
-    showSuggestions.value = true
-  } else {
-    showSuggestions.value = false
-  }
-}
-
-const selectClienteFromList = (cliente: any) => {
-  onClienteSelected(cliente)
-  whatsappInput.value = cliente.whatsapp || cliente.celular || cliente.label || ''
-  showSuggestions.value = false
-}
-
-const handleWhatsappBlur = () => {
-  // esperar un tick para permitir click en la lista
-  setTimeout(() => {
-    showSuggestions.value = false
-    const match = clientes.value.find(c => {
-      const w = (c.whatsapp || c.celular || c.label || '').toString()
-      return w === (whatsappInput.value || '').toString()
-    })
-    if (match) {
-      onClienteSelected(match)
-    } else {
-      // No existe: tomar como número nuevo y no autocompletar otros campos
-      selectedCliente.value = null
-      clienteInfo.value.whatsapp = whatsappInput.value || ''
- 
-    }
-  }, 150)
-}
-
-// Mantener el input sincronizado si clienteInfo cambia programáticamente
-watch(() => clienteInfo.value.whatsapp, (val) => {
-  whatsappInput.value = val || ''
-})
-
-// Estados de colapso para las secciones del paso 3
-const collapsedSections = ref({
-  calculos: false,
-  tributos: false,
-  costosDestino: false,
-  costosTotal: false
-})
-
-// Computed para obtener el ancho mínimo de cada columna de producto
-const productoColumnWidth = computed(() => {
-  const visibleItems = Math.min(totalItems.value, 6)
-  if (visibleItems === 0) return 120
-  // Calcular ancho dinámico: máximo 1000px total para 8 items = ~125px cada uno
-  // Mínimo 120px por columna
-  return Math.max(120, Math.floor(1000 / visibleItems))
-})
-
-const getGlobalProductIndex = (pIndex: number, prodIndex: number) => {
-  const before = proveedores.value.slice(0, pIndex).reduce((acc, p) => {
-    return acc + (Array.isArray(p.productos) ? p.productos.length : 0)
-  }, 0)
-  return before + prodIndex + 1
-}
 const saveCotizacion = async () => {
   if (selectedTarifa && selectedTarifa.value && selectedTarifa.value.label === 'MANUAL' && (!selectedTarifa.value.tarifa || selectedTarifa.value.tarifa <= 0)) {
     showError('La tarifa manual es obligatoria y debe ser mayor a 0', 'error')
@@ -1197,16 +1084,16 @@ const saveCotizacion = async () => {
   }
   try {
     await withSpinner(async () => {
-      const response = await handleEndFormulario()
+      const response = await handleEndFormulario(cotizacionId)
       if (response.success) {
-        showSuccess('Cotización creada correctamente', 'success')
+        showSuccess('Cotización actualizada correctamente', 'success')
         navigateTo('/cotizaciones')
       } else {
-        showError('Error al crear la cotización', 'error')
+        showError('Error al actualizar la cotización', 'error')
       }
     })
   } catch (error) {
-    showError('Error al crear la cotización', 'error')
+    showError('Error al actualizar la cotización', 'error')
   }
 }
 
@@ -1309,54 +1196,6 @@ const confirmDeleteProducto = (proveedorId: string, productoId: string) => {
   )
 }
 
-const handleAddProducto = (proveedorId: string) => {
-  if (!canAddMoreItems()) {
-    const maxItems = getMaxItemsByTotalCbm()
-    showError(
-      `No se puede agregar más ítems. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
-      'error'
-    )
-    return
-  }
-  
-  const success = addProducto(proveedorId)
-  if (!success) {
-    const maxItems = getMaxItemsByTotalCbm()
-    showError(
-      `No se puede agregar más ítems. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
-      'error'
-    )
-  }
-}
-
-const handleAddProveedor = () => {
-  if (proveedores.value.length >= MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA) {
-    showError(
-      `No se pueden agregar más proveedores. El límite máximo es de ${MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA} proveedores.`,
-      'error'
-    )
-    return
-  }
-  
-  if (!canAddMoreItems()) {
-    const maxItems = getMaxItemsByTotalCbm()
-    showError(
-      `No se puede agregar un nuevo proveedor. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
-      'error'
-    )
-    return
-  }
-  
-  const success = addProveedor()
-  if (!success) {
-    const maxItems = getMaxItemsByTotalCbm()
-    showError(
-      `No se puede agregar un nuevo proveedor. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
-      'error'
-    )
-  }
-}
-
 
 // Computed para cálculos de proveedores
 const proveedoresResumen = computed(() => {
@@ -1437,6 +1276,23 @@ const seguroPorProducto = computed(() => {
   )
 })
 
+// Estados de colapso para las secciones del paso 3
+const collapsedSections = ref({
+  calculos: false,
+  tributos: false,
+  costosDestino: false,
+  costosTotal: false
+})
+
+// Computed para obtener el ancho mínimo de cada columna de producto
+const productoColumnWidth = computed(() => {
+  const visibleItems = Math.min(totalItems.value, 6)
+  if (visibleItems === 0) return 120
+  // Calcular ancho dinámico: máximo 1000px total para 6 items
+  // Mínimo 120px por columna
+  return Math.max(120, Math.floor(1000 / visibleItems))
+})
+
 // Función para encontrar la tarifa más cercana cuando el CBM cae en un hueco entre rangos
 const findTarifaByCbm = (cbm: number) => {
   if (!cbm || isNaN(cbm) || cbm <= 0) {
@@ -1490,6 +1346,14 @@ const getExtraItem = (cbm: number) => {
     item_extra: tarifa?.item_extra,
     tarifa: tarifa?.tarifa
   }
+}
+
+// Función para obtener el índice global de un producto
+const getGlobalProductIndex = (pIndex: number, prodIndex: number) => {
+  const before = proveedores.value.slice(0, pIndex).reduce((acc, p) => {
+    return acc + (Array.isArray(p.productos) ? p.productos.length : 0)
+  }, 0)
+  return before + prodIndex + 1
 }
 
 // Determinar si un producto es "extra" basándose en su índice global y el CBM total
@@ -1547,10 +1411,9 @@ const handleCbmChange = (proveedorId: string, nuevoCbm: number) => {
     
     // Mostrar modal de error
     const itemsAeliminar = itemsActuales - itemMax
-    const message = `No se puede reducir el CBM a ${nuevoCbm.toFixed(2)}. El nuevo CBM total (${nuevoCbmTotal.toFixed(2)} CBM) solo permite un máximo de ${itemMax} ítems, pero actualmente tienes ${itemsActuales} ítems. Por favor, elimina ${itemsAeliminar} ítem(s) o proveedor(es) antes de reducir el CBM.`
     showError(
-      `No se puede reducir el CBM`,
-      message
+      `No se puede reducir el CBM a ${nuevoCbm.toFixed(2)}. El nuevo CBM total (${nuevoCbmTotal.toFixed(2)} CBM) solo permite un máximo de ${itemMax} ítems, pero actualmente tienes ${itemsActuales} ítems. Por favor, elimina ${itemsAeliminar} ítem(s) o proveedor(es) antes de reducir el CBM.`,
+      'error'
     )
     return false
   }
@@ -1558,6 +1421,55 @@ const handleCbmChange = (proveedorId: string, nuevoCbm: number) => {
   // Si el cambio es válido, no hacer nada más (el valor ya está actualizado por v-model)
   return true
 }
+
+const handleAddProducto = (proveedorId: string) => {
+  if (!canAddMoreItems()) {
+    const maxItems = getMaxItemsByTotalCbm()
+    showError(
+      `No se puede agregar más ítems. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      'error'
+    )
+    return
+  }
+  
+  const success = addProducto(proveedorId)
+  if (!success) {
+    const maxItems = getMaxItemsByTotalCbm()
+    showError(
+      `No se puede agregar más ítems. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      'error'
+    )
+  }
+}
+
+const handleAddProveedor = () => {
+  if (proveedores.value.length >= MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA) {
+    showError(
+      `No se pueden agregar más proveedores. El límite máximo es de ${MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA} proveedores.`,
+      'error'
+    )
+    return
+  }
+  
+  if (!canAddMoreItems()) {
+    const maxItems = getMaxItemsByTotalCbm()
+    showError(
+      `No se puede agregar un nuevo proveedor. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      'error'
+    )
+    return
+  }
+  
+  const success = addProveedor()
+  if (!success) {
+    const maxItems = getMaxItemsByTotalCbm()
+    showError(
+      `No se puede agregar un nuevo proveedor. Has alcanzado el límite máximo de ${maxItems} ítems permitidos para el rango de CBM total (${totalCbm.value.toFixed(2)} CBM).`,
+      'error'
+    )
+  }
+}
+
 // Total de flete
 const totalFlete = computed(() => {
   return fletePorProducto.value.reduce((sum, item) => sum + item.valor, 0)
@@ -1573,7 +1485,7 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
   const FLETE_PORCENTAJE = 0.6;
   const COSTO_DESTINO_PORCENTAJE = 0.4;
 
-  const cbm = round2(proveedores.reduce((sum, proveedor) => sum + proveedor.cbm, 0));
+  const cbm = proveedores.reduce((sum, proveedor) => sum + proveedor.cbm, 0);
 
   // Validación defensiva
   if (!tarifa || typeof tarifa !== 'object') {
@@ -1592,9 +1504,9 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
 
   let costoServicio = 0;
   if (tarifa.type === 'STANDARD') {
-    costoServicio = round2(cbm * tarifa.tarifa);
+    costoServicio = cbm * tarifa.tarifa;
   } else if (tarifa.type === 'PLAIN') {
-    costoServicio = round2(tarifa.tarifa);
+    costoServicio = tarifa.tarifa;
   }
 
   const fleteTotal = round2(costoServicio * FLETE_PORCENTAJE);
@@ -1606,11 +1518,11 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
   const cifAjustado = round2(cfrAjustado + seguro);
   return {
     flete: fleteTotal,
-    cbm,
+    cbm: round2(cbm),
     cfr,
     cif,
     costoDestino,
-    costoServicio,
+    costoServicio: round2(costoServicio),
     cfrAjustado,
     cifAjustado,
     seguro
@@ -1681,9 +1593,6 @@ const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: 
   // Obtenemos los valores base sin dependencias circulares
   const { flete, cfr, cif, costoDestino, cfrAjustado } = calcularDistribucionBase(proveedores, tarifa);
 
-  // Calculamos tributos para este producto específico
-  const { antidumping, total } = getTributosPorProducto(proveedores, tarifa, producto);
-
   const valorFob = round2(producto.precio * producto.cantidad);
   const valorFobAjustado = round2(producto.valoracion * producto.cantidad);
   const distribucion = totalValorFOB.value > 0 ? valorFob / totalValorFOB.value : 0;
@@ -1697,11 +1606,11 @@ const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: 
   const cfrAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido : cfrDistribuido);
   const cifAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
   const maxCif = round2(Math.max(cifDistribuido, cifAjustadoDistribuido));
+    
+  // Calculamos tributos para este producto específico (usa maxCif correcto)
+  const { antidumping, adValorem, igv, ipm, percepcion } = getTributosPorProducto(proveedores, tarifa, producto);
+  
   // Costo total = costoDestino + adValorem + impuestos (IGV+IPM+Percepción) + max(cif, cifAjustado)
-  const adValorem = round2(maxCif * producto.adValoremP / 100);
-  const igv = round2((maxCif * 0.16) + (adValorem * 0.16));
-  const ipm = round2((maxCif * 0.02) + (adValorem * 0.02));
-  const percepcion = round2((maxCif * 0.035) + (adValorem * 0.035) + (igv * 0.035) + (ipm * 0.035));
   const totalImpuestos = round2(igv + ipm + percepcion);
   const costoTotal = round2(costoDestinoDistribuido + adValorem + totalImpuestos + maxCif);
   const costoUSD = round2(producto.cantidad === 0 ? 0 : costoTotal / producto.cantidad);
@@ -1825,9 +1734,38 @@ watch(() => clienteInfo.value.qtyProveedores, (newValue) => {
     clienteInfo.value.qtyProveedores = 6
   }
 })
+const route = useRoute()
+const rawId = route.params.id
+const cotizacionId = Number(Array.isArray(rawId) ? rawId[0] : (rawId ?? 0))
+
 onMounted(async () => {
   await getClientesByWhatsapp('')
   await getTarifas()
+  // Si hay un id, cargar la cotización desde el composable
+  if (cotizacionId) {
+    try {
+      await withSpinner(async () => {
+        await loadCotizacionById(cotizacionId)
+      })
+    } catch (err) {
+      showError('Error al cargar la cotización', 'error')
+    }
+  }
+      // Si el composable cargó el whatsapp pero no hay cliente seleccionado,
+      // intentar encontrar el objeto correspondiente en `clientes` para
+      // que `UInputMenu` muestre la opción correcta.
+      if (clienteInfo.value.whatsapp && !selectedCliente.value) {
+        const w = String(clienteInfo.value.whatsapp)
+        const found = (clientes.value || []).find((c: any) => {
+          const cand = String(c.whatsapp || c.telefono || c.celular || c.label || c.whatsapp_cliente || '')
+          return cand === w || cand.includes(w)
+        })
+        if (found) {
+          selectedCliente.value = found
+        } else {
+          selectedCliente.value = { label: w, whatsapp: w }
+        }
+      }
   // fetchVendedores y fetchContenedores solo en step 4
 })
 
@@ -1861,40 +1799,19 @@ table th {
   border-radius: 8px;
 }
 
-/* Transitions for collapsing provider panels */
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 240ms cubic-bezier(.4,0,.2,1);
+/* Transiciones para secciones colapsables */
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
 }
+
+.slide-fade-leave-active {
+  transition: all 0.3s ease-in;
+}
+
 .slide-fade-enter-from,
 .slide-fade-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
-}
-.slide-fade-enter-to,
-.slide-fade-leave-from {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Transitions for list items (add/remove product) */
-.list-enter-active,
-.list-leave-active {
-  transition: all 200ms ease;
-}
-.list-enter-from,
-.list-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
-}
-.list-enter-to,
-.list-leave-from {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.provider-toggle-button {
-  opacity: 0.9;
+  transform: translateY(-10px);
 }
 
 .sticky-left {
@@ -1994,4 +1911,5 @@ table th {
 table tbody tr td[colspan] {
   min-width: calc(120px * var(--colspan, 1));
 }
+
 </style>

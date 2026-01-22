@@ -2,7 +2,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import type { PaginationInfo, HeaderResponse } from '~/types/data-table'
 import { EntregaService } from '../../../services/cargaconsolidada/entrega/entregaService'
 import type { Entrega } from '../../../types/cargaconsolidada/entrega/entrega'
-import { useSpinner } from '../composables/commons/useSpinner'
+import { useSpinner } from '~/composables/commons/useSpinner'
 const { withSpinner } = useSpinner()
 
 // Define Header type for local use
@@ -225,6 +225,7 @@ export const useEntrega = () => {
           documento: lima?.pick_doc ?? province?.r_doc ?? '',
           import_name: lima?.import_name ?? province.import_name ?? '',
           productos: lima?.productos ?? province.productos ?? '',
+          isVerified: lima?.isVerified ?? province?.isVerified ?? false,
           // Lima
           nombre_chofer: lima?.drver_name ?? root.driver_name ?? '',
           licencia: lima?.driver_license ?? root.driver_license ?? '',
@@ -763,6 +764,36 @@ export const useEntrega = () => {
     }
     return res
   }
+
+  // Actualizar campo is_verified del detalle del cliente
+  // Acepta boolean o number; normaliza antes de enviar al backend.
+  const setIsVerified = async (id_cotizacion: number, is_verified: boolean | number | string) => {
+    try {
+      let normalized: boolean
+      if (typeof is_verified === 'boolean') normalized = is_verified
+      else if (typeof is_verified === 'string') {
+        const s = is_verified.trim().toLowerCase()
+        if (s === 'true') normalized = true
+        else if (s === 'false') normalized = false
+        else normalized = Boolean(Number(is_verified))
+      } else {
+        normalized = Boolean(Number(is_verified))
+      }
+      // Incluir `type_form` porque el backend puede requerirlo en la validación
+      const rawType = (entregaDetalle.value as any)?.type_form ?? (entregaDetalle.value as any)?.typeForm
+      const type_form = (typeof rawType !== 'undefined' && rawType !== null) ? (Number(rawType) === 1 ? 1 : 0) : 1
+      // Enviar como 0/1 (tinyint) porque la columna es tinyint(1)
+      const payload: any = { isVerified: normalized ? 1 : 0, type_form }
+      const res = await EntregaService.updateClienteDetalle(id_cotizacion, payload)
+      if (res?.success) {
+        await getEntregasDetalle(id_cotizacion)
+      }
+      return res
+    } catch (err: any) {
+      error.value = err?.message || String(err)
+      return { success: false, error: err?.message || String(err) }
+    }
+  }
   const getAllDeliveryData = async () => {
     try {
       loading.value = true
@@ -899,6 +930,7 @@ export const useEntrega = () => {
     deleteConformidad,
     deleteEntregaRegistro,
     saveClienteDetalle,
+    setIsVerified,
     getAllDeliveryData,
     fetchDeliveryData,
     updateFiltersDelivery,

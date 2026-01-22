@@ -1,17 +1,17 @@
 <template>
-  <div class="p-6">
+  <div class="md:p-6 p-0">
     <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+    <div class="md:mb-8 mb-4">
+      <h1 class="md:text-3xl text-2xl font-bold text-gray-900 dark:text-white mb-2">
         Mi Progreso
       </h1>
-      <p class="text-gray-600 dark:text-gray-400">
+      <p class="md:text-base text-sm text-gray-600 dark:text-gray-400">
         Seguimiento de métricas de volumen y totales por contenedor y fecha
       </p>
     </div>
 
     <!-- Filtros -->
-    <UCard class="mb-6">
+    <UCard class="md:mb-6 mb-4">
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold">Filtros</h3>
@@ -111,7 +111,7 @@
     </UCard>
 
     <!-- Métricas Principales -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:mb-8 mb-4">
       <template v-if="loading">
         <!-- Skeleton para métricas -->
         <UCard v-for="i in 6" :key="i">
@@ -216,7 +216,7 @@
     </div>
 
     <!-- Gráficos -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:mb-8 mb-4">
       <!-- Gráfico de Volúmenes por Contenedor -->
       <UCard>
         <template #header>

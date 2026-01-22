@@ -5,13 +5,13 @@
         <UButton
           v-if="!hideBackButton"
           @click="$emit('back')"
-          aria-label="Regresar"
+          :aria-label="currentRole === ROLES.CONTENEDOR_ALMACEN ? 'Back' : 'Regresar'"
           color="primary"
           variant="subtle"
           class="flex items-center gap-3 px-2 py-2 md:px-4 md:py-2 text-sm md:text-base w-fit md:w-auto"
         >
           <UIcon name="i-heroicons-arrow-left" class="w-4 h-4 md:w-5 md:h-5 text-gray-500" />
-          <span class=" md:inline whitespace-nowrap">Regresar</span>
+          <span class=" md:inline whitespace-nowrap">{{ currentRole === ROLES.CONTENEDOR_ALMACEN ? 'Back' : 'Regresar' }}</span>
         </UButton>
 
         <!-- Small controls inserted next to the back button. One variant for mobile, another for md+ -->
@@ -38,6 +38,11 @@
 </template>
 
 <script setup lang="ts">
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
+
+const { currentRole } = useUserRole()
+
 interface Props {
   title?: string
   subtitle?: string

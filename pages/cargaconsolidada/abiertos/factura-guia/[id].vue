@@ -160,9 +160,10 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
           variant: 'outline',
           onClick: () => {
             simpleUploadFileModal.open({
-              title: 'Subir Factura Comercial',
+              title: 'Subir Facturas Electronicas',
+              multiple: true,
               onClose: () => simpleUploadFileModal.close(),
-              onSave: async (data: { file: File }) => {
+              onSave: async (data: { file?: File, files?: File[] }) => {
                 await handleUploadFacturaComercial(data, row.original.id_cotizacion)
               }
             })
@@ -347,9 +348,10 @@ const generalColumns = ref<TableColumn<any>[]>([
           variant: 'outline',
           onClick: () => {
             simpleUploadFileModal.open({
-              title: 'Subir Factura Comercial',
+              title: 'Subir Facturas Electronicas',
+              multiple: true,
               onClose: () => simpleUploadFileModal.close(),
-              onSave: async (data: { file: File }) => {
+              onSave: async (data: { file?: File, files?: File[] }) => {
                 await handleUploadFacturaComercial(data, row.original.id_cotizacion)
               }
             })
@@ -439,21 +441,37 @@ const generalColumns = ref<TableColumn<any>[]>([
   }
 ])
 
-const handleUploadFacturaComercial = async (data: { file: File }, idCotizacion: number) => {
+const handleUploadFacturaComercial = async (data: { file?: File, files?: File[] }, idCotizacion: number) => {
   await withSpinner(async () => {
     try {
+      const filesToUpload = data.files || (data.file ? [data.file] : [])
+      
+      if (filesToUpload.length === 0) {
+        showError('No se seleccionaron archivos para subir', 'error')
+        return
+      }
+
+      // Enviar todos los archivos en un solo request
       const response = await uploadFacturaComercial({
         idCotizacion: idCotizacion,
-        file: data.file
+        files: filesToUpload
       })
+
       if (response.success) {
-        showSuccess('Factura comercial subida correctamente', 'success')
+        const count = filesToUpload.length
+        const message = (response as any).message || 
+          (count === 1 
+            ? 'Factura comercial subida correctamente' 
+            : `${count} factura(s) comercial(es) subida(s) correctamente`)
+        showSuccess(message, 'success')
         await getGeneral(Number(id))
       } else {
-        showError('Error al subir la factura comercial', 'error')
+        const errorMessage = (response as any).message || 'Error al subir las facturas comerciales'
+        showError(errorMessage, 'error')
       }
     } catch (error) {
-      showError('Error al subir la factura comercial', 'error')
+      console.error('Error al subir facturas comerciales:', error)
+      showError('Error al subir las facturas comerciales', 'error')
     }
   })
 }

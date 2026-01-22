@@ -4,7 +4,7 @@
         <PageHeader title="Documentación China" subtitle="Gestión de documentos e inspección"
             icon="i-heroicons-document-text" :show-back-button="true" @back="navigateBack">
             <template #actions>
-                <UButton label="Guardar" icon="i-heroicons-save" color="warning" @click="saveAll" :loading="saving" />
+                <UButton label="Guardar" icon="material-symbols:save" color="warning" @click="saveAll" :loading="saving" />
             </template>
         </PageHeader>
 

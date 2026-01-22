@@ -72,12 +72,46 @@ export const useGeneral  = () => {
     const uploadFacturaComercial = async (data: any) => {
         try {
             const formData = new FormData()
-            formData.append('file', data.file)
-            formData.append('idCotizacion', data.idCotizacion)
+            
+            // Validar y obtener archivos válidos
+            let validFiles: File[] = []
+            
+            if (data.files && Array.isArray(data.files) && data.files.length > 0) {
+                validFiles = data.files.filter((file: any) => file instanceof File && file.size > 0)
+            } else if (data.file && data.file instanceof File && data.file.size > 0) {
+                validFiles = [data.file]
+            }
+            
+            if (validFiles.length === 0) {
+                throw new Error('No se proporcionaron archivos válidos para subir')
+            }
+            
+            // Agregar todos los archivos válidos al FormData
+            validFiles.forEach((file: File) => {
+                formData.append('files[]', file)
+            })
+            
+            formData.append('idCotizacion', data.idCotizacion.toString())
+            
+            // Debug: verificar qué se está enviando
+            console.log('FormData - uploadFacturaComercial:', {
+                validFilesCount: validFiles.length,
+                fileNames: validFiles.map(f => f.name),
+                idCotizacion: formData.get('idCotizacion'),
+                hasFilesArray: formData.has('files[]')
+            })
+            
+            // Verificar que NO se esté agregando 'file' por error
+            if (formData.has('file')) {
+                console.warn('⚠️ ADVERTENCIA: Se detectó campo "file" en FormData, eliminándolo')
+                formData.delete('file')
+            }
+            
             const response = await GeneralService.uploadFacturaComercial(formData)
             return response
         } catch (err) {
             error.value = err as string
+            throw err
         }
     }
     const uploadGuiaRemision = async (data: any) => {
@@ -107,6 +141,14 @@ export const useGeneral  = () => {
             error.value = err as string
         }
     }
+    const getFacturasComerciales = async (idCotizacion: number) => {
+        try {
+            const response = await GeneralService.getFacturasComerciales(idCotizacion)
+            return response
+        } catch (err) {
+            error.value = err as string
+        }
+    }
     return {
         general,
         loadingGeneral,
@@ -127,6 +169,7 @@ export const useGeneral  = () => {
         loadingHeaders,
         getHeaders,
         deleteFacturaComercial,
-        deleteGuiaRemision
+        deleteGuiaRemision,
+        getFacturasComerciales
     }
 }   

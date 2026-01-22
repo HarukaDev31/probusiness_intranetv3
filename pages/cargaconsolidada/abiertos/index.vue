@@ -12,7 +12,7 @@
         <div v-if="isDesktop || currentRole==ROLES.DOCUMENTACION">
             <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData"
         :show-pagination="false" :show-export="false"
-            :table-meta="tableMeta"
+           
             :columns="getColumns()" :loading="loading" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :filters-value="(() => {
@@ -38,7 +38,12 @@
                         <div class="flex-1">
                             <div class="text-xs text-gray-500">{{ row.mes }}</div>
                             <div class="font-semibold text-sm">Consolidado #{{ row.carga }}</div>
-                            <div class="text-xs text-gray-400 mt-1">{{ formatDateTimeToDmy(row.f_cierre) }} • {{ row.empresa }}</div>
+                            <div class="text-xs text-gray-400 mt-1">{{ row.empresa }}</div>
+                            <div class="mt-1 text-xs text-gray-400 flex flex-col items-center gap-1">
+                                <span v-if="row.f_cierre">Cierre: {{ formatDateTimeToDmy(row.f_cierre) }}</span>
+                                <span v-if="row.fecha_arribo || row.f_puerto">Puerto: {{ formatDateTimeToDmy(row.fecha_arribo || row.f_puerto) }}</span>
+                                <span v-if="row.f_entrega">Entrega: {{ formatDateTimeToDmy(row.f_entrega) }}</span>
+                            </div>
                         </div>
                         <div class="ml-4 flex flex-col items-end">
                             <div class="min-w-[110px]">

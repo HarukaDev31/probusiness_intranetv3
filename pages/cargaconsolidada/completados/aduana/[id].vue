@@ -1,5 +1,5 @@
 <template>
-    <div class="mx-6 p-6 ">
+    <div class="md:mx-6 md:p-6 ">
         <PageHeader title="" subtitle="" icon="" :hide-back-button="false" @back="
             navigateTo(`/cargaconsolidada/completados/pasos/${id}`)
             " />
