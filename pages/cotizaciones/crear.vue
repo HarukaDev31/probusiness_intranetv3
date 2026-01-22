@@ -419,8 +419,8 @@
                 <h3 class="text-lg font-semibold">Cálculos Base</h3>
                 <div v-if="collapsedSections.calculos" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                   <span><strong>CBM:</strong> {{ totalCbm.toFixed(2) }}</span>
-                  <span><strong>CIF:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).cif) }}</span>
-                  <span><strong>Flete:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).flete) }}</span>
+                  <span><strong>CIF:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cif)) }}</span>
+                  <span><strong>Flete:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).flete)) }}</span>
                 </div>
               </div>
               <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
@@ -447,9 +447,6 @@
                               </div>
                             </template>
                           </div>
-                        </td>
-                        <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right max-w-[130px]">
-                          Total
                         </td>
                       </tr>
                       <tr>
@@ -589,7 +586,7 @@
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).flete) }}
+                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).flete)) }}
                         </td>
                       </tr>
                       <tr>
@@ -600,7 +597,7 @@
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).cfr) }}
+                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cfr)) }}
                         </td>
                       </tr>
                       <tr v-if="existsValoracion">
@@ -611,7 +608,7 @@
                           </td>
                         </template>
                         <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
-                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).cfrAjustado) }}
+                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cfrAjustado)) }}
                         </td>
                       </tr>
                       <tr>
@@ -633,7 +630,7 @@
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).cif) }}
+                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cif)) }}
                         </td>
                       </tr>
                       <tr v-if="existsValoracion">
@@ -644,7 +641,7 @@
                           </td>
                         </template>
                         <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
-                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).cifAjustado) }}
+                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cifAjustado)) }}
                         </td>
                       </tr>
                     </tbody>
@@ -660,12 +657,12 @@
               <div class="flex items-center gap-6 flex-1 flex-wrap">
                 <h3 class="text-lg font-semibold">Tributos Aplicables</h3>
                 <div v-if="collapsedSections.tributos" class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
-                  <span><strong>Ad Valorem:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAdValorem) }}</span>
-                  <span><strong>Antidumping:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAntidumping) }}</span>
-                  <span><strong>IGV:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalIGV) }}</span>
-                  <span><strong>IPM:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalIPM || 0) }}</span>
-                  <span><strong>Percepción:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalPercepcion) }}</span>
-                  <span class="font-bold text-gray-900 dark:text-gray-100"><strong>Total:</strong> {{ formatCurrency(getTributos(proveedores, selectedTarifa).total) }}</span>
+                  <span><strong>Ad Valorem:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalAdValorem)) }}</span>
+                  <span><strong>Antidumping:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalAntidumping)) }}</span>
+                  <span><strong>IGV:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalIGV)) }}</span>
+                  <span><strong>IPM:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalIPM || 0)) }}</span>
+                  <span><strong>Percepción:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalPercepcion)) }}</span>
+                  <span class="font-bold text-gray-900 dark:text-gray-100"><strong>Total:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).total)) }}</span>
                 </div>
               </div>
               <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
@@ -700,7 +697,7 @@
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                          {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAntidumping) }}
+                          {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalAntidumping)) }}
                         </td>
                       </tr>
                       <tr>
@@ -726,7 +723,7 @@
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                          {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAdValorem) }}
+                          {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalAdValorem)) }}
                         </td>
                       </tr>
                       <tr>
@@ -737,7 +734,7 @@
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                          {{ formatCurrency(totalIGV) }}
+                          {{ formatCurrency(round2(totalIGV)) }}
                         </td>
                       </tr>
                       <tr>
@@ -748,7 +745,7 @@
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                          {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalIPM || 0) }}
+                          {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalIPM || 0)) }}
                         </td>
                       </tr>
                       <tr>
@@ -759,7 +756,7 @@
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                          {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalPercepcion) }}
+                          {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalPercepcion)) }}
                         </td>
                       </tr>
                       <tr>
@@ -770,7 +767,7 @@
                           </td>
                         </template>
                         <td class=" text-center bg-gray-200 dark:bg-gray-700 font-semibold sticky-right">
-                          {{ formatCurrency(getTributos(proveedores, selectedTarifa).total) }}
+                          {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).total)) }}
                         </td>
                       </tr>
                     </tbody>
@@ -785,7 +782,7 @@
               <div class="flex items-center gap-6 flex-1">
                 <h3 class="text-lg font-semibold">Costos Destinos</h3>
                 <div v-if="collapsedSections.costosDestino" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  <span><strong>Total:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoDestino) }}</span>
+                  <span><strong>Total:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoDestino)) }}</span>
                 </div>
               </div>
               <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
@@ -816,7 +813,7 @@
 
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
-                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoDestino) }}
+                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoDestino)) }}
                         </td>
                       </tr>
                     </tbody>
@@ -831,8 +828,8 @@
               <div class="flex items-center gap-6 flex-1">
                 <h3 class="text-lg font-semibold">Costos Total de Importación</h3>
                 <div v-if="collapsedSections.costosTotal" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  <span><strong>USD:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoTotal) }}</span>
-                  <span><strong>PEN:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoPEN) }}</span>
+                  <span><strong>USD:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoTotal)) }}</span>
+                  <span><strong>PEN:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoPEN)) }}</span>
                 </div>
               </div>
               <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
@@ -863,7 +860,7 @@
 
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
-                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoTotal) }}
+                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoTotal)) }}
                         </td>
                       </tr>
 
@@ -888,7 +885,7 @@
 
                         </template>
                         <td class=" text-center bg-gray-200 dark:bg-gray-700 sticky-right">
-                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoUSD) }}
+                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoUSD)) }}
                         </td>
                       </tr>
                       <tr>
@@ -900,7 +897,7 @@
 
                         </template>
                         <td class=" text-center bg-primary text-white sticky-right">
-                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoPEN) }}
+                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoPEN)) }}
                         </td>
                       </tr>
                     </tbody>
