@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="md:p-6">
 
     <DataTable title="Cotizaciones" :show-title="true" icon="i-heroicons-users" :data="cotizaciones" :columns="columns"
       :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
@@ -7,7 +7,7 @@
       :show-primary-search="true" :showPrimarySearchLabel="false" :primary-search-placeholder="'Buscar por'"
       :show-filters="true" :filter-config="filterConfig" :filters-value="filters" :show-export="true" :show-headers="true" :headers="headers"
       empty-state-message="No se encontraron cotizaciones que coincidan con los criterios de búsqueda."
-      :show-new-button="true" new-button-label="Crear Cotización" :on-new-button-click="handleNewButtonClick"
+      :show-new-button="isDesktop" new-button-label="Crear Cotización" :on-new-button-click="handleNewButtonClick"
       @update:search-query="handleSearch" @update:primary-search="handleSearch"
       @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @filter-change="handleFilterChange">
 
@@ -28,6 +28,8 @@ import MoveCotizacionModal from '~/components/cargaconsolidada/MoveCotizacionMod
 import { useModal } from '~/composables/commons/useModal';
 import { useSpinner } from '~/composables/commons/useSpinner';
 import type { FilterConfig } from '~/types/data-table'
+import { useIsDesktop } from '~/composables/useResponsive'
+const { isDesktop } = useIsDesktop()
 const { showSuccess, showConfirmation, showError } = useModal()
 const overlay = useOverlay()
 const moveCotizacionModal = overlay.create(MoveCotizacionModal)
