@@ -435,7 +435,7 @@
                     </thead>
                     <tbody>
                       <tr>
-                        <td class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2 sticky-left min-w-[150px]">Tipo de cliente:</td>
+                        <td class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2 sticky-left max-w-[180px]">Tipo de cliente:</td>
                         <td class="text-center px-4 py-2" :colspan="totalItems">
                           <div class="flex items-center gap-4">
                             <USelect v-model="clienteInfo.tipoCliente" :items="tarifasSelect" item-value="value"
@@ -674,7 +674,7 @@
                   <table class="w-full border-collapse" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
                     <thead>
                       <tr>
-                        <th class="bg-white dark:bg-gray-800 text-left sticky-left min-w-[150px]"></th>
+                        <th class="bg-white dark:bg-gray-900 text-left sticky-left max-w-[180px]"></th>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                           <th v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
                             <UInput class="w-full text-center" v-model.number="producto.antidumpingCU" type="number" min="0"
@@ -685,7 +685,7 @@
                             </UInput>
                           </th>
                         </template>
-                        <th class="bg-white dark:bg-gray-800 text-center sticky-right max-w-[130px]"></th>
+                        <th class="bg-white dark:bg-gray-900 text-center sticky-right max-w-[130px]"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -701,7 +701,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <td class="bg-white dark:bg-gray-800 sticky-left"></td>
+                        <td class="bg-white dark:bg-gray-900 sticky-left"></td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                           <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
                             <UInput class="w-full text-white" v-model.number="producto.adValoremP" type="number" min="0"
@@ -712,7 +712,7 @@
                             </UInput>
                           </td>
                         </template>
-                        <td class="bg-white dark:bg-gray-800 text-center sticky-right">
+                        <td class="bg-white dark:bg-gray-900 text-center sticky-right">
                         </td>
                       </tr>
                       <tr>
@@ -794,7 +794,7 @@
                   <table class="w-full border-collapse" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
                     <tbody>
                       <tr>
-                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left min-w-[150px]">Item</td>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left max-w-[180px]">Item</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                           <td v-for="producto in proveedor.productos" :key="producto.id" class="bg-gray-200 dark:bg-gray-700 text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
                             {{ (getPorDistribucion(proveedores, selectedTarifa, producto).distribucion * 100).toFixed(2) + '%' }}
@@ -841,7 +841,7 @@
                   <table class="w-full border-collapse" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
                     <tbody>
                       <tr>
-                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left min-w-[150px]">Item</td>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left max-w-[180px]">Item</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                           <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
                             <UInput :value="producto.nombre" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
@@ -1895,7 +1895,6 @@ table th {
   position: sticky;
   left: 0;
   z-index: 10;
-  background-color: inherit !important;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -1903,7 +1902,6 @@ table th {
   position: sticky;
   right: 0;
   z-index: 10;
-  background-color: inherit !important;
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
