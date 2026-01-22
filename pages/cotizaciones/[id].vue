@@ -1830,6 +1830,14 @@ table th {
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Force a strict max width on sticky-right cells and their inputs to prevent expansion */
+.sticky-right {
+  max-width: 100px;
+  min-width: 100px; /* allow shrinking inside table layout */
+  overflow: hidden;
+}
+
+
 /* Ancho dinámico para columnas de productos - mostrar más items por defecto */
 .producto-column {
   min-width: 120px;
