@@ -68,13 +68,17 @@
                     <!-- Video -->
                     <div v-else-if="isVideo" class="w-full flex justify-center">
                         <video 
+                            ref="videoEl"
                             :src="file?.file_url || ''" 
                             controls
                             playsinline
                             webkit-playsinline="true"
                             preload="metadata"
                             class="max-w-full max-h-[45vh] rounded-lg shadow-lg"
-                            crossorigin="anonymous">
+                            crossorigin="anonymous"
+                            @error="onVideoError"
+                            @loadedmetadata="onVideoLoadedMetadata"
+                            @canplay="onVideoCanPlay">
                             <source :src="file?.file_url || ''" :type="getVideoMimeType">
                             Tu navegador no soporta el elemento de video.
                         </video>
@@ -344,6 +348,63 @@ const downloadFile = async () => {
 const openInNewTab = () => {
     if (props.file?.file_url) {
         window.open(props.file.file_url, '_blank')
+    }
+}
+
+// Video diagnostics
+const videoEl = ref<HTMLVideoElement | null>(null)
+
+const onVideoLoadedMetadata = (ev?: Event) => {
+    console.info('video: loadedmetadata', props.file?.file_name || props.file?.file_url)
+}
+
+const onVideoCanPlay = (ev?: Event) => {
+    console.info('video: canplay', props.file?.file_name || props.file?.file_url)
+}
+
+const onVideoError = async (ev: Event) => {
+    console.error('video: error event', ev)
+    try {
+        await checkVideoHeaders()
+    } catch (err) {
+        console.error('checkVideoHeaders failed', err)
+    }
+    showError('Error al reproducir video', 'Revisa la consola del navegador o verifica las cabeceras del archivo en el servidor')
+}
+
+const checkVideoHeaders = async () => {
+    const fileUrl = props.file?.file_url
+    if (!fileUrl) return
+
+    try {
+        console.info('Checking video headers for', fileUrl)
+
+        // 1) HEAD request to inspect headers
+        const headResp = await fetch(fileUrl, { method: 'HEAD' })
+        console.info('HEAD status', headResp.status)
+        const headersObj: Record<string, string> = {}
+        headResp.headers.forEach((v, k) => (headersObj[k] = v))
+        console.info('HEAD headers:', headersObj)
+
+        // 2) Test Range support (partial content)
+        const rangeResp = await fetch(fileUrl, { method: 'GET', headers: { Range: 'bytes=0-1' } })
+        console.info('Range request status', rangeResp.status)
+        const rangeHeaders: Record<string, string> = {}
+        rangeResp.headers.forEach((v, k) => (rangeHeaders[k] = v))
+        console.info('Range headers:', rangeHeaders)
+
+        // Helpful hints based on headers
+        if (!headersObj['content-type'] || !headersObj['content-type'].includes('video')) {
+            console.warn('Content-Type no parece video:', headersObj['content-type'])
+        }
+
+        if (rangeResp.status !== 206) {
+            console.warn('El servidor no respondió con 206 Partial Content. Esto puede impedir reproducción progresiva en iOS.')
+        }
+
+    } catch (error) {
+        console.error('Error comprobando cabeceras de video:', error)
+        throw error
     }
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="md:p-6">
 
     <DataTable title="Cotizaciones" :show-title="true" icon="i-heroicons-users" :data="cotizaciones" :columns="columns"
       :loading="loading" :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
@@ -7,7 +7,7 @@
       :show-primary-search="true" :showPrimarySearchLabel="false" :primary-search-placeholder="'Buscar por'"
       :show-filters="true" :filter-config="filterConfig" :filters-value="filters" :show-export="true" :show-headers="true" :headers="headers"
       empty-state-message="No se encontraron cotizaciones que coincidan con los criterios de búsqueda."
-      :show-new-button="true" new-button-label="Crear Cotización" :on-new-button-click="handleNewButtonClick"
+      :show-new-button="isDesktop" new-button-label="Crear Cotización" :on-new-button-click="handleNewButtonClick"
       @update:search-query="handleSearch" @update:primary-search="handleSearch"
       @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @filter-change="handleFilterChange">
 
@@ -28,6 +28,8 @@ import MoveCotizacionModal from '~/components/cargaconsolidada/MoveCotizacionMod
 import { useModal } from '~/composables/commons/useModal';
 import { useSpinner } from '~/composables/commons/useSpinner';
 import type { FilterConfig } from '~/types/data-table'
+import { useIsDesktop } from '~/composables/useResponsive'
+const { isDesktop } = useIsDesktop()
 const { showSuccess, showConfirmation, showError } = useModal()
 const overlay = useOverlay()
 const moveCotizacionModal = overlay.create(MoveCotizacionModal)
@@ -49,13 +51,14 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.created_at)
   },
   {
+    //show in two rows the contacto with the name, dni and whatsapp
     accessorKey: 'contacto',
     header: 'Contacto',
     cell: ({ row }: { row: any }) => {
       const nombre = row.original?.nombre_cliente || row.original?.nombre || ''
       const telefono = row.original?.whatsapp_cliente || row.original?.whatsapp || ''
       const dni = row.original?.dni_cliente || row.original?.dni || ''
-      return h('div', { class: 'py-2' }, [
+      return h('div', { class: 'py-2 w-30 whitespace-normal' }, [
         h('div', { class: 'font-medium' }, nombre),
         h('div', { class: 'text-sm text-gray-500' }, dni),
         h('div', { class: 'text-sm text-gray-500' }, telefono)
@@ -64,12 +67,16 @@ const columns: TableColumn<any>[] = [
   },
   {
     accessorKey: 'volumen',
-    header: 'Volumen',
-    cell: ({ row }: { row: any }) => row.original.totales.total_cbm
+    header: 'Vol',
+    cell: ({ row }: { row: any }) => {
+      return h('div', { class: 'py-2 w-10 whitespace-normal' }, [
+        h('div', { class: 'font-medium' }, row.original.totales.total_cbm),
+      ])
+    }
   },
   {
     accessorKey: 'qty_item',
-    header: 'Qty Item',
+    header: 'Item',
     cell: ({ row }: { row: any }) => row.original.totales.total_productos
   },
   {
@@ -95,7 +102,7 @@ const columns: TableColumn<any>[] = [
   {
     accessorKey: 'descuento',
     header: 'Desct.',
-    cell: ({ row }: { row: any }) => formatCurrency(row.original.descuento || 0)
+    cell: ({ row }: { row: any }) => formatCurrency(row.original.tarifa_descuento || 0)
   },
   {
     accessorKey: 'campania',
@@ -183,10 +190,10 @@ const columns: TableColumn<any>[] = [
           }
         }) : null,
         h(UButton, {
-          color: 'secondary',
+          color: 'primary',
           size: 'sm',
           variant: 'ghost',
-          icon: 'i-heroicons-arrow-path',
+          icon: 'i-heroicons-document-duplicate',
           label: '',
           onClick: (event: MouseEvent) => {
             handleDuplicate(row.original.id)
