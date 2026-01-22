@@ -1819,6 +1819,9 @@ table th {
   left: 0;
   z-index: 10;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  max-width: 150px;
+  min-width: 150px; /* allow shrinking inside table layout */
+  overflow: hidden;
 }
 
 .sticky-right {
