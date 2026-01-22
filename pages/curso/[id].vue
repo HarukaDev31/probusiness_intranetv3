@@ -219,10 +219,10 @@
       </div>
 
       <!-- Botón para generar y enviar constancia -->
-      <div v-if="datosCliente?.Nu_Estado_Usuario_Externo == 2 && !datosCliente?.url_constancia" class="mt-4">
+      <div v-if="datosCliente?.Nu_Estado_Usuario_Externo == 2 " class="mt-4">
         <UButton @click="handleGenerarConstancia" color="success" icon="i-heroicons-document-plus"
           :loading="generandoConstancia">
-          Generar y Enviar Constancia
+         {{ datosCliente?.url_constancia ? 'Regenerar Constancia y Enviar' : 'Generar y Enviar Constancia' }}
         </UButton>
       </div>
 
