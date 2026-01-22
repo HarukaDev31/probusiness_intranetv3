@@ -615,14 +615,23 @@ const pagosColumns = ref<TableColumn<any>[]>([
     cell: ({ row }: { row: any }) => {
       let MAX_PAYMENTS = 4;
       //IF apagar > MAX_PAYMENTS and length(pagos) > MAX_PAYMENTS then MAX_PAYMENTS ++
-      if (row.original.total_logistica_impuestos > row.original.total_pagos && JSON.parse(row.original.pagos || '[]').length >= MAX_PAYMENTS) {
-        MAX_PAYMENTS=JSON.parse(row.original.pagos || '[]').length+1;
+      const totalLogisticaImpuestos = Number(Number(row.original.total_logistica_impuestos).toFixed(2));
+      const totalPagos = Number(Number(row.original.total_pagos).toFixed(2));
+      const pagos = JSON.parse(row.original.pagos || '[]');
+      const pagosLength = pagos.length;
+      
+      if (pagosLength >= MAX_PAYMENTS) {
+        if (totalLogisticaImpuestos > totalPagos) {
+          MAX_PAYMENTS = pagosLength + 1;
+        } else if (totalLogisticaImpuestos >= totalPagos) {
+          MAX_PAYMENTS = pagosLength;
+        }
       }
       return !row.original.id_contenedor_pago ?
         h(PagoGrid,
           {
             numberOfPagos: MAX_PAYMENTS,
-            pagoDetails: JSON.parse(row.original.pagos || '[]'),
+            pagoDetails: pagos,
             clienteNombre: row.original.nombre,
             currency: 'USD',
             showDelete: true,
