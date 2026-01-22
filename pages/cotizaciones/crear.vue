@@ -435,7 +435,7 @@
                     </thead>
                     <tbody>
                       <tr>
-                        <td class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2 sticky-left min-w-[200px]">Tipo de cliente:</td>
+                        <td class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2 sticky-left min-w-[150px]">Tipo de cliente:</td>
                         <td class="text-center px-4 py-2" :colspan="totalItems">
                           <div class="flex items-center gap-4">
                             <USelect v-model="clienteInfo.tipoCliente" :items="tarifasSelect" item-value="value"
@@ -448,7 +448,7 @@
                             </template>
                           </div>
                         </td>
-                        <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right min-w-[120px]">
+                        <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right max-w-[130px]">
                           Total
                         </td>
                       </tr>
@@ -462,192 +462,192 @@
                           Total
                         </td>
                       </tr>
-                <tr>
-                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Qty Cajas</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
-                    :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
-                    <UInput class="w-full" v-model.number="proveedor.qtyCaja" type="number" min="0" placeholder="0"
-                      size="md" variant="outline" :ui="{ base: 'text-center'}" />
-                  </td>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ totalCajas }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Peso</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
-                    :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
-                    <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0"
-                      size="md" variant="outline" :ui="{ base: 'text-center'}" />
-                  </td>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ totalPeso }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Vol. x Prov.</td>
-                  <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
-                    :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
-                    <UInput class="w-full" v-model.number="proveedor.cbm" type="number" min="0" placeholder="0"
-                      size="md" variant="outline" :ui="{ base: 'text-center'}"
-                      @focus="() => { cbmAnteriorPorProveedor[proveedor.id] = proveedor.cbm || 0 }"
-                      @blur="(e) => handleCbmChange(proveedor.id, parseFloat((e.target as HTMLInputElement).value) || 0)" />
-                  </td>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ totalCbm }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-2 sticky-left">Productos</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                      <UInput class="w-full" v-model="producto.nombre" type="text" placeholder="Nombre del producto"
-                        size="md" variant="outline" :ui="{ base: 'text-center'}" />
-                    </td>
-                  </template>
-                  <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
-                    Total
-                  </td>
-                </tr>
-                <tr>
-                  <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Valor unitario</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                      <UInput class="w-full" v-model.number="producto.precio" type="number" step="0.01" min="0"
-                        placeholder="0.00" size="md" variant="outline" :ui="{ base: 'text-center'}">
-                        <template #leading>
-                          <span class="text-gray-500">$</span>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Qty Cajas</td>
+                        <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
+                          :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
+                          <UInput class="w-full" v-model.number="proveedor.qtyCaja" type="number" min="0" placeholder="0"
+                            size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                        </td>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ totalCajas }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Peso</td>
+                        <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
+                          :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
+                          <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0"
+                            size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                        </td>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ totalPeso }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Vol. x Prov.</td>
+                        <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
+                          :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
+                          <UInput class="w-full" v-model.number="proveedor.cbm" type="number" min="0" placeholder="0"
+                            size="md" variant="outline" :ui="{ base: 'text-center'}"
+                            @focus="() => { cbmAnteriorPorProveedor[proveedor.id] = proveedor.cbm || 0 }"
+                            @blur="(e) => handleCbmChange(proveedor.id, parseFloat((e.target as HTMLInputElement).value) || 0)" />
+                        </td>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ totalCbm }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-white dark:bg-gray-800 px-4 py-2 sticky-left">Productos</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
+                            <UInput class="w-full" v-model="producto.nombre" type="text" placeholder="Nombre del producto"
+                              size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                          </td>
                         </template>
-                      </UInput>
-                    </td>
-                  </template>
-                </tr>
-                <tr v-if="existsValoracion">
-                  <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Valor Ajustado</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                      <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0" placeholder="0.00"
-                        size="md" variant="outline" :ui="{ base: 'text-center'}">
-                        <template #leading>
-                          <span class="text-gray-500">$</span>
+                        <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
+                          Total
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Valor unitario</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
+                            <UInput class="w-full" v-model.number="producto.precio" type="number" step="0.01" min="0"
+                              placeholder="0.00" size="md" variant="outline" :ui="{ base: 'text-center'}">
+                              <template #leading>
+                                <span class="text-gray-500">$</span>
+                              </template>
+                            </UInput>
+                          </td>
                         </template>
-                      </UInput>
-                    </td>
-                  </template>
-                </tr>
-                <tr>
-                  <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Cantidad</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                      <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0" placeholder="0"
-                        size="md" variant="outline" :ui="{ base: 'text-center'}" />
-                    </td>
-                  </template>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ totalItems }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor FOB</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                      <UInput :value="formatCurrency((producto.precio * producto.cantidad) || 0)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                    </td>
-                  </template>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ formatCurrency(totalValorFOB) }}
-                  </td>
-                </tr>
-                <tr v-if="existsValoracion">
-                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ajustado FOB</td>
+                      </tr>
+                      <tr v-if="existsValoracion">
+                        <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Valor Ajustado</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0" placeholder="0.00"
+                              size="md" variant="outline" :ui="{ base: 'text-center'}">
+                              <template #leading>
+                                <span class="text-gray-500">$</span>
+                              </template>
+                            </UInput>
+                          </td>
+                        </template>
+                      </tr>
+                      <tr>
+                        <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Cantidad</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
+                            <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0" placeholder="0"
+                              size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ totalItems }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor FOB</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
+                            <UInput :value="formatCurrency((producto.precio * producto.cantidad) || 0)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(totalValorFOB) }}
+                        </td>
+                      </tr>
+                      <tr v-if="existsValoracion">
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ajustado FOB</td>
 
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                      {{ (producto.valoracion * producto.cantidad || 0).toFixed(2) }}
-                    </td>
-                  </template>
-                  <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
-                    {{ totalValorFOBAjustado.toFixed(2) }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-2 sticky-left">Distribución %</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                      <UInput :value="totalValorFOB > 0 ? ((producto.precio * producto.cantidad || 0) / totalValorFOB * 100).toFixed(2) + '%' : '0%'" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                    </td>
-                  </template>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    100%
-                  </td>
-                </tr>
-                <tr>
-                  <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Flete</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                      <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).flete)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                    </td>
-                  </template>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ formatCurrency(getTotals(proveedores, selectedTarifa).flete) }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor CFR</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                      <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cfr)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                    </td>
-                  </template>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ formatCurrency(getTotals(proveedores, selectedTarifa).cfr) }}
-                  </td>
-                </tr>
-                <tr v-if="existsValoracion">
-                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ajustado CFR</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center ">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                      <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cfrAjustado)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                    </td>
-                  </template>
-                  <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
-                    {{ formatCurrency(getTotals(proveedores, selectedTarifa).cfrAjustado) }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Seguro</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                      <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).seguro)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                    </td>
-                  </template>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ formatCurrency(totalSeguro) }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor CIF</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                      <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cif)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                    </td>
-                  </template>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ formatCurrency(getTotals(proveedores, selectedTarifa).cif) }}
-                  </td>
-                </tr>
-                <tr v-if="existsValoracion">
-                  <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ajustado CIF</td>
-                  <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                    <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                      {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cifAjustado) }}
-                    </td>
-                  </template>
-                  <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
-                    {{ formatCurrency(getTotals(proveedores, selectedTarifa).cifAjustado) }}
-                  </td>
-                </tr>
-              </tbody>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            {{ (producto.valoracion * producto.cantidad || 0).toFixed(2) }}
+                          </td>
+                        </template>
+                        <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
+                          {{ totalValorFOBAjustado.toFixed(2) }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-white dark:bg-gray-800 px-4 py-2 sticky-left">Distribución %</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
+                            <UInput :value="totalValorFOB > 0 ? ((producto.precio * producto.cantidad || 0) / totalValorFOB * 100).toFixed(2) + '%' : '0%'" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          100%
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Flete</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
+                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).flete)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).flete) }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor CFR</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
+                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cfr)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).cfr) }}
+                        </td>
+                      </tr>
+                      <tr v-if="existsValoracion">
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ajustado CFR</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center ">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cfrAjustado)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
+                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).cfrAjustado) }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Seguro</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
+                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).seguro)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(totalSeguro) }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor CIF</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
+                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cif)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).cif) }}
+                        </td>
+                      </tr>
+                      <tr v-if="existsValoracion">
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ajustado CIF</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cifAjustado) }}
+                          </td>
+                        </template>
+                        <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
+                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).cifAjustado) }}
+                        </td>
+                      </tr>
+                    </tbody>
                   </table>
                 </div>
               </div>
@@ -675,106 +675,105 @@
               <div v-show="!collapsedSections.tributos">
                 <div class="overflow-x-auto" style="scrollbar-width: thin;" :style="{ '--total-items': totalItems }">
                   <table class="w-full border-collapse" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
-                <thead>
-                  <tr>
-                    <th class=" text-left sticky-left"></th>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <th v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput class="w-full text-center" v-model.number="producto.antidumpingCU" type="number" min="0"
-                                                  placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }" >
-                                                  <template #leading>
-                                                    <span class="text-white">$</span>
-                                                  </template>
-                                                </UInput>
-                      </th>
-                    </template>
-                    <th class=" text-center sticky-right"></th>
-                  </tr>
-                </thead>
-                <tbody>
-
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Antidumping</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).antidumping)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                      </td>
-                    </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAntidumping) }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="sticky-left"></td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput class="w-full text-white" v-model.number="producto.adValoremP" type="number" min="0"
-                                                  placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }" >
-                                                  <template #leading>
-                                                    <span class="text-white">%</span>
-                                                  </template>
-                                                </UInput>
-                      </td>
-                    </template>
-                    <td class=" text-center sticky-right">
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ad Valorem</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).adValorem)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                      </td>
-                    </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAdValorem) }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">IGV 16%</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).igv)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                      </td>
-                    </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(totalIGV) }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">IPM 2%</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).ipm)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                      </td>
-                    </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalIPM || 0) }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Percepción 3.5%</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).percepcion)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                      </td>
-                    </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalPercepcion) }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Total</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center ">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-gray-200 dark:bg-gray-700 font-semibold producto-column">
-                        {{ formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).total) }}
-                      </td>
-                    </template>
-                    <td class=" text-center bg-gray-200 dark:bg-gray-700 font-semibold sticky-right">
-                      {{ formatCurrency(getTributos(proveedores, selectedTarifa).total) }}
-                    </td>
-                  </tr>
-                </tbody>
+                    <thead>
+                      <tr>
+                        <th class="bg-white dark:bg-gray-800 text-left sticky-left min-w-[150px]"></th>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <th v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
+                            <UInput class="w-full text-center" v-model.number="producto.antidumpingCU" type="number" min="0"
+                              placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }" >
+                              <template #leading>
+                                <span class="text-white">$</span>
+                              </template>
+                            </UInput>
+                          </th>
+                        </template>
+                        <th class="bg-white dark:bg-gray-800 text-center sticky-right max-w-[130px]"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Antidumping</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).antidumping)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAntidumping) }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-white dark:bg-gray-800 sticky-left"></td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput class="w-full text-white" v-model.number="producto.adValoremP" type="number" min="0"
+                              placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }" >
+                              <template #leading>
+                                <span class="text-white">%</span>
+                              </template>
+                            </UInput>
+                          </td>
+                        </template>
+                        <td class="bg-white dark:bg-gray-800 text-center sticky-right">
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ad Valorem</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).adValorem)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAdValorem) }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">IGV 16%</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).igv)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(totalIGV) }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">IPM 2%</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).ipm)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalIPM || 0) }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Percepción 3.5%</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).percepcion)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalPercepcion) }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Total</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center ">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-gray-200 dark:bg-gray-700 font-semibold producto-column">
+                            {{ formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).total) }}
+                          </td>
+                        </template>
+                        <td class=" text-center bg-gray-200 dark:bg-gray-700 font-semibold sticky-right">
+                          {{ formatCurrency(getTributos(proveedores, selectedTarifa).total) }}
+                        </td>
+                      </tr>
+                    </tbody>
                   </table>
                 </div>
               </div>
@@ -796,32 +795,31 @@
               <div v-show="!collapsedSections.costosDestino">
                 <div class="overflow-x-auto" style="scrollbar-width: thin;" :style="{ '--total-items': totalItems }">
                   <table class="w-full border-collapse" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
+                    <tbody>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left min-w-[150px]">Item</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class="bg-gray-200 dark:bg-gray-700 text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
+                            {{ (getPorDistribucion(proveedores, selectedTarifa, producto).distribucion * 100).toFixed(2) + '%' }}
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
+                          100%
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Item</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoDestino)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
 
-                <tbody>
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Item</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class="bg-gray-200 dark:bg-gray-700 text-center producto-column">
-                        {{ (getPorDistribucion(proveedores, selectedTarifa, producto).distribucion * 100).toFixed(2) + '%' }}
-                      </td>
-                    </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      100%
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Item</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoDestino)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                      </td>
-
-                    </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoDestino) }}
-                    </td>
-                  </tr>
-                </tbody>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
+                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoDestino) }}
+                        </td>
+                      </tr>
+                    </tbody>
                   </table>
                 </div>
               </div>
@@ -844,69 +842,68 @@
               <div v-show="!collapsedSections.costosTotal">
                 <div class="overflow-x-auto" style="scrollbar-width: thin;" :style="{ '--total-items': totalItems }">
                   <table class="w-full border-collapse" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
+                    <tbody>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left min-w-[150px]">Item</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
+                            <UInput :value="producto.nombre" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
+                          Total
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Costo total</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoTotal)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
 
-                <tbody>
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Item</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput :value="producto.nombre" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                      </td>
-                    </template>
-                    <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
-                      Total
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Costo total</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoTotal)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                      </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
+                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoTotal) }}
+                        </td>
+                      </tr>
 
-                    </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      <UInput :value="formatCurrency(getTotals(proveedores, selectedTarifa).costoTotal)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                    </td>
-                  </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Cantidad</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                            <UInput :value="producto.cantidad" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
 
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Cantidad</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput :value="producto.cantidad" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                      </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ totalItems }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 sticky-left">Costo unit. usd</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-gray-200 dark:bg-gray-700 producto-column">
+                            {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoUSD) }}
+                          </td>
 
-                    </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      <UInput :value="totalItems" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 sticky-left">Costo unit. usd</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-gray-200 dark:bg-gray-700 producto-column">
-                        {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoUSD) }}
-                      </td>
+                        </template>
+                        <td class=" text-center bg-gray-200 dark:bg-gray-700 sticky-right">
+                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoUSD) }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-primary text-white sticky-left">Costo unit. pen</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-primary text-white producto-column">
+                            {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoPEN,'PEN') }}
+                          </td>
 
-                    </template>
-                    <td class=" text-center bg-gray-200 dark:bg-gray-700 sticky-right">
-                      {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoUSD) }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="bg-primary text-white sticky-left">Costo unit. pen</td>
-                    <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-primary text-white producto-column">
-                        {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoPEN,'PEN') }}
-                      </td>
-
-                    </template>
-                    <td class=" text-center bg-primary text-white sticky-right">
-                      {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoPEN) }}
-                    </td>
-                  </tr>
-                </tbody>
+                        </template>
+                        <td class=" text-center bg-primary text-white sticky-right">
+                          {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoPEN) }}
+                        </td>
+                      </tr>
+                    </tbody>
                   </table>
                 </div>
               </div>
