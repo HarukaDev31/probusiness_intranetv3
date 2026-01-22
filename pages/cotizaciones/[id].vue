@@ -394,7 +394,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <td class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2 sticky-left min-w-[200px]">Tipo de cliente:</td>
+                  <td class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2 sticky-left min-w-[150px]">Tipo de cliente:</td>
                   <td class="text-center px-4 py-2" :colspan="totalItems">
                     <div class="flex items-center gap-4">
                       <USelect v-model="clienteInfo.tipoCliente" :items="tarifasSelect" item-value="value"
@@ -414,7 +414,7 @@
                     :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
                     {{ proveedor.id }}
                   </td>
-                  <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
+                  <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right max-w-[130px]">
                     Total
                   </td>
                 </tr>
@@ -454,7 +454,7 @@
                   </td>
                 </tr>
                 <tr>
-                  <td class="px-4 py-2 sticky-left">Productos</td>
+                  <td class="bg-white dark:bg-gray-800 px-4 py-2 sticky-left">Productos</td>
                   <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
                     <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
                       <UInput class="w-full" v-model="producto.nombre" type="text" placeholder="Nombre del producto"
@@ -544,8 +544,8 @@
                       <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).flete)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                     </td>
                   </template>
-                  <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ formatCurrency(getTotals(proveedores, selectedTarifa).flete) }}
+                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                    {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).flete)) }}
                   </td>
                 </tr>
                 <tr>
@@ -556,7 +556,7 @@
                     </td>
                   </template>
                   <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ formatCurrency(getTotals(proveedores, selectedTarifa).cfr) }}
+                    {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cfr)) }}
                   </td>
                 </tr>
                 <tr v-if="existsValoracion">
@@ -567,7 +567,7 @@
                     </td>
                   </template>
                   <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
-                    {{ formatCurrency(getTotals(proveedores, selectedTarifa).cfrAjustado) }}
+                    {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cfrAjustado)) }}
                   </td>
                 </tr>
                 <tr>
@@ -589,7 +589,7 @@
                     </td>
                   </template>
                   <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                    {{ formatCurrency(getTotals(proveedores, selectedTarifa).cif) }}
+                    {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cif)) }}
                   </td>
                 </tr>
                 <tr v-if="existsValoracion">
@@ -600,7 +600,7 @@
                     </td>
                   </template>
                   <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
-                    {{ formatCurrency(getTotals(proveedores, selectedTarifa).cifAjustado) }}
+                    {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cifAjustado)) }}
                   </td>
                 </tr>
               </tbody>
@@ -633,9 +633,9 @@
                   <table class="w-full border-collapse" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
                 <thead>
                   <tr>
-                    <th class=" text-left sticky-left"></th>
+                    <th class="bg-white dark:bg-gray-800 text-left sticky-left min-w-[150px]"></th>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <th v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                      <th v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
                         <UInput class="w-full text-center" v-model.number="producto.antidumpingCU" type="number" min="0"
                                                   placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }" >
                                                   <template #leading>
@@ -644,7 +644,7 @@
                                                 </UInput>
                       </th>
                     </template>
-                    <th class=" text-center sticky-right"></th>
+                    <th class="bg-white dark:bg-gray-800 text-center sticky-right max-w-[130px]"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -657,7 +657,7 @@
                       </td>
                     </template>
                     <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAntidumping) }}
+                      {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalAntidumping)) }}
                     </td>
                   </tr>
                   <tr>
@@ -683,7 +683,7 @@
                       </td>
                     </template>
                     <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalAdValorem) }}
+                      {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalAdValorem)) }}
                     </td>
                   </tr>
                   <tr>
@@ -705,7 +705,7 @@
                       </td>
                     </template>
                     <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalIPM || 0) }}
+                      {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalIPM || 0)) }}
                     </td>
                   </tr>
                   <tr>
@@ -716,7 +716,7 @@
                       </td>
                     </template>
                     <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      {{ formatCurrency(getTributos(proveedores, selectedTarifa).totalPercepcion) }}
+                      {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalPercepcion)) }}
                     </td>
                   </tr>
                   <tr>
@@ -727,7 +727,7 @@
                       </td>
                     </template>
                     <td class=" text-center bg-gray-200 dark:bg-gray-700 font-semibold sticky-right">
-                      {{ formatCurrency(getTributos(proveedores, selectedTarifa).total) }}
+                      {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).total)) }}
                     </td>
                   </tr>
                 </tbody>
@@ -742,7 +742,7 @@
               <div class="flex items-center gap-6 flex-1">
                 <h3 class="text-lg font-semibold">Costos Destinos</h3>
                 <div v-if="collapsedSections.costosDestino" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  <span><strong>Total:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoDestino) }}</span>
+                  <span><strong>Total:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoDestino)) }}</span>
                 </div>
               </div>
               <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
@@ -755,26 +755,26 @@
 
                 <tbody>
                   <tr>
-                    <td class="sticky-left"></td>
+                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left min-w-[150px]">Item</td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class="bg-gray-200 dark:bg-gray-700 text-center producto-column">
+                      <td v-for="producto in proveedor.productos" :key="producto.id" class="bg-gray-200 dark:bg-gray-700 text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
                         {{ (getPorDistribucion(proveedores, selectedTarifa, producto).distribucion * 100).toFixed(2) + '%' }}
                       </td>
                     </template>
-                    <td class=" text-center bg-gray-200 dark:bg-gray-700 sticky-right">
+                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
                       100%
                     </td>
                   </tr>
                   <tr>
-                    <td class="sticky-left">Item</td>
+                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Item</td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
                         <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoDestino)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                       </td>
 
                     </template>
-                    <td class=" text-center sticky-right">
-                      <UInput :value="formatCurrency(getTotals(proveedores, selectedTarifa).costoDestino)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
+                      {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoDestino)) }}
                     </td>
                   </tr>
                 </tbody>
@@ -789,8 +789,8 @@
               <div class="flex items-center gap-6 flex-1">
                 <h3 class="text-lg font-semibold">Costos Total de Importación</h3>
                 <div v-if="collapsedSections.costosTotal" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  <span><strong>USD:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoTotal) }}</span>
-                  <span><strong>PEN:</strong> {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoPEN) }}</span>
+                  <span><strong>USD:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoTotal)) }}</span>
+                  <span><strong>PEN:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoPEN)) }}</span>
                 </div>
               </div>
               <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
@@ -803,11 +803,11 @@
 
                 <tbody>
                   <tr>
-                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Item</td>
+                    <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left min-w-[150px]">Item</td>
                     <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                      <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                        <UInput :value="producto.nombre" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
-                      </td>
+                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
+                            <UInput :value="producto.nombre" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
                     </template>
                     <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
                       Total
@@ -821,8 +821,8 @@
                       </td>
 
                     </template>
-                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      <UInput :value="formatCurrency(getTotals(proveedores, selectedTarifa).costoTotal)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                    <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
+                      {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoTotal)) }}
                     </td>
                   </tr>
 
@@ -835,7 +835,7 @@
 
                     </template>
                     <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                      <UInput :value="totalItems" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                      {{ totalItems }}
                     </td>
                   </tr>
                   <tr>
@@ -847,7 +847,7 @@
 
                     </template>
                     <td class=" text-center bg-gray-200 dark:bg-gray-700 sticky-right">
-                      {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoUSD) }}
+                      {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoUSD)) }}
                     </td>
                   </tr>
                   <tr>
@@ -859,7 +859,7 @@
 
                     </template>
                     <td class=" text-center bg-primary text-white sticky-right">
-                      {{ formatCurrency(getTotals(proveedores, selectedTarifa).costoPEN) }}
+                      {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoPEN)) }}
                     </td>
                   </tr>
                 </tbody>
