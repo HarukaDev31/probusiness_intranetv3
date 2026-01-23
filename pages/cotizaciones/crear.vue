@@ -1143,7 +1143,8 @@ const handleWhatsappBlur = () => {
       // No existe: tomar como número nuevo y no autocompletar otros campos
       selectedCliente.value = null
       clienteInfo.value.whatsapp = whatsappInput.value || ''
- 
+      // Cliente nuevo (no seleccionado del dropdown) = NUEVO
+      clienteInfo.value.tipoCliente = 'NUEVO'
     }
   }, 150)
 }
@@ -1215,6 +1216,10 @@ const onClienteSelected = (cliente: any) => {
     // Guardar el whatsapp como string
     const whatsappValue = cliente.whatsapp || cliente.celular || cliente.label || ''
     clienteInfo.value.whatsapp = whatsappValue
+    
+    // Cliente seleccionado del dropdown = ANTIGUO
+    clienteInfo.value.tipoCliente = 'ANTIGUO'
+    
     selectedCliente.value = cliente
   }
 }
@@ -1825,8 +1830,20 @@ onMounted(async () => {
   // fetchVendedores y fetchContenedores solo en step 4
 })
 
-// Solo cargar vendedores y contenedores al llegar al paso 4
+// Cuando se pasa al paso 3, asegurar que el tipoCliente esté establecido
 watch(currentStep, async (step) => {
+  if (step === 3) {
+    // Si hay un cliente seleccionado del dropdown = ANTIGUO
+    if (selectedCliente.value && !clienteInfo.value.tipoCliente) {
+      clienteInfo.value.tipoCliente = 'ANTIGUO'
+    }
+    // Si no hay cliente seleccionado (se escribió manualmente) = NUEVO
+    if (!selectedCliente.value && !clienteInfo.value.tipoCliente && clienteInfo.value.whatsapp) {
+      clienteInfo.value.tipoCliente = 'NUEVO'
+    }
+    // La tarifa se autocalcula automáticamente con selectedTarifa (computed) basado en tipoCliente y totalCbm
+  }
+  
   if (step === 4) {
     await fetchVendedores()
     await fetchContenedores()

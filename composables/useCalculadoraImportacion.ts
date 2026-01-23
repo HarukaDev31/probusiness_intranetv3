@@ -209,23 +209,71 @@ export const useCalculadoraImportacion = () => {
   const proveedores = ref<Proveedor[]>([
 
   ])
-  const selectedTarifa = computed(() => {
-    const tipoCliente = clienteInfo.value.tipoCliente
-    const totalCbmValue = parseFloat(totalCbm.value.toFixed(2))
+
+  // Función helper para encontrar tarifa de ítems extra por CBM (comportamiento original)
+  const findTarifaByCbm = (cbm: number) => {
+    if (!cbm || isNaN(cbm) || cbm <= 0) {
+      return TARIFAS_EXTRA_ITEM_PER_CBM[0] // Devolver primera tarifa por defecto
+    }
     
-    // Filtrar tarifas del tipo de cliente actual
+    const cbmValue = parseFloat(cbm.toFixed(2))
+    
+    // 1. Buscar tarifa exacta donde el CBM cae en el rango
+    let tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
+      cbmValue >= t.limit_inf && cbmValue <= t.limit_sup
+    )
+    
+    // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
+    if (!tarifa) {
+      const cbmRedondeado = Math.round(cbmValue * 10) / 10
+      tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
+        cbmRedondeado >= t.limit_inf && cbmRedondeado <= t.limit_sup
+      )
+    }
+    
+    // 3. Si aún no encuentra, buscar la tarifa más cercana
+    if (!tarifa) {
+      // Buscar el rango más cercano comparando distancias
+      const distancias = TARIFAS_EXTRA_ITEM_PER_CBM.map(t => {
+        const centro = (t.limit_inf + t.limit_sup) / 2
+        return { tarifa: t, distancia: Math.abs(cbmValue - centro) }
+      })
+      distancias.sort((a, b) => a.distancia - b.distancia)
+      tarifa = distancias[0]?.tarifa
+    }
+    
+    // 4. Si aún no hay tarifa, usar la última (mayor rango)
+    return tarifa || TARIFAS_EXTRA_ITEM_PER_CBM[TARIFAS_EXTRA_ITEM_PER_CBM.length - 1]
+  }
+
+  // Función helper para encontrar tarifa general por CBM y tipo de cliente
+  const findTarifaByCbmAndTipo = (cbm: number, tipoCliente: string): Tarifa | null => {
+    if (!cbm || isNaN(cbm) || cbm <= 0) {
+      if (tarifas.value.length > 0) {
+        const tarifasDelTipo = tarifas.value.filter(t => t.label === tipoCliente)
+        return tarifasDelTipo[0] || null
+      }
+      return null
+    }
+    
+    const cbmValue = parseFloat(cbm.toFixed(2))
+    
+    if (tarifas.value.length === 0) {
+      return null
+    }
+    
     const tarifasDelTipo = tarifas.value.filter(t => t.label === tipoCliente)
     
     // 1. Buscar tarifa exacta donde el CBM cae en el rango
     let tarifa = tarifasDelTipo.find(t => {
       const limitInferior = parseFloat(t.limit_inf.replace(',', '.'))
       const limitSuperior = parseFloat(t.limit_sup.replace(',', '.'))
-      return totalCbmValue >= limitInferior && totalCbmValue <= limitSuperior
+      return cbmValue >= limitInferior && cbmValue <= limitSuperior
     })
     
     // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
     if (!tarifa) {
-      const cbmRedondeado = Math.round(totalCbmValue * 10) / 10
+      const cbmRedondeado = Math.round(cbmValue * 10) / 10
       tarifa = tarifasDelTipo.find(t => {
         const limitInferior = parseFloat(t.limit_inf.replace(',', '.'))
         const limitSuperior = parseFloat(t.limit_sup.replace(',', '.'))
@@ -241,8 +289,8 @@ export const useCalculadoraImportacion = () => {
         const limitInfClosest = parseFloat(closest.limit_inf.replace(',', '.'))
         const limitSupClosest = parseFloat(closest.limit_sup.replace(',', '.'))
         
-        const distCurrent = Math.min(Math.abs(totalCbmValue - limitInfCurrent), Math.abs(totalCbmValue - limitSupCurrent))
-        const distClosest = Math.min(Math.abs(totalCbmValue - limitInfClosest), Math.abs(totalCbmValue - limitSupClosest))
+        const distCurrent = Math.min(Math.abs(cbmValue - limitInfCurrent), Math.abs(cbmValue - limitSupCurrent))
+        const distClosest = Math.min(Math.abs(cbmValue - limitInfClosest), Math.abs(cbmValue - limitSupClosest))
         
         return distCurrent < distClosest ? current : closest
       })
@@ -253,7 +301,15 @@ export const useCalculadoraImportacion = () => {
       tarifa = tarifas.value.find(t => t.label === 'NUEVO')
     }
     
-    return tarifa
+    return tarifa || null
+  }
+
+  const selectedTarifa = computed(() => {
+    const tipoCliente = clienteInfo.value.tipoCliente
+    const totalCbmValue = totalCbm.value
+    
+    // Usar la función helper findTarifaByCbmAndTipo para buscar tarifa general
+    return findTarifaByCbmAndTipo(totalCbmValue, tipoCliente)
   })
 
   //NUEVO RECURRENTE PREMIUM SOCIO INACTIVO
@@ -437,41 +493,6 @@ export const useCalculadoraImportacion = () => {
         })
       })
     }
-  }
-  // Función helper para encontrar tarifa por CBM con manejo de casos edge
-  const findTarifaByCbm = (cbm: number) => {
-    if (!cbm || isNaN(cbm) || cbm <= 0) {
-      return TARIFAS_EXTRA_ITEM_PER_CBM[0] // Devolver primera tarifa por defecto
-    }
-    
-    const cbmValue = parseFloat(cbm.toFixed(2))
-    
-    // 1. Buscar tarifa exacta donde el CBM cae en el rango
-    let tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
-      cbmValue >= t.limit_inf && cbmValue <= t.limit_sup
-    )
-    
-    // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
-    if (!tarifa) {
-      const cbmRedondeado = Math.round(cbmValue * 10) / 10
-      tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
-        cbmRedondeado >= t.limit_inf && cbmRedondeado <= t.limit_sup
-      )
-    }
-    
-    // 3. Si aún no encuentra, buscar la tarifa más cercana
-    if (!tarifa) {
-      // Buscar el rango más cercano comparando distancias
-      const distancias = TARIFAS_EXTRA_ITEM_PER_CBM.map(t => {
-        const centro = (t.limit_inf + t.limit_sup) / 2
-        return { tarifa: t, distancia: Math.abs(cbmValue - centro) }
-      })
-      distancias.sort((a, b) => a.distancia - b.distancia)
-      tarifa = distancias[0]?.tarifa
-    }
-    
-    // 4. Si aún no hay tarifa, usar la última (mayor rango)
-    return tarifa || TARIFAS_EXTRA_ITEM_PER_CBM[TARIFAS_EXTRA_ITEM_PER_CBM.length - 1]
   }
 
   const getExtraItem = (cbm: number) => {
