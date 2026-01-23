@@ -627,7 +627,7 @@ const pagosColumns = ref<TableColumn<any>[]>([
           MAX_PAYMENTS = pagosLength;
         }
       }
-      return !row.original.id_contenedor_pago ?
+      return (!row.original.id_contenedor_destino || row.original.id_contenedor_destino == row.original.id_contenedor) ?
         h(PagoGrid,
           {
             numberOfPagos: MAX_PAYMENTS,

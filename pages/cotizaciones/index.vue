@@ -29,6 +29,7 @@ import { useModal } from '~/composables/commons/useModal';
 import { useSpinner } from '~/composables/commons/useSpinner';
 import type { FilterConfig } from '~/types/data-table'
 import { useIsDesktop } from '~/composables/useResponsive'
+import { STATUS_BG_CLASSES } from '~/constants/ui'
 const { isDesktop } = useIsDesktop()
 const { showSuccess, showConfirmation, showError } = useModal()
 const overlay = useOverlay()
@@ -152,10 +153,11 @@ const columns: TableColumn<any>[] = [
     accessorKey: 'estado',
     header: 'Estado',
     cell: ({ row }: { row: any }) => {
-      //RETURN USelect with options from estadoCotizaciones
+      const estado = row.original.estado
       return h(USelect as any, {
+        class: [STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES], 'min-w-36'],
         items: estadoCotizaciones.value.filter((item: any) => item.showOptions),
-        modelValue: row.original.estado,
+        modelValue: estado,
         'onUpdate:modelValue': (value: string) => {
           handleEstadoChange(row.original.id, value)
         }

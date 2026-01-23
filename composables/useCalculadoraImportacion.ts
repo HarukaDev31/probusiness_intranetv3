@@ -106,13 +106,13 @@ export const useCalculadoraImportacion = () => {
     {
       label: 'COTIZADO',
       value: 'COTIZADO',
-      class: 'bg-secondary',
+      class: 'bg-blue-500',
       showOptions: true
     },
     {
       label: 'CONFIRMADO',
       value: 'CONFIRMADO',
-      class: 'bg-success',
+      class: 'bg-green-500',
       showOptions: true
     }
   ])
@@ -187,11 +187,7 @@ export const useCalculadoraImportacion = () => {
   })
 
   const calculatedExtraItems = computed(() => {
-    // Calcular tarifa adicional basada en el CBM TOTAL y el TOTAL de ítems
-    // La tarifa se cobra SOLO por los ítems que exceden el item_base hasta el item_max
-    // Ejemplo: Si item_base=6, item_max=10, y tienes 8 ítems:
-    //   - Los primeros 6 ítems son gratis (item_base)
-    //   - Los ítems 7 y 8 (2 ítems extra) se cobran con la tarifa
+   
     const cbmTotal = totalCbm.value
     const itemsTotal = totalItems.value
     const tarifa = findTarifaByCbm(cbmTotal)
@@ -305,12 +301,11 @@ export const useCalculadoraImportacion = () => {
   }
 
   const handleEndFormulario = async (id?: number) => {
-    //get extra per proveedor and item from proveedores
-    const tarifaTotalExtraProveedor = proveedores.value.reduce((acc, proveedor) => {
-      return acc + proveedor.extraProveedor
-    }, 0)
-    // Usar calculatedExtraItems que calcula basado en CBM total y total de ítems
-    const tarifaTotalExtraItem = calculatedExtraItems.value
+    // Las tarifas siempre se toman del campo modificable
+    // Al inicio, estos campos se inicializan con los valores calculados
+    // Si el usuario modifica esos campos, solo se envía el valor modificado (no la suma)
+    const tarifaTotalExtraProveedor = tarifaExtraProveedorManual.value
+    const tarifaTotalExtraItem = tarifaExtraItemManual.value
     //create saveCotizacionRequest
     let tarifaToSend = selectedTarifa.value
     // Si es MANUAL, usar el valor del input
@@ -333,8 +328,8 @@ export const useCalculadoraImportacion = () => {
           adValoremP: producto.adValoremP
         }))
       })),
-      tarifaTotalExtraProveedor: tarifaTotalExtraProveedor + tarifaExtraProveedorManual.value,
-      tarifaTotalExtraItem: tarifaTotalExtraItem + tarifaExtraItemManual.value,
+      tarifaTotalExtraProveedor: tarifaTotalExtraProveedor,
+      tarifaTotalExtraItem: tarifaTotalExtraItem,
       tarifaDescuento: tarifaDescuento.value,
       id_usuario: selectedVendedor.value,
       id_carga_consolidada_contenedor: selectedContenedor.value,
