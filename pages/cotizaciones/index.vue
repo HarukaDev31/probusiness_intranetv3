@@ -59,10 +59,12 @@ const columns: TableColumn<any>[] = [
       const nombre = row.original?.nombre_cliente || row.original?.nombre || ''
       const telefono = row.original?.whatsapp_cliente || row.original?.whatsapp || ''
       const dni = row.original?.dni_cliente || row.original?.dni || ''
+      const codigo=row.original?.cod_cotizacion || ''
       return h('div', { class: 'py-2 w-30 whitespace-normal' }, [
         h('div', { class: 'font-medium' }, nombre),
         h('div', { class: 'text-sm text-gray-500' }, dni),
-        h('div', { class: 'text-sm text-gray-500' }, telefono)
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, codigo)
       ])
     }
   },

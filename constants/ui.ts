@@ -27,7 +27,9 @@ export const STATUS_BG_CLASSES = {
     Verde: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
     Naranja: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white',
     Rojo: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
-    
+    PENDING: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white',
+    CONFIRMED: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
+    REJECTED: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
 
 } as const
 export const STATUS_BG_PAGOS_CLASSES = {

@@ -16,11 +16,8 @@
         <div class="flex items-center justify-center">
           <div class="flex items-center space-x-4">
             <div v-for="step in totalSteps" :key="step" class="flex items-center">
-              <div 
-                @click="handleStepClick(step)" 
-                class="flex flex-col items-center cursor-pointer group"
-                :class="{ 'cursor-not-allowed opacity-50': !canGoToStep(step) }"
-              >
+              <div @click="handleStepClick(step)" class="flex flex-col items-center cursor-pointer group"
+                :class="{ 'cursor-not-allowed opacity-50': !canGoToStep(step) }">
                 <!-- Step Label -->
                 <div :class="[
                   'text-sm font-medium transition-colors mb-2 group-hover:text-green-700',
@@ -61,26 +58,20 @@
           <div class="mb-8">
             <h3 class="text-xl font-semibold mb-4">Escoge el tipo de cliente:</h3>
             <div class="flex gap-4">
-              <button 
-                @click="clienteInfo.tipoDocumento = 'DNI'"
-                :class="[
-                  'px-8 py-3 rounded-full font-semibold transition-all',
-                  clienteInfo.tipoDocumento === 'DNI' 
-                    ? 'bg-orange-500 text-white shadow-lg' 
-                    : 'bg-white text-gray-700 border border-gray-300 hover:border-orange-500'
-                ]"
-              >
+              <button @click="clienteInfo.tipoDocumento = 'DNI'" :class="[
+                'px-8 py-3 rounded-full font-semibold transition-all',
+                clienteInfo.tipoDocumento === 'DNI'
+                  ? 'bg-orange-500 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:border-orange-500'
+              ]">
                 DNI
               </button>
-              <button 
-                @click="clienteInfo.tipoDocumento = 'RUC'"
-                :class="[
-                  'px-8 py-3 rounded-full font-semibold transition-all',
-                  clienteInfo.tipoDocumento === 'RUC' 
-                    ? 'bg-orange-500 text-white shadow-lg' 
-                    : 'bg-white text-gray-700 border border-gray-300 hover:border-orange-500'
-                ]"
-              >
+              <button @click="clienteInfo.tipoDocumento = 'RUC'" :class="[
+                'px-8 py-3 rounded-full font-semibold transition-all',
+                clienteInfo.tipoDocumento === 'RUC'
+                  ? 'bg-orange-500 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:border-orange-500'
+              ]">
                 RUC
               </button>
             </div>
@@ -93,8 +84,7 @@
                 <template #label>
                   Nombre completo: <span class="text-red-500">*</span>
                 </template>
-                <UInput v-model="clienteInfo.nombre" type="text" placeholder="" required
-                  class="w-full" />
+                <UInput v-model="clienteInfo.nombre" type="text" placeholder="" required class="w-full" />
               </UFormField>
             </div>
 
@@ -110,19 +100,15 @@
                   WhatsApp <span class="text-red-500">*</span>
                 </template>
                 <div class="relative">
-                  <UInput
-                    class="w-full"
-                    v-model="whatsappInput"
-                    type="text"
-                    placeholder="51 999999999"
-                    @update:model-value="handleWhatsappInput"
-                    @blur="handleWhatsappBlur"
-                    required
-                  />
+                  <UInput class="w-full" v-model="whatsappInput" type="text" placeholder="51 999999999"
+                    @update:model-value="handleWhatsappInput" @blur="handleWhatsappBlur" required />
 
-                  <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded max-h-48 overflow-auto">
+                  <div v-if="showSuggestions && clientes.length"
+                    class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded max-h-48 overflow-auto">
                     <ul>
-                      <li v-for="(c, i) in clientes" :key="i" class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" @mousedown.prevent="selectClienteFromList(c)">
+                      <li v-for="(c, i) in clientes" :key="i"
+                        class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                        @mousedown.prevent="selectClienteFromList(c)">
                         {{ c.whatsapp || c.celular || c.label }}
                       </li>
                     </ul>
@@ -142,8 +128,9 @@
                 <template #label>
                   Qty Proveedores <span class="text-red-500">*</span>
                 </template>
-                <UInput class="w-full" v-model.number="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
-                  placeholder="" size="md" variant="outline" @blur="() => { if (!clienteInfo.qtyProveedores || clienteInfo.qtyProveedores < 1) clienteInfo.qtyProveedores = 1 }" />
+                <UInput class="w-full" v-model.number="clienteInfo.qtyProveedores" type="number" required :min="1"
+                  :max="6" placeholder="" size="md" variant="outline"
+                  @blur="() => { if (!clienteInfo.qtyProveedores || clienteInfo.qtyProveedores < 1) clienteInfo.qtyProveedores = 1 }" />
               </UFormField>
             </div>
           </div>
@@ -172,19 +159,15 @@
                   WhatsApp <span class="text-red-500">*</span>
                 </template>
                 <div class="relative">
-                  <UInput
-                    class="w-full"
-                    v-model="whatsappInput"
-                    type="text"
-                    placeholder="51 934 958 839"
-                    @update:model-value="handleWhatsappInput"
-                    @blur="handleWhatsappBlur"
-                    required
-                  />
+                  <UInput class="w-full" v-model="whatsappInput" type="text" placeholder="51 934 958 839"
+                    @update:model-value="handleWhatsappInput" @blur="handleWhatsappBlur" required />
 
-                  <div v-if="showSuggestions && clientes.length" class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded max-h-48 overflow-auto">
+                  <div v-if="showSuggestions && clientes.length"
+                    class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded max-h-48 overflow-auto">
                     <ul>
-                      <li v-for="(c, i) in clientes" :key="i" class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" @mousedown.prevent="selectClienteFromList(c)">
+                      <li v-for="(c, i) in clientes" :key="i"
+                        class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                        @mousedown.prevent="selectClienteFromList(c)">
                         {{ c.whatsapp || c.celular || c.label }}
                       </li>
                     </ul>
@@ -195,7 +178,8 @@
 
             <div>
               <UFormField label="Correo:" name="correo">
-                <UInput class="w-full" v-model="clienteInfo.correo" type="email" placeholder="mvillegas@probusiness.pe" />
+                <UInput class="w-full" v-model="clienteInfo.correo" type="email"
+                  placeholder="mvillegas@probusiness.pe" />
               </UFormField>
             </div>
 
@@ -204,8 +188,9 @@
                 <template #label>
                   Qty Proveedores <span class="text-red-500">*</span>
                 </template>
-                <UInput class="w-full" v-model.number="clienteInfo.qtyProveedores" type="number" required :min="1" :max="6"
-                  placeholder="" size="md" variant="outline" @blur="() => { if (!clienteInfo.qtyProveedores || clienteInfo.qtyProveedores < 1) clienteInfo.qtyProveedores = 1 }" />
+                <UInput class="w-full" v-model.number="clienteInfo.qtyProveedores" type="number" required :min="1"
+                  :max="6" placeholder="" size="md" variant="outline"
+                  @blur="() => { if (!clienteInfo.qtyProveedores || clienteInfo.qtyProveedores < 1) clienteInfo.qtyProveedores = 1 }" />
               </UFormField>
             </div>
           </div>
@@ -245,12 +230,13 @@
                 </div>
 
                 <div class="flex items-center space-x-2">
-                  <UButton v-if="proveedores.length > 1" @click="confirmDeleteProveedor(proveedor.id)" color="error" variant="outline"
-                    title="Eliminar proveedor">
+                  <UButton v-if="proveedores.length > 1" @click="confirmDeleteProveedor(proveedor.id)" color="error"
+                    variant="outline" title="Eliminar proveedor">
                     <UIcon name="i-heroicons-trash" class="w-5 h-5" />
                   </UButton>
                   <UButton size="sm" variant="outline" @click="proveedor.collapsed = !proveedor.collapsed">
-                    <UIcon :name="!proveedor.collapsed ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" class="w-5 h-5" />
+                    <UIcon :name="!proveedor.collapsed ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'"
+                      class="w-5 h-5" />
                   </UButton>
                 </div>
               </div>
@@ -263,7 +249,7 @@
                         CBM Total <span class="text-red-500">*</span>
                       </label>
                       <UInput class="w-full" v-model.number="proveedor.cbm" type="number" step="0.1" min="0"
-                        placeholder="0.0" size="md" variant="outline" 
+                        placeholder="0.0" size="md" variant="outline"
                         @focus="() => { cbmAnteriorPorProveedor[proveedor.id] = proveedor.cbm || 0 }"
                         @blur="(e) => handleCbmChange(proveedor.id, parseFloat((e.target as HTMLInputElement).value) || 0)" />
                     </div>
@@ -272,8 +258,8 @@
                       <label class="block text-sm font-medium  mb-2">
                         Peso Total
                       </label>
-                      <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0" size="md"
-                        variant="outline" />
+                      <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0"
+                        size="md" variant="outline" />
                     </div>
 
                     <div>
@@ -295,7 +281,9 @@
 
                         <!-- Badge (índice global) -->
                         <div class="col-span-1 flex items-center justify-center md:mt-6">
-                          <UBadge :color="isProductoExtra(getGlobalProductIndex(pIndex, prodIndex)) ? 'error' : 'warning'" variant="soft" size="sm" class="text-xs py-1 px-2">
+                          <UBadge
+                            :color="isProductoExtra(getGlobalProductIndex(pIndex, prodIndex)) ? 'error' : 'warning'"
+                            variant="soft" size="sm" class="text-xs py-1 px-2">
                             {{ getGlobalProductIndex(pIndex, prodIndex) }}
                             <span v-if="isProductoExtra(getGlobalProductIndex(pIndex, prodIndex))" class="ml-1">
                               Extra {{ formatCurrency(getTarifaExtraItem()) }}
@@ -317,8 +305,8 @@
                           <label class="block text-sm font-medium  mb-2">
                             Precio <span class="text-red-500">*</span>
                           </label>
-                          <UInput class="w-full" v-model.number="producto.precio" type="number" step
-                            placeholder="0.00" size="md" variant="outline">
+                          <UInput class="w-full" v-model.number="producto.precio" type="number" step placeholder="0.00"
+                            size="md" variant="outline">
                             <template #leading>
                               <span class="text-gray-500">$</span>
                             </template>
@@ -330,8 +318,8 @@
                           <label class="block text-sm font-medium  mb-2">
                             Cantidad <span class="text-red-500">*</span>
                           </label>
-                          <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0" placeholder="0"
-                            size="md" variant="outline" />
+                          <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0"
+                            placeholder="0" size="md" variant="outline" />
                         </div>
 
                         <!-- Valoración (opcional) -->
@@ -339,8 +327,8 @@
                           <label class="block text-sm font-medium  mb-2">
                             P.Ajuste
                           </label>
-                          <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0" placeholder="0.00"
-                            size="md" variant="outline">
+                          <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0"
+                            placeholder="0.00" size="md" variant="outline">
                             <template #leading>
                               <span class="text-gray-500">$</span>
                             </template>
@@ -351,12 +339,13 @@
                         <div class="col-span-1 flex items-center justify-end space-x-2 md:mt-6">
                           <UButton @click="producto.showValoracion = !producto.showValoracion" color="primary"
                             variant="soft" size="sm" icon="i-heroicons-cog-6-tooth" />
-                          <UButton v-if="proveedor.productos.length > 1" @click="confirmDeleteProducto(proveedor.id, producto.id)" color="error" variant="soft" size="sm"
-                            icon="i-heroicons-trash" title="Eliminar producto" />
+                          <UButton v-if="proveedor.productos.length > 1"
+                            @click="confirmDeleteProducto(proveedor.id, producto.id)" color="error" variant="soft"
+                            size="sm" icon="i-heroicons-trash" title="Eliminar producto" />
                         </div>
 
                       </div>
-              </transition-group>
+                    </transition-group>
 
                     <UButton @click="handleAddProducto(proveedor.id)" :disabled="getDisabledByRangeItem(proveedor)"
                       class="bg-orange-500  rounded-md hover:bg-orange-600 transition-colors">
@@ -377,13 +366,14 @@
         <!-- Step 3: Resumen -->
         <div v-if="currentStep === 3">
           <h2 class="text-2xl font-bold mb-6">Resumen</h2>
-          
+
           <!-- Información del Cliente -->
           <div class="flex gap-8 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-2">
               <span class="font-semibold text-gray-700 dark:text-gray-300">Cliente:</span>
               <div class="w-72">
-                <UInput :value="clienteInfo.tipoDocumento === 'RUC' ? clienteInfo.empresa : clienteInfo.nombre" class="w-full" disabled size="md" variant="outline" />
+                <UInput :value="clienteInfo.tipoDocumento === 'RUC' ? clienteInfo.empresa : clienteInfo.nombre"
+                  class="w-full" disabled size="md" variant="outline" />
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -396,14 +386,17 @@
             <div class="flex items-center gap-2">
               <span class="font-semibold text-gray-700 dark:text-gray-300">Tarifa actual:</span>
               <div class="w-32">
-                <UInput :value="formatCurrency(selectedTarifa?.tarifa || 0)" class="w-full" disabled size="md" variant="outline" />
+                <UInput :value="formatCurrency(selectedTarifa?.tarifa || 0)" class="w-full" disabled size="md"
+                  variant="outline" />
               </div>
             </div>
             <!--tipo de cambio-->
             <div class="flex items-center gap-2">
-              <span class="font-semibold text-gray-700 dark:text-gray-300">T.C.: <span class="text-red-500">*</span></span>
+              <span class="font-semibold text-gray-700 dark:text-gray-300">T.C.: <span
+                  class="text-red-500">*</span></span>
               <div class="w-24">
-                <UInput v-model.number="tipoCambio" type="number" step="0.01" min="0" placeholder="3.70" class="w-full" size="md" variant="outline" />
+                <UInput v-model.number="tipoCambio" type="number" step="0.01" min="0" placeholder="3.70" class="w-full"
+                  size="md" variant="outline" />
               </div>
             </div>
           </div>
@@ -414,16 +407,20 @@
         <div v-if="currentStep === 3">
           <!-- Sección: Cálculos Base -->
           <section class="mb-6">
-            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2" @click="collapsedSections.calculos = !collapsedSections.calculos">
+            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2"
+              @click="collapsedSections.calculos = !collapsedSections.calculos">
               <div class="flex items-center gap-6 flex-1">
                 <h3 class="text-lg font-semibold">Cálculos Base</h3>
-                <div v-if="collapsedSections.calculos" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                <div v-if="collapsedSections.calculos"
+                  class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                   <span><strong>CBM:</strong> {{ totalCbm.toFixed(2) }}</span>
-                  <span><strong>CIF:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cif)) }}</span>
-                  <span><strong>Flete:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).flete)) }}</span>
+                  <span><strong>CIF:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cif))
+                    }}</span>
+                  <span><strong>Flete:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).flete))
+                    }}</span>
                 </div>
               </div>
-              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
+              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down"
                 :class="{ 'rotate-180': !collapsedSections.calculos }" class="transition-transform" />
             </div>
             <transition name="slide-fade">
@@ -435,15 +432,20 @@
                     </thead>
                     <tbody>
                       <tr>
-                        <td class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2 sticky-left max-w-[180px]">Tipo de cliente:</td>
+                        <td
+                          class="bg-red-500 dark:bg-red-700 text-white font-semibold px-4 py-2 sticky-left max-w-[180px]">
+                          Tipo
+                          de cliente:</td>
                         <td class="text-center px-4 py-2" :colspan="totalItems">
                           <div class="flex items-center gap-4">
                             <USelect v-model="clienteInfo.tipoCliente" :items="tarifasSelect" item-value="value"
                               item-title="label" placeholder="Selecciona un tipo de cliente" class="flex-1 max-w-xs" />
                             <template v-if="selectedTarifa && selectedTarifa.label === 'MANUAL'">
                               <div class="flex flex-col items-start">
-                                <UInput v-model.number="selectedTarifa.tarifa" type="number" min="0" placeholder="Tarifa manual" class="w-32" required />
-                                <span v-if="!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0" class="text-red-500 text-xs">La tarifa manual es obligatoria</span>
+                                <UInput v-model.number="selectedTarifa.tarifa" type="number" min="0"
+                                  placeholder="Tarifa manual" class="w-32" required />
+                                <span v-if="!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0"
+                                  class="text-red-500 text-xs">La tarifa manual es obligatoria</span>
                               </div>
                             </template>
                           </div>
@@ -452,19 +454,22 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">N. Proveedor</td>
                         <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center px-4 py-2"
-                          :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
+                          :colspan="proveedor.productos.length"
+                          :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
                           {{ proveedor.id }}
                         </td>
-                        <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
+                        <td
+                          class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
                           Total
                         </td>
                       </tr>
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Qty Cajas</td>
                         <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
-                          :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
-                          <UInput class="w-full" v-model.number="proveedor.qtyCaja" type="number" min="0" placeholder="0"
-                            size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                          :colspan="proveedor.productos.length"
+                          :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
+                          <UInput class="w-full" v-model.number="proveedor.qtyCaja" type="number" min="0"
+                            placeholder="0" size="md" variant="outline" :ui="{ base: 'text-center' }" />
                         </td>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
                           {{ totalCajas }}
@@ -473,9 +478,10 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Peso</td>
                         <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
-                          :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
+                          :colspan="proveedor.productos.length"
+                          :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
                           <UInput class="w-full" v-model.number="proveedor.peso" type="number" min="0" placeholder="0"
-                            size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                            size="md" variant="outline" :ui="{ base: 'text-center' }" />
                         </td>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
                           {{ totalPeso }}
@@ -484,9 +490,10 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Vol. x Prov.</td>
                         <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center"
-                          :colspan="proveedor.productos.length" :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
+                          :colspan="proveedor.productos.length"
+                          :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
                           <UInput class="w-full" v-model.number="proveedor.cbm" type="number" min="0" placeholder="0"
-                            size="md" variant="outline" :ui="{ base: 'text-center'}"
+                            size="md" variant="outline" :ui="{ base: 'text-center' }"
                             @focus="() => { cbmAnteriorPorProveedor[proveedor.id] = proveedor.cbm || 0 }"
                             @blur="(e) => handleCbmChange(proveedor.id, parseFloat((e.target as HTMLInputElement).value) || 0)" />
                         </td>
@@ -497,21 +504,25 @@
                       <tr>
                         <td class="bg-white dark:bg-gray-800 px-4 py-2 sticky-left">Productos</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                            <UInput class="w-full" v-model="producto.nombre" type="text" placeholder="Nombre del producto"
-                              size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="text-center producto-column">
+                            <UInput class="w-full" v-model="producto.nombre" type="text"
+                              placeholder="Nombre del producto" size="md" variant="outline"
+                              :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
-                        <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
+                        <td
+                          class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
                           Total
                         </td>
                       </tr>
                       <tr>
                         <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Valor unitario</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="text-center producto-column">
                             <UInput class="w-full" v-model.number="producto.precio" type="number" step="0.01" min="0"
-                              placeholder="0.00" size="md" variant="outline" :ui="{ base: 'text-center'}">
+                              placeholder="0.00" size="md" variant="outline" :ui="{ base: 'text-center' }">
                               <template #leading>
                                 <span class="text-gray-500">$</span>
                               </template>
@@ -522,9 +533,10 @@
                       <tr v-if="existsValoracion">
                         <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Valor Ajustado</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                            <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01" min="0" placeholder="0.00"
-                              size="md" variant="outline" :ui="{ base: 'text-center'}">
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput class="w-full" v-model.number="producto.valoracion" type="number" step="0.01"
+                              min="0" placeholder="0.00" size="md" variant="outline" :ui="{ base: 'text-center' }">
                               <template #leading>
                                 <span class="text-gray-500">$</span>
                               </template>
@@ -535,9 +547,10 @@
                       <tr>
                         <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Cantidad</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                            <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0" placeholder="0"
-                              size="md" variant="outline" :ui="{ base: 'text-center'}" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="text-center producto-column">
+                            <UInput class="w-full" v-model.number="producto.cantidad" type="number" min="0"
+                              placeholder="0" size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -547,8 +560,10 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor FOB</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                            <UInput :value="formatCurrency((producto.precio * producto.cantidad) || 0)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="text-center producto-column">
+                            <UInput :value="formatCurrency((producto.precio * producto.cantidad) || 0)" class="w-full"
+                              disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -559,7 +574,8 @@
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ajustado FOB</td>
 
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
                             {{ (producto.valoracion * producto.cantidad || 0).toFixed(2) }}
                           </td>
                         </template>
@@ -570,8 +586,11 @@
                       <tr>
                         <td class="bg-white dark:bg-gray-800 px-4 py-2 sticky-left">Distribución %</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                            <UInput :value="totalValorFOB > 0 ? ((producto.precio * producto.cantidad || 0) / totalValorFOB * 100).toFixed(2) + '%' : '0%'" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="text-center producto-column">
+                            <UInput
+                              :value="totalValorFOB > 0 ? ((producto.precio * producto.cantidad || 0) / totalValorFOB * 100).toFixed(2) + '%' : '0%'"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -581,8 +600,11 @@
                       <tr>
                         <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Flete</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).flete)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).flete)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -592,8 +614,11 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor CFR</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cfr)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cfr)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -603,8 +628,11 @@
                       <tr v-if="existsValoracion">
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ajustado CFR</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center ">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cfrAjustado)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cfrAjustado)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class=" text-center bg-blue-100 dark:bg-blue-400 px-4 py-2 sticky-right">
@@ -614,8 +642,11 @@
                       <tr>
                         <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Seguro</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).seguro)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).seguro)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -625,8 +656,11 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor CIF</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class="text-center producto-column">
-                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cif)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cif)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -636,7 +670,8 @@
                       <tr v-if="existsValoracion">
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ajustado CIF</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
                             {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).cifAjustado) }}
                           </td>
                         </template>
@@ -653,32 +688,45 @@
 
           <!-- Tributos Aplicables -->
           <section class="mb-6">
-            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2" @click="collapsedSections.tributos = !collapsedSections.tributos">
+            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2"
+              @click="collapsedSections.tributos = !collapsedSections.tributos">
               <div class="flex items-center gap-6 flex-1 flex-wrap">
                 <h3 class="text-lg font-semibold">Tributos Aplicables</h3>
-                <div v-if="collapsedSections.tributos" class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
-                  <span><strong>Ad Valorem:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalAdValorem)) }}</span>
-                  <span><strong>Antidumping:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalAntidumping)) }}</span>
-                  <span><strong>IGV:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalIGV)) }}</span>
-                  <span><strong>IPM:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalIPM || 0)) }}</span>
-                  <span><strong>Percepción:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalPercepcion)) }}</span>
-                  <span class="font-bold text-gray-900 dark:text-gray-100"><strong>Total:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).total)) }}</span>
+                <div v-if="collapsedSections.tributos"
+                  class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
+                  <span><strong>Ad Valorem:</strong> {{ formatCurrency(round2(getTributos(proveedores,
+                    selectedTarifa).totalAdValorem)) }}</span>
+                  <span><strong>Antidumping:</strong> {{ formatCurrency(round2(getTributos(proveedores,
+                    selectedTarifa).totalAntidumping)) }}</span>
+                  <span><strong>IGV:</strong> {{ formatCurrency(round2(getTributos(proveedores,
+                    selectedTarifa).totalIGV))
+                    }}</span>
+                  <span><strong>IPM:</strong> {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalIPM
+                    || 0))
+                    }}</span>
+                  <span><strong>Percepción:</strong> {{ formatCurrency(round2(getTributos(proveedores,
+                    selectedTarifa).totalPercepcion)) }}</span>
+                  <span class="font-bold text-gray-900 dark:text-gray-100"><strong>Total:</strong> {{
+                    formatCurrency(round2(getTributos(proveedores, selectedTarifa).total)) }}</span>
                 </div>
               </div>
-              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
+              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down"
                 :class="{ 'rotate-180': !collapsedSections.tributos }" class="transition-transform" />
             </div>
             <transition name="slide-fade">
               <div v-show="!collapsedSections.tributos">
                 <div class="overflow-x-auto" style="scrollbar-width: thin;" :style="{ '--total-items': totalItems }">
-                  <table class="w-full border-collapse" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
+                  <table class="w-full border-collapse"
+                    :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
                     <thead>
                       <tr>
                         <th class="bg-white dark:bg-gray-900 text-left sticky-left max-w-[180px]"></th>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <th v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
-                            <UInput class="w-full text-center" v-model.number="producto.antidumpingCU" type="number" min="0"
-                              placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }" >
+                          <th v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column" :style="{ minWidth: `${productoColumnWidth}px` }">
+                            <UInput class="w-full text-center" v-model.number="producto.antidumpingCU" type="number"
+                              min="0" placeholder="0" size="md" color="primary"
+                              :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }">
                               <template #leading>
                                 <span class="text-white">$</span>
                               </template>
@@ -692,8 +740,11 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Antidumping</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                            <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).antidumping)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).antidumping)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -703,9 +754,11 @@
                       <tr>
                         <td class="bg-white dark:bg-gray-900 sticky-left"></td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
                             <UInput class="w-full text-white" v-model.number="producto.adValoremP" type="number" min="0"
-                              placeholder="0" size="md" color="primary" :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }" >
+                              placeholder="0" size="md" color="primary"
+                              :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }">
                               <template #leading>
                                 <span class="text-white">%</span>
                               </template>
@@ -718,8 +771,11 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ad Valorem</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                            <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).adValorem)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).adValorem)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -729,8 +785,11 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">IGV 16%</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                            <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).igv)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).igv)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -740,8 +799,11 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">IPM 2%</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                            <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).ipm)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).ipm)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -749,10 +811,14 @@
                         </td>
                       </tr>
                       <tr>
-                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Percepción 3.5%</td>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Percepción 3.5%
+                        </td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                            <UInput :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).percepcion)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).percepcion)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
@@ -762,7 +828,8 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Total</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center ">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-gray-200 dark:bg-gray-700 font-semibold producto-column">
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center bg-gray-200 dark:bg-gray-700 font-semibold producto-column">
                             {{ formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).total) }}
                           </td>
                         </template>
@@ -778,26 +845,35 @@
           </section>
           <!-- Costos destinos -->
           <section class="mb-6">
-            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2" @click="collapsedSections.costosDestino = !collapsedSections.costosDestino">
+            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2"
+              @click="collapsedSections.costosDestino = !collapsedSections.costosDestino">
               <div class="flex items-center gap-6 flex-1">
                 <h3 class="text-lg font-semibold">Costos Destinos</h3>
-                <div v-if="collapsedSections.costosDestino" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  <span><strong>Total:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoDestino)) }}</span>
+                <div v-if="collapsedSections.costosDestino"
+                  class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <span><strong>Total:</strong> {{ formatCurrency(round2(getTotals(proveedores,
+                    selectedTarifa).costoDestino))
+                    }}</span>
                 </div>
               </div>
-              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
+              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down"
                 :class="{ 'rotate-180': !collapsedSections.costosDestino }" class="transition-transform" />
             </div>
             <transition name="slide-fade">
               <div v-show="!collapsedSections.costosDestino">
                 <div class="overflow-x-auto" style="scrollbar-width: thin;" :style="{ '--total-items': totalItems }">
-                  <table class="w-full border-collapse" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
+                  <table class="w-full border-collapse"
+                    :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
                     <tbody>
                       <tr>
-                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left max-w-[180px]">Item</td>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left max-w-[180px]">Item
+                        </td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class="bg-gray-200 dark:bg-gray-700 text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
-                            {{ (getPorDistribucion(proveedores, selectedTarifa, producto).distribucion * 100).toFixed(2) + '%' }}
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="bg-gray-200 dark:bg-gray-700 text-center producto-column"
+                            :style="{ minWidth: `${productoColumnWidth}px` }">
+                            {{ (getPorDistribucion(proveedores, selectedTarifa, producto).distribucion * 100).toFixed(2)
+                            + '%' }}
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
@@ -807,13 +883,21 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Item</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoDestino)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoDestino)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
 
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
-                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoDestino)) }}
+                          <div class="flex items-center justify-center gap-1">
+                            {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoDestino)) }}
+                            <UTooltip :text="`-${formatCurrency(tarifaDescuento)} por descuento`">
+                              <UIcon v-if="tarifaDescuento > 0" name="i-heroicons-information-circle" class="w-4 h-4" color="error" />
+                            </UTooltip>
+                          </div>
                         </td>
                       </tr>
                     </tbody>
@@ -824,51 +908,69 @@
           </section>
           <!-- Costos total de Importacion -->
           <section class="mb-6">
-            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2" @click="collapsedSections.costosTotal = !collapsedSections.costosTotal">
+            <div class="flex items-center justify-between mb-4 cursor-pointer border-b pb-2"
+              @click="collapsedSections.costosTotal = !collapsedSections.costosTotal">
               <div class="flex items-center gap-6 flex-1">
                 <h3 class="text-lg font-semibold">Costos Total de Importación</h3>
-                <div v-if="collapsedSections.costosTotal" class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                  <span><strong>USD:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoTotal)) }}</span>
-                  <span><strong>PEN:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoPEN)) }}</span>
+                <div v-if="collapsedSections.costosTotal"
+                  class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <span><strong>USD:</strong> {{ formatCurrency(round2(getTotals(proveedores,
+                    selectedTarifa).costoTotal))
+                    }}</span>
+                  <span><strong>PEN:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoPEN))
+                    }}</span>
                 </div>
               </div>
-              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down" 
+              <UButton size="sm" variant="ghost" icon="i-heroicons-chevron-down"
                 :class="{ 'rotate-180': !collapsedSections.costosTotal }" class="transition-transform" />
             </div>
             <transition name="slide-fade">
               <div v-show="!collapsedSections.costosTotal">
                 <div class="overflow-x-auto" style="scrollbar-width: thin;" :style="{ '--total-items': totalItems }">
-                  <table class="w-full border-collapse" :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
+                  <table class="w-full border-collapse"
+                    :style="{ minWidth: `max(100%, calc(200px + 120px * ${totalItems} + 120px))` }">
                     <tbody>
                       <tr>
-                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left max-w-[180px]">Item</td>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left max-w-[180px]">Item
+                        </td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column" :style="{minWidth: `${productoColumnWidth}px`}">
-                            <UInput :value="producto.nombre" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column" :style="{ minWidth: `${productoColumnWidth}px` }">
+                            <UInput :value="producto.nombre" class="w-full" disabled size="md" variant="outline"
+                              :ui="{ base: 'text-center' }" />
                           </td>
                         </template>
-                        <td class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
+                        <td
+                          class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right">
                           Total
                         </td>
                       </tr>
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Costo total</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                            <UInput :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoTotal)" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoTotal)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
                           </td>
 
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
-                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoTotal)) }}
+                          <div class="flex items-center justify-center gap-1">
+                            {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoTotal)) }}
+
+                          </div>
                         </td>
                       </tr>
 
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Cantidad</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center producto-column">
-                            <UInput :value="producto.cantidad" class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput :value="producto.cantidad" class="w-full" disabled size="md" variant="outline"
+                              :ui="{ base: 'text-center' }" />
                           </td>
 
                         </template>
@@ -879,7 +981,8 @@
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 sticky-left">Costo unit. usd</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-gray-200 dark:bg-gray-700 producto-column">
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center bg-gray-200 dark:bg-gray-700 producto-column">
                             {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoUSD) }}
                           </td>
 
@@ -891,8 +994,10 @@
                       <tr>
                         <td class="bg-primary text-white sticky-left">Costo unit. pen</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
-                          <td v-for="producto in proveedor.productos" :key="producto.id" class=" text-center bg-primary text-white producto-column">
-                            {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoPEN,'PEN') }}
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center bg-primary text-white producto-column">
+                            {{ formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costoPEN, 'PEN')
+                            }}
                           </td>
 
                         </template>
@@ -914,7 +1019,7 @@
 
           <div class="space-y-6">
             <!-- Cantidad proveedores -->
-            <div class="grid grid-cols-3 gap-4 items-center">
+            <div class="grid grid-cols-2 gap-4 items-center">
               <div>
                 <label class="block text-sm font-medium mb-2">
                   Cantidad proveedores:
@@ -925,23 +1030,14 @@
                 <label class="block text-sm font-medium mb-2">
                   Extra calculado:
                 </label>
-                <UInput :modelValue="formatCurrency(calculatedExtraProveedores)" disabled class="w-full bg-gray-100 dark:bg-gray-700" />
+                <UInput :modelValue="formatCurrency(calculatedExtraProveedores)" disabled
+                  class="w-full bg-gray-100 dark:bg-gray-700" />
               </div>
-              <div>
-                <label class="block text-sm font-medium mb-2">
-                  Tarifa adicional (modificable):
-                </label>
-                <UInput v-model.number="tarifaExtraProveedorManual" type="number" step="0.01" min="0"
-                  :placeholder="calculatedExtraProveedores.toString()" class="w-full">
-                  <template #leading>
-                    <span class="text-gray-500">$</span>
-                  </template>
-                </UInput>
-              </div>
+
             </div>
 
             <!-- Cantidad Items -->
-            <div class="grid grid-cols-3 gap-4 items-center">
+            <div class="grid grid-cols-2 gap-4 items-center">
               <div>
                 <label class="block text-sm font-medium mb-2">
                   Cantidad items:
@@ -952,19 +1048,10 @@
                 <label class="block text-sm font-medium mb-2">
                   Extra calculado:
                 </label>
-                <UInput :modelValue="formatCurrency(calculatedExtraItems)" disabled class="w-full bg-gray-100 dark:bg-gray-700" />
+                <UInput :modelValue="formatCurrency(calculatedExtraItems)" disabled
+                  class="w-full bg-gray-100 dark:bg-gray-700" />
               </div>
-              <div>
-                <label class="block text-sm font-medium mb-2">
-                  Tarifa adicional (modificable):
-                </label>
-                <UInput v-model.number="tarifaExtraItemManual" type="number" step="0.01" min="0"
-                  :placeholder="calculatedExtraItems.toString()" class="w-full">
-                  <template #leading>
-                    <span class="text-gray-500">$</span>
-                  </template>
-                </UInput>
-              </div>
+
             </div>
 
             <!-- Descuento -->
@@ -972,8 +1059,8 @@
               <label class="block text-sm font-medium mb-2">
                 Descuento (opcional):
               </label>
-              <UInput v-model.number="tarifaDescuento" type="number" step="0.01" min="0"
-                placeholder="0.00" class="w-full max-w-md">
+              <UInput v-model.number="tarifaDescuento" type="number" step="0.01" min="0" placeholder="0.00"
+                class="w-full max-w-md">
                 <template #leading>
                   <span class="text-gray-500">$</span>
                 </template>
@@ -985,7 +1072,7 @@
               <label class="block text-sm font-medium mb-2">
                 Selecciona el vendedor: <span class="text-red-500">*</span>
               </label>
-              <USelect v-model="selectedVendedor" :items="vendedores" placeholder="Seleccionar" 
+              <USelect v-model="selectedVendedor" :items="vendedores" placeholder="Seleccionar"
                 class="w-full max-w-md" />
             </div>
 
@@ -1003,7 +1090,7 @@
 
       <!-- Navigation -->
       <div class="flex justify-between items-center my-6">
-        <UButton @click="prevStep" :disabled="!canGoPrev" color="primary" size="lg" icon="i-heroicons-arrow-left"
+        <UButton @click="handlePrevStep" :disabled="!canGoPrev" color="primary" size="lg" icon="i-heroicons-arrow-left"
           :label="'Anterior'">
 
         </UButton>
@@ -1012,31 +1099,17 @@
           <span class="">Paso {{ currentStep }} de {{ totalSteps }}</span>
         </div>
 
-        <UButton v-if="currentStep < totalSteps" 
-          @click="nextStep" 
-          :disabled="
-            (currentStep === 3 && selectedTarifa && selectedTarifa.label === 'MANUAL' && (!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0)) ||
-            !canGoNext
-          "
-          color="primary" 
-          size="lg"
-          icon="i-heroicons-arrow-right" 
-          :label="'Siguiente'">
+        <UButton v-if="currentStep < totalSteps" @click="nextStep" :disabled="(currentStep === 3 && selectedTarifa && selectedTarifa.label === 'MANUAL' && (!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0)) ||
+          !canGoNext
+          " color="primary" size="lg" icon="i-heroicons-arrow-right" :label="'Siguiente'">
 
         </UButton>
 
-        <UButton v-else 
-          @click="saveCotizacion()" 
-          color="primary" 
-          size="lg" 
-          icon="i-heroicons-arrow-right"
-          :label="'Finalizar'"
-          :disabled="
-            !selectedVendedor || 
-            !selectedContenedor || 
+        <UButton v-else @click="saveCotizacion()" color="primary" size="lg" icon="i-heroicons-arrow-right"
+          :label="'Finalizar'" :disabled="!selectedVendedor ||
+            !selectedContenedor ||
             (selectedTarifa && selectedTarifa.label === 'MANUAL' && (!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0))
-          "
-        >
+            ">
           Finalizar
         </UButton>
       </div>
@@ -1045,7 +1118,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 import type { Proveedor, Tarifa, ProductoItem } from '~/types/calculadora-importacion'
 import { useSpinner } from '@/composables/commons/useSpinner'
@@ -1111,6 +1184,146 @@ const displayWhatsapp = computed(() => {
 // Local input state for Whatsapp (para mantener solo input sin autocompletar automáticamente)
 const whatsappInput = ref<string>('')
 const showSuggestions = ref<boolean>(false)
+
+// Persistencia (draft) en localStorage para evitar perder progreso al recargar
+const DRAFT_STORAGE_KEY = 'cotizaciones.crear.draft.v1'
+type CotizacionCrearDraftV1 = {
+  v: 1
+  savedAt: number
+  currentStep: number
+  clienteInfo: any
+  proveedores: any[]
+  tarifaDescuento: number
+  tarifaExtraProveedorManual: number
+  tarifaExtraItemManual: number
+  tipoCambio: number
+  selectedVendedor: number | null
+  selectedContenedor: number | null
+  whatsappInput: string
+}
+
+let draftSaveTimer: ReturnType<typeof setTimeout> | null = null
+let isRestoringDraft = false
+
+const clearDraftStorage = () => {
+  try {
+    localStorage.removeItem(DRAFT_STORAGE_KEY)
+  } catch {
+    // noop (p.ej. storage bloqueado)
+  }
+}
+
+const startNewCotizacion = () => {
+  clearDraftStorage()
+
+  // Reset de estado para que realmente "comience como nueva"
+  selectedCliente.value = null
+  whatsappInput.value = ''
+  showSuggestions.value = false
+
+  clienteInfo.value = {
+    nombre: '',
+    dni: '',
+    whatsapp: null,
+    correo: '',
+    qtyProveedores: 0,
+    tipoCliente: 'NUEVO',
+    tipoDocumento: 'DNI',
+    empresa: '',
+    ruc: ''
+  }
+
+  proveedores.value = []
+  tarifaDescuento.value = 0
+  tarifaExtraProveedorManual.value = 0
+  tarifaExtraItemManual.value = 0
+  tipoCambio.value = 3.7
+  selectedVendedor.value = null
+  selectedContenedor.value = null
+
+  collapsedSections.value = {
+    calculos: false,
+    tributos: false,
+    costosDestino: false,
+    costosTotal: false
+  }
+
+  currentStep.value = 1
+}
+
+const saveDraftNow = () => {
+  if (isRestoringDraft) return
+  const draft: CotizacionCrearDraftV1 = {
+    v: 1,
+    savedAt: Date.now(),
+    currentStep: currentStep.value,
+    clienteInfo: clienteInfo.value,
+    proveedores: proveedores.value,
+    tarifaDescuento: Number(tarifaDescuento.value || 0),
+    tarifaExtraProveedorManual: Number(tarifaExtraProveedorManual.value || 0),
+    tarifaExtraItemManual: Number(tarifaExtraItemManual.value || 0),
+    tipoCambio: Number(tipoCambio.value || 0),
+    selectedVendedor: selectedVendedor.value ?? null,
+    selectedContenedor: selectedContenedor.value ?? null,
+    whatsappInput: whatsappInput.value || ''
+  }
+
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
+  } catch {
+    // noop
+  }
+}
+
+const scheduleDraftSave = () => {
+  if (isRestoringDraft) return
+  if (draftSaveTimer) clearTimeout(draftSaveTimer)
+  draftSaveTimer = setTimeout(() => {
+    draftSaveTimer = null
+    saveDraftNow()
+  }, 350)
+}
+
+const restoreDraftIfAny = () => {
+  let raw: string | null = null
+  try {
+    raw = localStorage.getItem(DRAFT_STORAGE_KEY)
+  } catch {
+    raw = null
+  }
+  if (!raw) return
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<CotizacionCrearDraftV1>
+    if (parsed?.v !== 1) return
+
+    isRestoringDraft = true
+
+    if (parsed.clienteInfo && typeof parsed.clienteInfo === 'object') {
+      clienteInfo.value = { ...clienteInfo.value, ...parsed.clienteInfo }
+    }
+    if (Array.isArray(parsed.proveedores)) {
+      proveedores.value = parsed.proveedores as any[]
+    }
+
+    tarifaDescuento.value = Number(parsed.tarifaDescuento ?? tarifaDescuento.value ?? 0)
+    tarifaExtraProveedorManual.value = Number(parsed.tarifaExtraProveedorManual ?? tarifaExtraProveedorManual.value ?? 0)
+    tarifaExtraItemManual.value = Number(parsed.tarifaExtraItemManual ?? tarifaExtraItemManual.value ?? 0)
+    tipoCambio.value = Number(parsed.tipoCambio ?? tipoCambio.value ?? 3.7)
+    selectedVendedor.value = (parsed.selectedVendedor ?? null) as any
+    selectedContenedor.value = (parsed.selectedContenedor ?? null) as any
+
+    whatsappInput.value = (parsed.whatsappInput ?? '') as string
+
+    const step = Number(parsed.currentStep ?? 1)
+    currentStep.value = Number.isFinite(step) ? Math.min(Math.max(step, 1), totalSteps) : 1
+  } catch {
+    // Si el draft está corrupto, lo limpiamos para evitar bucles
+    clearDraftStorage()
+  } finally {
+    isRestoringDraft = false
+  }
+}
 
 const handleWhatsappInput = (e: Event | string) => {
   const value = typeof e === 'string' ? e : (e.target as HTMLInputElement).value
@@ -1194,6 +1407,8 @@ const saveCotizacion = async () => {
     await withSpinner(async () => {
       const response = await handleEndFormulario()
       if (response.success) {
+        // Al finalizar, limpiar draft para iniciar una nueva cotización
+        clearDraftStorage()
         showSuccess('Cotización creada correctamente', 'success')
         navigateTo('/cotizaciones')
       } else {
@@ -1205,6 +1420,21 @@ const saveCotizacion = async () => {
   }
 }
 
+const handlePrevStep = () => {
+  // Si retrocede al paso 1 (o sale desde el paso 1), se considera "nueva cotización"
+  if (currentStep.value <= 1) {
+    startNewCotizacion()
+    prevStep()
+    return
+  }
+  if (currentStep.value === 2) {
+    // 2 -> 1 (por Anterior): limpiar y resetear
+    startNewCotizacion()
+    return
+  }
+  prevStep()
+}
+
 const onClienteSelected = (cliente: any) => {
   if (cliente && typeof cliente === 'object') {
     clienteInfo.value.nombre = cliente.nombre || ''
@@ -1212,14 +1442,14 @@ const onClienteSelected = (cliente: any) => {
     clienteInfo.value.correo = cliente.correo || ''
     clienteInfo.value.empresa = cliente.razon_social || cliente.empresa || ''
     clienteInfo.value.ruc = cliente.ruc || ''
-    
+
     // Guardar el whatsapp como string
     const whatsappValue = cliente.whatsapp || cliente.celular || cliente.label || ''
     clienteInfo.value.whatsapp = whatsappValue
-    
+
     // Cliente seleccionado del dropdown = ANTIGUO
     clienteInfo.value.tipoCliente = 'ANTIGUO'
-    
+
     selectedCliente.value = cliente
   }
 }
@@ -1262,7 +1492,13 @@ const handleStepClick = (step: number) => {
   if (!canGoToStep(step)) {
     return
   }
-  
+
+  // Si vuelven al paso 1, se considera nueva cotización (limpia storage + estado)
+  if (step === 1 && currentStep.value > 1) {
+    startNewCotizacion()
+    return
+  }
+
   // Si estamos en el paso 1 y queremos ir al 2, ejecutar la lógica de cambio
   if (currentStep.value === 1 && step === 2) {
     if (!isStepValid(1)) {
@@ -1271,7 +1507,7 @@ const handleStepClick = (step: number) => {
     }
     handleChangeToStep2()
   }
-  
+
   // Si estamos en el paso 2 y queremos ir al 3, validar
   if (currentStep.value === 2 && step === 3) {
     if (!isStepValid(2)) {
@@ -1279,7 +1515,7 @@ const handleStepClick = (step: number) => {
       return
     }
   }
-  
+
   // Si estamos en el paso 3 y queremos ir al 4, validar
   if (currentStep.value === 3 && step === 4) {
     if (!isStepValid(3)) {
@@ -1287,7 +1523,7 @@ const handleStepClick = (step: number) => {
       return
     }
   }
-  
+
   // Navegar al step
   goToStep(step)
 }
@@ -1317,7 +1553,7 @@ const handleAddProducto = (proveedorId: string) => {
     )
     return
   }
-  
+
   const success = addProducto(proveedorId)
   if (!success) {
     const maxItems = getMaxItemsByTotalCbm()
@@ -1336,7 +1572,7 @@ const handleAddProveedor = () => {
     )
     return
   }
-  
+
   if (!canAddMoreItems()) {
     const maxItems = getMaxItemsByTotalCbm()
     showError(
@@ -1345,7 +1581,7 @@ const handleAddProveedor = () => {
     )
     return
   }
-  
+
   const success = addProveedor()
   if (!success) {
     const maxItems = getMaxItemsByTotalCbm()
@@ -1441,22 +1677,22 @@ const findTarifaByCbm = (cbm: number) => {
   if (!cbm || isNaN(cbm) || cbm <= 0) {
     return TARIFAS_EXTRA_ITEM_PER_CBM[0] // Devolver primera tarifa por defecto
   }
-  
+
   const cbmValue = parseFloat(cbm.toFixed(2))
-  
+
   // 1. Buscar tarifa exacta donde el CBM cae en el rango
-  let tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
+  let tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t =>
     cbmValue >= t.limit_inf && cbmValue <= t.limit_sup
   )
-  
+
   // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
   if (!tarifa) {
     const cbmRedondeado = Math.round(cbmValue * 10) / 10
-    tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
+    tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t =>
       cbmRedondeado >= t.limit_inf && cbmRedondeado <= t.limit_sup
     )
   }
-  
+
   // 3. Si aún no encuentra, buscar la tarifa más cercana
   if (!tarifa) {
     // Buscar el rango más cercano comparando distancias
@@ -1467,7 +1703,7 @@ const findTarifaByCbm = (cbm: number) => {
     distancias.sort((a, b) => a.distancia - b.distancia)
     tarifa = distancias[0]?.tarifa
   }
-  
+
   // 4. Si aún no hay tarifa, usar la última (mayor rango)
   return tarifa || TARIFAS_EXTRA_ITEM_PER_CBM[TARIFAS_EXTRA_ITEM_PER_CBM.length - 1]
 }
@@ -1517,12 +1753,12 @@ const handleCbmChange = (proveedorId: string, nuevoCbm: number) => {
 
   // Obtener el CBM anterior guardado (se guarda en @focus)
   const cbmAnterior = cbmAnteriorPorProveedor.value[proveedorId] ?? (proveedor.cbm || 0)
-  
+
   // Si el nuevo valor es igual al anterior, no hacer nada
   if (Math.abs(nuevoCbm - cbmAnterior) < 0.01) {
     return true
   }
-  
+
   // Calcular el nuevo CBM total si se aplica este cambio
   // Usar el nuevoCbm directamente porque v-model ya actualizó proveedor.cbm
   const nuevoCbmTotal = proveedores.value.reduce((sum, p) => {
@@ -1543,7 +1779,7 @@ const handleCbmChange = (proveedorId: string, nuevoCbm: number) => {
   if (itemsActuales > itemMax) {
     // Revertir el cambio
     proveedor.cbm = cbmAnterior
-    
+
     // Mostrar modal de error
     const itemsAeliminar = itemsActuales - itemMax
     const message = `No se puede reducir el CBM a ${nuevoCbm.toFixed(2)}. El nuevo CBM total (${nuevoCbmTotal.toFixed(2)} CBM) solo permite un máximo de ${itemMax} ítems, pero actualmente tienes ${itemsActuales} ítems. Por favor, elimina ${itemsAeliminar} ítem(s) o proveedor(es) antes de reducir el CBM.`
@@ -1567,12 +1803,14 @@ const totalSeguro = computed(() => {
 // Total de seguro
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
+const roundn = (value: number, n: number) => Math.round(value * Math.pow(10, n)) / Math.pow(10, n);
+const round10 = (value: number) => Math.round(value * Math.pow(10, 10)) / Math.pow(10, 10);
 
 const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
   const FLETE_PORCENTAJE = 0.6;
   const COSTO_DESTINO_PORCENTAJE = 0.4;
 
-  const cbm = round2(proveedores.reduce((sum, proveedor) => sum + proveedor.cbm, 0));
+  const cbm = proveedores.reduce((sum, proveedor) => sum + proveedor.cbm, 0);
 
   // Validación defensiva
   if (!tarifa || typeof tarifa !== 'object') {
@@ -1591,25 +1829,29 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
 
   let costoServicio = 0;
   if (tarifa.type === 'STANDARD') {
-    costoServicio = round2(cbm * tarifa.tarifa);
+    costoServicio = round10(cbm * tarifa.tarifa);
   } else if (tarifa.type === 'PLAIN') {
-    costoServicio = round2(tarifa.tarifa);
+    costoServicio = round10(tarifa.tarifa);
   }
 
-  const fleteTotal = round2(costoServicio * FLETE_PORCENTAJE);
-  const cfr = round2(totalValorFOB.value + fleteTotal);
-  const cfrAjustado = round2(totalValorFOBAjustado.value + fleteTotal);
-  const seguro = round2(totalSeguro.value);
-  const cif = round2(cfr + seguro);
-  const costoDestino = round2(costoServicio * COSTO_DESTINO_PORCENTAJE);
-  const cifAjustado = round2(cfrAjustado + seguro);
+  // Sumar extras autocalculados (proveedores extra + items extra) antes de calcular flete y costo destino
+  const extras = round10((calculatedExtraProveedores.value || 0) + (calculatedExtraItems.value || 0));
+  const costoServicioConExtras = round10(costoServicio + extras);
+  const fleteTotal = round10(costoServicioConExtras * FLETE_PORCENTAJE);
+  const costoDestino = round10(costoServicioConExtras * COSTO_DESTINO_PORCENTAJE);
+
+  const cfr = round10(totalValorFOB.value + fleteTotal);
+  const cfrAjustado = round10(totalValorFOBAjustado.value + fleteTotal);
+  const seguro = round10(totalSeguro.value);
+  const cif = round10(cfr + seguro);
+  const cifAjustado = round10(cfrAjustado + seguro);
   return {
     flete: fleteTotal,
-    cbm,
+    cbm: round10(cbm),
     cfr,
     cif,
     costoDestino,
-    costoServicio,
+    costoServicio: round10(costoServicio),
     cfrAjustado,
     cifAjustado,
     seguro
@@ -1624,20 +1866,20 @@ const getTributosPorProducto = (proveedores: Proveedor[], tarifa: Tarifa, produc
 
   // Calculamos la distribución base una sola vez
   const { cif, flete, seguro } = calcularDistribucionBase(proveedores, tarifa);
-  const valorFob = round2(producto.precio * producto.cantidad);
-  const valorFobAjustado = round2(producto.valoracion * producto.cantidad);
-  const distribucion = totalValorFOB.value > 0 ? valorFob / totalValorFOB.value : 0;
-  const fleteDistribuido = round2(flete * distribucion);
-  const cifDistribuido = round2(cif * distribucion);
-  const seguroDistribuido = round2(seguro * distribucion);
-  const cifAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
-  const maxCif = round2(Math.max(cifDistribuido, cifAjustadoDistribuido));
-  const antidumping = round2(producto.antidumpingCU * producto.cantidad);
-  const adValorem = round2(maxCif * producto.adValoremP / 100);
-  const igv = round2((maxCif * IGV) + (adValorem * IGV));
-  const ipm = round2((maxCif * IPM) + (adValorem * IPM));
-  const percepcion = round2((maxCif * PERCEPCION) + (adValorem * PERCEPCION) + (igv * PERCEPCION) + (ipm * PERCEPCION));
-  const total = round2(adValorem + igv + ipm + percepcion);
+  const valorFob = round10(producto.precio * producto.cantidad);
+  const valorFobAjustado = round10(producto.valoracion * producto.cantidad);
+  const distribucion = roundn(totalValorFOB.value > 0 ? valorFob / roundn(totalValorFOB.value, 2) : 0, 10);
+  const fleteDistribuido = round10(flete * distribucion);
+  const cifDistribuido = round10(cif * distribucion);
+  const seguroDistribuido = round10(seguro * distribucion);
+  const cifAjustadoDistribuido = round10(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
+  const maxCif = round10(Math.max(cifDistribuido, cifAjustadoDistribuido));
+  const antidumping = round10(producto.antidumpingCU * producto.cantidad);
+  const adValorem = round10(maxCif * producto.adValoremP / 100);
+  const igv = round10((maxCif * IGV) + (adValorem * IGV));
+  const ipm = round10((maxCif * IPM) + (adValorem * IPM));
+  const percepcion = round10((maxCif * PERCEPCION) + (adValorem * PERCEPCION) + (igv * PERCEPCION) + (ipm * PERCEPCION));
+  const total = round10(adValorem + igv + ipm + percepcion);
 
   return {
     antidumping,
@@ -1651,7 +1893,7 @@ const getTributosPorProducto = (proveedores: Proveedor[], tarifa: Tarifa, produc
 
 // Función para obtener totales de tributos
 const getTributos = (proveedores: Proveedor[], tarifa: Tarifa) => {
-  const sumAntidumping = round2(proveedores.reduce((sum, proveedor) =>
+  const sumAntidumping = round10(proveedores.reduce((sum, proveedor) =>
     sum + proveedor.productos.reduce((sumProd, prod) =>
       sumProd + prod.antidumpingCU * prod.cantidad, 0), 0));
 
@@ -1662,11 +1904,11 @@ const getTributos = (proveedores: Proveedor[], tarifa: Tarifa) => {
 
   return {
     totalAntidumping: sumAntidumping,
-    totalAdValorem: round2(tributosPorProducto.reduce((sum, item) => sum + item.adValorem, 0)),
-    totalIGV: round2(tributosPorProducto.reduce((sum, item) => sum + item.igv, 0)),
-    totalIPM: round2(tributosPorProducto.reduce((sum, item) => sum + item.ipm, 0)),
-    totalPercepcion: round2(tributosPorProducto.reduce((sum, item) => sum + item.percepcion, 0)),
-    total: round2(tributosPorProducto.reduce((sum, item) => sum + item.total, 0))
+    totalAdValorem: round10(tributosPorProducto.reduce((sum, item) => sum + item.adValorem, 0)),
+    totalIGV: round10(tributosPorProducto.reduce((sum, item) => sum + item.igv, 0)),
+    totalIPM: round10(tributosPorProducto.reduce((sum, item) => sum + item.ipm, 0)),
+    totalPercepcion: round10(tributosPorProducto.reduce((sum, item) => sum + item.percepcion, 0)),
+    total: round10(tributosPorProducto.reduce((sum, item) => sum + item.total, 0))
   };
 };
 //computed exists valoracion
@@ -1683,28 +1925,32 @@ const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: 
   // Calculamos tributos para este producto específico
   const { antidumping, total } = getTributosPorProducto(proveedores, tarifa, producto);
 
-  const valorFob = round2(producto.precio * producto.cantidad);
-  const valorFobAjustado = round2(producto.valoracion * producto.cantidad);
-  const distribucion = totalValorFOB.value > 0 ? valorFob / totalValorFOB.value : 0;
+  const valorFob = round10(producto.precio * producto.cantidad);
+  const valorFobAjustado = round10(producto.valoracion * producto.cantidad);
+  const distribucion = roundn(totalValorFOB.value > 0 ? valorFob / roundn(totalValorFOB.value, 2) : 0, 10);
+
+  // Descuento aplicado al COSTO DESTINO total (se distribuye por ítem)
+  const descuento = Number(tarifaDescuento.value || 0);
+  const costoDestinoNeto = round10(costoDestino - descuento);
 
   // Distribución proporcional
-  const cfrDistribuido = round2(cfr * distribucion);
-  const cifDistribuido = round2(cif * distribucion);
-  const costoDestinoDistribuido = round2(costoDestino * distribucion);
-  const seguroDistribuido = round2(totalSeguro.value * distribucion);
-  const fleteDistribuido = round2(flete * distribucion);
-  const cfrAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido : cfrDistribuido);
-  const cifAjustadoDistribuido = round2(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
-  const maxCif = round2(Math.max(cifDistribuido, cifAjustadoDistribuido));
+  const cfrDistribuido = round10(cfr * distribucion);
+  const cifDistribuido = round10(cif * distribucion);
+  const costoDestinoDistribuido = round10(costoDestinoNeto * distribucion);
+  const seguroDistribuido = round10(totalSeguro.value * distribucion);
+  const fleteDistribuido = round10(flete * distribucion);
+  const cfrAjustadoDistribuido = round10(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido : cfrDistribuido);
+  const cifAjustadoDistribuido = round10(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
+  const maxCif = round10(Math.max(cifDistribuido, cifAjustadoDistribuido));
   // Costo total = costoDestino + adValorem + impuestos (IGV+IPM+Percepción) + max(cif, cifAjustado)
-  const adValorem = round2(maxCif * producto.adValoremP / 100);
-  const igv = round2((maxCif * 0.16) + (adValorem * 0.16));
-  const ipm = round2((maxCif * 0.02) + (adValorem * 0.02));
-  const percepcion = round2((maxCif * 0.035) + (adValorem * 0.035) + (igv * 0.035) + (ipm * 0.035));
-  const totalImpuestos = round2(igv + ipm + percepcion);
-  const costoTotal = round2(costoDestinoDistribuido + adValorem + totalImpuestos + maxCif);
-  const costoUSD = round2(producto.cantidad === 0 ? 0 : costoTotal / producto.cantidad);
-  const costoPEN = round2(costoUSD * tipoCambio.value);
+  const adValorem = round10(maxCif * producto.adValoremP / 100);
+  const igv = round10((maxCif * 0.16) + (adValorem * 0.16));
+  const ipm = round10((maxCif * 0.02) + (adValorem * 0.02));
+  const percepcion = round10((maxCif * 0.035) + (adValorem * 0.035) + (igv * 0.035) + (ipm * 0.035));
+  const totalImpuestos = round10(igv + ipm + percepcion);
+  const costoTotal = round10(costoDestinoDistribuido + adValorem + totalImpuestos + maxCif);
+  const costoUSD = round10(producto.cantidad === 0 ? 0 : costoTotal / producto.cantidad);
+  const costoPEN = round10(costoUSD * tipoCambio.value);
 
   return {
     flete: fleteDistribuido,
@@ -1726,25 +1972,29 @@ const getTotals = (proveedores: Proveedor[], tarifa: Tarifa) => {
   const { totalAdValorem, totalIGV, totalIPM, totalPercepcion } = getTributos(proveedores, tarifa);
   const { flete, cbm, cfr, cif, costoDestino, cfrAjustado, cifAjustado } = calcularDistribucionBase(proveedores, tarifa);
 
+  // Descuento aplicado al COSTO DESTINO total
+  const descuento = Number(tarifaDescuento.value || 0);
+  const costoDestinoNeto = round10(costoDestino - descuento);
+
   // Costo total = costoDestino + totalAdValorem + totalImpuestos + max(cif, cifAjustado)
-  const totalImpuestos = round2(totalIGV + totalIPM + totalPercepcion);
-  const maxCif = round2(Math.max(cif, cifAjustado));
-  const costoTotal = round2(costoDestino + totalAdValorem + totalImpuestos + maxCif);
-  
+  const totalImpuestos = round10(totalIGV + totalIPM + totalPercepcion);
+  const maxCif = round10(Math.max(cif, cifAjustado));
+  const costoTotal = round10(costoDestinoNeto + totalAdValorem + totalImpuestos + maxCif);
+
   // Sumar todos los costos unitarios USD y PEN de cada producto
-  const costoUSD = round2(proveedores.reduce((sum, proveedor) => 
-    sum + proveedor.productos.reduce((sumProd, producto) => 
+  const costoUSD = round10(proveedores.reduce((sum, proveedor) =>
+    sum + proveedor.productos.reduce((sumProd, producto) =>
       sumProd + getPorDistribucion(proveedores, tarifa, producto).costoUSD, 0), 0));
-  const costoPEN = round2(proveedores.reduce((sum, proveedor) => 
-    sum + proveedor.productos.reduce((sumProd, producto) => 
+  const costoPEN = round10(proveedores.reduce((sum, proveedor) =>
+    sum + proveedor.productos.reduce((sumProd, producto) =>
       sumProd + getPorDistribucion(proveedores, tarifa, producto).costoPEN, 0), 0));
-  
+
   return {
     flete,
     cbm,
     cfr,
     cif,
-    costoDestino,
+    costoDestino: costoDestinoNeto,
     costoUSD,
     costoPEN,
     costoTotal,
@@ -1817,7 +2067,7 @@ watch(() => clienteInfo.value.qtyProveedores, (newValue) => {
   if (newValue === null || newValue === undefined || typeof newValue !== 'number' || isNaN(newValue)) {
     return // Permitir valores inválidos mientras se escribe
   }
-  
+
   if (newValue < 1) {
     clienteInfo.value.qtyProveedores = 1
   } else if (newValue > 6) {
@@ -1825,13 +2075,20 @@ watch(() => clienteInfo.value.qtyProveedores, (newValue) => {
   }
 })
 onMounted(async () => {
+  restoreDraftIfAny()
   await getClientesByWhatsapp('')
   await getTarifas()
   // fetchVendedores y fetchContenedores solo en step 4
 })
 
 // Cuando se pasa al paso 3, asegurar que el tipoCliente esté establecido
-watch(currentStep, async (step) => {
+watch(currentStep, async (step, prev) => {
+  // Si se vuelve al paso 1 desde cualquier paso > 1, iniciar como nueva cotización
+  if (prev && prev > 1 && step === 1) {
+    startNewCotizacion()
+    return
+  }
+
   if (step === 3) {
     // Si hay un cliente seleccionado del dropdown = ANTIGUO
     if (selectedCliente.value && !clienteInfo.value.tipoCliente) {
@@ -1843,7 +2100,7 @@ watch(currentStep, async (step) => {
     }
     // La tarifa se autocalcula automáticamente con selectedTarifa (computed) basado en tipoCliente y totalCbm
   }
-  
+
   if (step === 4) {
     await fetchVendedores()
     await fetchContenedores()
@@ -1856,6 +2113,31 @@ watch(currentStep, async (step) => {
     }
   }
 })
+
+// Guardar draft al cambiar datos relevantes (solo en script, no en UI)
+watch(
+  () => [
+    currentStep.value,
+    clienteInfo.value,
+    proveedores.value,
+    tarifaDescuento.value,
+    tarifaExtraProveedorManual.value,
+    tarifaExtraItemManual.value,
+    tipoCambio.value,
+    selectedVendedor.value,
+    selectedContenedor.value,
+    whatsappInput.value
+  ],
+  () => scheduleDraftSave(),
+  { deep: true }
+)
+
+onBeforeUnmount(() => {
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer)
+    draftSaveTimer = null
+  }
+})
 </script>
 <style scoped>
 /**style table add spacing between rows */
@@ -1863,10 +2145,12 @@ table {
   border-spacing: 8px 4px;
   border-collapse: separate;
 }
+
 table td {
   padding: 10px;
   border-radius: 8px;
 }
+
 table th {
   padding: 10px;
   border-radius: 8px;
@@ -1875,13 +2159,15 @@ table th {
 /* Transitions for collapsing provider panels */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-  transition: all 240ms cubic-bezier(.4,0,.2,1);
+  transition: all 240ms cubic-bezier(.4, 0, .2, 1);
 }
+
 .slide-fade-enter-from,
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateY(-8px);
 }
+
 .slide-fade-enter-to,
 .slide-fade-leave-from {
   opacity: 1;
@@ -1893,11 +2179,13 @@ table th {
 .list-leave-active {
   transition: all 200ms ease;
 }
+
 .list-enter-from,
 .list-leave-to {
   opacity: 0;
   transform: translateY(-6px);
 }
+
 .list-enter-to,
 .list-leave-from {
   opacity: 1;
@@ -1914,7 +2202,8 @@ table th {
   z-index: 10;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
   max-width: 150px;
-  min-width: 150px; /* allow shrinking inside table layout */
+  min-width: 150px;
+  /* allow shrinking inside table layout */
   overflow: hidden;
 }
 
@@ -1928,7 +2217,8 @@ table th {
 /* Force a strict max width on sticky-right cells and their inputs to prevent expansion */
 .sticky-right {
   max-width: 100px;
-  min-width: 100px; /* allow shrinking inside table layout */
+  min-width: 100px;
+  /* allow shrinking inside table layout */
   overflow: hidden;
 }
 
