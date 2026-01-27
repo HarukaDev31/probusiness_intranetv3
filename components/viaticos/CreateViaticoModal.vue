@@ -1,7 +1,7 @@
 <template>
     <UModal>
         <template #header>
-            <h2 class="text-xl font-semibold">Crear Viático</h2>
+            <h2 class="text-xl font-semibold">Crear viático o reintegro</h2>
         </template>
         <template #body>
             <div class="p-6 space-y-6">
