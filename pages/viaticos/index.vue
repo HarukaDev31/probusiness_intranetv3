@@ -1,7 +1,7 @@
 <template>
   <div class="md:p-6">
     <DataTable 
-      title="Mis Viáticos" 
+      title="Mis viáticos y reintegros" 
       :show-title="true" 
       icon="i-heroicons-banknotes" 
       :data="viaticos" 
@@ -25,7 +25,7 @@
       :skeleton-cols="8"
       empty-state-message="No se encontraron viáticos que coincidan con los criterios de búsqueda."
       :show-new-button="isDesktop" 
-      new-button-label="Crear Viático" 
+      new-button-label="Crear viático o reintegro" 
       :on-new-button-click="handleNewButtonClick"
       @update:search-query="handleSearch" 
       @update:primary-search="handleSearch"

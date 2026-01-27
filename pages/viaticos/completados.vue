@@ -1,7 +1,7 @@
 <template>
   <div class="md:p-6">
     <DataTable 
-      title="Viáticos Completados" 
+      title="Completados" 
       :show-title="true" 
       icon="i-heroicons-check-circle" 
       :data="viaticos" 

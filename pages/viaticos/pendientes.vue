@@ -1,7 +1,7 @@
 <template>
   <div class="md:p-6">
     <DataTable 
-      title="Viáticos Pendientes" 
+      title="Pendientes" 
       :show-title="true" 
       icon="i-heroicons-clock" 
       :data="viaticos" 
