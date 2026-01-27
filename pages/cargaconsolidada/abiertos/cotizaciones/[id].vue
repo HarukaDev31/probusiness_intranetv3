@@ -633,6 +633,15 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         handleDeleteFile(row.original.id)
                     }
                 }) : null,
+                row.original.url_cotizacion_pdf ? h(UButton, {
+                    icon: 'i-heroicons-eye',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'info',
+                    onClick: () => {
+                        window.open(row.original.url_cotizacion_pdf, '_blank')
+                    }
+                }) : null,
                 h(UButton, {
                     icon: 'i-heroicons-arrow-right',
                     variant: 'ghost',
@@ -836,6 +845,13 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     color: 'secondary',
                     onClick: () => {
                         handleDeleteFile(row.original.id)
+                    }
+                }) : null,
+                row.original.url_cotizacion_pdf ? h(UButton, {
+                    innerHTML: CUSTOMIZED_ICONS.PDF,
+                    class: 'cursor-pointer',
+                    onClick: () => {
+                        window.open(row.original.url_cotizacion_pdf, '_blank')
                     }
                 }) : null,
             ])

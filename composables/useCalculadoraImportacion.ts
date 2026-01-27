@@ -183,7 +183,7 @@ export const useCalculadoraImportacion = () => {
   const calculatedExtraProveedores = computed(() => {
     // Proveedores extra son los que superan MAX_PROVEEDORES
     const extraCount = Math.max(0, proveedores.value.length - MAX_PROVEEDORES)
-    return extraCount * TARIFA_EXTRA_PROVEEDOR
+    return round10(extraCount * (TARIFA_EXTRA_PROVEEDOR || 0 || 0))
   })
 
   const calculatedExtraItems = computed(() => {
@@ -203,7 +203,7 @@ export const useCalculadoraImportacion = () => {
     const itemsExtraACobrar = Math.min(itemsExtra, itemMax - tarifa.item_base)
     
     // Multiplicar por la tarifa por ítem extra
-    return itemsExtraACobrar * tarifa.tarifa
+    return round10(itemsExtraACobrar * (tarifa.tarifa || 0))
   })
 
   const proveedores = ref<Proveedor[]>([
@@ -372,6 +372,8 @@ export const useCalculadoraImportacion = () => {
       ...(id ? { id } : {}),
       clienteInfo: clienteInfo.value,
       proveedores: proveedores.value.map(proveedor => ({
+        id: proveedor.id,
+        code_supplier: proveedor.code_supplier,
         cbm: proveedor.cbm,
         peso: proveedor.peso,
         qtyCaja: proveedor.qtyCaja,
@@ -392,7 +394,7 @@ export const useCalculadoraImportacion = () => {
       tarifa: tarifaToSend,
       tipo_cambio: tipoCambio.value,
     }
-
+    console.log(saveCotizacionRequest)
     const response = await CalculadoraImportacionService.saveCotizacion(saveCotizacionRequest)
     return response
   }
@@ -763,9 +765,10 @@ export const useCalculadoraImportacion = () => {
       clienteInfo.value.tipoDocumento = cliente.tipo_documento || payload.tipo_documento || 'DNI'
 
       proveedores.value = (payload.proveedores || []).map((p: any, idx: number) => ({
-        id: (idx + 1).toString(),
+        id:  p.id || (idx + 1).toString(),
         cbm: Number(p.cbm) || 0,
         peso: Number(p.peso) || 0,
+        code_supplier: p.code_supplier,
         qtyCaja: Number(p.qty_caja || p.qtyCaja || 0),
         productos: (p.productos || []).map((prod: any, j: number) => ({
           id: `${idx + 1}-${j + 1}`,
@@ -799,6 +802,8 @@ export const useCalculadoraImportacion = () => {
       throw error
     }
   }
+
+  const round10 = (value: number) => Math.round(value * Math.pow(10, 10)) / Math.pow(10, 10);
 
   return {
     currentStep,

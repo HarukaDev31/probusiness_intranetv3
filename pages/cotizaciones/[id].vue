@@ -197,8 +197,11 @@
           <div class="space-y-6">
             <div v-for="(proveedor, index) in proveedores" :key="proveedor.id" class="border-t pt-6">
               <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold ">
-                  <span>Proveedor #{{ proveedor.id }} </span>
+                <h3 class="text-lg font-semibold flex items-center gap-2">
+                  <span>Proveedor #{{ index + 1 }}</span>
+                  <UBadge v-if="proveedor.code_supplier" color="primary" variant="soft" size="sm">
+                    {{ proveedor.code_supplier }}
+                  </UBadge>
                   <UButton v-if="index + 1 > MAX_PROVEEDORES" color="warning" variant="soft" size="sm"
                     @click="proveedor.extraProveedor = 1" class="ml-2">
                     <UIcon name="i-heroicons-plus" class="w-5 h-5" />
@@ -416,10 +419,16 @@
                       </tr>
                       <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">N. Proveedor</td>
-                        <td v-for="proveedor in proveedores" :key="proveedor.id" class="text-center px-4 py-2"
+                        <td v-for="(proveedor, index) in proveedores" :key="proveedor.id" class="text-center px-4 py-2"
                           :colspan="proveedor.productos.length"
                           :style="{ minWidth: `${productoColumnWidth * proveedor.productos.length}px` }">
-                          {{ proveedor.id }}
+                          <div class="flex flex-col items-center gap-1">
+                            <span>Proveedor #{{ index + 1 }}</span>
+                            
+                            <UBadge v-if="proveedor.code_supplier" color="primary" variant="soft" size="sm">
+                              {{ proveedor.code_supplier }}
+                            </UBadge>
+                          </div>
                         </td>
                         <td
                           class="bg-blue-500 dark:bg-blue-700 text-white font-semibold text-center px-4 py-2 sticky-right max-w-[130px]">
@@ -859,8 +868,8 @@
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right max-w-[130px]">
                           <div class="flex items-center justify-center gap-1">
                             {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costoDestino)) }}
-                            <UTooltip :text="`-${formatCurrency(tarifaDescuento)} por descuento`">
-                              <UIcon v-if="tarifaDescuento > 0" name="i-heroicons-information-circle" class="w-4 h-4" color="error" />
+                            <UTooltip v-if="tieneAjustesCostosDestino" :text="tooltipCostosDestino">
+                              <UIcon name="i-heroicons-information-circle" class="w-6 h-6" color="primary" />
                             </UTooltip>
                           </div>                        </td>
                       </tr>
@@ -1320,6 +1329,25 @@ const totalPeso = computed(() => {
   return proveedores.value.reduce((sum, p) => sum + (p.peso || 0), 0)
 })
 
+// Computed para combinar todos los mensajes del tooltip de costos destino
+const tooltipCostosDestino = computed(() => {
+  const mensajes: string[] = []
+  if (tarifaDescuento.value > 0) {
+    mensajes.push(`-${formatCurrency(tarifaDescuento.value)} por descuento`)
+  }
+  if (tarifaExtraProveedorManual.value > 0) {
+    mensajes.push(`+${formatCurrency(tarifaExtraProveedorManual.value)} por extra proveedor`)
+  }
+  if (tarifaExtraItemManual.value > 0) {
+    mensajes.push(`+${formatCurrency(tarifaExtraItemManual.value)} por extra items`)
+  }
+  return mensajes.length > 0 ? mensajes.join('\n') : ''
+})
+
+const tieneAjustesCostosDestino = computed(() => {
+  return tarifaDescuento.value > 0 || tarifaExtraProveedorManual.value > 0 || tarifaExtraItemManual.value > 0
+})
+
 // Total valor FOB
 const totalValorFOB = computed(() => {
   return proveedores.value.reduce((sum, p) =>
@@ -1599,18 +1627,24 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
     };
   }
 
+  // Calcular tarifa base: multiplicar por CBM si es STANDARD y CBM > 1, sino usar la tarifa tal cual
   let costoServicio = 0;
   if (tarifa.type === 'STANDARD') {
-    costoServicio = round10(cbm * tarifa.tarifa);
+    if (cbm > 1) {
+      costoServicio = round10(cbm * tarifa.tarifa);
+    } else {
+      costoServicio = round10(tarifa.tarifa);
+    }
   } else if (tarifa.type === 'PLAIN') {
     costoServicio = round10(tarifa.tarifa);
   }
 
-  // Sumar extras autocalculados (proveedores extra + items extra) antes de calcular flete y costo destino
-  const extras = round10((calculatedExtraProveedores.value || 0) + (calculatedExtraItems.value || 0));
-  const costoServicioConExtras = round10(costoServicio + extras);
-  const fleteTotal = round10(costoServicioConExtras * FLETE_PORCENTAJE);
-  const costoDestino = round10(costoServicioConExtras * COSTO_DESTINO_PORCENTAJE);
+  // Aplicar 60% para flete y 40% para costoDestino base (sin extras ni descuentos)
+  const fleteTotal = round10(costoServicio * FLETE_PORCENTAJE);
+  const costoDestinoBase = round10(costoServicio * COSTO_DESTINO_PORCENTAJE);
+
+  // Los extras y descuentos se aplicarán después al costoDestino, no aquí
+  // Esto se hace en getTotals y getPorDistribucion
 
   const cfr = round10(totalValorFOB.value + fleteTotal);
   const cfrAjustado = round10(totalValorFOBAjustado.value + fleteTotal);
@@ -1622,7 +1656,7 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
     cbm: round10(cbm),
     cfr,
     cif,
-    costoDestino,
+    costoDestino: costoDestinoBase, // Este es el costoDestino base, sin extras ni descuentos
     costoServicio: round10(costoServicio),
     cfrAjustado,
     cifAjustado,
@@ -1698,14 +1732,16 @@ const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: 
   const valorFobAjustado = round10(producto.valoracion * producto.cantidad);
   const distribucion = roundn(totalValorFOB.value > 0 ? valorFob / roundn(totalValorFOB.value, 2) : 0, 10);
 
-  // Descuento aplicado al COSTO DESTINO total (se distribuye por ítem)
+  // Aplicar descuento y extras al COSTO DESTINO total (se distribuye por ítem)
   const descuento = Number(tarifaDescuento.value || 0);
-  const costoDestinoNeto = round10(costoDestino - descuento);
+  const extraProveedor = Number(tarifaExtraProveedorManual.value || 0);
+  const extraItem = Number(tarifaExtraItemManual.value || 0);
+  const costoDestinoConAjustes = round10(costoDestino - descuento + extraProveedor + extraItem);
 
   // Distribución proporcional
   const cfrDistribuido = round10(cfr * distribucion);
   const cifDistribuido = round10(cif * distribucion);
-  const costoDestinoDistribuido = round10(costoDestinoNeto * distribucion);
+  const costoDestinoDistribuido = round10(costoDestinoConAjustes * distribucion);
   const seguroDistribuido = round10(totalSeguro.value * distribucion);
   const fleteDistribuido = round10(flete * distribucion);
   const cfrAjustadoDistribuido = round10(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido : cfrDistribuido);
@@ -1741,15 +1777,17 @@ const getTotals = (proveedores: Proveedor[], tarifa: Tarifa) => {
   const { totalAdValorem, totalIGV, totalIPM, totalPercepcion } = getTributos(proveedores, tarifa);
   const { flete, cbm, cfr, cif, costoDestino, cfrAjustado, cifAjustado } = calcularDistribucionBase(proveedores, tarifa);
 
-  // Descuento aplicado al COSTO DESTINO total
+  // Aplicar descuento y extras al COSTO DESTINO total
   const descuento = Number(tarifaDescuento.value || 0);
-  const costoDestinoNeto = round10(costoDestino - descuento);
+  const extraProveedor = Number(tarifaExtraProveedorManual.value || 0);
+  const extraItem = Number(tarifaExtraItemManual.value || 0);
+  const costoDestinoConAjustes = round10(costoDestino - descuento + extraProveedor + extraItem);
 
   // Costo total = costoDestino + totalAdValorem + totalImpuestos + max(cif, cifAjustado)
   const totalImpuestos = round10(totalIGV + totalIPM + totalPercepcion);
   const maxCif = round10(Math.max(cif, cifAjustado));
   const maxCfr = round10(Math.max(cfr, cfrAjustado));
-  const costoTotal = round10(costoDestinoNeto + totalAdValorem + totalImpuestos + maxCfr);
+  const costoTotal = round10(costoDestinoConAjustes + totalAdValorem + totalImpuestos + maxCfr);
 
   // Sumar todos los costos unitarios USD y PEN de cada producto
   const costoUSD = round10(proveedores.reduce((sum, proveedor) =>
@@ -1764,7 +1802,7 @@ const getTotals = (proveedores: Proveedor[], tarifa: Tarifa) => {
     cbm,
     cfr,
     cif,
-    costoDestino: costoDestinoNeto,
+    costoDestino: costoDestinoConAjustes,
     costoUSD,
     costoPEN,
     costoTotal,

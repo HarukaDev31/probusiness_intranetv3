@@ -40,6 +40,7 @@ export interface Proveedor {
   productos: ProductoItem[]
   extraProveedor: number
   collapsed?: boolean
+  code_supplier?: string
 }
 
 

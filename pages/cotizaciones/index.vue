@@ -183,7 +183,7 @@ const columns: TableColumn<any>[] = [
             handleDelete(row.original.id)
           }
         }),
-        !row.original.id_cotizacion ? h(UButton, {
+         h(UButton, {
           color: 'warning',
           size: 'sm',
           variant: 'ghost',
@@ -192,7 +192,7 @@ const columns: TableColumn<any>[] = [
           onClick: (event: MouseEvent) => {
             handleEdit(row.original.id)
           }
-        }) : null,
+        }) ,
         h(UButton, {
           color: 'primary',
           size: 'sm',
@@ -209,6 +209,15 @@ const columns: TableColumn<any>[] = [
   }
 ]
 const handleEstadoChange = (id: string, value: string) => {
+  // Validar que si se quiere cambiar a COTIZADO, debe tener id_carga_consolidada
+  if (value === 'COTIZADO') {
+    const cotizacion = cotizaciones.value.find((c: any) => c.id === Number(id))
+    if (!cotizacion || !cotizacion.id_carga_consolidada_contenedor) {
+      showError('No se puede cambiar a COTIZADO', 'La cotización debe estar asociada a una carga consolidada para poder cambiar su estado a COTIZADO.')
+      return
+    }
+  }
+
   showConfirmation('Cambiar Estado de Cotización', '¿Estás seguro de que deseas cambiar el estado de esta cotización?',
     async () => {
       await withSpinner(async () => {
