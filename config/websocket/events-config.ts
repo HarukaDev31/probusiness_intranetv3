@@ -38,7 +38,9 @@ export const WS_EVENTS = {
   SYSTEM_MAINTENANCE: 'MaintenanceAlert',
   SYSTEM_UPDATE: 'SystemUpdate',
   USER_ACTIVITY: 'UserActivity',
-  DASHBOARD_UPDATE: 'DashboardUpdate'
+  DASHBOARD_UPDATE: 'DashboardUpdate',
+  //evnetos de administracion
+  REINTEGRO_REQUEST:'ViaticoCreado'
 } as const
 
 // ============================================

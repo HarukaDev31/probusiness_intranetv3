@@ -141,12 +141,12 @@ export class ViaticoService extends BaseService {
           // Para eliminar el archivo, enviar delete_file como true
           formData.append('delete_file', 'true')
         } else if (data.payment_receipt_file instanceof File) {
-          formData.append('receipt_file', data.payment_receipt_file) // El backend espera 'receipt_file' pero lo guarda en payment_receipt_file
+          formData.append('payment_receipt_file', data.payment_receipt_file) // El backend espera 'receipt_file' pero lo guarda en payment_receipt_file
         }
       }
 
-      const response = await this.apiCall<ViaticoResponse>(`${this.baseUrl}/${id}`, {
-        method: 'PUT',
+      const response = await this.apiCall<ViaticoResponse>(`${this.baseUrl}/update/${id}`, {
+        method: 'POST',
         body: formData
       })
       return response

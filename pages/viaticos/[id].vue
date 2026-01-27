@@ -100,7 +100,15 @@
               </div>
 
               <!-- Grid de información -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">   
+                <!-- Fecha de Creación -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Fecha de Creación</label>
+                  <div class="flex items-center gap-2">
+                    <UIcon name="i-heroicons-calendar" class="w-4 h-4 text-gray-400" />
+                    <p class="text-sm text-gray-900 dark:text-white">{{ formatDateTimeToDmy(viatico.created_at) }}</p>
+                  </div>
+                </div>
                 <!-- Fecha de Reintegro -->
                 <div>
                   <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Fecha de Reintegro</label>
@@ -210,11 +218,9 @@
                   :src="viatico.url_payment_receipt" 
                   alt="Comprobante de Retribución" 
                   class="w-full h-auto rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-green-400 transition-all duration-200 shadow-sm"
-                  @click="() => openComprobanteModal(viatico?.url_payment_receipt, 'Comprobante de Retribución')"
+                  @click="() => openComprobanteModal(viatico?.url_payment_receipt, viatico?.url_payment_receipt)"
                 />
-                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center">
-                  <UIcon name="i-heroicons-eye" class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
+               
               </div>
               <div class="flex gap-2">
                 <UButton 
@@ -282,18 +288,6 @@
             >
               Subir Comprobante de Retribución
             </UButton>
-          </div>
-
-          <!-- Cambiar estado manualmente -->
-          <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Cambiar Estado</label>
-            <USelect
-              v-model="selectedStatus"
-              :items="statusOptions"
-              @update:modelValue="handleStatusChange"
-              :disabled="viatico.status === 'CONFIRMED'"
-              class="w-full"
-            />
           </div>
         </div>
       </UCard>
@@ -391,7 +385,8 @@ const handleUploadFile = async () => {
     await withSpinner(async () => {
       const data: UpdateViaticoRequest = {
         payment_receipt_file: selectedFile.value!
-      }
+      } 
+      console.log(data,'data')
       await updateViatico(viatico.value!.id, data)
       showSuccess('Comprobante subido', 'El comprobante de retribución ha sido subido exitosamente y el estado cambió a Confirmado')
       selectedFile.value = null

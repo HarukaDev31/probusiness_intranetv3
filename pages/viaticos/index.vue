@@ -114,6 +114,11 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => row.original.subject
   },
   {
+    accessorKey: 'created_at',
+    header: 'Fecha Creación',
+    cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.created_at || row.original.created_at)
+  },
+  {
     accessorKey: 'reimbursement_date',
     header: 'Fecha Reintegro',
     cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.reimbursement_date)
@@ -142,7 +147,7 @@ const columns: TableColumn<any>[] = [
   },
   {
     accessorKey: 'receipt_file',
-    header: 'Comprobante',
+    header: 'Evidencia',
     cell: ({ row }: { row: any }) => {
       if (row.original.url_comprobante) {
         return h(UButton, {
@@ -153,7 +158,7 @@ const columns: TableColumn<any>[] = [
           onClick: () => {
             const fileItem: FileItem = {
               id: 0,
-              file_name: 'Comprobante',
+              file_name: row.original.url_comprobante,
               file_url: row.original.url_comprobante,
               type: 'image',
               size: 0,
@@ -167,7 +172,37 @@ const columns: TableColumn<any>[] = [
           }
         })
       }
-      return 'Sin comprobante'
+      return 'Sin evidencia'
+    }
+  },
+  {
+    accessorKey: 'payment_receipt_file',
+    header: 'Retribución',
+    cell: ({ row }: { row: any }) => {
+      if (row.original.url_payment_receipt) {
+        return h(UButton, {
+          icon: 'i-heroicons-eye',
+          size: 'xs',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => {
+            const fileItem: FileItem = {
+              id: 0,
+              file_name: row.original.url_payment_receipt,
+              file_url: row.original.url_payment_receipt,
+              type: 'image',
+              size: 0,
+              lastModified: 0,
+              file_ext: 'jpg'
+            }
+            modalPreview.open({
+              file: fileItem,
+              isOpen: true
+            })
+          }
+        })
+      }
+      return '-'
     }
   },
   {

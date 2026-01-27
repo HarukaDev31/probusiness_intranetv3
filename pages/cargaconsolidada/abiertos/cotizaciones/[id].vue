@@ -852,6 +852,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 }) : null,
                 row.original.url_cotizacion_pdf ? h(UButton, {
                     innerHTML: CUSTOMIZED_ICONS.PDF,
+                    variant:'ghost',
                     class: 'cursor-pointer',
                     onClick: () => {
                         window.open(row.original.url_cotizacion_pdf, '_blank')
