@@ -46,85 +46,34 @@
             class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
             @click="handleExport" />
             <div class="flex items-center md:gap-2 relative md:w-full lg:w-auto">
-            <div ref="filtersButtonRef" class="w-auto lg:w-auto">
-              <UButton v-if="showFilters"
-                :label="isMobile ? '' : translations.filters"
-                :aria-label="translations.filters"
-                :title="translations.filters"
-                icon="i-heroicons-funnel"
+              <div ref="filtersButtonRef" class="w-auto lg:w-auto">
+                <UButton v-if="showFilters"
+                  :label="isMobile ? '' : translations.filters"
+                  :aria-label="translations.filters"
+                  :title="translations.filters"
+                  icon="i-heroicons-funnel"
 
-                class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
-                :class="isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto'"
-                @click="showFiltersPanel = !showFiltersPanel" />
-            </div>
-
-            <!-- Desktop: keep inline absolute panel to preserve original behavior on large screens -->
-            <div v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && !isMobile"
-              ref="filtersPanelRef"
-              class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
-              @click.stop>
-              <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
-                <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {{ filter.label }}
-                  </label>
-                  <!-- Filtro de tipo date -->
-                  <UInput v-if="filter.type === 'date'"
-                    :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
-                    :placeholder="filter.placeholder" class="w-full"  
-                    @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
-                  <!-- Filtro de tipo select -->
-                  <USelect v-else :model-value="(() => {
-                      const value = filtersValue && filtersValue[filter.key]
-                      return value
-                    })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
-                      @update:model-value="(value) => {
-                        handleFilterChange(filter.key, value)
-                      }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
-                </div>
+                  class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
+                  :class="isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto'"
+                  @click="showFiltersPanel = !showFiltersPanel" />
               </div>
 
-              <!-- Footer actions for filters (design similar to screenshot) -->
-              <div class="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
-                <div class="flex items-center justify-between">
-                  <!-- Left: prominent clear filters button -->
-                  <UButton
-                    icon="i-heroicons-x-mark"
-                    class="h-8 bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 border-0"
-                    :label="translations.clearFilters"
-                    @click="handleClearFilters"
-                  />
-
-                  <!-- Right: close link-style button -->
-                  <button type="button" class="text-sm text-gray-600 dark:text-gray-300 hover:underline" @click="showFiltersPanel = false">
-                    {{ translations.close }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Mobile: teleport the filters panel to body to avoid clipping; only active when isMobile === true -->
-            <teleport to="body" v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && isMobile">
-              <!-- Overlay: usando utilidades Tailwind para color y backdrop; mantenemos la clase antigua para compatibilidad -->
-              <div class="filters-overlay fixed inset-0 bg-black/40 backdrop-blur-sm z-[990]" @click="showFiltersPanel = false"></div>
-
-              <!-- Panel móvil: utilidades Tailwind para fondo, dark-mode, tamaño y scroll; mantenemos la clase antigua para reglas legacy -->
-              <div ref="filtersPanelRef" class="filters-panel-mobile fixed left-4 right-4 top-[12vh] max-h-[calc(100vh-16vh)] mx-auto z-[1000] bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-lg overflow-y-auto p-3" @click.stop>
-                <!-- Nota: este panel usa utilidades Tailwind (bg / dark:bg / z-index / spacing) para asegurar comportamiento claro/oscuro -->
-                <div class="sticky top-0 bg-transparent pb-2 mb-2 z-10 flex items-center justify-between">
-                  <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ translations.filters }}</div>
-                  <button type="button" class="filters-close bg-transparent border-0 text-lg p-1" @click="showFiltersPanel = false">✕</button>
-                </div>
-
+              <!-- Desktop: keep inline absolute panel to preserve original behavior on large screens -->
+              <div v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && !isMobile"
+                ref="filtersPanelRef"
+                class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
+                @click.stop>
                 <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
                   <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {{ filter.label }}
                     </label>
+                    <!-- Filtro de tipo date -->
                     <UInput v-if="filter.type === 'date'"
                       :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
-                      :placeholder="filter.placeholder" class="w-full"
+                      :placeholder="filter.placeholder" class="w-full"  
                       @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
+                    <!-- Filtro de tipo select -->
                     <USelect v-else :model-value="(() => {
                         const value = filtersValue && filtersValue[filter.key]
                         return value
@@ -135,32 +84,88 @@
                   </div>
                 </div>
 
+                <!-- Footer actions for filters (design similar to screenshot) -->
                 <div class="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
                   <div class="flex items-center justify-between">
+                    <!-- Left: prominent clear filters button -->
                     <UButton
                       icon="i-heroicons-x-mark"
                       class="h-8 bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 border-0"
                       :label="translations.clearFilters"
                       @click="handleClearFilters"
                     />
+
+                    <!-- Right: close link-style button -->
                     <button type="button" class="text-sm text-gray-600 dark:text-gray-300 hover:underline" @click="showFiltersPanel = false">
                       {{ translations.close }}
                     </button>
                   </div>
                 </div>
               </div>
-            </teleport>
-            <!-- Export Button -->
 
-            <slot name="actions" />
-            <!--Show New Button-->
-            <div class="flex w-full lg:w-auto">
-              <div v-if="showNewButton" class="w-full lg:w-auto">
-                <UButton :label="newButtonLabel || 'Nuevo'" icon="i-heroicons-plus" color="primary"
-                  class="h-11 flex-1 font-normal w-full lg:w-auto" @click="onNewButtonClick" />
+              <!-- Mobile: teleport the filters panel to body to avoid clipping; only active when isMobile === true -->
+              <teleport to="body" v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && isMobile">
+                <!-- Overlay: usando utilidades Tailwind para color y backdrop; mantenemos la clase antigua para compatibilidad -->
+                <div class="filters-overlay fixed inset-0 bg-black/40 backdrop-blur-sm z-[990]" @click="showFiltersPanel = false"></div>
+
+                <!-- Panel móvil: utilidades Tailwind para fondo, dark-mode, tamaño y scroll; mantenemos la clase antigua para reglas legacy -->
+                <div ref="filtersPanelRef" class="filters-panel-mobile fixed left-4 right-4 top-[12vh] max-h-[calc(100vh-16vh)] mx-auto z-[1000] bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-lg overflow-y-auto p-3" @click.stop>
+                  <!-- Nota: este panel usa utilidades Tailwind (bg / dark:bg / z-index / spacing) para asegurar comportamiento claro/oscuro -->
+                  <div class="sticky top-0 bg-transparent pb-2 mb-2 z-10 flex items-center justify-between">
+                    <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ translations.filters }}</div>
+                    <button type="button" class="filters-close bg-transparent border-0 text-lg p-1" @click="showFiltersPanel = false">✕</button>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
+                    <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ filter.label }}
+                      </label>
+                      <UInput v-if="filter.type === 'date'"
+                        :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
+                        :placeholder="filter.placeholder" class="w-full"
+                        @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
+                      <USelect v-else :model-value="(() => {
+                          const value = filtersValue && filtersValue[filter.key]
+                          return value
+                        })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
+                          @update:model-value="(value) => {
+                            handleFilterChange(filter.key, value)
+                          }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                    </div>
+                  </div>
+
+                  <div class="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
+                    <div class="flex items-center justify-between">
+                      <UButton
+                        icon="i-heroicons-x-mark"
+                        class="h-8 bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 border-0"
+                        :label="translations.clearFilters"
+                        @click="handleClearFilters"
+                      />
+                      <button type="button" class="text-sm text-gray-600 dark:text-gray-300 hover:underline" @click="showFiltersPanel = false">
+                        {{ translations.close }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </teleport>
+              <!-- Export Button -->
+
+              <slot name="actions" />
+              <!--Show New Button-->
+              <div class="flex w-full lg:w-auto">
+                <div v-if="showNewButton && isDesktop" class="hidden md:block w-full">
+                  <UButton :label="newButtonLabel || 'Nuevo'" icon="i-heroicons-plus" color="primary"
+                    class="h-11 flex-1 font-normal w-full lg:w-auto" @click="onNewButtonClick" />
+                </div>
               </div>
-            </div>
           </div>
+        </div>
+        <div v-if="showNewButton && isMobile" class="md:hidden w-full">
+          <UButton :label="newButtonLabel || 'Nuevo'" icon="i-heroicons-plus" color="primary"
+            class="h-8 flex-1 font-normal w-full lg:w-auto" @click="onNewButtonClick" />
+
         </div>
       </div>
     </div>
@@ -297,6 +302,8 @@ import { formatDateForInput } from '../utils/data-table'
 import { setContentNarrow } from '../composables/usePageLayout'
 import { navigateTo, useRouter } from '#imports'
 const UButton = resolveComponent('UButton')
+import { useIsDesktop } from '~/composables/useResponsive'
+const { isDesktop } = useIsDesktop()
 
 // Props
 const props = withDefaults(defineProps<DataTableProps>(), DATA_TABLE_DEFAULTS)
