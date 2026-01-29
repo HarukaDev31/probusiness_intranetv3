@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="md:p-6">
     <!-- Skeleton Loading -->
     <div v-if="loading" class="max-w-6xl mx-auto space-y-6">
       <!-- Header skeleton -->
