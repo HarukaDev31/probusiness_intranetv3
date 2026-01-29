@@ -223,16 +223,6 @@
               </div>
               <div class="flex gap-2">
                 <UButton 
-                  icon="i-heroicons-eye" 
-                  color="primary" 
-                  variant="soft" 
-                  size="sm"
-                  class="flex-1"
-                  @click="() => openComprobanteModal(viatico?.url_payment_receipt, 'Comprobante de Retribución')"
-                >
-                  Ver
-                </UButton>
-                <UButton 
                   v-if="viatico.status !== 'CONFIRMED'"
                   icon="i-heroicons-trash" 
                   color="error" 
