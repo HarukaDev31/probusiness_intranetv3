@@ -31,7 +31,7 @@ import {
     
     subscribeEventsToRole(
       ROLES.ADMINISTRACION,
-      `${ROLES.ADMINISTRACION}-notifications`,
+      `Administracion-notifications`,
       [
         WS_EVENTS.REINTEGRO_REQUEST
       ],
