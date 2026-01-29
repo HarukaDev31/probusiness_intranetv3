@@ -24,7 +24,7 @@
       :skeleton-rows="6"
       :skeleton-cols="8"
       empty-state-message="No se encontraron viáticos que coincidan con los criterios de búsqueda."
-      :show-new-button="isDesktop" 
+      :show-new-button="true" 
       new-button-label="Crear viático o reintegro" 
       :on-new-button-click="handleNewButtonClick"
       @update:search-query="handleSearch" 
@@ -56,6 +56,7 @@ import CreateViaticoModal from '~/components/viaticos/CreateViaticoModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import type { CreateViaticoRequest } from '~/types/viatico'
 import type { FileItem } from '~/types/commons/file'
+import { tr } from '@nuxt/ui/runtime/locale/index.js'
 
 const { viaticos, loading, error, pagination, loadViaticos, createViatico, updateViatico, getStatusColor, getStatusLabel, formatAmount, deleteViatico } = useViaticos()
 const { hasRole } = useUserRole()
