@@ -103,21 +103,20 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">   
                 <!-- Fecha de Creación -->
                 <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Fecha de Creación</label>
-                  <div class="flex items-center gap-2">
-                    <UIcon name="i-heroicons-calendar" class="w-4 h-4 text-gray-400" />
-                    <p class="text-sm text-gray-900 dark:text-white">{{ formatDateTimeToDmy(viatico.created_at) }}</p>
-                  </div>
-                </div>
-                <!-- Fecha de Reintegro -->
-                <div>
                   <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Fecha de Reintegro</label>
                   <div class="flex items-center gap-2">
                     <UIcon name="i-heroicons-calendar" class="w-4 h-4 text-gray-400" />
                     <p class="text-sm text-gray-900 dark:text-white">{{ formatDateTimeToDmy(viatico.reimbursement_date) }}</p>
                   </div>
                 </div>
-
+                <!-- Fecha de Reintegro -->
+                <div v-if="viatico.return_date">
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Fecha de devolución</label>
+                  <div class="flex items-center gap-2" >
+                    <UIcon name="i-heroicons-calendar" class="w-4 h-4 text-gray-400" />
+                    <p class="text-sm text-gray-900 dark:text-white">{{ formatDateTimeToDmy(viatico.return_date) }}</p>
+                  </div>
+                </div>
                 <!-- Área Solicitante -->
                 <div>
                   <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Área Solicitante</label>

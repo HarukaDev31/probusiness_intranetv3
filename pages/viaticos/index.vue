@@ -57,10 +57,10 @@ import ModalPreview from '~/components/commons/ModalPreview.vue'
 import type { CreateViaticoRequest } from '~/types/viatico'
 import type { FileItem } from '~/types/commons/file'
 
-const { viaticos, loading, error, pagination, loadViaticos, createViatico, updateViatico, getStatusColor, getStatusLabel, formatAmount, deleteViatico } = useViaticos()
+const { viaticos, loading, error, pagination, loadViaticos, createViatico, getStatusColor, getStatusLabel, formatAmount, deleteViatico } = useViaticos()
 const { hasRole } = useUserRole()
 const { isDesktop } = useIsDesktop()
-const { showSuccess, showError } = useModal()
+const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 
 const search = ref('')
@@ -140,7 +140,7 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => {
       const status = row.original.status
       return h(UBadge, {
-        color: getStatusColor(status),
+        color: getStatusColor(status) as any,
         variant: 'subtle',
         label: getStatusLabel(status)
       })
@@ -239,7 +239,8 @@ const columns: TableColumn<any>[] = [
               onSave: async (data: CreateViaticoRequest) => {
                 try {
                   await withSpinner(async () => {
-                    await updateViatico(row.original.id, data)
+                    // Usar el mismo endpoint de creación pero enviar el id para indicar edición
+                    await createViatico({ ...(data as any), id: row.original.id } as any)
                     showSuccess('Viático actualizado', 'El viático ha sido actualizado exitosamente')
                     createViaticoModal.close()
                     await loadViaticos({
@@ -263,22 +264,26 @@ const columns: TableColumn<any>[] = [
           color: 'error',
           variant: 'ghost',
           onClick: async () => {
-            const confirmed = confirm('¿Está seguro que desea eliminar este viático?')
-            if (!confirmed) return
-            try {
-              await withSpinner(async () => {
-                await deleteViatico(row.original.id)
-                showSuccess('Viático eliminado', 'El viático ha sido eliminado exitosamente')
-                await loadViaticos({
-                  page: pagination.value.current_page,
-                  per_page: pagination.value.per_page,
-                  search: search.value,
-                  ...filters.value
-                })
-              })
-            } catch (err: any) {
-              showError('Error al eliminar viático', err.message || 'Error desconocido')
-            }
+            showConfirmation(
+              'Confirmar eliminación',
+              '¿Estás seguro de que deseas eliminar este viático? Esta acción no se puede deshacer.',
+              async () => {
+                try {
+                  await withSpinner(async () => {
+                    await deleteViatico(row.original.id)
+                    showSuccess('Viático eliminado', 'El viático ha sido eliminado exitosamente')
+                    await loadViaticos({
+                      page: pagination.value.current_page,
+                      per_page: pagination.value.per_page,
+                      search: search.value,
+                      ...filters.value
+                    })
+                  })
+                } catch (err: any) {
+                  showError('Error al eliminar viático', err.message || 'Error desconocido')
+                }
+              }
+            )
           }
         })
       ])

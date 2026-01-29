@@ -8,6 +8,7 @@ export interface Viatico {
   status: 'PENDING' | 'CONFIRMED' | 'REJECTED'
   receipt_file: string | null // Archivo inicial subido por el usuario
   payment_receipt_file: string | null // Comprobante de retribución subido por admin
+  return_date: string | null
   user_id: number
   created_at: string
   updated_at: string

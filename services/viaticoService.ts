@@ -103,6 +103,10 @@ export class ViaticoService extends BaseService {
   static async createViatico(data: CreateViaticoRequest): Promise<ViaticoResponse> {
     try {
       const formData = new FormData()
+      // If an id is provided, include it so backend can handle create-or-update behavior
+      if ((data as any).id !== undefined && (data as any).id !== null) {
+        formData.append('id', String((data as any).id))
+      }
       formData.append('subject', data.subject)
       formData.append('reimbursement_date', data.reimbursement_date)
       formData.append('requesting_area', data.requesting_area)
