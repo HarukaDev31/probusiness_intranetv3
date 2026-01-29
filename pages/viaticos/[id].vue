@@ -69,14 +69,18 @@
         >
           Volver
         </UButton>
-        <UBadge 
-          :color="getStatusColor(viatico.status)" 
-          variant="subtle"
+        <USelect
+          v-if="isAdmin"
+          v-model="selectedStatus"
+          :items="[
+            { label: 'Pendiente', value: 'PENDING', disabled: true },
+            { label: 'Rechazado', value: 'REJECTED', disabled: false },
+            { label: 'Confirmado', value: 'CONFIRMED', disabled: true }
+          ]"
           size="lg"
-          class="text-sm font-semibold px-4 py-2"
-        >
-          {{ getStatusLabel(viatico.status) }}
-        </UBadge>
+          class="text-sm font-semibold px-2 py-1 w-48"
+          @update:modelValue="handleStatusChange"
+        />
       </div>
 
       <!-- Grid principal: Información y Comprobantes -->
@@ -267,11 +271,11 @@
             <FileUploader 
               ref="fileUploaderRef" 
               :multiple="false" 
-              :accepted-types="['.jpg', '.jpeg', '.png', '.gif']"
+              :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.pdf', '.doc', '.docx']"
               @file-added="handleFileAdded"
               @file-removed="handleFileRemoved" 
               :show-save-button="false"
-              :initial-files="viatico.url_payment_receipt ? [{ url: viatico.url_payment_receipt, name: 'Comprobante de retribución actual' }] : []"
+              :initial-files="viatico.url_payment_receipt ? [{ id: 0, file_name: 'Comprobante de retribución actual', file_url: viatico.url_payment_receipt, type: isImageFile(viatico.url_payment_receipt) ? 'image' : (isPdfFile(viatico.url_payment_receipt) ? 'pdf' : 'file'), size: 0, lastModified: 0, file_ext: getFileExtension(viatico.url_payment_receipt) }] : []"
             />
             <UButton 
               v-if="selectedFile"
@@ -299,6 +303,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { formatDateTimeToDmy, formatCurrency } from '~/utils/formatters'
 import { ROLES } from '~/constants/roles'
 import FileUploader from '~/components/commons/FileUploader.vue'
+import { USelect } from '#components'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import type { UpdateViaticoRequest } from '~/types/viatico'
 import type { FileItem } from '~/types/commons/file'
