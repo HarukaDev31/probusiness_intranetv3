@@ -221,30 +221,6 @@ export const useViaticos = () => {
     return labels[status] || status
   }
 
-  /**
-   * Formatear fecha
-   */
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'Sin fecha'
-    
-    const date = new Date(dateString)
-    return date.toLocaleDateString('es-PE', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  }
-
-  /**
-   * Formatear monto
-   */
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('es-PE', {
-      style: 'currency',
-      currency: 'PEN'
-    }).format(amount)
-  }
-
   return {
     // State
     viaticos,
@@ -264,8 +240,6 @@ export const useViaticos = () => {
     
     // Helpers
     getStatusColor,
-    getStatusLabel,
-    formatDate,
-    formatAmount
+    getStatusLabel
   }
 }
