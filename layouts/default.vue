@@ -138,6 +138,14 @@ const pageTitle = computed(() => {
     return 'Verificación'
   }
 
+  //Viaticos
+  if (route.path.includes('/viaticos')) {
+    if (route.path.includes('/pendientes')) return 'Viáticos Pendientes'
+    if (route.path.includes('/completados')) return 'Viáticos Completados'
+    if (route.params.id) return 'Detalle de Viático'
+    return 'Viáticos'
+  }
+
   // Login
   if (route.path === '/login') return 'Iniciar Sesión'
 
