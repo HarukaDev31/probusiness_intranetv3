@@ -26,7 +26,7 @@
                             </UButton>
 
                             <template #content>
-                                <UCalendar v-model="reimbursementCalendar" class="p-2 w-full" />
+                                <UCalendar v-model="reimbursementCalendar" :type="'date'" class="p-2 w-full" />
                             </template>
                         </UPopover>
                     </div>
@@ -61,13 +61,12 @@
 
                     <!-- Uploader -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Comprobante
-                        </label>
-                        <FileUploader 
-                            ref="fileUploaderRef" 
-                            :multiple="false" 
-                            :accepted-types="['.jpg', '.jpeg', '.png', '.gif','.pdf','.doc','.docx']"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Comprobante</label>
+                        <FileUploader
+                            ref="fileUploaderRef"
+                            :multiple="false"
+                            :initial-files="initialFilesForUploader"
+                            :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx']"
                             @file-added="handleFileAdded"
                             @file-removed="handleFileRemoved"
                             :show-save-button="false"
@@ -105,6 +104,7 @@ const props = defineProps<Props>()
 const loading = ref(false)
 const selectedFile = ref<File | null>(null)
 const fileUploaderRef = ref<InstanceType<typeof FileUploader> | null>(null)
+const deleteExistingReceipt = ref(false)
 
 const formData = ref<CreateViaticoRequest>({
     subject: '',
@@ -116,24 +116,35 @@ const formData = ref<CreateViaticoRequest>({
 })
 
 // Estado para UCalendar
-const reimbursementCalendar = ref<CalendarDate | null>(null)
+const reimbursementCalendar = ref<any>(null)
 const df = new DateFormatter('es-PE', { dateStyle: 'medium' })
 
 const stringToCalendarDate = (dateString?: string): CalendarDate | null => {
     if (!dateString) return null
     try {
-        const date = new Date(dateString)
-        return new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate())
+        const dayPart = dateString.split('T')[0]
+        const parts = dayPart.split('-')
+        if (parts.length < 3) return null
+        const y = parseInt(parts[0], 10)
+        const m = parseInt(parts[1], 10)
+        const d = parseInt(parts[2], 10)
+        if (isNaN(y) || isNaN(m) || isNaN(d)) return null
+        return new CalendarDate(y, m, d)
     } catch {
         return null
     }
 }
 
-const calendarDateToString = (calendarDate: CalendarDate | null): string | undefined => {
+const pad = (n: number) => String(n).padStart(2, '0')
+
+const calendarDateToString = (calendarDate: any): string | undefined => {
     if (!calendarDate) return undefined
     try {
-        const date = calendarDate.toDate(getLocalTimeZone())
-        return date.toISOString().split('T')[0]
+        // Use date-like fields directly
+        const y = (calendarDate as any).year
+        const m = (calendarDate as any).month
+        const d = (calendarDate as any).day
+        return `${y}-${pad(m)}-${pad(d)}`
     } catch {
         return undefined
     }
@@ -144,6 +155,22 @@ if (props.initialData?.reimbursement_date) {
     reimbursementCalendar.value = stringToCalendarDate(props.initialData.reimbursement_date)
 } else if (formData.value.reimbursement_date) {
     reimbursementCalendar.value = stringToCalendarDate(formData.value.reimbursement_date)
+}
+
+// Si existe comprobante previo, preparar initialFiles para FileUploader
+const initialFilesForUploader = ref<any[]>([])
+if (props.initialData?.url_comprobante) {
+    initialFilesForUploader.value = [
+        {
+            id: 1,
+            file_name: props.initialData.url_comprobante.split('/').pop(),
+            file_url: props.initialData.url_comprobante,
+            type: 'image',
+            size: 0,
+            lastModified: 0,
+            file_ext: props.initialData.url_comprobante.split('.').pop() || 'jpg'
+        }
+    ]
 }
 
 // Sincronizar calendar -> formData.reimbursement_date
@@ -185,21 +212,48 @@ const isValid = computed(() => {
 const handleFileAdded = (file: File) => {
     selectedFile.value = file
     formData.value.receipt_file = file
+    // If user adds a new file, cancel deletion flag
+    deleteExistingReceipt.value = false
 }
 
-const handleFileRemoved = () => {
+const handleFileRemoved = (payload: number | undefined) => {
+    // payload may be index (when removing selectedFiles) or id (when removing existing file)
     selectedFile.value = null
     formData.value.receipt_file = null
+    // Detect removal of existing initial file
+    if (initialFilesForUploader.value.length > 0 && typeof payload === 'number' && payload === initialFilesForUploader.value[0].id) {
+        deleteExistingReceipt.value = true
+        initialFilesForUploader.value = []
+    }
 }
 
 const handleSave = (close: () => void) => {
     if (!isValid.value) return
 
+    // Prefer files from the FileUploader ref if available
+    let fileToSend: File | null = selectedFile.value
+    try {
+        const filesFromUploader = fileUploaderRef.value?.getFiles?.() as File[] | undefined
+        if (filesFromUploader && filesFromUploader.length > 0) {
+            fileToSend = filesFromUploader[0]
+        }
+    } catch (e) {
+        // ignore
+    }
+
     if (props.onSave) {
-        props.onSave({
+        // If the user removed the existing receipt but didn't add a new one,
+        // send an explicit null so backend can detect deletion when id is present.
+        const payload: any = {
             ...formData.value,
-            receipt_file: selectedFile.value
-        })
+            receipt_file: fileToSend
+        }
+        if (deleteExistingReceipt.value && !fileToSend) {
+            payload.receipt_file = null
+            payload.delete_receipt = true
+        }
+
+        props.onSave(payload)
         close()
     }
 }
