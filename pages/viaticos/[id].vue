@@ -136,7 +136,7 @@
                   <div class="flex items-center gap-2">
                     <UIcon name="i-heroicons-banknotes" class="w-5 h-5 text-primary-500" />
                     <p class="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                      {{ formatCurrency(viatico.total_amount, 'PEN') }}
+                      {{ formatCurrency(Number(viatico.total_amount), 'PEN') }}
                     </p>
                   </div>
                 </div>
@@ -170,36 +170,84 @@
 
         <!-- Columna derecha: Comprobantes -->
         <div class="space-y-6">
-          <!-- Comprobante Inicial -->
+          <!-- Evidencias (múltiples pagos o comprobante único legacy) -->
           <UCard class="bg-white dark:bg-gray-800">
             <template #header>
-              <div class="flex items-center gap-2">
-                <UIcon name="i-heroicons-document" class="w-5 h-5 text-primary-500" />
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Evidencia</h2>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-heroicons-document-duplicate" class="w-5 h-5 text-primary-500" />
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Evidencia</h2>
+                  <UBadge v-if="hasPagos" color="primary" variant="soft" size="sm">{{ viatico.pagos!.length }} {{ viatico.pagos!.length === 1 ? 'comprobante' : 'comprobantes' }}</UBadge>
+                </div>
               </div>
             </template>
-            
-            <div v-if="viatico.url_comprobante" class="space-y-3">
+
+            <!-- Múltiples evidencias (pagos) -->
+            <div v-if="hasPagos" class="space-y-4">
+              <div
+                v-for="(pago, index) in viatico.pagos"
+                :key="pago.id"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800/50"
+              >
+                <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center gap-2">
+                  <span class="flex items-center justify-center w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 text-sm font-semibold">{{ index + 1 }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ pago.concepto }}</span>
+                  <span class="ml-auto text-sm font-semibold text-primary-600 dark:text-primary-400">{{ formatCurrency(Number(pago.monto), 'PEN') }}</span>
+                </div>
+                <div class="p-4">
+                  
+                  <div v-if="pagoUrl(pago)" class="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
+                    <div v-if="isPagoImage(pago)" class="bg-gray-100 dark:bg-gray-700 flex justify-center">
+                      <img
+                        :src="pagoUrl(pago)!"
+                        :alt="pago.file_original_name || pago.concepto"
+                        class="max-h-64 w-full object-contain cursor-pointer hover:opacity-90 transition"
+                        @click="openPagoFile(pago)"
+                      />
+                    </div>
+                    <div v-else-if="isPagoPdf(pago)" class="min-h-[200px]">
+                      <iframe :src="pagoUrl(pago)!" class="w-full h-[280px] rounded-lg border-0" frameborder="0" title="Comprobante" />
+                      <UButton size="xs" color="primary" variant="soft" class="mt-2" @click="openPagoFile(pago)">Abrir en nueva pestaña</UButton>
+                    </div>
+                    <div v-else class="p-4 flex items-center justify-between gap-2">
+                      <UIcon name="i-heroicons-document" class="w-10 h-10 text-gray-400 shrink-0" />
+                      <span class="text-sm text-gray-600 dark:text-gray-400 truncate flex-1">{{ pago.file_original_name || 'Comprobante' }}</span>
+                      <UButton size="xs" color="primary" variant="soft" @click="openPagoFile(pago)">Ver</UButton>
+                    </div>
+                  </div>
+                  <div v-else class="p-4 flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                    <UIcon name="i-heroicons-document-minus" class="w-8 h-8" />
+                    <span class="text-sm">{{ pago.file_original_name || 'Sin archivo' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Un solo comprobante (legacy) -->
+            <div v-else-if="viatico.url_comprobante" class="space-y-3">
               <div class="relative group">
                 <div v-if="isImageFile(viatico.url_comprobante)">
-                <img 
-                  :src="viatico.url_comprobante" 
-                  alt="Comprobante Inicial" 
-                  class="w-full h-auto rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-primary-400 transition-all duration-200 shadow-sm"
-                  @click="() => openComprobanteModal(viatico?.url_comprobante, viatico?.url_comprobante)"
-                />
+                  <img
+                    :src="viatico.url_comprobante"
+                    alt="Comprobante"
+                    class="w-full h-auto rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-primary-400 transition-all duration-200 shadow-sm"
+                    @click="() => openComprobanteModal(viatico?.url_comprobante, viatico?.url_comprobante)"
+                  />
                 </div>
                 <div v-else-if="isPdfFile(viatico.url_comprobante)">
-                  <iframe :src="viatico.url_comprobante" class="w-full h-auto rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-primary-400 transition-all duration-200 shadow-sm" frameborder="0"></iframe>
-                </div>  
-                <div v-else>
+                  <iframe :src="viatico.url_comprobante" class="w-full h-auto min-h-[280px] rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-sm" frameborder="0" />
+                </div>
+                <div v-else class="flex items-center gap-2 p-4 border rounded-lg">
                   <UIcon name="i-heroicons-document" class="w-5 h-5 text-primary-500" />
                   <p class="text-sm text-gray-900 dark:text-white">{{ viatico.url_comprobante }}</p>
                 </div>
               </div>
-             
             </div>
-           
+
+            <div v-else class="text-center py-8">
+              <UIcon name="i-heroicons-document-minus" class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+              <p class="text-sm text-gray-500 dark:text-gray-400 italic">Sin evidencias</p>
+            </div>
           </UCard>
 
           <!-- Comprobante de Retribución (solo para admin) -->
@@ -295,11 +343,11 @@ import { ROLES } from '~/constants/roles'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import { USelect } from '#components'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
-import type { UpdateViaticoRequest } from '~/types/viatico'
+import type { UpdateViaticoRequest, ViaticoPago } from '~/types/viatico'
 import type { FileItem } from '~/types/commons/file'
 
 const route = useRoute()
-const { currentViatico, loading, error, loadViaticoById, updateViatico, getStatusColor, getStatusLabel } = useViaticos()
+const { currentViatico, loading, error, loadViaticoById, updateViatico } = useViaticos()
 const { hasRole, currentId } = useUserRole()
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
@@ -353,6 +401,40 @@ const getFileExtension = (url: string) => {
   const extension = url.split('.').pop()?.toLowerCase()
   return extension || ''
 }
+
+const hasPagos = computed(() => (viatico.value?.pagos?.length ?? 0) > 0)
+
+const config = useRuntimeConfig()
+function pagoUrl(pago: ViaticoPago): string | null {
+  return pago.file_path
+}
+function isPagoImage(pago: ViaticoPago): boolean {
+  const url = pagoUrl(pago)
+  if (!url) return false
+  const ext = (pago.file_extension || url.split('.').pop() || '').toLowerCase()
+  const mime = (pago.file_mime_type || '').toLowerCase()
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || mime.startsWith('image/')
+}
+function isPagoPdf(pago: ViaticoPago): boolean {
+  const ext = (pago.file_extension || '').toLowerCase()
+  const mime = (pago.file_mime_type || '').toLowerCase()
+  return ext === 'pdf' || mime.includes('pdf')
+}
+function openPagoFile(pago: ViaticoPago) {
+  const url = pagoUrl(pago)
+  if (!url) return
+  const fileItem: FileItem = {
+    id: pago.id,
+    file_name: pago.file_original_name || pago.concepto || 'comprobante',
+    file_url: url,
+    type: isPagoImage(pago) ? 'image' : 'file',
+    size: pago.file_size || 0,
+    lastModified: 0,
+    file_ext: pago.file_extension || 'pdf'
+  }
+  modalPreview.open({ file: fileItem, isOpen: true })
+}
+
 const handleFileAdded = (file: File) => {
   selectedFile.value = file
 }
@@ -388,8 +470,7 @@ const handleUploadFile = async () => {
     await withSpinner(async () => {
       const data: UpdateViaticoRequest = {
         payment_receipt_file: selectedFile.value!
-      } 
-      console.log(data,'data')
+      }
       await updateViatico(viatico.value!.id, data)
       showSuccess('Comprobante subido', 'El comprobante de retribución ha sido subido exitosamente y el estado cambió a Confirmado')
       selectedFile.value = null

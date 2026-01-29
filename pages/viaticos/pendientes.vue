@@ -42,20 +42,21 @@
 import { ref, watch, onMounted, computed, h } from 'vue'
 import { useViaticos } from '~/composables/useViaticos'
 import { useUserRole } from '~/composables/auth/useUserRole'
-import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { UButton, UBadge } from '#components'
 import { formatDateTimeToDmy, formatCurrency } from '~/utils/formatters'
 import { ROLES } from '~/constants/roles'
+import EvidenciasModal from '~/components/viaticos/EvidenciasModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import type { FileItem } from '~/types/commons/file'
+import type { ViaticoPago } from '~/types/viatico'
 
 const { viaticos, loading, error, pagination, loadPendientes, getStatusColor, getStatusLabel } = useViaticos()
 const { hasRole } = useUserRole()
-const { showError } = useModal()
 const overlay = useOverlay()
+const evidenciasModal = overlay.create(EvidenciasModal)
 const modalPreview = overlay.create(ModalPreview)
 
 const search = ref('')
@@ -110,7 +111,7 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => {
       const status = row.original.status
       return h(UBadge, {
-        color: getStatusColor(status),
+        color: getStatusColor(status) as 'primary' | 'success' | 'error' | 'warning' | 'neutral' | 'info' | 'secondary' | 'transparent',
         variant: 'subtle',
         label: getStatusLabel(status)
       })
@@ -120,7 +121,33 @@ const columns: TableColumn<any>[] = [
     accessorKey: 'receipt_file',
     header: 'Comprobante',
     cell: ({ row }: { row: any }) => {
-      if (row.original.url_comprobante) {
+      const pagos: ViaticoPago[] = row.original.pagos || []
+      const urlComprobante = row.original.url_comprobante
+
+      if (pagos.length > 0) {
+        return h('div', { class: 'flex items-center gap-2' }, [
+          h(UBadge, {
+            color: 'primary' as const,
+            variant: 'soft',
+            size: 'xs',
+            label: `${pagos.length} ${pagos.length === 1 ? 'comprobante' : 'comprobantes'}`
+          }),
+          h(UButton, {
+            icon: 'i-heroicons-eye',
+            size: 'xs',
+            color: 'primary',
+            variant: 'ghost',
+            label: 'Ver',
+            onClick: () => {
+              evidenciasModal.open({
+                pagos,
+                subject: row.original.subject
+              })
+            }
+          })
+        ])
+      }
+      if (urlComprobante) {
         return h(UButton, {
           icon: 'i-heroicons-eye',
           size: 'xs',
@@ -129,21 +156,18 @@ const columns: TableColumn<any>[] = [
           onClick: () => {
             const fileItem: FileItem = {
               id: 0,
-              file_name: 'Comprobante',
-              file_url: row.original.url_comprobante,
+              file_name: String(urlComprobante).split('/').pop() || 'Comprobante',
+              file_url: urlComprobante,
               type: 'image',
               size: 0,
               lastModified: 0,
               file_ext: 'jpg'
             }
-            modalPreview.open({
-              file: fileItem,
-              isOpen: true
-            })
+            modalPreview.open({ file: fileItem, isOpen: true })
           }
         })
       }
-      return 'Sin comprobante'
+      return h('span', { class: 'text-gray-500 dark:text-gray-400 text-sm' }, 'Sin comprobante')
     }
   },
   {
@@ -155,7 +179,7 @@ const columns: TableColumn<any>[] = [
         size: 'xs',
         color: 'primary',
         variant: 'ghost',
-        onClick: () => navigateTo(`/viaticos/${row.original.id}`)
+        onClick: () => { void navigateTo(`/viaticos/${row.original.id}`) }
       })
     }
   }

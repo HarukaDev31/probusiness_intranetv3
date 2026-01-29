@@ -5,7 +5,8 @@ import type {
   UpdateViaticoRequest,
   ViaticosResponse,
   ViaticoResponse,
-  ViaticoFilters
+  ViaticoFilters,
+  ViaticoPaymentItem
 } from '~/types/viatico'
 
 export class ViaticoService extends BaseService {
@@ -107,23 +108,41 @@ export class ViaticoService extends BaseService {
   }
 
   /**
-   * Crear un nuevo viático
+   * Crear un nuevo viático.
+   * Si data.items está definido, se envía un item por concepto (concepto, monto, receipt_file).
+   * Si no, se usa el formato legacy: expense_description, total_amount, receipt_file.
    */
   static async createViatico(data: CreateViaticoRequest): Promise<ViaticoResponse> {
     try {
       const formData = new FormData()
-      // If an id is provided, include it so backend can handle create-or-update behavior
       if ((data as any).id !== undefined && (data as any).id !== null) {
         formData.append('id', String((data as any).id))
       }
       formData.append('subject', data.subject)
       formData.append('reimbursement_date', data.reimbursement_date)
       formData.append('requesting_area', data.requesting_area)
-      formData.append('expense_description', data.expense_description)
+      formData.append('expense_description', data.expense_description || '')
       formData.append('total_amount', data.total_amount.toString())
-      
-      if (data.receipt_file) {
-        formData.append('receipt_file', data.receipt_file)
+
+      const items = data.items && data.items.length > 0 ? data.items : null
+
+      if (items) {
+        items.forEach((item: ViaticoPaymentItem, index: number) => {
+          if (item.id !== undefined && item.id !== null) {
+            formData.append(`items[${index}][id]`, String(item.id))
+          }
+          formData.append(`items[${index}][concepto]`, item.concepto)
+          formData.append(`items[${index}][monto]`, String(item.monto))
+          if (item.receipt_file && item.receipt_file instanceof File) {
+            formData.append(`items[${index}][receipt_file]`, item.receipt_file)
+          } else if (item.existing_file_url) {
+            formData.append(`items[${index}][existing_file_url]`, item.existing_file_url)
+          }
+        })
+      } else {
+        if (data.receipt_file && data.receipt_file instanceof File) {
+          formData.append('receipt_file', data.receipt_file)
+        }
       }
 
       const response = await this.apiCall<ViaticoResponse>(this.baseUrl, {
@@ -138,23 +157,39 @@ export class ViaticoService extends BaseService {
   }
 
   /**
-   * Actualizar un viático
+   * Actualizar un viático.
+   * Acepta status/payment_receipt_file (admin) o datos completos (subject, reimbursement_date, items, etc.).
    */
   static async updateViatico(id: number, data: UpdateViaticoRequest): Promise<ViaticoResponse> {
     try {
       const formData = new FormData()
-      
+
       if (data.status) {
         formData.append('status', data.status)
       }
-      
-      // Para el comprobante de retribución (subido por admin)
+
+      if (data.subject !== undefined) formData.append('subject', data.subject)
+      if (data.reimbursement_date !== undefined) formData.append('reimbursement_date', data.reimbursement_date)
+      if (data.requesting_area !== undefined) formData.append('requesting_area', data.requesting_area)
+      if (data.expense_description !== undefined) formData.append('expense_description', data.expense_description)
+      if (data.total_amount !== undefined) formData.append('total_amount', String(data.total_amount))
+
+      const items = data.items && data.items.length > 0 ? data.items : null
+      if (items) {
+        items.forEach((item: ViaticoPaymentItem, index: number) => {
+          formData.append(`items[${index}][concepto]`, item.concepto)
+          formData.append(`items[${index}][monto]`, String(item.monto))
+          if (item.receipt_file && item.receipt_file instanceof File) {
+            formData.append(`items[${index}][receipt_file]`, item.receipt_file)
+          }
+        })
+      }
+
       if (data.payment_receipt_file !== undefined) {
         if (data.payment_receipt_file === null) {
-          // Para eliminar el archivo, enviar delete_file como true
           formData.append('delete_file', 'true')
         } else if (data.payment_receipt_file instanceof File) {
-          formData.append('payment_receipt_file', data.payment_receipt_file) // El backend espera 'receipt_file' pero lo guarda en payment_receipt_file
+          formData.append('payment_receipt_file', data.payment_receipt_file)
         }
       }
 

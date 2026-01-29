@@ -43,23 +43,19 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed, h } from 'vue'
 import { useViaticos } from '~/composables/useViaticos'
-import { useUserRole } from '~/composables/auth/useUserRole'
-import { useIsDesktop } from '~/composables/useResponsive'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { UButton, UBadge } from '#components'
 import { formatDateTimeToDmy, formatCurrency } from '~/utils/formatters'
-import { STATUS_BG_CLASSES } from '~/constants/ui'
 import CreateViaticoModal from '~/components/viaticos/CreateViaticoModal.vue'
+import EvidenciasModal from '~/components/viaticos/EvidenciasModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
-import type { CreateViaticoRequest } from '~/types/viatico'
+import type { CreateViaticoRequest, ViaticoPago } from '~/types/viatico'
 import type { FileItem } from '~/types/commons/file'
-import { tr } from '@nuxt/ui/runtime/locale/index.js'
 
-const { viaticos, loading, error, pagination, loadViaticos, createViatico, updateViatico, getStatusColor, getStatusLabel, formatAmount, deleteViatico } = useViaticos()
-const { hasRole } = useUserRole()
+const { viaticos, loading, error, pagination, loadViaticos, createViatico, updateViatico, getStatusColor, getStatusLabel, deleteViatico } = useViaticos()
 const { isDesktop } = useIsDesktop()
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
@@ -67,9 +63,9 @@ const { withSpinner } = useSpinner()
 const search = ref('')
 const filters = ref<Record<string, any>>({})
 
-// Overlay para el modal de creación
 const overlay = useOverlay()
 const createViaticoModal = overlay.create(CreateViaticoModal)
+const evidenciasModal = overlay.create(EvidenciasModal)
 const modalPreview = overlay.create(ModalPreview)
 
 const handleNewButtonClick = () => {
@@ -133,7 +129,7 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => {
       const status = row.original.status
       return h(UBadge, {
-        color: getStatusColor(status),
+        color: getStatusColor(status) as 'primary' | 'success' | 'error' | 'warning' | 'neutral' | 'info' | 'secondary' | 'transparent',
         variant: 'subtle',
         label: getStatusLabel(status)
       })
@@ -143,7 +139,33 @@ const columns: TableColumn<any>[] = [
     accessorKey: 'receipt_file',
     header: 'Evidencia',
     cell: ({ row }: { row: any }) => {
-      if (row.original.url_comprobante) {
+      const pagos: ViaticoPago[] = row.original.pagos || []
+      const urlComprobante = row.original.url_comprobante
+
+      if (pagos.length > 0) {
+        return h('div', { class: 'flex items-center gap-2' }, [
+          h(UBadge, {
+            color: 'primary' as const,
+            variant: 'soft',
+            size: 'xs',
+            label: `${pagos.length} ${pagos.length === 1 ? 'comprobante' : 'comprobantes'}`
+          }),
+          h(UButton, {
+            icon: 'i-heroicons-eye',
+            size: 'xs',
+            color: 'primary',
+            variant: 'ghost',
+            label: 'Ver',
+            onClick: () => {
+              evidenciasModal.open({
+                pagos,
+                subject: row.original.subject
+              })
+            }
+          })
+        ])
+      }
+      if (urlComprobante) {
         return h(UButton, {
           icon: 'i-heroicons-eye',
           size: 'xs',
@@ -152,21 +174,18 @@ const columns: TableColumn<any>[] = [
           onClick: () => {
             const fileItem: FileItem = {
               id: 0,
-              file_name: row.original.url_comprobante,
-              file_url: row.original.url_comprobante,
+              file_name: String(urlComprobante).split('/').pop() || 'Comprobante',
+              file_url: urlComprobante,
               type: 'image',
               size: 0,
               lastModified: 0,
               file_ext: 'jpg'
             }
-            modalPreview.open({
-              file: fileItem,
-              isOpen: true
-            })
+            modalPreview.open({ file: fileItem, isOpen: true })
           }
         })
       }
-      return 'Sin evidencia'
+      return h('span', { class: 'text-gray-500 dark:text-gray-400 text-sm' }, 'Sin evidencia')
     }
   },
   {
@@ -210,7 +229,7 @@ const columns: TableColumn<any>[] = [
           size: 'xs',
           color: 'primary',
           variant: 'ghost',
-          onClick: (event: MouseEvent) => { navigateTo(`/viaticos/${row.original.id}`) }
+          onClick: () => { void navigateTo(`/viaticos/${row.original.id}`) }
         }),
         // Editar (abrir modal en modo edición)
         h(UButton, {
@@ -223,18 +242,21 @@ const columns: TableColumn<any>[] = [
             if (isCompleted) return
             createViaticoModal.open({
               initialData: {
+                id: row.original.id,
                 subject: row.original.subject,
                 reimbursement_date: row.original.reimbursement_date,
                 requesting_area: row.original.requesting_area,
                 expense_description: row.original.expense_description,
-                total_amount: row.original.total_amount
+                total_amount: row.original.total_amount,
+                pagos: row.original.pagos,
+                url_comprobante: row.original.url_comprobante ?? null
               },
               mode: 'edit',
               onClose: () => createViaticoModal.close(),
               onSave: async (data: CreateViaticoRequest) => {
                 try {
                   await withSpinner(async () => {
-                    await updateViatico(row.original.id, data)
+                    await createViatico(data)
                     showSuccess('Viático actualizado', 'El viático ha sido actualizado exitosamente')
                     createViaticoModal.close()
                     await loadViaticos({
