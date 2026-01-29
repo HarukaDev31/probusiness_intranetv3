@@ -265,7 +265,7 @@
 
     <!-- Sticky Bottom Section - Pagination -->
     <div v-if="showBottomSection"
-      class="md:sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
+      class="md:sticky bottom-0 z-39 bg-[#f0f4f9] dark:bg-gray-900">
       <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
           {{ translations.showing }} {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} {{translations.a}} {{ Math.min((currentPage || 1) *
@@ -309,7 +309,7 @@ const { isDesktop } = useIsDesktop()
 const props = withDefaults(defineProps<DataTableProps>(), DATA_TABLE_DEFAULTS)
 
 // Emits
-const emit = defineEmits(['update:primarySearch'])
+const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'items-per-page-change', 'page-change'] )
 
 // Computed writable para v-model:page
 const currentPageModel = computed({

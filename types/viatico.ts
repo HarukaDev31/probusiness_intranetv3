@@ -104,6 +104,10 @@ export interface ViaticoFilters {
   fecha_inicio?: string
   fecha_fin?: string
   search?: string
+  // Filtro por área solicitante. Puede venir como `requesting_area` (backend) o
+  // `area_solicitante` (UI). Ambos se aceptan y se mapearán en el servicio.
+  requesting_area?: string
+  area_solicitante?: string
   page?: number
   per_page?: number
   sort_by?: string

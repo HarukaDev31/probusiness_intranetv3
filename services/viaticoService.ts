@@ -23,6 +23,9 @@ export class ViaticoService extends BaseService {
       if (filters?.status) queryParams.append('status', filters.status)
       if (filters?.fecha_inicio) queryParams.append('fecha_inicio', filters.fecha_inicio)
       if (filters?.fecha_fin) queryParams.append('fecha_fin', filters.fecha_fin)
+      // Mapear posibles claves de filtro de área desde la UI
+      if (filters?.requesting_area) queryParams.append('requesting_area', filters.requesting_area)
+      if (filters?.area_solicitante) queryParams.append('requesting_area', filters.area_solicitante)
       if (filters?.search) queryParams.append('search', filters.search)
       if (filters?.page) queryParams.append('page', filters.page.toString())
       if (filters?.per_page) queryParams.append('per_page', filters.per_page.toString())
@@ -47,6 +50,9 @@ export class ViaticoService extends BaseService {
       
       if (filters?.fecha_inicio) queryParams.append('fecha_inicio', filters.fecha_inicio)
       if (filters?.fecha_fin) queryParams.append('fecha_fin', filters.fecha_fin)
+      // Mapear posibles claves de filtro de área desde la UI
+      if (filters?.requesting_area) queryParams.append('requesting_area', filters.requesting_area)
+      if (filters?.area_solicitante) queryParams.append('requesting_area', filters.area_solicitante)
       if (filters?.search) queryParams.append('search', filters.search)
       if (filters?.page) queryParams.append('page', filters.page.toString())
       if (filters?.per_page) queryParams.append('per_page', filters.per_page.toString())
@@ -71,6 +77,9 @@ export class ViaticoService extends BaseService {
       
       if (filters?.fecha_inicio) queryParams.append('fecha_inicio', filters.fecha_inicio)
       if (filters?.fecha_fin) queryParams.append('fecha_fin', filters.fecha_fin)
+      // Mapear posibles claves de filtro de área desde la UI
+      if (filters?.requesting_area) queryParams.append('requesting_area', filters.requesting_area)
+      if (filters?.area_solicitante) queryParams.append('requesting_area', filters.area_solicitante)
       if (filters?.search) queryParams.append('search', filters.search)
       if (filters?.page) queryParams.append('page', filters.page.toString())
       if (filters?.per_page) queryParams.append('per_page', filters.per_page.toString())
