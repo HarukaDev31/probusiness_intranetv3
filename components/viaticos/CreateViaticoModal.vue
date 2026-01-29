@@ -61,11 +61,13 @@
 
                     <!-- Uploader -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Comprobante (Imagen)</label>
-                        <FileUploader
-                            ref="fileUploaderRef"
-                            :multiple="false"
-                            :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx']"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Comprobante
+                        </label>
+                        <FileUploader 
+                            ref="fileUploaderRef" 
+                            :multiple="false" 
+                            :accepted-types="['.jpg', '.jpeg', '.png', '.gif','.pdf','.doc','.docx']"
                             @file-added="handleFileAdded"
                             @file-removed="handleFileRemoved"
                             :show-save-button="false"

@@ -1,6 +1,6 @@
 <template>
 
-  <div v-if="currentRole !== ROLES.CONTENEDOR_ALMACEN" class="space-y-3 w-full grid grid-cols-2 lg:grid-cols-7 gap-2 h-auto min-h-0">
+  <div v-if="currentRole !== ROLES.CONTENEDOR_ALMACEN" :class="fullWidth ? 'w-full' : 'space-y-3 w-full grid grid-cols-2 lg:grid-cols-7 gap-2 h-auto min-h-0'">
     <div
       v-for="(item, index) in instances"
       :key="index"
@@ -80,12 +80,14 @@ interface Props {
   autoRefresh?: boolean
   refreshInterval?: number
   compact?: boolean
+  fullWidth?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   autoRefresh: false,
   refreshInterval: 30000, // 30 segundos por defecto
-  compact: false
+  compact: false,
+  fullWidth: false
 })
 
 const config = useRuntimeConfig()

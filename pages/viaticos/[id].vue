@@ -172,35 +172,31 @@
             <template #header>
               <div class="flex items-center gap-2">
                 <UIcon name="i-heroicons-document" class="w-5 h-5 text-primary-500" />
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Comprobante Inicial</h2>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Evidencia</h2>
               </div>
             </template>
             
             <div v-if="viatico.url_comprobante" class="space-y-3">
               <div class="relative group">
+                <div v-if="isImageFile(viatico.url_comprobante)">
                 <img 
                   :src="viatico.url_comprobante" 
                   alt="Comprobante Inicial" 
                   class="w-full h-auto rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-primary-400 transition-all duration-200 shadow-sm"
                   @click="() => openComprobanteModal(viatico?.url_comprobante, viatico?.url_comprobante)"
                 />
-                
+                </div>
+                <div v-else-if="isPdfFile(viatico.url_comprobante)">
+                  <iframe :src="viatico.url_comprobante" class="w-full h-auto rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-primary-400 transition-all duration-200 shadow-sm" frameborder="0"></iframe>
+                </div>  
+                <div v-else>
+                  <UIcon name="i-heroicons-document" class="w-5 h-5 text-primary-500" />
+                  <p class="text-sm text-gray-900 dark:text-white">{{ viatico.url_comprobante }}</p>
+                </div>
               </div>
-              <UButton 
-                icon="i-heroicons-eye" 
-                color="primary" 
-                variant="soft" 
-                size="sm"
-                class="w-full"
-                @click="() => openComprobanteModal(viatico?.url_comprobante, viatico?.url_comprobante)"
-              >
-                Ver Comprobante
-              </UButton>
+             
             </div>
-            <div v-else class="text-center py-8">
-              <UIcon name="i-heroicons-document-minus" class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-              <p class="text-sm text-gray-500 dark:text-gray-400 italic">Sin comprobante inicial</p>
-            </div>
+           
           </UCard>
 
           <!-- Comprobante de Retribución (solo para admin) -->
@@ -349,7 +345,20 @@ const goBack = () => {
     navigateTo('/viaticos')
   }
 }
-
+const isImageFile = (url: string) => {
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']
+  const extension = getFileExtension(url).toLowerCase()
+  return imageExtensions.includes(extension)
+}
+const isPdfFile = (url: string) => {
+  const pdfExtensions = ['pdf']
+  const extension = getFileExtension(url).toLowerCase()
+  return pdfExtensions.includes(extension)
+}
+const getFileExtension = (url: string) => {
+  const extension = url.split('.').pop()?.toLowerCase()
+  return extension || ''
+}
 const handleFileAdded = (file: File) => {
   selectedFile.value = file
 }

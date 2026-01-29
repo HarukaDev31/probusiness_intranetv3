@@ -84,6 +84,11 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.reimbursement_date)
   },
   {
+    accessorKey: 'return_date',
+    header: 'Fecha de devolución',
+    cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.return_date)
+  },
+  {
     accessorKey: 'requesting_area',
     header: 'Área Solicitante',
     cell: ({ row }: { row: any }) => row.original.requesting_area

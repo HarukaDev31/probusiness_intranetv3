@@ -174,6 +174,12 @@
             class="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
             Preferencias
           </div>
+          <WhatsappNumbersStatus :instances="[{ instanceName: 'ADMINISTRACION','key':'Administracion' }]"
+              :auto-refresh="true"
+              :refresh-interval="30000"
+              :full-width="true"
+              :compact="false"
+            />
           <div class="mt-2 space-y-1 px-2">
             <div class="py-2">
               <UButton variant="ghost" class="w-full rounded-md text-sm text-gray-700 dark:text-gray-300"
@@ -200,7 +206,9 @@
                   class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transform peer-checked:translate-x-4 transition-transform" />
               </label>
             </div>
+            
           </div>
+          
         </div>
       </div>
     </nav>
@@ -234,7 +242,6 @@ import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar'
 import { useUserRole } from '../composables/auth/useUserRole'
 import { useAuth } from '../composables/auth/useAuth'
 import { useNotifications } from '../composables/useNotifications'
-
 interface AuthUser {
   id: number | string
   email: string

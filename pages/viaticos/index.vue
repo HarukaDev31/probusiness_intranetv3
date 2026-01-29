@@ -113,15 +113,16 @@ const columns: TableColumn<any>[] = [
     header: 'Asunto',
     cell: ({ row }: { row: any }) => row.original.subject
   },
-  {
-    accessorKey: 'created_at',
-    header: 'Fecha Creación',
-    cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.created_at || row.original.created_at)
-  },
+
   {
     accessorKey: 'reimbursement_date',
     header: 'Fecha Reintegro',
     cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.reimbursement_date)
+  },
+  {
+    accessorKey: 'return_date',
+    header: 'Fecha de devolución',
+    cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.return_date)||'N/A'
   },
   {
     accessorKey: 'requesting_area',

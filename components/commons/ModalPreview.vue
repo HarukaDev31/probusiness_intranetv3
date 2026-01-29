@@ -162,7 +162,10 @@
                                 </div>
                             </div>
                         </div>
-                        
+                        <!-- Vista previa de PDF -->
+                        <div v-else-if="isPdfFile" class="w-full">
+                            <iframe :src="file?.file_url || ''" class="w-full h-[45vh] rounded-lg shadow-lg" frameborder="0"></iframe>
+                        </div>
                         <!-- Otros documentos (PDF, DOC, etc.) -->
                         <div v-else class="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <UIcon :name="getDocumentIcon" class="w-24 h-24 text-gray-400 mb-4" />
@@ -276,7 +279,11 @@ const isExcelFile = computed(() => {
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
     return ['xls', 'xlsx', 'xlsm'].includes(extension || '')
 })
-
+const isPdfFile = computed(() => {
+    if (!props.file?.file_name) return false
+    const extension = props.file.file_name.split('.').pop()?.toLowerCase()
+    return ['pdf'].includes(extension || '')
+})
 const getVideoMimeType = computed(() => {
     if (!props.file?.file_name) return 'video/mp4'
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
