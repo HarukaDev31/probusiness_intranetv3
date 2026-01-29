@@ -29,6 +29,7 @@
       @page-change="handlePageChange" 
       @items-per-page-change="handleItemsPerPageChange" 
       @filter-change="handleFilterChange"
+      @update:filters="handleUpdateFilters"
     >
       <template #error-state>
         <ErrorState :message="error || 'Error desconocido'" />
@@ -182,8 +183,25 @@ const handleItemsPerPageChange = (itemsPerPage: number) => {
   })
 }
 
-const handleFilterChange = (newFilters: Record<string, any>) => {
-  filters.value = newFilters
+// DataTable may emit either:
+// - ('filter-change', key, value) for single filter changes, OR
+// - ('update:filters', filtersObject) when clearing/updating all filters.
+const handleFilterChange = (arg1: any, arg2?: any) => {
+  // case: filter-change with key + value
+  if (typeof arg1 === 'string' && arg2 !== undefined) {
+    filters.value = { ...(filters.value || {}), [arg1]: arg2 }
+    return
+  }
+
+  // case: parent emitted a full filters object accidentally
+  if (arg1 && typeof arg1 === 'object') {
+    filters.value = arg1
+    return
+  }
+}
+
+const handleUpdateFilters = (newFilters: Record<string, any>) => {
+  filters.value = newFilters || {}
 }
 
 // Configuración de filtros
@@ -201,6 +219,19 @@ const filterConfig = computed<FilterConfig[]>(() => [
     type: 'date',
     placeholder: 'DD/MM/YYYY',
     options: []
+  },
+  {   
+    key: 'area_solicitante',
+    label: 'Área Solicitante',
+    type: 'select',
+    placeholder: 'Seleccionar área solicitante',
+    options: [
+      { label: 'Ventas', value: 'Ventas' },
+      { label: 'Marketing', value: 'Marketing' },
+      { label: 'Administración', value: 'Administración' },
+      { label: 'Finanzas', value: 'Finanzas' },
+      { label: 'Otros', value: 'Otros' }
+    ]
   }
 ])
 

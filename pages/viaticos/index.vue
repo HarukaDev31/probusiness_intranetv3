@@ -61,7 +61,7 @@ import { tr } from '@nuxt/ui/runtime/locale/index.js'
 const { viaticos, loading, error, pagination, loadViaticos, createViatico, updateViatico, getStatusColor, getStatusLabel, formatAmount, deleteViatico } = useViaticos()
 const { hasRole } = useUserRole()
 const { isDesktop } = useIsDesktop()
-const { showSuccess, showError } = useModal()
+const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 
 const search = ref('')
@@ -219,6 +219,8 @@ const columns: TableColumn<any>[] = [
           color: 'primary',
           variant: 'ghost',
           onClick: () => {
+            const isCompleted = row.original.status === 'CONFIRMED'
+            if (isCompleted) return
             createViaticoModal.open({
               initialData: {
                 subject: row.original.subject,
@@ -247,7 +249,9 @@ const columns: TableColumn<any>[] = [
                 }
               }
             })
-          }
+          },
+          // also expose disabled state so the button shows visually inactive
+          disabled: row.original.status === 'CONFIRMED'
         }),
         // Borrar
         h(UButton, {
@@ -256,22 +260,26 @@ const columns: TableColumn<any>[] = [
           color: 'error',
           variant: 'ghost',
           onClick: async () => {
-            const confirmed = confirm('¿Está seguro que desea eliminar este viático?')
-            if (!confirmed) return
-            try {
-              await withSpinner(async () => {
-                await deleteViatico(row.original.id)
-                showSuccess('Viático eliminado', 'El viático ha sido eliminado exitosamente')
-                await loadViaticos({
-                  page: pagination.value.current_page,
-                  per_page: pagination.value.per_page,
-                  search: search.value,
-                  ...filters.value
-                })
-              })
-            } catch (err: any) {
-              showError('Error al eliminar viático', err.message || 'Error desconocido')
-            }
+            showConfirmation(
+              'Confirmar eliminación',
+              '¿Estás seguro de que deseas eliminar este viático? Esta acción no se puede deshacer.',
+              async () => {
+                try {
+                  await withSpinner(async () => {
+                    await deleteViatico(row.original.id)
+                    showSuccess('Viático eliminado', 'El viático ha sido eliminado exitosamente')
+                    await loadViaticos({
+                      page: pagination.value.current_page,
+                      per_page: pagination.value.per_page,
+                      search: search.value,
+                      ...filters.value
+                    })
+                  })
+                } catch (err: any) {
+                  showError('Error al eliminar viático', err.message || 'Error desconocido')
+                }
+              }
+            )
           }
         })
       ])
