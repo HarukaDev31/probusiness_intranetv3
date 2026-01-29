@@ -179,6 +179,7 @@
               :refresh-interval="30000"
               :full-width="true"
               :compact="false"
+              v-if="currentRole !== ROLES.ADMINISTRACION"
             />
           <div class="mt-2 space-y-1 px-2">
             <div class="py-2">
