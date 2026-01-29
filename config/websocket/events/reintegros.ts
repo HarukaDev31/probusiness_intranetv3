@@ -21,9 +21,9 @@ import {
       const { showSuccess } = useModal()
       //data.data ="{\"viatico_id\":4,\"viatico_subject\":\"Taxi\",\"viatico_total_amount\":\"35.00\",\"viatico_status\":\"PENDING\",\"usuario_id\":28790,\"usuario_nombre\":\"Danitza\",\"message\":\"Vi\\u00e1tico creado exitosamente\",\"updated_at\":\"2026-01-29T15:07:51+00:00\"}"
 
-      const viatico = JSON.parse(data.data) 
+      const viatico = JSON.parse(data) 
       const {usuario_nombre, viatico_subject, viatico_total_amount} = viatico
-      const message = `El usuario ${usuario_nombre} ha solicitado el reintegro de ${viatico_total_amount} para ${viatico_subject}.`
+      const message = `El usuario ${usuario_nombre} ha solicitado el reintegro de S/ ${viatico_total_amount} para ${viatico_subject}.`
       showSuccess('Reintegro solicitado', message)
     })
   
