@@ -57,7 +57,7 @@ import ModalPreview from '~/components/commons/ModalPreview.vue'
 import type { CreateViaticoRequest } from '~/types/viatico'
 import type { FileItem } from '~/types/commons/file'
 
-const { viaticos, loading, error, pagination, loadViaticos, createViatico, getStatusColor, getStatusLabel, formatAmount } = useViaticos()
+const { viaticos, loading, error, pagination, loadViaticos, createViatico, updateViatico, getStatusColor, getStatusLabel, formatAmount, deleteViatico } = useViaticos()
 const { hasRole } = useUserRole()
 const { isDesktop } = useIsDesktop()
 const { showSuccess, showError } = useModal()
@@ -209,13 +209,78 @@ const columns: TableColumn<any>[] = [
     accessorKey: 'acciones',
     header: 'Acciones',
     cell: ({ row }: { row: any }) => {
-      return h(UButton, {
-        icon: 'i-heroicons-eye',
-        size: 'xs',
-        color: 'primary',
-        variant: 'ghost',
-        onClick: () => navigateTo(`/viaticos/${row.original.id}`)
-      })
+      return h('div', { class: 'flex gap-2' }, [
+        // Ver detalles
+        h(UButton, {
+          icon: 'i-heroicons-eye',
+          size: 'xs',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: (event: MouseEvent) => { navigateTo(`/viaticos/${row.original.id}`) }
+        }),
+        // Editar (abrir modal en modo edición)
+        h(UButton, {
+          icon: 'i-heroicons-pencil',
+          size: 'xs',
+          color: 'primary',
+          variant: 'ghost',
+          onClick: () => {
+            createViaticoModal.open({
+              initialData: {
+                subject: row.original.subject,
+                reimbursement_date: row.original.reimbursement_date,
+                requesting_area: row.original.requesting_area,
+                expense_description: row.original.expense_description,
+                total_amount: row.original.total_amount
+              },
+              mode: 'edit',
+              onClose: () => createViaticoModal.close(),
+              onSave: async (data: CreateViaticoRequest) => {
+                try {
+                  await withSpinner(async () => {
+                    await updateViatico(row.original.id, data)
+                    showSuccess('Viático actualizado', 'El viático ha sido actualizado exitosamente')
+                    createViaticoModal.close()
+                    await loadViaticos({
+                      page: pagination.value.current_page,
+                      per_page: pagination.value.per_page,
+                      search: search.value,
+                      ...filters.value
+                    })
+                  })
+                } catch (err: any) {
+                  showError('Error al actualizar viático', err.message || 'Error desconocido')
+                }
+              }
+            })
+          }
+        }),
+        // Borrar
+        h(UButton, {
+          icon: 'i-heroicons-trash',
+          size: 'xs',
+          color: 'error',
+          variant: 'ghost',
+          onClick: async () => {
+            const confirmed = confirm('¿Está seguro que desea eliminar este viático?')
+            if (!confirmed) return
+            try {
+              await withSpinner(async () => {
+                await deleteViatico(row.original.id)
+                showSuccess('Viático eliminado', 'El viático ha sido eliminado exitosamente')
+                await loadViaticos({
+                  page: pagination.value.current_page,
+                  per_page: pagination.value.per_page,
+                  search: search.value,
+                  ...filters.value
+                })
+              })
+            } catch (err: any) {
+              showError('Error al eliminar viático', err.message || 'Error desconocido')
+            }
+          }
+        })
+      ])
     }
   }
 ]
