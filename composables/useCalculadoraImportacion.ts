@@ -113,6 +113,7 @@ export const useCalculadoraImportacion = () => {
       label: 'CONFIRMADO',
       value: 'CONFIRMADO',
       class: 'bg-green-500',
+      disabled: true,
       showOptions: true
     }
   ])

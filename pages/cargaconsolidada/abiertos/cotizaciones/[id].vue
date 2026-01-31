@@ -383,7 +383,6 @@ const filterConfigProspectos = ref([
         options: [
             { label: 'Todos', value: 'todos', inrow: false },
             { label: 'PENDIENTE', value: 'PENDIENTE', inrow: true },
-            { label: 'COTIZADO', value: 'COTIZADO', inrow: true },
             { label: 'CONTACTADO', value: 'CONTACTADO', inrow: false },
             { label: 'CONFIRMADO', value: 'CONFIRMADO', inrow: true }
         ]
@@ -514,6 +513,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
             const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
+            const cod_cotizacion = String(pick(['cod_contract_calculator']) || '')
             return h('div', { class: '' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
@@ -542,7 +542,8 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                             )
                         )
                     )
-                ]) : null  
+                ]) : null ,
+                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotización: ${cod_cotizacion}`) : null
             ])
         }
     },
@@ -627,7 +628,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         handleRefresh(row.original.id)
                     }
                 }) : null,
-                row.original.cotizacion_file_url ? h(UButton, {
+                row.original.cotizacion_file_url  && !row.original.from_calculator ? h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
                     size: 'xs',
@@ -736,6 +737,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
             const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
+            const cod_cotizacion = String(pick(['cod_contract_calculator']) || '')
             return h('div', { class: 'py-2' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
@@ -764,7 +766,8 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                             )
                         )
                     )
-                ]) : null            
+                ]) : null ,
+                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotización: ${cod_cotizacion}`) : null
             ])
         }
         },
@@ -817,7 +820,14 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'cotizacion',
+        accessorKey: 'descuento',
+        header: 'Descuento',
+        cell: ({ row }: { row: any }) => {
+            return row.original.tarifa_descuento?formatCurrency(parseFloat(row.original.tarifa_descuento), 'USD'):'N/A'
+        }
+    },
+    {
+        accessorKey: 'cotizacion_calculator',
         header: 'Cotizacion',
         cell: ({ row }: { row: any }) => {
             // div with 3 button with icons file ,refresh an delete
@@ -841,7 +851,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         downloadFile(row.original.cotizacion_file_url)
                     }
                 }) : null,
-                row.original.cotizacion_file_url ? h(UButton, {
+                row.original.cotizacion_file_url &&(  (!row.original.from_calculator  || ((currentId.value === ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number))) && row.original.from_calculator )) ? h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
                     size: 'xs',

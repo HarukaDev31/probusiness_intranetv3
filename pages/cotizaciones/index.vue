@@ -60,11 +60,15 @@ const columns: TableColumn<any>[] = [
       const telefono = row.original?.whatsapp_cliente || row.original?.whatsapp || ''
       const dni = row.original?.dni_cliente || row.original?.dni || ''
       const codigo=row.original?.cod_cotizacion || ''
+      const cod_contract=row.original?.cod_contract || ''
+      const estado_cotizador=row.original?.estado_cotizador || ''
       return h('div', { class: 'py-2 w-30 whitespace-normal' }, [
         h('div', { class: 'font-medium' }, nombre),
         h('div', { class: 'text-sm text-gray-500' }, dni),
         h('div', { class: 'text-sm text-gray-500' }, telefono),
-        h('div', { class: 'text-sm text-gray-500' }, codigo)
+        h('div', { class: 'text-sm text-gray-500' }, codigo),
+        //if estado_cotizador is CONFIRMADO, show the cod_contract
+        estado_cotizador === 'CONFIRMADO' ? h('div', { class: 'text-sm text-gray-500' }, cod_contract) : null
       ])
     }
   },
