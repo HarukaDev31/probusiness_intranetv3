@@ -109,7 +109,7 @@
         <!-- Consolidado/Contenedor -->
         <UFormField label="Consolidado">
           <USelectMenu
-            v-model="form.contenedor_id"
+            :model-value="selectedContenedorOption"
             :items="contenedorOptions"
             value-attribute="value"
             placeholder="Seleccionar consolidado"
@@ -117,6 +117,7 @@
             class="w-full"
             searchable
             searchable-placeholder="Buscar consolidado..."
+            @update:model-value="onContenedorChange"
           />
         </UFormField>
 
@@ -124,7 +125,7 @@
         <UFormField v-if="calendarPermissions.canAssignResponsables" label="Responsables" :error="errors.responsables">
           <div class="space-y-3">
             <USelectMenu
-              v-model="form.responsable_ids"
+              :model-value="selectedResponsableOptions"
               :items="responsableOptions"
               value-attribute="value"
               placeholder="Seleccionar responsables"
@@ -133,23 +134,24 @@
               multiple
               searchable
               searchable-placeholder="Buscar responsable..."
+              @update:model-value="onResponsablesChange"
             >
-              <template #option="{ option }">
+              <template #item="{ item }">
                 <div class="flex items-center gap-2">
                   <div
-                    class="w-3 h-3 rounded-full"
-                    :style="{ backgroundColor: option.color || '#6B7280' }"
+                    class="w-2 h-2 rounded-full shrink-0"
+                    :style="{ backgroundColor: item.color || '#6B7280' }"
                   />
-                  <span>{{ option.label }}</span>
+                  <span>{{ item.label }}</span>
                 </div>
               </template>
             </USelectMenu>
 
-            <!-- Mostrar responsables seleccionados -->
+            <!-- Mostrar responsables seleccionados (id puede ser número u objeto según USelectMenu) -->
             <div v-if="form.responsable_ids.length > 0" class="flex flex-wrap gap-2">
               <UBadge
-                v-for="id in form.responsable_ids"
-                :key="id"
+                v-for="(item, index) in form.responsable_ids"
+                :key="toResponsableId(item) ?? index"
                 variant="soft"
                 size="lg"
                 class="pr-1"
@@ -157,23 +159,21 @@
                 <div class="flex items-center gap-1">
                   <div
                     class="w-2 h-2 rounded-full"
-                    :style="{ backgroundColor: getResponsableColorById(id) }"
+                    :style="{ backgroundColor: getResponsableColorById(toResponsableId(item)) }"
                   />
-                  <span>{{ getResponsableNameById(id) }}</span>
+                  <span>{{ getResponsableNameById(toResponsableId(item)) }}</span>
                   <UButton
                     icon="i-heroicons-x-mark"
                     variant="ghost"
                     size="xs"
                     class="ml-1"
-                    @click="removeResponsable(id)"
+                    @click="removeResponsable(item)"
                   />
                 </div>
               </UBadge>
             </div>
 
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              Máximo 2 responsables por actividad
-            </p>
+            
           </div>
         </UFormField>
 
@@ -227,7 +227,7 @@ import type {
   CalendarEventPriority,
   CreateCalendarEventRequest
 } from '~/types/calendar'
-import { PRIORITY_OPTIONS, MAX_RESPONSABLES_PER_ACTIVITY } from '~/constants/calendar'
+import { PRIORITY_OPTIONS } from '~/constants/calendar'
 import CreateActivityNameModal from '~/components/calendar/CreateActivityNameModal.vue'
 
 // Actividades predefinidas (catálogo)
@@ -308,24 +308,58 @@ const activityOptions = computed(() => {
 })
 
 const contenedorOptions = computed(() => {
-  const options: any[] = [{ label: 'Sin consolidado', value: null }]
+  const options: { label: string; value: number | null }[] = [{ label: 'Sin consolidado', value: null }]
+  const addedIds = new Set<number>()
   props.contenedores.forEach(c => {
     options.push({
       label: c.nombre || c.codigo || `#${c.id}`,
       value: c.id
     })
+    addedIds.add(c.id)
   })
+  // Si estamos editando y el evento tiene contenedor que no está en la lista, añadirlo para que se muestre
+  const eventContenedor = props.event?.contenedor
+  if (eventContenedor?.id != null && !addedIds.has(Number(eventContenedor.id))) {
+    options.push({
+      label: eventContenedor.nombre || eventContenedor.codigo || `#${eventContenedor.id}`,
+      value: Number(eventContenedor.id)
+    })
+  }
   return options
 })
+
+type ContenedorOption = { label: string; value: number | null }
+const selectedContenedorOption = computed(() => {
+  const id = form.value.contenedor_id
+  return contenedorOptions.value.find((o: ContenedorOption) => o.value === id) ?? null
+})
+const onContenedorChange = (payload: ContenedorOption | number | null) => {
+  if (payload == null) {
+    form.value.contenedor_id = null
+    return
+  }
+  form.value.contenedor_id = typeof payload === 'object' && 'value' in payload ? payload.value : (typeof payload === 'number' ? payload : null)
+}
 
 const responsableOptions = computed(() => {
   return props.responsables.map(r => ({
     label: r.nombre,
     value: r.id,
-    color: props.getResponsableColor(r.id, r.nombre),
-    disabled: form.value.responsable_ids.length >= MAX_RESPONSABLES_PER_ACTIVITY && !form.value.responsable_ids.includes(r.id)
+    color: props.getResponsableColor(r.id, r.nombre)
   }))
 })
+
+type ResponsableOption = { label: string; value: number; color: string }
+const selectedResponsableOptions = computed(() => {
+  const ids = form.value.responsable_ids
+  return responsableOptions.value.filter((o: ResponsableOption) =>
+    ids.some((id: number | unknown) => toResponsableId(id) === o.value)
+  )
+})
+const onResponsablesChange = (payload: ResponsableOption[] | number[] | unknown) => {
+  const arr = Array.isArray(payload) ? payload : []
+  form.value.responsable_ids = arr.map((item: unknown) => toResponsableId(item)).filter((id): id is number => typeof id === 'number')
+}
 
 // Funciones para manejo de actividades
 const handleActivitySelect = (selected: { label: string; value: number } | null) => {
@@ -350,11 +384,11 @@ const handleCreateNewActivity = async (name: string) => {
   isCreatingActivity.value = true
 
   try {
-    // Si hay callback para crear en el backend
+    // Si hay callback para crear en el backend (catálogo): no pushear a localActivities
+    // porque el store ya actualiza activityCatalog y viene como actividadesPredefinidas.
     if (props.onCreateActivity) {
       const newActivity = await props.onCreateActivity(name)
       if (newActivity) {
-        localActivities.value.push(newActivity)
         form.value.name = newActivity.name
         form.value.activity_id = newActivity.id
         selectedActivity.value = { label: newActivity.name, value: newActivity.id }
@@ -389,6 +423,15 @@ const formatDisplayDate = (date: CalendarDate): string => {
   return df.format(date.toDate(getLocalTimeZone()))
 }
 
+// Normalizar id: USelectMenu multiple puede guardar número o objeto { value }
+const toResponsableId = (item: number | { value?: number } | unknown): number => {
+  if (typeof item === 'number') return item
+  if (item && typeof item === 'object' && 'value' in item && typeof (item as { value: number }).value === 'number') {
+    return (item as { value: number }).value
+  }
+  return Number(item)
+}
+
 const getResponsableNameById = (id: number): string => {
   const responsable = props.responsables.find(r => r.id === id)
   return responsable?.nombre || 'Desconocido'
@@ -399,8 +442,9 @@ const getResponsableColorById = (id: number): string => {
   return props.getResponsableColor(id, responsable?.nombre)
 }
 
-const removeResponsable = (id: number) => {
-  form.value.responsable_ids = form.value.responsable_ids.filter(rid => rid !== id)
+const removeResponsable = (item: number | { value?: number }) => {
+  const id = toResponsableId(item)
+  form.value.responsable_ids = form.value.responsable_ids.filter(rid => toResponsableId(rid) !== id)
 }
 
 // Validación
@@ -502,8 +546,9 @@ const initializeForm = () => {
   if (props.event) {
     form.value.name = props.event.name || props.event.title || ''
     form.value.activity_id = props.event.id || null
-    form.value.priority = props.event.priority || 0
-    form.value.contenedor_id = props.event.contenedor_id || null
+    form.value.priority = props.event.priority ?? 0
+    const rawContenedorId = props.event.contenedor_id ?? props.event.contenedor?.id ?? null
+    form.value.contenedor_id = rawContenedorId != null ? Number(rawContenedorId) : null
     form.value.notes = props.event.notes || ''
     form.value.responsable_ids = props.event.charges?.map(c => c.user_id) || []
 
@@ -570,13 +615,6 @@ const initializeForm = () => {
 watch(() => props.event, () => {
   initializeForm()
 }, { immediate: true })
-
-// Limitar responsables a MAX_RESPONSABLES_PER_ACTIVITY
-watch(() => form.value.responsable_ids, (newIds) => {
-  if (newIds.length > MAX_RESPONSABLES_PER_ACTIVITY) {
-    form.value.responsable_ids = newIds.slice(0, MAX_RESPONSABLES_PER_ACTIVITY)
-  }
-})
 
 onMounted(() => {
   initializeForm()

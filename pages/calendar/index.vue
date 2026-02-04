@@ -591,9 +591,9 @@ const handleViewModeChange = (value: 'month' | 'week' | 'day' | 'activities') =>
   }
 }
 
-// Cargar datos de actividades
-const loadActivitiesData = async () => {
-  await getEvents()
+// Cargar datos de actividades (force = true tras crear/editar para evitar caché)
+const loadActivitiesData = async (force = false) => {
+  await getEvents(undefined, force)
   if (calendarPermissions.value.canViewTeamProgress) {
     await loadProgress()
   }
@@ -1231,7 +1231,7 @@ const goToToday = () => {
   // La petición se hará después de la animación
 }
 
-const loadEvents = async () => {
+const loadEvents = async (force = false) => {
   let startDate: string
   let endDate: string
   
@@ -1261,7 +1261,7 @@ const loadEvents = async () => {
   await getEvents({
     start_date: startDate,
     end_date: endDate
-  })
+  }, force)
 }
 
 const handleDayClick = (date: CalendarDate) => {
@@ -1431,10 +1431,9 @@ const handleSaveActivityOverlay = async (data: CreateCalendarEventRequest) => {
     if (result) {
       showSuccess('Actividad creada', 'La actividad se ha creado correctamente.')
       activityModal.close()
-      await loadEvents()
-      // Si está en vista de actividades, recargar también
+      await loadEvents(true)
       if (viewMode.value === 'activities') {
-        await loadActivitiesData()
+        await loadActivitiesData(true)
       }
     } else {
       showError('Error', 'No se pudo crear la actividad.')
@@ -1447,15 +1446,13 @@ const handleSaveActivityOverlay = async (data: CreateCalendarEventRequest) => {
 // Handler para actualizar actividades usando el overlay modal
 const handleUpdateActivityOverlay = async (data: CreateCalendarEventRequest & { id: number }) => {
   try {
-    console.log(calendarPermissions.value.canEditActivity)
     const result = await updateActivity(data)
     if (result) {
       showSuccess('Actividad actualizada', 'La actividad se ha actualizado correctamente.')
       activityModal.close()
-      await loadEvents()
-      // Si está en vista de actividades, recargar también
+      await loadEvents(true)
       if (viewMode.value === 'activities') {
-        await loadActivitiesData()
+        await loadActivitiesData(true)
       }
     } else {
       showError('Error', 'No se pudo actualizar la actividad.')

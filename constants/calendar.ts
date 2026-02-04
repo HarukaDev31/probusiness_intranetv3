@@ -54,9 +54,6 @@ export const COLOR_PRESETS = [
   '#1F2937'  // Dark
 ]
 
-// Máximo de responsables por actividad
-export const MAX_RESPONSABLES_PER_ACTIVITY = 2
-
 // Días de la semana
 export const WEEK_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 export const WEEK_DAYS_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']

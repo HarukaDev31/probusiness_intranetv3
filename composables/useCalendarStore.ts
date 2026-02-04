@@ -180,11 +180,8 @@ export const useCalendarStore = () => {
         () => CalendarService.createActivity(data),
         'Creando actividad...'
       )
-      if (activity) {
-        // Agregar a la lista local y transformar
-        const transformed = transformEvent(activity)
-        state.events.value.push(transformed)
-      }
+      // No hacer push aquí: el caller hace loadEvents/loadActivitiesData y reemplaza la lista.
+      // Evita duplicados cuando se recarga justo después de crear.
       return activity
     } catch (err: any) {
       state.error.value = err?.message || 'Error al crear actividad'

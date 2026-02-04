@@ -25,12 +25,7 @@
           />
         </UFormField>
 
-        <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            <UIcon name="i-heroicons-information-circle" class="w-4 h-4 inline mr-1" />
-            Esta actividad se agregará al catálogo y podrá ser reutilizada en futuras asignaciones.
-          </p>
-        </div>
+       
       </div>
     </template>
 
