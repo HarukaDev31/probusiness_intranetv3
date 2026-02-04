@@ -105,15 +105,18 @@
             @update:model-value="applyFilters"
           />
 
-          <!-- Consolidado -->
+          <!-- Consolidado (múltiple) -->
           <USelectMenu
-            v-model="filterContenedor"
-            :items="contenedorOptions"
+            :model-value="selectedContenedorOptions"
+            :items="contenedorOptionsMulti"
             value-attribute="value"
-            placeholder="Consolidado"
+            :placeholder="filterContenedorIds.length ? `${filterContenedorIds.length} seleccionado(s)` : 'Consolidado(s)'"
             size="sm"
-            class="w-40"
-            @update:model-value="applyFilters"
+            class="w-48 min-w-0"
+            multiple
+            searchable
+            searchable-placeholder="Buscar..."
+            @update:model-value="onContenedorIdsChange"
           />
         </div>
 
@@ -207,24 +210,46 @@
                   </div>
                 </td>
 
-                <!-- Notas -->
+                <!-- Notas: jefe ve/edita notas de la actividad; no-jefe ve/edita solo sus notas (charge) -->
                 <td class="px-4 py-3">
                   <div class="max-w-xs">
-                    <p
-                      v-if="activity.notes"
-                      class="text-sm text-gray-600 dark:text-gray-400 truncate cursor-pointer hover:text-primary-600"
-                      @click="openNotesModal(activity)"
-                    >
-                      {{ activity.notes }}
-                    </p>
-                    <UButton
-                      v-else
-                      icon="i-heroicons-plus"
-                      variant="ghost"
-                      size="xs"
-                      color="neutral"
-                      @click="openNotesModal(activity)"
-                    />
+                    <template v-if="isJefeImportaciones">
+                      <p
+                        v-if="activity.notes"
+                        class="text-sm text-gray-600 dark:text-gray-400 truncate cursor-pointer hover:text-primary-600"
+                        @click="openNotesModal(activity)"
+                      >
+                        {{ activity.notes }}
+                      </p>
+                      <UButton
+                        v-else
+                        icon="i-heroicons-plus"
+                        variant="ghost"
+                        size="xs"
+                        color="neutral"
+                        @click="openNotesModal(activity)"
+                      />
+                    </template>
+                    <template v-else>
+                      <template v-if="getMyCharge(activity)">
+                        <p
+                          v-if="getMyCharge(activity)?.notes"
+                          class="text-sm text-gray-600 dark:text-gray-400 truncate cursor-pointer hover:text-primary-600"
+                          @click="openNotesModal(activity, getMyCharge(activity))"
+                        >
+                          {{ getMyCharge(activity)?.notes }}
+                        </p>
+                        <UButton
+                          v-else
+                          icon="i-heroicons-plus"
+                          variant="ghost"
+                          size="xs"
+                          color="neutral"
+                          @click="openNotesModal(activity, getMyCharge(activity))"
+                        />
+                      </template>
+                      <span v-else class="text-sm text-gray-400 dark:text-gray-500">—</span>
+                    </template>
                   </div>
                 </td>
 
@@ -249,22 +274,31 @@
                 </td>
               </tr>
 
-              <!-- Loading -->
-              <tr v-if="loading">
-                <td colspan="10" class="px-4 py-12 text-center">
-                  <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 text-primary-500 animate-spin" />
-                </td>
-              </tr>
+              <!-- Loading skeleton -->
+              <template v-if="loading">
+                <tr v-for="i in 6" :key="i" class="animate-pulse">
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40"></div></td>
+                  <td class="px-4 py-3"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20"></div></td>
+                  <td class="px-4 py-3"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-14"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div></td>
+                  <td class="px-4 py-3"><div class="flex gap-1"><div class="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div><div class="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28"></div></td>
+                  <td class="px-4 py-3 text-center"><div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
       </UCard>
     </div>
 
-    <!-- Modal de Notas -->
+    <!-- Modal de Notas (jefe: notas de la actividad; no-jefe: mis notas del charge) -->
     <UModal :open="isNotesModalOpen" @close="closeNotesModal" class="w-full max-w-md">
       <template #header>
-        <h3 class="text-lg font-semibold">Notas de la actividad</h3>
+        <h3 class="text-lg font-semibold">{{ selectedCharge ? 'Mis notas' : 'Notas de la actividad' }}</h3>
       </template>
 
       <template #body>
@@ -274,7 +308,7 @@
             <p class="font-medium">{{ selectedActivity?.name || selectedActivity?.title }}</p>
           </div>
 
-          <UFormField label="Notas">
+          <UFormField :label="selectedCharge ? 'Mis notas' : 'Notas'">
             <UTextarea
               v-model="notesText"
               placeholder="Agregar notas..."
@@ -288,7 +322,7 @@
       <template #footer>
         <div class="flex justify-between w-full">
           <UButton
-            v-if="selectedActivity?.notes"
+            v-if="(selectedCharge ? selectedCharge.notes : selectedActivity?.notes)"
             label="Borrar"
             color="error"
             variant="ghost"
@@ -320,7 +354,7 @@ import { ref, computed, onMounted } from 'vue'
 import { CalendarDate, getLocalTimeZone, today, parseDate } from '@internationalized/date'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
-import type { CalendarEvent, CalendarEventStatus, CalendarEventPriority } from '~/types/calendar'
+import type { CalendarEvent, CalendarEventCharge, CalendarEventStatus, CalendarEventPriority } from '~/types/calendar'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS } from '~/constants/calendar'
 import StatusDropdown from '~/components/calendar/StatusDropdown.vue'
 import PriorityDropdown from '~/components/calendar/PriorityDropdown.vue'
@@ -338,6 +372,7 @@ const {
   updateChargeStatus,
   updateEventPriority,
   updateEventNotes,
+  updateChargeNotes,
   getResponsableColor,
   initialize
 } = useCalendarStore()
@@ -350,11 +385,12 @@ const filterEndDate = ref<CalendarDate | null>(null)
 const filterStatus = ref<CalendarEventStatus | null>(null)
 const filterPriority = ref<CalendarEventPriority | null>(null)
 const filterResponsable = ref<number | null>(null)
-const filterContenedor = ref<number | null>(null)
+const filterContenedorIds = ref<number[]>([])
 
-// Estado de notas
+// Estado de notas (para no-jefe se edita el charge del usuario; para jefe las notas de la actividad)
 const isNotesModalOpen = ref(false)
 const selectedActivity = ref<CalendarEvent | null>(null)
+const selectedCharge = ref<CalendarEventCharge | null>(null)
 const notesText = ref('')
 const savingNotes = ref(false)
 
@@ -424,6 +460,25 @@ const contenedorOptions = computed(() => {
   return options
 })
 
+const contenedorOptionsMulti = computed(() => {
+  return contenedores.value.map(c => ({
+    label: c.nombre || c.codigo || `#${c.id}`,
+    value: c.id
+  }))
+})
+
+const selectedContenedorOptions = computed(() => {
+  const ids = filterContenedorIds.value
+  if (ids.length === 0) return []
+  return contenedorOptionsMulti.value.filter(opt => ids.includes(opt.value))
+})
+
+const onContenedorIdsChange = (val: unknown) => {
+  const arr = Array.isArray(val) ? val : []
+  filterContenedorIds.value = arr.map((v: any) => typeof v === 'object' && v && 'value' in v ? v.value : v).filter((id): id is number => typeof id === 'number')
+  applyFilters()
+}
+
 // Helpers
 const formatDate = (dateStr: string | undefined): string => {
   if (!dateStr) return '-'
@@ -462,6 +517,10 @@ const canEditStatus = (activity: CalendarEvent): boolean => {
   return activity.charges?.some(c => c.user_id === Number(currentUserId.value)) || false
 }
 
+const getMyCharge = (activity: CalendarEvent): CalendarEventCharge | undefined => {
+  return activity.charges?.find(c => c.user_id === Number(currentUserId.value))
+}
+
 // Helper para extraer valor de un select (puede venir como objeto o primitivo)
 const extractValue = (val: any): any => {
   if (val === null || val === undefined) return null
@@ -494,11 +553,10 @@ const applyFilters = async () => {
     filters.responsable_id = responsableVal
   }
   
-  const contenedorVal = extractValue(filterContenedor.value)
-  if (contenedorVal) {
-    filters.contenedor_id = contenedorVal
+  if (filterContenedorIds.value.length > 0) {
+    filters.contenedor_ids = filterContenedorIds.value
   }
-  
+
   await getEvents(filters)
 }
 
@@ -528,16 +586,22 @@ const handlePriorityUpdate = async (activityId: number, priority: CalendarEventP
   }
 }
 
-// Notas
-const openNotesModal = (activity: CalendarEvent) => {
+// Notas (charge = notas del responsable actual; sin charge = notas de la actividad, jefe)
+const openNotesModal = (activity: CalendarEvent, charge?: CalendarEventCharge) => {
   selectedActivity.value = activity
-  notesText.value = activity.notes || ''
+  selectedCharge.value = charge ?? null
+  if (charge) {
+    notesText.value = charge.notes || ''
+  } else {
+    notesText.value = activity.notes || ''
+  }
   isNotesModalOpen.value = true
 }
 
 const closeNotesModal = () => {
   isNotesModalOpen.value = false
   selectedActivity.value = null
+  selectedCharge.value = null
   notesText.value = ''
 }
 
@@ -545,7 +609,12 @@ const saveNotes = async () => {
   if (!selectedActivity.value) return
   savingNotes.value = true
   try {
-    const success = await updateEventNotes(selectedActivity.value.id, notesText.value)
+    let success: boolean
+    if (selectedCharge.value) {
+      success = await updateChargeNotes(selectedCharge.value.id, notesText.value)
+    } else {
+      success = await updateEventNotes(selectedActivity.value.id, notesText.value)
+    }
     if (success) {
       showSuccess('Éxito', 'Notas guardadas correctamente')
       closeNotesModal()

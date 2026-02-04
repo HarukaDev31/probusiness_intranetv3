@@ -4,7 +4,7 @@
   <SidebarMenu v-model="sidebarVisible" :user="user" :menu-categories="sidebarCategories" @collapsed-change="(v) => sidebarCollapsed = v" />
 
     <!-- Main Content -->
-  <div class="flex-1 flex flex-col transition-all duration-300 w-80" :class="sidebarVisible ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-70') : ''">
+  <div class="flex-1 flex flex-col min-h-0 transition-all duration-300 w-80" :class="sidebarVisible ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-70') : ''">
       <!-- Top Header -->
       <header 
       class="bg-[#f0f4f9] dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 lg:hidden">
@@ -20,7 +20,7 @@
       </header>
 
       <!-- Page Content -->
-      <main ref="mainContentRef" :class="['flex-1 p-3 bg-[#f0f4f9] dark:bg-gray-900']" :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}">
+      <main ref="mainContentRef" :class="['flex-1 min-h-0 p-3 bg-[#f0f4f9] dark:bg-gray-900 flex flex-col', route.path.startsWith('/calendar') ? 'overflow-hidden' : '']" :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}">
         <div class="">
           <!-- <Breadcrumbs /> -->
         </div>
@@ -62,9 +62,9 @@ import type { SidebarCategory } from '../types/module'
 const sidebarVisible = ref(true)
 const sidebarCollapsed = ref(false)
 const mainContentRef = ref<HTMLElement | null>(null)
+const route = useRoute()
 
 const pageTitle = computed(() => {
-  const route = useRoute()
 
   // Ruta raíz
   if (route.path === '/') return 'Inicio'

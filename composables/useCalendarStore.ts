@@ -587,11 +587,13 @@ export const useCalendarStore = () => {
   // UTILIDADES PARA EVENTOS MULTI-DÍA
   // ============================================
 
-  const getEventColors = (event: CalendarEvent): string[] => {
+  const getEventColors = (event: CalendarEvent, options?: { usePriority?: boolean }): string[] => {
+    if (options?.usePriority) {
+      return [PRIORITY_COLORS[event.priority] ?? '#3b82f6']
+    }
     if (!event.charges || event.charges.length === 0) {
       return [PRIORITY_COLORS[event.priority] || '#3b82f6']
     }
-    
     return event.charges.map(charge => {
       const config = state.colorConfig.value.find(c => c.user_id === charge.user_id)
       if (config?.color_code) return config.color_code
@@ -708,15 +710,19 @@ export const useCalendarStore = () => {
     if (state.initialized.value && !force) {
       return
     }
-    
-    await Promise.all([
-      loadResponsables(force),
-      loadContenedores(force),
-      loadColorConfig(force),
-      loadActivityCatalog(force)
-    ])
-    
-    state.initialized.value = true
+
+    state.loading.value = true
+    try {
+      await Promise.all([
+        loadResponsables(force),
+        loadContenedores(force),
+        loadColorConfig(force),
+        loadActivityCatalog(force)
+      ])
+      state.initialized.value = true
+    } finally {
+      state.loading.value = false
+    }
   }
 
   // Invalidar caché (forzar recarga en la próxima petición)

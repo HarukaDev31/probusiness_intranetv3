@@ -9,7 +9,7 @@
         :compact="true"
         />
 
-        <div v-if="isDesktop || currentRole==ROLES.DOCUMENTACION">
+        <div v-if="isDesktop || currentRole==ROLES.DOCUMENTACION || currentRole==ROLES.JEFE_IMPORTACIONES">
             <DataTable title="Carga Consolidada Abierta" icon="" :show-title="true" :data="consolidadoData"
         :show-pagination="false" :show-export="false"
            
@@ -31,7 +31,7 @@
             </DataTable>
         </div>
         <!-- Mobile list view: visible only on small screens -->
-        <div v-if="currentRole!==ROLES.DOCUMENTACION" class="sm:hidden mt-4">
+        <div v-if="currentRole!==ROLES.DOCUMENTACION && currentRole!==ROLES.JEFE_IMPORTACIONES" class="sm:hidden mt-4">
             <div class="flex flex-col gap-3">
                 <template v-for="(row, idx) in consolidadoData" :key="row.id || idx">
                     <button type="button" @click="handleViewSteps(row.id)" class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4 flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary">

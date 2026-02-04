@@ -33,13 +33,31 @@ export class CalendarService extends BaseService {
   // ============================================
 
   /**
+   * Construye query string para GET; arrays se envían como key[]=val para que Laravel los reciba como array.
+   */
+  private static buildCalendarQueryString(filters?: CalendarFilters): string {
+    if (!filters || Object.keys(filters).length === 0) return ''
+    const params = new URLSearchParams()
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '') return
+      if (key === 'contenedor_ids' && Array.isArray(value)) {
+        value.forEach((id: number) => params.append('contenedor_ids[]', String(id)))
+      } else {
+        params.append(key, String(value))
+      }
+    })
+    const qs = params.toString()
+    return qs ? `?${qs}` : ''
+  }
+
+  /**
    * Obtener eventos/actividades con filtros
    */
   static async getEvents(filters?: CalendarFilters): Promise<CalendarResponse> {
     try {
-      const response = await this.apiCall<CalendarResponse>(`${this.baseUrl}/events`, {
-        method: 'GET',
-        params: filters
+      const query = this.buildCalendarQueryString(filters)
+      const response = await this.apiCall<CalendarResponse>(`${this.baseUrl}/events${query}`, {
+        method: 'GET'
       })
       return response
     } catch (error) {

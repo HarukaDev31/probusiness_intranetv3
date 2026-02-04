@@ -1,63 +1,50 @@
 <template>
-  <div class="w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col h-full">
+  <div class="w-52 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col h-full">
     <!-- Botones de acción -->
-    <div class="p-4 border-b border-gray-200 dark:border-gray-700 space-y-2">
-      <!-- Botón Crear (solo Jefe) -->
+    <div class="p-3 border-b border-gray-200 dark:border-gray-700 space-y-1.5">
       <UButton
         v-if="canCreate"
         icon="i-heroicons-plus"
         color="primary"
         label="Crear Actividad"
         class="w-full justify-center"
-        size="lg"
+        size="sm"
         @click="handleCreate('evento')"
       />
-      
-      <!-- Botón Ver Progreso (para todos) -->
       <UButton
         icon="i-heroicons-chart-bar"
         :color="canCreate ? 'neutral' : 'primary'"
         :variant="canCreate ? 'outline' : 'solid'"
         label="Ver Progreso"
         class="w-full justify-center"
-        :size="canCreate ? 'md' : 'lg'"
+        size="sm"
         @click="$emit('view-progress')"
       />
     </div>
 
-    <!-- Mini Calendario -->
-    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-      <div class="mb-2 flex items-center justify-between">
-        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+    <!-- Mini Calendario compacto -->
+    <div class="p-3 border-b border-gray-200 dark:border-gray-700">
+      <div class="mb-1.5 flex items-center justify-between">
+        <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">
           {{ miniCalendarMonthYear }}
-        </h3>
-        <div class="flex items-center gap-1">
-          <UButton
-            icon="i-heroicons-chevron-left"
-            variant="ghost"
-            size="xs"
-            @click="previousMonth"
-          />
-          <UButton
-            icon="i-heroicons-chevron-right"
-            variant="ghost"
-            size="xs"
-            @click="nextMonth"
-          />
+        </span>
+        <div class="flex items-center gap-0.5">
+          <UButton icon="i-heroicons-chevron-left" variant="ghost" size="xs" class="!p-1 min-w-0" @click="previousMonth" />
+          <UButton icon="i-heroicons-chevron-right" variant="ghost" size="xs" class="!p-1 min-w-0" @click="nextMonth" />
         </div>
       </div>
-      <div class="grid grid-cols-7 gap-1 text-xs">
+      <div class="grid grid-cols-7 gap-0.5 text-[11px]">
         <div
           v-for="day in ['D', 'L', 'M', 'X', 'J', 'V', 'S']"
           :key="day"
-          class="text-center text-gray-500 dark:text-gray-400 font-medium py-1"
+          class="text-center text-gray-500 dark:text-gray-400 font-medium py-0.5"
         >
           {{ day }}
         </div>
         <div
           v-for="(day, index) in miniCalendarDays"
           :key="index"
-          class="text-center py-1 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          class="text-center py-0.5 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors min-h-[22px] flex items-center justify-center"
           :class="{
             'text-gray-400 dark:text-gray-600': !day.isCurrentMonth,
             'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday,
@@ -71,7 +58,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 

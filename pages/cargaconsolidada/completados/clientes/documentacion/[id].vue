@@ -226,10 +226,10 @@
                                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
 
                                 <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
-                                    Documentación {{ currentRole === ROLES.DOCUMENTACION ? 'Perú' : '' }} - {{ proveedorActivo?.products }}
+                                    Documentación {{ currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES ? 'Perú' : '' }} - {{ proveedorActivo?.products }}
                                     
                                 </h3>
-                                <img  v-if="currentRole === ROLES.DOCUMENTACION" :src="CUSTOMIZED_ICONS_URL['PERU']" alt="Flag" class="w-5 h-5" />
+                                <img  v-if="currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES" :src="CUSTOMIZED_ICONS_URL['PERU']" alt="Flag" class="w-5 h-5" />
                                 <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
                                     Cambios sin guardar
                                 </UBadge>
@@ -335,7 +335,7 @@
                     </div>
                 </UCard>
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
-                    v-if="currentRole === ROLES.DOCUMENTACION">
+                    v-if="currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES">
                     <template #header>
                         <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
@@ -343,7 +343,7 @@
                                 <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
                                     Documentación China
                                 </h3>
-                                <img  v-if="currentRole === ROLES.DOCUMENTACION" :src="CUSTOMIZED_ICONS_URL['CHINA']" alt="Flag" class="w-5 h-5" />
+                                <img  v-if="currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES" :src="CUSTOMIZED_ICONS_URL['CHINA']" alt="Flag" class="w-5 h-5" />
 
                                 <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
                                     Cambios sin guardar
@@ -376,7 +376,7 @@
 
                 </UCard>
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
-                    v-if="currentRole === ROLES.DOCUMENTACION">
+                    v-if="currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES">
                     <template #header>
                         <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">

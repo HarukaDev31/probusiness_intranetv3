@@ -157,12 +157,18 @@
                 </td>
               </tr>
 
-              <!-- Loading -->
-              <tr v-if="loading">
-                <td colspan="7" class="px-4 py-12 text-center">
-                  <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 text-primary-500 animate-spin" />
-                </td>
-              </tr>
+              <!-- Loading skeleton -->
+              <template v-if="loading">
+                <tr v-for="i in 6" :key="i" class="animate-pulse">
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-44"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-14"></div></td>
+                  <td class="px-4 py-3"><div class="flex gap-1"><div class="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div></div></td>
+                  <td class="px-4 py-3 text-right"><div class="flex gap-1 justify-end"><div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div><div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div></div></td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -317,7 +323,7 @@ const extractValue = (val: any): any => {
 }
 
 // Acciones
-const applyFilters = async () => {
+const applyFilters = async (force = false) => {
   const filters: any = {}
   if (filterStartDate.value) {
     filters.start_date = `${filterStartDate.value.year}-${String(filterStartDate.value.month).padStart(2, '0')}-${String(filterStartDate.value.day).padStart(2, '0')}`
@@ -325,18 +331,15 @@ const applyFilters = async () => {
   if (filterEndDate.value) {
     filters.end_date = `${filterEndDate.value.year}-${String(filterEndDate.value.month).padStart(2, '0')}-${String(filterEndDate.value.day).padStart(2, '0')}`
   }
-  
   const responsableVal = extractValue(filterResponsable.value)
   if (responsableVal) {
     filters.responsable_id = responsableVal
   }
-  
   const contenedorVal = extractValue(filterContenedor.value)
   if (contenedorVal) {
     filters.contenedor_id = contenedorVal
   }
-  
-  await getEvents(filters)
+  await getEvents(filters, force)
 }
 
 const clearDateFilter = () => {
@@ -376,14 +379,14 @@ const handleSaveActivity = async (data: CreateCalendarEventRequest) => {
       if (result) {
         showSuccess('Éxito', 'Actividad actualizada correctamente')
         closeModal()
-        await applyFilters()
+        await applyFilters(true)
       }
     } else {
       const result = await createActivity(data)
       if (result) {
         showSuccess('Éxito', 'Actividad creada correctamente')
         closeModal()
-        await applyFilters()
+        await applyFilters(true)
       }
     }
   } catch (err: any) {
@@ -428,7 +431,7 @@ const deleteActivityConfirm = async () => {
       showSuccess('Éxito', 'Actividad eliminada correctamente')
       isDeleteModalOpen.value = false
       activityToDelete.value = null
-      await applyFilters()
+      await applyFilters(true)
     }
   } catch (err: any) {
     showError('Error', err?.message || 'No se pudo eliminar la actividad')

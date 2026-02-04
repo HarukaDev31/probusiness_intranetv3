@@ -11,7 +11,7 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
@@ -32,7 +32,7 @@
                 :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true"
                 :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados" @filter-change="handleFilterChangeEmbarcados">
@@ -71,7 +71,7 @@
                 :filters-value="filtersVariacion" :show-export="false" :show-body-top="true"
                 :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
@@ -1596,7 +1596,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
     }
 }
 onMounted(() => {
-    if (currentRole.value === ROLES.DOCUMENTACION) {
+    if (currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) {
         tabs.value = [
             {
                 label: 'Documentacion',

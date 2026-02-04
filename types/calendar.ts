@@ -255,6 +255,8 @@ export interface CalendarFilters {
   end_date?: string
   responsable_id?: number
   contenedor_id?: number
+  /** Varios consolidados (ej. en vista progreso). El backend acepta contenedor_ids[] */
+  contenedor_ids?: number[]
   status?: CalendarEventStatus
   priority?: CalendarEventPriority
 }

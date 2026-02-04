@@ -86,6 +86,27 @@
       </div>
     </div>
 
+    <!-- Skeleton para vista de actividades (tabla) -->
+    <div v-else-if="viewMode === 'activities'" class="bg-white dark:bg-gray-800 h-full p-4">
+      <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="grid grid-cols-7 gap-0 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3">
+          <div v-for="i in 7" :key="i" class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+        </div>
+        <div v-for="row in 8" :key="row" class="grid grid-cols-7 gap-0 border-b border-gray-200 dark:border-gray-700 px-4 py-3 items-center">
+          <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-24"></div>
+          <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-28"></div>
+          <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+          <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+          <div class="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-16"></div>
+          <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-14"></div>
+          <div class="flex gap-1">
+            <div class="h-8 w-8 bg-gray-300 dark:bg-gray-600 rounded"></div>
+            <div class="h-8 w-8 bg-gray-300 dark:bg-gray-600 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Skeleton para vista de día -->
     <div v-else class="bg-white dark:bg-gray-800 flex flex-col h-full">
       <div class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
@@ -134,7 +155,7 @@
 
 <script setup lang="ts">
 interface Props {
-  viewMode: 'month' | 'week' | 'day'
+  viewMode: 'month' | 'week' | 'day' | 'activities'
 }
 
 defineProps<Props>()

@@ -12,7 +12,7 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
@@ -35,7 +35,7 @@
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true" :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados"
@@ -83,7 +83,7 @@
                 :show-secondary-search="false" :show-filters="false" :filters-value="filtersVariacion"
                 :show-export="false" :show-body-top="true" :hide-back-button="false" :show-pagination="false"
                 @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.DOCUMENTACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">

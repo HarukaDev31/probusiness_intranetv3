@@ -1,15 +1,18 @@
 <template>
-  <div class="flex flex-wrap items-center gap-2 md:gap-3 p-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+  <div
+    class="flex items-center gap-1.5 shrink-0"
+    :class="inline ? 'flex-nowrap' : 'flex-wrap p-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 gap-2 md:gap-3'"
+  >
     <!-- Filtro por Consolidado/Contenedor -->
-    <div v-if="calendarPermissions.canFilterByContenedor" class="flex items-center gap-2">
-      <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Consolidado:</span>
+    <div v-if="calendarPermissions.canFilterByContenedor" class="flex items-center gap-1 shrink-0">
+      <span class="text-xs text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Consolidado</span>
       <USelectMenu
         v-model="selectedContenedor"
         :items="contenedorOptions"
         value-attribute="value"
         placeholder="Todos"
         size="xs"
-        class="w-[140px] sm:w-[180px]"
+        :class="compact ? 'w-[100px] sm:w-[110px]' : 'w-[120px] sm:w-[150px]'"
         searchable
         searchable-placeholder="Buscar..."
         @update:model-value="handleContenedorChange"
@@ -17,15 +20,15 @@
     </div>
 
     <!-- Filtro por Responsable (solo Jefe) -->
-    <div v-if="calendarPermissions.canFilterByResponsable" class="flex items-center gap-2">
-      <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Responsable:</span>
+    <div v-if="calendarPermissions.canFilterByResponsable" class="flex items-center gap-1 shrink-0">
+      <span class="text-xs text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Responsable</span>
       <USelectMenu
         v-model="selectedResponsable"
         :items="responsableOptions"
         value-attribute="value"
         placeholder="Todos"
         size="xs"
-        class="w-[140px] sm:w-[180px]"
+        :class="compact ? 'w-[100px] sm:w-[110px]' : 'w-[120px] sm:w-[150px]'"
         searchable
         searchable-placeholder="Buscar..."
         @update:model-value="handleResponsableChange"
@@ -33,7 +36,7 @@
         <template #option="{ option }">
           <div class="flex items-center gap-2">
             <div
-              class="w-3 h-3 rounded-full"
+              class="w-3 h-3 rounded-full shrink-0"
               :style="{ backgroundColor: option.color || '#6B7280' }"
             />
             <span>{{ option.label }}</span>
@@ -43,56 +46,35 @@
     </div>
 
     <!-- Filtro por Fecha (rango) -->
-    <div class="flex items-center gap-2">
-      <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Fecha:</span>
+    <div class="flex items-center gap-1 shrink-0">
+      <span class="text-xs text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Fecha</span>
       <UPopover>
         <UButton
           :label="dateRangeLabel"
           icon="i-heroicons-calendar"
           variant="outline"
           size="xs"
-          class="min-w-[160px]"
+          :class="compact ? 'min-w-[100px]' : 'min-w-[130px]'"
         />
         <template #content>
-          <div class="p-3 space-y-3">
-            <div>
-              <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Desde:</label>
-              <UCalendar v-model="startDate" class="w-full" />
+          <div class="p-3 flex flex-col gap-3 max-h-[85vh] overflow-y-auto">
+            <div class="flex flex-row gap-4 items-start">
+              <div class="flex flex-col">
+                <label class="text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</label>
+                <UCalendar v-model="startDate" />
+              </div>
+              <div class="flex flex-col">
+                <label class="text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
+                <UCalendar v-model="endDate" />
+              </div>
             </div>
-            <div>
-              <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Hasta:</label>
-              <UCalendar v-model="endDate" class="w-full" />
-            </div>
-            <div class="flex gap-2">
-              <UButton
-                label="Aplicar"
-                color="primary"
-                size="xs"
-                class="flex-1"
-                @click="applyDateRange"
-              />
-              <UButton
-                label="Limpiar"
-                variant="outline"
-                size="xs"
-                class="flex-1"
-                @click="clearDateRange"
-              />
+            <div class="flex gap-2 pt-1 border-t border-gray-200 dark:border-gray-700 pt-3">
+              <UButton label="Aplicar" color="primary" size="xs" class="flex-1" @click="applyDateRange" />
+              <UButton label="Limpiar" variant="outline" size="xs" class="flex-1" @click="clearDateRange" />
             </div>
           </div>
         </template>
       </UPopover>
-    </div>
-
-    <!-- Botón Configuración (solo Jefe) -->
-    <div v-if="calendarPermissions.canAccessConfig" class="ml-auto">
-      <UButton
-        icon="i-heroicons-cog-6-tooth"
-        label="Configuración"
-        variant="ghost"
-        size="xs"
-        @click="$emit('open-config')"
-      />
     </div>
   </div>
 </template>
@@ -107,6 +89,10 @@ interface Props {
   responsables: CalendarResponsable[]
   contenedores: CalendarContenedor[]
   calendarPermissions: any
+  /** En true, los filtros se muestran en línea (ej. dentro del header) sin barra propia */
+  inline?: boolean
+  /** Barra resumida: controles más estrechos y una sola fila */
+  compact?: boolean
   initialFilters?: {
     responsable_id?: number
     contenedor_id?: number
@@ -116,11 +102,10 @@ interface Props {
   getResponsableColor: (userId: number, nombre?: string) => string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { inline: false, compact: false })
 
 const emit = defineEmits<{
   (e: 'filter-change', filters: { responsable_id?: number; contenedor_id?: number; start_date?: string; end_date?: string }): void
-  (e: 'open-config'): void
 }>()
 
 // Estado local de filtros

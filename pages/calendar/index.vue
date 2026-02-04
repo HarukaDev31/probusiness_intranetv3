@@ -1,122 +1,58 @@
 <template>
-  <div class="flex h-screen bg-white dark:bg-gray-900">
-    <!-- Sidebar - Oculto en móvil, visible en desktop -->
-    <div class="hidden md:block">
-      <CalendarSidebar
-        :selected-date="currentDate as CalendarDate"
-        :can-create="isJefeImportaciones"
-        @date-select="handleSidebarDateSelect"
-        @date-double-click="handleSidebarDateDoubleClick"
-        @create="handleSidebarCreate"
-        @view-progress="navigateTo('/calendar/progreso')"
-      />
-    </div>
-
-    <!-- Sidebar móvil como drawer - z-index más bajo que la sidebar principal -->
-    <div
-      v-if="isSidebarOpen"
-      class="fixed inset-0 z-30 md:hidden"
-      @click="isSidebarOpen = false"
-    >
-      <div class="absolute inset-0 bg-black/50" />
-      <div
-        class="absolute left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl"
-        @click.stop
-      >
-        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Calendario</h2>
+  <div class="flex flex-col h-full min-h-0 bg-white dark:bg-gray-900">
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-h-0 min-w-0">
+      <!-- Barra resumida: una sola fila (estilo referencia jefe) -->
+      <div class="flex items-center py-5 gap-2 flex-nowrap border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 shrink-0">
+        
+        
+        <CalendarFilters
+          v-if="showCalendarFilters"
+          :responsables="responsables"
+          :contenedores="contenedores"
+          :calendar-permissions="calendarPermissions"
+          :get-responsable-color="getResponsableColor"
+          inline
+          compact
+          @filter-change="handleFilterChange"
+        />
+        <div class="flex items-center gap-1 ml-auto shrink-0">
           <UButton
-            icon="i-heroicons-x-mark"
+            v-if="isJefeImportaciones"
+            icon="i-heroicons-plus"
+            color="primary"
+            size="xs"
+            label="Crear Actividad"
+            class="hidden sm:inline-flex"
+            @click="openCreateActivity"
+          />
+          <UButton
+            icon="i-heroicons-chart-bar"
             variant="ghost"
-            size="sm"
-            @click="isSidebarOpen = false"
+            size="xs"
+            label="Progreso"
+            class="hidden sm:inline-flex"
+            title="Ver Progreso"
+            @click="navigateTo('/calendar/progreso')"
+          />
+          <USelect
+            v-model="viewMode"
+            :items="viewOptions"
+            size="xs"
+            class="w-[80px] sm:w-[90px]"
+            @update:model-value="handleViewModeChange"
+          />
+          <UButton
+            v-if="showCalendarFilters && calendarPermissions?.canAccessConfig"
+            icon="i-heroicons-cog-6-tooth"
+            variant="ghost"
+            size="xs"
+            class="!p-1.5"
+            title="Configuración"
+            @click="openConfig"
           />
         </div>
-        <CalendarSidebar
-          :selected-date="currentDate as CalendarDate"
-          :can-create="isJefeImportaciones"
-          @date-select="handleSidebarDateSelect"
-          @date-double-click="handleSidebarDateDoubleClick"
-          @create="handleSidebarCreate"
-          @view-progress="navigateTo('/calendar/progreso')"
-        />
       </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-      <!-- Header -->
-      <div class="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 md:px-6 py-2 md:py-3">
-        <div class="flex items-center justify-between gap-2">
-          <!-- Left: Logo and Navigation -->
-          <div class="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
-            <div class="flex items-center gap-1 md:gap-2">
-              <div class="w-8 h-8 md:w-10 md:h-10 bg-primary-500 rounded flex items-center justify-center text-white font-bold text-sm md:text-base">
-                C
-              </div>
-              <h1 class="text-base md:text-xl font-semibold text-gray-900 dark:text-white hidden sm:block">Calendario</h1>
-            </div>
-            
-            <div class="flex items-center gap-1 md:gap-2 flex-1 min-w-0">
-              <UButton
-                label="Hoy"
-                variant="outline"
-                size="xs"
-                class="hidden sm:inline-flex"
-                @click="goToToday"
-              />
-              <UButton
-                icon="i-heroicons-chevron-left"
-                variant="ghost"
-                size="xs"
-                @click="previousPeriod"
-              />
-              <UButton
-                icon="i-heroicons-chevron-right"
-                variant="ghost"
-                size="xs"
-                @click="nextPeriod"
-              />
-              <h2 class="text-sm md:text-lg font-semibold text-gray-900 dark:text-white truncate min-w-0">
-                <span class="hidden md:inline">{{ currentPeriodTitle }}</span>
-                <span class="md:hidden">{{ currentPeriodTitleShort }}</span>
-              </h2>
-            </div>
-          </div>
-
-          <!-- Right: View Selector and Calendar Sidebar Toggle -->
-          <div class="flex items-center gap-1 md:gap-2 flex-shrink-0">
-            <!-- Botón para abrir sidebar del calendario en móvil -->
-            <UButton
-              v-if="!isSidebarOpen"
-              icon="i-heroicons-squares-2x2"
-              variant="ghost"
-              size="xs"
-              class="md:hidden"
-              title="Abrir calendario"
-              @click="isSidebarOpen = true"
-            />
-            <USelect
-              v-model="viewMode"
-              :items="viewOptions"
-              size="xs"
-              class="w-[100px] sm:w-[120px]"
-              @update:model-value="handleViewModeChange"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Filtros del calendario (solo para roles con permisos) -->
-      <CalendarFilters
-        v-if="showCalendarFilters"
-        :responsables="responsables"
-        :contenedores="contenedores"
-        :calendar-permissions="calendarPermissions"
-        :get-responsable-color="getResponsableColor"
-        @filter-change="handleFilterChange"
-        @open-config="openConfig"
-      />
 
       <!-- Progreso del equipo (solo para Jefe de Importaciones) -->
       <ProgressCards
@@ -126,28 +62,33 @@
         :get-responsable-color="getResponsableColor"
       />
 
-      <!-- Calendar Content -->
-      <div class="flex-1 overflow-auto relative">
+      <!-- Calendar Content (único scroll) -->
+      <div class="flex-1 min-h-0 overflow-auto relative px-4 md:px-6 lg:px-8 py-4">
         <div v-if="error && !loading" class="text-center py-12">
           <p class="text-red-500">{{ error }}</p>
           <UButton label="Reintentar" @click="viewMode === 'activities' ? loadActivitiesData() : loadEvents()" class="mt-4" />
         </div>
 
         <!-- Vista de Actividades (tabla) -->
-        <div v-if="viewMode === 'activities'" class="h-full">
-          <ActivityTable
-            :activities="visibleActivities"
-            :calendar-permissions="calendarPermissions"
-            :current-user-id="Number(currentUserId) || 0"
-            :is-jefe="isJefeImportaciones"
-            :get-responsable-color="getResponsableColor"
-            @create="openActivityModal()"
-            @edit="openActivityModal"
-            @delete="handleDeleteActivity"
-            @open-notes="openNotesModal"
-            @update-status="handleUpdateStatus"
-            @update-priority="handleUpdatePriority"
-          />
+        <div v-if="viewMode === 'activities'" class="h-full relative">
+          <div v-if="loading" class="absolute inset-0 z-20 bg-white dark:bg-gray-900">
+            <CalendarSkeleton view-mode="activities" />
+          </div>
+          <div v-show="!loading" class="h-full">
+            <ActivityTable
+              :activities="visibleActivities"
+              :calendar-permissions="calendarPermissions"
+              :current-user-id="Number(currentUserId) || 0"
+              :is-jefe="isJefeImportaciones"
+              :get-responsable-color="getResponsableColor"
+              @create="openActivityModal()"
+              @edit="openActivityModal"
+              @delete="handleDeleteActivity"
+              @open-notes="openNotesModal"
+              @update-status="handleUpdateStatus"
+              @update-priority="handleUpdatePriority"
+            />
+          </div>
         </div>
 
         <!-- Transición para vistas de calendario -->
@@ -164,13 +105,17 @@
               <CalendarSkeleton :view-mode="viewMode" />
             </div>
             <!-- Contenido del calendario -->
-            <div v-show="!loading">
-      <!-- Días de la semana -->
-      <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
+            <div v-show="!loading" class="pb-4">
+      <!-- Título del mes (estilo referencia: grande, centrado, mayúsculas) -->
+      <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-wide text-center py-3 md:py-4">
+        {{ currentPeriodTitle }}
+      </h2>
+      <!-- Días de la semana (fondo oscuro, texto blanco) -->
+      <div class="grid grid-cols-7 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-800 dark:bg-gray-900">
         <div
           v-for="day in weekDays"
           :key="day"
-          class="p-1 md:p-3 text-center text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900"
+          class="py-2.5 md:py-3 px-1 text-center text-xs md:text-sm font-bold text-white"
         >
           <span class="hidden sm:inline">{{ day }}</span>
           <span class="sm:hidden">{{ day.charAt(0) }}</span>
@@ -188,58 +133,247 @@
           <div
             v-for="(day, dayIndex) in week.days"
             :key="dayIndex"
-            class="min-h-[80px] md:min-h-[110px] border-r border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors"
-            :class="{
-              'bg-gray-50/50 dark:bg-gray-900/50': !day.isCurrentMonth,
-              'bg-white dark:bg-gray-800': day.isCurrentMonth,
-              'bg-blue-50 dark:bg-blue-900/10': day.isToday
-            }"
-            @click="handleDayClick(day.date)"
+            class="min-h-[150px] md:min-h-[195px] transition-colors flex flex-col"
+            :class="day.isCurrentMonth
+              ? 'border-r border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' + (day.isWeekend ? 'bg-gray-100 dark:bg-gray-700/50' : 'bg-white dark:bg-gray-800') + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : '')
+              : 'border-0 bg-transparent pointer-events-none'"
+            @click="day.isCurrentMonth && handleDayClick(day.date)"
           >
-            <!-- Número del día -->
-            <div class="p-1 md:p-1.5">
+            <!-- Número del día: solo en celdas del mes actual -->
+            <div v-if="day.isCurrentMonth" class="p-2 md:p-2.5">
               <span
                 class="text-sm font-medium"
                 :class="{
-                  'text-gray-400 dark:text-gray-600': !day.isCurrentMonth,
-                  'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday,
+                  'text-gray-900 dark:text-white': !day.isToday,
                   'text-primary-600 dark:text-primary-400 font-bold': day.isToday
                 }"
               >
                 {{ day.day }}
               </span>
             </div>
+            <!-- Ver más por día: solo si este día tiene más de 3 eventos -->
+            <div
+              v-if="day.isCurrentMonth && getEventsForDayInWeek(week, dayIndex).length > MAX_VISIBLE_EVENT_ROWS"
+              class="mt-auto pt-1 px-1 pointer-events-auto"
+              @click.stop
+            >
+              <button
+                type="button"
+                class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline focus:outline-none w-full text-left"
+                @click.stop="openMoreEventsModal(getEventsForDayInWeek(week, dayIndex).slice(MAX_VISIBLE_EVENT_ROWS), `Más eventos - ${day.day} ${monthNames[day.date.month - 1]}`)"
+              >
+                Ver más (+{{ getEventsForDayInWeek(week, dayIndex).length - MAX_VISIBLE_EVENT_ROWS }}) eventos
+              </button>
+            </div>
           </div>
         </div>
         
-        <!-- Eventos multi-día (capa absoluta sobre las celdas) -->
-        <div class="absolute top-6 md:top-7 left-0 right-0 pointer-events-none">
+        <!-- Eventos multi-día (capa absoluta). Máx 3 filas. Espacio entre filas. -->
+        <div class="absolute top-8 md:top-9 left-0 right-0 pointer-events-none">
           <div
-            v-for="(eventRow, rowIndex) in week.eventRows"
+            v-for="(eventRow, rowIndex) in week.eventRows.slice(0, MAX_VISIBLE_EVENT_ROWS)"
             :key="rowIndex"
-            class="relative h-5 md:h-6 mb-0.5"
+            class="relative h-8 md:h-9 mb-2"
           >
             <div
               v-for="eventSpan in eventRow"
               :key="`${eventSpan.event.id}-${eventSpan.startCol}`"
-              class="absolute h-full flex items-center cursor-pointer hover:opacity-90 transition-opacity text-[10px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto"
+              class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1"
               :class="{
                 'rounded-l-md': eventSpan.isStart,
                 'rounded-r-md': eventSpan.isEnd,
               }"
               :style="getMultiDayEventStyle(eventSpan)"
-              :title="eventSpan.event.title || eventSpan.event.name"
+              :title="(eventSpan.isStart ? '' : 'Continúa desde la semana anterior. ') + getEventTooltip(eventSpan.event)"
               @click.stop="openEditModal(eventSpan.event)"
             >
-              <span v-if="eventSpan.isStart" class="truncate px-1 md:px-2">
-                {{ eventSpan.event.title || eventSpan.event.name }}
+              <UTooltip v-if="!eventSpan.isStart" text="Continúa desde la semana anterior" class="shrink-0">
+                <span class="flex items-center justify-center w-5 h-5 rounded bg-white/20 text-[10px] font-bold">…</span>
+              </UTooltip>
+              <span v-if="eventSpan.isStart" class="truncate flex items-center gap-1 min-w-0 flex-1">
+                <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
+                  <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
+                </UTooltip>
+                <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
+                <span v-if="eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
+                  / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
+                </span>
               </span>
+            </div>
+            <!-- Avatares en la columna sábado (celda vacía), horizontal -->
+            <div
+              v-for="eventSpan in eventRow"
+              v-show="eventSpan.isEnd && getEventResponsables(eventSpan.event).length > 0"
+              :key="`avatars-${eventSpan.event.id}-${eventSpan.startCol}`"
+              class="absolute flex items-center gap-0.5 pointer-events-auto"
+              :style="getEventSpanAvatarStyle(eventSpan)"
+              @click.stop="openEditModal(eventSpan.event)"
+            >
+              <UTooltip
+                v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
+                :key="resp.id"
+                :text="resp.nombre"
+              >
+                <UAvatar
+                  :src="resp.avatar || undefined"
+                  :alt="resp.nombre"
+                  size="2xs"
+                  class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
+                  :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+                />
+              </UTooltip>
+              <button
+                v-if="getEventResponsables(eventSpan.event).length > 2"
+                type="button"
+                class="w-5 h-5 min-w-[20px] min-h-[20px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 cursor-pointer shrink-0"
+                title="Ver todos los responsables"
+                @click.stop="openResponsablesModal(eventSpan.event)"
+              >
+                +
+              </button>
             </div>
           </div>
         </div>
       </div>
             </div>
     </div>
+
+          <!-- Vista de Rango (varios meses según filtro de fechas) -->
+          <div v-else-if="viewMode === 'range'" :key="`range-${filters?.start_date}-${filters?.end_date}`" class="h-full bg-white dark:bg-gray-800 relative overflow-auto">
+            <div v-if="loading" class="absolute inset-0 z-20 bg-white dark:bg-gray-900">
+              <CalendarSkeleton view-mode="month" />
+            </div>
+            <div v-show="!loading" class="p-2 md:p-4 space-y-8 pb-6">
+              <template v-for="(monthData, monthIndex) in rangeViewData" :key="`${monthData.year}-${monthData.month}`">
+                <div class="min-w-0">
+                  <h3 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-wide text-center py-3 md:py-4">
+                    {{ monthData.title }}
+                  </h3>
+                  <div class="grid grid-cols-7 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-800 dark:bg-gray-900">
+                    <div
+                      v-for="day in weekDays"
+                      :key="day"
+                      class="py-2.5 md:py-3 px-1 text-center text-xs md:text-sm font-bold text-white"
+                    >
+                      <span class="hidden sm:inline">{{ day }}</span>
+                      <span class="sm:hidden">{{ day.charAt(0) }}</span>
+                    </div>
+                  </div>
+                  <div
+                    v-for="(week, weekIndex) in monthData.weeks"
+                    :key="weekIndex"
+                    class="relative"
+                  >
+                    <div class="grid grid-cols-7">
+                    <div
+                      v-for="(day, dayIndex) in week.days"
+                      :key="dayIndex"
+                      class="min-h-[150px] md:min-h-[195px] transition-colors flex flex-col"
+                      :class="day.isCurrentMonth
+                        ? 'border-r border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' + (day.isWeekend ? 'bg-gray-100 dark:bg-gray-700/50' : 'bg-white dark:bg-gray-800') + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : '')
+                        : 'border-0 bg-transparent pointer-events-none'"
+                      @click="day.isCurrentMonth && handleDayClick(day.date)"
+                    >
+                      <div v-if="day.isCurrentMonth" class="p-2 md:p-2.5">
+                        <span
+                          class="text-sm font-medium"
+                          :class="{
+                            'text-gray-900 dark:text-white': !day.isToday,
+                            'text-primary-600 dark:text-primary-400 font-bold': day.isToday
+                          }"
+                        >
+                          {{ day.day }}
+                        </span>
+                      </div>
+                      <!-- Ver más por día -->
+                      <div
+                        v-if="day.isCurrentMonth && getEventsForDayInWeek(week, dayIndex).length > MAX_VISIBLE_EVENT_ROWS"
+                        class="mt-auto pt-1 px-1 pointer-events-auto"
+                        @click.stop
+                      >
+                        <button
+                          type="button"
+                          class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline focus:outline-none w-full text-left"
+                          @click.stop="openMoreEventsModal(getEventsForDayInWeek(week, dayIndex).slice(MAX_VISIBLE_EVENT_ROWS), `Más eventos - ${day.day} ${monthNames[day.date.month - 1]}`)"
+                        >
+                          Ver más (+{{ getEventsForDayInWeek(week, dayIndex).length - MAX_VISIBLE_EVENT_ROWS }}) eventos
+                        </button>
+                      </div>
+                    </div>
+                    </div>
+                    <div class="absolute top-8 md:top-9 left-0 right-0 pointer-events-none">
+                      <div
+                        v-for="(eventRow, rowIndex) in week.eventRows.slice(0, MAX_VISIBLE_EVENT_ROWS)"
+                        :key="rowIndex"
+                        class="relative h-8 md:h-9 mb-2"
+                      >
+                        <div
+                          v-for="eventSpan in eventRow"
+                          :key="`${eventSpan.event.id}-${eventSpan.startCol}`"
+                          class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1"
+                          :class="{
+                            'rounded-l-md': eventSpan.isStart,
+                            'rounded-r-md': eventSpan.isEnd,
+                          }"
+                          :style="getMultiDayEventStyle(eventSpan)"
+                          :title="(eventSpan.isStart ? '' : 'Continúa desde la semana anterior. ') + getEventTooltip(eventSpan.event)"
+                          @click.stop="openEditModal(eventSpan.event)"
+                        >
+                          <UTooltip v-if="!eventSpan.isStart" text="Continúa desde la semana anterior" class="shrink-0">
+                            <span class="flex items-center justify-center w-5 h-5 rounded bg-white/20 text-[10px] font-bold">…</span>
+                          </UTooltip>
+                          <span v-if="eventSpan.isStart" class="truncate flex items-center gap-1 min-w-0 flex-1">
+                            <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
+                              <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
+                            </UTooltip>
+                            <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
+                            <span v-if="eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
+                              / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
+                            </span>
+                          </span>
+                        </div>
+                        <!-- Avatares en la columna sábado (celda vacía), horizontal -->
+                        <div
+                          v-for="eventSpan in eventRow"
+                          v-show="eventSpan.isEnd && getEventResponsables(eventSpan.event).length > 0"
+                          :key="`avatars-${eventSpan.event.id}-${eventSpan.startCol}`"
+                          class="absolute flex items-center gap-0.5 pointer-events-auto"
+                          :style="getEventSpanAvatarStyle(eventSpan)"
+                          @click.stop="openEditModal(eventSpan.event)"
+                        >
+                          <UTooltip
+                            v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
+                            :key="resp.id"
+                            :text="resp.nombre"
+                          >
+                            <UAvatar
+                              :src="resp.avatar || undefined"
+                              :alt="resp.nombre"
+                              size="2xs"
+                              class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
+                              :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+                            />
+                          </UTooltip>
+                          <button
+                            v-if="getEventResponsables(eventSpan.event).length > 2"
+                            type="button"
+                            class="w-5 h-5 min-w-[20px] min-h-[20px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 cursor-pointer shrink-0"
+                            title="Ver todos los responsables"
+                            @click.stop="openResponsablesModal(eventSpan.event)"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <p v-if="rangeViewData.length === 0 && !loading" class="text-gray-500 dark:text-gray-400 text-center py-8">
+                Selecciona un rango de fechas con meses diferentes en el filtro para ver esta vista.
+              </p>
+            </div>
+          </div>
 
           <!-- Vista de Semana -->
           <div v-else-if="viewMode === 'week'" :key="`week-${currentDate.year}-${currentDate.month}-${currentDate.day}`" class="h-full bg-white dark:bg-gray-800 relative">
@@ -256,16 +390,17 @@
           :key="day.date"
           class="p-2 md:p-3 text-center border-l border-gray-200 dark:border-gray-700 min-w-[80px] md:min-w-0"
           :class="{
-            'bg-primary-50 dark:bg-primary-900/20': day.isToday,
-            'bg-gray-50 dark:bg-gray-900': !day.isToday
+            'bg-primary-50 dark:bg-primary-900/20': day.isToday && !day.isWeekend,
+            'bg-gray-100 dark:bg-gray-700/50': day.isWeekend,
+            'bg-gray-50 dark:bg-gray-900': !day.isToday && !day.isWeekend
           }"
         >
           <div class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400">{{ day.dayName }}</div>
           <div
             class="text-sm md:text-lg font-semibold"
             :class="{
-              'text-primary-600 dark:text-primary-400': day.isToday,
-              'text-gray-900 dark:text-white': !day.isToday
+              'text-primary-600 dark:text-primary-400': day.isToday && !day.isWeekend,
+              'text-gray-900 dark:text-white': !day.isToday || day.isWeekend
             }"
           >
             {{ day.day }}
@@ -287,6 +422,7 @@
           v-for="day in weekDaysData"
           :key="day.date"
           class="border-r border-b border-gray-200 dark:border-gray-700 relative min-w-[80px] md:min-w-0"
+          :class="{ 'bg-gray-100 dark:bg-gray-700/50': day.isWeekend }"
         >
           <div
             v-for="hour in hours"
@@ -294,11 +430,11 @@
             class="h-12 md:h-16 border-b border-gray-200 dark:border-gray-700"
           ></div>
           <div
-            v-for="event in day.events"
+            v-for="event in day.events.slice(0, MAX_VISIBLE_EVENT_ROWS)"
             :key="event.id"
-            class="absolute left-0.5 md:left-1 right-0.5 md:right-1 text-[10px] md:text-xs px-1 md:px-2 py-0.5 md:py-1 rounded cursor-pointer hover:opacity-80 transition-opacity"
+            class="absolute left-0.5 md:left-1 right-0.5 md:right-1 text-[11px] md:text-xs px-2 py-1 rounded shadow-sm cursor-pointer hover:opacity-90 transition-opacity flex flex-col gap-0.5"
             :style="{
-              backgroundColor: event.color || '#3b82f6',
+              backgroundColor: getEventDisplayColor(event),
               color: '#ffffff',
               top: getEventTopPosition(event),
               height: getEventHeight(event)
@@ -306,10 +442,27 @@
             @click="openEditModal(event)"
             @dblclick="openEditModal(event)"
           >
-            <div class="truncate font-medium">{{ event.title }}</div>
-            <div v-if="event.start_time" class="text-xs opacity-90">
+            <div class="truncate font-medium flex items-center gap-1">
+              <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[event.priority ?? 0]}`">
+                <UIcon :name="getPriorityIcon(event.priority ?? 0)" class="w-3 h-3 shrink-0 opacity-90" />
+              </UTooltip>
+              {{ event.title || event.name }}
+            </div>
+            <div v-if="event.contenedor?.nombre" class="text-[10px] md:text-[11px] opacity-90 truncate">
+              {{ event.contenedor.nombre }}
+            </div>
+            <div v-if="event.start_time" class="text-[10px] opacity-90">
               {{ formatTime(event.start_time) }}
             </div>
+          </div>
+          <!-- Al final de la lista del día: abrir modal con el resto (no redirigir) -->
+          <div
+            v-if="day.events.length > MAX_VISIBLE_EVENT_ROWS"
+            class="absolute left-0.5 md:left-1 right-0.5 md:right-1 text-xs font-medium text-primary-600 dark:text-primary-400 cursor-pointer hover:underline py-0.5"
+            :style="{ top: getVerMasTopPosition(day.events.slice(0, MAX_VISIBLE_EVENT_ROWS)) }"
+            @click="openMoreEventsModal(day.events.slice(MAX_VISIBLE_EVENT_ROWS), `Más eventos - ${day.dayName} ${day.day}`)"
+          >
+            Ver más (+{{ day.events.length - MAX_VISIBLE_EVENT_ROWS }}) eventos
           </div>
         </div>
       </div>
@@ -363,13 +516,13 @@
                   @click="handleHourClick(hour)"
                 ></div>
 
-                <!-- Eventos del día -->
+                <!-- Eventos del día (máx 3 visibles + Ver más abre modal) -->
                 <div
-                  v-for="event in dayEvents"
+                  v-for="event in dayEvents.slice(0, MAX_VISIBLE_EVENT_ROWS)"
                   :key="event.id"
-                  class="absolute left-1 md:left-2 right-1 md:right-2 text-[10px] md:text-xs px-1 md:px-2 py-0.5 md:py-1 rounded cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
+                  class="absolute left-1 md:left-2 right-1 md:right-2 text-[11px] md:text-xs px-2 py-1.5 rounded cursor-pointer hover:opacity-90 transition-opacity shadow-sm flex flex-col gap-0.5"
                   :style="{
-                    backgroundColor: event.color || '#3b82f6',
+                    backgroundColor: getEventDisplayColor(event),
                     color: '#ffffff',
                     top: getEventTopPosition(event),
                     height: getEventHeight(event)
@@ -377,13 +530,30 @@
                   @click="openEditModal(event)"
                   @dblclick="openEditModal(event)"
                 >
-                  <div class="font-medium truncate">{{ event.title }}</div>
+                  <div class="font-medium truncate flex items-center gap-1">
+                    <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[event.priority ?? 0]}`">
+                      <UIcon :name="getPriorityIcon(event.priority ?? 0)" class="w-3 h-3 shrink-0 opacity-90" />
+                    </UTooltip>
+                    {{ event.title || event.name }}
+                  </div>
+                  <div v-if="event.contenedor?.nombre" class="text-[10px] opacity-90 truncate">
+                    {{ event.contenedor.nombre }}
+                  </div>
                   <div v-if="event.start_time && event.end_time" class="text-[10px] opacity-90">
                     {{ formatTime(event.start_time) }} - {{ formatTime(event.end_time) }}
                   </div>
                   <div v-else-if="event.start_time" class="text-[10px] opacity-90">
                     {{ formatTime(event.start_time) }}
                   </div>
+              </div>
+              <!-- Al final de la lista: abrir modal con el resto (no redirigir) -->
+              <div
+                v-if="dayEvents.length > MAX_VISIBLE_EVENT_ROWS"
+                class="absolute left-1 md:left-2 right-1 md:right-2 text-xs font-medium text-primary-600 dark:text-primary-400 cursor-pointer hover:underline py-1.5"
+                :style="{ top: getVerMasTopPosition(dayEvents.slice(0, MAX_VISIBLE_EVENT_ROWS)) }"
+                @click="openMoreEventsModal(dayEvents.slice(MAX_VISIBLE_EVENT_ROWS), formatDayHeader(currentDate as CalendarDate))"
+              >
+                Ver más (+{{ dayEvents.length - MAX_VISIBLE_EVENT_ROWS }}) eventos
               </div>
             </div>
           </div>
@@ -439,6 +609,64 @@
       @save="handleSaveNotes"
       @close="closeNotesModal"
     />
+
+    <!-- Modal: resto de eventos del día / semana (sin redirigir) -->
+    <UModal :open="showMoreEventsModal" @close="closeMoreEventsModal">
+      <template #header>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ moreEventsTitle }}</h3>
+      </template>
+      <template #body>
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700 max-h-[60vh] overflow-y-auto">
+          <li
+            v-for="event in moreEventsList"
+            :key="event.id"
+            class="py-2.5 px-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-2"
+            @click="openEventFromMoreModal(event)"
+          >
+            <div
+              class="w-3 h-3 rounded shrink-0"
+              :style="{ backgroundColor: getEventDisplayColor(event) }"
+            />
+            <div class="min-w-0 flex-1">
+              <span class="font-medium text-gray-900 dark:text-white truncate block">
+                <span v-if="!isJefeImportaciones" class="text-[10px] text-gray-500 dark:text-gray-400 mr-1">{{ PRIORITY_LABELS[event.priority ?? 0] }} —</span>
+                {{ event.title || event.name }}
+              </span>
+              <span v-if="event.contenedor?.nombre" class="text-xs text-gray-500 dark:text-gray-400 truncate block">{{ event.contenedor.nombre }}</span>
+            </div>
+            <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400 shrink-0" />
+          </li>
+        </ul>
+        <p v-if="moreEventsList.length === 0" class="text-gray-500 dark:text-gray-400 text-sm py-4 text-center">No hay más eventos.</p>
+      </template>
+    </UModal>
+
+    <!-- Modal: todos los responsables del evento -->
+    <UModal :open="showResponsablesModal" @close="closeResponsablesModal">
+      <template #header>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Responsables — {{ responsablesModalEvent?.title || responsablesModalEvent?.name || 'Evento' }}
+        </h3>
+      </template>
+      <template #body>
+        <ul v-if="responsablesModalEvent" class="divide-y divide-gray-200 dark:divide-gray-700 max-h-[50vh] overflow-y-auto">
+          <li
+            v-for="resp in getEventResponsables(responsablesModalEvent)"
+            :key="resp.id"
+            class="py-2.5 px-2 flex items-center gap-3"
+          >
+            <UAvatar
+              :src="resp.avatar || undefined"
+              :alt="resp.nombre"
+              size="sm"
+              :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+            />
+            <span class="font-medium text-gray-900 dark:text-white">{{ resp.nombre }}</span>
+          </li>
+        </ul>
+        <p v-if="responsablesModalEvent && getEventResponsables(responsablesModalEvent).length === 0" class="text-gray-500 dark:text-gray-400 text-sm py-4 text-center">Sin responsables asignados.</p>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -448,9 +676,9 @@ import { CalendarDate, getLocalTimeZone, today, parseDate, isSameDay } from '@in
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
 import type { CalendarEvent, CreateEventRequest, UpdateEventRequest, CreateCalendarEventRequest, CalendarEventStatus, CalendarEventPriority } from '~/types/calendar'
+import { PRIORITY_LABELS } from '~/types/calendar'
 import EventModal from '~/components/calendar/EventModal.vue'
 import QuickCreateModal from '~/components/calendar/QuickCreateModal.vue'
-import CalendarSidebar from '~/components/calendar/CalendarSidebar.vue'
 import CalendarSkeleton from '~/components/calendar/CalendarSkeleton.vue'
 import CalendarFilters from '~/components/calendar/CalendarFilters.vue'
 import ActivityTable from '~/components/calendar/ActivityTable.vue'
@@ -498,6 +726,7 @@ const {
   getEventColors,
   getEventPosition,
   isEventOnDate,
+  filters,
   setFilter,
   clearFilters,
   setDateRange,
@@ -544,7 +773,7 @@ const initializeFromRoute = () => {
   }
 }
 
-const viewMode = ref<'month' | 'week' | 'day' | 'activities'>('month')
+const viewMode = ref<'month' | 'week' | 'day' | 'activities' | 'range'>('month')
 
 // Estado para modales de actividades
 const isActivityModalOpen = ref(false)
@@ -565,27 +794,79 @@ const currentDate = ref<CalendarDate>(today(getLocalTimeZone()))
 const isDeleteModalOpen = ref(false)
 const selectedEvent = ref<CalendarEvent | null>(null)
 const pendingLoadEvents = ref(false)
-const isSidebarOpen = ref(false)
 
-// Opciones de vista (incluye 'activities' para Jefe de Importaciones)
+// Modal "Más eventos" (sin redirigir a otra vista)
+const showMoreEventsModal = ref(false)
+const moreEventsList = ref<CalendarEvent[]>([])
+const moreEventsTitle = ref('')
+const openMoreEventsModal = (events: CalendarEvent[], title: string) => {
+  moreEventsList.value = events
+  moreEventsTitle.value = title
+  showMoreEventsModal.value = true
+}
+
+// Modal de responsables (cuando hay más de 2 en la barra)
+const showResponsablesModal = ref(false)
+const responsablesModalEvent = ref<CalendarEvent | null>(null)
+const openResponsablesModal = (event: CalendarEvent) => {
+  responsablesModalEvent.value = event
+  showResponsablesModal.value = true
+}
+const closeResponsablesModal = () => {
+  showResponsablesModal.value = false
+  responsablesModalEvent.value = null
+}
+const closeMoreEventsModal = () => {
+  showMoreEventsModal.value = false
+  moreEventsList.value = []
+}
+const openEventFromMoreModal = (event: CalendarEvent) => {
+  closeMoreEventsModal()
+  openEditModal(event)
+}
+// Eventos que tocan un día concreto dentro de una semana (por columna 0-6)
+const getEventsForDayInWeek = (week: { days: any[], eventRows: EventSpan[][] }, dayIndex: number): CalendarEvent[] => {
+  if (week.days[dayIndex]?.isWeekend) return []
+  const byId = new Map<number, CalendarEvent>()
+  week.eventRows.forEach(row => {
+    row.forEach(span => {
+      if (span.startCol <= dayIndex && dayIndex <= span.endCol) {
+        byId.set(span.event.id, span.event)
+      }
+    })
+  })
+  return Array.from(byId.values())
+}
+
+// Opciones de vista (incluye 'Rango' cuando hay fechas de meses distintos y 'activities' para Jefe/Coord)
 const viewOptions = computed(() => {
   const options = [
     { label: 'Día', value: 'day' },
     { label: 'Semana', value: 'week' },
     { label: 'Mes', value: 'month' }
   ]
-  // Agregar vista de actividades para roles con permiso
+  const start = filters.value?.start_date
+  const end = filters.value?.end_date
+  if (start && end) {
+    const [sy, sm] = start.split('-').map(Number)
+    const [ey, em] = end.split('-').map(Number)
+    if (sy !== ey || sm !== em) {
+      options.push({ label: 'Rango', value: 'range' })
+    }
+  }
   if (isJefeImportaciones.value || isCoordinacionOrDocumentacion.value) {
     options.push({ label: 'Actividades', value: 'activities' })
   }
   return options
 })
 
-const handleViewModeChange = (value: 'month' | 'week' | 'day' | 'activities') => {
+const handleViewModeChange = (value: 'month' | 'week' | 'day' | 'activities' | 'range') => {
   viewMode.value = value
   updateUrl()
   if (value === 'activities') {
     loadActivitiesData()
+  } else if (value === 'range') {
+    loadEventsWithRange()
   } else {
     pendingLoadEvents.value = true
   }
@@ -600,15 +881,29 @@ const loadActivitiesData = async (force = false) => {
 }
 
 // Handlers para filtros
-const handleFilterChange = async (filters: any) => {
-  if (filters.responsable_id !== undefined) {
-    setFilter('responsable_id', filters.responsable_id)
+const handleFilterChange = async (newFilters: any) => {
+  if (newFilters.responsable_id !== undefined) {
+    setFilter('responsable_id', newFilters.responsable_id)
   }
-  if (filters.contenedor_id !== undefined) {
-    setFilter('contenedor_id', filters.contenedor_id)
+  if (newFilters.contenedor_id !== undefined) {
+    setFilter('contenedor_id', newFilters.contenedor_id)
   }
-  if (filters.start_date !== undefined || filters.end_date !== undefined) {
-    setDateRange(filters.start_date, filters.end_date)
+  if (newFilters.start_date !== undefined || newFilters.end_date !== undefined) {
+    setDateRange(newFilters.start_date || '', newFilters.end_date || '')
+    const start = newFilters.start_date
+    const end = newFilters.end_date
+    if (start && end) {
+      const [sy, sm] = start.split('-').map(Number)
+      const [ey, em] = end.split('-').map(Number)
+      if (sy !== ey || sm !== em) {
+        viewMode.value = 'range'
+      } else {
+        // Mismo mes: vista normal de mes
+        viewMode.value = 'month'
+        currentDate.value = parseDate(`${sy}-${String(sm).padStart(2, '0')}-01`) as CalendarDate
+        updateUrl()
+      }
+    }
   }
   await loadActivitiesData()
 }
@@ -639,6 +934,7 @@ const handleSaveActivity = async (data: CreateCalendarEventRequest) => {
         showSuccess('Actividad actualizada', 'La actividad se ha actualizado correctamente.')
         closeActivityModal()
         await loadActivitiesData()
+        await loadProgress(true)
       } else {
         showError('Error', 'No se pudo actualizar la actividad.')
       }
@@ -654,6 +950,7 @@ const handleSaveActivity = async (data: CreateCalendarEventRequest) => {
         showSuccess('Actividad creada', 'La actividad se ha creado correctamente.')
         closeActivityModal()
         await loadActivitiesData()
+        await loadProgress(true)
       } else {
         showError('Error', 'No se pudo crear la actividad.')
       }
@@ -693,6 +990,7 @@ const handleUpdateStatus = async (chargeId: number, status: CalendarEventStatus)
   const success = await updateChargeStatus(chargeId, status)
   if (success) {
     showSuccess('Estado actualizado', 'El estado se ha actualizado correctamente.')
+    await loadProgress(true)
   } else {
     showError('Error', 'No se pudo actualizar el estado.')
   }
@@ -748,7 +1046,9 @@ const openConfig = () => {
 // Inicializar desde la ruta
 initializeFromRoute()
 
-const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+// Semana empieza en lunes (col 0 = Lunes, col 6 = Domingo)
+const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+const MAX_VISIBLE_EVENT_ROWS = 3
 const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`)
 const overlay = useOverlay()
 const eventModal = overlay.create(EventModal)
@@ -768,7 +1068,11 @@ const currentPeriodTitle = computed(() => {
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ]
   const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-  
+  if (viewMode.value === 'range' && filters.value?.start_date && filters.value?.end_date) {
+    const [sy, sm, sd] = filters.value.start_date.split('-').map(Number)
+    const [ey, em, ed] = filters.value.end_date.split('-').map(Number)
+    return `${sd} ${months[sm - 1]} ${sy} - ${ed} ${months[em - 1]} ${ey}`
+  }
   if (viewMode.value === 'day') {
     try {
       // Calcular el día de la semana usando una fecha JavaScript
@@ -799,7 +1103,11 @@ const currentPeriodTitle = computed(() => {
 const currentPeriodTitleShort = computed(() => {
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
   const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-  
+  if (viewMode.value === 'range' && filters.value?.start_date && filters.value?.end_date) {
+    const [, sm, sd] = filters.value.start_date.split('-').map(Number)
+    const [, em, ed] = filters.value.end_date.split('-').map(Number)
+    return `${sd}/${sm} - ${ed}/${em}`
+  }
   if (viewMode.value === 'day') {
     try {
       const jsDate = new Date(currentDate.value.year, currentDate.value.month - 1, currentDate.value.day)
@@ -837,14 +1145,16 @@ const calendarDays = computed(() => {
   const firstDay = parseDate(`${year}-${String(month).padStart(2, '0')}-01`)
   const lastDay = firstDay.set({ day: firstDay.calendar.getDaysInMonth(firstDay) })
   
-  // Obtener el primer día de la semana del mes (domingo = 0)
+  // Primer día del mes en columna 0=lunes, 6=domingo. dayOfWeek: 0=dom, 1=lun,...,6=sáb → (x+6)%7 = lun=0, dom=6
   const startDayOfWeek = (firstDay as any).dayOfWeek % 7
+  const startDayMonday = (startDayOfWeek + 6) % 7
   const days: any[] = []
-  
-  // Días del mes anterior
   const prevMonth = firstDay.subtract({ months: 1 })
   const daysInPrevMonth = prevMonth.calendar.getDaysInMonth(prevMonth)
-  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+  const dayOfWeek = (d: CalendarDate) => (d as any).dayOfWeek % 7
+  const isWeekend = (d: CalendarDate) => { const w = dayOfWeek(d); return w === 0 || w === 6 }
+
+  for (let i = startDayMonday - 1; i >= 0; i--) {
     const day = prevMonth.set({ day: daysInPrevMonth - i })
     const dateStr = formatDateToStr(day as CalendarDate)
     days.push({
@@ -853,11 +1163,11 @@ const calendarDays = computed(() => {
       dateStr,
       isCurrentMonth: false,
       isToday: isSameDay(day, today(getLocalTimeZone())),
+      isWeekend: isWeekend(day),
       events: getEventsForDate(day)
     })
   }
-  
-  // Días del mes actual
+
   for (let day = 1; day <= lastDay.day; day++) {
     const date = parseDate(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
     const dateStr = formatDateToStr(date as CalendarDate)
@@ -867,22 +1177,23 @@ const calendarDays = computed(() => {
       dateStr,
       isCurrentMonth: true,
       isToday: isSameDay(date, today(getLocalTimeZone())),
+      isWeekend: isWeekend(date),
       events: getEventsForDate(date)
     })
   }
-  
-  // Completar hasta 42 días (6 semanas)
-  const remainingDays = 42 - days.length
+
+  const remainingDays = (7 - (days.length % 7)) % 7
   const nextMonth = lastDay.add({ days: 1 })
   for (let day = 1; day <= remainingDays; day++) {
     const date = nextMonth.set({ day: day })
     const dateStr = formatDateToStr(date as CalendarDate)
     days.push({
-      day: day,
+      day: date.day,
       date: date,
       dateStr,
       isCurrentMonth: false,
       isToday: isSameDay(date, today(getLocalTimeZone())),
+      isWeekend: isWeekend(date),
       events: getEventsForDate(date)
     })
   }
@@ -897,6 +1208,27 @@ interface EventSpan {
   endCol: number
   isStart: boolean
   isEnd: boolean
+}
+
+// Columnas 0 = Lunes, 5 = Sábado, 6 = Domingo. Segmentos solo días laborables (no sáb/dom).
+const getWeekdaySegments = (startCol: number, endCol: number): { startCol: number, endCol: number }[] => {
+  const segments: { startCol: number, endCol: number }[] = []
+  let runStart: number | null = null
+  for (let col = startCol; col <= endCol; col++) {
+    if (col === 5 || col === 6) {
+      if (runStart !== null) {
+        const end = 4
+        if (end >= runStart) segments.push({ startCol: runStart, endCol: end })
+        runStart = null
+      }
+      continue
+    }
+    if (runStart === null) runStart = col
+  }
+  if (runStart !== null) {
+    segments.push({ startCol: runStart, endCol: Math.min(endCol, 4) })
+  }
+  return segments
 }
 
 // Agrupar días por semanas y calcular posiciones de eventos multi-día
@@ -949,31 +1281,33 @@ const calendarWeeks = computed(() => {
         if (dayDate <= event.end_date) endCol = col
       }
       
-      const span: EventSpan = {
-        event,
-        startCol,
-        endCol,
-        isStart: event.start_date >= weekStartDate && event.start_date <= weekEndDate,
-        isEnd: event.end_date >= weekStartDate && event.end_date <= weekEndDate
-      }
+      const segments = getWeekdaySegments(startCol, endCol)
+      const origIsStart = event.start_date >= weekStartDate && event.start_date <= weekEndDate
+      const origIsEnd = event.end_date >= weekStartDate && event.end_date <= weekEndDate
       
-      // Encontrar una fila donde quepa el evento
-      let placed = false
-      for (const row of eventRows) {
-        // Verificar si hay espacio en esta fila
-        const hasConflict = row.some(existing => 
-          !(span.endCol < existing.startCol || span.startCol > existing.endCol)
-        )
-        if (!hasConflict) {
-          row.push(span)
-          placed = true
-          break
+      segments.forEach((seg, segIdx) => {
+        const span: EventSpan = {
+          event,
+          startCol: seg.startCol,
+          endCol: seg.endCol,
+          isStart: origIsStart && segIdx === 0,
+          isEnd: origIsEnd && segIdx === segments.length - 1
         }
-      }
-      
-      if (!placed) {
-        eventRows.push([span])
-      }
+        let placed = false
+        for (const row of eventRows) {
+          const hasConflict = row.some((existing: EventSpan) =>
+            !(span.endCol < existing.startCol || span.startCol > existing.endCol)
+          )
+          if (!hasConflict) {
+            row.push(span)
+            placed = true
+            break
+          }
+        }
+        if (!placed) {
+          eventRows.push([span])
+        }
+      })
     })
     
     weeks.push({ days: weekDays, eventRows })
@@ -982,9 +1316,39 @@ const calendarWeeks = computed(() => {
   return weeks
 })
 
+// Tooltip para evento (título + consolidado)
+const getEventTooltip = (event: CalendarEvent) => {
+  const title = event.title || event.name
+  const consolidado = event.contenedor?.nombre
+  return consolidado ? `${title} — ${consolidado}` : title
+}
+
+// Responsables del evento (desde charges o responsables)
+const getEventResponsables = (event: CalendarEvent) => {
+  if (event.responsables?.length) return event.responsables
+  const fromCharges = (event.charges || [])
+    .map(c => c.user)
+    .filter((u): u is NonNullable<typeof u> => !!u)
+  return fromCharges.length ? fromCharges : []
+}
+
+// Color de evento según rol: Jefe → responsables; otros → prioridad
+const getEventDisplayColor = (event: CalendarEvent) => {
+  return getEventColors(event, { usePriority: !isJefeImportaciones.value })[0]
+}
+
+// Indicador de prioridad (icono) para perfiles no-Jefe
+const getPriorityIcon = (priority: CalendarEventPriority) => {
+  switch (priority) {
+    case 2: return 'i-heroicons-exclamation-triangle'
+    case 1: return 'i-heroicons-minus-circle'
+    default: return 'i-heroicons-check-circle'
+  }
+}
+
 // Estilo para eventos multi-día
 const getMultiDayEventStyle = (span: EventSpan) => {
-  const colors = getEventColors(span.event)
+  const colors = getEventColors(span.event, { usePriority: !isJefeImportaciones.value })
   
   let background: string
   if (colors.length === 1) {
@@ -1013,6 +1377,181 @@ const getMultiDayEventStyle = (span: EventSpan) => {
   }
 }
 
+// Posición de los avatares en la columna del sábado (celda vacía)
+const getEventSpanAvatarStyle = (span: EventSpan) => {
+  const colWidth = 100 / 7
+  const saturdayCol = 5
+  return {
+    left: `calc(${saturdayCol * colWidth}% + 4px)`,
+    width: `calc(${colWidth}% - 8px)`,
+    top: 0,
+    height: '100%',
+  }
+}
+
+// Días de un mes para la vista de rango (semana empieza lunes)
+const getCalendarDaysForMonth = (year: number, month: number) => {
+  const firstDay = parseDate(`${year}-${String(month).padStart(2, '0')}-01`)
+  const lastDay = firstDay.set({ day: firstDay.calendar.getDaysInMonth(firstDay) })
+  const startDayOfWeek = (firstDay as any).dayOfWeek % 7
+  const startDayMonday = (startDayOfWeek + 6) % 7
+  const prevMonth = firstDay.subtract({ months: 1 })
+  const daysInPrevMonth = prevMonth.calendar.getDaysInMonth(prevMonth)
+  const days: any[] = []
+
+  const dayOfWeek = (d: CalendarDate) => (d as any).dayOfWeek % 7
+  const isWeekend = (d: CalendarDate) => { const w = dayOfWeek(d); return w === 0 || w === 6 }
+
+  for (let i = startDayMonday - 1; i >= 0; i--) {
+    const day = prevMonth.set({ day: daysInPrevMonth - i })
+    const dateStr = formatDateToStr(day as CalendarDate)
+    days.push({
+      day: day.day,
+      date: day,
+      dateStr,
+      isCurrentMonth: false,
+      isToday: isSameDay(day, today(getLocalTimeZone())),
+      isWeekend: isWeekend(day),
+      events: getEventsForDate(day)
+    })
+  }
+
+  for (let day = 1; day <= lastDay.day; day++) {
+    const date = parseDate(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
+    const dateStr = formatDateToStr(date as CalendarDate)
+    days.push({
+      day: day,
+      date: date,
+      dateStr,
+      isCurrentMonth: true,
+      isToday: isSameDay(date, today(getLocalTimeZone())),
+      isWeekend: isWeekend(date),
+      events: getEventsForDate(date)
+    })
+  }
+
+  const remainingDays = (7 - (days.length % 7)) % 7
+  const nextMonth = lastDay.add({ days: 1 })
+  for (let day = 1; day <= remainingDays; day++) {
+    const date = nextMonth.set({ day: day })
+    const dateStr = formatDateToStr(date as CalendarDate)
+    days.push({
+      day: date.day,
+      date: date,
+      dateStr,
+      isCurrentMonth: false,
+      isToday: isSameDay(date, today(getLocalTimeZone())),
+      isWeekend: isWeekend(date),
+      events: getEventsForDate(date)
+    })
+  }
+  return days
+}
+
+// Semanas de un mes para la vista de rango (misma estructura que calendarWeeks)
+const getCalendarWeeksForMonth = (year: number, month: number) => {
+  const days = getCalendarDaysForMonth(year, month)
+  const weeks: { days: any[], eventRows: EventSpan[][] }[] = []
+
+  for (let i = 0; i < days.length; i += 7) {
+    const weekDays = days.slice(i, i + 7)
+    const weekStartDate = weekDays[0].dateStr
+    const weekEndDate = weekDays[6].dateStr
+
+    const weekEvents = visibleEvents.value.filter(event => {
+      const eventStart = event.start_date
+      const eventEnd = event.end_date
+      if (!eventStart || !eventEnd) return false
+      return eventStart <= weekEndDate && eventEnd >= weekStartDate
+    })
+
+    const eventRows: EventSpan[][] = []
+    const processedEvents = new Set<number>()
+
+    weekEvents.forEach(event => {
+      if (processedEvents.has(event.id)) return
+      processedEvents.add(event.id)
+
+      let startCol = 0
+      let endCol = 6
+      for (let col = 0; col < 7; col++) {
+        const dayDate = weekDays[col].dateStr
+        if (event.start_date === dayDate) startCol = col
+        if (event.start_date > dayDate && col === 0) startCol = 0
+        if (event.start_date < weekStartDate) startCol = 0
+        if (event.end_date === dayDate) endCol = col
+        if (event.end_date < dayDate && col === 6) endCol = 6
+        if (event.end_date > weekEndDate) endCol = 6
+      }
+      for (let col = 0; col < 7; col++) {
+        const dayDate = weekDays[col].dateStr
+        if (dayDate >= event.start_date && startCol > col) startCol = col
+        if (dayDate <= event.end_date) endCol = col
+      }
+
+      const segments = getWeekdaySegments(startCol, endCol)
+      const origIsStart = event.start_date >= weekStartDate && event.start_date <= weekEndDate
+      const origIsEnd = event.end_date >= weekStartDate && event.end_date <= weekEndDate
+
+      segments.forEach((seg, segIdx) => {
+        const span: EventSpan = {
+          event,
+          startCol: seg.startCol,
+          endCol: seg.endCol,
+          isStart: origIsStart && segIdx === 0,
+          isEnd: origIsEnd && segIdx === segments.length - 1
+        }
+        let placed = false
+        for (const row of eventRows) {
+          const hasConflict = row.some((existing: EventSpan) =>
+            !(span.endCol < existing.startCol || span.startCol > existing.endCol)
+          )
+          if (!hasConflict) {
+            row.push(span)
+            placed = true
+            break
+          }
+        }
+        if (!placed) {
+          eventRows.push([span])
+        }
+      })
+    })
+
+    weeks.push({ days: weekDays, eventRows })
+  }
+  return weeks
+}
+
+const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+// Datos para la vista de rango: array de meses con sus semanas
+const rangeViewData = computed(() => {
+  if (viewMode.value !== 'range') return []
+  const start = filters.value?.start_date
+  const end = filters.value?.end_date
+  if (!start || !end) return []
+  const [startYear, startMonth] = start.split('-').map(Number)
+  const [endYear, endMonth] = end.split('-').map(Number)
+  const result: { year: number, month: number, title: string, weeks: { days: any[], eventRows: EventSpan[][] }[] }[] = []
+  let y = startYear
+  let m = startMonth
+  while (y < endYear || (y === endYear && m <= endMonth)) {
+    result.push({
+      year: y,
+      month: m,
+      title: `${monthNames[m - 1]} ${y}`,
+      weeks: getCalendarWeeksForMonth(y, m)
+    })
+    m++
+    if (m > 12) {
+      m = 1
+      y++
+    }
+  }
+  return result
+})
+
 // Calcular días de la semana para la vista semanal
 const weekDaysData = computed(() => {
   const year = currentDate.value.year
@@ -1027,12 +1566,16 @@ const weekDaysData = computed(() => {
   const days: any[] = []
   for (let i = 0; i < 7; i++) {
     const date = monday.add({ days: i })
+    const dow = (date as any).dayOfWeek % 7
+    const isWeekend = dow === 0 || dow === 6
+    const dowMonFirst = dow === 0 ? 6 : dow - 1
     days.push({
       day: date.day,
       date: date,
-      dayName: weekDays[(date as any).dayOfWeek % 7],
+      dayName: weekDays[dowMonFirst],
       isToday: isSameDay(date, today(getLocalTimeZone())),
-      events: getEventsForDate(date)
+      isWeekend,
+      events: isWeekend ? [] : getEventsForDate(date)
     })
   }
   return days
@@ -1058,7 +1601,7 @@ const getEventBarClasses = (event: CalendarEvent, dateStr: string) => {
 }
 
 const getEventBarStyle = (event: CalendarEvent, dateStr: string) => {
-  const colors = getEventColors(event)
+  const colors = getEventColors(event, { usePriority: !isJefeImportaciones.value })
   const position = getEventPosition(event, dateStr)
   
   let background: string
@@ -1091,9 +1634,12 @@ const shouldShowEventTitle = (event: CalendarEvent, dateStr: string) => {
   return position === 'start' || position === 'single'
 }
 
-// Eventos del día actual para la vista de día
+// Eventos del día actual para la vista de día (no mostrar en sábado/domingo)
 const dayEvents = computed(() => {
-  return getEventsForDate(currentDate.value as CalendarDate)
+  const d = currentDate.value as CalendarDate
+  const w = (d as any).dayOfWeek != null ? (d as any).dayOfWeek % 7 : new Date(d.year, d.month - 1, d.day).getDay()
+  if (w === 0 || w === 6) return []
+  return getEventsForDate(d)
 })
 
 const formatDayHeader = (date: CalendarDate) => {
@@ -1171,6 +1717,17 @@ const getEventHeight = (event: CalendarEvent) => {
   return `${(duration / 60) * 64}px`
 }
 
+// Posición "Ver más" debajo de los primeros N eventos (vista semana)
+const getVerMasTopPosition = (firstEvents: CalendarEvent[]) => {
+  if (firstEvents.length === 0) return '0px'
+  const last = firstEvents[firstEvents.length - 1]
+  const topStr = getEventTopPosition(last)
+  const heightStr = getEventHeight(last)
+  const top = parseInt(topStr, 10) || 0
+  const height = parseInt(heightStr, 10) || 64
+  return `${top + height + 4}px`
+}
+
 const updateUrl = () => {
   const year = currentDate.value.year
   const month = currentDate.value.month
@@ -1231,7 +1788,25 @@ const goToToday = () => {
   // La petición se hará después de la animación
 }
 
+const loadEventsWithRange = async () => {
+  const start = filters.value?.start_date
+  const end = filters.value?.end_date
+  if (!start || !end) return
+  await getEvents({
+    start_date: start,
+    end_date: end
+  }, true)
+}
+
 const loadEvents = async (force = false) => {
+  if (viewMode.value === 'range' && filters.value?.start_date && filters.value?.end_date) {
+    await getEvents({
+      start_date: filters.value.start_date,
+      end_date: filters.value.end_date
+    }, force)
+    return
+  }
+
   let startDate: string
   let endDate: string
   
@@ -1293,35 +1868,12 @@ const handleDayClick = (date: CalendarDate) => {
   })
 }
 
-const handleSidebarDateSelect = (date: CalendarDate) => {
-  currentDate.value = date as CalendarDate
-  // Mantener la vista actual (no cambiar automáticamente a mes)
-  updateUrl()
-  pendingLoadEvents.value = true
-  isSidebarOpen.value = false
-  // La petición se hará después de la animación
-}
-
-const handleSidebarDateDoubleClick = (date: CalendarDate) => {
-  currentDate.value = date as CalendarDate
-  viewMode.value = 'day'
-  updateUrl()
-  pendingLoadEvents.value = true
-  isSidebarOpen.value = false
-  // La petición se hará después de la animación
-}
-
-const handleSidebarCreate = (type: 'evento' | 'tarea') => {
-  // Verificar permisos (solo Jefe puede crear)
+const openCreateActivity = () => {
   if (!isJefeImportaciones.value) {
     showError('Sin permisos', 'Solo el Jefe de Importaciones puede crear actividades.')
     return
   }
-  
-  // Usar la fecha seleccionada actual (currentDate) para prellenar el modal
   const dateStr = `${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`
-  
-  // Abrir el modal de crear actividad
   activityModal.open({
     event: null,
     responsables: responsables.value,
@@ -1435,6 +1987,7 @@ const handleSaveActivityOverlay = async (data: CreateCalendarEventRequest) => {
       if (viewMode.value === 'activities') {
         await loadActivitiesData(true)
       }
+      await loadProgress(true)
     } else {
       showError('Error', 'No se pudo crear la actividad.')
     }
@@ -1454,6 +2007,7 @@ const handleUpdateActivityOverlay = async (data: CreateCalendarEventRequest & { 
       if (viewMode.value === 'activities') {
         await loadActivitiesData(true)
       }
+      await loadProgress(true)
     } else {
       showError('Error', 'No se pudo actualizar la actividad.')
     }

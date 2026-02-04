@@ -61,8 +61,11 @@
           </div>
         </template>
 
-        <div v-if="loading" class="flex justify-center py-8">
-          <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 text-primary-500 animate-spin" />
+        <div v-if="loading" class="flex flex-wrap items-center gap-6 justify-center md:justify-start py-4 animate-pulse">
+          <div v-for="i in 4" :key="i" class="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg">
+            <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+            <div class="h-8 bg-gray-300 dark:bg-gray-600 rounded w-12"></div>
+          </div>
         </div>
 
         <div v-else class="flex flex-wrap items-center gap-6 justify-center md:justify-start">
@@ -94,8 +97,12 @@
           </div>
         </template>
 
-        <div v-if="loading" class="flex justify-center py-8">
-          <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 text-primary-500 animate-spin" />
+        <div v-if="loading" class="space-y-4 py-4 animate-pulse">
+          <div v-for="i in 5" :key="i" class="flex items-center gap-4">
+            <div class="w-24 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+            <div class="flex-1 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+            <div class="w-14 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+          </div>
         </div>
 
         <div v-else-if="responsableProgress.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">

@@ -19,10 +19,28 @@
 
     <!-- Content -->
     <div class="max-w-4xl mx-auto px-4 md:px-6 py-6">
-      <!-- Loading -->
-      <div v-if="loading" class="flex justify-center py-12">
-        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 text-primary-500 animate-spin" />
-      </div>
+      <!-- Loading skeleton -->
+      <UCard v-if="loading">
+        <template #header>
+          <div class="flex items-center gap-2 animate-pulse">
+            <div class="w-5 h-5 bg-gray-300 dark:bg-gray-600 rounded"></div>
+            <div class="h-5 bg-gray-300 dark:bg-gray-600 rounded w-48"></div>
+          </div>
+        </template>
+        <div class="space-y-4 animate-pulse">
+          <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+          <div v-for="i in 6" :key="i" class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+              <div class="space-y-2">
+                <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-32"></div>
+                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-40"></div>
+              </div>
+            </div>
+            <div class="h-10 w-10 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
+          </div>
+        </div>
+      </UCard>
 
       <!-- Configuración de colores -->
       <UCard v-else>

@@ -40,7 +40,11 @@ export const WS_EVENTS = {
   USER_ACTIVITY: 'UserActivity',
   DASHBOARD_UPDATE: 'DashboardUpdate',
   //evnetos de administracion
-  REINTEGRO_REQUEST:'ViaticoCreado'
+  REINTEGRO_REQUEST:'ViaticoCreado',
+  // Eventos de Calendario (documentación, coordinación, jefe importaciones)
+  CALENDAR_ACTIVITY_CREATED: 'CalendarActivityCreated',
+  CALENDAR_ACTIVITY_UPDATED: 'CalendarActivityUpdated',
+  CALENDAR_ACTIVITY_DELETED: 'CalendarActivityDeleted'
 } as const
 
 // ============================================
