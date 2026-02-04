@@ -1,32 +1,28 @@
 <template>
   <div class="w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col h-full">
-    <!-- Botón Crear -->
-    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-      <UPopover>
-        <UButton
-          icon="i-heroicons-plus"
-          color="primary"
-          label="Crear"
-          class="w-full justify-center"
-          size="lg"
-        />
-        <template #content>
-          <div class="p-2">
-            <UButton
-              label="Evento"
-              variant="ghost"
-              class="w-full justify-start"
-              @click="handleCreate('evento')"
-            />
-            <UButton
-              label="Tarea"
-              variant="ghost"
-              class="w-full justify-start"
-              @click="handleCreate('tarea')"
-            />
-          </div>
-        </template>
-      </UPopover>
+    <!-- Botones de acción -->
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 space-y-2">
+      <!-- Botón Crear (solo Jefe) -->
+      <UButton
+        v-if="canCreate"
+        icon="i-heroicons-plus"
+        color="primary"
+        label="Crear Actividad"
+        class="w-full justify-center"
+        size="lg"
+        @click="handleCreate('evento')"
+      />
+      
+      <!-- Botón Ver Progreso (para todos) -->
+      <UButton
+        icon="i-heroicons-chart-bar"
+        :color="canCreate ? 'neutral' : 'primary'"
+        :variant="canCreate ? 'outline' : 'solid'"
+        label="Ver Progreso"
+        class="w-full justify-center"
+        :size="canCreate ? 'md' : 'lg'"
+        @click="$emit('view-progress')"
+      />
     </div>
 
     <!-- Mini Calendario -->
@@ -86,6 +82,7 @@ import { DateFormatter } from '@internationalized/date'
 
 interface Props {
   selectedDate?: CalendarDate | null
+  canCreate?: boolean
   onDateSelect?: (date: CalendarDate) => void
   onDateDoubleClick?: (date: CalendarDate) => void
   onCreate?: (type: 'evento' | 'tarea') => void
@@ -93,9 +90,17 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   selectedDate: null,
+  canCreate: false,
   onCreate: undefined,
   onDateDoubleClick: undefined
 })
+
+const emit = defineEmits<{
+  (e: 'create', type: 'evento' | 'tarea'): void
+  (e: 'date-select', date: CalendarDate): void
+  (e: 'date-double-click', date: CalendarDate): void
+  (e: 'view-progress'): void
+}>()
 
 const df = new DateFormatter('es-ES', { month: 'long', year: 'numeric' })
 const miniCalendarDate = ref<CalendarDate>(props.selectedDate ?? today(getLocalTimeZone()))
@@ -164,18 +169,21 @@ const miniCalendarDays = computed(() => {
 })
 
 const handleCreate = (type: 'evento' | 'tarea') => {
+  emit('create', type)
   if (props.onCreate) {
     props.onCreate(type)
   }
 }
 
 const handleMiniCalendarDayClick = (date: CalendarDate) => {
+  emit('date-select', date)
   if (props.onDateSelect) {
     props.onDateSelect(date)
   }
 }
 
 const handleMiniCalendarDayDoubleClick = (date: CalendarDate) => {
+  emit('date-double-click', date)
   if (props.onDateDoubleClick) {
     props.onDateDoubleClick(date)
   }

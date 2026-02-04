@@ -8,7 +8,8 @@ export const ROLES = {
     COTIZADOR: 'Cotizador',
     DOCUMENTACION: 'Documentacion',
     ADMINISTRACION: 'Administración',
-    SUB_ADMINISTRACION: 'SUB_ADMINISTRACION'
+    SUB_ADMINISTRACION: 'SUB_ADMINISTRACION',
+    JEFE_IMPORTACIONES: 'Jefe Importacion'
 } as const
 export const ID_JEFEVENTAS = 28791
 export const COTIZADORES_WITH_PRIVILEGES = [28911]
@@ -85,6 +86,13 @@ export const PERMISSIONS = {
         canExport: true,
         canFilter: true
     },
+    [ROLES.JEFE_IMPORTACIONES]: {
+        canViewSteps: true,
+        canEdit: true,
+        canDelete: true,
+        canExport: true,
+        canFilter: true
+    },
     default: {
         canViewSteps: false,
         canEdit: false,
@@ -93,6 +101,71 @@ export const PERMISSIONS = {
         canFilter: false
     }
 } as const
+
+// Permisos específicos del calendario por rol
+export const CALENDAR_PERMISSIONS = {
+    [ROLES.JEFE_IMPORTACIONES]: {
+        canViewAllActivities: true,
+        canEditPriority: true,
+        canEditAnyStatus: true,
+        canAssignResponsables: true,
+        canViewTeamProgress: true,
+        canViewResponsableProgress: true,
+        canAccessConfig: true,
+        canFilterByResponsable: true,
+        canFilterByContenedor: true,
+        canCreateActivity: true,
+        canDeleteActivity: true,
+        canEditActivity: true
+    },
+    [ROLES.COORDINACION]: {
+        canViewAllActivities: false,
+        canEditPriority: false,
+        canEditAnyStatus: false,
+        canAssignResponsables: false,
+        canViewTeamProgress: false,
+        canViewResponsableProgress: false,
+        canAccessConfig: false,
+        canFilterByResponsable: false,
+        canFilterByContenedor: true,
+        canCreateActivity: false,
+        canDeleteActivity: false,
+        canEditActivity: false 
+    },
+    [ROLES.DOCUMENTACION]: {
+        canViewAllActivities: false,
+        canEditPriority: false,
+        canEditAnyStatus: false,
+        canAssignResponsables: false,
+        canViewTeamProgress: false,
+        canViewResponsableProgress: false,
+        canAccessConfig: false,
+        canFilterByResponsable: false,
+        canFilterByContenedor: true,
+        canCreateActivity: false,
+        canDeleteActivity: false,
+        canEditActivity:    false 
+    },
+    default: {
+        canViewAllActivities: false,
+        canEditPriority: false,
+        canEditAnyStatus: false,
+        canAssignResponsables: false,
+        canViewTeamProgress: false,
+        canViewResponsableProgress: false,
+        canAccessConfig: false,
+        canFilterByResponsable: false,
+        canFilterByContenedor: false,
+        canCreateActivity: false,
+        canDeleteActivity: false,
+        canEditActivity: false
+    }
+} as const
+
+// Función helper para obtener permisos del calendario
+export const getCalendarPermissions = (role: UserRole) => {
+    return CALENDAR_PERMISSIONS[role as keyof typeof CALENDAR_PERMISSIONS] || CALENDAR_PERMISSIONS.default
+}
 
 // Función helper para obtener permisos de un rol
 export const getRolePermissions = (role: UserRole) => {

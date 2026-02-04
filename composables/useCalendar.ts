@@ -3,8 +3,16 @@ import type { CalendarEvent, CreateEventRequest, UpdateEventRequest, MoveEventRe
 import { ref, computed } from 'vue'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import { DEFAULT_RESPONSABLE_COLORS } from '~/constants/calendar'
 
 const { withSpinner } = useSpinner()
+
+// Colores por defecto para prioridades
+const PRIORITY_COLORS: Record<number, string> = {
+  0: '#22c55e', // Verde - Bajo
+  1: '#f59e0b', // Amarillo - Medio
+  2: '#ef4444'  // Rojo - Alto
+}
 
 export const useCalendar = () => {
   const events = ref<CalendarEvent[]>([])
@@ -12,12 +20,94 @@ export const useCalendar = () => {
   const error = ref<string | null>(null)
   const { currentRole, currentId } = useUserRole()
 
+  // Transformar evento del backend para agregar campos necesarios para el calendario
+  const transformEvent = (event: CalendarEvent): CalendarEvent => {
+    // Alias title para name
+    const title = event.name || event.title || 'Sin título'
+    
+    // Calcular color basado en el primer responsable o prioridad
+    let color = '#3b82f6' // Azul por defecto
+    
+    if (event.charges && event.charges.length > 0) {
+      const firstCharge = event.charges[0]
+      // Buscar color del usuario en config o usar default
+      if (firstCharge.user?.color) {
+        color = firstCharge.user.color
+      } else if (firstCharge.user?.nombre && DEFAULT_RESPONSABLE_COLORS[firstCharge.user.nombre]) {
+        color = DEFAULT_RESPONSABLE_COLORS[firstCharge.user.nombre]
+      }
+    } else {
+      // Si no hay responsables, usar color por prioridad
+      color = PRIORITY_COLORS[event.priority] || color
+    }
+
+    // Calcular start_date y end_date desde days si no existen
+    let startDate = event.start_date
+    let endDate = event.end_date
+    
+    if (!startDate && event.days && event.days.length > 0) {
+      const sortedDays = [...event.days].sort((a, b) => a.date.localeCompare(b.date))
+      startDate = sortedDays[0].date
+      endDate = sortedDays[sortedDays.length - 1].date
+    }
+
+    return {
+      ...event,
+      title,
+      color,
+      start_date: startDate,
+      end_date: endDate || startDate,
+      is_all_day: true, // Por defecto las actividades son de todo el día
+    }
+  }
+
+  // Obtener colores de todos los responsables de un evento
+  const getEventColors = (event: CalendarEvent): string[] => {
+    if (!event.charges || event.charges.length === 0) {
+      // Color por prioridad si no hay responsables
+      return [PRIORITY_COLORS[event.priority] || '#3b82f6']
+    }
+    
+    return event.charges.map(charge => {
+      if (charge.user?.color) {
+        return charge.user.color
+      }
+      if (charge.user?.nombre && DEFAULT_RESPONSABLE_COLORS[charge.user.nombre]) {
+        return DEFAULT_RESPONSABLE_COLORS[charge.user.nombre]
+      }
+      return '#6B7280' // Gris por defecto
+    })
+  }
+
+  // Obtener la posición de un evento en un día específico
+  const getEventPosition = (event: CalendarEvent, dateStr: string): 'start' | 'middle' | 'end' | 'single' | null => {
+    const startDate = event.start_date
+    const endDate = event.end_date
+    
+    if (!startDate || !endDate) return null
+    if (dateStr < startDate || dateStr > endDate) return null
+    
+    if (startDate === endDate) return 'single'
+    if (dateStr === startDate) return 'start'
+    if (dateStr === endDate) return 'end'
+    return 'middle'
+  }
+
+  // Verificar si un evento está en un día específico
+  const isEventOnDate = (event: CalendarEvent, dateStr: string): boolean => {
+    const startDate = event.start_date
+    const endDate = event.end_date
+    if (!startDate || !endDate) return false
+    return dateStr >= startDate && dateStr <= endDate
+  }
+
   const getEvents = async (filters?: CalendarFilters) => {
     try {
       loading.value = true
       error.value = null
       const response = await CalendarService.getEvents(filters)
-      events.value = response.data || []
+      // Transformar eventos para agregar campos necesarios
+      events.value = (response.data || []).map(transformEvent)
     } catch (err: any) {
       error.value = err?.message || 'Error al cargar eventos'
       console.error('Error en getEvents:', err)
@@ -153,22 +243,42 @@ export const useCalendar = () => {
   // Filtrar eventos visibles según permisos
   const visibleEvents = computed(() => {
     return events.value.filter(event => {
+      // Si el evento tiene charges (responsables asignados), verificar si el usuario actual está asignado
+      if (event.charges && event.charges.length > 0) {
+        const isAssigned = event.charges.some(charge => charge.user_id === Number(currentId.value))
+        if (isAssigned) {
+          return true
+        }
+      }
+      
       // Si es público, todos pueden verlo
       if (event.is_public) {
         return true
       }
-      // Si es para el usuario actual
+      
+      // Si es para el usuario actual (legacy)
       if (event.is_for_me && event.created_by === Number(currentId.value)) {
         return true
       }
-      // Si es para el rol del usuario actual
+      
+      // Si es para el rol del usuario actual (legacy)
       if (event.role_name && event.role_name === currentRole.value) {
         return true
       }
+      
       // Si el usuario es el creador
       if (event.created_by === Number(currentId.value)) {
         return true
       }
+
+      const hasLegacyFields = event.is_public !== undefined || 
+                              event.is_for_me !== undefined || 
+                              event.role_name !== undefined || 
+                              event.created_by !== undefined
+      if (!hasLegacyFields) {
+        return true
+      }
+      
       return false
     })
   })
@@ -183,7 +293,11 @@ export const useCalendar = () => {
     createEvent,
     updateEvent,
     deleteEvent,
-    moveEvent
+    moveEvent,
+    // Utilidades para eventos multi-día
+    getEventColors,
+    getEventPosition,
+    isEventOnDate
   }
 }
 

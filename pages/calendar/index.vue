@@ -4,9 +4,11 @@
     <div class="hidden md:block">
       <CalendarSidebar
         :selected-date="currentDate as CalendarDate"
+        :can-create="isJefeImportaciones"
         @date-select="handleSidebarDateSelect"
         @date-double-click="handleSidebarDateDoubleClick"
         @create="handleSidebarCreate"
+        @view-progress="navigateTo('/calendar/progreso')"
       />
     </div>
 
@@ -32,9 +34,11 @@
         </div>
         <CalendarSidebar
           :selected-date="currentDate as CalendarDate"
+          :can-create="isJefeImportaciones"
           @date-select="handleSidebarDateSelect"
           @date-double-click="handleSidebarDateDoubleClick"
           @create="handleSidebarCreate"
+          @view-progress="navigateTo('/calendar/progreso')"
         />
       </div>
     </div>
@@ -103,15 +107,52 @@
         </div>
       </div>
 
+      <!-- Filtros del calendario (solo para roles con permisos) -->
+      <CalendarFilters
+        v-if="showCalendarFilters"
+        :responsables="responsables"
+        :contenedores="contenedores"
+        :calendar-permissions="calendarPermissions"
+        :get-responsable-color="getResponsableColor"
+        @filter-change="handleFilterChange"
+        @open-config="openConfig"
+      />
+
+      <!-- Progreso del equipo (solo para Jefe de Importaciones) -->
+      <ProgressCards
+        v-if="showProgress && viewMode === 'activities'"
+        :team-progress="teamProgress"
+        :responsable-progress="responsableProgress"
+        :get-responsable-color="getResponsableColor"
+      />
+
       <!-- Calendar Content -->
       <div class="flex-1 overflow-auto relative">
         <div v-if="error && !loading" class="text-center py-12">
           <p class="text-red-500">{{ error }}</p>
-          <UButton label="Reintentar" @click="loadEvents" class="mt-4" />
+          <UButton label="Reintentar" @click="viewMode === 'activities' ? loadActivitiesData() : loadEvents()" class="mt-4" />
         </div>
 
-        <!-- Transición para todas las vistas -->
+        <!-- Vista de Actividades (tabla) -->
+        <div v-if="viewMode === 'activities'" class="h-full">
+          <ActivityTable
+            :activities="visibleActivities"
+            :calendar-permissions="calendarPermissions"
+            :current-user-id="Number(currentUserId) || 0"
+            :is-jefe="isJefeImportaciones"
+            :get-responsable-color="getResponsableColor"
+            @create="openActivityModal()"
+            @edit="openActivityModal"
+            @delete="handleDeleteActivity"
+            @open-notes="openNotesModal"
+            @update-status="handleUpdateStatus"
+            @update-priority="handleUpdatePriority"
+          />
+        </div>
+
+        <!-- Transición para vistas de calendario -->
         <Transition
+          v-else
           name="slide-fade"
           mode="out-in"
           @after-enter="onTransitionComplete"
@@ -136,50 +177,63 @@
         </div>
       </div>
 
-      <!-- Días del mes -->
-      <div class="grid grid-cols-7">
-        <div
-          v-for="(day, index) in calendarDays"
-          :key="index"
-          class="min-h-[60px] md:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-0.5 md:p-1.5"
-          :class="{
-            'bg-gray-50/50 dark:bg-gray-900/50': !day.isCurrentMonth,
-            'bg-white dark:bg-gray-800': day.isCurrentMonth,
-            'bg-blue-50 dark:bg-blue-900/10': day.isToday
-          }"
-        >
-          <div class="flex justify-between items-start mb-1">
-            <span
-              class="text-sm font-medium"
-              :class="{
-                'text-gray-400 dark:text-gray-600': !day.isCurrentMonth,
-                'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday,
-                'text-primary-600 dark:text-primary-400 font-bold': day.isToday
-              }"
-            >
-              {{ day.day }}
-            </span>
-          </div>
-          <div 
-            class="space-y-0.5 max-h-[50px] md:max-h-[80px] overflow-y-auto min-h-[40px] md:min-h-[60px] cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded transition-colors"
+      <!-- Semanas del mes con eventos multi-día -->
+      <div 
+        v-for="(week, weekIndex) in calendarWeeks" 
+        :key="weekIndex"
+        class="relative"
+      >
+        <!-- Celdas de los días -->
+        <div class="grid grid-cols-7">
+          <div
+            v-for="(day, dayIndex) in week.days"
+            :key="dayIndex"
+            class="min-h-[80px] md:min-h-[110px] border-r border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors"
+            :class="{
+              'bg-gray-50/50 dark:bg-gray-900/50': !day.isCurrentMonth,
+              'bg-white dark:bg-gray-800': day.isCurrentMonth,
+              'bg-blue-50 dark:bg-blue-900/10': day.isToday
+            }"
             @click="handleDayClick(day.date)"
           >
+            <!-- Número del día -->
+            <div class="p-1 md:p-1.5">
+              <span
+                class="text-sm font-medium"
+                :class="{
+                  'text-gray-400 dark:text-gray-600': !day.isCurrentMonth,
+                  'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday,
+                  'text-primary-600 dark:text-primary-400 font-bold': day.isToday
+                }"
+              >
+                {{ day.day }}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Eventos multi-día (capa absoluta sobre las celdas) -->
+        <div class="absolute top-6 md:top-7 left-0 right-0 pointer-events-none">
+          <div
+            v-for="(eventRow, rowIndex) in week.eventRows"
+            :key="rowIndex"
+            class="relative h-5 md:h-6 mb-0.5"
+          >
             <div
-              v-for="event in day.events"
-              :key="event.id"
-              class="text-[10px] md:text-xs px-1 md:px-1.5 py-0.5 rounded cursor-pointer hover:opacity-90 transition-opacity mb-0.5 text-left truncate"
-              :style="{ 
-                backgroundColor: event.color || '#3b82f6', 
-                color: '#ffffff',
-                borderLeft: `3px solid ${event.color || '#3b82f6'}`
+              v-for="eventSpan in eventRow"
+              :key="`${eventSpan.event.id}-${eventSpan.startCol}`"
+              class="absolute h-full flex items-center cursor-pointer hover:opacity-90 transition-opacity text-[10px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto"
+              :class="{
+                'rounded-l-md': eventSpan.isStart,
+                'rounded-r-md': eventSpan.isEnd,
               }"
-              @click.stop="openEditModal(event)"
-              @dblclick.stop="openEditModal(event)"
+              :style="getMultiDayEventStyle(eventSpan)"
+              :title="eventSpan.event.title || eventSpan.event.name"
+              @click.stop="openEditModal(eventSpan.event)"
             >
-              <div class="truncate font-medium leading-tight">{{ event.title }}</div>
-              <div v-if="!event.is_all_day && event.start_time" class="text-[10px] opacity-90 leading-tight">
-                {{ formatTime(event.start_time) }}
-              </div>
+              <span v-if="eventSpan.isStart" class="truncate px-1 md:px-2">
+                {{ eventSpan.event.title || eventSpan.event.name }}
+              </span>
             </div>
           </div>
         </div>
@@ -341,36 +395,115 @@
     </div>
 
     <!-- Modal de confirmación de eliminación -->
-    <UModal v-model="isDeleteModalOpen">
+    <UModal :open="isDeleteModalOpen" @close="isDeleteModalOpen = false">
       <template #header>
         <h3 class="text-lg font-semibold">Confirmar eliminación</h3>
       </template>
       <template #body>
-        <p>¿Estás seguro de que deseas eliminar el evento "{{ selectedEvent?.title }}"?</p>
+        <p>¿Estás seguro de que deseas eliminar "{{ selectedEvent?.title || selectedEvent?.name }}"?</p>
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
           <UButton label="Cancelar" variant="ghost" @click="isDeleteModalOpen = false" />
-          <UButton label="Eliminar" color="error" @click="confirmDelete" :loading="loading" />
+          <UButton 
+            label="Eliminar" 
+            color="error" 
+            @click="viewMode === 'activities' ? confirmDeleteActivity() : confirmDelete()" 
+            :loading="loading" 
+          />
         </div>
       </template>
     </UModal>
+
+    <!-- Modal de Actividad (crear/editar) -->
+    <ActivityModal
+      v-if="isActivityModalOpen"
+      :event="selectedActivity"
+      :responsables="responsables"
+      :contenedores="contenedores"
+      :calendar-permissions="calendarPermissions"
+      :get-responsable-color="getResponsableColor"
+      :loading="activityModalLoading"
+      @save="handleSaveActivity"
+      @delete="() => { closeActivityModal(); handleDeleteActivity(selectedActivity!) }"
+      @close="closeActivityModal"
+    />
+
+    <!-- Modal de Notas -->
+    <NotesModal
+      v-if="isNotesModalOpen"
+      :activity="selectedActivity"
+      :current-user-id="Number(currentUserId) || 0"
+      :calendar-permissions="calendarPermissions"
+      :get-responsable-color="getResponsableColor"
+      @save="handleSaveNotes"
+      @close="closeNotesModal"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { CalendarDate, getLocalTimeZone, today, parseDate, isSameDay } from '@internationalized/date'
-import { useCalendar } from '~/composables/useCalendar'
+import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
-import type { CalendarEvent, CreateEventRequest, UpdateEventRequest } from '~/types/calendar'
+import type { CalendarEvent, CreateEventRequest, UpdateEventRequest, CreateCalendarEventRequest, CalendarEventStatus, CalendarEventPriority } from '~/types/calendar'
 import EventModal from '~/components/calendar/EventModal.vue'
 import QuickCreateModal from '~/components/calendar/QuickCreateModal.vue'
 import CalendarSidebar from '~/components/calendar/CalendarSidebar.vue'
 import CalendarSkeleton from '~/components/calendar/CalendarSkeleton.vue'
+import CalendarFilters from '~/components/calendar/CalendarFilters.vue'
+import ActivityTable from '~/components/calendar/ActivityTable.vue'
+import ActivityModal from '~/components/calendar/ActivityModal.vue'
+import NotesModal from '~/components/calendar/NotesModal.vue'
+import ProgressCards from '~/components/calendar/ProgressCards.vue'
 import { useOverlay } from '#imports'
+import { ROLES } from '~/constants/roles'
+import { VIEW_OPTIONS } from '~/constants/calendar'
 
-const { visibleEvents, loading, error, getEvents, createEvent, updateEvent, deleteEvent } = useCalendar()
+// Store unificado del calendario (con caché)
+const {
+  visibleEvents,
+  visibleActivities,
+  responsables,
+  contenedores,
+  colorConfig,
+  activityCatalog,
+  teamProgress,
+  responsableProgress,
+  loading,
+  error,
+  calendarPermissions,
+  isJefeImportaciones,
+  isCoordinacionOrDocumentacion,
+  currentUserId,
+  getEvents,
+  createActivity,
+  updateActivity,
+  deleteActivity,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  updateChargeStatus,
+  updateEventPriority,
+  updateChargeNotes,
+  updateEventNotes,
+  loadResponsables,
+  loadContenedores,
+  loadColorConfig,
+  loadActivityCatalog,
+  createActivityInCatalog,
+  loadProgress,
+  getResponsableColor,
+  getEventColors,
+  getEventPosition,
+  isEventOnDate,
+  setFilter,
+  clearFilters,
+  setDateRange,
+  initialize: initializeStore
+} = useCalendarStore()
+
 const { showSuccess, showError } = useModal()
 
 const route = useRoute()
@@ -411,23 +544,205 @@ const initializeFromRoute = () => {
   }
 }
 
-const viewMode = ref<'month' | 'week' | 'day'>('month')
+const viewMode = ref<'month' | 'week' | 'day' | 'activities'>('month')
+
+// Estado para modales de actividades
+const isActivityModalOpen = ref(false)
+const isNotesModalOpen = ref(false)
+const selectedActivity = ref<CalendarEvent | null>(null)
+const activityModalLoading = ref(false)
+
+// Verificar si mostrar filtros (para roles con permisos de calendario)
+const showCalendarFilters = computed(() => {
+  return isJefeImportaciones.value || isCoordinacionOrDocumentacion.value
+})
+
+// Verificar si mostrar progreso
+const showProgress = computed(() => {
+  return isJefeImportaciones.value && calendarPermissions.value.canViewTeamProgress
+})
 const currentDate = ref<CalendarDate>(today(getLocalTimeZone()))
 const isDeleteModalOpen = ref(false)
 const selectedEvent = ref<CalendarEvent | null>(null)
 const pendingLoadEvents = ref(false)
 const isSidebarOpen = ref(false)
 
-const viewOptions = [
-  { label: 'Día', value: 'day' },
-  { label: 'Semana', value: 'week' },
-  { label: 'Mes', value: 'month' }
-]
+// Opciones de vista (incluye 'activities' para Jefe de Importaciones)
+const viewOptions = computed(() => {
+  const options = [
+    { label: 'Día', value: 'day' },
+    { label: 'Semana', value: 'week' },
+    { label: 'Mes', value: 'month' }
+  ]
+  // Agregar vista de actividades para roles con permiso
+  if (isJefeImportaciones.value || isCoordinacionOrDocumentacion.value) {
+    options.push({ label: 'Actividades', value: 'activities' })
+  }
+  return options
+})
 
-const handleViewModeChange = (value: 'month' | 'week' | 'day') => {
+const handleViewModeChange = (value: 'month' | 'week' | 'day' | 'activities') => {
   viewMode.value = value
   updateUrl()
-  pendingLoadEvents.value = true
+  if (value === 'activities') {
+    loadActivitiesData()
+  } else {
+    pendingLoadEvents.value = true
+  }
+}
+
+// Cargar datos de actividades
+const loadActivitiesData = async () => {
+  await getEvents()
+  if (calendarPermissions.value.canViewTeamProgress) {
+    await loadProgress()
+  }
+}
+
+// Handlers para filtros
+const handleFilterChange = async (filters: any) => {
+  if (filters.responsable_id !== undefined) {
+    setFilter('responsable_id', filters.responsable_id)
+  }
+  if (filters.contenedor_id !== undefined) {
+    setFilter('contenedor_id', filters.contenedor_id)
+  }
+  if (filters.start_date !== undefined || filters.end_date !== undefined) {
+    setDateRange(filters.start_date, filters.end_date)
+  }
+  await loadActivitiesData()
+}
+
+// Handlers para actividades
+const openActivityModal = (activity?: CalendarEvent) => {
+  // Verificar permisos para crear (solo Jefe puede crear nuevas actividades)
+  if (!activity && !isJefeImportaciones.value) {
+    showError('Sin permisos', 'Solo el Jefe de Importaciones puede crear actividades.')
+    return
+  }
+  selectedActivity.value = activity || null
+  isActivityModalOpen.value = true
+}
+
+const closeActivityModal = () => {
+  isActivityModalOpen.value = false
+  selectedActivity.value = null
+}
+
+const handleSaveActivity = async (data: CreateCalendarEventRequest) => {
+  activityModalLoading.value = true
+  try {
+    if (selectedActivity.value?.id) {
+      // Actualizar
+      const result = await updateActivity({ id: selectedActivity.value.id, ...data })
+      if (result) {
+        showSuccess('Actividad actualizada', 'La actividad se ha actualizado correctamente.')
+        closeActivityModal()
+        await loadActivitiesData()
+      } else {
+        showError('Error', 'No se pudo actualizar la actividad.')
+      }
+    } else {
+      // Verificar permisos para crear
+      if (!isJefeImportaciones.value) {
+        showError('Sin permisos', 'Solo el Jefe de Importaciones puede crear actividades.')
+        return
+      }
+      // Crear
+      const result = await createActivity(data)
+      if (result) {
+        showSuccess('Actividad creada', 'La actividad se ha creado correctamente.')
+        closeActivityModal()
+        await loadActivitiesData()
+      } else {
+        showError('Error', 'No se pudo crear la actividad.')
+      }
+    }
+  } catch (err: any) {
+    showError('Error', err?.message || 'Ocurrió un error al guardar la actividad.')
+  } finally {
+    activityModalLoading.value = false
+  }
+}
+
+const handleDeleteActivity = async (activity: CalendarEvent) => {
+  if (!activity.id) return
+  selectedEvent.value = activity as any
+  isDeleteModalOpen.value = true
+}
+
+const confirmDeleteActivity = async () => {
+  if (!selectedEvent.value?.id) return
+  try {
+    const success = await deleteActivity(selectedEvent.value.id)
+    if (success) {
+      showSuccess('Actividad eliminada', 'La actividad se ha eliminado correctamente.')
+      isDeleteModalOpen.value = false
+      selectedEvent.value = null
+      await loadActivitiesData()
+    } else {
+      showError('Error', 'No se pudo eliminar la actividad.')
+    }
+  } catch (err: any) {
+    showError('Error', err?.message || 'Ocurrió un error al eliminar la actividad.')
+  }
+}
+
+// Handler para estado
+const handleUpdateStatus = async (chargeId: number, status: CalendarEventStatus) => {
+  const success = await updateChargeStatus(chargeId, status)
+  if (success) {
+    showSuccess('Estado actualizado', 'El estado se ha actualizado correctamente.')
+  } else {
+    showError('Error', 'No se pudo actualizar el estado.')
+  }
+}
+
+// Handler para prioridad
+const handleUpdatePriority = async (activityId: number, priority: CalendarEventPriority) => {
+  const success = await updateEventPriority(activityId, priority)
+  if (success) {
+    showSuccess('Prioridad actualizada', 'La prioridad se ha actualizado correctamente.')
+  } else {
+    showError('Error', 'No se pudo actualizar la prioridad.')
+  }
+}
+
+// Handlers para notas
+const openNotesModal = (activity: CalendarEvent) => {
+  selectedActivity.value = activity
+  isNotesModalOpen.value = true
+}
+
+const closeNotesModal = () => {
+  isNotesModalOpen.value = false
+  selectedActivity.value = null
+}
+
+const handleSaveNotes = async (data: { activityNotes: string; chargeNotes: Record<number, string> }) => {
+  if (!selectedActivity.value?.id) return
+  try {
+    // Guardar notas de la actividad
+    await updateEventNotes(selectedActivity.value.id, data.activityNotes)
+    // Guardar notas de cada charge
+    for (const [chargeIdStr, notes] of Object.entries(data.chargeNotes)) {
+      const chargeId = parseInt(chargeIdStr)
+      const originalNotes = selectedActivity.value.charges?.find(c => c.id === chargeId)?.notes || ''
+      if (notes !== originalNotes) {
+        await updateChargeNotes(chargeId, notes)
+      }
+    }
+    showSuccess('Notas guardadas', 'Las notas se han guardado correctamente.')
+    closeNotesModal()
+    await loadActivitiesData()
+  } catch (err: any) {
+    showError('Error', err?.message || 'Ocurrió un error al guardar las notas.')
+  }
+}
+
+// Navegar a configuración
+const openConfig = () => {
+  navigateTo('/calendar/config')
 }
 
 // Inicializar desde la ruta
@@ -438,6 +753,7 @@ const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')
 const overlay = useOverlay()
 const eventModal = overlay.create(EventModal)
 const quickCreateModal = overlay.create(QuickCreateModal)
+const activityModal = overlay.create(ActivityModal)
 const currentMonthYear = computed(() => {
   const months = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -509,6 +825,11 @@ const currentPeriodTitleShort = computed(() => {
   }
 })
 
+// Helper para formatear fecha a string
+const formatDateToStr = (date: CalendarDate): string => {
+  return `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
+}
+
 // Calcular días del mes para la vista mensual
 const calendarDays = computed(() => {
   const year = currentDate.value.year
@@ -525,9 +846,11 @@ const calendarDays = computed(() => {
   const daysInPrevMonth = prevMonth.calendar.getDaysInMonth(prevMonth)
   for (let i = startDayOfWeek - 1; i >= 0; i--) {
     const day = prevMonth.set({ day: daysInPrevMonth - i })
+    const dateStr = formatDateToStr(day as CalendarDate)
     days.push({
       day: day.day,
       date: day,
+      dateStr,
       isCurrentMonth: false,
       isToday: isSameDay(day, today(getLocalTimeZone())),
       events: getEventsForDate(day)
@@ -537,9 +860,11 @@ const calendarDays = computed(() => {
   // Días del mes actual
   for (let day = 1; day <= lastDay.day; day++) {
     const date = parseDate(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
+    const dateStr = formatDateToStr(date as CalendarDate)
     days.push({
       day: day,
       date: date,
+      dateStr,
       isCurrentMonth: true,
       isToday: isSameDay(date, today(getLocalTimeZone())),
       events: getEventsForDate(date)
@@ -551,9 +876,11 @@ const calendarDays = computed(() => {
   const nextMonth = lastDay.add({ days: 1 })
   for (let day = 1; day <= remainingDays; day++) {
     const date = nextMonth.set({ day: day })
+    const dateStr = formatDateToStr(date as CalendarDate)
     days.push({
       day: day,
       date: date,
+      dateStr,
       isCurrentMonth: false,
       isToday: isSameDay(date, today(getLocalTimeZone())),
       events: getEventsForDate(date)
@@ -562,6 +889,129 @@ const calendarDays = computed(() => {
   
   return days
 })
+
+// Interface para eventos en semana
+interface EventSpan {
+  event: CalendarEvent
+  startCol: number
+  endCol: number
+  isStart: boolean
+  isEnd: boolean
+}
+
+// Agrupar días por semanas y calcular posiciones de eventos multi-día
+const calendarWeeks = computed(() => {
+  const days = calendarDays.value
+  const weeks: { days: any[], eventRows: EventSpan[][] }[] = []
+  
+  // Dividir días en semanas de 7
+  for (let i = 0; i < days.length; i += 7) {
+    const weekDays = days.slice(i, i + 7)
+    const weekStartDate = weekDays[0].dateStr
+    const weekEndDate = weekDays[6].dateStr
+    
+    // Encontrar todos los eventos que tocan esta semana
+    const weekEvents = visibleEvents.value.filter(event => {
+      const eventStart = event.start_date
+      const eventEnd = event.end_date
+      if (!eventStart || !eventEnd) return false
+      // El evento toca la semana si: empieza antes del fin de semana Y termina después del inicio de semana
+      return eventStart <= weekEndDate && eventEnd >= weekStartDate
+    })
+    
+    // Organizar eventos en filas sin solapamiento
+    const eventRows: EventSpan[][] = []
+    const processedEvents = new Set<number>()
+    
+    weekEvents.forEach(event => {
+      if (processedEvents.has(event.id)) return
+      processedEvents.add(event.id)
+      
+      // Calcular columnas de inicio y fin dentro de la semana
+      let startCol = 0
+      let endCol = 6
+      
+      for (let col = 0; col < 7; col++) {
+        const dayDate = weekDays[col].dateStr
+        if (event.start_date === dayDate) startCol = col
+        if (event.start_date > dayDate && col === 0) startCol = 0
+        if (event.start_date < weekStartDate) startCol = 0
+        
+        if (event.end_date === dayDate) endCol = col
+        if (event.end_date < dayDate && col === 6) endCol = 6
+        if (event.end_date > weekEndDate) endCol = 6
+      }
+      
+      // Ajustar startCol y endCol
+      for (let col = 0; col < 7; col++) {
+        const dayDate = weekDays[col].dateStr
+        if (dayDate >= event.start_date && startCol > col) startCol = col
+        if (dayDate <= event.end_date) endCol = col
+      }
+      
+      const span: EventSpan = {
+        event,
+        startCol,
+        endCol,
+        isStart: event.start_date >= weekStartDate && event.start_date <= weekEndDate,
+        isEnd: event.end_date >= weekStartDate && event.end_date <= weekEndDate
+      }
+      
+      // Encontrar una fila donde quepa el evento
+      let placed = false
+      for (const row of eventRows) {
+        // Verificar si hay espacio en esta fila
+        const hasConflict = row.some(existing => 
+          !(span.endCol < existing.startCol || span.startCol > existing.endCol)
+        )
+        if (!hasConflict) {
+          row.push(span)
+          placed = true
+          break
+        }
+      }
+      
+      if (!placed) {
+        eventRows.push([span])
+      }
+    })
+    
+    weeks.push({ days: weekDays, eventRows })
+  }
+  
+  return weeks
+})
+
+// Estilo para eventos multi-día
+const getMultiDayEventStyle = (span: EventSpan) => {
+  const colors = getEventColors(span.event)
+  
+  let background: string
+  if (colors.length === 1) {
+    background = colors[0]
+  } else if (colors.length === 2) {
+    // Gradiente diagonal (de arriba-izquierda a abajo-derecha)
+    background = `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)`
+  } else {
+    // Múltiples colores en diagonal
+    const stops = colors.map((color, i) => {
+      const start = (i / colors.length) * 100
+      const end = ((i + 1) / colors.length) * 100
+      return `${color} ${start}%, ${color} ${end}%`
+    }).join(', ')
+    background = `linear-gradient(135deg, ${stops})`
+  }
+  
+  const colWidth = 100 / 7
+  const left = span.startCol * colWidth
+  const width = (span.endCol - span.startCol + 1) * colWidth
+  
+  return {
+    background,
+    left: `calc(${left}% + 2px)`,
+    width: `calc(${width}% - 4px)`,
+  }
+}
 
 // Calcular días de la semana para la vista semanal
 const weekDaysData = computed(() => {
@@ -595,6 +1045,50 @@ const getEventsForDate = (date: CalendarDate) => {
     const endDate = event.end_date
     return dateStr >= startDate && dateStr <= endDate
   })
+}
+
+// Funciones para renderizar eventos multi-día con múltiples colores
+const getEventBarClasses = (event: CalendarEvent, dateStr: string) => {
+  const position = getEventPosition(event, dateStr)
+  return {
+    'rounded-l-md': position === 'start' || position === 'single',
+    'rounded-r-md': position === 'end' || position === 'single',
+    'rounded-md': position === 'single',
+  }
+}
+
+const getEventBarStyle = (event: CalendarEvent, dateStr: string) => {
+  const colors = getEventColors(event)
+  const position = getEventPosition(event, dateStr)
+  
+  let background: string
+  
+  if (colors.length === 1) {
+    // Un solo color
+    background = colors[0]
+  } else if (colors.length === 2) {
+    // Dos colores - gradiente diagonal
+    background = `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)`
+  } else {
+    // Múltiples colores - dividir en diagonal
+    const stops = colors.map((color, i) => {
+      const start = (i / colors.length) * 100
+      const end = ((i + 1) / colors.length) * 100
+      return `${color} ${start}%, ${color} ${end}%`
+    }).join(', ')
+    background = `linear-gradient(135deg, ${stops})`
+  }
+  
+  return {
+    background,
+    marginLeft: position === 'start' || position === 'single' ? '2px' : '0',
+    marginRight: position === 'end' || position === 'single' ? '2px' : '0',
+  }
+}
+
+const shouldShowEventTitle = (event: CalendarEvent, dateStr: string) => {
+  const position = getEventPosition(event, dateStr)
+  return position === 'start' || position === 'single'
 }
 
 // Eventos del día actual para la vista de día
@@ -771,19 +1265,30 @@ const loadEvents = async () => {
 }
 
 const handleDayClick = (date: CalendarDate) => {
-  quickCreateModal.open({
-    selectedDate: date,
-    onSelect: (type: 'evento' | 'tarea') => {
-      // Cerrar el modal rápido y abrir el modal de evento/tarea
-      const dateStr = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
-      eventModal.open({
-        event: null,
-        initialDate: dateStr,
-        type: type,
-        onSave: async (data: CreateEventRequest | UpdateEventRequest) => {
-          await handleSaveEvent(data)
-        }
-      })
+  if (!calendarPermissions.value.canEditActivity) {
+    //redirect to page /calendar/progreso
+    navigateTo('/calendar/progreso')
+    return
+  }
+  const dateStr = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
+  
+  // Abrir el modal de crear actividad directamente
+  activityModal.open({
+    event: null,
+    responsables: responsables.value,
+    contenedores: contenedores.value,
+    calendarPermissions: calendarPermissions.value,
+    getResponsableColor: getResponsableColor,
+    actividadesPredefinidas: activityCatalog.value,
+    initialDate: dateStr,
+    onSave: async (data: CreateCalendarEventRequest) => {
+      await handleSaveActivityOverlay(data)
+    },
+    onCreateActivity: async (name: string) => {
+      return await createActivityInCatalog(name)
+    },
+    onClose: () => {
+      activityModal.close()
     }
   })
 }
@@ -807,34 +1312,88 @@ const handleSidebarDateDoubleClick = (date: CalendarDate) => {
 }
 
 const handleSidebarCreate = (type: 'evento' | 'tarea') => {
+  // Verificar permisos (solo Jefe puede crear)
+  if (!isJefeImportaciones.value) {
+    showError('Sin permisos', 'Solo el Jefe de Importaciones puede crear actividades.')
+    return
+  }
+  
   // Usar la fecha seleccionada actual (currentDate) para prellenar el modal
   const dateStr = `${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`
-  eventModal.open({
+  
+  // Abrir el modal de crear actividad
+  activityModal.open({
     event: null,
-    type: type,
-    initialDate: dateStr, // Pasar la fecha seleccionada
-    onSave: async (data: CreateEventRequest | UpdateEventRequest) => {
-      await handleSaveEvent(data)
+    responsables: responsables.value,
+    contenedores: contenedores.value,
+    calendarPermissions: calendarPermissions.value,
+    getResponsableColor: getResponsableColor,
+    actividadesPredefinidas: activityCatalog.value,
+    initialDate: dateStr,
+    onSave: async (data: CreateCalendarEventRequest) => {
+      await handleSaveActivityOverlay(data)
+    },
+    onCreateActivity: async (name: string) => {
+      return await createActivityInCatalog(name)
+    },
+    onClose: () => {
+      activityModal.close()
     }
   })
 }
 
 const openCreateModal = () => {
-  eventModal.open({
+  const dateStr = `${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`
+  
+  activityModal.open({
     event: null,
-    type: 'evento',
-    onSave: async (data: CreateEventRequest | UpdateEventRequest) => {
-      await handleSaveEvent(data)
+    responsables: responsables.value,
+    contenedores: contenedores.value,
+    calendarPermissions: calendarPermissions.value,
+    getResponsableColor: getResponsableColor,
+    actividadesPredefinidas: activityCatalog.value,
+    initialDate: dateStr,
+    onSave: async (data: CreateCalendarEventRequest) => {
+      await handleSaveActivityOverlay(data)
+    },
+    onCreateActivity: async (name: string) => {
+      return await createActivityInCatalog(name)
+    },
+    onClose: () => {
+      activityModal.close()
     }
   })
 }
 
 const openEditModal = (event: CalendarEvent) => {
-  eventModal.open({
+  // Abrir el modal de editar actividad
+  console.log(calendarPermissions.value.canEditActivity)
+  if (!calendarPermissions.value.canEditActivity) {
+    navigateTo('/calendar/progreso')
+    return
+  }
+  activityModal.open({
     event: event,
-    type: event.type || 'evento',
-    onSave: async (data: CreateEventRequest | UpdateEventRequest) => {
-      await handleSaveEvent(data)
+    responsables: responsables.value,
+    contenedores: contenedores.value,
+    calendarPermissions: calendarPermissions.value,
+    getResponsableColor: getResponsableColor,
+    actividadesPredefinidas: activityCatalog.value,
+    onSave: async (data: CreateCalendarEventRequest) => {
+      // Agregar el ID para actualizar
+      const updateData = { ...data, id: event.id }
+      await handleUpdateActivityOverlay(updateData)
+    },
+    onCreateActivity: async (name: string) => {
+      return await createActivityInCatalog(name)
+    },
+    onDelete: async () => {
+      selectedEvent.value = event
+      isDeleteModalOpen.value = true
+      activityModal.close()
+    },
+    onClose: () => {
+      activityModal.close()
     }
   })
 }
@@ -865,6 +1424,47 @@ const handleSaveEvent = async (data: CreateEventRequest | UpdateEventRequest) =>
   }
 }
 
+// Handler para guardar actividades usando el overlay modal
+const handleSaveActivityOverlay = async (data: CreateCalendarEventRequest) => {
+  try {
+    const result = await createActivity(data)
+    if (result) {
+      showSuccess('Actividad creada', 'La actividad se ha creado correctamente.')
+      activityModal.close()
+      await loadEvents()
+      // Si está en vista de actividades, recargar también
+      if (viewMode.value === 'activities') {
+        await loadActivitiesData()
+      }
+    } else {
+      showError('Error', 'No se pudo crear la actividad.')
+    }
+  } catch (err: any) {
+    showError('Error', err?.message || 'Ocurrió un error al guardar la actividad.')
+  }
+}
+
+// Handler para actualizar actividades usando el overlay modal
+const handleUpdateActivityOverlay = async (data: CreateCalendarEventRequest & { id: number }) => {
+  try {
+    console.log(calendarPermissions.value.canEditActivity)
+    const result = await updateActivity(data)
+    if (result) {
+      showSuccess('Actividad actualizada', 'La actividad se ha actualizado correctamente.')
+      activityModal.close()
+      await loadEvents()
+      // Si está en vista de actividades, recargar también
+      if (viewMode.value === 'activities') {
+        await loadActivitiesData()
+      }
+    } else {
+      showError('Error', 'No se pudo actualizar la actividad.')
+    }
+  } catch (err: any) {
+    showError('Error', err?.message || 'Ocurrió un error al actualizar la actividad.')
+  }
+}
+
 const confirmDelete = async () => {
   if (!selectedEvent.value?.id) return
   
@@ -885,11 +1485,19 @@ const confirmDelete = async () => {
 }
 
 // Cargar eventos al montar
-onMounted(() => {
+onMounted(async () => {
+  // Inicializar datos del store (responsables, contenedores, colores, catálogo)
+  await initializeStore()
+  
   loadEvents()
   // Actualizar URL inicial si no hay parámetros
   if (!route.query.year && !route.query.month) {
     updateUrl()
+  }
+  
+  // Si la vista inicial es actividades, cargar datos
+  if (viewMode.value === 'activities') {
+    await loadActivitiesData()
   }
 })
 
@@ -949,6 +1557,10 @@ watch(() => route.query, (newQuery) => {
     }
   }
 }, { immediate: false })
+
+definePageMeta({
+  middleware: ['auth']
+})
 </script>
 
 <style scoped>
