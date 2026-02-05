@@ -217,7 +217,7 @@ import { CalendarDate, getLocalTimeZone, today, parseDate } from '@international
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
 import type { CalendarEvent, CreateCalendarEventRequest } from '~/types/calendar'
-import { MONTHS_SHORT } from '~/constants/calendar'
+import { MONTHS_SHORT, countWeekdaysBetween } from '~/constants/calendar'
 import ActivityModal from '~/components/calendar/ActivityModal.vue'
 
 const {
@@ -309,10 +309,7 @@ const calculateDuration = (activity: CalendarEvent): number => {
   const start = activity.start_date || getFirstDate(activity)
   const end = activity.end_date || getLastDate(activity)
   if (!start || !end) return 1
-  const startDate = new Date(start)
-  const endDate = new Date(end)
-  const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
+  return countWeekdaysBetween(start, end) || 1
 }
 
 // Helper para extraer valor de un select (puede venir como objeto o primitivo)

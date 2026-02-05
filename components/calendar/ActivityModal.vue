@@ -67,7 +67,7 @@
                 {{ startDate ? formatDisplayDate(startDate) : 'Seleccionar fecha' }}
               </UButton>
               <template #content>
-                <UCalendar v-model="startDate" class="p-2" />
+                <UCalendar v-model="startDate" class="p-2" :is-date-disabled="isWeekendDisabled" />
               </template>
             </UPopover>
           </UFormField>
@@ -84,7 +84,7 @@
                 {{ endDate ? formatDisplayDate(endDate) : 'Seleccionar fecha' }}
               </UButton>
               <template #content>
-                <UCalendar v-model="endDate" class="p-2" />
+                <UCalendar v-model="endDate" class="p-2" :is-date-disabled="isWeekendDisabled" />
               </template>
             </UPopover>
           </UFormField>
@@ -220,6 +220,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { CalendarDate, getLocalTimeZone, today, parseDate, DateFormatter } from '@internationalized/date'
+import type { DateValue } from '@internationalized/date'
 import type {
   CalendarEvent,
   CalendarResponsable,
@@ -272,6 +273,19 @@ const emit = defineEmits<{
 }>()
 
 const df = new DateFormatter('es-ES', { dateStyle: 'long' })
+
+/** Deshabilita sábado y domingo en el calendario (días no laborables). */
+const isWeekendDisabled = (date: DateValue): boolean => {
+  try {
+    const d = date && typeof (date as any).toDate === 'function'
+      ? (date as any).toDate(getLocalTimeZone())
+      : new Date((date as any).year, (date as any).month - 1, (date as any).day)
+    const dayOfWeek = d.getDay()
+    return dayOfWeek === 0 || dayOfWeek === 6
+  } catch {
+    return false
+  }
+}
 
 // Estado del formulario
 const form = ref({

@@ -1,4 +1,5 @@
-import { registerEventHandler, WS_EVENTS } from '~/config/websocket/channels'
+import { registerEventHandler, registerRole, WS_EVENTS } from '~/config/websocket/channels'
+import { ROLES } from '~/constants/roles'
 import { notifyCalendarUpdateFromSocket } from '~/composables/useCalendarUpdateNotification'
 
 /** Nombres de eventos de calendario (canal por usuario). */
@@ -26,9 +27,12 @@ function onCalendarSocketEvent() {
 /**
  * Registra handlers de eventos de calendario.
  * La suscripción al canal se hace por usuario en el plugin (App.Models.User.{userId}).
+ * Se registra el rol Jefe Importacion sin canales por rol para evitar el aviso
+ * "No se encontró configuración para el rol" (el jefe recibe calendario por canal de usuario).
  */
 export const registerCalendarEvents = () => {
   registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_CREATED, onCalendarSocketEvent)
   registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_UPDATED, onCalendarSocketEvent)
   registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_DELETED, onCalendarSocketEvent)
+  registerRole(ROLES.JEFE_IMPORTACIONES, [])
 }

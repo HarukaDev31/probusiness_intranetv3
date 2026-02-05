@@ -213,6 +213,7 @@
 
 <script setup lang="ts">
 import type { CalendarEvent, CalendarEventStatus, CalendarEventPriority } from '~/types/calendar'
+import { countWeekdaysBetween } from '~/constants/calendar'
 import ActivityStatusBadge from './ActivityStatusBadge.vue'
 import ActivityPriorityBadge from './ActivityPriorityBadge.vue'
 
@@ -263,11 +264,7 @@ const calculateDuration = (activity: CalendarEvent): number => {
   const start = activity.start_date || getFirstDate(activity)
   const end = activity.end_date || getLastDate(activity)
   if (!start || !end) return 1
-  const startDate = new Date(start)
-  const endDate = new Date(end)
-  const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return diffDays + 1
+  return countWeekdaysBetween(start, end) || 1
 }
 
 const formatDate = (dateStr: string | undefined): string => {

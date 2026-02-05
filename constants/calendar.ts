@@ -1,5 +1,20 @@
 import type { CalendarEventPriority, CalendarEventStatus } from '~/types/calendar'
 
+/** Cuenta solo días hábiles (lun–vie) entre dos fechas YYYY-MM-DD, inclusive. No cuenta sábado ni domingo. */
+export function countWeekdaysBetween(startDateStr: string, endDateStr: string): number {
+  const start = new Date(startDateStr + 'T12:00:00')
+  const end = new Date(endDateStr + 'T12:00:00')
+  if (start > end) return 0
+  let count = 0
+  const cur = new Date(start)
+  while (cur <= end) {
+    const d = cur.getDay()
+    if (d !== 0 && d !== 6) count++
+    cur.setDate(cur.getDate() + 1)
+  }
+  return count
+}
+
 // Opciones de prioridad para selects
 export const PRIORITY_OPTIONS: { label: string; value: CalendarEventPriority; color: string }[] = [
   { label: 'Bajo', value: 0, color: 'success' },

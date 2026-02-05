@@ -355,7 +355,7 @@ import { CalendarDate, getLocalTimeZone, today, parseDate } from '@international
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
 import type { CalendarEvent, CalendarEventCharge, CalendarEventStatus, CalendarEventPriority } from '~/types/calendar'
-import { STATUS_OPTIONS, PRIORITY_OPTIONS } from '~/constants/calendar'
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, countWeekdaysBetween } from '~/constants/calendar'
 import StatusDropdown from '~/components/calendar/StatusDropdown.vue'
 import PriorityDropdown from '~/components/calendar/PriorityDropdown.vue'
 import ActivityTrackingModal from '~/components/calendar/ActivityTrackingModal.vue'
@@ -504,10 +504,7 @@ const calculateDuration = (activity: CalendarEvent): number => {
   const start = activity.start_date || getFirstDate(activity)
   const end = activity.end_date || getLastDate(activity)
   if (!start || !end) return 1
-  const startDate = new Date(start)
-  const endDate = new Date(end)
-  const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
+  return countWeekdaysBetween(start, end) || 1
 }
 
 const canEditStatus = (activity: CalendarEvent): boolean => {
