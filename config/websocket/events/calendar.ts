@@ -17,10 +17,20 @@ export const getUserCalendarChannelName = (userId: number | string): string =>
   `App.Models.Usuario.${userId}`
 
 /**
- * Al recibir un evento de calendario por socket: mostrar popup para que el usuario
- * recargue la vista actual (solo recarga si está en una página /calendar/*).
+ * Al recibir un evento de calendario por socket: mostrar popup para recargar la vista.
+ * No se muestra al usuario que realizó la acción (triggered_by_user_id).
  */
-function onCalendarSocketEvent() {
+function onCalendarSocketEvent(data: { triggered_by_user_id?: number | null }) {
+  if (data?.triggered_by_user_id != null && typeof process !== 'undefined' && process.client) {
+    try {
+      const authUser = localStorage.getItem('auth_user')
+      if (authUser) {
+        const user = JSON.parse(authUser) as { id?: number | string; raw?: { ID_Usuario?: number; id?: number } }
+        const myId = user?.id ?? user?.raw?.ID_Usuario ?? user?.raw?.id
+        if (myId != null && Number(data.triggered_by_user_id) === Number(myId)) return
+      }
+    } catch (_) { /* ignore */ }
+  }
   notifyCalendarUpdateFromSocket()
 }
 
