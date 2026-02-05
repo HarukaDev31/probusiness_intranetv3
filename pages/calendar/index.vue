@@ -137,16 +137,17 @@
             :class="day.isCurrentMonth
               ? 'border-r border-b border-gray-200 dark:border-gray-700 ' +
                 (day.isWeekend
-                  ? 'bg-gray-100 dark:bg-gray-700/50 pointer-events-none cursor-not-allowed select-none calendar-day-disabled'
+                  ? 'bg-gray-100 dark:bg-gray-700/50 cursor-not-allowed select-none calendar-day-disabled'
                   : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
               : 'border-0 bg-transparent pointer-events-none'"
-            @click="day.isCurrentMonth && !day.isWeekend && handleDayClick(day.date)"
+            @click="(e) => { if (day.isWeekend) { e.stopPropagation(); e.preventDefault(); return }; if (day.isCurrentMonth) handleDayClick(day.date) }"
           >
-            <!-- Overlay rayas en días deshabilitados (fin de semana) -->
+            <!-- Overlay rayas en días deshabilitados (fin de semana); captura clic para no abrir modal -->
             <div
               v-if="day.isCurrentMonth && day.isWeekend"
-              class="absolute inset-0 pointer-events-none calendar-day-disabled-pattern"
+              class="absolute inset-0 z-10 cursor-not-allowed calendar-day-disabled-pattern"
               aria-hidden="true"
+              @click.stop.prevent
             />
             <!-- Número del día: solo en celdas del mes actual -->
             <div v-if="day.isCurrentMonth" class="p-2 md:p-2.5 relative z-[1]">
@@ -282,15 +283,16 @@
                       :class="day.isCurrentMonth
                         ? 'border-r border-b border-gray-200 dark:border-gray-700 ' +
                           (day.isWeekend
-                            ? 'bg-gray-100 dark:bg-gray-700/50 pointer-events-none cursor-not-allowed select-none calendar-day-disabled'
+                            ? 'bg-gray-100 dark:bg-gray-700/50 cursor-not-allowed select-none calendar-day-disabled'
                             : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
                         : 'border-0 bg-transparent pointer-events-none'"
-                      @click="day.isCurrentMonth && !day.isWeekend && handleDayClick(day.date)"
+                      @click="(e) => { if (day.isWeekend) { e.stopPropagation(); e.preventDefault(); return }; if (day.isCurrentMonth) handleDayClick(day.date) }"
                     >
                       <div
                         v-if="day.isCurrentMonth && day.isWeekend"
-                        class="absolute inset-0 pointer-events-none calendar-day-disabled-pattern"
+                        class="absolute inset-0 z-10 cursor-not-allowed calendar-day-disabled-pattern"
                         aria-hidden="true"
+                        @click.stop.prevent
                       />
                       <div v-if="day.isCurrentMonth" class="p-2 md:p-2.5 relative z-[1]">
                         <span
@@ -1863,7 +1865,15 @@ const loadEvents = async (force = false) => {
   }, force)
 }
 
+// Sabado=6, Domingo=0 en JS Date.getDay()
+const isDateWeekend = (date: CalendarDate) => {
+  const d = new Date(date.year, date.month - 1, date.day)
+  const day = d.getDay()
+  return day === 0 || day === 6
+}
+
 const handleDayClick = (date: CalendarDate) => {
+  if (isDateWeekend(date)) return
   if (!calendarPermissions.value.canEditActivity) {
     //redirect to page /calendar/progreso
     navigateTo('/calendar/progreso')

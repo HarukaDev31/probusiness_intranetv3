@@ -20,15 +20,10 @@ export default defineNuxtPlugin(async () => {
     
     // Evitar inicialización múltiple
     if (isInitializing || isInitialized) {
-      
       return
     }
 
-    // Resetear estado si es necesario
-    if (typeof window !== 'undefined' && (window as any).Echo) {
-      
-      resetEcho()
-    }
+    // No hacer reset aquí: provoca cierre y reconexión. Solo se hace reset en logout (storage).
 
     // Verificar si el usuario está autenticado
     const authToken = localStorage.getItem('auth_token')
@@ -79,10 +74,7 @@ export default defineNuxtPlugin(async () => {
           }
         }
 
-        // Configurar canales según el rol del usuario
-        await setupRoleChannels()
-
-        // Suscripción al canal privado del usuario para eventos de calendario (por usuario)
+        // 1) Primero canal del usuario (calendario): así la suscripción llega aunque falle algo del rol
         try {
           const user = JSON.parse(authUser) as { id?: number | string }
           if (user?.id != null) {
@@ -99,8 +91,11 @@ export default defineNuxtPlugin(async () => {
             })
           }
         } catch (e) {
-          console.debug('Calendar user channel: skip', e)
+          console.warn('Calendar user channel:', e)
         }
+
+        // 2) Después canales por rol (Documentación, Coordinación, etc.)
+        await setupRoleChannels()
 
         isInitialized = true
         
