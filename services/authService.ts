@@ -1,5 +1,6 @@
 import type { User, LoginCredentials as _LoginCredentials, LoginResponse as _LoginResponse, ApiLoginResponse } from '../types/auth'
-import { getWebsocketRoles } from '../config/websocket/channels'
+import { getWebsocketRoles, getAllEventHandlers } from '../config/websocket/channels'
+import { CALENDAR_EVENTS, getUserCalendarChannelName } from '../config/websocket/events/calendar'
 import { useEcho } from '../composables/websocket/useEcho'
 
 interface ApiPlugin {
@@ -81,10 +82,35 @@ class AuthService {
 
       await this.echo.initializeEcho(config)
       this.isEchoInitialized = true
+      // 1) Canal del usuario (calendario): private-App.Models.Usuario.{id} — debe existir una llamada a auth por usuario
+      this.setupUserChannel()
+      // 2) Canales por rol (Coordinación, Documentación, etc.)
       const role = this.currentUser?.raw?.grupo.nombre
       if (role) {
         this.setupWebSocketChannels(role)
       }
+    }
+  }
+
+  /** Suscripción al canal privado del usuario para eventos de calendario. */
+  private setupUserChannel() {
+    if (!this.isEchoInitialized || !this.currentUser) return
+    const userId = this.currentUser.id ?? (this.currentUser as any).raw?.ID_Usuario
+    if (userId == null) return
+    try {
+      const channelName = getUserCalendarChannelName(userId)
+      const allHandlers = getAllEventHandlers()
+      const handlers = CALENDAR_EVENTS.map((event) => ({
+        event,
+        callback: allHandlers[event] ?? (() => {})
+      }))
+      this.echo.subscribeToChannel({
+        name: channelName,
+        type: 'private',
+        handlers
+      })
+    } catch (e) {
+      console.warn('Canal de usuario (calendario):', e)
     }
   }
 
