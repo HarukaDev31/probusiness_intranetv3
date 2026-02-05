@@ -133,19 +133,29 @@
           <div
             v-for="(day, dayIndex) in week.days"
             :key="dayIndex"
-            class="min-h-[150px] md:min-h-[195px] transition-colors flex flex-col"
+            class="min-h-[150px] md:min-h-[195px] transition-colors flex flex-col relative"
             :class="day.isCurrentMonth
-              ? 'border-r border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' + (day.isWeekend ? 'bg-gray-100 dark:bg-gray-700/50' : 'bg-white dark:bg-gray-800') + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : '')
+              ? 'border-r border-b border-gray-200 dark:border-gray-700 ' +
+                (day.isWeekend
+                  ? 'bg-gray-100 dark:bg-gray-700/50 pointer-events-none cursor-not-allowed select-none calendar-day-disabled'
+                  : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
               : 'border-0 bg-transparent pointer-events-none'"
-            @click="day.isCurrentMonth && handleDayClick(day.date)"
+            @click="day.isCurrentMonth && !day.isWeekend && handleDayClick(day.date)"
           >
+            <!-- Overlay rayas en días deshabilitados (fin de semana) -->
+            <div
+              v-if="day.isCurrentMonth && day.isWeekend"
+              class="absolute inset-0 pointer-events-none calendar-day-disabled-pattern"
+              aria-hidden="true"
+            />
             <!-- Número del día: solo en celdas del mes actual -->
-            <div v-if="day.isCurrentMonth" class="p-2 md:p-2.5">
+            <div v-if="day.isCurrentMonth" class="p-2 md:p-2.5 relative z-[1]">
               <span
                 class="text-sm font-medium"
                 :class="{
-                  'text-gray-900 dark:text-white': !day.isToday,
-                  'text-primary-600 dark:text-primary-400 font-bold': day.isToday
+                  'text-gray-900 dark:text-white': !day.isToday && !day.isWeekend,
+                  'text-primary-600 dark:text-primary-400 font-bold': day.isToday && !day.isWeekend,
+                  'text-gray-400 dark:text-gray-500': day.isWeekend
                 }"
               >
                 {{ day.day }}
@@ -268,18 +278,27 @@
                     <div
                       v-for="(day, dayIndex) in week.days"
                       :key="dayIndex"
-                      class="min-h-[150px] md:min-h-[195px] transition-colors flex flex-col"
+                      class="min-h-[150px] md:min-h-[195px] transition-colors flex flex-col relative"
                       :class="day.isCurrentMonth
-                        ? 'border-r border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' + (day.isWeekend ? 'bg-gray-100 dark:bg-gray-700/50' : 'bg-white dark:bg-gray-800') + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : '')
+                        ? 'border-r border-b border-gray-200 dark:border-gray-700 ' +
+                          (day.isWeekend
+                            ? 'bg-gray-100 dark:bg-gray-700/50 pointer-events-none cursor-not-allowed select-none calendar-day-disabled'
+                            : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
                         : 'border-0 bg-transparent pointer-events-none'"
-                      @click="day.isCurrentMonth && handleDayClick(day.date)"
+                      @click="day.isCurrentMonth && !day.isWeekend && handleDayClick(day.date)"
                     >
-                      <div v-if="day.isCurrentMonth" class="p-2 md:p-2.5">
+                      <div
+                        v-if="day.isCurrentMonth && day.isWeekend"
+                        class="absolute inset-0 pointer-events-none calendar-day-disabled-pattern"
+                        aria-hidden="true"
+                      />
+                      <div v-if="day.isCurrentMonth" class="p-2 md:p-2.5 relative z-[1]">
                         <span
                           class="text-sm font-medium"
                           :class="{
-                            'text-gray-900 dark:text-white': !day.isToday,
-                            'text-primary-600 dark:text-primary-400 font-bold': day.isToday
+                            'text-gray-900 dark:text-white': !day.isToday && !day.isWeekend,
+                            'text-primary-600 dark:text-primary-400 font-bold': day.isToday && !day.isWeekend,
+                            'text-gray-400 dark:text-gray-500': day.isWeekend
                           }"
                         >
                           {{ day.day }}
@@ -388,19 +407,21 @@
         <div
           v-for="day in weekDaysData"
           :key="day.date"
-          class="p-2 md:p-3 text-center border-l border-gray-200 dark:border-gray-700 min-w-[80px] md:min-w-0"
+          class="p-2 md:p-3 text-center border-l border-gray-200 dark:border-gray-700 min-w-[80px] md:min-w-0 relative"
           :class="{
             'bg-primary-50 dark:bg-primary-900/20': day.isToday && !day.isWeekend,
-            'bg-gray-100 dark:bg-gray-700/50': day.isWeekend,
+            'bg-gray-100 dark:bg-gray-700/50 calendar-day-disabled select-none': day.isWeekend,
             'bg-gray-50 dark:bg-gray-900': !day.isToday && !day.isWeekend
           }"
         >
-          <div class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400">{{ day.dayName }}</div>
+          <div v-if="day.isWeekend" class="absolute inset-0 pointer-events-none calendar-day-disabled-pattern" aria-hidden="true" />
+          <div class="text-[10px] md:text-xs relative z-[1]" :class="day.isWeekend ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'">{{ day.dayName }}</div>
           <div
-            class="text-sm md:text-lg font-semibold"
+            class="text-sm md:text-lg font-semibold relative z-[1]"
             :class="{
               'text-primary-600 dark:text-primary-400': day.isToday && !day.isWeekend,
-              'text-gray-900 dark:text-white': !day.isToday || day.isWeekend
+              'text-gray-400 dark:text-gray-500': day.isWeekend,
+              'text-gray-900 dark:text-white': !day.isToday && !day.isWeekend
             }"
           >
             {{ day.day }}
@@ -422,8 +443,9 @@
           v-for="day in weekDaysData"
           :key="day.date"
           class="border-r border-b border-gray-200 dark:border-gray-700 relative min-w-[80px] md:min-w-0"
-          :class="{ 'bg-gray-100 dark:bg-gray-700/50': day.isWeekend }"
+          :class="{ 'bg-gray-100 dark:bg-gray-700/50 calendar-day-disabled': day.isWeekend }"
         >
+          <div v-if="day.isWeekend" class="absolute inset-0 pointer-events-none calendar-day-disabled-pattern" aria-hidden="true" />
           <div
             v-for="hour in hours"
             :key="hour"
@@ -2117,6 +2139,28 @@ definePageMeta({
 </script>
 
 <style scoped>
+/* Días deshabilitados (fin de semana): mismo cuadro con patrón para notar que no están activos */
+.calendar-day-disabled-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 5px,
+    rgba(0, 0, 0, 0.04) 5px,
+    rgba(0, 0, 0, 0.04) 6px
+  );
+}
+
+:deep(.dark) .calendar-day-disabled-pattern,
+:global(.dark) .calendar-day-disabled-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 5px,
+    rgba(255, 255, 255, 0.05) 5px,
+    rgba(255, 255, 255, 0.05) 6px
+  );
+}
+
 /* Animación de pase de página */
 .slide-fade-enter-active {
   transition: all 0.3s ease-out;
