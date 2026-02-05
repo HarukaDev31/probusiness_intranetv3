@@ -31,6 +31,9 @@
     <!-- Session Expired Modal -->
     <SessionExpiredModal />
 
+    <!-- Popup de actualización de calendario (WebSocket) -->
+    <CalendarUpdatePopup />
+
     <!-- Global Notifications -->
     <GlobalNotifications />
 
@@ -52,6 +55,7 @@ import { useWebSocketRole } from '../composables/websocket/useWebSocketRole'
 const SidebarMenu = defineAsyncComponent(() => import('../components/SidebarMenu.vue'))
 const Breadcrumbs = defineAsyncComponent(() => import('../components/Breadcrumbs.vue'))
 const SessionExpiredModal = defineAsyncComponent(() => import('../components/SessionExpiredModal.vue'))
+const CalendarUpdatePopup = defineAsyncComponent(() => import('../components/calendar/CalendarUpdatePopup.vue'))
 const GlobalNotifications = defineAsyncComponent(() => import('../components/GlobalNotifications.vue'))
 const ModalContainer = defineAsyncComponent(() => import('../components/ModalContainer.vue'))
 const GlobalSpinner = defineAsyncComponent(() => import('../components/GlobalSpinner.vue'))

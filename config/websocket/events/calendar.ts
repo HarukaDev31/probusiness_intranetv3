@@ -1,61 +1,34 @@
-import {
-  registerEventHandler,
-  subscribeEventsToRole,
-  WS_EVENTS
-} from '~/config/websocket/channels'
-import { ROLES } from '~/constants/roles'
+import { registerEventHandler, WS_EVENTS } from '~/config/websocket/channels'
+import { notifyCalendarUpdateFromSocket } from '~/composables/useCalendarUpdateNotification'
 
-const CALENDAR_EVENTS = [
+/** Nombres de eventos de calendario (canal por usuario). */
+export const CALENDAR_EVENTS = [
   WS_EVENTS.CALENDAR_ACTIVITY_CREATED,
   WS_EVENTS.CALENDAR_ACTIVITY_UPDATED,
   WS_EVENTS.CALENDAR_ACTIVITY_DELETED
 ]
 
 /**
- * Refresca datos del calendario (eventos y progreso) al recibir un evento por socket.
- * Usado por los roles Documentación, Coordinación y Jefe Importaciones.
+ * Nombre del canal privado del usuario para eventos de calendario.
+ * El backend emite a private-App.Models.User.{userId} para el dueño y responsables.
  */
-function refreshCalendarData() {
-  try {
-    const { loadEvents, loadProgress } = useCalendarStore()
-    loadEvents(true)
-    loadProgress(true)
-  } catch (e) {
-    // Store puede no estar inicializado si el usuario no está en el módulo calendario
-    console.debug('Calendar socket: refresh skipped', e)
-  }
+export const getUserCalendarChannelName = (userId: number | string): string =>
+  `App.Models.User.${userId}`
+
+/**
+ * Al recibir un evento de calendario por socket: mostrar popup para que el usuario
+ * recargue la vista actual (solo recarga si está en una página /calendar/*).
+ */
+function onCalendarSocketEvent() {
+  notifyCalendarUpdateFromSocket()
 }
 
 /**
- * Configuración de eventos de calendario para los roles que ven el módulo:
- * Documentación, Coordinación y Jefe Importaciones.
+ * Registra handlers de eventos de calendario.
+ * La suscripción al canal se hace por usuario en el plugin (App.Models.User.{userId}).
  */
 export const registerCalendarEvents = () => {
-  registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_CREATED, refreshCalendarData)
-  registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_UPDATED, refreshCalendarData)
-  registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_DELETED, refreshCalendarData)
-
-  // Documentación: canal Documentacion-notifications
-  subscribeEventsToRole(
-    ROLES.DOCUMENTACION,
-    `${ROLES.DOCUMENTACION}-notifications`,
-    CALENDAR_EVENTS,
-    'private'
-  )
-
-  // Coordinación: canal Coordinacion-notifications (sin tilde, como en backend)
-  subscribeEventsToRole(
-    ROLES.COORDINACION,
-    'Coordinacion-notifications',
-    CALENDAR_EVENTS,
-    'private'
-  )
-
-  // Jefe Importaciones: canal JefeImportacion-notifications
-  subscribeEventsToRole(
-    ROLES.JEFE_IMPORTACIONES,
-    'JefeImportacion-notifications',
-    CALENDAR_EVENTS,
-    'private'
-  )
+  registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_CREATED, onCalendarSocketEvent)
+  registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_UPDATED, onCalendarSocketEvent)
+  registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_DELETED, onCalendarSocketEvent)
 }

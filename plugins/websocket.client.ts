@@ -1,17 +1,17 @@
 import { useWebSocketRole } from '../composables/websocket/useWebSocketRole'
 import { useEcho, getEchoInstance } from '../composables/websocket/useEcho'
+import { getAllEventHandlers } from '../config/websocket/channels'
+import { CALENDAR_EVENTS, getUserCalendarChannelName } from '../config/websocket/events/calendar'
 
 export default defineNuxtPlugin(async () => {
   // Solo ejecutar en el cliente
   if (process.server) return
 
-  
-
   // Variable para evitar inicialización múltiple
   let isInitializing = false
   let isInitialized = false
 
-  const { initializeEcho, resetEcho } = useEcho()
+  const { initializeEcho, resetEcho, subscribeToChannel } = useEcho()
   const { setupRoleChannels } = useWebSocketRole()
 
   // Función para inicializar websockets cuando el usuario esté autenticado
@@ -81,6 +81,26 @@ export default defineNuxtPlugin(async () => {
 
         // Configurar canales según el rol del usuario
         await setupRoleChannels()
+
+        // Suscripción al canal privado del usuario para eventos de calendario (por usuario)
+        try {
+          const user = JSON.parse(authUser) as { id?: number | string }
+          if (user?.id != null) {
+            const channelName = getUserCalendarChannelName(user.id)
+            const allHandlers = getAllEventHandlers()
+            const handlers = CALENDAR_EVENTS.map((event) => ({
+              event,
+              callback: allHandlers[event] ?? (() => {})
+            }))
+            subscribeToChannel({
+              name: channelName,
+              type: 'private',
+              handlers
+            })
+          }
+        } catch (e) {
+          console.debug('Calendar user channel: skip', e)
+        }
 
         isInitialized = true
         
