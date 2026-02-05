@@ -1138,16 +1138,19 @@ const formatDateToStr = (date: CalendarDate): string => {
   return `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
 }
 
+// Día de la semana con lunes=0, domingo=6 (igual que columnas del grid)
+const getMondayBasedWeekday = (year: number, month: number, day: number) => {
+  const jsDay = new Date(year, month - 1, day).getDay() // 0=dom, 1=lun, ..., 6=sáb
+  return (jsDay + 6) % 7 // 0=lun, ..., 6=dom
+}
+
 // Calcular días del mes para la vista mensual
 const calendarDays = computed(() => {
   const year = currentDate.value.year
   const month = currentDate.value.month
   const firstDay = parseDate(`${year}-${String(month).padStart(2, '0')}-01`)
   const lastDay = firstDay.set({ day: firstDay.calendar.getDaysInMonth(firstDay) })
-  
-  // Primer día del mes en columna 0=lunes, 6=domingo. dayOfWeek: 0=dom, 1=lun,...,6=sáb → (x+6)%7 = lun=0, dom=6
-  const startDayOfWeek = (firstDay as any).dayOfWeek % 7
-  const startDayMonday = (startDayOfWeek + 6) % 7
+  const startDayMonday = getMondayBasedWeekday(year, month, 1)
   const days: any[] = []
   const prevMonth = firstDay.subtract({ months: 1 })
   const daysInPrevMonth = prevMonth.calendar.getDaysInMonth(prevMonth)
@@ -1393,8 +1396,7 @@ const getEventSpanAvatarStyle = (span: EventSpan) => {
 const getCalendarDaysForMonth = (year: number, month: number) => {
   const firstDay = parseDate(`${year}-${String(month).padStart(2, '0')}-01`)
   const lastDay = firstDay.set({ day: firstDay.calendar.getDaysInMonth(firstDay) })
-  const startDayOfWeek = (firstDay as any).dayOfWeek % 7
-  const startDayMonday = (startDayOfWeek + 6) % 7
+  const startDayMonday = getMondayBasedWeekday(year, month, 1)
   const prevMonth = firstDay.subtract({ months: 1 })
   const daysInPrevMonth = prevMonth.calendar.getDaysInMonth(prevMonth)
   const days: any[] = []
