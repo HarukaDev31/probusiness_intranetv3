@@ -65,7 +65,7 @@
               </div>
               <div class="flex flex-col">
                 <label class="text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
-                <UCalendar v-model="endDate" />
+                <UCalendar v-model="endDate" :placeholder="endDatePlaceholder" />
               </div>
             </div>
             <div class="flex gap-2 pt-1 border-t border-gray-200 dark:border-gray-700 pt-3">
@@ -121,6 +121,13 @@ const endDate = ref<CalendarDate | null>(
     ? parseDate(props.initialFilters.end_date) as CalendarDate
     : null
 )
+
+/** Mes que muestra el 2.º calendario (Hasta): el mes siguiente al "Desde" o al actual si no hay Desde */
+const endDatePlaceholder = computed(() => {
+  const base = startDate.value ?? today(getLocalTimeZone())
+  const nextMonth = base.add({ months: 1 })
+  return new CalendarDate(nextMonth.year, nextMonth.month, 1)
+})
 
 // Opciones para selects
 const responsableOptions = computed(() => {

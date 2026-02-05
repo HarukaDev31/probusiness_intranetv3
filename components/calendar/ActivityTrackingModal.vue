@@ -21,68 +21,9 @@
 
     <template #body>
       <div class="space-y-4">
-        <!-- Tabla de responsables -->
-        <table class="w-full">
-          <thead>
-            <tr class="border-b border-gray-200 dark:border-gray-700">
-              <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400">Responsable</th>
-              <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400">Estado</th>
-              <th class="px-3 py-2 text-right text-xs font-semibold text-gray-600 dark:text-gray-400">Actualización</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-            <tr v-for="charge in activity?.charges || []" :key="charge.id">
-              <td class="px-3 py-2">
-                <div class="flex items-center gap-2">
-                  <div
-                    class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                    :style="{ backgroundColor: getResponsableColor(charge.user_id, charge.user?.nombre) }"
-                  >
-                    {{ (charge.user?.nombre || 'U').charAt(0) }}
-                  </div>
-                  <span class="text-sm text-gray-900 dark:text-white">{{ charge.user?.nombre || 'N/A' }}</span>
-                </div>
-              </td>
-              <td class="px-3 py-2">
-                <UDropdownMenu v-if="canEditChargeStatus(charge)" :items="getStatusItems(charge)">
-                  <span
-                    class="px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80"
-                    :class="getStatusClasses(charge.status || 'PENDIENTE')"
-                  >
-                    {{ getStatusLabel(charge.status || 'PENDIENTE') }}
-                    <UIcon name="i-heroicons-chevron-down" class="w-3 h-3 ml-0.5 inline" />
-                  </span>
-                </UDropdownMenu>
-                <span v-else class="px-2 py-0.5 rounded-full text-xs font-medium" :class="getStatusClasses(charge.status || 'PENDIENTE')">
-                  {{ getStatusLabel(charge.status || 'PENDIENTE') }}
-                </span>
-              </td>
-              <td class="px-3 py-2 text-right text-xs text-gray-500">
-                {{ formatDateTime(charge.updated_at) }}
-              </td>
-            </tr>
-            <tr v-if="!activity?.charges?.length">
-              <td colspan="3" class="px-3 py-6 text-center text-gray-400 text-sm">
-                No hay responsables asignados
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      
 
-        <!-- Barra de progreso -->
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <div class="flex gap-4 text-xs text-gray-600 dark:text-gray-400">
-            <span><span class="inline-block w-2 h-2 rounded-full bg-warning-500 mr-1"></span>{{ statusCounts.PENDIENTE }}</span>
-            <span><span class="inline-block w-2 h-2 rounded-full bg-orange-500 mr-1"></span>{{ statusCounts.PROGRESO }}</span>
-            <span><span class="inline-block w-2 h-2 rounded-full bg-success-500 mr-1"></span>{{ statusCounts.COMPLETADO }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="w-24 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div class="h-full bg-success-500" :style="{ width: `${progressPercentage}%` }"></div>
-            </div>
-            <span class="text-xs font-medium text-gray-600 dark:text-gray-400">{{ progressPercentage }}%</span>
-          </div>
-        </div>
+      
 
         <!-- Historial -->
         <div v-if="trackingHistory.length > 0" class="border-t border-gray-200 dark:border-gray-700 pt-3">

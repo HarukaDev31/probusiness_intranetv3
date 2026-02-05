@@ -35,20 +35,13 @@
             title="Ver Progreso"
             @click="navigateTo('/calendar/progreso')"
           />
-          <USelect
-            v-model="viewMode"
-            :items="viewOptions"
-            size="xs"
-            class="w-[80px] sm:w-[90px]"
-            @update:model-value="handleViewModeChange"
-          />
           <UButton
             v-if="showCalendarFilters && calendarPermissions?.canAccessConfig"
             icon="i-heroicons-cog-6-tooth"
             variant="ghost"
             size="xs"
             class="!p-1.5"
-            title="Configuración"
+            label="Configuración"
             @click="openConfig"
           />
         </div>
@@ -63,7 +56,7 @@
       />
 
       <!-- Calendar Content (único scroll) -->
-      <div class="flex-1 min-h-0 overflow-auto relative px-4 md:px-6 lg:px-8 py-4">
+      <div class="flex-1 min-h-0 overflow-auto relative px-4 md:px-6 lg:px-8 py-4 w-9/10  mx-auto">
         <div v-if="error && !loading" class="text-center py-12">
           <p class="text-red-500">{{ error }}</p>
           <UButton label="Reintentar" @click="viewMode === 'activities' ? loadActivitiesData() : loadEvents()" class="mt-4" />
@@ -129,15 +122,15 @@
         class="relative"
       >
         <!-- Celdas de los días -->
-        <div class="grid grid-cols-7">
+        <div class="grid grid-cols-7 border-r-2 border-gray-300 dark:border-gray-600">
           <div
             v-for="(day, dayIndex) in week.days"
             :key="dayIndex"
-            class="min-h-[150px] md:min-h-[195px] transition-colors flex flex-col relative"
+            class="min-h-[150px] md:min-h-[145px] transition-colors flex flex-col relative"
             :class="day.isCurrentMonth
-              ? 'border-r border-b border-gray-200 dark:border-gray-700 ' +
+              ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 ' +
                 (day.isWeekend
-                  ? 'bg-gray-100 dark:bg-gray-700/50 cursor-not-allowed select-none calendar-day-disabled'
+                  ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed select-none calendar-day-disabled'
                   : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
               : 'border-0 bg-transparent pointer-events-none'"
             @click="(e) => { if (day.isWeekend) { e.stopPropagation(); e.preventDefault(); return }; if (day.isCurrentMonth) handleDayClick(day.date) }"
@@ -228,7 +221,7 @@
                 <UAvatar
                   :src="resp.avatar || undefined"
                   :alt="resp.nombre"
-                  size="2xs"
+                  size="md"
                   class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
                   :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
                 />
@@ -281,9 +274,9 @@
                       :key="dayIndex"
                       class="min-h-[150px] md:min-h-[195px] transition-colors flex flex-col relative"
                       :class="day.isCurrentMonth
-                        ? 'border-r border-b border-gray-200 dark:border-gray-700 ' +
+                        ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 ' +
                           (day.isWeekend
-                            ? 'bg-gray-100 dark:bg-gray-700/50 cursor-not-allowed select-none calendar-day-disabled'
+                            ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed select-none calendar-day-disabled'
                             : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
                         : 'border-0 bg-transparent pointer-events-none'"
                       @click="(e) => { if (day.isWeekend) { e.stopPropagation(); e.preventDefault(); return }; if (day.isCurrentMonth) handleDayClick(day.date) }"
@@ -370,7 +363,7 @@
                             <UAvatar
                               :src="resp.avatar || undefined"
                               :alt="resp.nombre"
-                              size="2xs"
+                              size="xs"
                               class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
                               :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
                             />
@@ -404,15 +397,15 @@
             </div>
             <!-- Contenido del calendario -->
             <div v-show="!loading">
-      <div class="grid grid-cols-8 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <div class="grid grid-cols-8 border-b-2 border-gray-300 dark:border-gray-600 overflow-x-auto">
         <div class="p-2 md:p-3 text-center text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900"></div>
         <div
           v-for="day in weekDaysData"
           :key="day.date"
-          class="p-2 md:p-3 text-center border-l border-gray-200 dark:border-gray-700 min-w-[80px] md:min-w-0 relative"
+          class="p-2 md:p-3 text-center border-l-2 border-gray-300 dark:border-gray-600 min-w-[80px] md:min-w-0 relative"
           :class="{
             'bg-primary-50 dark:bg-primary-900/20': day.isToday && !day.isWeekend,
-            'bg-gray-100 dark:bg-gray-700/50 calendar-day-disabled select-none': day.isWeekend,
+            'bg-gray-200 dark:bg-gray-700 calendar-day-disabled select-none': day.isWeekend,
             'bg-gray-50 dark:bg-gray-900': !day.isToday && !day.isWeekend
           }"
         >
@@ -444,8 +437,8 @@
         <div
           v-for="day in weekDaysData"
           :key="day.date"
-          class="border-r border-b border-gray-200 dark:border-gray-700 relative min-w-[80px] md:min-w-0"
-          :class="{ 'bg-gray-100 dark:bg-gray-700/50 calendar-day-disabled': day.isWeekend }"
+          class="border-r-2 border-b-2 border-gray-300 dark:border-gray-600 relative min-w-[80px] md:min-w-0"
+          :class="{ 'bg-gray-200 dark:bg-gray-700 calendar-day-disabled': day.isWeekend }"
         >
           <div v-if="day.isWeekend" class="absolute inset-0 pointer-events-none calendar-day-disabled-pattern" aria-hidden="true" />
           <div
@@ -682,7 +675,7 @@
             <UAvatar
               :src="resp.avatar || undefined"
               :alt="resp.nombre"
-              size="sm"
+              size="md"
               :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
             />
             <span class="font-medium text-gray-900 dark:text-white">{{ resp.nombre }}</span>

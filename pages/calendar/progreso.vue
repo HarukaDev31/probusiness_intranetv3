@@ -62,7 +62,7 @@
                   </div>
                   <div>
                     <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Hasta:</label>
-                    <UCalendar v-model="filterEndDate" class="w-full" />
+                    <UCalendar v-model="filterEndDate" class="w-full" :placeholder="endDatePlaceholder" />
                   </div>
                 </div>
                 <div class="flex gap-2">
@@ -389,6 +389,13 @@ const filterStatus = ref<CalendarEventStatus | null>(null)
 const filterPriority = ref<CalendarEventPriority | null>(null)
 const filterResponsable = ref<number | null>(null)
 const filterContenedorIds = ref<number[]>([])
+
+/** Mes que muestra el 2.º calendario (Hasta): el mes siguiente al "Desde" o al actual */
+const endDatePlaceholder = computed(() => {
+  const base = filterStartDate.value ?? today(getLocalTimeZone())
+  const nextMonth = base.add({ months: 1 })
+  return new CalendarDate(nextMonth.year, nextMonth.month, 1)
+})
 
 // Paginación
 const page = ref(1)

@@ -5,12 +5,7 @@
         <h3 class="text-lg font-semibold">
           {{ isEdit ? 'Editar Actividad' : 'Nueva Actividad' }}
         </h3>
-        <UButton
-          icon="i-heroicons-x-mark"
-          variant="ghost"
-          size="sm"
-          @click="close"
-        />
+        
       </div>
     </template>
 
@@ -189,7 +184,7 @@
       </div>
     </template>
 
-    <template #footer>
+    <template #footer="{ close }">
       <div class="flex justify-between items-center w-full">
         <UButton
           v-if="isEdit && calendarPermissions.canDeleteActivity"
