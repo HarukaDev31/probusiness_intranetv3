@@ -188,9 +188,8 @@ export const useEcho = () => {
         }
       }
 
-      // Registrar los manejadores de eventos para este canal
-      // Laravel con broadcastAs() envía 'CalendarActivityCreated'; Pusher recibe ese nombre exacto.
-      // Registrar con bind() (nombre exacto) y también listen('.EventName') por compatibilidad Echo.
+      // Registrar los manejadores de eventos para este canal.
+      // Laravel Echo expone el canal real en .subscription; enlazar ahí garantiza el mismo comportamiento que los canales por rol.
       const registeredEvents = new Set()
       channel.handlers.forEach(({ event, callback }) => {
         const eventKey = `${channel.name}:${event}`
@@ -199,10 +198,6 @@ export const useEcho = () => {
 
         const eventNamePusher = event.startsWith('.') ? event.slice(1) : event
         const eventNameEcho = event.startsWith('.') ? event : '.' + event
-        const eventNamesToBind = [eventNamePusher]
-        if (eventNamePusher.startsWith('Calendar')) {
-          eventNamesToBind.push('App.Events.' + eventNamePusher)
-        }
 
         const onEvent = (data: any) => {
           if (process.dev && eventNamePusher.startsWith('Calendar')) {
@@ -216,22 +211,24 @@ export const useEcho = () => {
             console.error('❌ channelInstance no es un objeto válido:', channelInstance)
             return
           }
-          const bound: string[] = []
-          if (typeof channelInstance.bind === 'function') {
-            eventNamesToBind.forEach((name) => {
-              channelInstance.bind(name, onEvent)
-              bound.push('bind:' + name)
-            })
+          let bound = false
+          // 1) Mismo camino que los canales por rol: enlazar en el canal real de Pusher (.subscription)
+          const subscription = channelInstance.subscription
+          if (subscription && typeof subscription.bind === 'function') {
+            subscription.bind(eventNamePusher, onEvent)
+            bound = true
           }
-          if (typeof channelInstance.listen === 'function' && !bound.length) {
+          // 2) Si no hay .subscription (canal no Echo), usar .listen() del wrapper Echo
+          if (!bound && typeof channelInstance.listen === 'function') {
             channelInstance.listen(eventNameEcho, onEvent)
-            bound.push('listen:' + eventNameEcho)
+            bound = true
           }
-          if (!bound.length && channelInstance.pusher && typeof channelInstance.pusher.bind === 'function') {
-            eventNamesToBind.forEach((name) => channelInstance.pusher.bind(name, onEvent))
+          if (!bound && typeof channelInstance.bind === 'function') {
+            channelInstance.bind(eventNamePusher, onEvent)
+            bound = true
           }
-          if (!bound.length) {
-            console.warn('⚠️ Canal sin bind/listen para evento:', event, Object.getOwnPropertyNames(channelInstance))
+          if (!bound) {
+            console.warn('⚠️ Canal sin subscription.bind/listen para evento:', event, Object.getOwnPropertyNames(channelInstance))
           }
         } catch (err) {
           console.error('❌ Error registrando evento:', event, err)
