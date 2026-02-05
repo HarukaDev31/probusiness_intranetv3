@@ -1,6 +1,5 @@
-import { useWebSocketRole } from '../composables/websocket/useWebSocketRole'
 import { useEcho, getEchoInstance } from '../composables/websocket/useEcho'
-import { getAllEventHandlers } from '../config/websocket/channels'
+import { getAllEventHandlers, getWebsocketRoles } from '../config/websocket/channels'
 import { CALENDAR_EVENTS, getUserCalendarChannelName } from '../config/websocket/events/calendar'
 
 export default defineNuxtPlugin(async () => {
@@ -11,8 +10,7 @@ export default defineNuxtPlugin(async () => {
   let isInitializing = false
   let isInitialized = false
 
-  const { initializeEcho, resetEcho, subscribeToChannel } = useEcho()
-  const { setupRoleChannels } = useWebSocketRole()
+  const { initializeEcho, resetEcho, subscribeToChannel, subscribeToRoleChannels } = useEcho()
 
   // Función para inicializar websockets cuando el usuario esté autenticado
   const initializeWebSockets = async () => {
@@ -74,11 +72,16 @@ export default defineNuxtPlugin(async () => {
           }
         }
 
-        // 1) Canal del usuario (calendario): modelo Usuario, ID_Usuario
-        try {
-          const user = JSON.parse(authUser) as { id?: number | string; raw?: { ID_Usuario?: number } }
-          const userId = user?.id ?? user?.raw?.ID_Usuario
-          if (userId != null) {
+        const user = JSON.parse(authUser) as {
+          id?: number | string
+          raw?: { ID_Usuario?: number; id?: number; grupo?: { nombre?: string } }
+        }
+        const userId = user?.id ?? user?.raw?.ID_Usuario ?? user?.raw?.id
+        const role = user?.raw?.grupo?.nombre
+
+        // 1) Canal del usuario (calendario): private-App.Models.Usuario.{id} — siempre que haya userId
+        if (userId != null) {
+          try {
             const channelName = getUserCalendarChannelName(userId)
             const allHandlers = getAllEventHandlers()
             const handlers = CALENDAR_EVENTS.map((event) => ({
@@ -90,13 +93,22 @@ export default defineNuxtPlugin(async () => {
               type: 'private',
               handlers
             })
+          } catch (e) {
+            console.warn('Calendar user channel:', e)
           }
-        } catch (e) {
-          console.warn('Calendar user channel:', e)
         }
 
-        // 2) Después canales por rol (Documentación, Coordinación, etc.)
-        await setupRoleChannels()
+        // 2) Canales por rol (Coordinación, Documentación, etc.) desde auth_user, no useUserRole (puede no estar cargado al recargar)
+        if (role) {
+          const roleConfig = getWebsocketRoles()[role]
+          if (roleConfig) {
+            try {
+              subscribeToRoleChannels(roleConfig)
+            } catch (e) {
+              console.warn('Role channels:', e)
+            }
+          }
+        }
 
         isInitialized = true
         

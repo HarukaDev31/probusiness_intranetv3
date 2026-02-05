@@ -94,8 +94,21 @@ class AuthService {
 
   /** Suscripción al canal privado del usuario para eventos de calendario. */
   private setupUserChannel() {
-    if (!this.isEchoInitialized || !this.currentUser) return
-    const userId = this.currentUser.id ?? (this.currentUser as any).raw?.ID_Usuario
+    if (!this.isEchoInitialized) return
+    let userId: number | string | null = null
+    if (this.currentUser) {
+      const raw = (this.currentUser as any).raw
+      userId = this.currentUser.id ?? raw?.ID_Usuario ?? raw?.id ?? null
+    }
+    if (userId == null && process.client) {
+      try {
+        const stored = localStorage.getItem('auth_user')
+        if (stored) {
+          const parsed = JSON.parse(stored) as { id?: number | string; raw?: { ID_Usuario?: number; id?: number } }
+          userId = parsed?.id ?? parsed?.raw?.ID_Usuario ?? parsed?.raw?.id ?? null
+        }
+      } catch (_) { /* ignore */ }
+    }
     if (userId == null) return
     try {
       const channelName = getUserCalendarChannelName(userId)
