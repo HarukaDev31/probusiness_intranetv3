@@ -17,19 +17,39 @@ export const getUserCalendarChannelName = (userId: number | string): string =>
   `App.Models.Usuario.${userId}`
 
 /**
- * Al recibir un evento de calendario por socket: mostrar popup para recargar la vista.
- * No se muestra al usuario que realizó la acción (triggered_by_user_id).
+ * Obtiene el ID del usuario actual desde localStorage (mismo criterio que auth/websocket).
  */
-function onCalendarSocketEvent(data: { triggered_by_user_id?: number | null }) {
-  if (data?.triggered_by_user_id != null && typeof process !== 'undefined' && process.client) {
-    try {
-      const authUser = localStorage.getItem('auth_user')
-      if (authUser) {
-        const user = JSON.parse(authUser) as { id?: number | string; raw?: { ID_Usuario?: number; id?: number } }
-        const myId = user?.id ?? user?.raw?.ID_Usuario ?? user?.raw?.id
-        if (myId != null && Number(data.triggered_by_user_id) === Number(myId)) return
-      }
-    } catch (_) { /* ignore */ }
+function getCurrentUserId(): number | string | null {
+  if (typeof process === 'undefined' || !process.client) return null
+  try {
+    const authUser = localStorage.getItem('auth_user')
+    if (!authUser) return null
+    const user = JSON.parse(authUser) as {
+      id?: number | string
+      raw?: { ID_Usuario?: number; id?: number; Id_Usuario?: number }
+    }
+    return user?.id ?? user?.raw?.ID_Usuario ?? user?.raw?.id ?? user?.raw?.Id_Usuario ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Al recibir un evento de calendario por socket: mostrar popup para recargar la vista.
+ * No se muestra al usuario que realizó la acción (creador/modificador).
+ */
+function onCalendarSocketEvent(payload: unknown) {
+  const data = payload && typeof payload === 'object' && 'triggered_by_user_id' in payload
+    ? (payload as { triggered_by_user_id?: number | string | null })
+    : null
+  const triggeredBy = data?.triggered_by_user_id
+  if (triggeredBy != null && triggeredBy !== '') {
+    const myId = getCurrentUserId()
+    if (myId != null) {
+      const a = Number(triggeredBy)
+      const b = Number(myId)
+      if (!Number.isNaN(a) && !Number.isNaN(b) && a === b) return
+    }
   }
   notifyCalendarUpdateFromSocket()
 }
