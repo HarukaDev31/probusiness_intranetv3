@@ -189,17 +189,25 @@ export const useEcho = () => {
       }
 
       // Registrar los manejadores de eventos para este canal
-      // Laravel con broadcastAs() envía el nombre custom; Echo espera .listen('.EventName') con punto
+      // Laravel con broadcastAs() envía 'CalendarActivityCreated'; Pusher recibe ese nombre exacto.
+      // Registrar con bind() (nombre exacto) y también listen('.EventName') por compatibilidad Echo.
       const registeredEvents = new Set()
       channel.handlers.forEach(({ event, callback }) => {
         const eventKey = `${channel.name}:${event}`
         if (registeredEvents.has(eventKey)) return
         registeredEvents.add(eventKey)
 
-        const eventNameForEcho = event.startsWith('.') ? event : '.' + event
-        const eventNameForPusher = event.startsWith('.') ? event.slice(1) : event
+        const eventNamePusher = event.startsWith('.') ? event.slice(1) : event
+        const eventNameEcho = event.startsWith('.') ? event : '.' + event
+        const eventNamesToBind = [eventNamePusher]
+        if (eventNamePusher.startsWith('Calendar')) {
+          eventNamesToBind.push('App.Events.' + eventNamePusher)
+        }
 
         const onEvent = (data: any) => {
+          if (process.dev && eventNamePusher.startsWith('Calendar')) {
+            console.log('[WS] Evento calendario recibido:', eventNamePusher, data)
+          }
           callback(data)
         }
 
@@ -208,28 +216,23 @@ export const useEcho = () => {
             console.error('❌ channelInstance no es un objeto válido:', channelInstance)
             return
           }
-          // Preferir listen() de Laravel Echo (necesario para eventos con broadcastAs())
-          if (typeof channelInstance.listen === 'function') {
-            channelInstance.listen(eventNameForEcho, onEvent)
-            return
-          }
+          const bound: string[] = []
           if (typeof channelInstance.bind === 'function') {
-            channelInstance.bind(eventNameForPusher, onEvent)
-            return
+            eventNamesToBind.forEach((name) => {
+              channelInstance.bind(name, onEvent)
+              bound.push('bind:' + name)
+            })
           }
-          if (channelInstance.pusher && typeof channelInstance.pusher.bind === 'function') {
-            channelInstance.pusher.bind(eventNameForPusher, onEvent)
-            return
+          if (typeof channelInstance.listen === 'function' && !bound.length) {
+            channelInstance.listen(eventNameEcho, onEvent)
+            bound.push('listen:' + eventNameEcho)
           }
-          if (typeof channelInstance.on === 'function') {
-            channelInstance.on(eventNameForPusher, onEvent)
-            return
+          if (!bound.length && channelInstance.pusher && typeof channelInstance.pusher.bind === 'function') {
+            eventNamesToBind.forEach((name) => channelInstance.pusher.bind(name, onEvent))
           }
-          if (typeof channelInstance.addEventListener === 'function') {
-            channelInstance.addEventListener(eventNameForPusher, onEvent)
-            return
+          if (!bound.length) {
+            console.warn('⚠️ Canal sin bind/listen para evento:', event, Object.getOwnPropertyNames(channelInstance))
           }
-          console.warn('⚠️ Canal sin bind/listen para evento:', event, Object.getOwnPropertyNames(channelInstance))
         } catch (err) {
           console.error('❌ Error registrando evento:', event, err)
         }
