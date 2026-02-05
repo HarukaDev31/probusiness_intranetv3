@@ -11,10 +11,10 @@ export const CALENDAR_EVENTS = [
 
 /**
  * Nombre del canal privado del usuario para eventos de calendario.
- * El backend emite a private-App.Models.User.{userId} para el dueño y responsables.
+ * Backend usa modelo Usuario (ID_Usuario): private-App.Models.Usuario.{userId}
  */
 export const getUserCalendarChannelName = (userId: number | string): string =>
-  `App.Models.User.${userId}`
+  `App.Models.Usuario.${userId}`
 
 /**
  * Al recibir un evento de calendario por socket: mostrar popup para que el usuario

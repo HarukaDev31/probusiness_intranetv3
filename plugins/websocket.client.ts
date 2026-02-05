@@ -74,11 +74,12 @@ export default defineNuxtPlugin(async () => {
           }
         }
 
-        // 1) Primero canal del usuario (calendario): así la suscripción llega aunque falle algo del rol
+        // 1) Canal del usuario (calendario): modelo Usuario, ID_Usuario
         try {
-          const user = JSON.parse(authUser) as { id?: number | string }
-          if (user?.id != null) {
-            const channelName = getUserCalendarChannelName(user.id)
+          const user = JSON.parse(authUser) as { id?: number | string; raw?: { ID_Usuario?: number } }
+          const userId = user?.id ?? user?.raw?.ID_Usuario
+          if (userId != null) {
+            const channelName = getUserCalendarChannelName(userId)
             const allHandlers = getAllEventHandlers()
             const handlers = CALENDAR_EVENTS.map((event) => ({
               event,
