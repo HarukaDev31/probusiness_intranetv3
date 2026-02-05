@@ -155,7 +155,7 @@ const isDark = computed(() => colorMode.value === 'dark')
 
 // Logo handling: usar URL pública del intranet para el logo oscuro
 const intranetLogoUrl = 'https://intranetback.probusiness.pe/storage/logo_icons/logo_header_white.png'
-const localLogo = '/assets/img/logos/logo_probusiness.png'
+const localLogo = '/assets/img/logos/logo_probusiness.webp'
 const logoSrc = computed(() => isDark.value ? intranetLogoUrl : localLogo)
 
 import { onMounted } from 'vue'
