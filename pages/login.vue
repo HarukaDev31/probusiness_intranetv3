@@ -4,7 +4,7 @@
       <!-- Background Image -->
       <div class="bg-image">
         <img 
-          src="/assets/img/backgrounds/portada_probusiness.png" 
+          src="/assets/img/backgrounds/portada_probusiness.webp" 
           width="1920" 
           height="1080" 
           class="image" 
