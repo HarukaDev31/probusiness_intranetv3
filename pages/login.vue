@@ -194,7 +194,7 @@ const preloadImage = (url: string, timeout = 10_000) => {
 onMounted(() => {
   // preload both background and logo (logoSrc may be external)
   withSpinner(async () => {
-    const bg = '/assets/img/backgrounds/portada_probusiness.png'
+    const bg = '/assets/img/backgrounds/portada_probusiness.webp'
     const logo = isDark.value ? intranetLogoUrl : localLogo
     await Promise.all([preloadImage(bg), preloadImage(logo)])
   }, 'Cargando...')
