@@ -251,6 +251,16 @@ const sidebarCategories = computed(() => {
     }
   })
 
+  // Para Jefe Importación: poner "Mi Progreso (Importaciones)" en 4.ª posición (índice 3)
+  const miProgresoIndex = modules.findIndex((m: any) =>
+    m.route === '/calendar' || (m.name && m.name.includes('Mi Progreso') && m.name.includes('Importaciones'))
+  )
+  const desiredPosition = 3 // 4to lugar (0-based)
+  if (miProgresoIndex !== -1 && miProgresoIndex !== desiredPosition) {
+    const [item] = modules.splice(miProgresoIndex, 1)
+    modules.splice(desiredPosition, 0, item)
+  }
+
   // Una sola categoría que contiene todos los módulos padre (para que SidebarMenu los muestre como botones)
   return [
     {
