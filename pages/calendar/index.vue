@@ -128,13 +128,14 @@
             :key="dayIndex"
             class="min-h-[150px] md:min-h-[145px] transition-colors flex flex-col relative"
             :class="day.isCurrentMonth
-              ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 ' +
+              ? 'border-r-2 border-b-2  border-gray-300 dark:border-gray-600 ' +
                 (day.isWeekend
                   ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed select-none calendar-day-disabled'
                   : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
               : 'border-0 bg-transparent pointer-events-none'"
             @click="(e) => { if (day.isWeekend) { e.stopPropagation(); e.preventDefault(); return }; if (day.isCurrentMonth) handleDayClick(day.date) }"
           >
+         
             <!-- Overlay rayas en días deshabilitados (fin de semana); captura clic para no abrir modal -->
             <div
               v-if="day.isCurrentMonth && day.isWeekend"
@@ -899,10 +900,12 @@ const loadActivitiesData = async (force = false) => {
 
 // Handlers para filtros
 const handleFilterChange = async (newFilters: any) => {
-  if (newFilters.responsable_id !== undefined) {
+  // Siempre actualizar responsable y contenedor en el store (también cuando son undefined = "Todos")
+  // para que al volver a "Todos" se limpien los filtros y se recarguen los eventos
+  if ('responsable_id' in newFilters) {
     setFilter('responsable_id', newFilters.responsable_id)
   }
-  if (newFilters.contenedor_id !== undefined) {
+  if ('contenedor_id' in newFilters) {
     setFilter('contenedor_id', newFilters.contenedor_id)
   }
   if (newFilters.start_date !== undefined || newFilters.end_date !== undefined) {
@@ -922,7 +925,8 @@ const handleFilterChange = async (newFilters: any) => {
       }
     }
   }
-  await loadActivitiesData()
+  // Forzar recarga para aplicar los filtros actualizados (incl. cuando se pone "Todos")
+  await loadActivitiesData(true)
 }
 
 // Handlers para actividades
@@ -1101,12 +1105,13 @@ const currentPeriodTitle = computed(() => {
       return `${currentDate.value.day} de ${months[currentDate.value.month - 1]}`
     }
   } else if (viewMode.value === 'week') {
-    // Obtener el lunes de la semana actual
-    const currentDay = parseDate(`${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`)
-    const dayOfWeek = (currentDay as any).dayOfWeek % 7
-    const monday = currentDay.subtract({ days: dayOfWeek === 0 ? 6 : dayOfWeek - 1 })
+    const y = currentDate.value.year
+    const m = currentDate.value.month
+    const d = currentDate.value.day
+    const currentDay = parseDate(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
+    const mondayOffset = getMondayBasedWeekday(y, m, d)
+    const monday = currentDay.subtract({ days: mondayOffset })
     const sunday = monday.add({ days: 6 })
-    
     if (monday.month === sunday.month) {
       return `${monday.day} - ${sunday.day} de ${months[monday.month - 1]} ${monday.year}`
     } else {
@@ -1135,11 +1140,13 @@ const currentPeriodTitleShort = computed(() => {
       return `${currentDate.value.day}/${currentDate.value.month}`
     }
   } else if (viewMode.value === 'week') {
-    const currentDay = parseDate(`${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`)
-    const dayOfWeek = (currentDay as any).dayOfWeek % 7
-    const monday = currentDay.subtract({ days: dayOfWeek === 0 ? 6 : dayOfWeek - 1 })
+    const y = currentDate.value.year
+    const m = currentDate.value.month
+    const d = currentDate.value.day
+    const currentDay = parseDate(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
+    const mondayOffset = getMondayBasedWeekday(y, m, d)
+    const monday = currentDay.subtract({ days: mondayOffset })
     const sunday = monday.add({ days: 6 })
-    
     if (monday.month === sunday.month) {
       return `${monday.day}-${sunday.day} ${months[monday.month - 1]}`
     } else {
@@ -1161,6 +1168,12 @@ const getMondayBasedWeekday = (year: number, month: number, day: number) => {
   return (jsDay + 6) % 7 // 0=lun, ..., 6=dom
 }
 
+// Fin de semana (sábado/domingo). CalendarDate no tiene dayOfWeek; usamos Date.getDay() (0=dom, 6=sáb)
+const isDateWeekend = (d: CalendarDate) => {
+  const day = new Date(d.year, d.month - 1, d.day).getDay()
+  return day === 0 || day === 6
+}
+
 // Calcular días del mes para la vista mensual
 const calendarDays = computed(() => {
   const year = currentDate.value.year
@@ -1171,8 +1184,6 @@ const calendarDays = computed(() => {
   const days: any[] = []
   const prevMonth = firstDay.subtract({ months: 1 })
   const daysInPrevMonth = prevMonth.calendar.getDaysInMonth(prevMonth)
-  const dayOfWeek = (d: CalendarDate) => (d as any).dayOfWeek % 7
-  const isWeekend = (d: CalendarDate) => { const w = dayOfWeek(d); return w === 0 || w === 6 }
 
   for (let i = startDayMonday - 1; i >= 0; i--) {
     const day = prevMonth.set({ day: daysInPrevMonth - i })
@@ -1183,7 +1194,7 @@ const calendarDays = computed(() => {
       dateStr,
       isCurrentMonth: false,
       isToday: isSameDay(day, today(getLocalTimeZone())),
-      isWeekend: isWeekend(day),
+      isWeekend: isDateWeekend(day),
       events: getEventsForDate(day)
     })
   }
@@ -1197,7 +1208,7 @@ const calendarDays = computed(() => {
       dateStr,
       isCurrentMonth: true,
       isToday: isSameDay(date, today(getLocalTimeZone())),
-      isWeekend: isWeekend(date),
+      isWeekend: isDateWeekend(date),
       events: getEventsForDate(date)
     })
   }
@@ -1213,7 +1224,7 @@ const calendarDays = computed(() => {
       dateStr,
       isCurrentMonth: false,
       isToday: isSameDay(date, today(getLocalTimeZone())),
-      isWeekend: isWeekend(date),
+      isWeekend: isDateWeekend(date),
       events: getEventsForDate(date)
     })
   }
@@ -1418,9 +1429,6 @@ const getCalendarDaysForMonth = (year: number, month: number) => {
   const daysInPrevMonth = prevMonth.calendar.getDaysInMonth(prevMonth)
   const days: any[] = []
 
-  const dayOfWeek = (d: CalendarDate) => (d as any).dayOfWeek % 7
-  const isWeekend = (d: CalendarDate) => { const w = dayOfWeek(d); return w === 0 || w === 6 }
-
   for (let i = startDayMonday - 1; i >= 0; i--) {
     const day = prevMonth.set({ day: daysInPrevMonth - i })
     const dateStr = formatDateToStr(day as CalendarDate)
@@ -1430,7 +1438,7 @@ const getCalendarDaysForMonth = (year: number, month: number) => {
       dateStr,
       isCurrentMonth: false,
       isToday: isSameDay(day, today(getLocalTimeZone())),
-      isWeekend: isWeekend(day),
+      isWeekend: isDateWeekend(day),
       events: getEventsForDate(day)
     })
   }
@@ -1444,7 +1452,7 @@ const getCalendarDaysForMonth = (year: number, month: number) => {
       dateStr,
       isCurrentMonth: true,
       isToday: isSameDay(date, today(getLocalTimeZone())),
-      isWeekend: isWeekend(date),
+      isWeekend: isDateWeekend(date),
       events: getEventsForDate(date)
     })
   }
@@ -1460,7 +1468,7 @@ const getCalendarDaysForMonth = (year: number, month: number) => {
       dateStr,
       isCurrentMonth: false,
       isToday: isSameDay(date, today(getLocalTimeZone())),
-      isWeekend: isWeekend(date),
+      isWeekend: isDateWeekend(date),
       events: getEventsForDate(date)
     })
   }
@@ -1656,8 +1664,7 @@ const shouldShowEventTitle = (event: CalendarEvent, dateStr: string) => {
 // Eventos del día actual para la vista de día (no mostrar en sábado/domingo)
 const dayEvents = computed(() => {
   const d = currentDate.value as CalendarDate
-  const w = (d as any).dayOfWeek != null ? (d as any).dayOfWeek % 7 : new Date(d.year, d.month - 1, d.day).getDay()
-  if (w === 0 || w === 6) return []
+  if (isDateWeekend(d)) return []
   return getEventsForDate(d)
 })
 
@@ -1835,12 +1842,13 @@ const loadEvents = async (force = false) => {
     startDate = dateStr
     endDate = dateStr
   } else if (viewMode.value === 'week') {
-    // Obtener el lunes y domingo de la semana
-    const currentDay = parseDate(`${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`)
-    const dayOfWeek = (currentDay as any).dayOfWeek % 7
-    const monday = currentDay.subtract({ days: dayOfWeek === 0 ? 6 : dayOfWeek - 1 })
+    const y = currentDate.value.year
+    const m = currentDate.value.month
+    const d = currentDate.value.day
+    const currentDay = parseDate(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
+    const mondayOffset = getMondayBasedWeekday(y, m, d)
+    const monday = currentDay.subtract({ days: mondayOffset })
     const sunday = monday.add({ days: 6 })
-    
     startDate = `${monday.year}-${String(monday.month).padStart(2, '0')}-${String(monday.day).padStart(2, '0')}`
     endDate = `${sunday.year}-${String(sunday.month).padStart(2, '0')}-${String(sunday.day).padStart(2, '0')}`
   } else {
@@ -1856,13 +1864,6 @@ const loadEvents = async (force = false) => {
     start_date: startDate,
     end_date: endDate
   }, force)
-}
-
-// Sabado=6, Domingo=0 en JS Date.getDay()
-const isDateWeekend = (date: CalendarDate) => {
-  const d = new Date(date.year, date.month - 1, date.day)
-  const day = d.getDay()
-  return day === 0 || day === 6
 }
 
 const handleDayClick = (date: CalendarDate) => {
@@ -2144,24 +2145,12 @@ definePageMeta({
 <style scoped>
 /* Días deshabilitados (fin de semana): mismo cuadro con patrón para notar que no están activos */
 .calendar-day-disabled-pattern {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 5px,
-    rgba(0, 0, 0, 0.04) 5px,
-    rgba(0, 0, 0, 0.04) 6px
-  );
+  background-color: #F2F3F4;
 }
 
 :deep(.dark) .calendar-day-disabled-pattern,
 :global(.dark) .calendar-day-disabled-pattern {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 5px,
-    rgba(255, 255, 255, 0.05) 5px,
-    rgba(255, 255, 255, 0.05) 6px
-  );
+  background-color: #F2F3F4;
 }
 
 /* Animación de pase de página */
