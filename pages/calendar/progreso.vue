@@ -135,8 +135,8 @@
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">F. Inicio</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">F. Fin</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Responsables</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Notas</th>
                 <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Notas</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -212,6 +212,19 @@
                   </div>
                 </td>
 
+                <!-- Acciones -->
+                <td class="px-4 py-3 text-center">
+                  <UTooltip text="Ver tracking">
+                    <UButton
+                      icon="i-heroicons-clipboard-document-list"
+                      variant="ghost"
+                      size="xs"
+                      color="primary"
+                      @click="openTrackingModal(activity)"
+                    />
+                  </UTooltip>
+                </td>
+
                 <!-- Notas: jefe ve/edita notas de la actividad; no-jefe ve/edita solo sus notas (charge) -->
                 <td class="px-4 py-3">
                   <div class="max-w-xs">
@@ -254,19 +267,6 @@
                     </template>
                   </div>
                 </td>
-
-                <!-- Acciones -->
-                <td class="px-4 py-3 text-center">
-                  <UTooltip text="Ver tracking">
-                    <UButton
-                      icon="i-heroicons-clipboard-document-list"
-                      variant="ghost"
-                      size="xs"
-                      color="primary"
-                      @click="openTrackingModal(activity)"
-                    />
-                  </UTooltip>
-                </td>
               </tr>
 
               <!-- Empty state -->
@@ -287,8 +287,8 @@
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div></td>
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div></td>
                   <td class="px-4 py-3"><div class="flex gap-1"><div class="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div><div class="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28"></div></td>
                   <td class="px-4 py-3 text-center"><div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28"></div></td>
                 </tr>
               </template>
             </tbody>
