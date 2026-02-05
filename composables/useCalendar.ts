@@ -4,6 +4,7 @@ import { ref, computed } from 'vue'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { DEFAULT_RESPONSABLE_COLORS } from '~/constants/calendar'
+import { markCalendarActionByCurrentUser } from '~/config/websocket/events/calendar'
 
 const { withSpinner } = useSpinner()
 
@@ -150,7 +151,7 @@ export const useCalendar = () => {
       if (data.type === 'tarea') {
         // Los días se cargarán automáticamente en la próxima consulta
       }
-      
+      if (event) markCalendarActionByCurrentUser()
       return event
     } catch (err: any) {
       error.value = err?.message || 'Error al crear evento'
@@ -186,6 +187,7 @@ export const useCalendar = () => {
           events.value[index] = event
         }
       }
+      if (event) markCalendarActionByCurrentUser()
       return event
     } catch (err: any) {
       error.value = err?.message || 'Error al actualizar evento'
@@ -210,6 +212,7 @@ export const useCalendar = () => {
       } else {
         events.value = events.value.filter(e => e.id !== id)
       }
+      markCalendarActionByCurrentUser()
       return true
     } catch (err: any) {
       error.value = err?.message || 'Error al eliminar evento'

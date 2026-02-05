@@ -2,6 +2,7 @@ import { CalendarService } from "~/services/calendar/calendarService"
 import type {
   CalendarEvent,
   CalendarFilters,
+  CalendarPaginationMeta,
   CalendarResponsable,
   CalendarContenedor,
   CalendarUserColorConfig,
@@ -15,6 +16,7 @@ import type {
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { ROLES, getCalendarPermissions } from '~/constants/roles'
+import { markCalendarActionByCurrentUser } from '~/config/websocket/events/calendar'
 import { DEFAULT_RESPONSABLE_COLORS } from '~/constants/calendar'
 
 const { withSpinner } = useSpinner()
@@ -50,6 +52,9 @@ const state = {
     status: undefined,
     priority: undefined
   }),
+  
+  /** Metadatos de paginación cuando getEvents se llama con page/per_page */
+  eventsPagination: ref<CalendarPaginationMeta | null>(null),
   
   // Control de caché
   lastFetch: {
@@ -160,6 +165,11 @@ export const useCalendarStore = () => {
       const appliedFilters = { ...state.filters.value, ...filters }
       const response = await CalendarService.getEvents(appliedFilters)
       state.events.value = (response.data || []).map(transformEvent)
+      if (response.meta) {
+        state.eventsPagination.value = response.meta
+      } else if (appliedFilters.page === undefined && appliedFilters.per_page === undefined) {
+        state.eventsPagination.value = null
+      }
       state.lastFetch.events.value = Date.now()
       ;(state as any)._lastFiltersKey = filtersKey
       return state.events.value
@@ -640,6 +650,7 @@ export const useCalendarStore = () => {
       if (event) {
         const transformed = transformEvent(event)
         state.events.value.push(transformed)
+        markCalendarActionByCurrentUser()
       }
       return event
     } catch (err: any) {
@@ -664,6 +675,7 @@ export const useCalendarStore = () => {
         if (index !== -1) {
           state.events.value[index] = transformEvent(event)
         }
+        markCalendarActionByCurrentUser()
       }
       return event
     } catch (err: any) {
@@ -692,6 +704,7 @@ export const useCalendarStore = () => {
       } else {
         state.events.value = state.events.value.filter(e => e.id !== id)
       }
+      markCalendarActionByCurrentUser()
       return true
     } catch (err: any) {
       state.error.value = err?.message || 'Error al eliminar evento'
@@ -759,6 +772,7 @@ export const useCalendarStore = () => {
     loading: computed(() => state.loading.value),
     error: computed(() => state.error.value),
     filters: computed(() => state.filters.value),
+    eventsPagination: computed(() => state.eventsPagination.value),
     initialized: computed(() => state.initialized.value),
     currentUserId: currentId,
 

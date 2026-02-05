@@ -37,17 +37,19 @@
             size="sm"
           />
           <template #content>
-            <div class="p-3 space-y-3 w-64">
-              <div>
-                <label class="text-xs text-gray-500 mb-1 block">Desde:</label>
-                <UCalendar v-model="filterStartDate" class="w-full" />
-              </div>
-              <div>
-                <label class="text-xs text-gray-500 mb-1 block">Hasta:</label>
-                <UCalendar v-model="filterEndDate" class="w-full" />
+            <div class="p-3 flex flex-col gap-3">
+              <div class="flex flex-wrap items-start gap-4">
+                <div>
+                  <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Desde:</label>
+                  <UCalendar v-model="filterStartDate" class="w-full" />
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Hasta:</label>
+                  <UCalendar v-model="filterEndDate" class="w-full" />
+                </div>
               </div>
               <div class="flex gap-2">
-                <UButton label="Aplicar" color="primary" size="xs" class="flex-1" @click="applyFilters" />
+                <UButton label="Aplicar" color="primary" size="xs" class="flex-1" @click="() => applyFilters()" />
                 <UButton label="Limpiar" variant="outline" size="xs" class="flex-1" @click="clearDateFilter" />
               </div>
             </div>
@@ -172,6 +174,46 @@
             </tbody>
           </table>
         </div>
+        <!-- Paginación -->
+        <div
+          v-if="eventsPagination && eventsPagination.total > 0"
+          class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              Mostrando
+              {{ (eventsPagination.current_page - 1) * eventsPagination.per_page + 1 }}
+              -
+              {{ Math.min(eventsPagination.current_page * eventsPagination.per_page, eventsPagination.total) }}
+              de {{ eventsPagination.total }}
+            </span>
+            <USelectMenu
+              v-model="perPageOption"
+              :items="perPageOptions"
+              value-attribute="value"
+              class="w-28"
+            />
+          </div>
+          <div class="flex items-center gap-2">
+            <UButton
+              icon="i-heroicons-chevron-left"
+              variant="outline"
+              size="sm"
+              :disabled="eventsPagination.current_page <= 1 || loading"
+              @click="goToPage(eventsPagination.current_page - 1)"
+            />
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              Página {{ eventsPagination.current_page }} de {{ eventsPagination.last_page }}
+            </span>
+            <UButton
+              icon="i-heroicons-chevron-right"
+              variant="outline"
+              size="sm"
+              :disabled="eventsPagination.current_page >= eventsPagination.last_page || loading"
+              @click="goToPage(eventsPagination.current_page + 1)"
+            />
+          </div>
+        </div>
       </UCard>
     </div>
 
@@ -222,6 +264,7 @@ import ActivityModal from '~/components/calendar/ActivityModal.vue'
 
 const {
   visibleActivities,
+  eventsPagination,
   responsables,
   contenedores,
   activityCatalog,
@@ -252,6 +295,26 @@ const filterStartDate = ref<CalendarDate | null>(null)
 const filterEndDate = ref<CalendarDate | null>(null)
 const filterResponsable = ref<number | null>(null)
 const filterContenedor = ref<number | null>(null)
+
+// Paginación
+const page = ref(1)
+const perPage = ref(10)
+const perPageOptions = [
+  { label: '10 por página', value: 10 },
+  { label: '25 por página', value: 25 },
+  { label: '50 por página', value: 50 },
+  { label: '100 por página', value: 100 }
+]
+const perPageOption = computed({
+  get: () => perPageOptions.find(o => o.value === perPage.value) || perPageOptions[0],
+  set: (v: { label: string; value: number }) => {
+    if (v?.value) {
+      perPage.value = v.value
+      page.value = 1
+      applyFilters(true, false)
+    }
+  }
+})
 
 // Computed
 const dateFilterLabel = computed(() => {
@@ -320,8 +383,12 @@ const extractValue = (val: any): any => {
 }
 
 // Acciones
-const applyFilters = async (force = false) => {
-  const filters: any = {}
+const applyFilters = async (force = false, resetPage = true) => {
+  if (resetPage) page.value = 1
+  const filters: any = {
+    page: page.value,
+    per_page: perPage.value
+  }
   if (filterStartDate.value) {
     filters.start_date = `${filterStartDate.value.year}-${String(filterStartDate.value.month).padStart(2, '0')}-${String(filterStartDate.value.day).padStart(2, '0')}`
   }
@@ -337,6 +404,14 @@ const applyFilters = async (force = false) => {
     filters.contenedor_id = contenedorVal
   }
   await getEvents(filters, force)
+}
+
+const goToPage = (p: number) => {
+  if (p < 1) return
+  const meta = eventsPagination.value
+  if (meta && p > meta.last_page) return
+  page.value = p
+  applyFilters(true, false)
 }
 
 const clearDateFilter = () => {
@@ -440,7 +515,7 @@ const deleteActivityConfirm = async () => {
 // Inicialización
 onMounted(async () => {
   await initialize()
-  await getEvents()
+  await applyFilters()
 })
 
 definePageMeta({

@@ -51,9 +51,10 @@ export class CalendarService extends BaseService {
   }
 
   /**
-   * Obtener eventos/actividades con filtros
+   * Obtener eventos/actividades con filtros.
+   * Si filters incluye page y per_page, el backend debe devolver data + meta (current_page, last_page, per_page, total).
    */
-  static async getEvents(filters?: CalendarFilters): Promise<CalendarResponse> {
+  static async getEvents(filters?: CalendarFilters): Promise<CalendarResponse<CalendarEvent[]>> {
     try {
       const query = this.buildCalendarQueryString(filters)
       const response = await this.apiCall<CalendarResponse>(`${this.baseUrl}/events${query}`, {

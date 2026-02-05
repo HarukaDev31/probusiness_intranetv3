@@ -683,8 +683,10 @@ export const useCalculadoraImportacion = () => {
     pagination.value.current_page = page
     await getCotizaciones()
   }
-  const handleItemsPerPageChange = async (itemsPerPage: number) => {
-    pagination.value.per_page = itemsPerPage
+  const handleItemsPerPageChange = async (newPerPage: number) => {
+    itemsPerPage.value = newPerPage
+    pagination.value.per_page = newPerPage
+    pagination.value.current_page = 1
     await getCotizaciones()
   }
   const handleFilterChange = async (filterType: string, value: string) => {

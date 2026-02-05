@@ -259,6 +259,17 @@ export interface CalendarFilters {
   contenedor_ids?: number[]
   status?: CalendarEventStatus
   priority?: CalendarEventPriority
+  /** Paginación: si se envían, el backend devuelve meta (current_page, last_page, per_page, total) */
+  page?: number
+  per_page?: number
+}
+
+/** Metadatos de paginación devueltos por el backend cuando se envían page y per_page */
+export interface CalendarPaginationMeta {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
 }
 
 // ============================================
@@ -269,6 +280,8 @@ export interface CalendarResponse<T = CalendarEvent[]> {
   success: boolean
   data: T
   message?: string
+  /** Presente cuando la petición incluyó page y per_page */
+  meta?: CalendarPaginationMeta
 }
 
 export interface CalendarEventResponse {

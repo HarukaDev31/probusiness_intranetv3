@@ -34,11 +34,42 @@ function getCurrentUserId(): number | string | null {
   }
 }
 
+const CALENDAR_ACTION_COOLDOWN_MS = 18_000 // No mostrar modal si el usuario acaba de crear/editar/eliminar (backend job tarda unos segundos)
+
+/** Indica que el usuario actual acaba de crear/editar/eliminar una actividad (para no mostrarle el modal). */
+export function markCalendarActionByCurrentUser(): void {
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem('calendar_action_ts', String(Date.now()))
+    } catch (_) { /* ignore */ }
+  }
+}
+
+function isOnCalendarPath(): boolean {
+  if (typeof window === 'undefined') return false
+  const path = window.location?.pathname ?? ''
+  return path.startsWith('/calendar')
+}
+
+function didCurrentUserJustAct(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const ts = sessionStorage.getItem('calendar_action_ts')
+    if (!ts) return false
+    const age = Date.now() - Number(ts)
+    return age >= 0 && age < CALENDAR_ACTION_COOLDOWN_MS
+  } catch {
+    return false
+  }
+}
+
 /**
- * Al recibir un evento de calendario por socket: mostrar popup para recargar la vista.
- * No se muestra al usuario que realizó la acción (creador/modificador).
+ * Al recibir un evento de calendario por socket: mostrar popup solo si está en vista calendario
+ * y no es el usuario que acaba de crear/editar/eliminar.
  */
 function onCalendarSocketEvent(payload: unknown) {
+  if (!isOnCalendarPath()) return
+
   const data = payload && typeof payload === 'object' && 'triggered_by_user_id' in payload
     ? (payload as { triggered_by_user_id?: number | string | null })
     : null
@@ -51,6 +82,8 @@ function onCalendarSocketEvent(payload: unknown) {
       if (!Number.isNaN(a) && !Number.isNaN(b) && a === b) return
     }
   }
+  if (didCurrentUserJustAct()) return
+
   notifyCalendarUpdateFromSocket()
 }
 

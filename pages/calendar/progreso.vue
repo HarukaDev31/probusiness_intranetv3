@@ -54,14 +54,16 @@
               size="sm"
             />
             <template #content>
-              <div class="p-3 space-y-3 w-64">
-                <div>
-                  <label class="text-xs text-gray-500 mb-1 block">Desde:</label>
-                  <UCalendar v-model="filterStartDate" class="w-full" />
-                </div>
-                <div>
-                  <label class="text-xs text-gray-500 mb-1 block">Hasta:</label>
-                  <UCalendar v-model="filterEndDate" class="w-full" />
+              <div class="p-3 flex flex-col gap-3">
+                <div class="flex flex-wrap items-start gap-4">
+                  <div>
+                    <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Desde:</label>
+                    <UCalendar v-model="filterStartDate" class="w-full" />
+                  </div>
+                  <div>
+                    <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Hasta:</label>
+                    <UCalendar v-model="filterEndDate" class="w-full" />
+                  </div>
                 </div>
                 <div class="flex gap-2">
                   <UButton label="Aplicar" color="primary" size="xs" class="flex-1" @click="applyFilters" />
@@ -362,6 +364,7 @@ import ActivityTrackingModal from '~/components/calendar/ActivityTrackingModal.v
 
 const {
   visibleActivities,
+  eventsPagination,
   responsables,
   contenedores,
   loading,
@@ -386,6 +389,26 @@ const filterStatus = ref<CalendarEventStatus | null>(null)
 const filterPriority = ref<CalendarEventPriority | null>(null)
 const filterResponsable = ref<number | null>(null)
 const filterContenedorIds = ref<number[]>([])
+
+// Paginación
+const page = ref(1)
+const perPage = ref(10)
+const perPageOptions = [
+  { label: '10 por página', value: 10 },
+  { label: '25 por página', value: 25 },
+  { label: '50 por página', value: 50 },
+  { label: '100 por página', value: 100 }
+]
+const perPageOption = computed({
+  get: () => perPageOptions.find(o => o.value === perPage.value) || perPageOptions[0],
+  set: (v: { label: string; value: number }) => {
+    if (v?.value) {
+      perPage.value = v.value
+      page.value = 1
+      applyFilters(true, false)
+    }
+  }
+})
 
 // Estado de notas (para no-jefe se edita el charge del usuario; para jefe las notas de la actividad)
 const isNotesModalOpen = ref(false)
@@ -526,35 +549,35 @@ const extractValue = (val: any): any => {
 }
 
 // Acciones
-const applyFilters = async () => {
-  const filters: any = {}
+const applyFilters = async (force = false, resetPage = true) => {
+  if (resetPage) page.value = 1
+  const filters: any = {
+    page: page.value,
+    per_page: perPage.value
+  }
   if (filterStartDate.value) {
     filters.start_date = `${filterStartDate.value.year}-${String(filterStartDate.value.month).padStart(2, '0')}-${String(filterStartDate.value.day).padStart(2, '0')}`
   }
   if (filterEndDate.value) {
     filters.end_date = `${filterEndDate.value.year}-${String(filterEndDate.value.month).padStart(2, '0')}-${String(filterEndDate.value.day).padStart(2, '0')}`
   }
-  
   const statusVal = extractValue(filterStatus.value)
-  if (statusVal) {
-    filters.status = statusVal
-  }
-  
+  if (statusVal) filters.status = statusVal
   const priorityVal = extractValue(filterPriority.value)
-  if (priorityVal !== null && priorityVal !== undefined) {
-    filters.priority = priorityVal
-  }
-  
+  if (priorityVal !== null && priorityVal !== undefined) filters.priority = priorityVal
   const responsableVal = extractValue(filterResponsable.value)
-  if (responsableVal) {
-    filters.responsable_id = responsableVal
-  }
-  
-  if (filterContenedorIds.value.length > 0) {
-    filters.contenedor_ids = filterContenedorIds.value
-  }
+  if (responsableVal) filters.responsable_id = responsableVal
+  if (filterContenedorIds.value.length > 0) filters.contenedor_ids = filterContenedorIds.value
 
-  await getEvents(filters)
+  await getEvents(filters, force)
+}
+
+const goToPage = (p: number) => {
+  if (p < 1) return
+  const meta = eventsPagination.value
+  if (meta && p > meta.last_page) return
+  page.value = p
+  applyFilters(true, false)
 }
 
 const clearDateFilter = () => {
@@ -656,7 +679,7 @@ const handleTrackingStatusUpdate = async (chargeId: number, status: CalendarEven
 // Inicialización
 onMounted(async () => {
   await initialize()
-  await getEvents()
+  await applyFilters()
 })
 
 definePageMeta({

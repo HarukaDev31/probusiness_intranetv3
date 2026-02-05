@@ -26,10 +26,29 @@ Obtiene lista de actividades/eventos con filtros opcionales.
 | `end_date` | string | No | Fecha fin (YYYY-MM-DD) |
 | `responsable_id` | number | No | Filtrar por ID de responsable |
 | `contenedor_id` | number | No | Filtrar por ID de consolidado |
+| `contenedor_ids[]` | number[] | No | Varios consolidados (vista progreso) |
 | `status` | string | No | PENDIENTE, PROGRESO, COMPLETADO |
 | `priority` | number | No | 0 (Bajo), 1 (Medio), 2 (Alto) |
+| `page` | number | No | Página (para paginación; usar con `per_page`) |
+| `per_page` | number | No | Registros por página (ej. 10, 25, 50) |
 
-**Response (200):**
+**Paginación:** Si se envían `page` y `per_page`, el backend debe devolver en la respuesta un objeto `meta` con: `current_page`, `last_page`, `per_page`, `total`. Si no se envían, se devuelve la lista completa (sin `meta`).
+
+**Response (200) con paginación (cuando se envían page y per_page):**
+```json
+{
+  "success": true,
+  "data": [ ... ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 5,
+    "per_page": 10,
+    "total": 48
+  }
+}
+```
+
+**Response (200) sin paginación:**
 ```json
 {
   "success": true,
