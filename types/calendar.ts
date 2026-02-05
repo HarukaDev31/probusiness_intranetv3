@@ -157,6 +157,8 @@ export interface CalendarContenedor {
 export interface CalendarEvent {
   id: number
   calendar_id: number
+  /** ID de la actividad en el catálogo (opcional) */
+  activity_id?: number | null
   priority: CalendarEventPriority
   name: string
   contenedor_id?: number | null

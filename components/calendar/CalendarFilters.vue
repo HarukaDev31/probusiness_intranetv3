@@ -1,34 +1,35 @@
 <template>
   <div
-    class="flex items-center gap-1.5 shrink-0"
-    :class="inline ? 'flex-nowrap' : 'flex-wrap p-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 gap-2 md:gap-3'"
+    class="flex items-center gap-3 md:gap-4 shrink-0"
+    :class="inline ? 'flex-nowrap' : 'flex-wrap p-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 gap-3 md:gap-4'"
   >
-    <!-- Filtro por Consolidado/Contenedor -->
-    <div v-if="calendarPermissions.canFilterByContenedor" class="flex items-center gap-1 shrink-0">
-      <span class="text-xs text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Consolidado</span>
+    <!-- Filtro por Consolidado/Contenedor (múltiple, como en vista progreso) -->
+    <div v-if="calendarPermissions.canFilterByContenedor" class="flex items-center gap-2 shrink-0">
+      <span class="text-base text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Consolidado</span>
       <USelectMenu
-        v-model="selectedContenedor"
-        :items="contenedorOptions"
+        :model-value="selectedContenedorOptions"
+        :items="contenedorOptionsMulti"
         value-attribute="value"
-        placeholder="Todos"
-        size="xs"
-        :class="compact ? 'w-[100px] sm:w-[110px]' : 'w-[120px] sm:w-[150px]'"
+        :placeholder="selectedContenedorIds.length ? `${selectedContenedorIds.length} seleccionado(s)` : 'Todos'"
+        size="md"
+        :class="compact ? 'w-[160px] sm:w-[180px]' : 'w-[180px] sm:w-[220px]'"
+        multiple
         searchable
         searchable-placeholder="Buscar..."
-        @update:model-value="handleContenedorChange"
+        @update:model-value="onContenedorIdsChange"
       />
     </div>
 
     <!-- Filtro por Responsable (solo Jefe) -->
-    <div v-if="calendarPermissions.canFilterByResponsable" class="flex items-center gap-1 shrink-0">
-      <span class="text-xs text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Responsable</span>
+    <div v-if="calendarPermissions.canFilterByResponsable" class="flex items-center gap-2 shrink-0">
+      <span class="text-base text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Responsable</span>
       <USelectMenu
         v-model="selectedResponsable"
         :items="responsableOptions"
         value-attribute="value"
         placeholder="Todos"
-        size="xs"
-        :class="compact ? 'w-[100px] sm:w-[110px]' : 'w-[120px] sm:w-[150px]'"
+        size="md"
+        :class="compact ? 'w-[160px] sm:w-[180px]' : 'w-[180px] sm:w-[220px]'"
         searchable
         searchable-placeholder="Buscar..."
         @update:model-value="handleResponsableChange"
@@ -36,41 +37,41 @@
         <template #option="{ option }">
           <div class="flex items-center gap-2">
             <div
-              class="w-3 h-3 rounded-full shrink-0"
+              class="w-4 h-4 rounded-full shrink-0"
               :style="{ backgroundColor: option.color || '#6B7280' }"
             />
-            <span>{{ option.label }}</span>
+            <span class="text-base">{{ option.label }}</span>
           </div>
         </template>
       </USelectMenu>
     </div>
 
     <!-- Filtro por Fecha (rango) -->
-    <div class="flex items-center gap-1 shrink-0">
-      <span class="text-xs text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Fecha</span>
+    <div class="flex items-center gap-2 shrink-0">
+      <span class="text-base text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Fecha</span>
       <UPopover>
         <UButton
           :label="dateRangeLabel"
           icon="i-heroicons-calendar"
           variant="outline"
-          size="xs"
-          :class="compact ? 'min-w-[100px]' : 'min-w-[130px]'"
+          size="md"
+          :class="compact ? 'min-w-[160px]' : 'min-w-[180px]'"
         />
         <template #content>
-          <div class="p-3 flex flex-col gap-3 max-h-[85vh] overflow-y-auto">
-            <div class="flex flex-row gap-4 items-start">
+          <div class="p-4 flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
+            <div class="flex flex-row gap-5 items-start">
               <div class="flex flex-col">
-                <label class="text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</label>
+                <label class="text-sm text-gray-500 dark:text-gray-400 mb-1.5">Desde</label>
                 <UCalendar v-model="startDate" />
               </div>
               <div class="flex flex-col">
-                <label class="text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
+                <label class="text-sm text-gray-500 dark:text-gray-400 mb-1.5">Hasta</label>
                 <UCalendar v-model="endDate" :placeholder="endDatePlaceholder" />
               </div>
             </div>
-            <div class="flex gap-2 pt-1 border-t border-gray-200 dark:border-gray-700 pt-3">
-              <UButton label="Aplicar" color="primary" size="xs" class="flex-1" @click="applyDateRange" />
-              <UButton label="Limpiar" variant="outline" size="xs" class="flex-1" @click="clearDateRange" />
+            <div class="flex gap-2 pt-1 border-t border-gray-200 dark:border-gray-700 pt-4">
+              <UButton label="Aplicar" color="primary" size="md" class="flex-1" @click="applyDateRange" />
+              <UButton label="Limpiar" variant="outline" size="md" class="flex-1" @click="clearDateRange" />
             </div>
           </div>
         </template>
@@ -96,6 +97,7 @@ interface Props {
   initialFilters?: {
     responsable_id?: number
     contenedor_id?: number
+    contenedor_ids?: number[]
     start_date?: string
     end_date?: string
   }
@@ -105,12 +107,16 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), { inline: false, compact: false })
 
 const emit = defineEmits<{
-  (e: 'filter-change', filters: { responsable_id?: number; contenedor_id?: number; start_date?: string; end_date?: string }): void
+  (e: 'filter-change', filters: { responsable_id?: number; contenedor_id?: number; contenedor_ids?: number[]; start_date?: string; end_date?: string }): void
 }>()
 
 // Estado local de filtros
-const selectedResponsable = ref<number | null>(props.initialFilters?.responsable_id || null)
-const selectedContenedor = ref<number | null>(props.initialFilters?.contenedor_id || null)
+const selectedResponsable = ref<number | null>(props.initialFilters?.responsable_id ?? null)
+const selectedContenedorIds = ref<number[]>(
+  props.initialFilters?.contenedor_ids?.length
+    ? [...props.initialFilters.contenedor_ids]
+    : (props.initialFilters?.contenedor_id != null ? [props.initialFilters.contenedor_id] : [])
+)
 const startDate = ref<CalendarDate | null>(
   props.initialFilters?.start_date
     ? parseDate(props.initialFilters.start_date) as CalendarDate
@@ -142,15 +148,17 @@ const responsableOptions = computed(() => {
   return options
 })
 
-const contenedorOptions = computed(() => {
-  const options = [{ label: 'Todos', value: null }]
-  props.contenedores.forEach(c => {
-    options.push({
-      label: c.nombre || c.codigo || `#${c.id}`,
-      value: c.id
-    } as any)
-  })
-  return options
+const contenedorOptionsMulti = computed(() => {
+  return props.contenedores.map(c => ({
+    label: c.nombre || c.codigo || `#${c.id}`,
+    value: c.id
+  }))
+})
+
+const selectedContenedorOptions = computed(() => {
+  const ids = selectedContenedorIds.value
+  if (ids.length === 0) return []
+  return contenedorOptionsMulti.value.filter(opt => ids.includes(opt.value))
 })
 
 // Label del rango de fechas
@@ -171,9 +179,37 @@ const handleResponsableChange = () => {
   emitFilters()
 }
 
-const handleContenedorChange = () => {
+const onContenedorIdsChange = (val: unknown) => {
+  const arr = Array.isArray(val) ? val : []
+  selectedContenedorIds.value = arr
+    .map((v: unknown) => (typeof v === 'object' && v && 'value' in v ? (v as { value: number }).value : v))
+    .filter((id): id is number => typeof id === 'number')
   emitFilters()
 }
+
+watch(
+  () => ({ ids: props.initialFilters?.contenedor_ids, single: props.initialFilters?.contenedor_id }),
+  ({ ids, single }) => {
+    if (ids && ids.length) {
+      selectedContenedorIds.value = [...ids]
+    } else if (single != null) {
+      selectedContenedorIds.value = [single]
+    } else {
+      selectedContenedorIds.value = []
+    }
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.initialFilters?.responsable_id,
+  (responsableId) => {
+    const id = responsableId ?? null
+    if (selectedResponsable.value !== id) {
+      selectedResponsable.value = id
+    }
+  }
+)
 
 const applyDateRange = () => {
   emitFilters()
@@ -200,7 +236,7 @@ const extractValue = (val: any): any => {
 const emitFilters = () => {
   emit('filter-change', {
     responsable_id: extractValue(selectedResponsable.value) || undefined,
-    contenedor_id: extractValue(selectedContenedor.value) || undefined,
+    contenedor_ids: selectedContenedorIds.value.length ? selectedContenedorIds.value : undefined,
     start_date: formatDateForApi(startDate.value),
     end_date: formatDateForApi(endDate.value)
   })

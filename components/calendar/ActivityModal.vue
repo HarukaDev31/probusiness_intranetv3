@@ -1,5 +1,11 @@
 <template>
-  <UModal class="w-full sm:max-w-2xl">
+  <div>
+  <UModal
+    v-model:open="modalOpen"
+    class="w-full sm:max-w-2xl"
+    :close="{ onClick: handleClose }"
+    @update:open="onOpenChange"
+  >
     <template #header>
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-semibold">
@@ -15,7 +21,7 @@
         <UFormField label="Actividad" required :error="errors.name">
           <div class="space-y-2">
             <!-- Dropdown con botón crear -->
-            <div class="flex gap-2">
+            <div class="flex gap-2 items-center">
               <USelectMenu
                 v-model="selectedActivity"
                 :items="activityOptions"
@@ -34,6 +40,20 @@
                 title="Crear nueva actividad"
                 @click="openCreateActivityModal"
               />
+              <UTooltip
+                v-if="hasCatalogActivityId && (calendarPermissions?.canDeleteActivity ?? false)"
+                text="Eliminar esta actividad del catálogo"
+              >
+                <UButton
+                  icon="i-heroicons-trash"
+                  color="error"
+                  variant="ghost"
+                  size="lg"
+                  class="!p-2"
+                  title="Eliminar del catálogo"
+                  @click.stop.prevent="openDeleteConfirmModal"
+                />
+              </UTooltip>
             </div>
 
             
@@ -185,31 +205,51 @@
     </template>
 
     <template #footer="{ close }">
-      <div class="flex justify-between items-center w-full">
+      <div class="flex justify-end gap-2 w-full">
         <UButton
-          v-if="isEdit && calendarPermissions.canDeleteActivity"
-          label="Eliminar"
-          color="error"
+          label="Cancelar"
           variant="ghost"
-          icon="i-heroicons-trash"
-          @click="handleDelete"
+          @click=" close"
         />
-        <div class="flex gap-2 ml-auto">
-          <UButton
-            label="Cancelar"
-            variant="ghost"
-            @click="close"
-          />
-          <UButton
-            :label="isEdit ? 'Guardar cambios' : 'Crear actividad'"
-            color="primary"
-            :loading="loading"
-            @click="submit"
-          />
-        </div>
+        <UButton
+          :label="isEdit ? 'Guardar cambios' : 'Crear actividad'"
+          color="primary"
+          :loading="loading"
+          @click="submit"
+        />
       </div>
     </template>
   </UModal>
+
+  <!-- Modal de confirmación: eliminar actividad del catálogo -->
+  <UModal v-model:open="showDeleteConfirm" class="w-full max-w-md">
+    <template #header>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Eliminar del catálogo
+      </h3>
+    </template>
+    <template #body>
+      <p class="text-gray-600 dark:text-gray-400">
+        ¿Eliminar esta actividad del catálogo? Los eventos ya creados en el calendario no se eliminarán.
+      </p>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton
+          label="Cancelar"
+          variant="ghost"
+          @click="showDeleteConfirm = false"
+        />
+        <UButton
+          label="Eliminar del catálogo"
+          color="error"
+          :loading="deleting"
+          @click="confirmDeleteFromCatalogClick"
+        />
+      </div>
+    </template>
+  </UModal>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -240,12 +280,15 @@ interface Props {
   getResponsableColor: (userId: number, nombre?: string) => string
   loading?: boolean
   initialDate?: string
+  /** Clave que cambia en cada open() del overlay para poder reabrir el modal (misma instancia) */
+  openKey?: number | string
   // Catálogo de actividades predefinidas
   actividadesPredefinidas?: ActivityOption[]
-  // Callbacks para overlay
+  // Callbacks para overlay (onClose puede venir como función o como array desde useOverlay)
   onSave?: (data: CreateCalendarEventRequest) => void | Promise<void>
   onDelete?: () => void | Promise<void>
-  onClose?: () => void
+  onDeleteFromCatalog?: (catalogActivityId: number) => void | Promise<void>
+  onClose?: (() => void) | (() => void)[]
   onCreateActivity?: (name: string) => Promise<ActivityOption | null>
 }
 
@@ -263,9 +306,38 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'save', data: CreateCalendarEventRequest): void
   (e: 'delete'): void
+  (e: 'delete-from-catalog', catalogActivityId: number): void
   (e: 'close'): void
   (e: 'create-activity', name: string): void
 }>()
+
+// Sincronizado con el overlay: al montar o al recibir nuevas props (reopen) el modal debe estar abierto
+const modalOpen = ref(true)
+
+const handleClose = () => {
+  modalOpen.value = false
+  emit('close')
+  const fn = Array.isArray(props.onClose) ? props.onClose[0] : props.onClose
+  if (typeof fn === 'function') {
+    fn()
+  }
+}
+
+const onOpenChange = (open: boolean) => {
+  if (!open) handleClose()
+}
+
+onMounted(() => {
+  modalOpen.value = true
+})
+
+watch(
+  () => [props.openKey, props.event?.id ?? null, props.initialDate],
+  () => {
+    modalOpen.value = true
+  },
+  { flush: 'sync' }
+)
 
 const df = new DateFormatter('es-ES', { dateStyle: 'long' })
 
@@ -304,6 +376,17 @@ const localActivities = ref<ActivityOption[]>([])
 
 // Computed
 const isEdit = computed(() => !!props.event?.id)
+
+/** Hay una actividad del catálogo seleccionada (para mostrar "Eliminar del catálogo") */
+const hasCatalogActivityId = computed(() => {
+  const formId = form.value.activity_id
+  if (formId != null && typeof formId === 'number') return true
+  const sel = selectedActivity.value
+  if (sel == null) return false
+  if (typeof sel === 'number') return true
+  if (typeof sel === 'object' && sel && 'value' in sel && typeof (sel as { value: number }).value === 'number') return true
+  return false
+})
 
 const priorityOptions = PRIORITY_OPTIONS
 
@@ -538,11 +621,38 @@ const close = () => {
   }
 }
 
+const showDeleteConfirm = ref(false)
+const deleting = ref(false)
+
+const openDeleteConfirmModal = () => {
+  showDeleteConfirm.value = true
+}
+
 const handleDelete = async () => {
   if (props.onDelete) {
     await props.onDelete()
   } else {
     emit('delete')
+  }
+}
+
+const confirmDeleteFromCatalogClick = async () => {
+  const id = form.value.activity_id ?? selectedActivity.value?.value ?? null
+  if (id == null) return
+  deleting.value = true
+  try {
+    if (props.onDeleteFromCatalog) {
+      await props.onDeleteFromCatalog(id)
+    } else {
+      emit('delete-from-catalog', id)
+    }
+    // Limpiar la selección del dropdown tras borrar del catálogo
+    selectedActivity.value = null
+    form.value.activity_id = null
+    form.value.name = ''
+    showDeleteConfirm.value = false
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -554,16 +664,16 @@ const initializeForm = () => {
 
   if (props.event) {
     form.value.name = props.event.name || props.event.title || ''
-    form.value.activity_id = props.event.id || null
+    form.value.activity_id = props.event.activity_id ?? null
     form.value.priority = props.event.priority ?? 0
     const rawContenedorId = props.event.contenedor_id ?? props.event.contenedor?.id ?? null
     form.value.contenedor_id = rawContenedorId != null ? Number(rawContenedorId) : null
     form.value.notes = props.event.notes || ''
     form.value.responsable_ids = props.event.charges?.map(c => c.user_id) || []
 
-    // Buscar si la actividad existe en las predefinidas
+    // Buscar si la actividad existe en las predefinidas (por nombre o por id de catálogo)
     const existingActivity = props.actividadesPredefinidas.find(
-      a => a.name === form.value.name || a.id === props.event?.id
+      a => a.name === form.value.name || a.id === props.event?.activity_id
     )
     if (existingActivity) {
       selectedActivity.value = { label: existingActivity.name, value: existingActivity.id }

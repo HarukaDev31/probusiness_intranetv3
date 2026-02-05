@@ -3,7 +3,7 @@
     <!-- Main Content -->
     <div class="flex-1 flex flex-col min-h-0 min-w-0">
       <!-- Barra resumida: una sola fila (estilo referencia jefe) -->
-      <div class="flex items-center py-5 gap-2 flex-nowrap border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 shrink-0">
+      <div class="flex items-center min-h-[72px] py-5 gap-2 flex-nowrap border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 md:px-5 shrink-0">
         
         
         <CalendarFilters
@@ -11,6 +11,7 @@
           :responsables="responsables"
           :contenedores="contenedores"
           :calendar-permissions="calendarPermissions"
+          :initial-filters="filters"
           :get-responsable-color="getResponsableColor"
           inline
           compact
@@ -132,7 +133,7 @@
                 (day.isWeekend
                   ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed select-none calendar-day-disabled'
                   : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
-              : 'border-0 bg-transparent pointer-events-none'"
+              : 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-800/50 pointer-events-none'"
             @click="(e) => { if (day.isWeekend) { e.stopPropagation(); e.preventDefault(); return }; if (day.isCurrentMonth) handleDayClick(day.date) }"
           >
          
@@ -143,14 +144,15 @@
               aria-hidden="true"
               @click.stop.prevent
             />
-            <!-- Número del día: solo en celdas del mes actual -->
-            <div v-if="day.isCurrentMonth" class="p-2 md:p-2.5 relative z-[1]">
+            <!-- Número del día: en todas las celdas (z-[11] para quedar sobre el overlay gris de fines de semana) -->
+            <div class="p-2 md:p-2.5 relative z-[11]">
               <span
                 class="text-sm font-medium"
                 :class="{
-                  'text-gray-900 dark:text-white': !day.isToday && !day.isWeekend,
-                  'text-primary-600 dark:text-primary-400 font-bold': day.isToday && !day.isWeekend,
-                  'text-gray-400 dark:text-gray-500': day.isWeekend
+                  'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday && !day.isWeekend,
+                  'text-primary-600 dark:text-primary-400 font-bold': day.isCurrentMonth && day.isToday && !day.isWeekend,
+                  'text-gray-400 dark:text-gray-500': day.isCurrentMonth && day.isWeekend,
+                  'text-gray-400 dark:text-gray-600': !day.isCurrentMonth
                 }"
               >
                 {{ day.day }}
@@ -173,8 +175,8 @@
           </div>
         </div>
         
-        <!-- Eventos multi-día (capa absoluta). Máx 3 filas. Espacio entre filas. -->
-        <div class="absolute top-8 md:top-9 left-0 right-0 pointer-events-none">
+        <!-- Eventos multi-día (capa absoluta). Máx 3 filas. z-20 para quedar sobre el overlay gris del fin de semana. -->
+        <div class="absolute top-8 md:top-9 left-0 right-0 pointer-events-none z-20">
           <div
             v-for="(eventRow, rowIndex) in week.eventRows.slice(0, MAX_VISIBLE_EVENT_ROWS)"
             :key="rowIndex"
@@ -279,7 +281,7 @@
                           (day.isWeekend
                             ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed select-none calendar-day-disabled'
                             : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
-                        : 'border-0 bg-transparent pointer-events-none'"
+                        : 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-800/50 pointer-events-none'"
                       @click="(e) => { if (day.isWeekend) { e.stopPropagation(); e.preventDefault(); return }; if (day.isCurrentMonth) handleDayClick(day.date) }"
                     >
                       <div
@@ -288,13 +290,15 @@
                         aria-hidden="true"
                         @click.stop.prevent
                       />
-                      <div v-if="day.isCurrentMonth" class="p-2 md:p-2.5 relative z-[1]">
+                      <!-- Número del día: en todas las celdas (z-[11] para quedar sobre el overlay gris de fines de semana) -->
+                      <div class="p-2 md:p-2.5 relative z-[11]">
                         <span
                           class="text-sm font-medium"
                           :class="{
-                            'text-gray-900 dark:text-white': !day.isToday && !day.isWeekend,
-                            'text-primary-600 dark:text-primary-400 font-bold': day.isToday && !day.isWeekend,
-                            'text-gray-400 dark:text-gray-500': day.isWeekend
+                            'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday && !day.isWeekend,
+                            'text-primary-600 dark:text-primary-400 font-bold': day.isCurrentMonth && day.isToday && !day.isWeekend,
+                            'text-gray-400 dark:text-gray-500': day.isCurrentMonth && day.isWeekend,
+                            'text-gray-400 dark:text-gray-600': !day.isCurrentMonth
                           }"
                         >
                           {{ day.day }}
@@ -316,7 +320,7 @@
                       </div>
                     </div>
                     </div>
-                    <div class="absolute top-8 md:top-9 left-0 right-0 pointer-events-none">
+                    <div class="absolute top-8 md:top-9 left-0 right-0 pointer-events-none z-20">
                       <div
                         v-for="(eventRow, rowIndex) in week.eventRows.slice(0, MAX_VISIBLE_EVENT_ROWS)"
                         :key="rowIndex"
@@ -609,11 +613,12 @@
       :event="selectedActivity"
       :responsables="responsables"
       :contenedores="contenedores"
+      :actividades-predefinidas="activityCatalog"
       :calendar-permissions="calendarPermissions"
       :get-responsable-color="getResponsableColor"
       :loading="activityModalLoading"
       @save="handleSaveActivity"
-      @delete="() => { closeActivityModal(); handleDeleteActivity(selectedActivity!) }"
+      @delete-from-catalog="onDeleteFromCatalog"
       @close="closeActivityModal"
     />
 
@@ -694,6 +699,7 @@ import { CalendarDate, getLocalTimeZone, today, parseDate, isSameDay } from '@in
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
 import type { CalendarEvent, CreateEventRequest, UpdateEventRequest, CreateCalendarEventRequest, CalendarEventStatus, CalendarEventPriority } from '~/types/calendar'
+import type { CalendarFilters as CalendarFiltersType } from '~/types/calendar'
 import { PRIORITY_LABELS } from '~/types/calendar'
 import EventModal from '~/components/calendar/EventModal.vue'
 import QuickCreateModal from '~/components/calendar/QuickCreateModal.vue'
@@ -739,6 +745,7 @@ const {
   loadColorConfig,
   loadActivityCatalog,
   createActivityInCatalog,
+  deleteActivityFromCatalog,
   loadProgress,
   getResponsableColor,
   getEventColors,
@@ -905,8 +912,12 @@ const handleFilterChange = async (newFilters: any) => {
   if ('responsable_id' in newFilters) {
     setFilter('responsable_id', newFilters.responsable_id)
   }
-  if ('contenedor_id' in newFilters) {
+  if ('contenedor_ids' in newFilters) {
+    setFilter('contenedor_ids', newFilters.contenedor_ids ?? undefined)
+    setFilter('contenedor_id', undefined)
+  } else if ('contenedor_id' in newFilters) {
     setFilter('contenedor_id', newFilters.contenedor_id)
+    setFilter('contenedor_ids', undefined)
   }
   if (newFilters.start_date !== undefined || newFilters.end_date !== undefined) {
     setDateRange(newFilters.start_date || '', newFilters.end_date || '')
@@ -925,8 +936,15 @@ const handleFilterChange = async (newFilters: any) => {
       }
     }
   }
-  // Forzar recarga para aplicar los filtros actualizados (incl. cuando se pone "Todos")
-  await loadActivitiesData(true)
+  // Construir payload explícito con contenedor_ids para que la petición los envíe siempre
+  const payload: Record<string, unknown> = { ...filters.value }
+  if (newFilters.contenedor_ids !== undefined) {
+    payload.contenedor_ids = Array.isArray(newFilters.contenedor_ids) ? newFilters.contenedor_ids : undefined
+  }
+  await getEvents(payload as CalendarFiltersType, true)
+  if (calendarPermissions.value.canViewTeamProgress) {
+    await loadProgress()
+  }
 }
 
 // Handlers para actividades
@@ -987,6 +1005,41 @@ const handleDeleteActivity = async (activity: CalendarEvent) => {
   if (!activity.id) return
   selectedEvent.value = activity as any
   isDeleteModalOpen.value = true
+}
+
+/** Eliminar actividad del catálogo desde el modal (no borra eventos del calendario) */
+const onDeleteFromCatalog = async (catalogActivityId: number) => {
+  try {
+    const success = await deleteActivityFromCatalog(catalogActivityId)
+    if (success) {
+      showSuccess('Eliminada del catálogo', 'La actividad se ha eliminado del catálogo. Los eventos ya creados no se modifican.')
+      closeActivityModal()
+      await loadActivityCatalog()
+    } else {
+      showError('Error', 'No se pudo eliminar del catálogo (puede estar en uso en algún evento).')
+    }
+  } catch (err: any) {
+    showError('Error', err?.message || 'Ocurrió un error al eliminar del catálogo.')
+  }
+}
+
+/** Mismo flujo para cuando el modal se abre por overlay (actualiza el dropdown sin cerrar el modal) */
+const onDeleteFromCatalogOverlay = async (catalogActivityId: number) => {
+  try {
+    const success = await deleteActivityFromCatalog(catalogActivityId)
+    if (success) {
+      showSuccess('Eliminada del catálogo', 'La actividad se ha eliminado del catálogo. Los eventos ya creados no se modifican.')
+      await loadActivityCatalog()
+      // Actualizar las actividades predefinidas en el modal abierto para refrescar el dropdown
+      activityModal.patch({
+        actividadesPredefinidas: activityCatalog.value
+      })
+    } else {
+      showError('Error', 'No se pudo eliminar del catálogo (puede estar en uso en algún evento).')
+    }
+  } catch (err: any) {
+    showError('Error', err?.message || 'Ocurrió un error al eliminar del catálogo.')
+  }
 }
 
 const confirmDeleteActivity = async () => {
@@ -1075,6 +1128,7 @@ const overlay = useOverlay()
 const eventModal = overlay.create(EventModal)
 const quickCreateModal = overlay.create(QuickCreateModal)
 const activityModal = overlay.create(ActivityModal)
+const activityModalOpenKey = ref(0)
 const currentMonthYear = computed(() => {
   const months = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -1875,8 +1929,9 @@ const handleDayClick = (date: CalendarDate) => {
   }
   const dateStr = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
   
-  // Abrir el modal de crear actividad directamente
+  activityModalOpenKey.value++
   activityModal.open({
+    openKey: activityModalOpenKey.value,
     event: null,
     responsables: responsables.value,
     contenedores: contenedores.value,
@@ -1890,6 +1945,7 @@ const handleDayClick = (date: CalendarDate) => {
     onCreateActivity: async (name: string) => {
       return await createActivityInCatalog(name)
     },
+    onDeleteFromCatalog: onDeleteFromCatalogOverlay,
     onClose: () => {
       activityModal.close()
     }
@@ -1902,7 +1958,9 @@ const openCreateActivity = () => {
     return
   }
   const dateStr = `${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`
+  activityModalOpenKey.value++
   activityModal.open({
+    openKey: activityModalOpenKey.value,
     event: null,
     responsables: responsables.value,
     contenedores: contenedores.value,
@@ -1916,6 +1974,7 @@ const openCreateActivity = () => {
     onCreateActivity: async (name: string) => {
       return await createActivityInCatalog(name)
     },
+    onDeleteFromCatalog: onDeleteFromCatalogOverlay,
     onClose: () => {
       activityModal.close()
     }
@@ -1924,8 +1983,9 @@ const openCreateActivity = () => {
 
 const openCreateModal = () => {
   const dateStr = `${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`
-  
+  activityModalOpenKey.value++
   activityModal.open({
+    openKey: activityModalOpenKey.value,
     event: null,
     responsables: responsables.value,
     contenedores: contenedores.value,
@@ -1939,6 +1999,7 @@ const openCreateModal = () => {
     onCreateActivity: async (name: string) => {
       return await createActivityInCatalog(name)
     },
+    onDeleteFromCatalog: onDeleteFromCatalogOverlay,
     onClose: () => {
       activityModal.close()
     }
@@ -1952,7 +2013,9 @@ const openEditModal = (event: CalendarEvent) => {
     navigateTo('/calendar/progreso')
     return
   }
+  activityModalOpenKey.value++
   activityModal.open({
+    openKey: activityModalOpenKey.value,
     event: event,
     responsables: responsables.value,
     contenedores: contenedores.value,
@@ -1960,13 +2023,13 @@ const openEditModal = (event: CalendarEvent) => {
     getResponsableColor: getResponsableColor,
     actividadesPredefinidas: activityCatalog.value,
     onSave: async (data: CreateCalendarEventRequest) => {
-      // Agregar el ID para actualizar
       const updateData = { ...data, id: event.id }
       await handleUpdateActivityOverlay(updateData)
     },
     onCreateActivity: async (name: string) => {
       return await createActivityInCatalog(name)
     },
+    onDeleteFromCatalog: onDeleteFromCatalogOverlay,
     onDelete: async () => {
       selectedEvent.value = event
       isDeleteModalOpen.value = true
@@ -2067,7 +2130,11 @@ const confirmDelete = async () => {
 onMounted(async () => {
   // Inicializar datos del store (responsables, contenedores, colores, catálogo)
   await initializeStore()
-  
+  // Si no es jefe, por defecto mostrar solo "mis" eventos (filtro responsable = yo)
+  if (!isJefeImportaciones.value && (filters.value.responsable_id === undefined || filters.value.responsable_id === null)) {
+    const uid = Number(currentUserId.value) || 0
+    if (uid) setFilter('responsable_id', uid)
+  }
   loadEvents()
   // Actualizar URL inicial si no hay parámetros
   if (!route.query.year && !route.query.month) {

@@ -49,6 +49,7 @@ const state = {
     end_date: undefined,
     responsable_id: undefined,
     contenedor_id: undefined,
+    contenedor_ids: undefined,
     status: undefined,
     priority: undefined
   }),
@@ -374,6 +375,19 @@ export const useCalendarStore = () => {
     }
   }
 
+  const deleteActivityFromCatalog = async (catalogId: number): Promise<boolean> => {
+    try {
+      await CalendarService.deleteActivityCatalog(catalogId)
+      state.activityCatalog.value = state.activityCatalog.value.filter(a => a.id !== catalogId)
+      state.lastFetch.activityCatalog.value = 0
+      return true
+    } catch (err: any) {
+      state.error.value = err?.message || 'Error al eliminar del catálogo'
+      console.error('Error en deleteActivityFromCatalog:', err)
+      return false
+    }
+  }
+
   // ============================================
   // PROGRESO
   // ============================================
@@ -542,6 +556,7 @@ export const useCalendarStore = () => {
       end_date: undefined,
       responsable_id: undefined,
       contenedor_id: undefined,
+      contenedor_ids: undefined,
       status: undefined,
       priority: undefined
     }
@@ -598,13 +613,18 @@ export const useCalendarStore = () => {
   // ============================================
 
   const getEventColors = (event: CalendarEvent, options?: { usePriority?: boolean }): string[] => {
+    // Evento completado (todos los responsables en COMPLETADO) → gris
+    const charges = event.charges || []
+    if (charges.length > 0 && charges.every((c: { status?: string }) => c.status === 'COMPLETADO')) {
+      return ['#9ca3af']
+    }
     if (options?.usePriority) {
       return [PRIORITY_COLORS[event.priority] ?? '#3b82f6']
     }
-    if (!event.charges || event.charges.length === 0) {
+    if (charges.length === 0) {
       return [PRIORITY_COLORS[event.priority] || '#3b82f6']
     }
-    return event.charges.map(charge => {
+    return charges.map(charge => {
       const config = state.colorConfig.value.find(c => c.user_id === charge.user_id)
       if (config?.color_code) return config.color_code
       if (charge.user?.color) return charge.user.color
@@ -814,6 +834,7 @@ export const useCalendarStore = () => {
     // Catálogo de actividades
     loadActivityCatalog,
     createActivityInCatalog,
+    deleteActivityFromCatalog,
 
     // Progreso
     loadProgress,
