@@ -189,74 +189,49 @@ export const useEcho = () => {
       }
 
       // Registrar los manejadores de eventos para este canal
+      // Laravel con broadcastAs() envía el nombre custom; Echo espera .listen('.EventName') con punto
       const registeredEvents = new Set()
       channel.handlers.forEach(({ event, callback }) => {
-        // Evitar registrar el mismo evento múltiples veces
         const eventKey = `${channel.name}:${event}`
-        if (registeredEvents.has(eventKey)) {
-          
-          return
-        }
+        if (registeredEvents.has(eventKey)) return
         registeredEvents.add(eventKey)
-        
-        
-        
+
+        const eventNameForEcho = event.startsWith('.') ? event : '.' + event
+        const eventNameForPusher = event.startsWith('.') ? event.slice(1) : event
+
+        const onEvent = (data: any) => {
+          callback(data)
+        }
+
         try {
-          // Intentar diferentes métodos para registrar eventos
-          if (channelInstance && typeof channelInstance === 'object') {
-            // Método 1: bind (Pusher) - PRIORITARIO para eventos de Pusher
-            if (typeof channelInstance.bind === 'function') {
-              
-              channelInstance.bind(event, (data: any) => {
-                
-                callback(data)
-              })
-            }
-            // Método 2: Acceder al objeto pusher del canal para usar bind
-            else if (channelInstance.pusher && typeof channelInstance.pusher.bind === 'function') {
-              
-              channelInstance.pusher.bind(event, (data: any) => {
-                
-                callback(data)
-              })
-            }
-            // Método 3: listen (Laravel Echo) - Para eventos de Laravel
-            else if (typeof channelInstance.listen === 'function') {
-              
-              channelInstance.listen(event, (data: any) => {
-                
-                callback(data)
-              })
-            }
-            // Método 4: on (alternativa)
-            else if (typeof channelInstance.on === 'function') {
-              
-              channelInstance.on(event, (data: any) => {
-                
-                callback(data)
-              })
-            }
-            // Método 5: addEventListener (DOM)
-            else if (typeof channelInstance.addEventListener === 'function') {
-              
-              channelInstance.addEventListener(event, (data: any) => {
-                
-                callback(data)
-              })
-            }
-            else {
-              console.warn(`⚠️ El canal no soporta ningún método conocido para el evento: ${event}`)
-              console.warn(`⚠️ Métodos disponibles:`, Object.getOwnPropertyNames(channelInstance))
-              console.warn(`⚠️ Objeto pusher disponible:`, !!channelInstance.pusher)
-              if (channelInstance.pusher) {
-                console.warn(`⚠️ Métodos del objeto pusher:`, Object.getOwnPropertyNames(channelInstance.pusher))
-              }
-            }
-          } else {
-            console.error(`❌ channelInstance no es un objeto válido:`, channelInstance)
+          if (!channelInstance || typeof channelInstance !== 'object') {
+            console.error('❌ channelInstance no es un objeto válido:', channelInstance)
+            return
           }
+          // Preferir listen() de Laravel Echo (necesario para eventos con broadcastAs())
+          if (typeof channelInstance.listen === 'function') {
+            channelInstance.listen(eventNameForEcho, onEvent)
+            return
+          }
+          if (typeof channelInstance.bind === 'function') {
+            channelInstance.bind(eventNameForPusher, onEvent)
+            return
+          }
+          if (channelInstance.pusher && typeof channelInstance.pusher.bind === 'function') {
+            channelInstance.pusher.bind(eventNameForPusher, onEvent)
+            return
+          }
+          if (typeof channelInstance.on === 'function') {
+            channelInstance.on(eventNameForPusher, onEvent)
+            return
+          }
+          if (typeof channelInstance.addEventListener === 'function') {
+            channelInstance.addEventListener(eventNameForPusher, onEvent)
+            return
+          }
+          console.warn('⚠️ Canal sin bind/listen para evento:', event, Object.getOwnPropertyNames(channelInstance))
         } catch (err) {
-          console.error(`❌ Error registrando evento '${event}':`, err)
+          console.error('❌ Error registrando evento:', event, err)
         }
       })
 
