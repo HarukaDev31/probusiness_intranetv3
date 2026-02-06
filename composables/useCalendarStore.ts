@@ -572,7 +572,7 @@ export const useCalendarStore = () => {
   // ============================================
 
   const visibleEvents = computed(() => {
-    return state.events.value.filter(event => {
+    let list = state.events.value.filter(event => {
       if (event.charges && event.charges.length > 0) {
         const isAssigned = event.charges.some(charge => charge.user_id === Number(currentId.value))
         if (isAssigned) return true
@@ -590,6 +590,13 @@ export const useCalendarStore = () => {
       
       return false
     })
+    const responsableId = state.filters.value.responsable_id
+    if (responsableId != null && typeof responsableId === 'number') {
+      list = list.filter(event =>
+        event.charges?.some(charge => charge.user_id === responsableId) ?? false
+      )
+    }
+    return list
   })
 
   const myActivities = computed(() => {
@@ -602,10 +609,16 @@ export const useCalendarStore = () => {
   })
 
   const visibleActivities = computed(() => {
-    if (calendarPermissions.value.canViewAllActivities) {
-      return state.events.value
+    let list = calendarPermissions.value.canViewAllActivities
+      ? state.events.value
+      : myActivities.value
+    const responsableId = state.filters.value.responsable_id
+    if (responsableId != null && typeof responsableId === 'number') {
+      list = list.filter(activity =>
+        activity.charges?.some(charge => charge.user_id === responsableId) ?? false
+      )
     }
-    return myActivities.value
+    return list
   })
 
   // ============================================

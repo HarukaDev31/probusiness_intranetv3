@@ -936,10 +936,13 @@ const handleFilterChange = async (newFilters: any) => {
       }
     }
   }
-  // Construir payload explícito con contenedor_ids para que la petición los envíe siempre
+  // Construir payload explícito para que la petición envíe siempre los filtros
   const payload: Record<string, unknown> = { ...filters.value }
   if (newFilters.contenedor_ids !== undefined) {
     payload.contenedor_ids = Array.isArray(newFilters.contenedor_ids) ? newFilters.contenedor_ids : undefined
+  }
+  if ('responsable_id' in newFilters) {
+    payload.responsable_id = newFilters.responsable_id ?? undefined
   }
   await getEvents(payload as CalendarFiltersType, true)
   if (calendarPermissions.value.canViewTeamProgress) {

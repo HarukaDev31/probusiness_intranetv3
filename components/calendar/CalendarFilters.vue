@@ -24,7 +24,7 @@
     <div v-if="calendarPermissions.canFilterByResponsable" class="flex items-center gap-2 shrink-0">
       <span class="text-base text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Responsable</span>
       <USelectMenu
-        v-model="selectedResponsable"
+        :model-value="selectedResponsableOption"
         :items="responsableOptions"
         value-attribute="value"
         placeholder="Todos"
@@ -32,7 +32,7 @@
         :class="compact ? 'w-[160px] sm:w-[180px]' : 'w-[180px] sm:w-[220px]'"
         searchable
         searchable-placeholder="Buscar..."
-        @update:model-value="handleResponsableChange"
+        @update:model-value="onResponsableSelect"
       >
         <template #option="{ option }">
           <div class="flex items-center gap-2">
@@ -137,7 +137,7 @@ const endDatePlaceholder = computed(() => {
 
 // Opciones para selects
 const responsableOptions = computed(() => {
-  const options = [{ label: 'Todos', value: null }]
+  const options: { label: string; value: number | null; color?: string }[] = [{ label: 'Todos', value: null }]
   props.responsables.forEach(r => {
     options.push({
       label: r.nombre,
@@ -146,6 +146,13 @@ const responsableOptions = computed(() => {
     } as any)
   })
   return options
+})
+
+/** Opción completa del responsable seleccionado (para que el USelectMenu marque la selección en el dropdown) */
+const selectedResponsableOption = computed(() => {
+  const id = selectedResponsable.value
+  if (id == null) return responsableOptions.value[0]
+  return responsableOptions.value.find(opt => opt.value === id) ?? responsableOptions.value[0]
 })
 
 const contenedorOptionsMulti = computed(() => {
@@ -175,7 +182,9 @@ const dateRangeLabel = computed(() => {
 })
 
 // Handlers
-const handleResponsableChange = () => {
+const onResponsableSelect = (val: unknown) => {
+  const id = extractValue(val) ?? null
+  selectedResponsable.value = typeof id === 'number' ? id : null
   emitFilters()
 }
 
@@ -235,7 +244,7 @@ const extractValue = (val: any): any => {
 
 const emitFilters = () => {
   emit('filter-change', {
-    responsable_id: extractValue(selectedResponsable.value) || undefined,
+    responsable_id: selectedResponsable.value ?? undefined,
     contenedor_ids: selectedContenedorIds.value.length ? selectedContenedorIds.value : undefined,
     start_date: formatDateForApi(startDate.value),
     end_date: formatDateForApi(endDate.value)
