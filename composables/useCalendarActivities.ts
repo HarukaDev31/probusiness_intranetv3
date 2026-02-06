@@ -57,7 +57,7 @@ export const useCalendarActivities = () => {
 
   // Verificar si es Coordinación o Documentación
   const isCoordinacionOrDocumentacion = computed(() => {
-    return currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.DOCUMENTACION
+    return currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES
   })
 
   // ============================================

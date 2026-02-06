@@ -144,7 +144,7 @@ export const useCalendarStore = () => {
   })
 
   const isCoordinacionOrDocumentacion = computed(() => {
-    return currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.DOCUMENTACION
+    return currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES
   })
 
   // ============================================
