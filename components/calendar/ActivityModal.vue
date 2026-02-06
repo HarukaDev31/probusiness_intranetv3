@@ -204,12 +204,12 @@
       </div>
     </template>
 
-    <template #footer="{ close }">
+    <template #footer>
       <div class="flex justify-end gap-2 w-full">
         <UButton
           label="Cancelar"
           variant="ghost"
-          @click=" close"
+          @click="handleClose"
         />
         <UButton
           :label="isEdit ? 'Guardar cambios' : 'Crear actividad'"
@@ -315,6 +315,7 @@ const emit = defineEmits<{
 const modalOpen = ref(true)
 
 const handleClose = () => {
+  initializeForm()
   modalOpen.value = false
   emit('close')
   const fn = Array.isArray(props.onClose) ? props.onClose[0] : props.onClose
@@ -604,11 +605,15 @@ const submit = async () => {
     responsable_ids: extractIds(form.value.responsable_ids)
   }
 
-  // Usar callback si existe, si no usar emit
-  if (props.onSave) {
-    await props.onSave(data)
-  } else {
-    emit('save', data)
+  try {
+    if (props.onSave) {
+      await props.onSave(data)
+    } else {
+      emit('save', data)
+    }
+    handleClose()
+  } catch {
+    // El padre ya muestra el error; no cerrar el modal
   }
 }
 
@@ -658,7 +663,7 @@ const confirmDeleteFromCatalogClick = async () => {
 
 // Inicializar formulario
 const initializeForm = () => {
-  // Reset estado de creación de actividad
+  errors.value = {}
   isCreateActivityModalOpen.value = false
   isCreatingActivity.value = false
 
