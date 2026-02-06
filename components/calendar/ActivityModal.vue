@@ -610,10 +610,22 @@ const initializeForm = () => {
     }
     selectedActivity.value = null
 
-    // Siempre fecha inicial = hoy al crear nueva actividad
-    const todayDate = today(getLocalTimeZone())
-    startDate.value = todayDate
-    endDate.value = todayDate
+    // Fecha inicial: la pasada (ej. día clicado) o hoy
+    if (props.initialDate) {
+      try {
+        const parsed = parseDate(props.initialDate) as CalendarDate
+        startDate.value = parsed
+        endDate.value = parsed
+      } catch {
+        const todayDate = today(getLocalTimeZone())
+        startDate.value = todayDate
+        endDate.value = todayDate
+      }
+    } else {
+      const todayDate = today(getLocalTimeZone())
+      startDate.value = todayDate
+      endDate.value = todayDate
+    }
   }
 }
 
@@ -621,6 +633,22 @@ const initializeForm = () => {
 watch(() => props.event, () => {
   initializeForm()
 }, { immediate: true })
+
+// Al reabrir con otro día (mismo event null, distinto initialDate) reinicializar fechas
+watch(
+  () => [props.openKey, props.initialDate],
+  () => {
+    if (!props.event && props.initialDate) {
+      try {
+        const parsed = parseDate(props.initialDate) as CalendarDate
+        startDate.value = parsed
+        endDate.value = parsed
+      } catch {
+        //
+      }
+    }
+  }
+)
 
 onMounted(() => {
   initializeForm()
