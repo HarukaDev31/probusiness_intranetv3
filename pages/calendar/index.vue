@@ -616,21 +616,6 @@
       </template>
     </UModal>
 
-    <!-- Modal de Actividad (crear/editar) -->
-    <ActivityModal
-      v-if="isActivityModalOpen"
-      :event="selectedActivity"
-      :responsables="responsables"
-      :contenedores="contenedores"
-      :actividades-predefinidas="activityCatalog"
-      :calendar-permissions="calendarPermissions"
-      :get-responsable-color="getResponsableColor"
-      :loading="activityModalLoading"
-      @save="handleSaveActivity"
-      @delete-from-catalog="onDeleteFromCatalog"
-      @close="closeActivityModal"
-    />
-
     <!-- Modal de Notas -->
     <NotesModal
       v-if="isNotesModalOpen"
@@ -810,7 +795,6 @@ const initializeFromRoute = () => {
 const viewMode = ref<'month' | 'week' | 'day' | 'activities' | 'range'>('month')
 
 // Estado para modales de actividades
-const isActivityModalOpen = ref(false)
 const isNotesModalOpen = ref(false)
 const selectedActivity = ref<CalendarEvent | null>(null)
 const activityModalLoading = ref(false)
@@ -931,10 +915,13 @@ const loadActivitiesData = async (force = false) => {
 
 // Handlers para filtros
 const handleFilterChange = async (newFilters: any) => {
-  // Siempre actualizar responsable y contenedor en el store (también cuando son undefined = "Todos")
-  // para que al volver a "Todos" se limpien los filtros y se recarguen los eventos
-  if ('responsable_id' in newFilters) {
+  // Actualizar responsable(s): múltiple (jefe) o único
+  if ('responsable_ids' in newFilters) {
+    setFilter('responsable_ids', newFilters.responsable_ids ?? undefined)
+    setFilter('responsable_id', undefined)
+  } else if ('responsable_id' in newFilters) {
     setFilter('responsable_id', newFilters.responsable_id)
+    setFilter('responsable_ids', undefined)
   }
   if ('contenedor_ids' in newFilters) {
     setFilter('contenedor_ids', newFilters.contenedor_ids ?? undefined)
@@ -960,18 +947,24 @@ const handleFilterChange = async (newFilters: any) => {
       }
     }
   }
-  // Construir payload explícito: cuando es "Todos" no enviar responsable_id para que el back traiga todos
+  // Construir payload: responsable_ids (varios) o responsable_id (uno); "Todos" = no enviar
   const payload: Record<string, unknown> = { ...filters.value }
   if (newFilters.contenedor_ids !== undefined) {
     payload.contenedor_ids = Array.isArray(newFilters.contenedor_ids) ? newFilters.contenedor_ids : undefined
   }
-  if ('responsable_id' in newFilters) {
+  if ('responsable_ids' in newFilters) {
+    payload.responsable_ids = Array.isArray(newFilters.responsable_ids) && newFilters.responsable_ids.length
+      ? newFilters.responsable_ids
+      : undefined
+    delete payload.responsable_id
+  } else if ('responsable_id' in newFilters) {
     const rid = newFilters.responsable_id ?? undefined
     if (rid !== undefined && rid !== null) {
       payload.responsable_id = rid
     } else {
       delete payload.responsable_id
     }
+    delete payload.responsable_ids
   }
   await getEvents(payload as CalendarFiltersType, true)
   if (calendarPermissions.value.canViewTeamProgress) {
@@ -979,20 +972,47 @@ const handleFilterChange = async (newFilters: any) => {
   }
 }
 
-// Handlers para actividades
+// Handlers para actividades: abrir modal de actividad vía overlay
 const openActivityModal = (activity?: CalendarEvent) => {
-  // Verificar permisos para crear (solo Jefe puede crear nuevas actividades)
   if (!activity && !isJefeImportaciones.value) {
     showError('Sin permisos', 'Solo el Jefe de Importaciones puede crear actividades.')
     return
   }
   selectedActivity.value = activity || null
-  isActivityModalOpen.value = true
-}
-
-const closeActivityModal = () => {
-  isActivityModalOpen.value = false
-  selectedActivity.value = null
+  activityModalOpenKey.value++
+  const dateStr = `${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`
+  activityModal.open({
+    openKey: activityModalOpenKey.value,
+    event: activity ?? null,
+    responsables: responsables.value,
+    contenedores: contenedores.value,
+    calendarPermissions: calendarPermissions.value,
+    getResponsableColor: getResponsableColor,
+    actividadesPredefinidas: activityCatalog.value,
+    initialDate: dateStr,
+    onSave: async (data: CreateCalendarEventRequest) => {
+      if (activity?.id) {
+        await handleUpdateActivityOverlay({ ...data, id: activity.id })
+      } else {
+        await handleSaveActivityOverlay(data)
+      }
+    },
+    onCreateActivity: async (name: string) => {
+      return await createActivityInCatalog(name)
+    },
+    onDeleteFromCatalog: onDeleteFromCatalogOverlay,
+    onDelete: activity
+      ? async () => {
+          selectedEvent.value = activity
+          isDeleteModalOpen.value = true
+          activityModal.close()
+        }
+      : undefined,
+    onClose: () => {
+      activityModal.close()
+      selectedActivity.value = null
+    }
+  })
 }
 
 const handleSaveActivity = async (data: CreateCalendarEventRequest) => {
@@ -1003,7 +1023,7 @@ const handleSaveActivity = async (data: CreateCalendarEventRequest) => {
       const result = await updateActivity({ id: selectedActivity.value.id, ...data })
       if (result) {
         showSuccess('Actividad actualizada', 'La actividad se ha actualizado correctamente.')
-        closeActivityModal()
+        activityModal.close()
         await loadActivitiesData()
         await loadProgress(true)
       } else {
@@ -1019,7 +1039,7 @@ const handleSaveActivity = async (data: CreateCalendarEventRequest) => {
       const result = await createActivity(data)
       if (result) {
         showSuccess('Actividad creada', 'La actividad se ha creado correctamente.')
-        closeActivityModal()
+        activityModal.close()
         await loadActivitiesData()
         await loadProgress(true)
       } else {
@@ -1045,7 +1065,7 @@ const onDeleteFromCatalog = async (catalogActivityId: number) => {
     const success = await deleteActivityFromCatalog(catalogActivityId)
     if (success) {
       showSuccess('Eliminada del catálogo', 'La actividad se ha eliminado del catálogo. Los eventos ya creados no se modifican.')
-      closeActivityModal()
+      activityModal.close()
       await loadActivityCatalog()
     } else {
       showError('Error', 'No se pudo eliminar del catálogo (puede estar en uso en algún evento).')
@@ -1982,7 +2002,6 @@ const openCreateActivity = () => {
     return
   }
   const dateStr = `${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`
-  activityModalOpenKey.value++
   activityModal.open({
     openKey: activityModalOpenKey.value,
     event: null,

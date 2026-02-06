@@ -1,17 +1,16 @@
 <template>
-  <div>
+
   <UModal
-    v-model:open="modalOpen"
     class="w-full sm:max-w-2xl"
+    :dismissible="false"
     :close="{ onClick: handleClose }"
-    @update:open="onOpenChange"
   >
     <template #header>
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-semibold">
           {{ isEdit ? 'Editar Actividad' : 'Nueva Actividad' }}
         </h3>
-        
+
       </div>
     </template>
 
@@ -22,63 +21,32 @@
           <div class="space-y-2">
             <!-- Dropdown con botón crear -->
             <div class="flex gap-2 items-center">
-              <USelectMenu
-                v-model="selectedActivity"
-                :items="activityOptions"
-                placeholder="Seleccionar actividad"
-                size="lg"
-                class="flex-1"
-                searchable
-                searchable-placeholder="Buscar actividad..."
-                @update:model-value="handleActivitySelect"
-              />
-              <UButton
-                icon="i-heroicons-plus"
-                color="primary"
-                variant="outline"
-                size="lg"
-                title="Crear nueva actividad"
-                @click="openCreateActivityModal"
-              />
-              <UTooltip
-                v-if="hasCatalogActivityId && (calendarPermissions?.canDeleteActivity ?? false)"
-                text="Eliminar esta actividad del catálogo"
-              >
-                <UButton
-                  icon="i-heroicons-trash"
-                  color="error"
-                  variant="ghost"
-                  size="lg"
-                  class="!p-2"
-                  title="Eliminar del catálogo"
-                  @click.stop.prevent="openDeleteConfirmModal"
-                />
+              <USelectMenu v-model="selectedActivity" :items="activityOptions" placeholder="Seleccionar actividad"
+                size="lg" class="flex-1" searchable searchable-placeholder="Buscar actividad..."
+                @update:model-value="handleActivitySelect" />
+              <UButton icon="i-heroicons-plus" color="primary" variant="outline" size="lg" title="Crear nueva actividad"
+                @click="openCreateActivityModal" />
+              <UTooltip v-if="hasCatalogActivityId && (calendarPermissions?.canDeleteActivity ?? false)"
+                text="Eliminar esta actividad del catálogo">
+                <UButton icon="i-heroicons-trash" color="error" variant="ghost" size="lg" class="!p-2"
+                  title="Eliminar del catálogo" @click.stop.prevent="openDeleteConfirmModal" />
               </UTooltip>
             </div>
 
-            
+
           </div>
         </UFormField>
 
         <!-- Modal para crear nueva actividad -->
-        <CreateActivityNameModal
-          :open="isCreateActivityModalOpen"
-          :loading="isCreatingActivity"
-          @close="closeCreateActivityModal"
-          @create="handleCreateNewActivity"
-        />
+        <CreateActivityNameModal :open="isCreateActivityModalOpen" :loading="isCreatingActivity"
+          @close="closeCreateActivityModal" @create="handleCreateNewActivity" />
 
         <!-- Fechas -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <UFormField label="Fecha de inicio" required :error="errors.start_date">
             <UPopover>
-              <UButton
-                color="neutral"
-                variant="outline"
-                icon="i-heroicons-calendar"
-                class="w-full justify-start"
-                size="lg"
-              >
+              <UButton color="neutral" variant="outline" icon="i-heroicons-calendar" class="w-full justify-start"
+                size="lg">
                 {{ startDate ? formatDisplayDate(startDate) : 'Seleccionar fecha' }}
               </UButton>
               <template #content>
@@ -89,13 +57,8 @@
 
           <UFormField label="Fecha de fin" required :error="errors.end_date">
             <UPopover>
-              <UButton
-                color="neutral"
-                variant="outline"
-                icon="i-heroicons-calendar"
-                class="w-full justify-start"
-                size="lg"
-              >
+              <UButton color="neutral" variant="outline" icon="i-heroicons-calendar" class="w-full justify-start"
+                size="lg">
                 {{ endDate ? formatDisplayDate(endDate) : 'Seleccionar fecha' }}
               </UButton>
               <template #content>
@@ -108,55 +71,28 @@
         <!-- Prioridad (solo editable si tiene permiso) -->
         <UFormField v-if="calendarPermissions.canEditPriority" label="Prioridad">
           <div class="flex gap-2">
-            <UButton
-              v-for="option in priorityOptions"
-              :key="option.value"
-              :label="option.label"
-              :variant="form.priority === option.value ? 'solid' : 'outline'"
-              :color="option.color"
-              size="md"
-              class="flex-1"
-              @click="form.priority = option.value"
-            />
+            <UButton v-for="option in priorityOptions" :key="option.value" :label="option.label"
+              :variant="form.priority === option.value ? 'solid' : 'outline'" :color="option.color" size="md"
+              class="flex-1" @click="form.priority = option.value" />
           </div>
         </UFormField>
 
         <!-- Consolidado/Contenedor -->
         <UFormField label="Consolidado">
-          <USelectMenu
-            :model-value="selectedContenedorOption"
-            :items="contenedorOptions"
-            value-attribute="value"
-            placeholder="Seleccionar consolidado"
-            size="lg"
-            class="w-full"
-            searchable
-            searchable-placeholder="Buscar consolidado..."
-            @update:model-value="onContenedorChange"
-          />
+          <USelectMenu :model-value="selectedContenedorOption" :items="contenedorOptions" value-attribute="value"
+            placeholder="Seleccionar consolidado" size="lg" class="w-full" searchable
+            searchable-placeholder="Buscar consolidado..." @update:model-value="onContenedorChange" />
         </UFormField>
 
         <!-- Responsables (solo si tiene permiso) -->
         <UFormField v-if="calendarPermissions.canAssignResponsables" label="Responsables" :error="errors.responsables">
           <div class="space-y-3">
-            <USelectMenu
-              :model-value="selectedResponsableOptions"
-              :items="responsableOptions"
-              value-attribute="value"
-              placeholder="Seleccionar responsables"
-              size="lg"
-              class="w-full"
-              multiple
-              searchable
-              searchable-placeholder="Buscar responsable..."
-              @update:model-value="onResponsablesChange"
-            >
+            <USelectMenu :model-value="selectedResponsableOptions" :items="responsableOptions" value-attribute="value"
+              placeholder="Seleccionar responsables" size="lg" class="w-full" multiple searchable
+              searchable-placeholder="Buscar responsable..." @update:model-value="onResponsablesChange">
               <template #item="{ item }">
                 <div class="flex items-center gap-2">
-                  <div
-                    class="w-2 h-2 rounded-full shrink-0"
-                    :style="{ backgroundColor: item.color || '#6B7280' }"
-                  />
+                  <div class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: item.color || '#6B7280' }" />
                   <span>{{ item.label }}</span>
                 </div>
               </template>
@@ -164,92 +100,39 @@
 
             <!-- Mostrar responsables seleccionados (id puede ser número u objeto según USelectMenu) -->
             <div v-if="form.responsable_ids.length > 0" class="flex flex-wrap gap-2">
-              <UBadge
-                v-for="(item, index) in form.responsable_ids"
-                :key="toResponsableId(item) ?? index"
-                variant="soft"
-                size="lg"
-                class="pr-1"
-              >
+              <UBadge v-for="(item, index) in form.responsable_ids" :key="toResponsableId(item) ?? index" variant="soft"
+                size="lg" class="pr-1">
                 <div class="flex items-center gap-1">
-                  <div
-                    class="w-2 h-2 rounded-full"
-                    :style="{ backgroundColor: getResponsableColorById(toResponsableId(item)) }"
-                  />
+                  <div class="w-2 h-2 rounded-full"
+                    :style="{ backgroundColor: getResponsableColorById(toResponsableId(item)) }" />
                   <span>{{ getResponsableNameById(toResponsableId(item)) }}</span>
-                  <UButton
-                    icon="i-heroicons-x-mark"
-                    variant="ghost"
-                    size="xs"
-                    class="ml-1"
-                    @click="removeResponsable(item)"
-                  />
+                  <UButton icon="i-heroicons-x-mark" variant="ghost" size="xs" class="ml-1"
+                    @click="removeResponsable(item)" />
                 </div>
               </UBadge>
             </div>
 
-            
+
           </div>
         </UFormField>
 
         <!-- Notas -->
         <UFormField label="Notas">
-          <UTextarea
-            v-model="form.notes"
-            placeholder="Agregar notas..."
-            :rows="3"
-            class="w-full"
-          />
+          <UTextarea v-model="form.notes" placeholder="Agregar notas..." :rows="3" class="w-full" />
         </UFormField>
       </div>
     </template>
 
     <template #footer>
       <div class="flex justify-end gap-2 w-full">
-        <UButton
-          label="Cancelar"
-          variant="ghost"
-          @click="handleClose"
-        />
-        <UButton
-          :label="isEdit ? 'Guardar cambios' : 'Crear actividad'"
-          color="primary"
-          :loading="loading"
-          @click="submit"
-        />
+        <UButton label="Cancelar" variant="ghost" @click="handleClose" />
+        <UButton :label="isEdit ? 'Guardar cambios' : 'Crear actividad'" color="primary" :loading="loading"
+          @click="submit" />
       </div>
     </template>
   </UModal>
 
-  <!-- Modal de confirmación: eliminar actividad del catálogo -->
-  <UModal v-model:open="showDeleteConfirm" class="w-full max-w-md">
-    <template #header>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        Eliminar del catálogo
-      </h3>
-    </template>
-    <template #body>
-      <p class="text-gray-600 dark:text-gray-400">
-        ¿Eliminar esta actividad del catálogo? Los eventos ya creados en el calendario no se eliminarán.
-      </p>
-    </template>
-    <template #footer>
-      <div class="flex justify-end gap-2">
-        <UButton
-          label="Cancelar"
-          variant="ghost"
-          @click="showDeleteConfirm = false"
-        />
-        <UButton
-          label="Eliminar del catálogo"
-          color="error"
-          :loading="deleting"
-          @click="confirmDeleteFromCatalogClick"
-        />
-      </div>
-    </template>
-  </UModal>
-  </div>
+
 </template>
 
 <script setup lang="ts">
@@ -265,6 +148,8 @@ import type {
 } from '~/types/calendar'
 import { PRIORITY_OPTIONS } from '~/constants/calendar'
 import CreateActivityNameModal from '~/components/calendar/CreateActivityNameModal.vue'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 
 // Actividades predefinidas (catálogo)
 interface ActivityOption {
@@ -350,10 +235,10 @@ const isWeekendDisabled = (date: DateValue): boolean => {
       typeof (date as { toDate?: (zone: string) => Date }).toDate === 'function'
         ? (date as { toDate: (zone: string) => Date }).toDate(getLocalTimeZone())
         : new Date(
-            (date as { year: number }).year,
-            ((date as { month: number }).month ?? 1) - 1,
-            (date as { day: number }).day
-          )
+          (date as { year: number }).year,
+          ((date as { month: number }).month ?? 1) - 1,
+          (date as { day: number }).day
+        )
     const dayOfWeek = d.getDay()
     return dayOfWeek === 0 || dayOfWeek === 6
   } catch {
@@ -632,12 +517,8 @@ const close = () => {
   }
 }
 
-const showDeleteConfirm = ref(false)
-const deleting = ref(false)
-
-const openDeleteConfirmModal = () => {
-  showDeleteConfirm.value = true
-}
+const { showConfirmation } = useModal()
+const { withSpinner } = useSpinner()
 
 const handleDelete = async () => {
   if (props.onDelete) {
@@ -647,24 +528,27 @@ const handleDelete = async () => {
   }
 }
 
-const confirmDeleteFromCatalogClick = async () => {
+const openDeleteConfirmModal = () => {
   const id = form.value.activity_id ?? selectedActivity.value?.value ?? null
   if (id == null) return
-  deleting.value = true
-  try {
-    if (props.onDeleteFromCatalog) {
-      await props.onDeleteFromCatalog(id)
-    } else {
-      emit('delete-from-catalog', id)
-    }
-    // Limpiar la selección del dropdown tras borrar del catálogo
-    selectedActivity.value = null
-    form.value.activity_id = null
-    form.value.name = ''
-    showDeleteConfirm.value = false
-  } finally {
-    deleting.value = false
-  }
+  showConfirmation(
+    'Eliminar del catálogo',
+    '¿Está seguro de que desea eliminar esta actividad del catálogo? Los eventos ya creados con esta actividad no se modifican.',
+    async () => {
+      await withSpinner(async () => {
+        if (props.onDeleteFromCatalog) {
+          await props.onDeleteFromCatalog(id)
+        } else {
+          emit('delete-from-catalog', id)
+        }
+        selectedActivity.value = null
+        form.value.activity_id = null
+        form.value.name = ''
+      }, 'Eliminando del catálogo...')
+    },
+    undefined,
+    { persistent: true }
+  )
 }
 
 // Inicializar formulario

@@ -48,6 +48,7 @@ const state = {
     start_date: undefined,
     end_date: undefined,
     responsable_id: undefined,
+    responsable_ids: undefined,
     contenedor_id: undefined,
     contenedor_ids: undefined,
     status: undefined,
@@ -478,6 +479,30 @@ export const useCalendarStore = () => {
     }
   }
 
+  /** Estado por actividad: actualiza todos los charges del evento; cualquier participante puede cambiarlo */
+  const updateEventStatus = async (eventId: number, status: CalendarEventStatus): Promise<boolean> => {
+    try {
+      state.loading.value = true
+      const response = await CalendarService.updateEventStatus({ event_id: eventId, status })
+      // Actualizar en la lista local (todos los charges del evento)
+      const event = state.events.value.find(e => e.id === eventId)
+      if (event?.charges) {
+        event.charges.forEach(c => { c.status = status })
+      }
+      if (response?.data) {
+        const idx = state.events.value.findIndex(e => e.id === eventId)
+        if (idx !== -1) state.events.value[idx] = response.data
+      }
+      return true
+    } catch (err: any) {
+      state.error.value = err?.message || 'Error al actualizar estado'
+      console.error('Error en updateEventStatus:', err)
+      return false
+    } finally {
+      state.loading.value = false
+    }
+  }
+
   const updateEventPriority = async (eventId: number, priority: CalendarEventPriority): Promise<boolean> => {
     try {
       state.loading.value = true
@@ -555,6 +580,7 @@ export const useCalendarStore = () => {
       start_date: undefined,
       end_date: undefined,
       responsable_id: undefined,
+      responsable_ids: undefined,
       contenedor_id: undefined,
       contenedor_ids: undefined,
       status: undefined,
@@ -590,8 +616,14 @@ export const useCalendarStore = () => {
       
       return false
     })
+    const responsableIds = state.filters.value.responsable_ids
     const responsableId = state.filters.value.responsable_id
-    if (responsableId != null && typeof responsableId === 'number') {
+    if (responsableIds?.length) {
+      const idSet = new Set(responsableIds)
+      list = list.filter(event =>
+        event.charges?.some(charge => idSet.has(charge.user_id)) ?? false
+      )
+    } else if (responsableId != null && typeof responsableId === 'number') {
       list = list.filter(event =>
         event.charges?.some(charge => charge.user_id === responsableId) ?? false
       )
@@ -612,8 +644,14 @@ export const useCalendarStore = () => {
     let list = calendarPermissions.value.canViewAllActivities
       ? state.events.value
       : myActivities.value
+    const responsableIds = state.filters.value.responsable_ids
     const responsableId = state.filters.value.responsable_id
-    if (responsableId != null && typeof responsableId === 'number') {
+    if (responsableIds?.length) {
+      const idSet = new Set(responsableIds)
+      list = list.filter(activity =>
+        activity.charges?.some(charge => idSet.has(charge.user_id)) ?? false
+      )
+    } else if (responsableId != null && typeof responsableId === 'number') {
       list = list.filter(activity =>
         activity.charges?.some(charge => charge.user_id === responsableId) ?? false
       )
@@ -832,6 +870,7 @@ export const useCalendarStore = () => {
 
     // Estados y prioridades
     updateChargeStatus,
+    updateEventStatus,
     updateEventPriority,
 
     // Notas

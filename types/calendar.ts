@@ -233,6 +233,14 @@ export interface UpdateEventPriorityRequest {
 }
 
 /**
+ * Request para actualizar el estado de una actividad (aplica a todos los participantes)
+ */
+export interface UpdateEventStatusRequest {
+  event_id: number
+  status: CalendarEventStatus
+}
+
+/**
  * Request para agregar/actualizar nota de un charge
  */
 export interface UpdateChargeNotesRequest {
@@ -256,6 +264,8 @@ export interface CalendarFilters {
   start_date?: string
   end_date?: string
   responsable_id?: number
+  /** Varios responsables (solo jefe). El backend acepta responsable_ids[] */
+  responsable_ids?: number[]
   contenedor_id?: number
   /** Varios consolidados (ej. en vista progreso). El backend acepta contenedor_ids[] */
   contenedor_ids?: number[]

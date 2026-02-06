@@ -7,40 +7,52 @@
     <div v-if="calendarPermissions.canFilterByContenedor" class="flex items-center gap-2 shrink-0">
       <span class="text-base text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Consolidado</span>
       <USelectMenu
-        :model-value="selectedContenedorOptions"
+        v-model="contenedorModelValue"
         :items="contenedorOptionsMulti"
-        value-attribute="value"
+        value-key="value"
         :placeholder="selectedContenedorIds.length ? `${selectedContenedorIds.length} seleccionado(s)` : 'Todos'"
         size="md"
         :class="compact ? 'w-[160px] sm:w-[180px]' : 'w-[180px] sm:w-[220px]'"
         multiple
-        searchable
-        searchable-placeholder="Buscar..."
-        @update:model-value="onContenedorIdsChange"
+        :search-input="{ placeholder: 'Buscar...' }"
       />
     </div>
 
-    <!-- Filtro por Responsable (solo Jefe) -->
+    <!-- Filtro por Responsable (Jefe: múltiple; otros: solo "Todos" / "Yo") -->
     <div v-if="calendarPermissions.canFilterByResponsable" class="flex items-center gap-2 shrink-0">
       <span class="text-base text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Responsable</span>
       <USelectMenu
-        :model-value="selectedResponsableOption"
-        :items="responsableOptions"
-        value-attribute="value"
+        v-if="isJefeMultiResponsable"
+        v-model="responsableModelValueMulti"
+        :items="responsableOptionsForSelect"
+        value-key="value"
+        :placeholder="selectedResponsableIds.length ? `${selectedResponsableIds.length} seleccionado(s)` : 'Todos'"
+        size="md"
+        :class="compact ? 'w-[160px] sm:w-[180px]' : 'w-[180px] sm:w-[220px]'"
+        multiple
+        :search-input="{ placeholder: 'Buscar...' }"
+      >
+        
+      </USelectMenu>
+      <USelectMenu
+        v-else
+        :model-value="selectedResponsable"
+        :items="responsableOptionsSingle"
+        value-key="value"
         placeholder="Todos"
         size="md"
         :class="compact ? 'w-[160px] sm:w-[180px]' : 'w-[180px] sm:w-[220px]'"
-        searchable
-        searchable-placeholder="Buscar..."
+        :search-input="{ placeholder: 'Buscar...' }"
         @update:model-value="onResponsableSelect"
       >
-        <template #option="{ option }">
+        <template #item="{ item }">
           <div class="flex items-center gap-2">
             <div
+              v-if="(item?.value ?? null) != null && item?.value !== RESPONSABLE_TODOS_VALUE"
               class="w-4 h-4 rounded-full shrink-0"
-              :style="{ backgroundColor: option.color || '#6B7280' }"
+              :style="{ backgroundColor: (item as any)?.color || '#6B7280' }"
             />
-            <span class="text-base">{{ option.label }}</span>
+            <span class="text-base">{{ (item as any)?.label }}</span>
           </div>
         </template>
       </USelectMenu>
@@ -98,6 +110,7 @@ interface Props {
   compact?: boolean
   initialFilters?: {
     responsable_id?: number
+    responsable_ids?: number[]
     contenedor_id?: number
     contenedor_ids?: number[]
     start_date?: string
@@ -109,11 +122,16 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), { inline: false, compact: false })
 
 const emit = defineEmits<{
-  (e: 'filter-change', filters: { responsable_id?: number; contenedor_id?: number; contenedor_ids?: number[]; start_date?: string; end_date?: string }): void
+  (e: 'filter-change', filters: { responsable_id?: number; responsable_ids?: number[]; contenedor_id?: number; contenedor_ids?: number[]; start_date?: string; end_date?: string }): void
 }>()
 
 // Estado local de filtros
 const selectedResponsable = ref<number | null>(props.initialFilters?.responsable_id ?? null)
+const selectedResponsableIds = ref<number[]>(
+  props.initialFilters?.responsable_ids?.length
+    ? [...props.initialFilters.responsable_ids]
+    : (props.initialFilters?.responsable_id != null ? [props.initialFilters.responsable_id] : [])
+)
 const selectedContenedorIds = ref<number[]>(
   props.initialFilters?.contenedor_ids?.length
     ? [...props.initialFilters.contenedor_ids]
@@ -137,8 +155,29 @@ const endDatePlaceholder = computed(() => {
   return new CalendarDate(nextMonth.year, nextMonth.month, 1)
 })
 
-// Opciones para selects (para no jefe solo llegan "Todos" + usuario actual, mostramos "Yo" para él)
-const responsableOptions = computed(() => {
+/** Jefe puede elegir varios responsables (cuando hay más de uno en la lista) */
+const isJefeMultiResponsable = computed(() => props.responsables.length > 1)
+
+const RESPONSABLE_TODOS_VALUE = -1
+
+// Opciones para select múltiple (Jefe): "Todos" + lista con color
+const responsableOptionsForSelect = computed(() => {
+  const options: { label: string; value: number; color?: string }[] = [
+    { label: 'Todos', value: RESPONSABLE_TODOS_VALUE }
+  ]
+  const uid = props.currentUserId != null ? Number(props.currentUserId) : null
+  props.responsables.forEach(r => {
+    options.push({
+      label: uid !== null && r.id === uid ? 'Yo' : r.nombre,
+      value: r.id,
+      color: props.getResponsableColor(r.id, r.nombre)
+    })
+  })
+  return options
+})
+
+// Opciones para select simple (no jefe): "Todos" (null) + "Yo" (id)
+const responsableOptionsSingle = computed(() => {
   const options: { label: string; value: number | null; color?: string }[] = [{ label: 'Todos', value: null }]
   const uid = props.currentUserId != null ? Number(props.currentUserId) : null
   props.responsables.forEach(r => {
@@ -146,16 +185,20 @@ const responsableOptions = computed(() => {
       label: uid !== null && r.id === uid ? 'Yo' : r.nombre,
       value: r.id,
       color: props.getResponsableColor(r.id, r.nombre)
-    } as any)
+    })
   })
   return options
 })
 
-/** Opción completa del responsable seleccionado (para que el USelectMenu marque la selección en el dropdown) */
-const selectedResponsableOption = computed(() => {
-  const id = selectedResponsable.value
-  if (id == null) return responsableOptions.value[0]
-  return responsableOptions.value.find(opt => opt.value === id) ?? responsableOptions.value[0]
+/** Modelo para USelectMenu Responsable múltiple (value-key): get/set para v-model con normalización "Todos" */
+const responsableModelValueMulti = computed({
+  get: () => {
+    const ids = selectedResponsableIds.value
+    return ids.length ? [...ids] : [RESPONSABLE_TODOS_VALUE]
+  },
+  set: (val: unknown) => {
+    onResponsableIdsChange(val)
+  }
 })
 
 /** Valor especial para la opción "Todos" (no es un id real de contenedor) */
@@ -174,10 +217,15 @@ const contenedorOptionsMulti = computed(() => {
   return options
 })
 
-const selectedContenedorOptions = computed(() => {
-  const ids = selectedContenedorIds.value
-  if (ids.length === 0) return [contenedorOptionsMulti.value[0]]
-  return contenedorOptionsMulti.value.filter(opt => opt.value !== CONTENEDOR_TODOS_VALUE && ids.includes(opt.value))
+/** Modelo para USelectMenu Consolidado (value-key): get/set para v-model con normalización "Todos" */
+const contenedorModelValue = computed({
+  get: () => {
+    const ids = selectedContenedorIds.value
+    return ids.length ? [...ids] : [CONTENEDOR_TODOS_VALUE]
+  },
+  set: (val: unknown) => {
+    onContenedorIdsChange(val)
+  }
 })
 
 // Label del rango de fechas
@@ -197,16 +245,40 @@ const dateRangeLabel = computed(() => {
 const onResponsableSelect = (val: unknown) => {
   const id = extractValue(val) ?? null
   selectedResponsable.value = typeof id === 'number' ? id : null
+  selectedResponsableIds.value = id != null ? [id] : []
+  emitFilters()
+}
+
+const onResponsableIdsChange = (val: unknown) => {
+  const arr = Array.isArray(val) ? val : val != null ? [val] : []
+  const ids = arr
+    .map((v: unknown) => (typeof v === 'object' && v && 'value' in v ? (v as { value: number }).value : v))
+    .filter((id): id is number => typeof id === 'number')
+  const hasTodos = ids.includes(RESPONSABLE_TODOS_VALUE)
+  const hadOtherSelected = selectedResponsableIds.value.length > 0
+  // Si se eligió "Todos" (solo o junto con otros) y había otros → deseleccionar todo (quedar en "Todos")
+  if (hasTodos && (ids.length === 1 || hadOtherSelected)) {
+    selectedResponsableIds.value = []
+  } else {
+    selectedResponsableIds.value = ids.filter(id => id !== RESPONSABLE_TODOS_VALUE)
+  }
+  selectedResponsable.value = selectedResponsableIds.value.length === 1 ? selectedResponsableIds.value[0] : null
   emitFilters()
 }
 
 const onContenedorIdsChange = (val: unknown) => {
-  const arr = Array.isArray(val) ? val : []
+  const arr = Array.isArray(val) ? val : val != null ? [val] : []
   const ids = arr
     .map((v: unknown) => (typeof v === 'object' && v && 'value' in v ? (v as { value: number }).value : v))
     .filter((id): id is number => typeof id === 'number')
   const hasTodos = ids.includes(CONTENEDOR_TODOS_VALUE)
-  selectedContenedorIds.value = hasTodos ? [] : ids.filter(id => id !== CONTENEDOR_TODOS_VALUE)
+  const hadOtherSelected = selectedContenedorIds.value.length > 0
+  // Si se eligió "Todos" (solo o junto con otros) y había otros → deseleccionar todo (quedar en "Todos")
+  if (hasTodos && (ids.length === 1 || hadOtherSelected)) {
+    selectedContenedorIds.value = []
+  } else {
+    selectedContenedorIds.value = ids.filter(id => id !== CONTENEDOR_TODOS_VALUE)
+  }
   emitFilters()
 }
 
@@ -225,13 +297,20 @@ watch(
 )
 
 watch(
-  () => props.initialFilters?.responsable_id,
-  (responsableId) => {
-    const id = responsableId ?? null
-    if (selectedResponsable.value !== id) {
-      selectedResponsable.value = id
+  () => ({ ids: props.initialFilters?.responsable_ids, single: props.initialFilters?.responsable_id }),
+  ({ ids, single }) => {
+    if (ids && ids.length) {
+      selectedResponsableIds.value = [...ids]
+      selectedResponsable.value = ids.length === 1 ? ids[0] : null
+    } else if (single != null) {
+      selectedResponsableIds.value = [single]
+      selectedResponsable.value = single
+    } else {
+      selectedResponsableIds.value = []
+      selectedResponsable.value = null
     }
-  }
+  },
+  { deep: true }
 )
 
 const applyDateRange = () => {
@@ -257,11 +336,22 @@ const extractValue = (val: any): any => {
 }
 
 const emitFilters = () => {
-  emit('filter-change', {
-    responsable_id: selectedResponsable.value ?? undefined,
-    contenedor_ids: selectedContenedorIds.value.length ? selectedContenedorIds.value : undefined,
+  const payload: {
+    responsable_id?: number
+    responsable_ids?: number[]
+    contenedor_ids?: number[]
+    start_date?: string
+    end_date?: string
+  } = {
     start_date: formatDateForApi(startDate.value),
     end_date: formatDateForApi(endDate.value)
-  })
+  }
+  if (isJefeMultiResponsable.value) {
+    payload.responsable_ids = selectedResponsableIds.value.length ? selectedResponsableIds.value : undefined
+  } else {
+    payload.responsable_id = selectedResponsable.value ?? undefined
+  }
+  payload.contenedor_ids = selectedContenedorIds.value.length ? selectedContenedorIds.value : undefined
+  emit('filter-change', payload)
 }
 </script>

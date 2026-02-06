@@ -66,7 +66,7 @@
                   </div>
                 </div>
                 <div class="flex gap-2">
-                  <UButton label="Aplicar" color="primary" size="xs" class="flex-1" @click="applyFilters" />
+                  <UButton label="Aplicar" color="primary" size="xs" class="flex-1" @click="() => applyFilters()" />
                   <UButton label="Limpiar" variant="outline" size="xs" class="flex-1" @click="clearDateFilter" />
                 </div>
               </div>
@@ -95,30 +95,40 @@
             @update:model-value="applyFilters"
           />
 
-          <!-- Responsable -->
+          <!-- Responsable (múltiple) -->
           <USelectMenu
             v-if="calendarPermissions.canFilterByResponsable"
-            v-model="filterResponsable"
-            :items="responsableOptions"
-            value-attribute="value"
-            placeholder="Responsable"
+            v-model="responsableModelValue"
+            :items="responsableOptionsMulti"
+            value-key="value"
+            :placeholder="filterResponsableIds.length ? `${filterResponsableIds.length} seleccionado(s)` : 'Todos'"
             size="sm"
             class="w-40"
-            @update:model-value="applyFilters"
-          />
+            multiple
+            :search-input="{ placeholder: 'Buscar...' }"
+          >
+            <template #item="{ item }">
+              <div class="flex items-center gap-2">
+                <div
+                  v-if="(item?.value ?? null) != null && item?.value !== RESPONSABLE_TODOS_VALUE"
+                  class="w-3 h-3 rounded-full shrink-0"
+                  :style="{ backgroundColor: (item as any)?.color || '#6B7280' }"
+                />
+                <span class="text-sm">{{ (item as any)?.label }}</span>
+              </div>
+            </template>
+          </USelectMenu>
 
           <!-- Consolidado (múltiple) -->
           <USelectMenu
-            :model-value="selectedContenedorOptions"
+            v-model="contenedorModelValue"
             :items="contenedorOptionsMulti"
-            value-attribute="value"
+            value-key="value"
             :placeholder="filterContenedorIds.length ? `${filterContenedorIds.length} seleccionado(s)` : 'Consolidado(s)'"
             size="sm"
             class="w-48 min-w-0"
             multiple
-            searchable
-            searchable-placeholder="Buscar..."
-            @update:model-value="onContenedorIdsChange"
+            :search-input="{ placeholder: 'Buscar...' }"
           />
         </div>
 
@@ -157,7 +167,7 @@
                     :can-edit="canEditStatus(activity)"
                     :current-user-id="currentUserId"
                     :is-jefe="isJefeImportaciones"
-                    @update="(chargeId, status) => handleStatusUpdate(chargeId, status)"
+                    @update="(eventId, status) => handleStatusUpdate(eventId, status)"
                   />
                 </td>
 
@@ -372,7 +382,7 @@ const {
   isJefeImportaciones,
   currentUserId,
   getEvents,
-  updateChargeStatus,
+  updateEventStatus,
   updateEventPriority,
   updateEventNotes,
   updateChargeNotes,
@@ -387,7 +397,7 @@ const filterStartDate = ref<CalendarDate | null>(null)
 const filterEndDate = ref<CalendarDate | null>(null)
 const filterStatus = ref<CalendarEventStatus | null>(null)
 const filterPriority = ref<CalendarEventPriority | null>(null)
-const filterResponsable = ref<number | null>(null)
+const filterResponsableIds = ref<number[]>([])
 const filterContenedorIds = ref<number[]>([])
 
 /** Mes que muestra el 2.º calendario (Hasta): el mes siguiente al "Desde" o al actual */
@@ -436,7 +446,7 @@ const dateFilterLabel = computed(() => {
   return 'Buscar Fecha'
 })
 
-// Mi progreso (para usuarios no-Jefe)
+// Mi progreso (por actividad: cuento actividades donde soy participante y su estado es único para todos)
 const myProgress = computed(() => {
   const userId = Number(currentUserId.value)
   let total = 0
@@ -445,14 +455,17 @@ const myProgress = computed(() => {
   let pendientes = 0
 
   visibleActivities.value.forEach(activity => {
-    const myCharge = activity.charges?.find(c => c.user_id === userId)
-    if (myCharge) {
-      total++
-      const status = myCharge.status || 'PENDIENTE'
-      if (status === 'COMPLETADO') completadas++
-      else if (status === 'PROGRESO') enProgreso++
-      else pendientes++
-    }
+    const isParticipant = activity.charges?.some(c => c.user_id === userId)
+    if (!isParticipant) return
+    total++
+    const charges = activity.charges || []
+    const statuses = charges.map(c => c.status || 'PENDIENTE')
+    const allCompleted = statuses.every(s => s === 'COMPLETADO')
+    const hasProgress = statuses.some(s => s === 'PROGRESO' || s === 'COMPLETADO')
+    const status = allCompleted ? 'COMPLETADO' : hasProgress ? 'PROGRESO' : 'PENDIENTE'
+    if (status === 'COMPLETADO') completadas++
+    else if (status === 'PROGRESO') enProgreso++
+    else pendientes++
   })
 
   return { total, completadas, enProgreso, pendientes }
@@ -474,38 +487,71 @@ const priorityOptions = computed(() => {
   return options
 })
 
-const responsableOptions = computed(() => {
-  const options: any[] = [{ label: 'Todos', value: null }]
+const RESPONSABLE_TODOS_VALUE = -1
+const CONTENEDOR_ALL_VALUE = '__all__' as const
+
+const responsableOptionsMulti = computed(() => {
+  const options: { label: string; value: number; color?: string }[] = [
+    { label: 'Todos', value: RESPONSABLE_TODOS_VALUE }
+  ]
   responsables.value.forEach(r => {
-    options.push({ label: r.nombre, value: r.id })
+    options.push({
+      label: r.nombre,
+      value: r.id,
+      color: getResponsableColor(r.id, r.nombre)
+    })
   })
   return options
 })
 
-const contenedorOptions = computed(() => {
-  const options: any[] = [{ label: 'Todos', value: null }]
+const responsableModelValue = computed({
+  get: () => filterResponsableIds.value.length ? [...filterResponsableIds.value] : [RESPONSABLE_TODOS_VALUE],
+  set: (val: unknown) => onResponsableIdsChange(val)
+})
+
+const onResponsableIdsChange = (val: unknown) => {
+  const arr = Array.isArray(val) ? val : val != null ? [val] : []
+  const ids = arr
+    .map((v: unknown) => (typeof v === 'object' && v && 'value' in v ? (v as { value: number }).value : v))
+    .filter((id): id is number => typeof id === 'number')
+  const hasTodos = ids.includes(RESPONSABLE_TODOS_VALUE)
+  const hadOtherSelected = filterResponsableIds.value.length > 0
+  if (hasTodos && (ids.length === 1 || hadOtherSelected)) {
+    filterResponsableIds.value = []
+  } else {
+    filterResponsableIds.value = ids.filter(id => id !== RESPONSABLE_TODOS_VALUE)
+  }
+  applyFilters()
+}
+
+const contenedorOptionsMulti = computed(() => {
+  const options: { label: string; value: number | string }[] = [
+    { label: 'Todos', value: CONTENEDOR_ALL_VALUE }
+  ]
   contenedores.value.forEach(c => {
     options.push({ label: c.nombre || c.codigo || `#${c.id}`, value: c.id })
   })
   return options
 })
 
-const contenedorOptionsMulti = computed(() => {
-  return contenedores.value.map(c => ({
-    label: c.nombre || c.codigo || `#${c.id}`,
-    value: c.id
-  }))
-})
-
-const selectedContenedorOptions = computed(() => {
-  const ids = filterContenedorIds.value
-  if (ids.length === 0) return []
-  return contenedorOptionsMulti.value.filter(opt => ids.includes(opt.value))
+const contenedorModelValue = computed({
+  get: () => filterContenedorIds.value.length ? [...filterContenedorIds.value] : [CONTENEDOR_ALL_VALUE],
+  set: (val: unknown) => onContenedorIdsChange(val)
 })
 
 const onContenedorIdsChange = (val: unknown) => {
-  const arr = Array.isArray(val) ? val : []
-  filterContenedorIds.value = arr.map((v: any) => typeof v === 'object' && v && 'value' in v ? v.value : v).filter((id): id is number => typeof id === 'number')
+  const arr = Array.isArray(val) ? val : val != null ? [val] : []
+  const values = arr.map((v: any) => typeof v === 'object' && v && 'value' in v ? v.value : v)
+  const hasAll = values.some(v => v === CONTENEDOR_ALL_VALUE || String(v) === CONTENEDOR_ALL_VALUE)
+  const hadOtherSelected = filterContenedorIds.value.length > 0
+  if (hasAll && (values.length === 1 || hadOtherSelected)) {
+    filterContenedorIds.value = []
+  } else {
+    const numericIds = values
+      .map((v: any) => (typeof v === 'number' ? v : Number(v)))
+      .filter((n: number) => !Number.isNaN(n) && n > 0)
+    filterContenedorIds.value = numericIds
+  }
   applyFilters()
 }
 
@@ -572,8 +618,7 @@ const applyFilters = async (force = false, resetPage = true) => {
   if (statusVal) filters.status = statusVal
   const priorityVal = extractValue(filterPriority.value)
   if (priorityVal !== null && priorityVal !== undefined) filters.priority = priorityVal
-  const responsableVal = extractValue(filterResponsable.value)
-  if (responsableVal) filters.responsable_id = responsableVal
+  if (filterResponsableIds.value.length > 0) filters.responsable_ids = filterResponsableIds.value
   if (filterContenedorIds.value.length > 0) filters.contenedor_ids = filterContenedorIds.value
 
   await getEvents(filters, force)
@@ -593,10 +638,10 @@ const clearDateFilter = () => {
   applyFilters()
 }
 
-const handleStatusUpdate = async (chargeId: number, status: CalendarEventStatus) => {
-  const success = await updateChargeStatus(chargeId, status)
+const handleStatusUpdate = async (eventId: number, status: CalendarEventStatus) => {
+  const success = await updateEventStatus(eventId, status)
   if (success) {
-    showSuccess('Éxito', 'Estado actualizado correctamente')
+    showSuccess('Éxito', 'Estado de la actividad actualizado correctamente')
     await applyFilters()
   } else {
     showError('Error', 'No se pudo actualizar el estado')
@@ -672,10 +717,11 @@ const closeTrackingModal = () => {
   trackingActivity.value = null
 }
 
-const handleTrackingStatusUpdate = async (chargeId: number, status: CalendarEventStatus) => {
-  const success = await updateChargeStatus(chargeId, status)
+const handleTrackingStatusUpdate = async (_chargeId: number, status: CalendarEventStatus) => {
+  if (!trackingActivity.value) return
+  const success = await updateEventStatus(trackingActivity.value.id, status)
   if (success) {
-    showSuccess('Éxito', 'Estado actualizado correctamente')
+    showSuccess('Éxito', 'Estado de la actividad actualizado correctamente')
     await applyFilters()
   } else {
     showError('Error', 'No se pudo actualizar el estado')

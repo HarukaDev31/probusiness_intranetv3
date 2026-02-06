@@ -74,6 +74,8 @@ function onCalendarSocketEvent(payload: unknown) {
     ? (payload as { triggered_by_user_id?: number | string | null })
     : null
   const triggeredBy = data?.triggered_by_user_id
+  console.log('triggeredBy', triggeredBy)
+  console.log('data', data)
   if (triggeredBy != null && triggeredBy !== '') {
     const myId = getCurrentUserId()
     if (myId != null) {

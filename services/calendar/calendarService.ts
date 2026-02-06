@@ -8,6 +8,7 @@ import type {
   UpdateCalendarEventRequest,
   UpdateChargeStatusRequest,
   UpdateEventPriorityRequest,
+  UpdateEventStatusRequest,
   UpdateChargeNotesRequest,
   UpdateUserColorRequest,
   ResponsablesResponse,
@@ -42,6 +43,8 @@ export class CalendarService extends BaseService {
       if (value === undefined || value === null || value === '') return
       if (key === 'contenedor_ids' && Array.isArray(value)) {
         value.forEach((id: number) => params.append('contenedor_ids[]', String(id)))
+      } else if (key === 'responsable_ids' && Array.isArray(value)) {
+        value.forEach((id: number) => params.append('responsable_ids[]', String(id)))
       } else {
         params.append(key, String(value))
       }
@@ -145,6 +148,22 @@ export class CalendarService extends BaseService {
       return response
     } catch (error) {
       console.error('Error al actualizar estado:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Actualizar estado de la actividad (aplica a todos los participantes; cualquiera puede cambiarlo)
+   */
+  static async updateEventStatus(data: UpdateEventStatusRequest): Promise<{ success: boolean; data?: CalendarEvent; message?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: CalendarEvent; message?: string }>(`${this.baseUrl}/events/${data.event_id}/status`, {
+        method: 'PUT',
+        body: { status: data.status }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al actualizar estado de actividad:', error)
       throw error
     }
   }

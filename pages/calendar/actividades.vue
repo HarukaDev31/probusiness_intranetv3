@@ -56,27 +56,40 @@
           </template>
         </UPopover>
 
-        <!-- Buscar responsable -->
+        <!-- Responsable (múltiple) -->
         <USelectMenu
           v-if="calendarPermissions.canFilterByResponsable"
-          v-model="filterResponsable"
-          :items="responsableOptions"
-          value-attribute="value"
-          placeholder="Buscar responsable"
+          v-model="responsableModelValue"
+          :items="responsableOptionsMulti"
+          value-key="value"
+          :placeholder="filterResponsableIds.length ? `${filterResponsableIds.length} seleccionado(s)` : 'Todos'"
           size="sm"
           class="w-48"
-          @update:model-value="applyFilters"
-        />
+          multiple
+          :search-input="{ placeholder: 'Buscar...' }"
+        >
+          <template #item="{ item }">
+            <div class="flex items-center gap-2">
+              <div
+                v-if="(item?.value ?? null) != null && item?.value !== RESPONSABLE_TODOS_VALUE"
+                class="w-3 h-3 rounded-full shrink-0"
+                :style="{ backgroundColor: (item as any)?.color || '#6B7280' }"
+              />
+              <span class="text-sm">{{ (item as any)?.label }}</span>
+            </div>
+          </template>
+        </USelectMenu>
 
-        <!-- Buscar consolidado -->
+        <!-- Consolidado (múltiple) -->
         <USelectMenu
-          v-model="filterContenedor"
-          :items="contenedorOptions"
-          value-attribute="value"
-          placeholder="Buscar consolidado"
+          v-model="contenedorModelValue"
+          :items="contenedorOptionsMulti"
+          value-key="value"
+          :placeholder="filterContenedorIds.length ? `${filterContenedorIds.length} seleccionado(s)` : 'Todos'"
           size="sm"
           class="w-48"
-          @update:model-value="applyFilters"
+          multiple
+          :search-input="{ placeholder: 'Buscar...' }"
         />
       </div>
     </div>
@@ -99,7 +112,7 @@
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr
-                v-for="activity in visibleActivities"
+                v-for="activity in sortedActivities"
                 :key="activity.id"
                 class="hover:bg-gray-50 dark:hover:bg-gray-800/50"
               >
@@ -153,7 +166,7 @@
               </tr>
 
               <!-- Empty state -->
-              <tr v-if="visibleActivities.length === 0 && !loading">
+              <tr v-if="sortedActivities.length === 0 && !loading">
                 <td colspan="7" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
                   No hay actividades registradas
                 </td>
@@ -216,40 +229,6 @@
         </div>
       </UCard>
     </div>
-
-    <!-- Modal Nueva/Editar Actividad -->
-    <ActivityModal
-      v-if="isModalOpen"
-      :open="isModalOpen"
-      :event="editingActivity"
-      :responsables="responsables"
-      :contenedores="contenedores"
-      :calendar-permissions="calendarPermissions"
-      :get-responsable-color="getResponsableColor"
-      :actividades-predefinidas="activityCatalog"
-      :loading="saving"
-      :initial-date="initialDate"
-      :on-create-activity="handleCreateActivityInCatalog"
-      @save="handleSaveActivity"
-      @delete="handleDeleteFromModal"
-      @close="closeModal"
-    />
-
-    <!-- Modal Confirmar Eliminación -->
-    <UModal :open="isDeleteModalOpen" @close="isDeleteModalOpen = false">
-      <template #header>
-        <h3 class="text-lg font-semibold">Confirmar eliminación</h3>
-      </template>
-      <template #body>
-        <p>¿Estás seguro de que deseas eliminar la actividad "{{ activityToDelete?.name }}"?</p>
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UButton label="Cancelar" variant="ghost" @click="isDeleteModalOpen = false" />
-          <UButton label="Eliminar" color="error" :loading="deleting" @click="deleteActivityConfirm" />
-        </div>
-      </template>
-    </UModal>
   </div>
 </template>
 
@@ -258,6 +237,8 @@ import { ref, computed, onMounted } from 'vue'
 import { CalendarDate, getLocalTimeZone, today, parseDate } from '@internationalized/date'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useOverlay } from '#imports'
 import type { CalendarEvent, CreateCalendarEventRequest } from '~/types/calendar'
 import { MONTHS_SHORT, countWeekdaysBetween } from '~/constants/calendar'
 import ActivityModal from '~/components/calendar/ActivityModal.vue'
@@ -276,25 +257,23 @@ const {
   deleteActivity,
   getResponsableColor,
   createActivityInCatalog,
+  deleteActivityFromCatalog,
   initialize
 } = useCalendarStore()
 
-const { showSuccess, showError } = useModal()
+const { showSuccess, showError, showConfirmation } = useModal()
+const { withSpinner } = useSpinner()
+const overlay = useOverlay()
+const activityModal = overlay.create(ActivityModal)
+const activityModalOpenKey = ref(0)
 
 // Estado
-const isModalOpen = ref(false)
-const isDeleteModalOpen = ref(false)
-const editingActivity = ref<CalendarEvent | null>(null)
-const activityToDelete = ref<CalendarEvent | null>(null)
-const saving = ref(false)
-const deleting = ref(false)
-const initialDate = ref<string | undefined>(undefined)
 
 // Filtros
 const filterStartDate = ref<CalendarDate | null>(null)
 const filterEndDate = ref<CalendarDate | null>(null)
-const filterResponsable = ref<number | null>(null)
-const filterContenedor = ref<number | null>(null)
+const filterResponsableIds = ref<number[]>([])
+const filterContenedorIds = ref<number[]>([])
 
 /** Mes que muestra el 2.º calendario (Hasta): el mes siguiente al "Desde" o al actual */
 const endDatePlaceholder = computed(() => {
@@ -331,22 +310,84 @@ const dateFilterLabel = computed(() => {
   return 'Buscar Fecha'
 })
 
-const responsableOptions = computed(() => {
-  const options: any[] = [{ label: 'Todos', value: null }]
+const RESPONSABLE_TODOS_VALUE = -1
+const CONTENEDOR_TODOS_VALUE = -1
+
+const responsableOptionsMulti = computed(() => {
+  const options: { label: string; value: number; color?: string }[] = [
+    { label: 'Todos', value: RESPONSABLE_TODOS_VALUE }
+  ]
   responsables.value.forEach(r => {
-    options.push({ label: r.nombre, value: r.id })
+    options.push({
+      label: r.nombre,
+      value: r.id,
+      color: getResponsableColor(r.id, r.nombre)
+    })
   })
   return options
 })
 
-const contenedorOptions = computed(() => {
-  const options: any[] = [{ label: 'Todos', value: null }]
+const responsableModelValue = computed({
+  get: () => filterResponsableIds.value.length ? [...filterResponsableIds.value] : [RESPONSABLE_TODOS_VALUE],
+  set: (val: unknown) => onResponsableIdsChange(val)
+})
+
+const contenedorOptionsMulti = computed(() => {
+  const options: { label: string; value: number }[] = [
+    { label: 'Todos', value: CONTENEDOR_TODOS_VALUE }
+  ]
   contenedores.value.forEach(c => {
     options.push({ label: c.nombre || c.codigo || `#${c.id}`, value: c.id })
   })
   return options
 })
 
+const contenedorModelValue = computed({
+  get: () => filterContenedorIds.value.length ? [...filterContenedorIds.value] : [CONTENEDOR_TODOS_VALUE],
+  set: (val: unknown) => onContenedorIdsChange(val)
+})
+
+const onResponsableIdsChange = (val: unknown) => {
+  const arr = Array.isArray(val) ? val : val != null ? [val] : []
+  const ids = arr
+    .map((v: unknown) => (typeof v === 'object' && v && 'value' in v ? (v as { value: number }).value : v))
+    .filter((id): id is number => typeof id === 'number')
+  const hasTodos = ids.includes(RESPONSABLE_TODOS_VALUE)
+  const hadOtherSelected = filterResponsableIds.value.length > 0
+  if (hasTodos && (ids.length === 1 || hadOtherSelected)) {
+    filterResponsableIds.value = []
+  } else {
+    filterResponsableIds.value = ids.filter(id => id !== RESPONSABLE_TODOS_VALUE)
+  }
+  applyFilters()
+}
+
+const onContenedorIdsChange = (val: unknown) => {
+  const arr = Array.isArray(val) ? val : val != null ? [val] : []
+  const ids = arr
+    .map((v: unknown) => (typeof v === 'object' && v && 'value' in v ? (v as { value: number }).value : v))
+    .filter((id): id is number => typeof id === 'number')
+  const hasTodos = ids.includes(CONTENEDOR_TODOS_VALUE)
+  const hadOtherSelected = filterContenedorIds.value.length > 0
+  if (hasTodos && (ids.length === 1 || hadOtherSelected)) {
+    filterContenedorIds.value = []
+  } else {
+    filterContenedorIds.value = ids.filter(id => id !== CONTENEDOR_TODOS_VALUE)
+  }
+  applyFilters()
+}
+
+/** Actividades ordenadas por fecha de inicio (ascendente: las que empiezan antes primero), como en el backend */
+const sortedActivities = computed(() => {
+  const list = visibleActivities.value.slice()
+  const getStartDate = (activity: CalendarEvent) =>
+    activity.start_date || (activity.days?.length ? activity.days.map(d => d.date).sort()[0] : '')
+  return list.sort((a, b) => {
+    const dateA = getStartDate(a) || '9999-12-31'
+    const dateB = getStartDate(b) || '9999-12-31'
+    return dateA.localeCompare(dateB) || (a.id ?? 0) - (b.id ?? 0)
+  })
+})
 
 // Helpers
 const formatDate = (dateStr: string | undefined): string => {
@@ -402,13 +443,11 @@ const applyFilters = async (force = false, resetPage = true) => {
   if (filterEndDate.value) {
     filters.end_date = `${filterEndDate.value.year}-${String(filterEndDate.value.month).padStart(2, '0')}-${String(filterEndDate.value.day).padStart(2, '0')}`
   }
-  const responsableVal = extractValue(filterResponsable.value)
-  if (responsableVal) {
-    filters.responsable_id = responsableVal
+  if (filterResponsableIds.value.length > 0) {
+    filters.responsable_ids = filterResponsableIds.value
   }
-  const contenedorVal = extractValue(filterContenedor.value)
-  if (contenedorVal) {
-    filters.contenedor_id = contenedorVal
+  if (filterContenedorIds.value.length > 0) {
+    filters.contenedor_ids = filterContenedorIds.value
   }
   await getEvents(filters, force)
 }
@@ -424,54 +463,107 @@ const goToPage = (p: number) => {
 const clearDateFilter = () => {
   filterStartDate.value = null
   filterEndDate.value = null
+  filterResponsableIds.value = []
+  filterContenedorIds.value = []
   applyFilters()
 }
 
 const openCreateModal = () => {
-  editingActivity.value = null
   const todayDate = today(getLocalTimeZone())
-  initialDate.value = `${todayDate.year}-${String(todayDate.month).padStart(2, '0')}-${String(todayDate.day).padStart(2, '0')}`
-  isModalOpen.value = true
+  const dateStr = `${todayDate.year}-${String(todayDate.month).padStart(2, '0')}-${String(todayDate.day).padStart(2, '0')}`
+  activityModalOpenKey.value++
+  activityModal.open({
+    openKey: activityModalOpenKey.value,
+    event: null,
+    responsables: responsables.value,
+    contenedores: contenedores.value,
+    calendarPermissions: calendarPermissions.value,
+    getResponsableColor: getResponsableColor,
+    actividadesPredefinidas: activityCatalog.value,
+    initialDate: dateStr,
+    onSave: async (data: CreateCalendarEventRequest) => {
+      await handleSaveActivityOverlay(data)
+    },
+    onCreateActivity: async (name: string) => {
+      return await handleCreateActivityInCatalog(name)
+    },
+    onDeleteFromCatalog: onDeleteFromCatalogOverlay,
+    onClose: () => activityModal.close()
+  })
 }
 
 const openEditModal = (activity: CalendarEvent) => {
-  console.log(calendarPermissions.value.canEditActivity)
   if (!calendarPermissions.value.canEditActivity) {
     showError('Sin permisos', 'No tienes permisos para editar actividades.')
     return
   }
-  editingActivity.value = activity
-  initialDate.value = undefined
-  isModalOpen.value = true
+  activityModalOpenKey.value++
+  activityModal.open({
+    openKey: activityModalOpenKey.value,
+    event: activity,
+    responsables: responsables.value,
+    contenedores: contenedores.value,
+    calendarPermissions: calendarPermissions.value,
+    getResponsableColor: getResponsableColor,
+    actividadesPredefinidas: activityCatalog.value,
+    onSave: async (data: CreateCalendarEventRequest) => {
+      await handleUpdateActivityOverlay({ ...data, id: activity.id })
+    },
+    onCreateActivity: async (name: string) => {
+      return await handleCreateActivityInCatalog(name)
+    },
+    onDeleteFromCatalog: onDeleteFromCatalogOverlay,
+    onDelete: async () => {
+      activityModal.close()
+      confirmDelete(activity)
+    },
+    onClose: () => activityModal.close()
+  })
 }
 
-const closeModal = () => {
-  isModalOpen.value = false
-  editingActivity.value = null
-}
-
-const handleSaveActivity = async (data: CreateCalendarEventRequest) => {
-  saving.value = true
+const handleSaveActivityOverlay = async (data: CreateCalendarEventRequest) => {
   try {
-    if (editingActivity.value) {
-      const result = await updateActivity({ id: editingActivity.value.id, ...data })
-      if (result) {
-        showSuccess('Éxito', 'Actividad actualizada correctamente')
-        closeModal()
-        await applyFilters(true)
-      }
+    const result = await createActivity(data)
+    if (result) {
+      showSuccess('Éxito', 'Actividad creada correctamente')
+      activityModal.close()
+      await applyFilters(true)
     } else {
-      const result = await createActivity(data)
-      if (result) {
-        showSuccess('Éxito', 'Actividad creada correctamente')
-        closeModal()
-        await applyFilters(true)
-      }
+      showError('Error', 'No se pudo crear la actividad')
     }
   } catch (err: any) {
     showError('Error', err?.message || 'No se pudo guardar la actividad')
-  } finally {
-    saving.value = false
+  }
+}
+
+const handleUpdateActivityOverlay = async (data: CreateCalendarEventRequest & { id: number }) => {
+  try {
+    const result = await updateActivity(data)
+    if (result) {
+      showSuccess('Éxito', 'Actividad actualizada correctamente')
+      activityModal.close()
+      await applyFilters(true)
+    } else {
+      showError('Error', 'No se pudo actualizar la actividad')
+    }
+  } catch (err: any) {
+    showError('Error', err?.message || 'No se pudo guardar la actividad')
+  }
+}
+
+const onDeleteFromCatalogOverlay = async (catalogActivityId: number) => {
+  try {
+    const success = await deleteActivityFromCatalog(catalogActivityId)
+    if (success) {
+      showSuccess('Éxito', 'La actividad se ha eliminado del catálogo.')
+      activityModal.patch({
+        actividadesPredefinidas: activityCatalog.value
+      })
+    } else {
+      showError('Error', 'No se pudo eliminar del catálogo (puede estar en uso).')
+    }
+  } catch (err: any) {
+    showError('Error', err?.message || 'No se pudo eliminar del catálogo.')
   }
 }
 
@@ -489,34 +581,23 @@ const handleCreateActivityInCatalog = async (name: string) => {
   }
 }
 
-const handleDeleteFromModal = () => {
-  if (editingActivity.value) {
-    confirmDelete(editingActivity.value)
-    closeModal()
-  }
-}
-
 const confirmDelete = (activity: CalendarEvent) => {
-  activityToDelete.value = activity
-  isDeleteModalOpen.value = true
-}
-
-const deleteActivityConfirm = async () => {
-  if (!activityToDelete.value) return
-  deleting.value = true
-  try {
-    const success = await deleteActivity(activityToDelete.value.id)
-    if (success) {
-      showSuccess('Éxito', 'Actividad eliminada correctamente')
-      isDeleteModalOpen.value = false
-      activityToDelete.value = null
-      await applyFilters(true)
+  const name = activity.name || activity.title || 'esta actividad'
+  showConfirmation(
+    'Confirmar eliminación',
+    `¿Estás seguro de que deseas eliminar la actividad "${name}"?`,
+    async () => {
+      await withSpinner(async () => {
+        const success = await deleteActivity(activity.id)
+        if (success) {
+          showSuccess('Éxito', 'Actividad eliminada correctamente')
+          await applyFilters(true)
+        } else {
+          showError('Error', 'No se pudo eliminar la actividad')
+        }
+      }, 'Eliminando actividad...')
     }
-  } catch (err: any) {
-    showError('Error', err?.message || 'No se pudo eliminar la actividad')
-  } finally {
-    deleting.value = false
-  }
+  )
 }
 
 // Inicialización
