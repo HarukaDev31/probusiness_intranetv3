@@ -342,12 +342,18 @@ watch(
 
 const df = new DateFormatter('es-ES', { dateStyle: 'long' })
 
-/** Deshabilita sábado y domingo en el calendario (días no laborables). */
+/** Deshabilita sábado (6) y domingo (0) en el calendario (días no laborables). */
 const isWeekendDisabled = (date: DateValue): boolean => {
+  if (!date) return false
   try {
-    const d = date && typeof (date as any).toDate === 'function'
-      ? (date as any).toDate(getLocalTimeZone())
-      : new Date((date as any).year, (date as any).month - 1, (date as any).day)
+    const d =
+      typeof (date as { toDate?: (zone: string) => Date }).toDate === 'function'
+        ? (date as { toDate: (zone: string) => Date }).toDate(getLocalTimeZone())
+        : new Date(
+            (date as { year: number }).year,
+            ((date as { month: number }).month ?? 1) - 1,
+            (date as { day: number }).day
+          )
     const dayOfWeek = d.getDay()
     return dayOfWeek === 0 || dayOfWeek === 6
   } catch {
@@ -720,18 +726,10 @@ const initializeForm = () => {
     }
     selectedActivity.value = null
 
-    if (props.initialDate) {
-      try {
-        startDate.value = parseDate(props.initialDate) as CalendarDate
-        endDate.value = parseDate(props.initialDate) as CalendarDate
-      } catch {
-        startDate.value = today(getLocalTimeZone())
-        endDate.value = today(getLocalTimeZone())
-      }
-    } else {
-      startDate.value = today(getLocalTimeZone())
-      endDate.value = today(getLocalTimeZone())
-    }
+    // Siempre fecha inicial = hoy al crear nueva actividad
+    const todayDate = today(getLocalTimeZone())
+    startDate.value = todayDate
+    endDate.value = todayDate
   }
 }
 

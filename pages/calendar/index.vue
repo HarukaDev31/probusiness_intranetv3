@@ -127,7 +127,7 @@
           <div
             v-for="(day, dayIndex) in week.days"
             :key="dayIndex"
-            class="min-h-[150px] md:min-h-[145px] transition-colors flex flex-col relative"
+            class="min-h-[145px] max-h-[180px] overflow-hidden transition-colors flex flex-col relative"
             :class="day.isCurrentMonth
               ? 'border-r-2 border-b-2  border-gray-300 dark:border-gray-600 ' +
                 (day.isWeekend
@@ -176,11 +176,11 @@
         </div>
         
         <!-- Eventos multi-día (capa absoluta). Máx 3 filas. z-20 para quedar sobre el overlay gris del fin de semana. -->
-        <div class="absolute top-8 md:top-9 left-0 right-0 pointer-events-none z-20">
+        <div class="absolute top-6 md:top-7 left-0 right-0 pointer-events-none z-20">
           <div
             v-for="(eventRow, rowIndex) in week.eventRows.slice(0, MAX_VISIBLE_EVENT_ROWS)"
             :key="rowIndex"
-            class="relative h-8 md:h-9 mb-2"
+            class="relative h-6 md:h-7 mb-1"
           >
             <div
               v-for="eventSpan in eventRow"
@@ -207,37 +207,41 @@
                 </span>
               </span>
             </div>
-            <!-- Avatares en la columna sábado (celda vacía), horizontal -->
+            <!-- Avatares en la columna sábado: un div flex con todos los grupos juntos -->
             <div
-              v-for="eventSpan in eventRow"
-              v-show="eventSpan.isEnd && getEventResponsables(eventSpan.event).length > 0"
-              :key="`avatars-${eventSpan.event.id}-${eventSpan.startCol}`"
-              class="absolute flex items-center gap-0.5 pointer-events-auto"
-              :style="getEventSpanAvatarStyle(eventSpan)"
-              @click.stop="openEditModal(eventSpan.event)"
+              v-if="getAvatarSpansInRow(eventRow).length"
+              class="absolute left-[71.43%] top-0 h-full max-w-[14.28%] flex items-center gap-1 flex-nowrap pointer-events-auto"
+              style="width: max-content;"
             >
-              <UTooltip
-                v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
-                :key="resp.id"
-                :text="resp.nombre"
+              <div
+                v-for="eventSpan in getAvatarSpansInRow(eventRow)"
+                :key="`avatars-${eventSpan.event.id}-${eventSpan.startCol}`"
+                class="flex items-center gap-0 shrink-0 cursor-pointer hover:opacity-90"
+                @click.stop="openEditModal(eventSpan.event)"
               >
-                <UAvatar
-                  :src="resp.avatar || undefined"
-                  :alt="resp.nombre"
-                  size="md"
-                  class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
-                  :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
-                />
-              </UTooltip>
-              <button
-                v-if="getEventResponsables(eventSpan.event).length > 2"
-                type="button"
-                class="w-5 h-5 min-w-[20px] min-h-[20px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 cursor-pointer shrink-0"
-                title="Ver todos los responsables"
-                @click.stop="openResponsablesModal(eventSpan.event)"
-              >
-                +
-              </button>
+                <UTooltip
+                  v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
+                  :key="resp.id"
+                  :text="resp.nombre"
+                >
+                  <UAvatar
+                    :src="resp.avatar || undefined"
+                    :alt="resp.nombre"
+                    size="sm"
+                    class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
+                    :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+                  />
+                </UTooltip>
+                <button
+                  v-if="getEventResponsables(eventSpan.event).length > 2"
+                  type="button"
+                  class="w-6 h-6 min-w-[24px] min-h-[24px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 shrink-0"
+                  title="Ver todos los responsables"
+                  @click.stop="openResponsablesModal(eventSpan.event)"
+                >
+                  +
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -275,7 +279,7 @@
                     <div
                       v-for="(day, dayIndex) in week.days"
                       :key="dayIndex"
-                      class="min-h-[150px] md:min-h-[195px] transition-colors flex flex-col relative"
+                      class="min-h-[145px] max-h-[180px] overflow-hidden transition-colors flex flex-col relative"
                       :class="day.isCurrentMonth
                         ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 ' +
                           (day.isWeekend
@@ -320,11 +324,11 @@
                       </div>
                     </div>
                     </div>
-                    <div class="absolute top-8 md:top-9 left-0 right-0 pointer-events-none z-20">
+                    <div class="absolute top-6 md:top-7 left-0 right-0 pointer-events-none z-20">
                       <div
                         v-for="(eventRow, rowIndex) in week.eventRows.slice(0, MAX_VISIBLE_EVENT_ROWS)"
                         :key="rowIndex"
-                        class="relative h-8 md:h-9 mb-2"
+                        class="relative h-6 md:h-7 mb-1"
                       >
                         <div
                           v-for="eventSpan in eventRow"
@@ -351,24 +355,27 @@
                             </span>
                           </span>
                         </div>
-                        <!-- Avatares en la columna sábado (celda vacía), horizontal -->
+                        <!-- Avatares en la columna sábado: un div flex con todos los grupos juntos -->
                         <div
-                          v-for="eventSpan in eventRow"
-                          v-show="eventSpan.isEnd && getEventResponsables(eventSpan.event).length > 0"
-                          :key="`avatars-${eventSpan.event.id}-${eventSpan.startCol}`"
-                          class="absolute flex items-center gap-0.5 pointer-events-auto"
-                          :style="getEventSpanAvatarStyle(eventSpan)"
-                          @click.stop="openEditModal(eventSpan.event)"
+                          v-if="getAvatarSpansInRow(eventRow).length"
+                          class="absolute left-[71.43%] top-0 h-full max-w-[14.28%] flex items-center gap-1 flex-nowrap pointer-events-auto"
+                          style="width: max-content;"
                         >
-                          <UTooltip
-                            v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
-                            :key="resp.id"
-                            :text="resp.nombre"
+                          <div
+                            v-for="eventSpan in getAvatarSpansInRow(eventRow)"
+                            :key="`avatars-${eventSpan.event.id}-${eventSpan.startCol}`"
+                            class="flex items-center gap-0 shrink-0 cursor-pointer hover:opacity-90"
+                            @click.stop="openEditModal(eventSpan.event)"
                           >
+                            <UTooltip
+                              v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
+                              :key="resp.id"
+                              :text="resp.nombre"
+                            >
                             <UAvatar
                               :src="resp.avatar || undefined"
                               :alt="resp.nombre"
-                              size="xs"
+                              size="sm"
                               class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
                               :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
                             />
@@ -376,12 +383,13 @@
                           <button
                             v-if="getEventResponsables(eventSpan.event).length > 2"
                             type="button"
-                            class="w-5 h-5 min-w-[20px] min-h-[20px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 cursor-pointer shrink-0"
-                            title="Ver todos los responsables"
-                            @click.stop="openResponsablesModal(eventSpan.event)"
-                          >
-                            +
-                          </button>
+                            class="w-6 h-6 min-w-[24px] min-h-[24px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 shrink-0"
+                              title="Ver todos los responsables"
+                              @click.stop="openResponsablesModal(eventSpan.event)"
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1465,17 +1473,9 @@ const getMultiDayEventStyle = (span: EventSpan) => {
   }
 }
 
-// Posición de los avatares en la columna del sábado (celda vacía)
-const getEventSpanAvatarStyle = (span: EventSpan) => {
-  const colWidth = 100 / 7
-  const saturdayCol = 5
-  return {
-    left: `calc(${saturdayCol * colWidth}% + 4px)`,
-    width: `calc(${colWidth}% - 8px)`,
-    top: 0,
-    height: '100%',
-  }
-}
+// Spans de una fila que muestran avatares (evento termina en semana y tiene responsables)
+const getAvatarSpansInRow = (eventRow: EventSpan[]) =>
+  eventRow.filter(span => span.isEnd && getEventResponsables(span.event).length > 0)
 
 // Días de un mes para la vista de rango (semana empieza lunes)
 const getCalendarDaysForMonth = (year: number, month: number) => {

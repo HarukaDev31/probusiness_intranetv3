@@ -626,10 +626,15 @@ export const useCalendarStore = () => {
   // ============================================
 
   const getEventColors = (event: CalendarEvent, options?: { usePriority?: boolean }): string[] => {
-    // Evento completado (todos los responsables en COMPLETADO) → gris
     const charges = event.charges || []
-    if (charges.length > 0 && charges.every((c: { status?: string }) => c.status === 'COMPLETADO')) {
+    // Jefe: gris si todos los miembros completaron el evento
+    if (!options?.usePriority && charges.length > 0 && charges.every((c: { status?: string }) => c.status === 'COMPLETADO')) {
       return ['#9ca3af']
+    }
+    // No-jefe: gris si yo completé (mi charge está en COMPLETADO)
+    if (options?.usePriority && charges.length > 0) {
+      const myCharge = charges.find((c: { user_id: number; status?: string }) => c.user_id === Number(currentId.value))
+      if (myCharge?.status === 'COMPLETADO') return ['#9ca3af']
     }
     if (options?.usePriority) {
       return [PRIORITY_COLORS[event.priority] ?? '#3b82f6']
