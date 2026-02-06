@@ -90,6 +90,8 @@ interface Props {
   responsables: CalendarResponsable[]
   contenedores: CalendarContenedor[]
   calendarPermissions: any
+  /** ID del usuario actual: si el responsable es este usuario, se muestra "Yo" en lugar del nombre (para no jefe) */
+  currentUserId?: number | null
   /** En true, los filtros se muestran en línea (ej. dentro del header) sin barra propia */
   inline?: boolean
   /** Barra resumida: controles más estrechos y una sola fila */
@@ -135,12 +137,13 @@ const endDatePlaceholder = computed(() => {
   return new CalendarDate(nextMonth.year, nextMonth.month, 1)
 })
 
-// Opciones para selects
+// Opciones para selects (para no jefe solo llegan "Todos" + usuario actual, mostramos "Yo" para él)
 const responsableOptions = computed(() => {
   const options: { label: string; value: number | null; color?: string }[] = [{ label: 'Todos', value: null }]
+  const uid = props.currentUserId != null ? Number(props.currentUserId) : null
   props.responsables.forEach(r => {
     options.push({
-      label: r.nombre,
+      label: uid !== null && r.id === uid ? 'Yo' : r.nombre,
       value: r.id,
       color: props.getResponsableColor(r.id, r.nombre)
     } as any)

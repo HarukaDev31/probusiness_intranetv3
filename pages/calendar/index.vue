@@ -8,9 +8,10 @@
         
         <CalendarFilters
           v-if="showCalendarFilters"
-          :responsables="responsables"
+          :responsables="responsablesForFilter"
           :contenedores="contenedores"
           :calendar-permissions="calendarPermissions"
+          :current-user-id="Number(currentUserId) || null"
           :initial-filters="filters"
           :get-responsable-color="getResponsableColor"
           inline
@@ -819,6 +820,14 @@ const showCalendarFilters = computed(() => {
   return isJefeImportaciones.value || isCoordinacionOrDocumentacion.value
 })
 
+// Para el filtro de responsable: jefe ve todos; quien no es jefe solo ve "Todos" y "Yo" (él mismo)
+const responsablesForFilter = computed(() => {
+  if (isJefeImportaciones.value) return responsables.value
+  const uid = Number(currentUserId.value) || 0
+  const me = responsables.value.find(r => r.id === uid)
+  return me ? [me] : []
+})
+
 // Verificar si mostrar progreso
 const showProgress = computed(() => {
   return isJefeImportaciones.value && calendarPermissions.value.canViewTeamProgress
@@ -951,13 +960,18 @@ const handleFilterChange = async (newFilters: any) => {
       }
     }
   }
-  // Construir payload explícito para que la petición envíe siempre los filtros
+  // Construir payload explícito: cuando es "Todos" no enviar responsable_id para que el back traiga todos
   const payload: Record<string, unknown> = { ...filters.value }
   if (newFilters.contenedor_ids !== undefined) {
     payload.contenedor_ids = Array.isArray(newFilters.contenedor_ids) ? newFilters.contenedor_ids : undefined
   }
   if ('responsable_id' in newFilters) {
-    payload.responsable_id = newFilters.responsable_id ?? undefined
+    const rid = newFilters.responsable_id ?? undefined
+    if (rid !== undefined && rid !== null) {
+      payload.responsable_id = rid
+    } else {
+      delete payload.responsable_id
+    }
   }
   await getEvents(payload as CalendarFiltersType, true)
   if (calendarPermissions.value.canViewTeamProgress) {
