@@ -155,17 +155,26 @@ const selectedResponsableOption = computed(() => {
   return responsableOptions.value.find(opt => opt.value === id) ?? responsableOptions.value[0]
 })
 
+/** Valor especial para la opción "Todos" (no es un id real de contenedor) */
+const CONTENEDOR_TODOS_VALUE = -1
+
 const contenedorOptionsMulti = computed(() => {
-  return props.contenedores.map(c => ({
-    label: c.nombre || c.codigo || `#${c.id}`,
-    value: c.id
-  }))
+  const options: { label: string; value: number }[] = [
+    { label: 'Todos', value: CONTENEDOR_TODOS_VALUE }
+  ]
+  props.contenedores.forEach(c => {
+    options.push({
+      label: c.nombre || c.codigo || `#${c.id}`,
+      value: c.id
+    })
+  })
+  return options
 })
 
 const selectedContenedorOptions = computed(() => {
   const ids = selectedContenedorIds.value
-  if (ids.length === 0) return []
-  return contenedorOptionsMulti.value.filter(opt => ids.includes(opt.value))
+  if (ids.length === 0) return [contenedorOptionsMulti.value[0]]
+  return contenedorOptionsMulti.value.filter(opt => opt.value !== CONTENEDOR_TODOS_VALUE && ids.includes(opt.value))
 })
 
 // Label del rango de fechas
@@ -190,9 +199,11 @@ const onResponsableSelect = (val: unknown) => {
 
 const onContenedorIdsChange = (val: unknown) => {
   const arr = Array.isArray(val) ? val : []
-  selectedContenedorIds.value = arr
+  const ids = arr
     .map((v: unknown) => (typeof v === 'object' && v && 'value' in v ? (v as { value: number }).value : v))
     .filter((id): id is number => typeof id === 'number')
+  const hasTodos = ids.includes(CONTENEDOR_TODOS_VALUE)
+  selectedContenedorIds.value = hasTodos ? [] : ids.filter(id => id !== CONTENEDOR_TODOS_VALUE)
   emitFilters()
 }
 

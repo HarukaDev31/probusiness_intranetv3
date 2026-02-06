@@ -642,7 +642,7 @@
     />
 
     <!-- Modal: resto de eventos del día / semana (sin redirigir) -->
-    <UModal :open="showMoreEventsModal" @close="closeMoreEventsModal">
+    <UModal v-model:open="showMoreEventsModal" @update:open="onMoreEventsModalOpenChange">
       <template #header>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ moreEventsTitle }}</h3>
       </template>
@@ -852,6 +852,13 @@ const closeResponsablesModal = () => {
 const closeMoreEventsModal = () => {
   showMoreEventsModal.value = false
   moreEventsList.value = []
+  moreEventsTitle.value = ''
+}
+const onMoreEventsModalOpenChange = (open: boolean) => {
+  if (!open) {
+    moreEventsList.value = []
+    moreEventsTitle.value = ''
+  }
 }
 const openEventFromMoreModal = (event: CalendarEvent) => {
   closeMoreEventsModal()
