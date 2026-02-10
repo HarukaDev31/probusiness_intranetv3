@@ -23,6 +23,9 @@
       :show-skeleton="true"
       :skeleton-rows="6"
       :skeleton-cols="9"
+      :show-new-button="isAdmin"
+      new-button-label="Crear viático o reintegro"
+      :on-new-button-click="handleNewButtonClick"
       empty-state-message="No se encontraron viáticos pendientes que coincidan con los criterios de búsqueda."
       @update:search-query="handleSearch" 
       @update:primary-search="handleSearch"
@@ -42,6 +45,7 @@
 import { ref, watch, onMounted, computed, h } from 'vue'
 import { useViaticos } from '~/composables/useViaticos'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
@@ -50,14 +54,18 @@ import { formatDateTimeToDmy, formatCurrency } from '~/utils/formatters'
 import { ROLES } from '~/constants/roles'
 import EvidenciasModal from '~/components/viaticos/EvidenciasModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
+import CreateViaticoModal from '~/components/viaticos/CreateViaticoModal.vue'
 import type { FileItem } from '~/types/commons/file'
-import type { ViaticoPago } from '~/types/viatico'
+import type { ViaticoPago, CreateViaticoRequest } from '~/types/viatico'
 
-const { viaticos, loading, error, pagination, loadPendientes, getStatusColor, getStatusLabel } = useViaticos()
+const { viaticos, loading, error, pagination, loadPendientes, createViatico, getStatusColor, getStatusLabel } = useViaticos()
 const { hasRole } = useUserRole()
+const { showSuccess, showError } = useModal()
+const { withSpinner } = useSpinner()
 const overlay = useOverlay()
 const evidenciasModal = overlay.create(EvidenciasModal)
 const modalPreview = overlay.create(ModalPreview)
+const createViaticoModal = overlay.create(CreateViaticoModal)
 
 const search = ref('')
 const filters = ref<Record<string, any>>({})
@@ -67,6 +75,30 @@ const isAdmin = computed(() => hasRole(ROLES.ADMINISTRACION))
 
 if (!isAdmin.value) {
   navigateTo('/viaticos')
+}
+
+const handleNewButtonClick = () => {
+  if (!isAdmin.value) return
+  createViaticoModal.open({
+    onClose: () => createViaticoModal.close(),
+    onSave: async (data: CreateViaticoRequest) => {
+      try {
+        await withSpinner(async () => {
+          await createViatico(data)
+          showSuccess('Viático creado', 'El viático ha sido creado exitosamente')
+          createViaticoModal.close()
+          await loadPendientes({
+            page: pagination.value.current_page,
+            per_page: pagination.value.per_page,
+            search: search.value,
+            ...filters.value
+          })
+        })
+      } catch (err: any) {
+        showError('Error al crear viático', err.message || 'Error desconocido')
+      }
+    }
+  })
 }
 
 const columns: TableColumn<any>[] = [
