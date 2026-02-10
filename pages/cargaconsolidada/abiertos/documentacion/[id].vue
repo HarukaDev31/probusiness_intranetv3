@@ -72,7 +72,7 @@
 
                     <!-- FileUploader para este folder -->
                     <FileUploader 
-                    :disabled="currentRole!=ROLES.DOCUMENTACION"
+                    :disabled="currentRole!=ROLES.DOCUMENTACION && currentRole!=ROLES.JEFE_IMPORTACIONES"
                     :accepted-types="acceptedFileTypes" :custom-message="uploadMessage" :immediate="false"
                     :show-remove-button="folder.id!=1"
                         :showSaveButton="true" :initial-files="folder.file_url ? [{

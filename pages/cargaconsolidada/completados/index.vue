@@ -10,7 +10,7 @@
         />
 
 
-        <div v-if="isDesktop || currentRole==ROLES.DOCUMENTACION">
+        <div v-if="isDesktop || currentRole==ROLES.DOCUMENTACION || currentRole==ROLES.JEFE_IMPORTACIONES">
             <DataTable title="Carga Consolidada Completada"  :show-pagination="false"   icon="" :show-title="true" :data="consolidadoData" :columns="getColumns()" :loading="loading"
             :current-page="currentPage" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="search" :show-secondary-search="false"
@@ -562,6 +562,7 @@ const almacenColumns: TableColumn<any>[] = [
 const getColumns = ()=>{
     switch(currentRole.value){
         case ROLES.DOCUMENTACION:
+        case ROLES.JEFE_IMPORTACIONES:
             return documentacionColumns
         case ROLES.CONTENEDOR_ALMACEN:
             return almacenColumns

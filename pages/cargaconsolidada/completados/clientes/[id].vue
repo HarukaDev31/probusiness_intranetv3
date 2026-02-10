@@ -854,6 +854,7 @@ const columnsDocumentacion: TableColumn<any>[] = [
 const getColumnsGeneral = () => {
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
+        case ROLES.JEFE_IMPORTACIONES:
             return columnsDocumentacion
         case ROLES.COORDINACION:
             return columnsCoordinacion

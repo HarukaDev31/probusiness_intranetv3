@@ -872,6 +872,8 @@ const getColumnsGeneral = () => {
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
             return columnsDocumentacion
+        case ROLES.JEFE_IMPORTACIONES:
+            return columnsDocumentacion
         case ROLES.COORDINACION:
             return columnsCoordinacion
         default:

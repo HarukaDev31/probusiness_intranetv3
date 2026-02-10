@@ -339,7 +339,7 @@
                     <template #header>
                         <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
-                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION" />
+                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500"  v-if="currentRole !== ROLES.DOCUMENTACION && currentRole !== ROLES.JEFE_IMPORTACIONES" />
                                 <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
                                     Documentación China
                                 </h3>
