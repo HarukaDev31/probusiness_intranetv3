@@ -383,6 +383,7 @@ const {
   currentUserId,
   getEvents,
   updateEventStatus,
+  updateChargeStatus,
   updateEventPriority,
   updateEventNotes,
   updateChargeNotes,
@@ -639,9 +640,20 @@ const clearDateFilter = () => {
 }
 
 const handleStatusUpdate = async (eventId: number, status: CalendarEventStatus) => {
-  const success = await updateEventStatus(eventId, status)
+  let success: boolean
+  if (calendarPermissions.value.canEditAnyStatus) {
+    success = await updateEventStatus(eventId, status)
+  } else {
+    const activity = visibleActivities.value.find(a => a.id === eventId)
+    const myCharge = activity ? getMyCharge(activity) : undefined
+    if (!myCharge) {
+      showError('Error', 'No puedes actualizar el estado de esta actividad')
+      return
+    }
+    success = await updateChargeStatus(myCharge.id, status)
+  }
   if (success) {
-    showSuccess('Éxito', 'Estado de la actividad actualizado correctamente')
+    showSuccess('Éxito', 'Estado actualizado correctamente')
     await applyFilters()
   } else {
     showError('Error', 'No se pudo actualizar el estado')
@@ -717,11 +729,10 @@ const closeTrackingModal = () => {
   trackingActivity.value = null
 }
 
-const handleTrackingStatusUpdate = async (_chargeId: number, status: CalendarEventStatus) => {
-  if (!trackingActivity.value) return
-  const success = await updateEventStatus(trackingActivity.value.id, status)
+const handleTrackingStatusUpdate = async (chargeId: number, status: CalendarEventStatus) => {
+  const success = await updateChargeStatus(chargeId, status)
   if (success) {
-    showSuccess('Éxito', 'Estado de la actividad actualizado correctamente')
+    showSuccess('Éxito', 'Estado actualizado correctamente')
     await applyFilters()
   } else {
     showError('Error', 'No se pudo actualizar el estado')
