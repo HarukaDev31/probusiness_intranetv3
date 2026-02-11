@@ -319,6 +319,11 @@ const clientesColumns = ref<TableColumn<any>[]>([
     }
   },
   {
+    accessorKey: 'origen',  
+    header: 'Origen',
+    cell: ({ row }) => row.original.origen || '—'
+  },
+  {
     accessorKey: 'registrado',
     header: 'Registrado',
     cell: ({ row }) => h(UBadge, { label: row.original.delivery_form_registered_at ? 'Si' : 'No', color: row.original.delivery_form_registered_at ? 'success' : 'error' })
