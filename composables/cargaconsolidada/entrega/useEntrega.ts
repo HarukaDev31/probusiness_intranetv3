@@ -520,6 +520,31 @@ export const useEntrega = () => {
     }, 'Descargando plantillas...')
   }
 
+  /**
+   * Exportar clientes de entrega a Excel (Nombre de cliente, Dni, WhatsApp, T. cliente, T. entrega, Nombre de la provincia, Origen).
+   */
+  const exportClientesExcel = async (idContenedor?: number) => {
+    return await withSpinner(async () => {
+      const cid = idContenedor ?? contenedorId.value
+      if (!cid) {
+        throw new Error('ID de contenedor no disponible')
+      }
+      const blob = await EntregaService.exportClientesExcel(cid, { search: search.value })
+      const url = window.URL.createObjectURL(new Blob([blob]))
+      const link = document.createElement('a')
+      link.href = url
+      const now = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`
+      link.setAttribute('download', `clientes-entrega-${carga.value ?? cid}-${ts}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      return { success: true }
+    }, 'Exportando Excel...')
+  }
+
   const handleSearch = (value: string) => {
     search.value = value
     pagination.value.current_page = 1
@@ -908,6 +933,7 @@ export const useEntrega = () => {
     loadingHeaders,
     getHeaders,
     downloadPlantillas,
+    exportClientesExcel,
     // delivery
     getDelivery,
     deliveryFilterConfig,

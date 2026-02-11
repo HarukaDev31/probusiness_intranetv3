@@ -3,10 +3,11 @@
     <DataTable v-if="activeTab === 'clientes'" title="" :data="clientes" :columns="clientesColumns" :loading="loading"
       icon="" :show-pagination="false" :current-page="currentPage" :total-pages="totalPages"
       :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
-      :show-secondary-search="false" :show-filters="true" :filter-config="clientesFilterConfig" :show-export="false"
+      :show-secondary-search="false" :show-filters="true" :filter-config="clientesFilterConfig" :show-export="true"
     empty-state-message="No se encontraron registros de entrega." @update:primary-search="handleClientesSearch"
     @page-change="handleClientesPageChange" @items-per-page-change="handleClientesItemsPerPageChange"
     @filter-change="handleClientesFilterChange" @clear-filters="onClearClientesFilters"
+    @export="handleExportClientesExcel"
     :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
   :previous-page-url="`/cargaconsolidada/completados/pasos/${id}`">
       <template #actions>
@@ -173,6 +174,7 @@ const {
   handleClientesItemsPerPageChange,
   clearClientesFilters,
   downloadPlantillas,
+  exportClientesExcel,
   clearFilters,
   headers,
   headersEntregas,
@@ -251,6 +253,15 @@ const handleCobroMessage = async (row: any) => {
     }
   }, 'Enviando cobro...')
 }
+const handleExportClientesExcel = async () => {
+  const result = await exportClientesExcel(id)
+  if (result?.success) {
+    showSuccess('Exportar', 'Excel descargado correctamente')
+  } else {
+    showError('Error', (result as any)?.error || 'No se pudo exportar el Excel')
+  }
+}
+
 const copyToClipboard = async (url: string, type: string) => {
   try {
     await navigator.clipboard.writeText(url)
@@ -323,6 +334,12 @@ const clientesColumns = ref<TableColumn<any>[]>([
       const color = label === 'Lima' ? 'primary' : label === 'Provincia' ? 'warning' : 'neutral'
       return h(UBadge, { label, color, variant: 'soft' })
     }
+  },
+  //origen
+  {
+    accessorKey: 'origen',  
+    header: 'Origen',
+    cell: ({ row }) => row.original.origen || '—'
   },
   {
     accessorKey: 'registrado',

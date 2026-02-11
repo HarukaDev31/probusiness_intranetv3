@@ -106,6 +106,24 @@ export class  EntregaService extends BaseService {
     }
   }
 
+  /** Exportar clientes de entrega a Excel (blob) */
+  static async exportClientesExcel(idContenedor: number, params?: { search?: string }): Promise<Blob> {
+    try {
+      const queryParams = new URLSearchParams()
+      if (params?.search) queryParams.append('search', params.search)
+      const qs = queryParams.toString()
+      const response = await this.apiCall<Blob>(`${this.baseUrl}/clientes/${idContenedor}/export-excel${qs ? `?${qs}` : ''}`, {
+        method: 'GET',
+        responseType: 'blob',
+        headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al exportar clientes a Excel:', error)
+      throw error
+    }
+  }
+
   static async marcarRegistrado(data: { id_cotizacion: number }): Promise<{ success: boolean }> {
     try {
       const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/marcar-registrado`, {

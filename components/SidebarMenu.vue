@@ -13,10 +13,6 @@
       </NuxtLink>
     </div>
 
-
-
-
-    <!-- Nav: scrollable -->
     <nav class="px-2 overflow-y-auto flex-1">
       <!-- Floating midpoint control: always show collapse chevron on desktop -->
       <div class="absolute right-[-12px] top-1/2 transform -translate-y-1/2 z-50 hidden lg:block">

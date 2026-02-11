@@ -91,19 +91,7 @@ const onItemsPerPageChange = (limit: number) => {
 
 // Configuración de filtros para DataTable
 const filterConfig = computed(() => [
-  {
-    key: 'categoria',
-    label: 'Categoría',
-    type: 'select',
-    placeholder: 'Seleccionar categoría',
-    options: [
-      { label: 'Todos', value: 'todos' },
-      { label: 'Cliente', value: 'Cliente' },
-      { label: 'Recurrente', value: 'Recurrente' },
-      { label: 'Premium', value: 'Premium' },
-      { label: 'Inactivo', value: 'Inactivo' }
-    ]
-  },
+  
   {
     key: 'fecha_inicio',
     label: 'Fecha Inicio',
@@ -127,6 +115,19 @@ const filterConfig = computed(() => [
       { label: 'Todos', value: 'todos' },
       { label: 'Curso', value: 'Curso' },
       { label: 'Consolidado', value: 'Consolidado' },
+    ]
+  },
+  {
+    key: 'categoria',
+    label: 'Categoría',
+    type: 'select',
+    placeholder: 'Seleccionar categoría',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      { label: 'Cliente', value: 'Cliente' },
+      { label: 'Recurrente', value: 'Recurrente' },
+      { label: 'Premium', value: 'Premium' },
+      { label: 'Inactivo', value: 'Inactivo' }
     ]
   },
 ])
