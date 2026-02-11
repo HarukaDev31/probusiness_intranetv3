@@ -561,7 +561,6 @@ const clientesColumns = ref<TableColumn<any>[]>([
     id: 'actions',
     header: 'Accion',
     cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
-      //replace with hamburger
       h(UButton, {
         size: 'xs',
         icon: 'iconamoon:menu-burger-horizontal',
@@ -693,7 +692,12 @@ const entregasColumns = ref<TableColumn<any>[]>([
     }
   },
   {
-    id: 'accion', header: 'Accion', cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
+    id: 'accion', header: 'Accion', cell: ({ row }) => h('div', { class: 'flex gap-1 items-center flex-wrap' }, [
+      h(UButton, {
+        size: 'xs', icon: 'i-heroicons-pencil-square', variant: 'ghost', color: 'primary',
+        label: '', title: 'Ir a firmar cargo de entrega',
+        onClick: () => navigateTo(`/cargaconsolidada/completados/entrega/firma-carga/${row.original.id_cotizacion || row.original.id}?id_contenedor=${id}`)
+      }),
       h(UButton, { size: 'xs', icon: 'i-heroicons-eye', variant: 'ghost', color: 'neutral', 'aria-label': 'Ver detalle', title: 'Ver detalle', onClick: async () => goToClienteDetalle(row.original) }),
       h(UButton, { size: 'xs', icon: 'i-heroicons-trash', variant: 'ghost', color: 'error', 'aria-label': 'Eliminar registro', title: 'Eliminar registro', onClick: () => handleEliminarRegistro(row.original) })
     ])

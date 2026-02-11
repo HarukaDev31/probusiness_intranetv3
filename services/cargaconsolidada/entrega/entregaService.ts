@@ -456,6 +456,51 @@ export class  EntregaService extends BaseService {
       throw error
     }
   }
+  // --- FIRMA CARGA ENTREGA ---
+  static async getCargoEntregaPdf(idContenedor: number, idCotizacion: number): Promise<{
+    success: boolean
+    data?: {
+      pdf_url?: string
+      pdf_url_firmado?: string
+      cargo_entrega_pdf_url?: string
+      cargo_entrega_pdf_firmado_url?: string
+      nombre?: string
+      telefono?: string
+    }
+    error?: string
+  }> {
+    try {
+      const response = await this.apiCall<{
+        success: boolean
+        data?: Record<string, any>
+        error?: string
+      }>(`${this.baseUrl}/cargo-entrega-pdf/${idContenedor}/${idCotizacion}`)
+      return response
+    } catch (error) {
+      console.error('Error al obtener PDF de cargo de entrega:', error)
+      throw error
+    }
+  }
+
+  static async signCargoEntrega(payload: {
+    id_contenedor: number
+    id_cotizacion: number
+    nombre: string
+    dni: string
+    signature: string
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(
+        `${this.baseUrl}/cargo-entrega-firmar`,
+        { method: 'POST', body: payload }
+      )
+      return response
+    } catch (error) {
+      console.error('Error al firmar cargo de entrega:', error)
+      throw error
+    }
+  }
+
   // --- ELIMINAR REGISTRO EN LISTA DE ENTREGAS ---
   static async deleteEntregaRegistro(registroId: number): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
