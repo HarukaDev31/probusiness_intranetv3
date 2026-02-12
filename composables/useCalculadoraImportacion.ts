@@ -762,7 +762,7 @@ export const useCalculadoraImportacion = () => {
       clienteInfo.value.ruc = cliente.ruc || payload.ruc_cliente || ''
       clienteInfo.value.empresa = cliente.empresa || payload.razon_social || ''
       clienteInfo.value.correo = cliente.correo || payload.correo_cliente || ''
-      clienteInfo.value.whatsapp = cliente.telefono || payload.whatsapp_cliente || ''
+      clienteInfo.value.whatsapp = payload.whatsapp_cliente ?? cliente.telefono ?? ''
       clienteInfo.value.tipoCliente = payload.tipo_cliente || clienteInfo.value.tipoCliente
       clienteInfo.value.qtyProveedores = Number(payload.qty_proveedores || payload.qtyProveedores || 0)
       clienteInfo.value.tipoDocumento = cliente.tipo_documento || payload.tipo_documento || 'DNI'

@@ -99,11 +99,8 @@
                 <template #label>
                   WhatsApp <span class="text-red-500">*</span>
                 </template>
-                <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
-                  class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
-                  @update:model-value="onClienteSelected">
-                  {{ displayWhatsapp }}
-                </UInputMenu>
+                <UInput v-model="clienteInfo.whatsapp" type="text" placeholder="51 934 958 839"
+                  class="w-full" />
               </UFormField>
             </div>
 
@@ -148,11 +145,8 @@
                 <template #label>
                   WhatsApp <span class="text-red-500">*</span>
                 </template>
-                <UInputMenu v-model="selectedCliente" required :items="clientes" placeholder="51 934 958 839"
-                  class="flex-1 w-full" @update:searchTerm="getClientesByWhatsapp"
-                  @update:model-value="onClienteSelected">
-                  {{ displayWhatsapp }}
-                </UInputMenu>
+                <UInput v-model="clienteInfo.whatsapp" type="text" placeholder="51 934 958 839"
+                  class="w-full" />
               </UFormField>
             </div>
 
