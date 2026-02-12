@@ -686,6 +686,16 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     }
                 }) : null,
                 h(UButton, {
+                    icon: 'i-heroicons-eye',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'info',
+                    title: 'Ver documentación cotizadores',
+                    onClick: () => {
+                        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/documentacion/${row.original.id}`)
+                    }
+                }),
+                h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
                     activeColor: 'error',
@@ -931,6 +941,16 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         copyToClipboard(getSignUrl(row.original.uuid), 'Enlace de firma copiado')
                     }
                 }) : null,
+                h(UButton, {
+                    icon: 'i-heroicons-eye',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'primary',
+                    title: 'Documentación',
+                    onClick: () => {
+                        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/documentacion/${row.original.id}`)
+                    }
+                }),
                 h(UButton, {
                     icon: 'i-heroicons-arrow-right',
                     variant: 'ghost',

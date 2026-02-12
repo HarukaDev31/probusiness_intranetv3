@@ -258,7 +258,6 @@ const isLoadingExcel = ref(false)
 const isImage = computed(() => {
     if (!props.file?.file_name) return false
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
-    console.log(extension)
     return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg','jpeg'].includes(extension || '')
 })
 
