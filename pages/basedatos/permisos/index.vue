@@ -368,6 +368,7 @@ function openCreateModal() {
       return null
     },
     onConsolidadoChange: async (id: number) => {
+      permisoModal.patch({ loadingClientes: true, clienteOptions: [] })
       await loadClientesByConsolidado(id)
       permisoModal.patch({ clienteOptions: clienteOptions.value, loadingClientes: loadingClientes.value })
     },
@@ -429,6 +430,7 @@ function openEditModal(t: TramiteAduana, viewOnly = false) {
       return null
     },
     onConsolidadoChange: async (id: number) => {
+      permisoModal.patch({ loadingClientes: true, clienteOptions: [] })
       await loadClientesByConsolidado(id)
       permisoModal.patch({ clienteOptions: clienteOptions.value, loadingClientes: loadingClientes.value })
     },

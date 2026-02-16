@@ -119,14 +119,13 @@
         <UFormField label="Derecho de trámite (S/.)" required :error="errors.derecho_entidad">
           <UInput
             v-model="form.derecho_entidad"
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputmode="decimal"
             placeholder="0.00"
             size="lg"
             class="w-full"
             :disabled="readOnly"
-            @update:model-value="(v: string) => form.derecho_entidad = formatDecimalInput(v)"
+            @blur="form.derecho_entidad = formatDecimalOnBlur(form.derecho_entidad)"
           />
         </UFormField>
 
@@ -134,14 +133,13 @@
         <UFormField label="Precio (S/.)" required :error="errors.precio">
           <UInput
             v-model="form.precio"
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputmode="decimal"
             placeholder="0.00"
             size="lg"
             class="w-full"
             :disabled="readOnly"
-            @update:model-value="(v: string) => form.precio = formatDecimalInput(v)"
+            @blur="form.precio = formatDecimalOnBlur(form.precio)"
           />
         </UFormField>
 
@@ -308,9 +306,12 @@ watch(
   { deep: true }
 )
 
-function formatDecimalInput(v: string): string {
-  const n = parseFloat(String(v).replace(',', '.'))
-  if (Number.isNaN(n)) return ''
+/** Formatea a 2 decimales solo al salir del campo; mientras se escribe se deja el valor tal cual. */
+function formatDecimalOnBlur(v: string): string {
+  const s = String(v).trim().replace(',', '.')
+  if (s === '') return ''
+  const n = parseFloat(s)
+  if (Number.isNaN(n) || n < 0) return ''
   return n.toFixed(2)
 }
 
