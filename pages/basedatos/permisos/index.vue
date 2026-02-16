@@ -112,11 +112,7 @@ const filterConfig = computed(() => [
 
 const consolidadoOptions = computed(() =>
   consolidados.value.map(c => {
-    const carga = c.carga || ''
-    const anio = c.f_entrega
-      ? new Date(c.f_entrega).getFullYear()
-      : ''
-    const label = anio ? `#${carga} - ${anio}` : (carga ? `#${carga}` : `#${c.id}`)
+    const label = c.carga ? `#${c.carga}` : `#${c.id}`
     return { label, value: c.id }
   })
 )

@@ -478,9 +478,10 @@ function initializeForm() {
     form.value.derecho_entidad = String(props.tramite.derecho_entidad ?? '')
     form.value.precio = String(props.tramite.precio ?? '')
     form.value.estado = props.tramite.estado ?? null
-    selectedConsolidado.value = props.tramite.consolidado
-      ? { label: props.tramite.consolidado.codigo || props.tramite.consolidado.nombre || `#${props.tramite.id_consolidado}`, value: props.tramite.id_consolidado }
-      : null
+    const consolidadoOpt = props.consolidadoOptions?.find((o: { value: number }) => o.value === props.tramite!.id_consolidado)
+    selectedConsolidado.value = consolidadoOpt ?? (props.tramite
+      ? { label: `#${props.tramite.id_consolidado}`, value: props.tramite.id_consolidado }
+      : null)
     selectedCliente.value = props.tramite.cliente
       ? { label: props.tramite.cliente.nombre || `#${props.tramite.cliente.id}`, value: props.tramite.cliente.id }
       : null
