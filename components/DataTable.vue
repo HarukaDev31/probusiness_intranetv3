@@ -73,14 +73,10 @@
                       :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
                       :placeholder="filter.placeholder" class="w-full"  
                       @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
-                    <!-- Filtro de tipo select -->
-                    <USelect v-else :model-value="(() => {
-                        const value = filtersValue && filtersValue[filter.key]
-                        return value
-                      })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
-                        @update:model-value="(value) => {
-                          handleFilterChange(filter.key, value)
-                        }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                    <!-- Filtro de tipo select: model-value no vacío (fallback primera opción) para cumplir SelectItem -->
+                    <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
+                        @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                        @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
                   </div>
                 </div>
 
@@ -125,13 +121,9 @@
                         :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
                         :placeholder="filter.placeholder" class="w-full"
                         @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
-                      <USelect v-else :model-value="(() => {
-                          const value = filtersValue && filtersValue[filter.key]
-                          return value
-                        })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
-                          @update:model-value="(value) => {
-                            handleFilterChange(filter.key, value)
-                          }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                      <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
+                          @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                          @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
                     </div>
                   </div>
 

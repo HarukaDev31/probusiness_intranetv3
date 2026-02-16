@@ -280,6 +280,14 @@ const {
   fetchUnreadCount
 } = useNotifications()
 
+// Refs para cleanup en onUnmounted (registrado de forma síncrona en setup)
+const notificationIntervalRef = ref<ReturnType<typeof setInterval> | null>(null)
+const cleanupListenersRef = ref<(() => void) | null>(null)
+onUnmounted(() => {
+  cleanupListenersRef.value?.()
+  if (notificationIntervalRef.value) clearInterval(notificationIntervalRef.value)
+})
+
 // Dark mode
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
@@ -471,31 +479,24 @@ onMounted(async () => {
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('auth_user_updated', handleAuthUserUpdate)
     window.addEventListener('resize', handleResize)
-
-    // Cleanup
-    onUnmounted(() => {
+    cleanupListenersRef.value = () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('auth_user_updated', handleAuthUserUpdate)
       window.removeEventListener('resize', handleResize)
-    })
+    }
   }
 
   // Cargar contador de notificaciones no leídas
   await fetchUnreadCount()
 
   // Actualizar contador cada 5 minutos
-  const interval = setInterval(async () => {
+  notificationIntervalRef.value = setInterval(async () => {
     try {
       await fetchUnreadCount()
     } catch (error) {
       console.error('Error actualizando contador de notificaciones:', error)
     }
   }, 1000 * 60 * 5) // 5 minutos
-
-  // Limpiar intervalo cuando el componente se desmonte
-  onUnmounted(() => {
-    clearInterval(interval)
-  })
 
   // Expandir ruta activa inicial
   const current = useRoute().path

@@ -8,6 +8,8 @@ export interface ConsolidadoParams {
     fecha_fin?: string
     estado_china?: string
     completado?: boolean | false
+    /** Filtrar por estado de documentación (ej. PENDIENTE). */
+    estado_documentacion?: string
 }
 
 export class ConsolidadoService extends BaseService {
@@ -53,6 +55,10 @@ export class ConsolidadoService extends BaseService {
 
             if (params.completado) {
                 cleanParams.completado = params.completado
+            }
+
+            if (params.estado_documentacion && params.estado_documentacion.trim()) {
+                cleanParams.estado_documentacion = params.estado_documentacion.trim()
             }
 
             const response = await this.apiCall<ContenedorResponse>(`${this.baseUrl}`, {

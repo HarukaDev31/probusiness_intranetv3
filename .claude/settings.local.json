@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Lenovo\\Desktop\\Proyectos\\Probusiness\\intranet_back\\app\\Models\\CargaConsolidada"
+    ]
+  }
+}
