@@ -10,6 +10,8 @@ export interface ConsolidadoParams {
     completado?: boolean | false
     /** Filtrar por estado de documentación (ej. PENDIENTE). */
     estado_documentacion?: string
+    /** Rol de vista (ej. Coordinación, Documentacion). Si el token es Jefe Importación, el backend usará este rol. */
+    role?: string
 }
 
 export class ConsolidadoService extends BaseService {
@@ -61,6 +63,10 @@ export class ConsolidadoService extends BaseService {
                 cleanParams.estado_documentacion = params.estado_documentacion.trim()
             }
 
+            if (params.role && params.role.trim()) {
+                cleanParams.role = params.role.trim()
+            }
+
             const response = await this.apiCall<ContenedorResponse>(`${this.baseUrl}`, {
                 method: 'GET',
                 params: cleanParams
@@ -85,9 +91,12 @@ export class ConsolidadoService extends BaseService {
         }
     }
 
-    static async getConsolidadoPasos(id: number): Promise<ContenedorPasosResponse> {
+    static async getConsolidadoPasos(id: number, role?: string): Promise<ContenedorPasosResponse> {
         try {
-            const response = await this.apiCall<ContenedorPasosResponse>(`${this.baseUrl}/pasos/${id}`, {
+            const params: Record<string, string> = {}
+            if (role && role.trim()) params.role = role.trim()
+            const qs = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : ''
+            const response = await this.apiCall<ContenedorPasosResponse>(`${this.baseUrl}/pasos/${id}${qs}`, {
                 method: 'GET'
             })
             return response

@@ -1,9 +1,9 @@
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, type Ref, type ComputedRef } from 'vue'
 import { ConsolidadoService } from '../../services/cargaconsolidada/consolidadoService'
 import type { PaginationInfo } from '../../types/data-table'
 import type { Contenedor, ContenedorFilters, ContenedorPasos } from '../../types/cargaconsolidada/contenedor'
 
-export const useConsolidado = () => {
+export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
     const consolidadoData = ref<Contenedor[]>([])
     const loading = ref(false)
     const error = ref<string | null>(null)
@@ -28,15 +28,16 @@ export const useConsolidado = () => {
     })
     const pasos=ref<ContenedorPasos[]>([])
     const validContainers=ref<any[]>([])
-    const getConsolidadoData = async () => {
+    const getConsolidadoData = async (roleOverride?: string) => {
         try {
             loading.value = true
             error.value = null
-
+            const role = roleOverride ?? (roleRef && 'value' in roleRef ? roleRef.value : undefined)
             const params: any = {
                 page: pagination.value.current_page,
                 limit: itemsPerPage.value
             }
+            if (role && String(role).trim()) params.role = String(role).trim()
 
             // Agregar búsqueda si existe
             if (search.value.trim()) {
@@ -138,10 +139,11 @@ export const useConsolidado = () => {
     const setCompletado = (completado: boolean) => {
         filters.value.completado = completado
     }
-    const getConsolidadoPasos = async (id: number) => {
+    const getConsolidadoPasos = async (id: number, roleOverride?: string) => {
         try {
             loading.value = true
-            const response = await ConsolidadoService.getConsolidadoPasos(id)
+            const role = roleOverride ?? (roleRef && 'value' in roleRef ? roleRef.value : undefined)
+            const response = await ConsolidadoService.getConsolidadoPasos(id, role)
             pasos.value = response.data
             loading.value = false
         } catch (error) {

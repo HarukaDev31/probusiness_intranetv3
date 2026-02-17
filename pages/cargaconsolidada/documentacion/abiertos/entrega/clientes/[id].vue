@@ -1,0 +1,722 @@
+<template>
+  <div class="p-6">
+    <PageHeader
+      :title="`Consolidado #${carga || ''}`"
+      :subtitle="clienteNombre || ''"
+      icon=""
+      class-add="justify-between md:justify-around mr-0 md:mr-20"
+      :hide-back-button="false"
+      @back="handleBack"
+    >
+      <template #actions>
+        <div class="flex gap-2 items-center">
+          <template v-if="!editable">
+            <UButton size="xl" color="primary" variant="solid" icon="i-heroicons-pencil-square" @click="toggleEdit">Editar</UButton>
+            <USelect
+              v-if="currentRole===ROLES.ADMINISTRACION || currentRole===ROLES.SUB_ADMINISTRACION"
+              :items="[{ label: 'No verificado', value: false }, { label: 'Verificado', value: true }]"
+              :model-value="isVerified"
+              size="sm"
+              class="w-36"
+              @update:model-value="handleVerifiedChange"
+            />
+          </template>
+          <template v-else>
+            <UButton size="xl" color="primary" variant="solid" icon="ic:baseline-save" :disabled="!canSave" @click="handleSave">Guardar</UButton>
+            <UButton size="xl" color="neutral" variant="outline" icon="i-heroicons-x-mark" @click="toggleEdit">Cancelar</UButton>
+          </template>
+        </div>
+      </template>
+    </PageHeader>
+
+      <div class="flex flex-col lg:flex-row gap-8 p-4 w-full justify-center">
+        <EntregaFormSkeleton v-if="!readyToRender" class="w-full md:max-w-4xl" />
+        <div v-else class="space-y-2 bg-white dark:bg-gray-800 p-4 rounded-lg shadow w-full md:max-w-4xl">
+        <h2 class="font-semibold text-xl p-4">{{ clienteNombre }}</h2>
+        <!-- Información de entrega -->
+        <div class="border-t border-gray-200" />
+        <section class="p-4">
+          <h3 class="font-semibold text-sm pb-4">Información de entrega</h3>
+          <div class="space-y-3 text-xs">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+              <div class="items-center gap-2">
+                <label class="pr-4 text-[11px] font-medium text-gray-500">Entrega:</label>
+                <UBadge :label="tipoClienteLabel" :color="isLima ? 'primary' : 'warning'" variant="soft" />
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">{{ isLima ? 'DNI - ID' : 'DNI - RUC' }}</label>
+                <UInput class="w-full md:w-1/4" v-model="form.documento" size="sm" :disabled="!editable" />
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Bultos</label>
+                <UInput class="w-full md:w-1/4" v-model="form.qty_box_china" size="sm" disabled />
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Peso</label>
+                <UInput class="w-full md:w-1/4" v-model="form.peso" size="sm" disabled />
+              </div>
+              
+              <div v-if="!isLima" class="flex items-center justify-between gap-4">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Tipo</label>
+                <USelect class="w-full md:w-1/4" :items="tipoReceptorOptions" v-model="form.r_type" size="sm" :disabled="!editable" placeholder="Seleccione" />
+              </div>
+              
+              <div v-if="isLima" class="flex items-center justify-between gap-4">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Licencia</label>
+                <UInput class="w-full md:w-1/4" v-model="form.licencia" size="sm" :disabled="!editable" />
+              </div>
+              <div v-if="isLima" class="flex items-center justify-between gap-4">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Placa de vehículo</label>
+                <UInput class="w-full md:w-1/4" v-model="form.placa" size="sm" :disabled="!editable" />
+              </div>
+            </div>
+            <div class="flex items-center w-full justify-between">
+              <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Productos</label>
+              <UInput class="w-full md:w-1/2" v-model="form.productos" size="sm" :disabled="!editable" />
+            </div>
+
+            <!-- Campos específicos por tipo -->
+            <div v-if="isLima" class="flex flex-col gap-2">
+              <div class="flex flex-col md:flex-row items-start md:items-center w-full justify-between gap-2">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre completo del chofer</label>
+                <UInput class="w-full md:w-1/2" v-model="form.nombre_chofer" size="sm" :disabled="!editable" />
+              </div>
+              <div class="flex flex-col md:flex-row items-start md:items-center w-full justify-between gap-2">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito del destino final</label>
+                <UInput class="w-full md:w-1/2" v-model="form.distrito" size="sm" :disabled="!editable" />
+              </div>
+              <div class="flex flex-col md:flex-row items-start md:items-center w-full justify-between gap-2">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección final de destino</label>
+                <UInput class="w-full md:w-1/2" v-model="form.direccion_final" size="sm" :disabled="!editable" />
+              </div>
+            </div>
+
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
+                <UInput class="w-full md:w-1/4" v-model="form.r_name" size="sm" :disabled="!editable" />
+              </div>
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Celular</label>
+                <UInput class="w-full md:w-1/4" v-model="form.r_phone" size="sm" :disabled="!editable" />
+              </div>
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Departamento</label>
+                <USelect class="w-full md:w-1/4" :items="departamentos" v-model="form.departamento_id" :disabled="!editable" placeholder="Seleccione" @update:model-value="onDepartamentoChange" />
+              </div>
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Provincia</label>
+                <USelect class="w-full md:w-1/4" :items="provincias" v-model="form.provincia_id" :disabled="!editable || !form.departamento_id" placeholder="Seleccione" @update:model-value="onProvinciaChange" />
+              </div>
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito</label>
+                <USelect class="w-full md:w-1/4" :items="distritos" v-model="form.distrito_id" :disabled="!editable || !form.provincia_id" placeholder="Seleccione" />
+              </div>
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Agencia</label>
+                <USelect class="w-full md:w-1/4" :items="agencias" v-model="form.id_agency" :disabled="!editable" placeholder="Seleccione" @update:model-value="onAgenciaChange" />
+              </div>
+              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">RUC de la agencia</label>
+                <UInput class="w-full md:w-1/4" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
+              </div>
+              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre de la agencia</label>
+                <UInput class="w-full md:w-1/4" v-model="form.agency_name" size="sm" :disabled="!editable" />
+              </div>
+              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección inicial de entrega</label>
+                <UInput class="w-full md:w-1/4" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
+              </div>
+              <div class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección final de entrega</label>
+                <UInput class="w-full md:w-1/4" v-model="form.agency_address_final_delivery" size="sm" :disabled="!editable" />
+              </div>
+              <div v-if="form.home_adress_delivery" class="flex items-center justify-between gap-4 w-full">
+                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección a domicilio</label>
+                <UInput class="w-full md:w-1/4" v-model="form.home_adress_delivery" size="sm" :disabled="!editable" />
+              </div>
+            </div>
+          </div>
+        </section>
+        <div class="border-t border-gray-200" />
+        <!-- Información de comprobante -->
+        <section class="p-4">
+          <h3 class="font-semibold mb-3 text-sm pb-4">Información de comprobante</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+            <div class="flex items-center justify-between gap-4">
+              <label class="w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">DNI / RUC</label>
+              <UInput class="w-1/2" v-model="form.comp_documento" size="sm" :disabled="!editable" />
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <label class="w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
+              <UInput class="w-1/2" v-model="form.comp_nombre" size="sm" :disabled="!editable" />
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <label class="w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Correo electrónico</label>
+              <UInput class="w-1/2" v-model="form.comp_email" size="sm" :disabled="!editable" />
+            </div>
+          </div>
+        </section>
+        <div class="border-t border-gray-200" />
+        <!-- Fotos de conformidad -->
+        <section class="p-4">
+          <h3 class="font-semibold mb-2 text-sm pb-4">Foto de conformidad de entrega:</h3>
+          <!-- Uploader para subir fotos (usa el componente común) -->
+          <div class="mb-3">
+            <FileUploader
+              ref="uploaderRef"
+              :multiple="true"
+              :acceptedTypes="['.jpg', '.jpeg', '.png', '.gif']"
+              :disabled="!editable"
+              :showSaveButton="false"
+              :showRemoveButton="editable"
+              :customMessage="'Selecciona o arrastra hasta 2 fotos'"
+              @files-selected="onUploaderFilesSelected"
+              @files-cleared="onUploaderCleared"
+              :initial-files="entregaDetalle?.conformidad?.map((item: any) => ({
+                id: item.id,
+                file_name: item.file_original_name,
+                file_url: item.file_url,
+                type: item.file_type,
+                size: item.file_size,
+                lastModified: 0,
+                file_ext: item.file_type
+              }))"
+              @error="onUploaderError"
+              @file-removed="(id: number) => onDeleteConformidad(id)"  
+            />
+          </div>
+
+          <div class="flex gap-4 flex-wrap items-start">
+            <!-- Thumbnails reales -->
+            <div
+              v-for="(f, i) in evidencia"
+              :key="i"
+              class="w-28 h-32 border rounded-lg flex items-center justify-center overflow-hidden relative bg-gray-50 cursor-pointer"
+              @click="onClickThumbnail(i)"
+            >
+              <img
+                v-if="getThumbUrl(i, f.url)"
+                :src="getThumbUrl(i, f.url)"
+                class="w-full h-full object-cover select-none"
+                :alt="`Foto de conformidad ${i + 1}`"
+                @dragstart.prevent
+              />
+              <span v-else class="text-[10px] text-gray-500">Sin imagen</span>
+              <!-- Acciones por thumbnail (eliminación inmediata deshabilitada; se gestiona en Guardar) -->
+            </div>
+
+            <!-- Inputs ocultos sólo para reemplazar cada foto -->
+            <input ref="fileInputReplace1" type="file" accept="image/*" class="hidden" @change="onPickReplace(1, $event)" />
+            <input ref="fileInputReplace2" type="file" accept="image/*" class="hidden" @change="onPickReplace(2, $event)" />
+
+            <p class="text-[10px] text-gray-500" v-if="editable">Puedes seleccionar 1 o 2 fotos y reemplazar thumbnails. Los cambios se guardan con el botón Guardar.</p>
+          </div>
+
+          <!-- Modal de vista previa -->
+          <ImageModal :isOpen="previewOpen" :imageUrl="previewUrl" @close="previewOpen = false" />
+        </section>
+      </div>
+    </div>
+  </div>
+</template>
+<script setup lang="ts">
+import { onMounted, ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useEntrega } from '@/composables/cargaconsolidada/entrega/useEntrega'
+import { UInput, USelect, UButton, UIcon, UBadge } from '#components'
+import PageHeader from '~/components/PageHeader.vue'
+import EntregaFormSkeleton from '~/components/EntregaFormSkeleton.vue'
+import FileUploader from '@/components/commons/FileUploader.vue'
+import ImageModal from '~/components/ImageModal.vue'
+import { LocationService } from '@/services/commons/locationService'
+import { useRouter } from 'vue-router'
+import { EntregaService } from '@/services/cargaconsolidada/entrega/entregaService'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
+import { useModal } from '~/composables/commons/useModal'
+import {useSpinner} from '~/composables/commons/useSpinner'
+const router = useRouter()
+
+// Props/params
+const route = useRoute()
+const id = Number(route.params.id) // id de cotizacion
+// El id del contenedor se derivará desde el detalle (entregaDetalle.id_contenedor)
+let contenedorId: number | null = null
+const cotizacionId = ref<number | null>(isNaN(id) ? null : id)
+// Obtener detalle desde composable (cache si se navegó desde listado)
+const { getEntregasDetalle, entregaDetalle, loading, getHeaders, carga, uploadConformidad, updateConformidad, deleteConformidad, saveClienteDetalle, setIsVerified } = useEntrega()
+const { currentRole } = useUserRole()
+const { showSuccess, showError } = useModal()
+const { withSpinner } = useSpinner()
+// Nombre del cliente (razon_social si existe, sino nombre)
+const clienteNombre = computed(() => (entregaDetalle.value as any)?.form_user || entregaDetalle.value?.nombre || '')
+// Back handler: go to parent Entregas tab when possible
+const handleBack = () => {
+  if (contenedorId) {
+    router.push({ path: `/cargaconsolidada/documentacion/abiertos/entrega/${contenedorId}`, query: { tab: 'entregas' } })
+  } else {
+    router.back()
+  }
+}
+
+// Derivar tipo de cliente desde el detalle: type_form (1 = Lima, 0 = Provincia)
+const typeFormValue = computed<number | null>(() => {
+  const tf: any = (entregaDetalle.value as any)?.type_form
+  if (tf === 1 || tf === '1') return 1
+  if (tf === 0 || tf === '0') return 0
+  return null
+})
+const isLima = computed(() => typeFormValue.value === 1)
+const tipoClienteLabel = computed(() => (isLima.value ? 'Lima' : 'Provincia'))
+
+// Opciones para tipo de documento del receptor (Provincia)
+const tipoReceptorOptions = [
+  { label: 'PERSONA NATURAL', value: 'PERSONA NATURAL' },
+  { label: 'EMPRESA', value: 'EMPRESA' }
+]
+
+
+// Formulario reactivo
+const form = ref<any>({
+  tipo_cliente: 'Lima',
+  tipo_entrega: 'Lima',
+  qty_box_china: '',
+  peso: '',
+  productos: '',
+
+  // Lima
+  documento: '',
+  licencia: '',
+  placa: '',
+  nombre_chofer: '',
+  direccion_final: '',
+  distrito: '',
+
+  // Provincia
+  agency_address_final_delivery: '',
+  agency_address_initial_delivery: '',
+  departamento_id: undefined,
+  provincia_id: undefined,
+  distrito_id: undefined,
+  id_agency: null,
+  agency_ruc: '',
+  agency_name: '',
+  home_adress_delivery: '',
+  r_type: '',
+  r_doc: '',
+  r_name: '',
+  r_phone: '',
+  // Comprobante
+  comp_documento: '',
+  comp_nombre: '',
+  comp_email: ''
+})
+
+// Verificación local: estado mostrado en la UI y sincronizado con `entregaDetalle`
+const isVerified = ref<boolean>(false)
+
+// Normaliza distintos formatos a booleano: true/false, 1/0, '1'/'0', 'true'/'false'
+const normalizeToBool = (v: any): boolean => {
+  if (v === true) return true
+  if (v === false) return false
+  if (v === 1 || v === '1') return true
+  if (v === 0 || v === '0') return false
+  const s = ('' + v).trim().toLowerCase()
+  if (s === 'true') return true
+  if (s === 'false') return false
+  return Boolean(v)
+}
+
+// Mantener `isVerified` en sincronía cuando cambie el detalle (por ejemplo, tras refetch)
+watch(() => entregaDetalle.value, (n) => {
+  try {
+    const raw = (n as any)?.is_verified ?? (n as any)?.isVerified
+    isVerified.value = normalizeToBool(raw)
+  } catch (e) {
+    isVerified.value = false
+  }
+}, { immediate: true })
+
+const initialSnapshot = ref<string>('')
+// Control para renderizar skeleton hasta que el form esté inicializado
+const readyToRender = ref<boolean>(false)
+type EvidenceItem = { url: string; key?: 'photo_1_url' | 'photo_2_url' }
+const evidencia = ref<EvidenceItem[]>([])
+const conformidadId = computed<number | null>(() => (entregaDetalle.value as any)?.conformidad_id ?? null)
+const editable = ref<boolean>(true) // En abiertos iniciamos en modo edición
+
+const snapshot = () => JSON.stringify(form.value)
+const dirty = computed(() => snapshot() !== initialSnapshot.value)
+
+const toggleEdit = () => {
+  editable.value = !editable.value
+  if (!editable.value) {
+    form.value = JSON.parse(initialSnapshot.value)
+  }
+}
+
+const handleSave = async () => {
+  if (!cotizacionId.value) return
+  // 1) Guardar formulario de cliente conforme contrato backend
+  const typeFormLocal = isLima.value ? 1 : 0
+  const payloadForm: any = { type_form: typeFormLocal }
+  const addIf = (key: string, val: any) => {
+    if (val !== undefined && val !== null && String(val) !== '') payloadForm[key] = val
+  }
+  // Campos comunes: siempre enviar productos (incluso vacío para permitir limpiar)
+  addIf('productos', form.value.productos)
+  if (isLima.value) {
+    // Lima
+    addIf('voucher_doc', form.value.comp_documento)
+    addIf('voucher_name', form.value.comp_nombre)
+    addIf('voucher_email', form.value.comp_email)
+    addIf('drver_name', form.value.nombre_chofer)
+    addIf('driver_plate', form.value.placa)
+    addIf('driver_doc', form.value.documento)
+    addIf('driver_license', form.value.licencia)
+    addIf('final_destination_place', form.value.direccion_final)
+    addIf('final_destination_district', form.value.distrito)
+  } else {
+    // Provincia
+    addIf('import_name', form.value.nombre)
+    addIf('r_type', form.value.r_type)
+    addIf('r_doc', form.value.r_doc)
+    addIf('r_name', form.value.r_name)
+    addIf('r_phone', form.value.r_phone)
+    addIf('id_agency', form.value.id_agency)
+    addIf('agency_ruc', form.value.agency_ruc)
+    addIf('agency_name', form.value.agency_name)
+    addIf('agency_address_initial_delivery', form.value.agency_address_initial_delivery)
+    addIf('agency_address_final_delivery', form.value.agency_address_final_delivery)
+    // Ubigeo IDs
+    addIf('id_department', form.value.departamento_id)
+    addIf('id_province', form.value.provincia_id)
+    addIf('id_district', form.value.distrito_id)
+    addIf('voucher_doc', form.value.comp_documento)
+    addIf('voucher_name', form.value.comp_nombre)
+    addIf('voucher_email', form.value.comp_email)
+  }
+  await saveClienteDetalle(cotizacionId.value, payloadForm)
+
+  // 2) Guardar fotos (create/update si hay picks nuevos)
+  const id_contenedor = contenedorId as number
+  const id_cotizacion = cotizacionId.value as number
+  const typeFormForPhotos = isLima.value ? 1 : 0
+  try {
+    if (picked1.value || picked2.value) {
+      await uploadConformidad({ id_contenedor: id_contenedor as number, id_cotizacion: id_cotizacion as number, type_form: typeFormForPhotos as 0 | 1, photo_1: picked1.value || undefined, photo_2: picked2.value || undefined })
+
+      picked1.value = null
+      picked2.value = null
+      if (uploaderRef.value?.clearSelectedFiles) uploaderRef.value.clearSelectedFiles()
+    }
+  } catch (err) {
+    console.error('Error al guardar fotos de conformidad', err)
+  }
+
+  // Refrescar y cerrar edición
+  await refreshEvidencia()
+  await getEntregasDetalle(cotizacionId.value)
+  initialSnapshot.value = snapshot()
+  editable.value = false
+}
+
+const handleVerifiedChange = async (val: boolean | number | string) => {
+  let newVal: boolean
+  if (typeof val === 'boolean') newVal = val
+  else if (typeof val === 'string') {
+    const s = val.trim().toLowerCase()
+    if (s === 'true') newVal = true
+    else if (s === 'false') newVal = false
+    else newVal = Boolean(Number(val))
+  } else {
+    newVal = Boolean(Number(val))
+  }
+  isVerified.value = newVal
+  if (!cotizacionId.value) return
+  try {
+    await withSpinner(async () => {
+      await setIsVerified(cotizacionId.value as number, newVal)
+    }, 'Actualizando verificación...')
+    try { showSuccess('Verificación actualizada', newVal ? 'Marcado como verificado' : 'Marcado como no verificado') } catch (e) { /* noop */ }
+  } catch (err: any) {
+    try { showError('Error', err?.message || 'No se pudo actualizar la verificación') } catch (e) { /* noop */ }
+  }
+}
+
+// Preview modal state
+const previewOpen = ref(false)
+const previewUrl = ref('')
+const openPreview = (url: string) => {
+  if (!url) return
+  previewUrl.value = url
+  previewOpen.value = true
+}
+
+const fileInputReplace1 = ref<HTMLInputElement | null>(null)
+const fileInputReplace2 = ref<HTMLInputElement | null>(null)
+const picked1 = ref<File | null>(null)
+const picked2 = ref<File | null>(null)
+const uploaderRef = ref<any>(null)
+const canSubmitConformidad = computed(() => !!(picked1.value || picked2.value))
+const canSave = computed(() => dirty.value || !!(picked1.value || picked2.value))
+
+// Ubigeo lists
+// USelect por defecto usa { label, value }
+const departamentos = ref<Array<{ label: string; value: number }>>([])
+const provincias = ref<Array<{ label: string; value: number; id_departamento?: number }>>([])
+const distritos = ref<Array<{ label: string; value: number; id_provincia?: number }>>([])
+// Agencias
+const agencias = ref<Array<{ label: string; value: number; ruc?: string; name?: string }>>([])
+const loadAgencias = async (search?: string) => {
+  const res = await EntregaService.getAgencias({ currentPage: 1, itemsPerPage: 100, search })
+  const list = (res?.data || [])
+  agencias.value = list.map((a: any) => ({ label: a.label ?? `${a.name} - ${a.ruc}`, value: Number(a.value ?? a.id), ruc: a.ruc, name: a.name }))
+}
+// Computed para mostrar campos extra solo si agencia es "otra opción"
+const isOtraOpcionAgencia = computed(() => {
+  const selected = agencias.value.find(a => a.value === Number(form.value.id_agency))
+  if (!selected) return false
+  // Puedes ajustar el criterio aquí si el label exacto es diferente
+  return selected.label?.toLowerCase().includes('otra opcion') || selected.label?.toLowerCase().includes('otra opción')
+})
+const onAgenciaChange = (id: number | string) => {
+  const selected = agencias.value.find(a => a.value === Number(id))
+  if (selected) {
+    form.value.agency_name = selected.name || ''
+    form.value.agency_ruc = selected.ruc || ''
+  }
+}
+// Helper: extract array from various response shapes
+const toArray = (res: any, keyFallback?: string) => {
+  if (!res) return []
+  if (Array.isArray(res)) return res
+  if (Array.isArray(res?.data)) return res.data
+  if (Array.isArray(res?.results)) return res.results
+  if (Array.isArray(res?.rows)) return res.rows
+  if (Array.isArray(res?.items)) return res.items
+  if (keyFallback && Array.isArray(res?.[keyFallback])) return res[keyFallback]
+  if (keyFallback && Array.isArray(res?.data?.[keyFallback])) return res.data[keyFallback]
+  if (Array.isArray(res?.data?.data)) return res.data.data
+  return []
+}
+const onDepartamentoChange = async (id: number | string) => {
+  const depId = Number(id)
+  form.value.provincia_id = undefined
+  form.value.distrito_id = undefined
+  provincias.value = []
+  distritos.value = []
+  if (depId) {
+    const res = await LocationService.getProvincias(depId)
+    const list = toArray(res, 'provincias')
+    provincias.value = list.map((p: any) => ({
+      label: p.nombre ?? p.name ?? String(p.id),
+      value: Number(p.id),
+      id_departamento: Number(p.id_departamento)
+    }))
+  }
+}
+const onProvinciaChange = async (id: number | string) => {
+  const provId = Number(id)
+  form.value.distrito_id = undefined
+  distritos.value = []
+  if (provId) {
+    const res = await LocationService.getDistritos(provId)
+    const list = toArray(res, 'distritos')
+    distritos.value = list.map((d: any) => ({
+      label: d.nombre ?? d.name ?? String(d.id),
+      value: Number(d.id),
+      id_provincia: Number(d.id_provincia)
+    }))
+  }
+}
+
+// Handlers para FileUploader
+const onUploaderFilesSelected = (files: File[]) => {
+  if (!editable.value) return
+  // Limitar a 2 archivos en memoria para crear/actualizar
+  const selected = files.slice(0, 2)
+  picked1.value = selected[0] || null
+  picked2.value = selected[1] || null
+  // Si el usuario seleccionó más de 2, recortar visualmente en el uploader
+  if (files.length > 2 && uploaderRef.value?.clearSelectedFiles && uploaderRef.value?.addFiles) {
+    uploaderRef.value.clearSelectedFiles()
+    uploaderRef.value.addFiles(selected)
+  }
+}
+const onUploaderCleared = () => {
+  picked1.value = null
+  picked2.value = null
+}
+const onUploaderError = (message: string) => {
+  console.error('[FileUploader] error:', message)
+}
+
+const onClickThumbnail = (i: number) => {
+  if (!editable.value) {
+    // vista previa cuando no se edita
+    const url = evidencia.value[i]?.url
+    if (url) openPreview(url)
+    return
+  }
+  // Reemplazar específica (1 o 2)
+  if (i === 0) fileInputReplace1.value?.click()
+  else if (i === 1) fileInputReplace2.value?.click()
+}
+const onPickReplace = async (which: 1 | 2, e: Event) => {
+  if (!editable.value) return
+  const input = e.target as HTMLInputElement
+  const file = input.files && input.files[0]
+  if (!file) return
+  // Si ya existe conformidad, actualizar de inmediato
+  if (conformidadId.value) {
+    const payload = which === 1 ? { photo_1: file } : { photo_2: file }
+    await updateConformidad(conformidadId.value, payload)
+    await refreshEvidencia()
+  } else {
+    // Aún no existe: preparar para subir
+    if (which === 1) picked1.value = file
+    else picked2.value = file
+  }
+}
+const submitConformidad = async () => {
+  if (!editable.value) return
+  const id_contenedor = contenedorId as number
+  const id_cotizacion = cotizacionId.value as number
+  const type_form = isLima.value ? 1 : 0
+  try {
+    if (conformidadId.value) {
+      // actualizar: permite una o ambas; si no hay picks, no hacer nada
+      if (!picked1.value && !picked2.value) return
+      await updateConformidad(conformidadId.value, { photo_1: picked1.value || undefined, photo_2: picked2.value || undefined })
+    } else {
+      // subir nueva: permite 1 o 2 fotos
+      if (!picked1.value && !picked2.value) return
+      await uploadConformidad({ id_contenedor: id_contenedor as number, id_cotizacion: id_cotizacion as number, type_form: type_form as 0 | 1, photo_1: picked1.value || undefined, photo_2: picked2.value || undefined })
+    }
+    // limpiar picks y refrescar UI
+    picked1.value = null
+    picked2.value = null
+    // limpiar selección visual del uploader
+    if (uploaderRef.value?.clearSelectedFiles) uploaderRef.value.clearSelectedFiles()
+    await refreshEvidencia()
+  } catch (err) {
+    console.error('Error al enviar conformidad', err)
+  }
+}
+const onDeleteConformidad = async (id: number) => {
+  // determinar type form
+  const typeForm = isLima.value ? 1 : 0
+  if (!editable.value || !id) return
+  try {
+    await deleteConformidad(id, typeForm)
+    picked1.value = null
+    picked2.value = null
+    await refreshEvidencia()
+  } catch (err) {
+    console.error('Error al borrar conformidad', err)
+  }
+}
+
+// Helpers de UI para evidencia
+const getThumbUrl = (index: number, serverUrl?: string) => {
+  if (index === 0 && picked1.value) return URL.createObjectURL(picked1.value)
+  if (index === 1 && picked2.value) return URL.createObjectURL(picked2.value)
+  return serverUrl || ''
+}
+const refreshEvidencia = async () => {
+  if (!cotizacionId.value) return
+  await getEntregasDetalle(cotizacionId.value)
+  evidencia.value = []
+  const d: any = entregaDetalle.value
+  if (d?.photo_1_url) evidencia.value.push({ url: d.photo_1_url, key: 'photo_1_url' })
+  if (d?.photo_2_url) evidencia.value.push({ url: d.photo_2_url, key: 'photo_2_url' })
+}
+
+onMounted(async () => {
+  // Cargar detalle si no está cacheado o corresponde a otro id
+  if (!entregaDetalle.value || entregaDetalle.value.id_cotizacion !== cotizacionId.value) {
+    await getEntregasDetalle(cotizacionId.value as number)
+  }
+  // Derivar contenedor desde el detalle si existe
+  if (entregaDetalle.value?.id_contenedor) {
+    contenedorId = entregaDetalle.value.id_contenedor as any
+  }
+  // Obtener headers/carga sólo si aún no está y tenemos id_contenedor
+  if (contenedorId && !carga.value) {
+    await getHeaders(contenedorId)
+  }
+  if (entregaDetalle.value) {
+    // Inicializar formulario con datos del detalle
+    const d: any = entregaDetalle.value
+    form.value.qty_box_china = d.qty_box_china || ''
+    form.value.peso = d.peso || ''
+    form.value.productos = d.productos || ''
+    form.value.nombre = d.import_name || ''
+    form.value.documento = d.documento || ''
+
+    // Lima
+    form.value.nombre_chofer = d.nombre_chofer || ''
+    form.value.distrito = d.distrito || ''
+    form.value.licencia = d.licencia || ''
+    form.value.placa = d.placa || ''
+    form.value.direccion_final = d.direccion_final || ''
+
+    // Provincia
+    form.value.agency_address_final_delivery = d.agency_address_final_delivery || ''
+    form.value.agency_address_initial_delivery = d.agency_address_initial_delivery || ''
+    form.value.agency_name = d.agency_name || ''
+    form.value.agency_ruc = d.agency_ruc || ''
+    form.value.home_adress_delivery = d.home_adress_delivery || ''
+    form.value.id_agency = d.id_agency || null
+    form.value.r_type = d.r_type || ''
+    form.value.r_doc = d.r_doc || ''
+    form.value.r_name = d.r_name || ''
+    form.value.r_phone = d.r_phone || ''
+    // IDs de ubicación (normalizar a número para que coincida con item-value)
+    form.value.departamento_id = d.id_department !== undefined && d.id_department !== null && d.id_department !== '' ? Number(d.id_department) : undefined
+    form.value.provincia_id = d.id_province !== undefined && d.id_province !== null && d.id_province !== '' ? Number(d.id_province) : undefined
+    form.value.distrito_id = d.id_district !== undefined && d.id_district !== null && d.id_district !== '' ? Number(d.id_district) : undefined
+
+    // Comprobante
+    form.value.comp_documento = d.comp_documento || d.documento || ''
+    form.value.comp_nombre = d.comp_nombre || d.nombre || ''
+    form.value.comp_email = d.comp_email || ''
+
+    // T. Cliente derivado
+    form.value.tipo_cliente = isLima.value ? 'Lima' : 'Provincia'
+    form.value.tipo_entrega = d.tipo_entrega || form.value.tipo_entrega
+
+    // Conformidad: inicializar evidencia real a partir de URLs disponibles
+    form.value.photo_1_url = d.photo_1_url || ''
+    form.value.photo_2_url = d.photo_2_url || ''
+    evidencia.value = []
+    if (form.value.photo_1_url) evidencia.value.push({ url: form.value.photo_1_url, key: 'photo_1_url' })
+    if (form.value.photo_2_url) evidencia.value.push({ url: form.value.photo_2_url, key: 'photo_2_url' })
+    // Inicializar estado de verificación desde el detalle (puede venir como isVerified o is_verified)
+    isVerified.value = normalizeToBool(d.isVerified ?? d.is_verified ?? false)
+  }
+  initialSnapshot.value = snapshot()
+  // cargar departamentos y, si hay valores, intentar preseleccionar sin resetear ids
+  try {
+    const res = await LocationService.getDepartamentos()
+    const list = toArray(res, 'departamentos')
+    departamentos.value = list.map((d: any) => ({ label: d.nombre ?? d.name ?? String(d.id), value: Number(d.id) }))
+    // Cargar agencias y preseleccionar si viene id_agency del backend
+    await loadAgencias()
+    if (form.value.departamento_id) {
+      const rp = await LocationService.getProvincias(form.value.departamento_id)
+      const listP = toArray(rp, 'provincias')
+      provincias.value = listP.map((p: any) => ({ label: p.nombre ?? p.name ?? String(p.id), value: Number(p.id), id_departamento: Number(p.id_departamento) }))
+    }
+    if (form.value.provincia_id) {
+      const rd = await LocationService.getDistritos(form.value.provincia_id)
+      const listD = toArray(rd, 'distritos')
+      distritos.value = listD.map((d: any) => ({ label: d.nombre ?? d.name ?? String(d.id), value: Number(d.id), id_provincia: Number(d.id_provincia) }))
+    }
+  } catch (e) { /* noop */ }
+  readyToRender.value = true
+})
+</script>
