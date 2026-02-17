@@ -129,7 +129,7 @@
 import { ref, onMounted, h, watch } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import SectionHeader from '../../../../components/commons/SectionHeader.vue'
-import { useEntrega } from '../../../../composables/cargaconsolidada/entrega/useEntrega'
+import { useEntrega } from '~/composables/cargaconsolidada/entrega/useEntrega'
 import { useUserRole } from '../../../../composables/auth/useUserRole'
 import { UBadge, UButton, UInput, UTabs, USelect } from '#components'
 import PagoGrid from '../../../../components/PagoGrid.vue'
