@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Lenovo\\Desktop\\Proyectos\\Probusiness\\intranet_back\\app\\Models\\CargaConsolidada"

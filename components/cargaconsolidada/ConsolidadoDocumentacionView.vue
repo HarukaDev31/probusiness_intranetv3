@@ -3,7 +3,7 @@
     <div class="flex flex-col md:flex-row justify-between mb-2 p-2 md:mb-6 md:p-6 border-b border-gray-200 dark:border-gray-700">
       <PageHeader :title="''" :subtitle="''" :icon="''" :hide-back-button="false" @back="goBack" />
       <div class="hidden md:flex items-center gap-3 flex-row flex-wrap w-full md:justify-end" v-if="role === ROLES.COORDINACION || role === ROLES.DOCUMENTACION || role === ROLES.JEFE_IMPORTACIONES">
-        <UButton v-if="role === ROLES.COORDINACION" label="Factura General" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
+        <UButton v-if="role === ROLES.COORDINACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.DOCUMENTACION" label="Factura General" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
           :loading="downloadingFactura" @click="handleDownloadFactura" class="whitespace-nowrap" />
         <UButton v-if="role === ROLES.COORDINACION" label="Descargar plantillas" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
           @click="handleDownloadAll" class="whitespace-nowrap" />
