@@ -126,6 +126,30 @@ export interface CalendarUserColorConfig {
   user?: CalendarResponsable
 }
 
+/**
+ * Tabla: calendar_consolidado_color_config
+ * Configuración de colores por consolidado/contenedor
+ */
+export interface CalendarConsolidadoColorConfig {
+  id: number
+  calendar_id: number
+  contenedor_id: number
+  color_code: string // Hex, ej. #RRGGBB
+  created_at?: string
+  updated_at?: string
+  // Datos extendidos del contenedor (join)
+  contenedor?: CalendarContenedor
+}
+
+/**
+ * Ítem del catálogo de actividades con orden
+ */
+export interface CalendarActivityCatalogItem {
+  id: number
+  name: string
+  orden: number
+}
+
 // ============================================
 // INTERFACES EXTENDIDAS (CON JOINS)
 // ============================================
@@ -256,6 +280,14 @@ export interface UpdateUserColorRequest {
   color_code: string
 }
 
+/**
+ * Request para configurar color de consolidado
+ */
+export interface UpdateConsolidadoColorRequest {
+  contenedor_id: number
+  color_code: string
+}
+
 // ============================================
 // FILTROS
 // ============================================
@@ -312,11 +344,20 @@ export interface ResponsablesResponse {
 }
 
 /**
- * Respuesta de configuración de colores
+ * Respuesta de configuración de colores (usuarios)
  */
 export interface ColorConfigResponse {
   success: boolean
   data: CalendarUserColorConfig[]
+  message?: string
+}
+
+/**
+ * Respuesta de configuración de colores por consolidado
+ */
+export interface ConsolidadoColorConfigResponse {
+  success: boolean
+  data: CalendarConsolidadoColorConfig[]
   message?: string
 }
 

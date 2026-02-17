@@ -208,41 +208,34 @@
                 </span>
               </span>
             </div>
-            <!-- Avatares en la columna sábado: un div flex con todos los grupos juntos -->
+            <!-- Avatares en la columna sábado: responsables únicos de toda la fila -->
             <div
-              v-if="getAvatarSpansInRow(eventRow).length"
-              class="absolute left-[71.43%] top-0 h-full max-w-[14.28%] flex items-center gap-1 flex-nowrap pointer-events-auto"
+              v-if="getUniqueResponsablesInRow(eventRow).length"
+              class="absolute left-[71.43%] top-0 h-full max-w-[14.28%] flex items-center gap-0.5 flex-nowrap pointer-events-auto"
               style="width: max-content;"
             >
-              <div
-                v-for="eventSpan in getAvatarSpansInRow(eventRow)"
-                :key="`avatars-${eventSpan.event.id}-${eventSpan.startCol}`"
-                class="flex items-center gap-0 shrink-0 cursor-pointer hover:opacity-90"
-                @click.stop="openEditModal(eventSpan.event)"
+              <UTooltip
+                v-for="resp in getUniqueResponsablesInRow(eventRow).slice(0, 3)"
+                :key="resp.id"
+                :text="resp.nombre"
               >
-                <UTooltip
-                  v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
-                  :key="resp.id"
-                  :text="resp.nombre"
-                >
-                  <UAvatar
-                    :src="resp.avatar || undefined"
-                    :alt="resp.nombre"
-                    size="sm"
-                    class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
-                    :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
-                  />
-                </UTooltip>
-                <button
-                  v-if="getEventResponsables(eventSpan.event).length > 2"
-                  type="button"
-                  class="w-6 h-6 min-w-[24px] min-h-[24px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 shrink-0"
-                  title="Ver todos los responsables"
-                  @click.stop="openResponsablesModal(eventSpan.event)"
-                >
-                  +
-                </button>
-              </div>
+                <UAvatar
+                  :src="resp.avatar || undefined"
+                  :alt="resp.nombre"
+                  size="sm"
+                  class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
+                  :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+                />
+              </UTooltip>
+              <button
+                v-if="getUniqueResponsablesInRow(eventRow).length > 3"
+                type="button"
+                class="w-6 h-6 min-w-[24px] min-h-[24px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 shrink-0"
+                title="Ver todos los responsables"
+                @click.stop="openResponsablesModal(getAvatarSpansInRow(eventRow)[0]?.event)"
+              >
+                +{{ getUniqueResponsablesInRow(eventRow).length - 3 }}
+              </button>
             </div>
           </div>
         </div>
@@ -356,23 +349,17 @@
                             </span>
                           </span>
                         </div>
-                        <!-- Avatares en la columna sábado: un div flex con todos los grupos juntos -->
+                        <!-- Avatares en la columna sábado: responsables únicos de toda la fila -->
                         <div
-                          v-if="getAvatarSpansInRow(eventRow).length"
-                          class="absolute left-[71.43%] top-0 h-full max-w-[14.28%] flex items-center gap-1 flex-nowrap pointer-events-auto"
+                          v-if="getUniqueResponsablesInRow(eventRow).length"
+                          class="absolute left-[71.43%] top-0 h-full max-w-[14.28%] flex items-center gap-0.5 flex-nowrap pointer-events-auto"
                           style="width: max-content;"
                         >
-                          <div
-                            v-for="eventSpan in getAvatarSpansInRow(eventRow)"
-                            :key="`avatars-${eventSpan.event.id}-${eventSpan.startCol}`"
-                            class="flex items-center gap-0 shrink-0 cursor-pointer hover:opacity-90"
-                            @click.stop="openEditModal(eventSpan.event)"
+                          <UTooltip
+                            v-for="resp in getUniqueResponsablesInRow(eventRow).slice(0, 3)"
+                            :key="resp.id"
+                            :text="resp.nombre"
                           >
-                            <UTooltip
-                              v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
-                              :key="resp.id"
-                              :text="resp.nombre"
-                            >
                             <UAvatar
                               :src="resp.avatar || undefined"
                               :alt="resp.nombre"
@@ -382,15 +369,14 @@
                             />
                           </UTooltip>
                           <button
-                            v-if="getEventResponsables(eventSpan.event).length > 2"
+                            v-if="getUniqueResponsablesInRow(eventRow).length > 3"
                             type="button"
                             class="w-6 h-6 min-w-[24px] min-h-[24px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 shrink-0"
-                              title="Ver todos los responsables"
-                              @click.stop="openResponsablesModal(eventSpan.event)"
-                            >
-                              +
-                            </button>
-                          </div>
+                            title="Ver todos los responsables"
+                            @click.stop="openResponsablesModal(getAvatarSpansInRow(eventRow)[0]?.event)"
+                          >
+                            +{{ getUniqueResponsablesInRow(eventRow).length - 3 }}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -739,6 +725,7 @@ const {
   loadColorConfig,
   loadActivityCatalog,
   createActivityInCatalog,
+  updateActivityInCatalog,
   deleteActivityFromCatalog,
   loadProgress,
   getResponsableColor,
@@ -1001,6 +988,7 @@ const openActivityModal = (activity?: CalendarEvent) => {
       return await createActivityInCatalog(name)
     },
     onDeleteFromCatalog: onDeleteFromCatalogOverlay,
+    onUpdateActivity: async (id: number, name: string) => updateActivityInCatalog(id, name),
     onDelete: activity
       ? async () => {
           selectedEvent.value = activity
@@ -1518,6 +1506,21 @@ const getMultiDayEventStyle = (span: EventSpan) => {
 const getAvatarSpansInRow = (eventRow: EventSpan[]) =>
   eventRow.filter(span => span.isEnd && getEventResponsables(span.event).length > 0)
 
+// Responsables únicos de toda la fila (sin duplicados)
+const getUniqueResponsablesInRow = (eventRow: EventSpan[]) => {
+  const seen = new Set<number>()
+  const unique: ReturnType<typeof getEventResponsables> = []
+  for (const span of eventRow) {
+    for (const resp of getEventResponsables(span.event)) {
+      if (!seen.has(resp.id)) {
+        seen.add(resp.id)
+        unique.push(resp)
+      }
+    }
+  }
+  return unique
+}
+
 // Días de un mes para la vista de rango (semana empieza lunes)
 const getCalendarDaysForMonth = (year: number, month: number) => {
   const firstDay = parseDate(`${year}-${String(month).padStart(2, '0')}-01`)
@@ -1990,6 +1993,7 @@ const handleDayClick = (date: CalendarDate) => {
       return await createActivityInCatalog(name)
     },
     onDeleteFromCatalog: onDeleteFromCatalogOverlay,
+    onUpdateActivity: async (id: number, name: string) => updateActivityInCatalog(id, name),
     onClose: () => {
       activityModal.close()
     }
@@ -2018,6 +2022,7 @@ const openCreateActivity = () => {
       return await createActivityInCatalog(name)
     },
     onDeleteFromCatalog: onDeleteFromCatalogOverlay,
+    onUpdateActivity: async (id: number, name: string) => updateActivityInCatalog(id, name),
     onClose: () => {
       activityModal.close()
     }
@@ -2043,6 +2048,7 @@ const openCreateModal = () => {
       return await createActivityInCatalog(name)
     },
     onDeleteFromCatalog: onDeleteFromCatalogOverlay,
+    onUpdateActivity: async (id: number, name: string) => updateActivityInCatalog(id, name),
     onClose: () => {
       activityModal.close()
     }
@@ -2073,6 +2079,7 @@ const openEditModal = (event: CalendarEvent) => {
       return await createActivityInCatalog(name)
     },
     onDeleteFromCatalog: onDeleteFromCatalogOverlay,
+    onUpdateActivity: async (id: number, name: string) => updateActivityInCatalog(id, name),
     onDelete: async () => {
       selectedEvent.value = event
       isDeleteModalOpen.value = true

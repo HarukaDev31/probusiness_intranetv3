@@ -11,15 +11,19 @@ import type {
   UpdateEventStatusRequest,
   UpdateChargeNotesRequest,
   UpdateUserColorRequest,
+  UpdateConsolidadoColorRequest,
   ResponsablesResponse,
   ColorConfigResponse,
+  ConsolidadoColorConfigResponse,
   ContenedoresResponse,
   ProgressResponse,
   ChargeTrackingResponse,
   CalendarResponsable,
   CalendarUserColorConfig,
+  CalendarConsolidadoColorConfig,
   CalendarContenedor,
   CalendarEventChargeTracking,
+  CalendarActivityCatalogItem,
   // Legacy
   CreateEventRequest,
   UpdateEventRequest,
@@ -305,6 +309,37 @@ export class CalendarService extends BaseService {
     }
   }
 
+  /**
+   * Obtener configuración de colores por consolidado
+   */
+  static async getConsolidadoColorConfig(): Promise<CalendarConsolidadoColorConfig[]> {
+    try {
+      const response = await this.apiCall<ConsolidadoColorConfigResponse>(`${this.baseUrl}/consolidado-colors`, {
+        method: 'GET'
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error al obtener colores de consolidados:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Actualizar colores de consolidados en batch (una sola petición)
+   */
+  static async updateConsolidadoColors(items: UpdateConsolidadoColorRequest[]): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; message?: string }>(`${this.baseUrl}/consolidado-colors`, {
+        method: 'PUT',
+        body: { items }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al actualizar colores de consolidados:', error)
+      throw error
+    }
+  }
+
   // ============================================
   // CONTENEDORES
   // ============================================
@@ -331,9 +366,9 @@ export class CalendarService extends BaseService {
   /**
    * Obtener catálogo de actividades predefinidas
    */
-  static async getActivityCatalog(): Promise<{ id: number; name: string }[]> {
+  static async getActivityCatalog(): Promise<CalendarActivityCatalogItem[]> {
     try {
-      const response = await this.apiCall<{ success: boolean; data: { id: number; name: string }[] }>(`${this.baseUrl}/activity-catalog`, {
+      const response = await this.apiCall<{ success: boolean; data: CalendarActivityCatalogItem[] }>(`${this.baseUrl}/activity-catalog`, {
         method: 'GET'
       })
       return response.data
@@ -346,9 +381,9 @@ export class CalendarService extends BaseService {
   /**
    * Crear una nueva actividad en el catálogo
    */
-  static async createActivityCatalog(name: string): Promise<{ id: number; name: string }> {
+  static async createActivityCatalog(name: string): Promise<CalendarActivityCatalogItem> {
     try {
-      const response = await this.apiCall<{ success: boolean; data: { id: number; name: string } }>(`${this.baseUrl}/activity-catalog`, {
+      const response = await this.apiCall<{ success: boolean; data: CalendarActivityCatalogItem }>(`${this.baseUrl}/activity-catalog`, {
         method: 'POST',
         body: { name }
       })
@@ -362,15 +397,31 @@ export class CalendarService extends BaseService {
   /**
    * Actualizar nombre de actividad del catálogo
    */
-  static async updateActivityCatalog(id: number, name: string): Promise<{ id: number; name: string }> {
+  static async updateActivityCatalog(id: number, name: string): Promise<CalendarActivityCatalogItem> {
     try {
-      const response = await this.apiCall<{ success: boolean; data: { id: number; name: string } }>(`${this.baseUrl}/activity-catalog/${id}`, {
+      const response = await this.apiCall<{ success: boolean; data: CalendarActivityCatalogItem }>(`${this.baseUrl}/activity-catalog/${id}`, {
         method: 'PUT',
         body: { name }
       })
       return response.data
     } catch (error) {
       console.error('Error al actualizar actividad del catálogo:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Reordenar actividades del catálogo
+   */
+  static async reorderActivityCatalog(ids: number[]): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; message?: string }>(`${this.baseUrl}/activity-catalog/reorder`, {
+        method: 'POST',
+        body: { ids }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al reordenar catálogo de actividades:', error)
       throw error
     }
   }

@@ -12,7 +12,7 @@
         />
         <div>
           <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Configuración de Colores</h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Personaliza los colores de los responsables</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Personaliza los colores por consolidado</p>
         </div>
       </div>
     </div>
@@ -31,7 +31,7 @@
           <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
           <div v-for="i in 6" :key="i" class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+              <div class="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
               <div class="space-y-2">
                 <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-32"></div>
                 <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-40"></div>
@@ -48,7 +48,7 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-paint-brush" class="w-5 h-5 text-primary-500" />
-              <h2 class="text-lg font-semibold">Colores de Responsables</h2>
+              <h2 class="text-lg font-semibold">Colores por Consolidado</h2>
             </div>
             <UButton
               label="Guardar cambios"
@@ -62,26 +62,26 @@
 
         <div class="space-y-4">
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            Asigna un color único a cada responsable. Este color se usará para identificar sus actividades en el calendario.
+            Asigna un color único a cada consolidado. Este color se usará para identificar sus actividades en el calendario.
           </p>
 
-          <!-- Lista de responsables -->
+          <!-- Lista de consolidados -->
           <div class="space-y-3">
             <div
-              v-for="responsable in responsables"
-              :key="responsable.id"
+              v-for="contenedor in contenedores"
+              :key="contenedor.id"
               class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
             >
               <div class="flex items-center gap-3">
-                <UAvatar
-                  :alt="responsable.nombre"
-                  size="md"
-                  :src="responsable.avatar"
-                  :style="{ backgroundColor: getColor(responsable.id) }"
-                />
+                <div
+                  class="w-10 h-10 rounded-lg flex items-center justify-center"
+                  :style="{ backgroundColor: getColor(contenedor.id) + '30' }"
+                >
+                  <UIcon name="i-heroicons-cube" class="w-5 h-5" :style="{ color: getColor(contenedor.id) }" />
+                </div>
                 <div>
-                  <p class="font-medium text-gray-900 dark:text-white">{{ responsable.nombre }}</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">{{ responsable.email }}</p>
+                  <p class="font-medium text-gray-900 dark:text-white">{{ contenedor.nombre }}</p>
+                  <p v-if="contenedor.codigo" class="text-sm text-gray-500 dark:text-gray-400">{{ contenedor.codigo }}</p>
                 </div>
               </div>
 
@@ -89,10 +89,10 @@
               <div class="flex items-center gap-2">
                 <div
                   class="w-10 h-10 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:scale-105 transition-transform"
-                  :style="{ backgroundColor: getColor(responsable.id) }"
-                  @click="toggleColorPicker(responsable.id)"
+                  :style="{ backgroundColor: getColor(contenedor.id) }"
+                  @click="toggleColorPicker(contenedor.id)"
                 />
-                <UPopover v-model:open="colorPickerOpen[responsable.id]">
+                <UPopover v-model:open="colorPickerOpen[contenedor.id]">
                   <template #default>
                     <UButton
                       icon="i-heroicons-chevron-down"
@@ -110,27 +110,27 @@
                           :key="color"
                           class="w-8 h-8 rounded-lg border-2 hover:scale-110 transition-transform"
                           :class="{
-                            'border-primary-500 ring-2 ring-primary-500': getColor(responsable.id) === color,
-                            'border-transparent': getColor(responsable.id) !== color
+                            'border-primary-500 ring-2 ring-primary-500': getColor(contenedor.id) === color,
+                            'border-transparent': getColor(contenedor.id) !== color
                           }"
                           :style="{ backgroundColor: color }"
-                          @click="setColor(responsable.id, color)"
+                          @click="setColor(contenedor.id, color)"
                         />
                       </div>
                       <!-- Input para color personalizado -->
                       <div class="flex items-center gap-2">
                         <input
                           type="color"
-                          :value="getColor(responsable.id)"
+                          :value="getColor(contenedor.id)"
                           class="w-10 h-10 rounded cursor-pointer border-0"
-                          @input="(e) => setColor(responsable.id, (e.target as HTMLInputElement).value)"
+                          @input="(e) => setColor(contenedor.id, (e.target as HTMLInputElement).value)"
                         />
                         <UInput
-                          :model-value="getColor(responsable.id)"
+                          :model-value="getColor(contenedor.id)"
                           placeholder="#000000"
                           size="sm"
                           class="w-24"
-                          @update:model-value="(val) => setColor(responsable.id, val as string)"
+                          @update:model-value="(val) => setColor(contenedor.id, val as string)"
                         />
                       </div>
                     </div>
@@ -141,41 +141,16 @@
 
             <!-- Empty state -->
             <div
-              v-if="responsables.length === 0"
+              v-if="contenedores.length === 0"
               class="text-center py-8 text-gray-500 dark:text-gray-400"
             >
-              No hay responsables configurados
+              No hay consolidados disponibles
             </div>
           </div>
         </div>
       </UCard>
 
-      <!-- Preview -->
-      <UCard class="mt-6">
-        <template #header>
-          <div class="flex items-center gap-2">
-            <UIcon name="i-heroicons-eye" class="w-5 h-5 text-primary-500" />
-            <h2 class="text-lg font-semibold">Vista previa</h2>
-          </div>
-        </template>
-
-        <div class="flex flex-wrap gap-3">
-          <div
-            v-for="responsable in responsables"
-            :key="responsable.id"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg"
-            :style="{ backgroundColor: getColor(responsable.id) + '20' }"
-          >
-            <div
-              class="w-3 h-3 rounded-full"
-              :style="{ backgroundColor: getColor(responsable.id) }"
-            />
-            <span class="text-sm font-medium" :style="{ color: getColor(responsable.id) }">
-              {{ responsable.nombre }}
-            </span>
-          </div>
-        </div>
-      </UCard>
+    
     </div>
   </div>
 </template>
@@ -187,12 +162,12 @@ import { useModal } from '~/composables/commons/useModal'
 import { COLOR_PRESETS } from '~/constants/calendar'
 
 const {
-  responsables,
+  contenedores,
   loading,
-  loadResponsables,
-  loadColorConfig,
-  updateUserColor,
-  getResponsableColor
+  loadContenedores,
+  loadConsolidadoColorConfig,
+  updateConsolidadoColors,
+  getConsolidadoColor,
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
@@ -205,43 +180,42 @@ const colorPresets = COLOR_PRESETS
 
 // Computed
 const hasChanges = computed(() => {
-  for (const [userId, color] of Object.entries(localColors.value)) {
-    const originalColor = getResponsableColor(Number(userId), '')
-    if (color !== originalColor) {
-      return true
-    }
+  for (const [id, color] of Object.entries(localColors.value)) {
+    const originalColor = getConsolidadoColor(Number(id))
+    if (color !== originalColor) return true
   }
   return false
 })
 
 // Helpers
-const getColor = (userId: number): string => {
-  if (localColors.value[userId]) {
-    return localColors.value[userId]
+const getColor = (contenedorId: number): string => {
+  if (localColors.value[contenedorId]) {
+    return localColors.value[contenedorId]
   }
-  return getResponsableColor(userId, responsables.value.find(r => r.id === userId)?.nombre)
+  return getConsolidadoColor(contenedorId)
 }
 
-const setColor = (userId: number, color: string) => {
-  localColors.value[userId] = color
+const setColor = (contenedorId: number, color: string) => {
+  localColors.value[contenedorId] = color
 }
 
-const toggleColorPicker = (userId: number) => {
-  colorPickerOpen.value[userId] = !colorPickerOpen.value[userId]
+const toggleColorPicker = (contenedorId: number) => {
+  colorPickerOpen.value[contenedorId] = !colorPickerOpen.value[contenedorId]
 }
 
-// Guardar todos los colores
+// Guardar todos los colores en una sola petición
 const saveAllColors = async () => {
   saving.value = true
   try {
-    for (const [userId, color] of Object.entries(localColors.value)) {
-      const originalColor = getResponsableColor(Number(userId), '')
-      if (color !== originalColor) {
-        await updateUserColor(Number(userId), color)
-      }
-    }
+    const changed = Object.entries(localColors.value)
+      .filter(([id, color]) => color !== getConsolidadoColor(Number(id)))
+      .map(([id, color]) => ({ contenedorId: Number(id), colorCode: color }))
+
+    if (changed.length === 0) return
+
+    await updateConsolidadoColors(changed)
     showSuccess('Éxito', 'Los colores se han actualizado correctamente.')
-    localColors.value = {} // Limpiar cambios locales
+    localColors.value = {}
   } catch (err: any) {
     showError('Error', err?.message || 'No se pudieron guardar los colores.')
   } finally {
@@ -252,8 +226,8 @@ const saveAllColors = async () => {
 // Inicialización
 onMounted(async () => {
   await Promise.all([
-    loadResponsables(),
-    loadColorConfig()
+    loadContenedores(),
+    loadConsolidadoColorConfig()
   ])
 })
 

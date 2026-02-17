@@ -27,6 +27,11 @@
               <UButton icon="i-heroicons-plus" color="primary" variant="outline" size="lg" title="Crear nueva actividad"
                 @click="openCreateActivityModal" />
               <UTooltip v-if="hasCatalogActivityId && (calendarPermissions?.canDeleteActivity ?? false)"
+                text="Editar nombre de esta actividad">
+                <UButton icon="i-heroicons-pencil-square" color="primary" variant="ghost" size="lg" class="!p-2"
+                  @click.stop.prevent="openEditActivityModal" />
+              </UTooltip>
+              <UTooltip v-if="hasCatalogActivityId && (calendarPermissions?.canDeleteActivity ?? false)"
                 text="Eliminar esta actividad del catálogo">
                 <UButton icon="i-heroicons-trash" color="error" variant="ghost" size="lg" class="!p-2"
                   title="Eliminar del catálogo" @click.stop.prevent="openDeleteConfirmModal" />
@@ -40,6 +45,15 @@
         <!-- Modal para crear nueva actividad -->
         <CreateActivityNameModal :open="isCreateActivityModalOpen" :loading="isCreatingActivity"
           @close="closeCreateActivityModal" @create="handleCreateNewActivity" />
+
+        <!-- Modal para editar nombre de actividad -->
+        <EditActivityNameModal
+          v-model:open="isEditActivityModalOpen"
+          :activity-id="form.activity_id ?? selectedActivity?.value ?? null"
+          :activity-name="selectedActivity?.label ?? ''"
+          :loading="isUpdatingActivity"
+          @save="handleEditActivity"
+        />
 
         <!-- Fechas -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -148,6 +162,7 @@ import type {
 } from '~/types/calendar'
 import { PRIORITY_OPTIONS } from '~/constants/calendar'
 import CreateActivityNameModal from '~/components/calendar/CreateActivityNameModal.vue'
+import EditActivityNameModal from '~/components/calendar/EditActivityNameModal.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 
@@ -175,6 +190,7 @@ interface Props {
   onDeleteFromCatalog?: (catalogActivityId: number) => void | Promise<void>
   onClose?: (() => void) | (() => void)[]
   onCreateActivity?: (name: string) => Promise<ActivityOption | null>
+  onUpdateActivity?: (id: number, name: string) => Promise<boolean>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -185,7 +201,8 @@ const props = withDefaults(defineProps<Props>(), {
   onSave: undefined,
   onDelete: undefined,
   onClose: undefined,
-  onCreateActivity: undefined
+  onCreateActivity: undefined,
+  onUpdateActivity: undefined
 })
 
 const emit = defineEmits<{
@@ -400,6 +417,35 @@ const clearActivity = () => {
   form.value.name = ''
   form.value.activity_id = null
   selectedActivity.value = null
+}
+
+// Editar actividad del catálogo
+const isEditActivityModalOpen = ref(false)
+const isUpdatingActivity = ref(false)
+
+const openEditActivityModal = () => {
+  isEditActivityModalOpen.value = true
+}
+
+const handleEditActivity = async ({ id, name }: { id: number; name: string }) => {
+  isUpdatingActivity.value = true
+  try {
+    if (props.onUpdateActivity) {
+      const ok = await props.onUpdateActivity(id, name)
+      if (ok) {
+        // Actualizar el item seleccionado localmente
+        form.value.name = name
+        if (selectedActivity.value) {
+          selectedActivity.value = { label: name, value: selectedActivity.value.value }
+        }
+        isEditActivityModalOpen.value = false
+      }
+    } else {
+      isEditActivityModalOpen.value = false
+    }
+  } finally {
+    isUpdatingActivity.value = false
+  }
 }
 
 // Helpers

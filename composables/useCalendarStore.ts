@@ -6,6 +6,8 @@ import type {
   CalendarResponsable,
   CalendarContenedor,
   CalendarUserColorConfig,
+  CalendarConsolidadoColorConfig,
+  CalendarActivityCatalogItem,
   CalendarEventStatus,
   CalendarEventPriority,
   CreateCalendarEventRequest,
@@ -35,7 +37,8 @@ const state = {
   responsables: ref<CalendarResponsable[]>([]),
   contenedores: ref<CalendarContenedor[]>([]),
   colorConfig: ref<CalendarUserColorConfig[]>([]),
-  activityCatalog: ref<{ id: number; name: string }[]>([]),
+  consolidadoColorConfig: ref<CalendarConsolidadoColorConfig[]>([]),
+  activityCatalog: ref<CalendarActivityCatalogItem[]>([]),
   teamProgress: ref<TeamProgress | null>(null),
   responsableProgress: ref<ResponsableProgress[]>([]),
   
@@ -64,6 +67,7 @@ const state = {
     responsables: ref<number>(0),
     contenedores: ref<number>(0),
     colorConfig: ref<number>(0),
+    consolidadoColorConfig: ref<number>(0),
     activityCatalog: ref<number>(0),
     progress: ref<number>(0)
   },
@@ -97,17 +101,12 @@ export const useCalendarStore = () => {
 
   const transformEvent = (event: CalendarEvent): CalendarEvent => {
     const title = event.name || event.title || 'Sin título'
-    
+
     let color = '#3b82f6'
-    if (event.charges && event.charges.length > 0) {
-      const firstCharge = event.charges[0]
-      const userColorConfig = state.colorConfig.value.find(c => c.user_id === firstCharge.user_id)
-      if (userColorConfig) {
-        color = userColorConfig.color_code
-      } else if (firstCharge.user?.color) {
-        color = firstCharge.user.color
-      } else if (firstCharge.user?.nombre && DEFAULT_RESPONSABLE_COLORS[firstCharge.user.nombre]) {
-        color = DEFAULT_RESPONSABLE_COLORS[firstCharge.user.nombre]
+    if (event.contenedor_id) {
+      const consolidadoConfig = state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
+      if (consolidadoConfig) {
+        color = consolidadoConfig.color_code
       }
     } else {
       color = PRIORITY_COLORS[event.priority] || color
@@ -341,6 +340,57 @@ export const useCalendarStore = () => {
     return '#6B7280'
   }
 
+  const loadConsolidadoColorConfig = async (force: boolean = false) => {
+    if (!shouldRefetch('consolidadoColorConfig', force) && state.consolidadoColorConfig.value.length > 0) {
+      return state.consolidadoColorConfig.value
+    }
+    try {
+      const data = await CalendarService.getConsolidadoColorConfig()
+      state.consolidadoColorConfig.value = data
+      state.lastFetch.consolidadoColorConfig.value = Date.now()
+      return data
+    } catch (err: any) {
+      console.error('Error al cargar colores de consolidados:', err)
+      return []
+    }
+  }
+
+  /** Guarda múltiples colores de consolidados en una sola petición */
+  const updateConsolidadoColors = async (items: Array<{ contenedorId: number; colorCode: string }>): Promise<boolean> => {
+    try {
+      state.loading.value = true
+      await CalendarService.updateConsolidadoColors(
+        items.map(i => ({ contenedor_id: i.contenedorId, color_code: i.colorCode }))
+      )
+      const next = [...state.consolidadoColorConfig.value]
+      for (const { contenedorId, colorCode } of items) {
+        const index = next.findIndex(c => c.contenedor_id === contenedorId)
+        if (index !== -1) {
+          next[index] = { ...next[index], color_code: colorCode }
+        } else {
+          next.push({ contenedor_id: contenedorId, color_code: colorCode } as CalendarConsolidadoColorConfig)
+        }
+      }
+      state.consolidadoColorConfig.value = next
+      return true
+    } catch (err: any) {
+      state.error.value = err?.message || 'Error al actualizar colores de consolidados'
+      console.error('Error en updateConsolidadoColors:', err)
+      return false
+    } finally {
+      state.loading.value = false
+    }
+  }
+
+  const updateConsolidadoColor = async (contenedorId: number, colorCode: string): Promise<boolean> => {
+    return updateConsolidadoColors([{ contenedorId, colorCode }])
+  }
+
+  const getConsolidadoColor = (contenedorId: number): string => {
+    const config = state.consolidadoColorConfig.value.find(c => c.contenedor_id === contenedorId)
+    return config?.color_code ?? '#6B7280'
+  }
+
   // ============================================
   // CATÁLOGO DE ACTIVIDADES
   // ============================================
@@ -361,11 +411,11 @@ export const useCalendarStore = () => {
     }
   }
 
-  const createActivityInCatalog = async (name: string): Promise<{ id: number; name: string } | null> => {
+  const createActivityInCatalog = async (name: string): Promise<CalendarActivityCatalogItem | null> => {
     try {
       state.loading.value = true
       const activity = await CalendarService.createActivityCatalog(name)
-      state.activityCatalog.value.push(activity)
+      state.activityCatalog.value = [...state.activityCatalog.value, activity]
       return activity
     } catch (err: any) {
       state.error.value = err?.message || 'Error al crear actividad en catálogo'
@@ -373,6 +423,40 @@ export const useCalendarStore = () => {
       return null
     } finally {
       state.loading.value = false
+    }
+  }
+
+  const updateActivityInCatalog = async (id: number, name: string): Promise<boolean> => {
+    try {
+      state.loading.value = true
+      const updated = await CalendarService.updateActivityCatalog(id, name)
+      const index = state.activityCatalog.value.findIndex(a => a.id === id)
+      if (index !== -1) {
+        state.activityCatalog.value[index] = updated
+      }
+      return true
+    } catch (err: any) {
+      state.error.value = err?.message || 'Error al actualizar actividad del catálogo'
+      console.error('Error en updateActivityInCatalog:', err)
+      return false
+    } finally {
+      state.loading.value = false
+    }
+  }
+
+  const reorderActivityCatalog = async (ids: number[]): Promise<boolean> => {
+    try {
+      await CalendarService.reorderActivityCatalog(ids)
+      // Reordenar localmente para reflejar el cambio sin recarga
+      const sorted = ids
+        .map(id => state.activityCatalog.value.find(a => a.id === id))
+        .filter(Boolean) as CalendarActivityCatalogItem[]
+      state.activityCatalog.value = sorted
+      return true
+    } catch (err: any) {
+      state.error.value = err?.message || 'Error al reordenar catálogo'
+      console.error('Error en reorderActivityCatalog:', err)
+      return false
     }
   }
 
@@ -677,18 +761,12 @@ export const useCalendarStore = () => {
     if (options?.usePriority) {
       return [PRIORITY_COLORS[event.priority] ?? '#3b82f6']
     }
-    if (charges.length === 0) {
-      return [PRIORITY_COLORS[event.priority] || '#3b82f6']
+    // Color por consolidado
+    if (event.contenedor_id) {
+      const consolidadoConfig = state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
+      if (consolidadoConfig) return [consolidadoConfig.color_code]
     }
-    return charges.map(charge => {
-      const config = state.colorConfig.value.find(c => c.user_id === charge.user_id)
-      if (config?.color_code) return config.color_code
-      if (charge.user?.color) return charge.user.color
-      if (charge.user?.nombre && DEFAULT_RESPONSABLE_COLORS[charge.user.nombre]) {
-        return DEFAULT_RESPONSABLE_COLORS[charge.user.nombre]
-      }
-      return '#6B7280'
-    })
+    return [PRIORITY_COLORS[event.priority] || '#3b82f6']
   }
 
   const getEventPosition = (event: CalendarEvent, dateStr: string): 'start' | 'middle' | 'end' | 'single' | null => {
@@ -806,6 +884,7 @@ export const useCalendarStore = () => {
         loadResponsables(force),
         loadContenedores(force),
         loadColorConfig(force),
+        loadConsolidadoColorConfig(force),
         loadActivityCatalog(force)
       ])
       state.initialized.value = true
@@ -842,6 +921,7 @@ export const useCalendarStore = () => {
     responsables: computed(() => state.responsables.value),
     contenedores: computed(() => state.contenedores.value),
     colorConfig: computed(() => state.colorConfig.value),
+    consolidadoColorConfig: computed(() => state.consolidadoColorConfig.value),
     activityCatalog: computed(() => state.activityCatalog.value),
     teamProgress: computed(() => state.teamProgress.value),
     responsableProgress: computed(() => state.responsableProgress.value),
@@ -862,7 +942,7 @@ export const useCalendarStore = () => {
     createActivity,
     updateActivity,
     deleteActivity,
-    
+
     // Legacy (compatibilidad)
     createEvent,
     updateEvent,
@@ -880,10 +960,16 @@ export const useCalendarStore = () => {
     // Responsables
     loadResponsables,
 
-    // Colores
+    // Colores por usuario
     loadColorConfig,
     updateUserColor,
     getResponsableColor,
+
+    // Colores por consolidado
+    loadConsolidadoColorConfig,
+    updateConsolidadoColors,
+    updateConsolidadoColor,
+    getConsolidadoColor,
 
     // Contenedores
     loadContenedores,
@@ -891,6 +977,8 @@ export const useCalendarStore = () => {
     // Catálogo de actividades
     loadActivityCatalog,
     createActivityInCatalog,
+    updateActivityInCatalog,
+    reorderActivityCatalog,
     deleteActivityFromCatalog,
 
     // Progreso

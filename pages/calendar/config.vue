@@ -143,13 +143,31 @@
             <UIcon name="i-heroicons-paint-brush" class="w-5 h-5 text-primary-500" />
             <div>
               <h3 class="font-medium text-gray-900 dark:text-white">Configuración de Colores</h3>
-              <p class="text-sm text-gray-500 dark:text-gray-400">Personalizar colores de los responsables</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Personalizar colores por consolidado</p>
             </div>
           </div>
           <UButton
             label="Configurar"
             variant="outline"
             @click="navigateTo('/calendar/colores')"
+          />
+        </div>
+      </UCard>
+
+      <!-- Link a catálogo de actividades -->
+      <UCard>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <UIcon name="i-heroicons-bars-3" class="w-5 h-5 text-primary-500" />
+            <div>
+              <h3 class="font-medium text-gray-900 dark:text-white">Catálogo de Actividades</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Ordenar y editar las actividades del calendario</p>
+            </div>
+          </div>
+          <UButton
+            label="Administrar"
+            variant="outline"
+            @click="navigateTo('/calendar/actividades-catalogo')"
           />
         </div>
       </UCard>
