@@ -35,6 +35,12 @@
               ]">
                 Delivery
               </button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
+              ]">
+                Permisos
+              </button>
             </div>
           </div>
           <div class="my-3 mr-20 flex justify-end items-center">
@@ -87,6 +93,12 @@
               ]">
                 Delivery
               </button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
+              ]">
+                Permisos
+              </button>
             </div>
           </div>
           <div class="my-3 mr-20 flex justify-end items-center">
@@ -102,6 +114,33 @@
         <!-- Estado de error -->
         <template #error-state>
           <ErrorState :message="errorCursos || 'Error desconocido'" />
+        </template>
+      </DataTable>
+    </div>
+
+    <div v-else-if="activeTab === 'permisos' && isAdministracion">
+      <!-- Permisos Tab (solo ADMINISTRACION) -->
+      <DataTable title="Permisos" subtitle="Verificación de pagos por permiso y tipo"
+        icon="i-heroicons-document-check" :data="permisosData" :columns="permisosColumns"
+        :loading="loadingPermisos" :current-page="paginationPermisos.current_page"
+        :total-pages="paginationPermisos.last_page" :total-records="totalRecordsPermisos"
+        :items-per-page="paginationPermisos.per_page" :primary-search-value="searchPermisos"
+        :show-primary-search="true" :show-filters="false"
+        empty-state-message="No hay registros de permisos." @update:primary-search="handleSearchPermisos"
+        @page-change="handlePageChangePermisos" @items-per-page-change="handleItemsPerPageChangePermisos"
+        :show-body-top="true">
+        <template #body-top>
+          <div class="w-50 mb-6 flex items-center">
+            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
+              <button type="button" @click="activeTab = 'consolidado'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isConsolidado ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Consolidado</button>
+              <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos</button>
+              <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
+              <button type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isPermisos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Permisos</button>
+            </div>
+          </div>
+        </template>
+        <template #error-state>
+          <ErrorState :message="errorPermisos || 'Error al cargar permisos'" />
         </template>
       </DataTable>
     </div>
@@ -138,6 +177,12 @@
               ]">
                 Delivery
               </button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
+              ]">
+                Permisos
+              </button>
             </div>
           </div>
           <div class="my-3 mr-20 flex justify-end items-center">
@@ -167,8 +212,11 @@ import type { TableColumn } from '@nuxt/ui'
 import { useConsolidado } from '~/composables/usePagosConsolidado'
 import { usePagos } from '~/composables/usePagos'
 import { useEntrega } from '~/composables/cargaconsolidada/entrega/useEntrega'
+import { useTramitesAduana } from '~/composables/basedatos/useTramitesAduana'
+import { useUserRole } from '~/composables/auth/useUserRole'
 import { ESTADOS_PAGO, CARGAS_DISPONIBLES } from '~/constants/consolidado'
 import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS } from '~/constants/cursos'
+import { ROLES } from '~/constants/roles'
 import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '~/utils/consolidado'
 import { getEstadoColor as getEstadoColorCursos, formatCurrency as formatCurrencyCursos, formatPhoneNumber as formatPhoneNumberCursos } from '~/utils/cursos'
 import { UButton, USelect } from '#components'
@@ -176,18 +224,30 @@ import DynamicModal from '~/components/DynamicModal.vue'
 import type { ModalData } from '~/composables/commons/useModal'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
-// Tabs
-const tabs = [
-  { value: 'consolidado', label: 'Consolidado' },
-  { value: 'cursos', label: 'Cursos' },
-  { value: 'delivery', label: 'Delivery' }
-]
+import type { TramiteAduana, TramiteAduanaTipoPermisoItem } from '~/types/basedatos/tramiteAduana'
+import { TRAMITE_ESTADOS } from '~/types/basedatos/tramiteAduana'
+import { formatDateTimeToDmy } from '~/utils/formatters'
+
+const { hasRole } = useUserRole()
+const isAdministracion = computed(() => hasRole(ROLES.ADMINISTRACION))
+
+// Tabs (Permisos solo visible para ADMINISTRACION)
+const tabs = computed(() => {
+  const base = [
+    { value: 'consolidado', label: 'Consolidado' },
+    { value: 'cursos', label: 'Cursos' },
+    { value: 'delivery', label: 'Delivery' },
+  ]
+  if (isAdministracion.value) base.push({ value: 'permisos', label: 'Permisos' })
+  return base
+})
 
 const activeTab = ref('consolidado')
 
 const isConsolidado = computed(() => activeTab.value === 'consolidado')
 const isCursos = computed(() => activeTab.value === 'cursos')
 const isDelivery = computed(() => activeTab.value === 'delivery')
+const isPermisos = computed(() => activeTab.value === 'permisos')
 
 const modalVisible = ref(false)
 const modalMessage = ref<ModalData | null>(null)
@@ -278,7 +338,17 @@ const {
   cargasDisponiblesDelivery
 } = useEntrega()
 
-
+// Permisos (solo para ADMINISTRACION)
+const {
+  tramites: tramitesPermisos,
+  loading: loadingPermisos,
+  error: errorPermisos,
+  pagination: paginationPermisos,
+  search: searchPermisos,
+  loadTramites: loadPermisosVerificacion,
+  totalItems: totalRecordsPermisos
+} = useTramitesAduana()
+const permisosData = computed(() => tramitesPermisos.value || [])
 
 // Configuración de filtros para consolidado
 // Opciones de cargas derivadas de los datos (únicas y ordenadas de menor a mayor)
@@ -470,7 +540,7 @@ const consolidadoColumns: TableColumn<any>[] = [
   {
     accessorKey: 'carga',
     header: 'Carga',
-    cell: ({ row }: { row: any }) => `#${row.getValue('carga')} `
+    cell: ({ row }: { row: any }) => row.original.carga_display || `#${row.getValue('carga')} `
   },
   {
     accessorKey: 'estado_pago',
@@ -746,7 +816,7 @@ const deliveryColumns: TableColumn<any>[] = [
   {
     accessorKey: 'carga',
     header: 'Carga',
-    cell: ({ row }: { row: any }) => `#${row.getValue('carga')} `
+    cell: ({ row }: { row: any }) => row.original.carga_display || `#${row.getValue('carga')} `
   },
   {
     accessorKey: 'estado_pago',
@@ -826,6 +896,72 @@ const deliveryColumns: TableColumn<any>[] = [
 
 ]
 
+// Columnas para Permisos (verificación): Cliente, Consolidado, Entidad, T. Permiso, Servicio, Acción
+const permisosColumns: TableColumn<TramiteAduana>[] = [
+  {
+    accessorKey: 'cliente',
+    header: 'Cliente',
+    cell: ({ row }: { row: any }) => {
+      const c = row.original.cliente
+      if (!c) return h('span', { class: 'text-gray-400' }, '-')
+      return h('div', { class: 'text-sm' }, [
+        h('div', { class: 'font-medium text-primary-600 dark:text-primary-400' }, c.nombre || '-'),
+        h('div', { class: 'text-gray-500' }, [c.ruc || '', c.telefono || ''].filter(Boolean).join(' ')),
+        h('div', { class: 'text-gray-500' }, c.email || 'Sin correo'),
+      ])
+    },
+  },
+  {
+    accessorKey: 'consolidado',
+    header: 'Consolidado',
+    cell: ({ row }: { row: any }) => {
+      const c = row.original.consolidado
+      const codigo = c?.codigo || c?.nombre
+      if (codigo) return h('span', {}, codigo)
+      return h('span', {}, `#${row.original.id_consolidado}`)
+    },
+  },
+  {
+    accessorKey: 'entidad',
+    header: 'Entidad',
+    cell: ({ row }: { row: any }) => h('span', row.original.entidad?.nombre ?? '-'),
+  },
+  {
+    accessorKey: 'tipo_permiso',
+    header: 'T. Permiso',
+    cell: ({ row }: { row: any }) => {
+      const tipos = row.original.tipos_permiso ?? []
+      if (tipos.length === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      return h('span', { class: 'text-sm' }, tipos.map((tp: TramiteAduanaTipoPermisoItem) => tp.nombre_permiso).join(', '))
+    },
+  },
+  {
+    accessorKey: 'precio',
+    header: 'Servicio',
+    cell: ({ row }: { row: any }) => {
+      const t = row.original
+      const monto = Number(t.precio) || 0
+      const pagado = Number(t.total_pago_servicio) || 0
+      const isPagado = monto > 0 && pagado >= monto
+      const bg = isPagado ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-200' : 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-200'
+      return h('span', { class: `inline-flex px-2 py-1 rounded text-xs font-medium border ${bg}` }, `S/. ${monto.toFixed(2)}`)
+    },
+  },
+  {
+    id: 'actions',
+    header: 'Acción',
+    cell: ({ row }: { row: any }) =>
+      h(UButton as any, {
+        icon: 'i-heroicons-eye',
+        variant: 'ghost',
+        size: 'xs',
+        color: 'primary',
+        title: 'Ver detalle y verificar pagos',
+        onClick: () => navigateTo(`/verificacion/permisos/${row.original.id}`),
+      }),
+  },
+]
+
 const totalImporteConsolidado = computed(() =>
   consolidadoData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
 )
@@ -875,8 +1011,18 @@ const handleSearch = async (query: string) => {
   } else if (activeTab.value === 'delivery') {
     searchDelivery.value = query
     await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
+  } else if (activeTab.value === 'permisos') {
+    searchPermisos.value = query
+    await loadPermisosVerificacion({ page: 1 })
   }
 }
+
+const handleSearchPermisos = (query: string) => {
+  searchPermisos.value = query
+  loadPermisosVerificacion({ page: 1 })
+}
+const handlePageChangePermisos = (page: number) => loadPermisosVerificacion({ page })
+const handleItemsPerPageChangePermisos = (limit: number) => loadPermisosVerificacion({ page: 1, limit })
 
 const handlePageChange = async (page: number) => {
   const idCotizacion = getIdCotizacionFromRoute()
@@ -889,6 +1035,8 @@ const handlePageChange = async (page: number) => {
   } else if (activeTab.value === 'delivery') {
     paginationDelivery.value.current_page = page
     await fetchDeliveryData(filtersDelivery.value, page, itemsPerPageDelivery.value)
+  } else if (activeTab.value === 'permisos') {
+    await loadPermisosVerificacion({ page })
   }
 }
 
@@ -903,6 +1051,8 @@ const handleItemsPerPageChange = async (items: number) => {
   } else if (activeTab.value === 'delivery') {
     paginationDelivery.value.per_page = items
     await fetchDeliveryData(filtersDelivery.value, 1, items)
+  } else if (activeTab.value === 'permisos') {
+    await loadPermisosVerificacion({ page: 1, limit: items })
   }
 }
 
@@ -1009,7 +1159,7 @@ onMounted(async () => {
   if (tabQuery) {
     activeTab.value = tabQuery as string
   } else {
-    activeTab.value = (tabs && tabs.length > 0) ? tabs[0].value : 'consolidado' // Cambiar a 'consolidado' como tab inicial
+    activeTab.value = (tabs.value && tabs.value.length > 0) ? tabs.value[0].value : 'consolidado'
   }
   
   
@@ -1021,8 +1171,9 @@ onMounted(async () => {
   } else if (activeTab.value === 'cursos') {
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
-    // Cargar todos los datos de delivery
     await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
+  } else if (activeTab.value === 'permisos' && isAdministracion.value) {
+    await loadPermisosVerificacion({ page: 1 })
   }
 })
 watch(activeTab, async (newTab, oldTab) => {
@@ -1043,9 +1194,12 @@ watch(activeTab, async (newTab, oldTab) => {
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   } else if (newTab === 'delivery') {
     navigateTo(`/verificacion?tab=delivery`)
-    // Cargar todos los datos de delivery
     try { searchDelivery.value = '' } catch (e) { /* ignore */ }
     await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
+  } else if (newTab === 'permisos') {
+    navigateTo(`/verificacion?tab=permisos`)
+    try { searchPermisos.value = '' } catch (e) { /* ignore */ }
+    await loadPermisosVerificacion({ page: 1 })
   }
 })
 </script>

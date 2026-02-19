@@ -8,6 +8,7 @@ import type {
   TramiteCategoria,
   TipoPermisoSection,
   PagoConDatos,
+  ComprobanteVerificacion,
 } from '~/types/basedatos/tramiteAduana'
 
 /** Si la categoría es Expediente/CPB → f_inicio; Decreto (resolutivo) o Hoja resumen → f_termino (días lo calcula el backend). */
@@ -47,6 +48,10 @@ export function useTramiteDocumentos() {
   const pagosConDatos = ref<PagoConDatos[]>([])
   /** Solo RH o Factura del tramitador (compartido) */
   const seguimientoCompartido = ref<TramiteDocumento[]>([])
+  /** Comprobantes de derecho por tipo (tabla pagos_permiso_derecho_tramite) */
+  const comprobantesDerechoPorTipo = ref<Record<number, ComprobanteVerificacion[]>>({})
+  /** Comprobantes del tramitador (tabla pagos_permiso_tramite) */
+  const comprobantesTramitador = ref<ComprobanteVerificacion[]>([])
   const loading = ref(false)
   const uploading = ref(false)
   const error = ref<string | null>(null)
@@ -115,6 +120,8 @@ export function useTramiteDocumentos() {
         pagoServicio.value = res.pago_servicio ?? []
         pagosConDatos.value = res.pagos_con_datos ?? []
         seguimientoCompartido.value = res.seguimiento_compartido ?? []
+        comprobantesDerechoPorTipo.value = res.comprobantes_derecho_por_tipo ?? {}
+        comprobantesTramitador.value = res.comprobantes_tramitador ?? []
         // Asegurar que todos los documentos de data estén en las secciones (por si el backend no los incluye)
         mergeDocumentosEnSecciones()
       } else {
@@ -430,6 +437,8 @@ export function useTramiteDocumentos() {
     pagoServicio,
     pagosConDatos,
     seguimientoCompartido,
+    comprobantesDerechoPorTipo,
+    comprobantesTramitador,
     loading,
     uploading,
     error,

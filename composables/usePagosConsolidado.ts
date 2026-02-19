@@ -112,11 +112,14 @@ export const useConsolidado = () => {
       consolidadoData.value = response.data
       pagination.value = response.pagination
 
-      // Populate cargasDisponibles from response when available (fallback to response.filters.cargas)
+      // Populate cargasDisponibles from response (backend envía label en formato "#carga -año")
       const apiCargas = (response as any)?.cargas_disponibles ?? (response as any)?.filters?.cargas ?? []
       cargasDisponibles.value = [
         { value: 'todos', label: 'Todas las cargas' },
-        ...apiCargas.map((c: any) => ({ value: String(c.carga ?? c.value ?? c.ID), label: `#${String(c.carga ?? c.value ?? c.ID)}` }))
+        ...apiCargas.map((c: any) => ({
+          value: String(c.value ?? c.carga ?? c.ID),
+          label: c.label || `#${String(c.carga ?? c.value ?? c.ID)}`
+        }))
       ]
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Error desconocido'

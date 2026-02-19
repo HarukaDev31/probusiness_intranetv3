@@ -133,6 +133,10 @@ export interface PagoConDatos {
   monto: string | null
   fecha_pago: string | null
   banco: string | null
+  /** Estado de verificación desde la BD: PENDIENTE | CONFIRMADO | OBSERVADO. El backend puede enviar cualquiera de estos nombres. */
+  estado_verificacion?: string | null
+  estado?: string | null
+  status?: string | null
 }
 
 export interface TramiteDocumentoListResponse {
@@ -157,7 +161,24 @@ export interface TramiteDocumentoListResponse {
   /** Solo RH o Factura del tramitador (compartido entre todos los permisos) */
   seguimiento_compartido?: TramiteDocumento[]
   seguimiento_por_tipo?: Record<number, TramiteDocumento[]>
+  /** Comprobantes de pago (derecho por tipo) subidos en Verificación; tabla pagos_permiso_derecho_tramite */
+  comprobantes_derecho_por_tipo?: Record<number, ComprobanteVerificacion[]>
+  /** Comprobantes del tramitador subidos en Verificación; tabla pagos_permiso_tramite */
+  comprobantes_tramitador?: ComprobanteVerificacion[]
   error?: string
+}
+
+/** Comprobante subido en Verificación (no en categorías/documentos). */
+export interface ComprobanteVerificacion {
+  id: number
+  id_tipo_permiso?: number
+  url: string
+  nombre_original: string
+  extension?: string
+  peso?: number
+  monto?: string | null
+  banco?: string | null
+  fecha_cierre?: string | null
 }
 
 export interface TramiteDocumentoResponse {
