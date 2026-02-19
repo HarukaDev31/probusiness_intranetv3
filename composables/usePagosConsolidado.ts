@@ -62,7 +62,8 @@ export const useConsolidado = () => {
     }
 
     if (filters.value.carga && filters.value.carga !== 'todos') {
-      data = data.filter(item => item.carga === filters.value.carga)
+      // value del filtro es id del contenedor (id_consolidado)
+      data = data.filter(item => String(item.id_consolidado ?? item.carga) === String(filters.value.carga))
     }
 
     return data
