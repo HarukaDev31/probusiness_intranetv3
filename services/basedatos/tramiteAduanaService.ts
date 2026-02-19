@@ -98,4 +98,25 @@ export class TramiteAduanaService extends BaseService {
       return { success: false, error: 'Error al actualizar el estado' }
     }
   }
+
+  /**
+   * Actualiza f_inicio y/o f_termino del tipo_permiso (pivot). El backend debe calcular dias = diferencia en días.
+   * Se llama al subir "Expediente CPB" (f_inicio) o "Decreto" / "Hoja resumen" (f_termino).
+   */
+  static async updateTipoPermisoFechas(
+    tramiteId: number,
+    tipoPermisoId: number,
+    payload: { f_inicio?: string | null; f_termino?: string | null }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; error?: string }>(
+        `${BASE}/${tramiteId}/tipos-permiso/${tipoPermisoId}/fechas`,
+        { method: 'PATCH', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } }
+      )
+      return response
+    } catch (error) {
+      console.error('Error updating tipo permiso fechas:', error)
+      return { success: false, error: 'Error al actualizar fechas' }
+    }
+  }
 }
