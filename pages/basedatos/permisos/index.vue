@@ -43,7 +43,7 @@ import PermisoTramiteModal from '~/components/basedatos/PermisoTramiteModal.vue'
 import { useTramitesAduana } from '~/composables/basedatos/useTramitesAduana'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import type { TramiteAduana, CreateTramiteAduanaRequest } from '~/types/basedatos/tramiteAduana'
+import type { TramiteAduana, TramiteAduanaTipoPermisoItem, TramiteEstado, CreateTramiteAduanaRequest } from '~/types/basedatos/tramiteAduana'
 import { TRAMITE_ESTADOS } from '~/types/basedatos/tramiteAduana'
 import { TramiteAduanaCatalogoService } from '~/services/basedatos/tramiteAduanaCatalogoService'
 
@@ -70,6 +70,7 @@ const {
   createTramite,
   updateTramite,
   deleteTramite,
+  updateTipoPermisoEstado,
   consolidados,
   loadConsolidados,
   clientesByConsolidado,
@@ -91,11 +92,8 @@ const permisoModal = overlay.create(PermisoTramiteModal)
 
 const selectedTramite = ref<TramiteAduana | null>(null)
 const saving = ref(false)
-const updatingEstadoId = ref<number | null>(null)
-
-const estadoSelectOptions = computed(() =>
-  TRAMITE_ESTADOS.map(e => ({ label: e.label, value: e.value }))
-)
+/** key = `${tramiteId}_${tipoPermisoId}` para no bloquear toda la fila */
+const updatingEstadoKey = ref<string | null>(null)
 
 const filterConfig = computed(() => [
   {
@@ -155,83 +153,131 @@ const tableColumns = computed<TableColumn<TramiteAduana>[]>(() => [
   {
     accessorKey: 'entidad',
     header: 'Entidad',
-    cell: ({ row }) => row.original.entidad?.nombre ?? '-',
+    cell: ({ row }) => h('span', row.original.entidad?.nombre ?? '-'),
   },
   {
     accessorKey: 'tipo_permiso',
     header: 'T. Permiso',
-    cell: ({ row }) => row.original.tipo_permiso?.nombre_permiso ?? '-',
+    cell: ({ row }) => {
+      const tipos = row.original.tipos_permiso ?? []
+      if (tipos.length === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      return h('div', { class: 'flex flex-col gap-1.5' }, tipos.map((tp: TramiteAduanaTipoPermisoItem) => {
+        return h('div', { class: 'text-sm font-medium text-gray-900 dark:text-gray-100 py-0.5 min-h-7 flex items-center' }, tp.nombre_permiso)
+      }))
+    },
   },
   {
     accessorKey: 'derecho_entidad',
     header: 'Derecho tramite',
-    cell: ({ row }) => h('span', {}, `S/.${Number(row.original.derecho_entidad).toFixed(2)}`),
+    cell: ({ row }) => {
+      const tipos = row.original.tipos_permiso ?? []
+      if (tipos.length === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      return h('div', { class: 'flex flex-col gap-1.5' }, tipos.map((tp: TramiteAduanaTipoPermisoItem) => {
+        return h('div', { class: 'text-sm text-gray-600 dark:text-gray-400 py-0.5 min-h-7 flex items-center' }, `S/.${Number(tp.derecho_entidad).toFixed(2)}`)
+      }))
+    },
+  },
+  {
+    accessorKey: 'tramitador',
+    header: 'Tramitador',
+    cell: ({ row }) => {
+      const v = row.original.tramitador
+      if (v == null || (typeof v === 'number' && Number.isNaN(v))) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      return h('span', { class: 'text-sm text-gray-700 dark:text-gray-300' }, `S/.${Number(v).toFixed(2)}`)
+    },
   },
   {
     accessorKey: 'precio',
-    header: 'Precio',
-    cell: ({ row }) => h('span', {}, `S/.${Number(row.original.precio).toFixed(2)}`),
+    header: 'Servicio',
+    cell: ({ row }) => h('span', { class: 'text-sm' }, `S/.${Number(row.original.precio).toFixed(2)}`),
   },
   {
     accessorKey: 'f_inicio',
     header: 'F. Inicio',
-    cell: ({ row }) => formatDate(row.original.f_inicio),
+    cell: ({ row }) => {
+      const tipos = row.original.tipos_permiso ?? []
+      if (tipos.length === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      return h('div', { class: 'flex flex-col gap-1.5' }, tipos.map((tp: TramiteAduanaTipoPermisoItem) =>
+        h('div', { class: 'text-sm text-gray-700 dark:text-gray-300 py-0.5 min-h-7 flex items-center' }, formatDateTimeToDmy(tp.f_inicio ?? (row.original as any).f_inicio))
+      ))
+    },
   },
   {
     accessorKey: 'f_termino',
     header: 'F. Termino',
-    cell: ({ row }) => formatDate(row.original.f_termino),
+    cell: ({ row }) => {
+      const tipos = row.original.tipos_permiso ?? []
+      if (tipos.length === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      return h('div', { class: 'flex flex-col gap-1.5' }, tipos.map((tp: TramiteAduanaTipoPermisoItem) =>
+        h('div', { class: 'text-sm text-gray-700 dark:text-gray-300 py-0.5 min-h-7 flex items-center' }, formatDateTimeToDmy(tp.f_termino ?? (row.original as any).f_termino))
+      ))
+    },
   },
   {
     accessorKey: 'f_caducidad',
     header: 'F. Caducidad',
-    cell: ({ row }) => formatDate(row.original.f_caducidad),
+    cell: ({ row }) => {
+      const tipos = row.original.tipos_permiso ?? []
+      if (tipos.length === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      return h('div', { class: 'flex flex-col gap-1.5' }, tipos.map((tp: TramiteAduanaTipoPermisoItem) =>
+        h('div', { class: 'text-sm text-gray-700 dark:text-gray-300 py-0.5 min-h-7 flex items-center' }, formatDateTimeToDmy(tp.f_caducidad ?? (row.original as any).f_caducidad))
+      ))
+    },
   },
   {
     accessorKey: 'dias',
     header: 'Días',
-    cell: ({ row }) => row.original.dias ?? '-',
+    cell: ({ row }) => {
+      const tipos = row.original.tipos_permiso ?? []
+      if (tipos.length === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      return h('div', { class: 'flex flex-col gap-1.5' }, tipos.map((tp: TramiteAduanaTipoPermisoItem) =>
+        h('div', { class: 'text-sm text-gray-700 dark:text-gray-300 py-0.5 min-h-7 flex items-center' }, String(tp.dias ?? (row.original as any).dias ?? '-'))
+      ))
+    },
   },
   {
     accessorKey: 'estado',
     header: 'Estado',
     cell: ({ row }) => {
-      const t = row.original
-      const isUpdating = updatingEstadoId.value === t.id
-      const est = TRAMITE_ESTADOS.find(e => e.value === (t.estado ?? ''))
-      const bg = (est && 'bgColor' in est ? est.bgColor : '#AAAAAA') as string
-      const text = (est && 'textColor' in est ? est.textColor : '#F0F0F0') as string
-      return h(UPopover as any, {
-        disabled: isUpdating,
-      }, {
-        default: () => h('button', {
-          class: 'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium min-w-[100px] justify-center border-0 cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed',
-          style: { backgroundColor: bg, color: text },
-          disabled: isUpdating,
-        }, [
-          isUpdating ? '...' : (est?.label ?? t.estado ?? '-'),
-          ...(isUpdating ? [] : [h(UIcon as any, { name: 'i-heroicons-chevron-down', class: 'w-3 h-3 ml-0.5' })]),
-        ]),
-        content: () => h('div', {
-          class: 'p-1.5 flex flex-col gap-1 min-w-[140px]',
-        }, TRAMITE_ESTADOS.map((e) => {
-          const itemBg = 'bgColor' in e ? e.bgColor : '#AAAAAA'
-          const itemText = 'textColor' in e ? e.textColor : '#F0F0F0'
-          return h('button', {
-            type: 'button',
-            key: e.value,
-            class: 'w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium border-0 cursor-pointer transition-opacity hover:opacity-90',
-            style: { backgroundColor: itemBg, color: itemText },
-            onClick: () => handleEstadoChange(t, e.value),
-          }, e.label)
-        })),
-      })
+      const tramite = row.original
+      const tipos = tramite.tipos_permiso ?? []
+      if (tipos.length === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      return h('div', { class: 'flex flex-col gap-1.5' }, tipos.map((tp: TramiteAduanaTipoPermisoItem) => {
+        const key = `${tramite.id}_${tp.id}`
+        const isUpdating = updatingEstadoKey.value === key
+        const est = TRAMITE_ESTADOS.find(e => e.value === (tp.estado ?? ''))
+        const bg = (est?.bgColor ?? '#AAAAAA') as string
+        const text = (est?.textColor ?? '#F0F0F0') as string
+        return h('div', { class: 'py-0.5 min-h-7 flex items-center' }, [
+          h(UPopover as any, { disabled: isUpdating }, {
+            default: () => h('button', {
+              type: 'button',
+              class: 'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border-0 cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px] justify-center',
+              style: { backgroundColor: bg, color: text },
+              disabled: isUpdating,
+            }, [
+              isUpdating ? '...' : (est?.label ?? tp.estado ?? '-'),
+              ...(isUpdating ? [] : [h(UIcon as any, { name: 'i-heroicons-chevron-down', class: 'w-3 h-3 ml-0.5' })]),
+            ]),
+            content: () => h('div', { class: 'p-1.5 flex flex-col gap-1 min-w-[140px]' },
+              TRAMITE_ESTADOS.map((e: { value: string; label: string; bgColor: string; textColor: string }) =>
+                h('button', {
+                  type: 'button',
+                  class: 'w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium border-0 cursor-pointer transition-opacity hover:opacity-90',
+                  style: { backgroundColor: e.bgColor, color: e.textColor },
+                  onClick: () => handleEstadoChange(tramite, tp, e.value),
+                }, e.label)
+              )
+            ),
+          }),
+        ])
+      }))
     },
   },
   {
     id: 'actions',
     header: 'Acciones',
-    cell: ({ row }) => h('div', { class: 'flex gap-1' }, [
+    cell: ({ row }) => h('div', { class: 'flex flex-wrap items-center gap-1.5' }, [
       h(UButton as any, {
         icon: 'i-heroicons-document-text',
         variant: 'ghost',
@@ -308,14 +354,15 @@ function handleClearFilters() {
   loadTramites({ page: 1 })
 }
 
-async function handleEstadoChange(tramite: TramiteAduana, nuevoEstado: string) {
-  if (!nuevoEstado || nuevoEstado === tramite.estado) return
-  updatingEstadoId.value = tramite.id
+async function handleEstadoChange(tramite: TramiteAduana, tp: TramiteAduanaTipoPermisoItem, nuevoEstado: string) {
+  if (!tp || !nuevoEstado || nuevoEstado === tp.estado) return
+  const key = `${tramite.id}_${tp.id}`
+  updatingEstadoKey.value = key
   try {
     await withSpinner(async () => {
-      const res = await updateTramite(tramite.id, { estado: nuevoEstado as TramiteAduana['estado'] })
+      const res = await updateTipoPermisoEstado(tramite.id, tp.id, nuevoEstado)
       if (res.success) {
-        showSuccess('Actualizado', 'Estado del trámite actualizado')
+        showSuccess('Actualizado', 'Estado actualizado')
         loadTramites({ page: pagination.value.current_page })
       } else {
         showError('Error', res.error || 'No se pudo actualizar el estado')
@@ -324,7 +371,7 @@ async function handleEstadoChange(tramite: TramiteAduana, nuevoEstado: string) {
   } catch (e: any) {
     showError('Error', e?.message || 'Error al actualizar el estado')
   } finally {
-    updatingEstadoId.value = null
+    updatingEstadoKey.value = null
   }
 }
 

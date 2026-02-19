@@ -1,38 +1,58 @@
 export type TramiteEstado = 'PENDIENTE' | 'SD' | 'PAGADO' | 'EN_TRAMITE' | 'RECHAZADO' | 'COMPLETADO'
 
+export interface TramiteAduanaTipoPermisoItem {
+  id: number
+  nombre_permiso: string
+  derecho_entidad: number
+  estado: TramiteEstado
+  /** Por tipo_permiso (pivot) */
+  f_inicio?: string | null
+  f_termino?: string | null
+  f_caducidad?: string | null
+  dias?: number | null
+}
+
 export interface TramiteAduana {
   id: number
   id_cotizacion: number | null
   id_consolidado: number
   id_cliente: number | null
   id_entidad: number
-  id_tipo_permiso: number
-  derecho_entidad: number
   precio: number
   f_inicio: string | null
   f_termino: string | null
   f_caducidad: string | null
   dias: number | null
   estado: TramiteEstado
+  /** Tramitador (decimal 10,2) compartido por permiso (todos los tipo_permiso) */
+  tramitador?: number | null
   created_at?: string
   updated_at?: string
   cotizacion?: { id: number; nombre?: string }
   consolidado?: { id: number; codigo?: string; nombre?: string }
   entidad?: { id: number; nombre: string }
-  tipo_permiso?: { id: number; nombre_permiso: string }
+  tipos_permiso: TramiteAduanaTipoPermisoItem[]
   cliente?: { id: number; nombre?: string; ruc?: string; telefono?: string; email?: string }
 }
 
-/** Solo los 6 campos del formulario de permiso. El backend puede rellenar el resto por defecto. */
 export interface CreateTramiteAduanaRequest {
   id_consolidado: number
   id_cliente?: number | null
   id_cotizacion?: number | null
   id_entidad: number
-  id_tipo_permiso: number
-  derecho_entidad: number
+  /** Array de tipos de permiso (derecho y fechas por tipo) */
+  tipos_permiso: {
+    id_tipo_permiso: number
+    derecho_entidad: number
+    f_inicio?: string | null
+    f_termino?: string | null
+    f_caducidad?: string | null
+    dias?: number | null
+  }[]
   precio: number
   estado?: TramiteEstado
+  /** Tramitador (decimal 10,2) compartido por permiso */
+  tramitador?: number | null
 }
 
 export interface TramiteAduanaListResponse {
@@ -58,14 +78,16 @@ export const TRAMITE_ESTADOS = [
   { value: 'COMPLETADO' as const, label: 'Completado', color: 'sky', bgColor: '#3399FF', textColor: '#F0F0F0' },
 ]
 
-/** Nombre de la categoría (carpeta). Puede ser cualquiera que envíe el front; el backend lo almacena como string. */
+/** Nombre de la categoría (carpeta). */
 export type DocumentoCategoria = string
 
-/** Categoría (carpeta) del trámite, devuelta por GET tramites/{id}/categorias */
+/** Categoría (carpeta) del trámite, devuelta por API */
 export interface TramiteCategoria {
   id: number
   id_tramite: number
   nombre: string
+  seccion?: 'documentos_tramite' | 'seguimiento'
+  id_tipo_permiso?: number | null
 }
 
 export interface TramiteCategoriaListResponse {
@@ -74,9 +96,13 @@ export interface TramiteCategoriaListResponse {
   error?: string
 }
 
+export type DocumentoSeccion = 'documentos_tramite' | 'fotos' | 'pago_servicio' | 'seguimiento'
+
 export interface TramiteDocumento {
   id: number
   id_tramite: number
+  id_tipo_permiso?: number | null
+  seccion?: DocumentoSeccion
   categoria: DocumentoCategoria
   id_categoria?: number
   nombre_documento: string
@@ -88,6 +114,18 @@ export interface TramiteDocumento {
   created_at: string | null
 }
 
+export interface TipoPermisoSection {
+  id_tipo_permiso: number
+  nombre: string
+  estado: TramiteEstado
+  /** Fecha de caducidad por tipo (pivot), independiente por tipo_permiso */
+  f_caducidad?: string | null
+  documentos_tramite: TramiteDocumento[]
+  fotos: TramiteDocumento[]
+  /** Seguimiento por tipo (Expediente, Decreto, Hoja resumen); RH va en seguimiento_compartido */
+  seguimiento?: TramiteDocumento[]
+}
+
 export interface TramiteDocumentoListResponse {
   success: boolean
   data: TramiteDocumento[]
@@ -95,9 +133,16 @@ export interface TramiteDocumentoListResponse {
     id: number
     estado: string
     entidad: string | null
-    tipo_permiso: string | null
+    tipos_permiso: string[]
     consolidado: string | null
+    f_caducidad: string | null
   }
+  categorias?: TramiteCategoria[]
+  tipos_permiso_sections?: TipoPermisoSection[]
+  pago_servicio?: TramiteDocumento[]
+  /** Solo RH o Factura del tramitador (compartido entre todos los permisos) */
+  seguimiento_compartido?: TramiteDocumento[]
+  seguimiento_por_tipo?: Record<number, TramiteDocumento[]>
   error?: string
 }
 

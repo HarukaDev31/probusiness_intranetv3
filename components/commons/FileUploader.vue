@@ -26,52 +26,37 @@
             </div>
         </div>
 
-        <!-- Lista de archivos seleccionados (internos o modelFiles del padre) -->
-        <div v-if="displayedSelectedFiles.length > 0" class="space-y-2">
-            <div v-for="(file, index) in displayedSelectedFiles" :key="getFileKey(file, index)"
-                class="flex items-center justify-between p-3 rounded-lg border border-gray-200">
-                <div class="flex items-center gap-3" @click="openFile(file as File)">
-                    <FileIcon :file="file" class="w-8 h-8"/>
+        <!-- Una sola lista: primero seleccionados (pendientes de subir), luego ya subidos -->
+        <div v-if="allFilesList.length > 0" class="space-y-2">
+            <div
+                v-for="(item, index) in allFilesList"
+                :key="item.key"
+                class="flex items-center justify-between p-3 rounded-lg border border-gray-200"
+            >
+                <div class="flex items-center gap-3" @click="openFile(item.raw)">
+                    <FileIcon :file="item.raw" class="w-8 h-8" />
                     <div>
-                        <p class="text-sm font-medium">{{ file.name }}</p>
-                        <p class="text-xs text-gray-500">{{ formatFileSize(file.size) }}</p>
+                        <p class="text-sm font-medium" :class="item.isInitial ? 'select-none cursor-default' : ''" style="word-break: break-all;">{{ item.name }}</p>
+                        <p class="text-xs" :class="item.isInitial ? 'select-none cursor-default text-gray-500' : 'text-gray-500'">{{ item.sizeText }}</p>
                     </div>
                 </div>
-                <div>
-                    <UButton color="primary" variant="ghost" class="p-2" @click="saveFile(file)">
-                        <UIcon name="i-heroicons-arrow-up-tray" />
-                    </UButton>
-                    <UButton v-if="showRemoveButton && !readOnly" color="neutral" variant="ghost" class="p-1" @click="removeSelectedFile(index)">
-                        <UIcon name="i-heroicons-trash" class="text-lg" />
-                    </UButton>
-                    
-                </div>
-            </div>
-        </div>
-
-        <!-- Lista de archivos iniciales -->
-        <div v-if="initialFiles && initialFiles.length > 0" class="space-y-2">
-            <div v-for="file in initialFiles" :key="file.id" 
-                class="flex items-center justify-between p-3 border border-gray-200 rounded-lg transition-colors">
-                <div class="flex items-center gap-3" @click="openFile(file)">
-                    <FileIcon :file="file" class="w-8 h-8" />
-                    <div>
-                        <p class="text-sm font-medium select-none cursor-default" style="word-break: break-all;">{{ file.file_name }}</p>
-                        <p class="text-xs select-none cursor-default">{{ formatFileSize(file.size || 0) }}</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <UButton variant="ghost" class="p-2" @click="downloadFileExisting(file.file_url)"
-                        title="Descargar archivo" color="secondary">
-                       
-                        <UIcon name="i-heroicons-arrow-down-tray"  
-                   
-                        />
-                    </UButton>
-                    <UButton v-if="showRemoveButton && !readOnly" color="error" variant="ghost" class="p-2" @click="removeFile(file.id)"
-                        title="Eliminar archivo">
-                        <UIcon name="i-heroicons-trash" />
-                    </UButton>
+                <div class="flex items-center space-x-1">
+                    <template v-if="item.isInitial">
+                        <UButton variant="ghost" class="p-2" title="Descargar" color="secondary" @click="downloadFileExisting((item.raw as FileItem).file_url)">
+                            <UIcon name="i-heroicons-arrow-down-tray" />
+                        </UButton>
+                        <UButton v-if="showRemoveButton && !readOnly" color="error" variant="ghost" class="p-2" title="Eliminar" @click="removeFile((item.raw as FileItem).id)">
+                            <UIcon name="i-heroicons-trash" />
+                        </UButton>
+                    </template>
+                    <template v-else>
+                        <UButton v-if="showSaveButton" color="primary" variant="ghost" class="p-2" title="Subir" @click="saveFile(item.raw as File)">
+                            <UIcon name="i-heroicons-arrow-up-tray" />
+                        </UButton>
+                        <UButton v-if="showRemoveButton && !readOnly" color="neutral" variant="ghost" class="p-1" @click="removeSelectedFile(item.selectedIndex ?? 0)">
+                            <UIcon name="i-heroicons-trash" class="text-lg" />
+                        </UButton>
+                    </template>
                 </div>
             </div>
         </div>
@@ -147,6 +132,33 @@ const acceptedTypesText = computed(() => {
 const displayedSelectedFiles = computed(() =>
     (props.modelFiles?.length ? props.modelFiles : selectedFiles.value)
 )
+
+/** Una sola lista unificada: primero seleccionados (pendientes), luego iniciales (ya subidos). */
+const allFilesList = computed(() => {
+    const list: { key: string; name: string; sizeText: string; raw: File | FileItem; isInitial: boolean; selectedIndex?: number }[] = []
+    const selected = displayedSelectedFiles.value
+    selected.forEach((file, i) => {
+        list.push({
+            key: `sel-${getFileKey(file, i)}`,
+            name: file.name,
+            sizeText: formatFileSize(file.size),
+            raw: file,
+            isInitial: false,
+            selectedIndex: i,
+        })
+    })
+    const initial = props.initialFiles ?? []
+    initial.forEach((file) => {
+        list.push({
+            key: `init-${file.id}`,
+            name: file.file_name,
+            sizeText: formatFileSize(file.size || 0),
+            raw: file,
+            isInitial: true,
+        })
+    })
+    return list
+})
 
 const showDropZone = computed(() =>
     !props.readOnly &&

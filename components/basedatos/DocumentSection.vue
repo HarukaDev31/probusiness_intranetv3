@@ -26,15 +26,16 @@
           <FileUploader
             :multiple="false"
             :initial-files="initialFilesForSlot(slotIndex - 1)"
-            :show-remove-button="true"
+            :show-remove-button="!readonly"
             :model-files="getSlotFiles(slotIndex - 1)"
-            @file-added="(file: File) => setSlotFile(slotIndex - 1, file)"
-            @file-removed="(idOrIndex: number) => handleFileRemoved(slotIndex - 1, idOrIndex)"
-            @save-file="(file: File) => handleSlotSave(slotIndex - 1, file)"
+            @file-added="(file: File) => !readonly && setSlotFile(slotIndex - 1, file)"
+            @file-removed="(idOrIndex: number) => !readonly && handleFileRemoved(slotIndex - 1, idOrIndex)"
+            @save-file="(file: File) => !readonly && handleSlotSave(slotIndex - 1, file)"
           />
         </div>
       </div>
       <UButton
+        v-if="!readonly"
         label="Agregar archivo"
         icon="i-heroicons-plus"
         variant="soft"
@@ -66,6 +67,8 @@ interface Props {
   idCategoria?: number
   /** Cuando cambia, se limpian los archivos pendientes (tras Guardar global). */
   clearTrigger?: number
+  /** Si true, oculta controles de subida/eliminación (solo lectura). */
+  readonly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -73,6 +76,7 @@ const props = withDefaults(defineProps<Props>(), {
   iconColor: 'text-gray-600 dark:text-gray-400',
   defaultSlots: 2,
   showAddButton: false,
+  readonly: false,
 })
 
 const emit = defineEmits<{

@@ -3,7 +3,10 @@
     "allow": [
       "Bash(grep:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Read(//c/Users/User/OneDrive/Desktop/Proyectos/Probusiness/probusiness_intranetv2_back/**)",
+      "Read(//c/Users/User/OneDrive/Desktop/Proyectos/Probusiness/probusiness_intranetv2_back/app/**)",
+      "Read(//c/Users/User/OneDrive/Desktop/Proyectos/Probusiness/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Lenovo\\Desktop\\Proyectos\\Probusiness\\intranet_back\\app\\Models\\CargaConsolidada"

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "c:\\Users\\User\\OneDrive\\Desktop\\Proyectos\\Probusiness\\probusiness_intranetv2_back\\routes\\modules"
+    ],
+    "allow": [
+      "Bash(\"c:/Users/User/OneDrive/Desktop/Proyectos/Probusiness/probusiness_intranetv2_back/database/migrations/2026_02_18_100003_add_tipo_permiso_seccion_to_tramite_aduana_documentos.php\":*)"
+    ]
+  }
+}

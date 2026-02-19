@@ -74,6 +74,10 @@ export function useTramitesAduana() {
     return TramiteAduanaService.delete(id)
   }
 
+  async function updateTipoPermisoEstado(tramiteId: number, tipoPermisoId: number, estado: string) {
+    return TramiteAduanaService.updateTipoPermisoEstado(tramiteId, tipoPermisoId, estado)
+  }
+
   // Opciones para dropdowns
   const consolidados = ref<Contenedor[]>([])
   const loadingConsolidados = ref(false)
@@ -166,6 +170,7 @@ export function useTramitesAduana() {
     createTramite,
     updateTramite,
     deleteTramite,
+    updateTipoPermisoEstado,
     consolidados,
     loadConsolidados,
     clientesByConsolidado,

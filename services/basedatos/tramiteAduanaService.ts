@@ -4,7 +4,6 @@ import type {
   TramiteAduanaListResponse,
   TramiteAduanaResponse,
   CreateTramiteAduanaRequest,
-  UpdateTramiteAduanaRequest,
 } from '~/types/basedatos/tramiteAduana'
 
 const BASE = '/api/base-datos/consolidado-cotizacion-aduana/tramites'
@@ -80,6 +79,23 @@ export class TramiteAduanaService extends BaseService {
     } catch (error) {
       console.error('Error deleting tramite:', error)
       return { success: false, error: 'Error al eliminar el trámite' }
+    }
+  }
+
+  static async updateTipoPermisoEstado(
+    tramiteId: number,
+    tipoPermisoId: number,
+    estado: string
+  ): Promise<{ success: boolean; data?: { estado: string }; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: { estado: string }; error?: string }>(
+        `${BASE}/${tramiteId}/tipo-permiso/${tipoPermisoId}/estado`,
+        { method: 'PATCH', body: JSON.stringify({ estado }) }
+      )
+      return response
+    } catch (error) {
+      console.error('Error updating tipo permiso estado:', error)
+      return { success: false, error: 'Error al actualizar el estado' }
     }
   }
 }

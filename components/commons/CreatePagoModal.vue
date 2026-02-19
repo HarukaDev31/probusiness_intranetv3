@@ -53,15 +53,20 @@
                 </UFormField>
               
 
-                <!-- Voucher Upload Section -->
-                <div class="col-span-2">
+                <!-- Voucher: si viene initialVoucher se muestra el nombre; si no, FileUploader -->
+                <div class="col-span-2 w-full">
                     <UFormField label="Voucher" name="voucher">
-                        <FileUploader ref="fileUploaderRef"
-                        :show-remove-button="true"
-                        :accepted-types="['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar']"
-                        :multiple="false" @file-added="handleFileAdded"
-                            @file-removed="handleFileRemoved" :show-save-button="false"  />
-
+                        <div v-if="initialVoucher" class="flex items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <UIcon name="i-heroicons-document" class="w-5 h-5 text-gray-500" />
+                            <span class="text-sm truncate flex-1">{{ initialVoucher.name }}</span>
+                        </div>
+                        <FileUploader v-else ref="fileUploaderRef"
+                            :show-remove-button="true"
+                            :accepted-types="['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar']"
+                            :multiple="false"
+                            @file-added="handleFileAdded"
+                            @file-removed="handleFileRemoved"
+                            :show-save-button="false" />
                     </UFormField>
                 </div>
             </div>
@@ -80,15 +85,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, watch } from 'vue'
 import FileUploader from './FileUploader.vue'
 import { CalendarDate } from '@internationalized/date'
 import { getLocalTimeZone, DateFormatter, } from '@internationalized/date'
 interface Props {
     clienteNombre: string
-    currency:string
+    currency: string
+    /** Si se abre desde un FileUploader (p. ej. sección Pago servicio), el archivo ya viene seleccionado */
+    initialVoucher?: File | null
 }
+const props = withDefaults(defineProps<Props>(), {
+    currency: 'USD'
+})
 const selectedFile = ref<File | null>(null)
+
+watch(() => props.initialVoucher, (f) => {
+    selectedFile.value = f ?? null
+}, { immediate: true })
+
 const handleFileAdded = (file: File) => {
     selectedFile.value = file
 }
@@ -97,9 +112,6 @@ const df = new DateFormatter('en-US', {
 })
 const hoy = new Date();
 
-const props =withDefaults( defineProps<Props>(),{
-    currency:'USD'
-})
 const fecha = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
 
 // Emits

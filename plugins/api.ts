@@ -32,12 +32,13 @@ export default defineNuxtPlugin(() => {
     try {
       const token = getAuthToken()
       const isFormData = options.body instanceof FormData
-      
-      const finalHeaders = {
+      const finalHeaders: Record<string, string> = {
         ...(isFormData ? {} : API_CONFIG.headers),
         ...options.headers,
         ...(token && { 'Authorization': `Bearer ${token}` })
       }
+      // Con FormData el navegador debe asignar Content-Type con boundary; no fijarlo aquí
+      if (isFormData) delete finalHeaders['Content-Type']
       
       const config = {
         baseURL: API_CONFIG.baseURL,
