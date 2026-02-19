@@ -25,7 +25,7 @@
 import { ref, computed } from 'vue'
 import { useGeneral } from '~/composables/cargaconsolidada/factura-guia/useGeneral'
 import { USelect, UBadge, UButton, UTooltip } from '#components'
-import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/SimpleUploadFile.vue'
+import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/CotizacionFinalSimpleUploadFile.vue'
 import SendDocumentModal from '~/components/cargaconsolidada/factura-guia/SendDocumentModal.vue'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import type { TableColumn } from '@nuxt/ui'

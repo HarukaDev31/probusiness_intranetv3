@@ -33,6 +33,8 @@ export interface TramiteAduana {
   entidad?: { id: number; nombre: string }
   tipos_permiso: TramiteAduanaTipoPermisoItem[]
   cliente?: { id: number; nombre?: string; ruc?: string; telefono?: string; email?: string }
+  /** Suma de montos de pagos (vouchers) registrados en pago servicio */
+  total_pago_servicio?: number
 }
 
 export interface CreateTramiteAduanaRequest {
@@ -126,6 +128,13 @@ export interface TipoPermisoSection {
   seguimiento?: TramiteDocumento[]
 }
 
+export interface PagoConDatos {
+  document: TramiteDocumento
+  monto: string | null
+  fecha_pago: string | null
+  banco: string | null
+}
+
 export interface TramiteDocumentoListResponse {
   success: boolean
   data: TramiteDocumento[]
@@ -133,13 +142,18 @@ export interface TramiteDocumentoListResponse {
     id: number
     estado: string
     entidad: string | null
+    /** Nombre del cliente (cotización o cliente) */
+    cliente: string | null
     tipos_permiso: string[]
+    /** Carga a la que pertenece (ej. #154 - 2025) */
     consolidado: string | null
     f_caducidad: string | null
   }
   categorias?: TramiteCategoria[]
   tipos_permiso_sections?: TipoPermisoSection[]
   pago_servicio?: TramiteDocumento[]
+  /** Cada pago con su documento (voucher) y datos (monto, banco, fecha) para mostrar uno debajo del otro */
+  pagos_con_datos?: PagoConDatos[]
   /** Solo RH o Factura del tramitador (compartido entre todos los permisos) */
   seguimiento_compartido?: TramiteDocumento[]
   seguimiento_por_tipo?: Record<number, TramiteDocumento[]>

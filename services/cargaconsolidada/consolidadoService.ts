@@ -55,7 +55,7 @@ export class ConsolidadoService extends BaseService {
                 cleanParams.estado_china = params.estado_china.trim()
             }
 
-            if (params.completado) {
+            if (params.completado !== undefined && params.completado !== null) {
                 cleanParams.completado = params.completado
             }
 

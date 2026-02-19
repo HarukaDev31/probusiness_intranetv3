@@ -10,23 +10,37 @@ export default defineNuxtConfig({
   },
   ssr: false,
   
-  // Optimizaciones de rendimiento
+  // Optimizaciones de rendimiento y lazy load
   experimental: {
     payloadExtraction: false, // Mejora tiempos de carga inicial
+    // Prefetch solo al hacer hover/focus, no al ser visible → carga inicial más rápida
+    defaults: {
+      nuxtLink: {
+        prefetch: true,
+        prefetchOn: { visibility: false, interaction: true },
+      },
+    },
+  },
+  // Carga diferida de rutas: cada página es un chunk que se descarga al navegar
+  routeRules: {
+    '/**': { prerender: false },
   },
   
-  // Code splitting y optimización de bundles
+  // Code splitting y minificación en producción (npm run build)
   vite: {
     build: {
+      // Minificación JS (solo aplica en producción)
       minify: 'terser',
       terserOptions: {
         compress: {
-          drop_console: false,
+          drop_console: false, // true para quitar console.* en producción
         },
         format: {
           comments: false,
         },
       },
+      // Minificación CSS (por defecto true en prod; explícito para asegurar)
+      cssMinify: 'esbuild',
       rollupOptions: {
         output: {
           manualChunks: (id) => {

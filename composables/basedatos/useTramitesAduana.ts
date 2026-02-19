@@ -81,20 +81,15 @@ export function useTramitesAduana() {
   // Opciones para dropdowns
   const consolidados = ref<Contenedor[]>([])
   const loadingConsolidados = ref(false)
-  async function loadConsolidados(opciones?: { sinCompletarDocumentacion?: boolean; estadoDocumentacion?: string }) {
+  async function loadConsolidados(opciones?: { sinCompletarDocumentacion?: boolean }) {
     loadingConsolidados.value = true
     try {
       const res = await ConsolidadoService.getConsolidadoData({
         limit: 500,
         page: 1,
         completado: opciones?.sinCompletarDocumentacion === true ? false : undefined,
-        estado_documentacion: opciones?.estadoDocumentacion,
       })
-      let data = res?.data ?? []
-      if (opciones?.estadoDocumentacion && data.length > 0) {
-        data = data.filter((c: Contenedor) => (c.estado_documentacion || '').toUpperCase() === opciones.estadoDocumentacion!.toUpperCase())
-      }
-      consolidados.value = data
+      consolidados.value = res?.data ?? []
     } catch {
       consolidados.value = []
     } finally {
@@ -114,7 +109,7 @@ export function useTramitesAduana() {
       const res = await GeneralService.getClientes(idConsolidado, {}, '', 500, 1)
       const list = res?.data ?? res ?? []
       clientesByConsolidado.value = Array.isArray(list) ? list.map((c: any) => ({
-        id: c.id,
+        id: c.id_cotizacion,
         nombre: c.nombre ?? c.razon_social,
         ruc: c.ruc ?? c.numero_documento,
         telefono: c.telefono ?? c.celular,

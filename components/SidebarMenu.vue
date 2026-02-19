@@ -5,7 +5,7 @@
     :class="[visible ? 'translate-x-0' : '-translate-x-full', collapsed ? 'w-20' : 'w-70']">
     <!-- Top: centered logo -->
     <div class="py-3 px-3 flex items-center gap-3" :class="[collapsed ? 'justify-center' : 'justify-start']">
-      <NuxtLink to="/" class="flex items-center gap-3">
+      <NuxtLink to="/" class="flex items-center gap-3" no-prefetch>
         <img src="https://intranet.probusiness.pe/assets/img/logos/probusiness.png" 
           :alt="collapsed ? 'Logo Probusiness' : ''"
           width="40" height="40" class="w-10 h-auto" />
@@ -212,7 +212,7 @@
 
     <!-- Bottom: user info + logout -->
     <div class="border-b border-gray-100 dark:border-gray-700 px-4 py-4">
-      <NuxtLink to="/perfil" class="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+      <NuxtLink to="/perfil" class="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer" no-prefetch>
         <UAvatar :src="userPhotoUrl || undefined" :alt="userName || 'Usuario'" :size="collapsed ? 'md' : 'sm'"
           :class="['w-10 h-10']" />
         <div class="flex-1 min-w-0" v-if="!collapsed">
@@ -461,7 +461,7 @@ onMounted(async () => {
       fetchCurrentUser()
     }
 
-    // Si la ventana se redimensiona a mobile, ocultamos el sidebar
+    // Si la ventana se redimensiona: en mobile ocultamos el sidebar, en desktop lo mostramos
     // Usar throttling con requestAnimationFrame para evitar forced reflows
     let resizeRafId: number | null = null
     const handleResize = () => {
@@ -469,7 +469,12 @@ onMounted(async () => {
       resizeRafId = requestAnimationFrame(() => {
         resizeRafId = null
         try {
-          if (window.innerWidth < 1024) visible.value = false
+          if (window.innerWidth < 1024) {
+            visible.value = false
+          } else {
+            // Al volver a vista desktop, mostrar la sidebar de nuevo
+            visible.value = true
+          }
         } catch (e) {
           // noop
         }

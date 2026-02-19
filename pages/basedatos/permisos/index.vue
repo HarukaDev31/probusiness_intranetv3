@@ -35,11 +35,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, h, resolveComponent } from 'vue'
+import { ref, computed, onMounted, nextTick, h, resolveComponent, defineAsyncComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useOverlay } from '#imports'
-import DataTable from '~/components/DataTable.vue'
-import PermisoTramiteModal from '~/components/basedatos/PermisoTramiteModal.vue'
+
+const DataTable = defineAsyncComponent(() => import('~/components/DataTable.vue'))
+const PermisoTramiteModal = defineAsyncComponent(() => import('~/components/basedatos/PermisoTramiteModal.vue'))
 import { useTramitesAduana } from '~/composables/basedatos/useTramitesAduana'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -192,6 +193,15 @@ const tableColumns = computed<TableColumn<TramiteAduana>[]>(() => [
     cell: ({ row }) => h('span', { class: 'text-sm' }, `S/.${Number(row.original.precio).toFixed(2)}`),
   },
   {
+    accessorKey: 'total_pago_servicio',
+    header: 'Pago servicio',
+    cell: ({ row }) => {
+      const v = row.original.total_pago_servicio
+      const n = v != null && !Number.isNaN(Number(v)) ? Number(v) : 0
+      return h('span', { class: 'text-sm' }, `S/.${n.toFixed(2)}`)
+    },
+  },
+  {
     accessorKey: 'f_inicio',
     header: 'F. Inicio',
     cell: ({ row }) => {
@@ -279,20 +289,12 @@ const tableColumns = computed<TableColumn<TramiteAduana>[]>(() => [
     header: 'Acciones',
     cell: ({ row }) => h('div', { class: 'flex flex-wrap items-center gap-1.5' }, [
       h(UButton as any, {
-        icon: 'i-heroicons-document-text',
-        variant: 'ghost',
-        size: 'xs',
-        color: 'orange' as any,
-        title: 'Documentos',
-        onClick: () => navigateTo(`/basedatos/permisos/documentos/${row.original.id}`),
-      }),
-      h(UButton as any, {
         icon: 'i-heroicons-eye',
         variant: 'ghost',
         size: 'xs',
         color: 'neutral',
-        title: 'Ver',
-        onClick: () => openViewModal(row.original),
+        title: 'Ver documentos',
+        onClick: () => navigateTo(`/basedatos/permisos/documentos/${row.original.id}`),
       }),
       h(UButton as any, {
         icon: 'i-heroicons-pencil-square',
@@ -419,10 +421,18 @@ function openCreateModal() {
       await loadClientesByConsolidado(id)
       permisoModal.patch({ clienteOptions: clienteOptions.value, loadingClientes: loadingClientes.value })
     },
+    onRefreshEntidades: async () => {
+      await loadEntidades()
+      permisoModal.patch({ entidadOptions: entidadOptions.value })
+    },
+    onRefreshTiposPermiso: async () => {
+      await loadTiposPermiso()
+      permisoModal.patch({ tipoPermisoOptions: tipoPermisoOptions.value })
+    },
   })
   // Cargar datos en segundo plano y actualizar el modal
   Promise.all([
-    loadConsolidados({ sinCompletarDocumentacion: true, estadoDocumentacion: 'PENDIENTE' }),
+    loadConsolidados({ sinCompletarDocumentacion: true }),
     loadEntidades(),
     loadTiposPermiso(),
   ]).then(() => {
@@ -481,11 +491,19 @@ function openEditModal(t: TramiteAduana, viewOnly = false) {
       await loadClientesByConsolidado(id)
       permisoModal.patch({ clienteOptions: clienteOptions.value, loadingClientes: loadingClientes.value })
     },
+    onRefreshEntidades: async () => {
+      await loadEntidades()
+      permisoModal.patch({ entidadOptions: entidadOptions.value })
+    },
+    onRefreshTiposPermiso: async () => {
+      await loadTiposPermiso()
+      permisoModal.patch({ tipoPermisoOptions: tipoPermisoOptions.value })
+    },
   })
-  // Cargar catálogos en segundo plano y actualizar el modal
+  // Cargar catálogos en segundo plano y actualizar el modal (solo contenedores no completados)
   const loadClientes = t.id_consolidado ? loadClientesByConsolidado(t.id_consolidado) : Promise.resolve()
   Promise.all([
-    loadConsolidados({ estadoDocumentacion: 'PENDIENTE' }),
+    loadConsolidados({ sinCompletarDocumentacion: true }),
     loadEntidades(),
     loadTiposPermiso(),
     loadClientes,

@@ -88,4 +88,57 @@ export class TramiteAduanaCatalogoService extends BaseService {
       return { success: false, data: null, error: 'Error al crear el tipo de permiso' }
     }
   }
+
+  static async updateEntidad(id: number, payload: { nombre: string }): Promise<TramiteAduanaEntidadCreateResponse> {
+    try {
+      const response = await this.apiCall<TramiteAduanaEntidadCreateResponse>(`${BASE}/entidades/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      })
+      return response
+    } catch (error) {
+      console.error('Error updating tramite aduana entidad:', error)
+      return { success: false, data: null, error: 'Error al actualizar la entidad' }
+    }
+  }
+
+  static async deleteEntidad(id: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; error?: string }>(`${BASE}/entidades/${id}`, {
+        method: 'DELETE',
+      })
+      return response
+    } catch (error) {
+      console.error('Error deleting tramite aduana entidad:', error)
+      return { success: false, error: 'Error al eliminar la entidad' }
+    }
+  }
+
+  static async updateTipoPermiso(
+    id: number,
+    payload: { nombre_permiso: string }
+  ): Promise<TramiteAduanaTipoPermisoCreateResponse> {
+    try {
+      const response = await this.apiCall<TramiteAduanaTipoPermisoCreateResponse>(`${BASE}/tipos-permiso/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      })
+      return response
+    } catch (error) {
+      console.error('Error updating tramite aduana tipo permiso:', error)
+      return { success: false, data: null, error: 'Error al actualizar el tipo de permiso' }
+    }
+  }
+
+  static async deleteTipoPermiso(id: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; error?: string }>(`${BASE}/tipos-permiso/${id}`, {
+        method: 'DELETE',
+      })
+      return response
+    } catch (error) {
+      console.error('Error deleting tramite aduana tipo permiso:', error)
+      return { success: false, error: 'Error al eliminar el tipo de permiso' }
+    }
+  }
 }

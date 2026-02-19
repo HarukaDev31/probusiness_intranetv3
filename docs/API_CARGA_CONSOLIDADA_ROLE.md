@@ -11,6 +11,11 @@ Listado de contenedores (abiertos o completados) según filtros.
 **Query params (existentes):**
 - `page`, `limit`, `search`, `fecha_inicio`, `fecha_fin`, `estado_china`, `completado`, `estado_documentacion`
 
+**Comportamiento del parámetro `completado`:**
+- **`completado=false`** (booleano): el backend debe devolver **solo contenedores que NO están en completados** (contenedores no completados / abiertos). El frontend (p. ej. permisos de trámite) usa este valor para listar contenedores disponibles sin filtrar por `estado_documentacion`.
+- **`completado=true`**: solo contenedores completados.
+- Si no se envía `completado`: comportamiento por defecto del listado (según implementación actual).
+
 **Query param nuevo:**
 - **`role`** (opcional): Rol de la vista desde la que se llama.
   - Valores esperados: `Coordinación`, `Documentacion`, o el valor que use el frontend para el rol actual de la sección (abiertos/completados por coordinación o documentación).

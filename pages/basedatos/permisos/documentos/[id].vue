@@ -11,12 +11,11 @@
           @click="navigateTo('/basedatos/permisos')"
         />
         <div>
-          <p v-if="tramiteInfo" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {{ tramiteInfo.entidad || '' }}
-            <template v-if="tramiteInfo.tipos_permiso?.length">
-              — {{ tramiteInfo.tipos_permiso.join(', ') }}
+          <p v-if="tramiteInfo" class="text-base font-medium text-gray-900 dark:text-white">
+            {{ tramiteInfo.cliente || 'Sin cliente' }}
+            <template v-if="tramiteInfo.consolidado">
+              <span class="text-gray-500 dark:text-gray-400 font-normal"> — Carga {{ tramiteInfo.consolidado }}</span>
             </template>
-            {{ tramiteInfo.consolidado ? `| ${tramiteInfo.consolidado}` : '' }}
           </p>
         </div>
       </div>
@@ -51,20 +50,16 @@
     <template v-else>
       <!-- TABS: una pestaña por tipo de permiso -->
       <div v-if="tiposPermisoSections.length">
-        <!-- Tab headers -->
-        <div class="flex gap-2 border-b border-gray-200 dark:border-gray-700 mb-6">
-          <button
-            v-for="sec in tiposPermisoSections"
-            :key="sec.id_tipo_permiso"
-            class="px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors"
-            :class="activeTab === sec.id_tipo_permiso
-              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
-            @click="activeTab = sec.id_tipo_permiso"
-          >
-            {{ sec.nombre }}
-          </button>
-        </div>
+        <UTabs
+          v-model="activeTab"
+          :color="activeTab ? 'primary' : 'neutral'"
+          
+          :items="tabs"
+          size="sm"
+          variant="pill"
+          class="mb-1 w-80 h-15"
+          v-if="tabs.length > 1"
+        />
 
         <!-- SECCIÓN 1: Documentos por trámite — FileUploader inline (Factura comercial, Ficha técnica, Fotos) -->
         <template v-for="sec in tiposPermisoSections" :key="sec.id_tipo_permiso">
@@ -76,8 +71,7 @@
                     <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h2 class="text-lg font-bold text-gray-900 dark:text-white">1. Documentos por trámite</h2>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Factura comercial, Ficha técnica y fotos — por tipo de permiso</p>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">1. Documentos por trámite</h2>
                   </div>
                 </div>
                 <UButton
@@ -154,8 +148,10 @@
               <UIcon name="i-heroicons-banknotes" class="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <h2 class="text-lg font-bold text-gray-900 dark:text-white">2. Pago servicio</h2>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Global para todo el permiso — registrar pago con voucher</p>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">2. Pago servicio</h2>
+              <p v-if="totalMontoPagoServicio !== null" class="text-sm font-medium text-green-600 dark:text-green-400 mt-0.5">
+                Total: S/ {{ totalMontoPagoServicio.toFixed(2) }}
+              </p>
             </div>
           </div>
           <UButton
@@ -168,95 +164,124 @@
             @click="openCreatePagoModal()"
           />
         </div>
-        <div class="space-y-2">
-          <p v-if="pendingPago" class="text-xs font-medium text-amber-600 dark:text-amber-400">Pago pendiente de guardar (haz clic en «Guardar» arriba para guardar todo)</p>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Vouchers / comprobantes (clic para previsualizar):</p>
-          <div class="flex flex-wrap items-start gap-2">
+        <div class="space-y-3">
+          <!-- Cada pago en una tarjeta: imagen + datos (monto, banco, f. cierre), uno debajo del otro -->
+          <div class="flex flex-col gap-3">
             <div
-              v-for="doc in pagoServicio"
-              :key="doc.id"
-              class="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 group cursor-pointer hover:ring-2 hover:ring-primary-400 transition-shadow shrink-0"
-              role="button"
-              tabindex="0"
-              @click="openPreview(doc.url)"
-              @keydown.enter="openPreview(doc.url)"
+              v-for="item in pagosParaMostrar"
+              :key="item.document.id"
+              class="flex flex-wrap items-stretch gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
             >
-              <img
-                v-if="isImage(doc.extension)"
-                :src="doc.url"
-                :alt="doc.nombre_original"
-                class="w-full h-full object-cover pointer-events-none"
-              />
-              <div v-else class="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 p-1 pointer-events-none">
-                <UIcon name="i-heroicons-document" class="w-6 h-6 text-gray-400" />
-                <span class="text-xs text-gray-400 mt-0.5 truncate w-full text-center">{{ doc.extension }}</span>
-              </div>
               <div
-                class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-              >
-                <UIcon name="i-heroicons-eye" class="w-6 h-6 text-white" />
-              </div>
-              <button
-                v-if="canUpload"
-                type="button"
-                class="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs leading-none z-10"
-                aria-label="Eliminar"
-                @click.stop="handleDelete(doc.id)"
-              >×</button>
-            </div>
-            <!-- Cuadrito: sin archivo → abre modal pago; con archivo → muestra preview (se envía al Guardar todo) -->
-            <template v-if="canUpload">
-              <div
-                class="relative w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden cursor-pointer hover:border-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex items-center justify-center shrink-0"
+                class="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 group cursor-pointer hover:ring-2 hover:ring-primary-400 transition-shadow shrink-0"
                 role="button"
                 tabindex="0"
-                @click="!pendingPago && openCreatePagoModal()"
-                @keydown.enter="!pendingPago && openCreatePagoModal()"
+                @click="openPreviewPago(item.document)"
+                @keydown.enter="openPreviewPago(item.document)"
               >
-                <template v-if="pendingPago && pendingPagoPreviewUrl">
+                <img
+                  v-if="isImage(item.document.extension)"
+                  :src="item.document.url"
+                  :alt="item.document.nombre_original"
+                  class="w-full h-full object-contain pointer-events-none bg-gray-50 dark:bg-gray-800"
+                />
+                <div v-else class="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 p-1 pointer-events-none">
+                  <UIcon name="i-heroicons-document" class="w-8 h-8 text-gray-500" />
+                  <span class="text-xs text-gray-500 truncate w-full text-center px-1">{{ item.document.nombre_original || item.document.extension }}</span>
+                </div>
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                >
+                  <UIcon name="i-heroicons-eye" class="w-6 h-6 text-white" />
+                </div>
+                <button
+                  v-if="canUpload"
+                  type="button"
+                  class="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs leading-none z-10"
+                  aria-label="Eliminar"
+                  @click.stop="handleDelete(item.document.id)"
+                >×</button>
+              </div>
+              <div class="flex flex-wrap items-end gap-3 p-2 rounded-lg min-w-0 flex-1">
+                <template v-if="canUpload">
+                  <UFormField label="Monto" class="w-24">
+                    <UInput v-model="getPagoEdit(item).monto" type="number" placeholder="0" step="0.01" size="sm" />
+                  </UFormField>
+                  <UFormField label="Banco" class="w-28">
+                    <USelectMenu
+                      :model-value="getBancoSelectForPagoEdit(item)"
+                      :items="BANCOS_OPTIONS"
+                      value-attribute="value"
+                      placeholder="Banco"
+                      size="sm"
+                      class="w-full"
+                      @update:model-value="(v) => setBancoSelectForPagoEdit(item, v)"
+                    />
+                  </UFormField>
+                  <UFormField label="F. cierre" class="w-36">
+                    <UInput v-model="getPagoEdit(item).fecha_cierre" type="date" size="sm" />
+                  </UFormField>
+                </template>
+                <template v-else>
+                  <div class="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    <span class="text-gray-500 dark:text-gray-500">Monto:</span> {{ item.monto ?? '—' }}
+                  </div>
+                  <div class="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    <span class="text-gray-500 dark:text-gray-500">Banco:</span> {{ item.banco ?? '—' }}
+                  </div>
+                  <div class="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    <span class="text-gray-500 dark:text-gray-500">F. cierre:</span> {{ item.fecha_pago ?? '—' }}
+                  </div>
+                </template>
+              </div>
+            </div>
+            <!-- Slots de pago pendientes (cada uno con imagen + datos) -->
+            <template v-if="canUpload">
+              <div
+                v-for="(p, idx) in pendingPagos"
+                :key="p.id"
+                class="flex flex-wrap items-stretch gap-3 p-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-600"
+              >
+                <div
+                  class="relative w-24 h-24 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shrink-0"
+                >
                   <img
-                    v-if="pendingPagoIsImage"
-                    :src="pendingPagoPreviewUrl"
+                    v-if="isPendingSlotImage(p)"
+                    :src="p.previewUrl!"
                     alt="Voucher"
-                    class="w-full h-full object-contain"
+                    class="w-full h-full object-contain bg-gray-50 dark:bg-gray-800"
                   />
                   <div v-else class="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 p-1">
                     <UIcon name="i-heroicons-document" class="w-8 h-8 text-gray-500" />
-                    <span class="text-xs text-gray-500 truncate w-full text-center px-1">{{ pendingPago?.voucher?.name }}</span>
+                    <span class="text-xs text-gray-500 truncate w-full text-center px-1">{{ p.voucher?.name }}</span>
                   </div>
                   <button
-                    type="button"
                     class="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none z-10"
                     aria-label="Quitar"
-                    @click.stop="clearPendingPago"
+                    @click.stop="removePendingPago(idx)"
                   >×</button>
-                </template>
-                <template v-else>
-                  <div class="flex flex-col items-center gap-1 text-gray-400">
-                    <UIcon name="i-heroicons-plus-circle" class="w-8 h-8" />
-                    <span class="text-xs">Clic para voucher</span>
-                  </div>
-                </template>
+                </div>
+                <div class="flex flex-wrap items-end gap-2 p-2 rounded-lg min-w-0 flex-1">
+                  <UFormField label="Monto" class="w-24">
+                    <UInput v-model="p.monto" type="number" placeholder="0" step="0.01" size="sm" />
+                  </UFormField>
+                  <UFormField label="Banco" class="w-28">
+                    <USelectMenu
+                      :model-value="getPendingBancoOpt(p)"
+                      :items="BANCOS_OPTIONS"
+                      value-attribute="value"
+                      placeholder="Banco"
+                      size="sm"
+                      class="w-full"
+                      @update:model-value="(v) => setPendingBanco(p, v)"
+                    />
+                  </UFormField>
+                  <UFormField label="F. cierre" class="w-36">
+                    <UInput :model-value="getPendingFechaStr(p)" type="date" size="sm" @update:model-value="(v) => setPendingFechaStr(p, v)" />
+                  </UFormField>
+                </div>
               </div>
-              <!-- Datos del pago pendiente (monto, banco, fecha) -->
-              <div v-if="pendingPago" class="flex flex-wrap items-end gap-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                <UFormField label="Monto" class="w-24">
-                  <UInput v-model="pendingPago.monto" type="number" placeholder="0" step="0.01" size="sm" />
-                </UFormField>
-                <UFormField label="Banco" class="w-28">
-                  <USelectMenu
-                    v-model="pendingPagoBancoSelected"
-                    :items="[{ label: 'BCP', value: 'BCP' }, { label: 'INTERBANK', value: 'INTERBANK' }, { label: 'YAPE', value: 'YAPE' }]"
-                    value-attribute="value"
-                    placeholder="Banco"
-                    size="sm"
-                    class="w-full"
-                  />
-                </UFormField>
-                <UFormField label="F. cierre" class="w-36">
-                  <UInput v-model="pendingPagoFechaStr" type="date" size="sm" />
-                </UFormField>
-              </div>
+             
             </template>
           </div>
         </div>
@@ -270,8 +295,7 @@
               <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <h2 class="text-lg font-bold text-gray-900 dark:text-white">3. Seguimiento</h2>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Expediente o CPB, Decreto resolutivo, Hoja resumen · RH o Factura del tramitador · F. Caducidad</p>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">3. Seguimiento</h2>
             </div>
           </div>
           <UButton
@@ -352,7 +376,7 @@
     <UModal v-model:open="showNuevoDocModal">
       <template #content>
         <UCard class="p-5 space-y-4">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Nuevo documento</h3>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Nuevo documento</h3>
           <UFormField label="Nombre del documento" required>
             <UInput v-model="nuevoDocNombre" placeholder="Ej: Factura comercial, Expediente..." />
           </UFormField>
@@ -379,6 +403,13 @@
       </template>
     </UModal>
   </UCard>
+
+  <!-- Vista previa de voucher (pago guardado) -->
+  <ModalPreview
+    :is-open="previewModalOpen"
+    :file="previewFile"
+    @close="previewModalOpen = false; previewFile = null"
+  />
 </template>
 
 <script setup lang="ts">
@@ -387,6 +418,7 @@ import { useRoute } from 'vue-router'
 import { useOverlay } from '#imports'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
+import ModalPreview from '~/components/commons/ModalPreview.vue'
 import { useTramiteDocumentos } from '~/composables/basedatos/useTramiteDocumentos'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -394,7 +426,7 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import { ROLES } from '~/constants/roles'
 import { TramiteAduanaService } from '~/services/basedatos/tramiteAduanaService'
 import { TramiteAduanaDocumentoService } from '~/services/basedatos/tramiteAduanaDocumentoService'
-import type { TramiteCategoria, TramiteDocumento } from '~/types/basedatos/tramiteAduana'
+import type { TramiteCategoria, TramiteDocumento, PagoConDatos } from '~/types/basedatos/tramiteAduana'
 import type { FileItem } from '~/types/commons/file'
 
 definePageMeta({ layout: 'default' })
@@ -410,6 +442,7 @@ const {
   categorias,
   tiposPermisoSections,
   pagoServicio,
+  pagosConDatos,
   seguimientoCompartido,
   loadDocumentos,
   uploadDocumento,
@@ -427,11 +460,67 @@ const canUpload = computed(() =>
   hasRole([ROLES.COORDINACION, ROLES.DOCUMENTACION, ROLES.JEFE_IMPORTACIONES])
 )
 
+/** Lista de pagos a mostrar: preferir pagos_con_datos del API; si no hay, usar pagoServicio con datos vacíos (retrocompat) */
+const pagosParaMostrar = computed<PagoConDatos[]>(() => {
+  if (pagosConDatos.value.length > 0) return pagosConDatos.value
+  return pagoServicio.value.map(doc => ({
+    document: doc,
+    monto: null,
+    fecha_pago: null,
+    banco: null,
+  }))
+})
+
+/** Total monto de pagos (guardados + pendientes) para mostrar junto al título */
+const totalMontoPagoServicio = computed<number | null>(() => {
+  let total = 0
+  for (const item of pagosParaMostrar.value) {
+    const m = item.monto != null && item.monto !== '' ? parseFloat(String(item.monto)) : NaN
+    if (!Number.isNaN(m)) total += m
+  }
+  for (const p of pendingPagos.value) {
+    const m = p.monto != null && p.monto !== '' ? parseFloat(String(p.monto)) : NaN
+    if (!Number.isNaN(m)) total += m
+  }
+  return total > 0 ? total : null
+})
+
+/** Edición de datos de cada pago (monto, banco, fecha); se envían en Guardar todo */
+const pagoEdits = ref<Record<number, { monto: string; banco: string; fecha_cierre: string }>>({})
+function getPagoEdit(item: PagoConDatos) {
+  const id = item.document.id
+  if (!(id in pagoEdits.value)) {
+    pagoEdits.value[id] = {
+      monto: item.monto ?? '',
+      banco: item.banco ?? '',
+      fecha_cierre: item.fecha_pago ?? '',
+    }
+  }
+  return pagoEdits.value[id]
+}
+
+const BANCOS_OPTIONS = [{ label: 'BCP', value: 'BCP' }, { label: 'INTERBANK', value: 'INTERBANK' }, { label: 'YAPE', value: 'YAPE' }]
+function getBancoSelectForPagoEdit(item: PagoConDatos) {
+  const v = getPagoEdit(item).banco || ''
+  return BANCOS_OPTIONS.find(o => o.value === v) || (v ? { label: v, value: v } : null)
+}
+function setBancoSelectForPagoEdit(item: PagoConDatos, opt: { value: string } | null) {
+  getPagoEdit(item).banco = opt?.value ?? ''
+}
+
 const activeTab = ref<number | null>(null)
+const tabs = computed(() =>
+  tiposPermisoSections.value.map(sec => ({
+    label: sec.nombre,
+    value: sec.id_tipo_permiso,
+  }))
+)
 const saving = ref(false)
 
-/** URL de previsualización del voucher pendiente (revocar al limpiar) */
-const pendingPagoPreviewUrl = ref<string | null>(null)
+
+/** Modal de vista previa (pagos guardados): abrir con doc al hacer clic en la imagen */
+const previewModalOpen = ref(false)
+const previewFile = ref<FileItem | null>(null)
 
 /** Refs a FileUploader por categoría (Documentos por trámite) — getFiles() y clearSelectedFiles() al guardar */
 const docUploaderRefs = ref<Record<string, { getFiles: () => File[]; clearSelectedFiles: () => void }>>({})
@@ -501,63 +590,55 @@ interface PendingNewDoc {
 const pendingNewDocId = ref(0)
 const pendingNewDocs = ref<PendingNewDoc[]>([])
 
-/** Pago pendiente: se registra al hacer "Guardar todo" (no al guardar en el modal) */
-interface PendingPago {
+/** Slots de pago pendientes: cada uno se guarda al hacer "Guardar todo" */
+interface PendingPagoSlot {
+  id: number
   monto: string
-  banco: string | string[]
+  banco: string
   fecha: { year: number; month: number; day: number }
   voucher: File
+  previewUrl: string | null
 }
-const pendingPago = ref<PendingPago | null>(null)
+const pendingPagoSlotId = ref(0)
+const pendingPagos = ref<PendingPagoSlot[]>([])
 
-/** Para el select de banco del pago pendiente (objeto con value para USelectMenu) */
-const pendingPagoBancoSelected = computed({
-  get: () => {
-    const b = pendingPago.value?.banco
-    const v = Array.isArray(b) ? (b[0] ?? '') : (b ?? '')
-    return v ? { label: v, value: v } : null
-  },
-  set: (opt: { value: string } | null) => {
-    if (pendingPago.value) pendingPago.value.banco = opt?.value ? [opt.value] : []
-  },
-})
-
-/** Fecha del pago pendiente como string YYYY-MM-DD para input type="date" */
-const pendingPagoFechaStr = computed({
-  get: () => {
-    const f = pendingPago.value?.fecha
-    if (!f) return ''
-    return `${f.year}-${String(f.month).padStart(2, '0')}-${String(f.day).padStart(2, '0')}`
-  },
-  set: (v: string) => {
-    if (!pendingPago.value || !v) return
-    const part = v.split('-')
-    if (part.length !== 3) return
-    pendingPago.value.fecha = {
-      year: parseInt(part[0], 10),
-      month: parseInt(part[1], 10),
-      day: parseInt(part[2], 10),
-    }
-  },
-})
-
-const pendingPagoIsImage = computed(() => {
-  const name = pendingPago.value?.voucher?.name ?? ''
+function getPendingBancoOpt(p: PendingPagoSlot) {
+  const v = p.banco || ''
+  return BANCOS_OPTIONS.find(o => o.value === v) || (v ? { label: v, value: v } : null)
+}
+function setPendingBanco(p: PendingPagoSlot, opt: { value: string } | null) {
+  p.banco = opt?.value ?? ''
+}
+function getPendingFechaStr(p: PendingPagoSlot) {
+  const f = p.fecha
+  if (!f) return ''
+  return `${f.year}-${String(f.month).padStart(2, '0')}-${String(f.day).padStart(2, '0')}`
+}
+function setPendingFechaStr(p: PendingPagoSlot, v: string) {
+  if (!v) return
+  const part = v.split('-')
+  if (part.length !== 3) return
+  p.fecha = {
+    year: parseInt(part[0], 10),
+    month: parseInt(part[1], 10),
+    day: parseInt(part[2], 10),
+  }
+}
+function isPendingSlotImage(p: PendingPagoSlot) {
+  const name = p.voucher?.name ?? ''
   const ext = name.split('.').pop()?.toLowerCase() ?? ''
   return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)
-})
+}
 
-function clearPendingPago() {
-  if (pendingPagoPreviewUrl.value) {
-    URL.revokeObjectURL(pendingPagoPreviewUrl.value)
-    pendingPagoPreviewUrl.value = null
-  }
-  pendingPago.value = null
+function removePendingPago(idx: number) {
+  const p = pendingPagos.value[idx]
+  if (p?.previewUrl) URL.revokeObjectURL(p.previewUrl)
+  pendingPagos.value.splice(idx, 1)
 }
 
 function openCreatePagoModal() {
   createPagoModal.open({
-    clienteNombre: tramiteInfo.value?.entidad ?? 'Trámite',
+    clienteNombre: tramiteInfo.value?.cliente ?? tramiteInfo.value?.entidad ?? 'Trámite',
     currency: 'PEN',
     onSave: (data: { monto: string; banco: string | string[]; fecha: { year: number; month: number; day: number }; voucher: File | null }) => {
       if (!data.voucher) {
@@ -571,14 +652,16 @@ function openCreatePagoModal() {
         showError('Error', 'Selecciona la fecha de cierre')
         return
       }
-      if (pendingPagoPreviewUrl.value) URL.revokeObjectURL(pendingPagoPreviewUrl.value)
-      pendingPagoPreviewUrl.value = URL.createObjectURL(data.voucher)
-      pendingPago.value = {
+      const bancoVal = Array.isArray(data.banco) ? (data.banco[0] ?? '') : (data.banco ?? '')
+      pendingPagoSlotId.value += 1
+      pendingPagos.value.push({
+        id: pendingPagoSlotId.value,
         monto: data.monto,
-        banco: data.banco,
+        banco: bancoVal,
         fecha: f,
         voucher: data.voucher,
-      }
+        previewUrl: URL.createObjectURL(data.voucher),
+      })
       createPagoModal.close()
     },
   })
@@ -641,14 +724,20 @@ function removePendingDoc(pendingId: number) {
   pendingNewDocs.value = pendingNewDocs.value.filter(p => p.id !== pendingId)
 }
 
-/** Categorías para un tipo y sección (desde API) */
+/** Categorías para un tipo y sección (desde API), ordenadas por id */
 function categoriasParaTipo(tipoId: number, seccion: 'documentos_tramite' | 'seguimiento') {
-  return categorias.value.filter(c => c.id_tipo_permiso === tipoId && (c.seccion ?? 'documentos_tramite') === seccion)
+  return categorias.value
+    .filter(c => c.id_tipo_permiso === tipoId && (c.seccion ?? 'documentos_tramite') === seccion)
+    .slice()
+    .sort((a, b) => a.id - b.id)
 }
 
-/** Slots de seguimiento por tipo (Expediente, Decreto, Hoja) — no RH */
+/** Slots de seguimiento por tipo (Expediente, Decreto, Hoja) — no RH, ordenados por id */
 function categoriasSeguimientoPorTipo(tipoId: number) {
-  return categorias.value.filter(c => c.seccion === 'seguimiento' && c.id_tipo_permiso === tipoId)
+  return categorias.value
+    .filter(c => c.seccion === 'seguimiento' && c.id_tipo_permiso === tipoId)
+    .slice()
+    .sort((a, b) => a.id - b.id)
 }
 
 /** Categoría RH compartida */
@@ -746,6 +835,20 @@ function openPreview(url: string) {
   if (url) window.open(url, '_blank', 'noopener,noreferrer')
 }
 
+function openPreviewPago(doc: TramiteDocumento) {
+  if (!doc?.url) return
+  previewFile.value = {
+    id: doc.id,
+    file_url: doc.url,
+    file_name: doc.nombre_original || `documento.${doc.extension || 'pdf'}`,
+    type: '',
+    size: doc.peso ?? 0,
+    lastModified: 0,
+    file_ext: doc.extension || '',
+  }
+  previewModalOpen.value = true
+}
+
 function isImage(ext: string) {
   return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes((ext || '').toLowerCase())
 }
@@ -835,25 +938,24 @@ async function guardarTodo() {
       }
     }
 
-    // 3) Pago pendiente: validar y preparar para enviar en la misma petición guardar todo
-    let pagoPayload: { monto: string; banco: string; fecha_cierre: string; voucher: File } | null = null
-    if (pendingPago.value) {
-      const p = pendingPago.value
-      const bancoVal = Array.isArray(p.banco) ? (p.banco[0] ?? '') : (p.banco ?? '')
+    // 3) Pagos pendientes: validar y preparar array para enviar en la misma petición guardar todo
+    const pagosPayload: Array<{ monto: string; banco: string; fecha_cierre: string; voucher: File }> = []
+    for (const p of pendingPagos.value) {
       const montoStr = p.monto != null ? String(p.monto).trim() : ''
-      if (!montoStr || !bancoVal || !p.fecha?.year || !p.fecha?.month || !p.fecha?.day) {
-        showError('Pago pendiente', 'Completa monto, banco y fecha de cierre del voucher pendiente.')
+      const bancoStr = String(p.banco ?? '').trim()
+      if (!montoStr || !bancoStr || !p.fecha?.year || !p.fecha?.month || !p.fecha?.day) {
+        showError('Pago pendiente', 'Completa monto, banco y fecha de cierre en todos los vouchers pendientes.')
         return
       }
-      pagoPayload = {
+      pagosPayload.push({
         monto: montoStr,
-        banco: bancoVal,
+        banco: bancoStr,
         fecha_cierre: `${p.fecha.year}-${String(p.fecha.month).padStart(2, '0')}-${String(p.fecha.day).padStart(2, '0')}`,
         voucher: p.voucher,
-      }
+      })
     }
 
-    // 4) Guardar todo en una sola petición: documentos + guardar tipos + pago (si hay)
+    // 4) Guardar todo en una sola petición: documentos + guardar tipos + pagos (si hay)
     const guardarTipos = tiposPermisoSections.value.map(sec => ({
       id_tipo_permiso: sec.id_tipo_permiso,
       documentos_tramite_ids: sec.documentos_tramite.map(d => d.id),
@@ -861,22 +963,31 @@ async function guardarTodo() {
       seguimiento_ids: (sec.seguimiento ?? []).map(d => d.id),
       f_caducidad: sec.f_caducidad ?? undefined,
     }))
+    const pagoActualizaciones = pagosParaMostrar.value.map(item => {
+      const edit = getPagoEdit(item)
+      return {
+        id_documento: item.document.id,
+        monto: String(edit.monto ?? '').trim(),
+        banco: String(edit.banco ?? '').trim(),
+        fecha_cierre: String(edit.fecha_cierre ?? '').trim(),
+      }
+    })
     const ok = await guardarTodoBatch(tramiteId, {
       items,
       guardarTipos,
-      pago: pagoPayload,
+      pagos: pagosPayload.length ? pagosPayload : undefined,
+      pagoActualizaciones: pagoActualizaciones.length ? pagoActualizaciones : undefined,
     })
     if (!ok) {
       showError('Error al guardar', error?.value ?? 'Error al guardar')
       return
     }
 
-    if (pagoPayload) {
-      if (pendingPagoPreviewUrl.value) {
-        URL.revokeObjectURL(pendingPagoPreviewUrl.value)
-        pendingPagoPreviewUrl.value = null
+    if (pagosPayload.length) {
+      for (const p of pendingPagos.value) {
+        if (p.previewUrl) URL.revokeObjectURL(p.previewUrl)
       }
-      pendingPago.value = null
+      pendingPagos.value = []
     }
 
     for (const sec of tiposPermisoSections.value) {
@@ -895,6 +1006,7 @@ async function guardarTodo() {
 
     showSuccess('Guardado', 'Datos de todos los tabs guardados correctamente')
     await loadDocumentos(tramiteId)
+    pagoEdits.value = {}
   } catch (e: any) {
     showError('Error', e?.message ?? 'Error al guardar')
   } finally {
@@ -902,15 +1014,16 @@ async function guardarTodo() {
   }
 }
 
-async function handleDelete(id: number) {
-  const confirmed = await showConfirmation(
+function handleDelete(id: number) {
+  showConfirmation(
     '¿Eliminar este documento?',
-    'Esta acción no se puede deshacer.'
+    'Esta acción no se puede deshacer.',
+    async () => {
+      const ok = await deleteDocumento(id)
+      if (ok) showSuccess('Eliminado', 'Documento eliminado correctamente')
+      else showError('Error', error.value || 'Error al eliminar')
+    }
   )
-  if (!confirmed) return
-  const ok = await deleteDocumento(id)
-  if (ok) showSuccess('Eliminado', 'Documento eliminado correctamente')
-  else showError('Error', error.value || 'Error al eliminar')
 }
 
 function handleFCaducidadChange(value: string) {

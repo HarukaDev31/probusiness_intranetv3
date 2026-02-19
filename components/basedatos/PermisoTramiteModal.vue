@@ -3,8 +3,8 @@
   <UModal
     :open="modalOpen"
     :close="{ onClick: handleClose }"
-    :dismissible="!loading"
-    @update:open="(v: boolean) => { if (v === false) handleClose() }"
+    :dismissible="!loading && !hasSubModalOpen"
+    @update:open="onMainModalOpenChange"
   >
     <template #header>
       <div class="flex items-center justify-between">
@@ -84,6 +84,27 @@
               title="Nueva entidad"
               @click="openCreateEntidadModal = true"
             />
+            <UTooltip v-if="!readOnly && selectedEntidad" text="Editar nombre de esta entidad">
+              <UButton
+                icon="i-heroicons-pencil-square"
+                color="primary"
+                variant="ghost"
+                size="lg"
+                class="!p-2"
+                @click.stop.prevent="openEditEntidadModal"
+              />
+            </UTooltip>
+            <UTooltip v-if="!readOnly && selectedEntidad" text="Ocultar esta entidad del catálogo (soft delete)">
+              <UButton
+                icon="i-heroicons-trash"
+                color="error"
+                variant="ghost"
+                size="lg"
+                class="!p-2"
+                title="Ocultar del catálogo"
+                @click.stop.prevent="confirmDeleteEntidad"
+              />
+            </UTooltip>
           </div>
         </UFormField>
 
@@ -127,6 +148,27 @@
                   title="Crear tipo de permiso"
                   @click="openCreateTipoPermisoForRow(i)"
                 />
+                <UTooltip v-if="!readOnly && row.selectedOption" text="Editar nombre de este tipo de permiso">
+                  <UButton
+                    icon="i-heroicons-pencil-square"
+                    color="primary"
+                    variant="ghost"
+                    size="lg"
+                    class="!p-2"
+                    @click.stop.prevent="openEditTipoPermisoModal(i)"
+                  />
+                </UTooltip>
+                <UTooltip v-if="!readOnly && row.selectedOption" text="Ocultar este tipo de permiso del catálogo (soft delete)">
+                  <UButton
+                    icon="i-heroicons-trash"
+                    color="error"
+                    variant="ghost"
+                    size="lg"
+                    class="!p-2"
+                    title="Ocultar del catálogo"
+                    @click.stop.prevent="confirmDeleteTipoPermiso(i)"
+                  />
+                </UTooltip>
               </div>
               <p v-if="rowErrors[i]?.id_tipo_permiso" class="text-xs text-red-500 mt-1">
                 {{ rowErrors[i].id_tipo_permiso }}
@@ -217,6 +259,122 @@
           @close="openCreateTipoPermisoModal = false"
           @create="handleCreateTipoPermiso"
         />
+
+        <!-- Modal editar entidad -->
+        <UModal v-model:open="editEntidadModalOpen">
+          <template #content>
+            <UCard>
+              <template #header>
+                <div class="flex items-center justify-between">
+                  <h3 class="text-base font-semibold">Editar entidad</h3>
+                  <UButton icon="i-heroicons-x-mark" variant="ghost" size="xs" @click="editEntidadModalOpen = false" />
+                </div>
+              </template>
+              <UFormField label="Nombre">
+                <UInput v-model="editEntidadName" placeholder="Nombre de la entidad" @keydown.enter="saveEditEntidad" />
+              </UFormField>
+              <template #footer>
+                <div class="flex justify-end gap-2">
+                  <UButton label="Cancelar" variant="ghost" @click="editEntidadModalOpen = false" />
+                  <UButton
+                    label="Guardar"
+                    color="primary"
+                    :loading="savingEditEntidad"
+                    :disabled="!editEntidadName.trim()"
+                    @click="saveEditEntidad"
+                  />
+                </div>
+              </template>
+            </UCard>
+          </template>
+        </UModal>
+
+        <!-- Modal editar tipo de permiso -->
+        <UModal v-model:open="editTipoPermisoModalOpen">
+          <template #content>
+            <UCard>
+              <template #header>
+                <div class="flex items-center justify-between">
+                  <h3 class="text-base font-semibold">Editar tipo de permiso</h3>
+                  <UButton icon="i-heroicons-x-mark" variant="ghost" size="xs" @click="editTipoPermisoModalOpen = false" />
+                </div>
+              </template>
+              <UFormField label="Nombre">
+                <UInput v-model="editTipoPermisoName" placeholder="Nombre del tipo de permiso" @keydown.enter="saveEditTipoPermiso" />
+              </UFormField>
+              <template #footer>
+                <div class="flex justify-end gap-2">
+                  <UButton label="Cancelar" variant="ghost" @click="editTipoPermisoModalOpen = false" />
+                  <UButton
+                    label="Guardar"
+                    color="primary"
+                    :loading="savingEditTipoPermiso"
+                    :disabled="!editTipoPermisoName.trim()"
+                    @click="saveEditTipoPermiso"
+                  />
+                </div>
+              </template>
+            </UCard>
+          </template>
+        </UModal>
+
+        <!-- Modal editar entidad -->
+        <UModal v-model:open="editEntidadModalOpen">
+          <template #content>
+            <UCard>
+              <template #header>
+                <div class="flex items-center justify-between">
+                  <h3 class="text-base font-semibold">Editar entidad</h3>
+                  <UButton icon="i-heroicons-x-mark" variant="ghost" size="xs" @click="editEntidadModalOpen = false" />
+                </div>
+              </template>
+              <UFormField label="Nombre">
+                <UInput v-model="editEntidadName" placeholder="Nombre de la entidad" @keydown.enter="saveEditEntidad" />
+              </UFormField>
+              <template #footer>
+                <div class="flex justify-end gap-2">
+                  <UButton label="Cancelar" variant="ghost" @click="editEntidadModalOpen = false" />
+                  <UButton
+                    label="Guardar"
+                    color="primary"
+                    :loading="savingEditEntidad"
+                    :disabled="!editEntidadName.trim()"
+                    @click="saveEditEntidad"
+                  />
+                </div>
+              </template>
+            </UCard>
+          </template>
+        </UModal>
+
+        <!-- Modal editar tipo de permiso -->
+        <UModal v-model:open="editTipoPermisoModalOpen">
+          <template #content>
+            <UCard>
+              <template #header>
+                <div class="flex items-center justify-between">
+                  <h3 class="text-base font-semibold">Editar tipo de permiso</h3>
+                  <UButton icon="i-heroicons-x-mark" variant="ghost" size="xs" @click="editTipoPermisoModalOpen = false" />
+                </div>
+              </template>
+              <UFormField label="Nombre">
+                <UInput v-model="editTipoPermisoName" placeholder="Nombre del tipo de permiso" @keydown.enter="saveEditTipoPermiso" />
+              </UFormField>
+              <template #footer>
+                <div class="flex justify-end gap-2">
+                  <UButton label="Cancelar" variant="ghost" @click="editTipoPermisoModalOpen = false" />
+                  <UButton
+                    label="Guardar"
+                    color="primary"
+                    :loading="savingEditTipoPermiso"
+                    :disabled="!editTipoPermisoName.trim()"
+                    @click="saveEditTipoPermiso"
+                  />
+                </div>
+              </template>
+            </UCard>
+          </template>
+        </UModal>
       </div>
     </template>
 
@@ -244,6 +402,8 @@ import type { TramiteAduana, CreateTramiteAduanaRequest, TramiteEstado } from '~
 import type { Entity } from '~/services/entityService'
 import CreateEntidadModal from '~/components/basedatos/CreateEntidadModal.vue'
 import CreateTipoPermisoModal from '~/components/basedatos/CreateTipoPermisoModal.vue'
+import { TramiteAduanaCatalogoService } from '~/services/basedatos/tramiteAduanaCatalogoService'
+import { useModal } from '~/composables/commons/useModal'
 
 interface TipoPermisoRow {
   id_tipo_permiso: number | null
@@ -270,6 +430,8 @@ interface Props {
   onConsolidadoChange?: (idConsolidado: number) => void
   onEntityCreated?: (entity: Entity | { id: number; nombre: string }) => void
   onCreateEntidad?: (nombre: string) => Promise<{ id: number; nombre: string } | null>
+  onRefreshEntidades?: () => void | Promise<void>
+  onRefreshTiposPermiso?: () => void | Promise<void>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -320,6 +482,46 @@ const savingTipoPermiso = ref(false)
 const activeRowIndex = ref(0)
 const openCreateEntidadModal = ref(false)
 const savingEntidad = ref(false)
+
+/** Cuando hay un modal secundario o diálogo de confirmación abierto, no cerrar el modal principal al hacer clic fuera ni al confirmar. */
+const confirmationOpen = ref(false)
+const editEntidadModalOpen = ref(false)
+const editTipoPermisoModalOpen = ref(false)
+const editEntidadName = ref('')
+const savingEditEntidad = ref(false)
+const editTipoPermisoRowIndex = ref(0)
+const editTipoPermisoName = ref('')
+const savingEditTipoPermiso = ref(false)
+/** Tras mostrar éxito/error, evitar que el cierre de ese mensaje cierre el modal principal (un par de segundos). */
+const successOrErrorJustShown = ref(false)
+const BLOCK_CLOSE_MS = 2500
+
+function showSuccessThenBlockClose(title: string, message: string) {
+  successOrErrorJustShown.value = true
+  showSuccess(title, message)
+  setTimeout(() => { successOrErrorJustShown.value = false }, BLOCK_CLOSE_MS)
+}
+
+function showErrorThenBlockClose(title: string, message: string) {
+  successOrErrorJustShown.value = true
+  showError(title, message)
+  setTimeout(() => { successOrErrorJustShown.value = false }, BLOCK_CLOSE_MS)
+}
+
+const { showConfirmation, showError, showSuccess } = useModal()
+const hasSubModalOpen = computed(
+  () =>
+    openCreateEntidadModal.value ||
+    openCreateTipoPermisoModal.value ||
+    editEntidadModalOpen.value ||
+    editTipoPermisoModalOpen.value ||
+    confirmationOpen.value ||
+    successOrErrorJustShown.value
+)
+
+function onMainModalOpenChange(v: boolean) {
+  if (v === false && !hasSubModalOpen.value) handleClose()
+}
 
 const modalOpen = ref(true)
 watch(
@@ -478,9 +680,9 @@ function validate(): boolean {
 
 async function submit() {
   if (!validate()) return
+  // El id del cliente seleccionado se envía como id_cotizacion (cotización del consolidado); se guarda en BD y se usa en el index para mostrar cliente
   const payload: CreateTramiteAduanaRequest = {
     id_consolidado: form.value.id_consolidado!,
-    id_cliente: undefined,
     id_cotizacion: form.value.id_cliente ?? form.value.id_cotizacion ?? undefined,
     id_entidad: form.value.id_entidad!,
     tipos_permiso: tiposPermisoRows.value.map(row => ({
@@ -540,12 +742,136 @@ async function handleCreateTipoPermiso(name: string) {
   }
 }
 
+function openEditEntidadModal() {
+  if (!selectedEntidad.value) return
+  editEntidadName.value = selectedEntidad.value.label
+  editEntidadModalOpen.value = true
+}
+
+function confirmDeleteEntidad() {
+  if (!selectedEntidad.value) return
+  const id = selectedEntidad.value.value
+  const label = selectedEntidad.value.label
+  confirmationOpen.value = true
+  showConfirmation(
+    'Ocultar entidad del catálogo',
+    `¿Está seguro de que desea ocultar la entidad "${label}"? Dejará de mostrarse en los listados (soft delete). Los trámites que la usen no se modifican.`,
+    async () => {
+      try {
+        const res = await TramiteAduanaCatalogoService.deleteEntidad(id)
+        if (res.success) {
+          showSuccessThenBlockClose('Ocultada', 'La entidad se ocultó del catálogo')
+          form.value.id_entidad = null
+          selectedEntidad.value = null
+          await props.onRefreshEntidades?.()
+        } else {
+          showErrorThenBlockClose('Error', res.error || 'No se pudo ocultar la entidad')
+        }
+      } finally {
+        confirmationOpen.value = false
+      }
+    },
+    () => { confirmationOpen.value = false }
+  )
+}
+
+async function saveEditEntidad() {
+  const id = selectedEntidad.value?.value
+  if (id == null || !editEntidadName.value.trim()) return
+  savingEditEntidad.value = true
+  try {
+    const res = await TramiteAduanaCatalogoService.updateEntidad(id, { nombre: editEntidadName.value.trim() })
+    if (res.success && res.data) {
+      showSuccessThenBlockClose('Actualizada', 'La entidad se actualizó correctamente')
+      selectedEntidad.value = { label: res.data.nombre, value: res.data.id }
+      editEntidadModalOpen.value = false
+      await props.onRefreshEntidades?.()
+    } else {
+      showErrorThenBlockClose('Error', res.error || 'No se pudo actualizar la entidad')
+    }
+  } catch (e: any) {
+    showErrorThenBlockClose('Error', e?.message || 'No se pudo actualizar la entidad')
+  } finally {
+    savingEditEntidad.value = false
+  }
+}
+
+function openEditTipoPermisoModal(rowIndex: number) {
+  const row = tiposPermisoRows.value[rowIndex]
+  if (!row?.selectedOption) return
+  editTipoPermisoRowIndex.value = rowIndex
+  editTipoPermisoName.value = row.selectedOption.label
+  editTipoPermisoModalOpen.value = true
+}
+
+function confirmDeleteTipoPermiso(rowIndex: number) {
+  const row = tiposPermisoRows.value[rowIndex]
+  if (!row?.selectedOption) return
+  const id = row.selectedOption.value
+  const label = row.selectedOption.label
+  confirmationOpen.value = true
+  showConfirmation(
+    'Ocultar tipo de permiso del catálogo',
+    `¿Está seguro de que desea ocultar el tipo "${label}"? Dejará de mostrarse en los listados (soft delete). Los trámites que lo usen no se modifican.`,
+    async () => {
+      try {
+        const res = await TramiteAduanaCatalogoService.deleteTipoPermiso(id)
+        if (res.success) {
+          showSuccessThenBlockClose('Ocultado', 'El tipo de permiso se ocultó del catálogo')
+          tiposPermisoRows.value[rowIndex].id_tipo_permiso = null
+          tiposPermisoRows.value[rowIndex].selectedOption = null
+          await props.onRefreshTiposPermiso?.()
+        } else {
+          showErrorThenBlockClose('Error', res.error || 'No se pudo ocultar el tipo de permiso')
+        }
+      } finally {
+        confirmationOpen.value = false
+      }
+    },
+    () => { confirmationOpen.value = false }
+  )
+}
+
+async function saveEditTipoPermiso() {
+  const rowIndex = editTipoPermisoRowIndex.value
+  const row = tiposPermisoRows.value[rowIndex]
+  const id = row?.selectedOption?.value
+  if (id == null || !editTipoPermisoName.value.trim()) return
+  savingEditTipoPermiso.value = true
+  try {
+    const res = await TramiteAduanaCatalogoService.updateTipoPermiso(id, {
+      nombre_permiso: editTipoPermisoName.value.trim(),
+    })
+    if (res.success && res.data) {
+      showSuccessThenBlockClose('Actualizado', 'El tipo de permiso se actualizó correctamente')
+      if (tiposPermisoRows.value[rowIndex]) {
+        tiposPermisoRows.value[rowIndex].selectedOption = {
+          label: res.data.nombre_permiso,
+          value: res.data.id,
+        }
+      }
+      editTipoPermisoModalOpen.value = false
+      await props.onRefreshTiposPermiso?.()
+    } else {
+      showErrorThenBlockClose('Error', res.error || 'No se pudo actualizar el tipo de permiso')
+    }
+  } catch (e: any) {
+    showErrorThenBlockClose('Error', e?.message || 'No se pudo actualizar el tipo de permiso')
+  } finally {
+    savingEditTipoPermiso.value = false
+  }
+}
+
 function handleClose() {
   modalOpen.value = false
   errors.value = {}
   rowErrors.value = [{}]
   openCreateTipoPermisoModal.value = false
   openCreateEntidadModal.value = false
+  confirmationOpen.value = false
+  editEntidadModalOpen.value = false
+  editTipoPermisoModalOpen.value = false
+  successOrErrorJustShown.value = false
   emit('close')
   const fn = Array.isArray(props.onClose) ? props.onClose[0] : props.onClose
   if (typeof fn === 'function') fn()
@@ -555,8 +881,9 @@ function initializeForm() {
   errors.value = {}
   if (props.tramite) {
     form.value.id_consolidado = props.tramite.id_consolidado
-    form.value.id_cliente = props.tramite.id_cliente ?? null
+    // Cliente en el formulario = id_cotizacion (cotización) para que el dropdown muestre el valor guardado
     form.value.id_cotizacion = props.tramite.id_cotizacion ?? null
+    form.value.id_cliente = props.tramite.id_cotizacion ?? props.tramite.id_cliente ?? null
     form.value.id_entidad = props.tramite.id_entidad
     form.value.precio = String(props.tramite.precio ?? '')
     form.value.estado = props.tramite.estado ?? null

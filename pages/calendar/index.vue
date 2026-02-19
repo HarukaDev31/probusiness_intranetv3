@@ -674,22 +674,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import { CalendarDate, getLocalTimeZone, today, parseDate, isSameDay } from '@internationalized/date'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
 import type { CalendarEvent, CreateEventRequest, UpdateEventRequest, CreateCalendarEventRequest, CalendarEventStatus, CalendarEventPriority } from '~/types/calendar'
 import type { CalendarFilters as CalendarFiltersType } from '~/types/calendar'
 import { PRIORITY_LABELS } from '~/types/calendar'
-import EventModal from '~/components/calendar/EventModal.vue'
-import QuickCreateModal from '~/components/calendar/QuickCreateModal.vue'
-import CalendarSkeleton from '~/components/calendar/CalendarSkeleton.vue'
-import CalendarFilters from '~/components/calendar/CalendarFilters.vue'
-import ActivityTable from '~/components/calendar/ActivityTable.vue'
-import ActivityModal from '~/components/calendar/ActivityModal.vue'
-import NotesModal from '~/components/calendar/NotesModal.vue'
-import ProgressCards from '~/components/calendar/ProgressCards.vue'
 import { useOverlay } from '#imports'
+
+const EventModal = defineAsyncComponent(() => import('~/components/calendar/EventModal.vue'))
+const QuickCreateModal = defineAsyncComponent(() => import('~/components/calendar/QuickCreateModal.vue'))
+// Skeleton se mantiene síncrono para mostrar estado de carga de inmediato
+import CalendarSkeleton from '~/components/calendar/CalendarSkeleton.vue'
+const CalendarFilters = defineAsyncComponent(() => import('~/components/calendar/CalendarFilters.vue'))
+const ActivityTable = defineAsyncComponent(() => import('~/components/calendar/ActivityTable.vue'))
+const ActivityModal = defineAsyncComponent(() => import('~/components/calendar/ActivityModal.vue'))
+const NotesModal = defineAsyncComponent(() => import('~/components/calendar/NotesModal.vue'))
+const ProgressCards = defineAsyncComponent(() => import('~/components/calendar/ProgressCards.vue'))
 import { ROLES } from '~/constants/roles'
 import { VIEW_OPTIONS } from '~/constants/calendar'
 

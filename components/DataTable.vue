@@ -1183,16 +1183,15 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 }
 
 /* Scoped styles can't reach inside child components; use deep selector to target inner table rendered by UTable */
-.utable-narrow ::v-deep table {
+.utable-narrow :deep(table) {
   width: auto !important;
   /* Allow very small tables to keep their natural width; page container enforces minimum instead */
   min-width: 80% !important;
 }
 
 /* Add small vertical spacing between tbody rows to make rows breathe */
-/* Use ::v-deep to reach the actual <table> rendered by UTable */
-.utable-narrow ::v-deep table,
-.min-w-full ::v-deep table {
+.utable-narrow :deep(table),
+.min-w-full :deep(table) {
   border-collapse: separate !important;
   /* vertical spacing: 0.5rem (8px) - adjust to taste */
   border-spacing: 0 0.5rem !important;

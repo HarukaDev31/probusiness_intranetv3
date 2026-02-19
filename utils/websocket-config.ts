@@ -59,13 +59,10 @@ export const validateWebSocketConfig = (): boolean => {
   return true
 }
 
-export const testWebSocketConnection = async (): Promise<boolean> => {
+/** Prueba async de la configuración WebSocket (uso interno). Para test en UI usar utils/websocket-test. */
+export const testWebSocketConnectionAsync = async (): Promise<boolean> => {
   try {
-    const config = getWebSocketConfig()
-    
-    
-    // Aquí podrías hacer una prueba de conexión real
-    // Por ahora solo validamos la configuración
+    getWebSocketConfig()
     return validateWebSocketConfig()
   } catch (error) {
     console.error('❌ Error probando conexión WebSocket:', error)

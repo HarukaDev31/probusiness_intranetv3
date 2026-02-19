@@ -7,6 +7,7 @@ import type {
   DocumentoSeccion,
   TramiteCategoria,
   TipoPermisoSection,
+  PagoConDatos,
 } from '~/types/basedatos/tramiteAduana'
 
 /** Si la categoría es Expediente/CPB → f_inicio; Decreto (resolutivo) o Hoja resumen → f_termino (días lo calcula el backend). */
@@ -42,6 +43,8 @@ export function useTramiteDocumentos() {
   const categorias = ref<TramiteCategoria[]>([])
   const tiposPermisoSections = ref<TipoPermisoSection[]>([])
   const pagoServicio = ref<TramiteDocumento[]>([])
+  /** Cada pago con documento + monto, fecha, banco (para mostrar uno debajo del otro) */
+  const pagosConDatos = ref<PagoConDatos[]>([])
   /** Solo RH o Factura del tramitador (compartido) */
   const seguimientoCompartido = ref<TramiteDocumento[]>([])
   const loading = ref(false)
@@ -51,6 +54,7 @@ export function useTramiteDocumentos() {
     id: number
     estado: string
     entidad: string | null
+    cliente: string | null
     tipos_permiso: string[]
     consolidado: string | null
     f_caducidad: string | null
@@ -109,6 +113,7 @@ export function useTramiteDocumentos() {
         categorias.value = res.categorias ?? []
         tiposPermisoSections.value = res.tipos_permiso_sections ?? []
         pagoServicio.value = res.pago_servicio ?? []
+        pagosConDatos.value = res.pagos_con_datos ?? []
         seguimientoCompartido.value = res.seguimiento_compartido ?? []
         // Asegurar que todos los documentos de data estén en las secciones (por si el backend no los incluye)
         mergeDocumentosEnSecciones()
@@ -316,7 +321,10 @@ export function useTramiteDocumentos() {
     payload: {
       items: Array<{ idTipoPermiso: number; file: File; seccion: DocumentoSeccion; idCategoria: number; categoria: string }>
       guardarTipos: Array<{ id_tipo_permiso: number; documentos_tramite_ids: number[]; fotos_ids: number[]; seguimiento_ids: number[]; f_caducidad?: string | null }>
-      pago?: { monto: string; banco: string; fecha_cierre: string; voucher: File } | null
+      /** Nuevos pagos (vouchers) a registrar; se envían todos en Guardar todo */
+      pagos?: Array<{ monto: string; banco: string; fecha_cierre: string; voucher: File }>
+      /** Actualizar monto, banco y fecha de pagos ya subidos (se guardan en Guardar todo) */
+      pagoActualizaciones?: Array<{ id_documento: number; monto: string; banco: string; fecha_cierre: string }>
     }
   ): Promise<boolean> {
     uploading.value = true
@@ -330,11 +338,16 @@ export function useTramiteDocumentos() {
         formData.append('categoria[]', it.categoria)
       }
       formData.append('guardar_tipos', JSON.stringify(payload.guardarTipos))
-      if (payload.pago) {
-        formData.append('pago_monto', payload.pago.monto)
-        formData.append('pago_banco', payload.pago.banco)
-        formData.append('pago_fecha_cierre', payload.pago.fecha_cierre)
-        formData.append('pago_voucher', payload.pago.voucher)
+      if (payload.pagos && payload.pagos.length > 0) {
+        for (const p of payload.pagos) {
+          formData.append('pago_monto[]', p.monto)
+          formData.append('pago_banco[]', p.banco)
+          formData.append('pago_fecha_cierre[]', p.fecha_cierre)
+          formData.append('pago_voucher[]', p.voucher)
+        }
+      }
+      if (payload.pagoActualizaciones && payload.pagoActualizaciones.length > 0) {
+        formData.append('pago_actualizaciones', JSON.stringify(payload.pagoActualizaciones))
       }
 
       const res = await TramiteAduanaDocumentoService.guardarTodo(idTramite, formData)
@@ -388,6 +401,7 @@ export function useTramiteDocumentos() {
       if (res.success) {
         documentos.value = documentos.value.filter(d => d.id !== id)
         pagoServicio.value = pagoServicio.value.filter(d => d.id !== id)
+        pagosConDatos.value = pagosConDatos.value.filter(p => p.document.id !== id)
         seguimientoCompartido.value = seguimientoCompartido.value.filter(d => d.id !== id)
         tiposPermisoSections.value = tiposPermisoSections.value.map(s => ({
           ...s,
@@ -414,6 +428,7 @@ export function useTramiteDocumentos() {
     categorias,
     tiposPermisoSections,
     pagoServicio,
+    pagosConDatos,
     seguimientoCompartido,
     loading,
     uploading,

@@ -113,8 +113,7 @@
         </div>
     </template>
 <script setup lang="ts">
-import { ref, h, computed } from 'vue'
-import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones.vue'
+import { ref, h, computed, defineAsyncComponent } from 'vue'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useGeneral } from '~/composables/cargaconsolidada/clientes/useGeneral'
@@ -129,10 +128,12 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import type { TableColumn } from '@nuxt/ui'
-import PagoGrid from '~/components/PagoGrid.vue'
 import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 import { FILE_ICONS_MAP } from '~/constants/file'
-import SectionHeader from '~/components/commons/SectionHeader.vue'
+
+const ModalAcciones = defineAsyncComponent(() => import('~/components/cargaconsolidada/clientes/ModalAcciones.vue'))
+const PagoGrid = defineAsyncComponent(() => import('~/components/PagoGrid.vue'))
+const SectionHeader = defineAsyncComponent(() => import('~/components/commons/SectionHeader.vue'))
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()

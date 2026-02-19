@@ -1,5 +1,5 @@
 <template>
-    <UModal :is-open="isOpen" @close="$emit('close')" class="sm:max-w-6xl max-h-[85vh]">
+    <UModal :open="isOpen" @update:open="(v: boolean) => !v && $emit('close')" class="sm:max-w-6xl max-h-[85vh]">
         <slot name="trigger" />
         <template #header>
             <div class="flex items-center justify-between">
