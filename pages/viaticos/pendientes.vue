@@ -15,7 +15,7 @@
       :primary-search-value="search"
       :show-primary-search="true" 
       :showPrimarySearchLabel="false" 
-      :primary-search-placeholder="'Buscar por asunto o descripción'"
+      :primary-search-placeholder="'Buscar por asunto, descripción o monto'"
       :show-filters="true" 
       :filter-config="filterConfig" 
       :filters-value="filters" 
@@ -106,6 +106,11 @@ const columns: TableColumn<any>[] = [
     accessorKey: 'id',
     header: 'ID',
     cell: ({ row }: { row: any }) => row.index + 1
+  },
+  {
+    accessorKey: 'codigo_confirmado',
+    header: 'Código',
+    cell: ({ row }: { row: any }) => row.original.codigo_confirmado || '—'
   },
   {
     accessorKey: 'subject',

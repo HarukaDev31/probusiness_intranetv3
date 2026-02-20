@@ -90,9 +90,14 @@
           <!-- Información General -->
           <UCard class="bg-white dark:bg-gray-800">
             <template #header>
-              <div class="flex items-center gap-2">
-                <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-primary-500" />
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Información General</h2>
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-primary-500" />
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Información General</h2>
+                </div>
+                <UBadge v-if="isAdmin && viatico.codigo_confirmado" color="primary" variant="solid" size="md">
+                  {{ viatico.codigo_confirmado }}
+                </UBadge>
               </div>
             </template>
             
@@ -147,6 +152,17 @@
                   <div class="flex items-center gap-2">
                     <UIcon name="i-heroicons-user" class="w-4 h-4 text-gray-400" />
                     <p class="text-sm text-gray-900 dark:text-white font-medium">{{ viatico.nombre_usuario || 'N/A' }}</p>
+                  </div>
+                </div>
+
+                <!-- Código de confirmación (solo para administración) -->
+                <div v-if="isAdmin" class="md:col-span-2">
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Código de confirmación</label>
+                  <div class="flex items-center gap-2">
+                    <UBadge v-if="viatico.codigo_confirmado" color="primary" variant="solid" size="md">
+                      {{ viatico.codigo_confirmado }}
+                    </UBadge>
+                    <span v-else class="text-sm text-gray-500 dark:text-gray-400">—</span>
                   </div>
                 </div>
               </div>
@@ -250,81 +266,128 @@
             </div>
           </UCard>
 
-          <!-- Comprobante de Retribución (solo para admin) -->
+          <!-- Comprobantes de Retribución (múltiples, solo para admin) -->
           <UCard v-if="isAdmin" class="bg-white dark:bg-gray-800">
             <template #header>
               <div class="flex items-center gap-2">
                 <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Comprobante de Retribución</h2>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Comprobantes de Retribución</h2>
+                <UBadge v-if="retribucionesList.length" color="primary" variant="soft" size="sm">{{ retribucionesList.length }} {{ retribucionesList.length === 1 ? 'comprobante' : 'comprobantes' }}</UBadge>
               </div>
             </template>
             
-            <div v-if="viatico.url_payment_receipt" class="space-y-3">
-              <div class="relative group">
-                <img 
-                  :src="viatico.url_payment_receipt" 
-                  alt="Comprobante de Retribución" 
-                  class="w-full h-auto rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-green-400 transition-all duration-200 shadow-sm"
-                  @click="() => openComprobanteModal(viatico?.url_payment_receipt, viatico?.url_payment_receipt)"
-                />
-               
-              </div>
-              <div class="flex gap-2">
-                <UButton 
-                  v-if="viatico.status !== 'CONFIRMED'"
-                  icon="i-heroicons-trash" 
-                  color="error" 
-                  variant="soft" 
-                  size="sm"
-                  @click="handleDeleteFile"
-                  :loading="deletingFile"
-                >
-                  Eliminar
-                </UButton>
+            <div v-if="retribucionesList.length" class="space-y-4">
+              <div
+                v-for="(item, index) in retribucionesList"
+                :key="item.id"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800/50"
+              >
+                <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between gap-2 flex-wrap">
+                  <span class="flex items-center gap-2 flex-1 min-w-0">
+                    <span class="flex items-center justify-center w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-sm font-semibold flex-shrink-0">{{ index + 1 }}</span>
+                    <div class="min-w-0">
+                      <span class="font-medium text-gray-900 dark:text-white block truncate">{{ item.file_original_name || `Comprobante ${index + 1}` }}</span>
+                      <span v-if="item.banco || item.monto != null" class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ item.banco }}{{ item.banco && (item.monto != null) ? ' — ' : '' }}{{ item.monto != null ? formatCurrency(Number(item.monto), 'PEN') : '' }}
+                      </span>
+                    </div>
+                  </span>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    
+                    <UButton
+                      v-if="isAdmin"
+                      icon="i-heroicons-trash"
+                      color="error"
+                      variant="soft"
+                      size="xs"
+                      :loading="deletingRetribucionId === item.id"
+                      @click="handleDeleteRetribucion(item.id)"
+                    >
+                      Eliminar
+                    </UButton>
+                  </div>
+                </div>
+                <div class="p-4">
+                  <div v-if="retribucionUrl(item)" class="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
+                    <div v-if="isRetribucionImage(item)" class="bg-gray-100 dark:bg-gray-700 flex justify-center cursor-pointer" @click="openRetribucionModal(item)">
+                      <img :src="retribucionUrl(item)!" alt="Comprobante" class="max-h-48 w-auto object-contain" />
+                    </div>
+                    <div v-else class="p-4 flex items-center justify-between bg-gray-100 dark:bg-gray-700">
+                      <span class="text-sm text-gray-700 dark:text-gray-300">{{ item.file_original_name || 'Documento' }}</span>
+                      <UButton size="xs" variant="soft" @click="openRetribucionModal(item)">Ver</UButton>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div v-else class="text-center py-8">
               <UIcon name="i-heroicons-document-minus" class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-              <p class="text-sm text-gray-500 dark:text-gray-400 italic">Sin comprobante de retribución</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 italic">Sin comprobantes de retribución</p>
             </div>
           </UCard>
         </div>
       </div>
 
-      <!-- Acciones de Administración -->
+      <!-- Acciones de Administración: Agregar retribuciones y Guardar todo -->
       <UCard v-if="isAdmin && viatico.status !== 'CONFIRMED'" class="bg-white dark:bg-gray-800">
         <template #header>
           <div class="flex items-center gap-2">
             <UIcon name="i-heroicons-cog-6-tooth" class="w-5 h-5 text-primary-500" />
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Acciones de Administración</h2>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Subir Comprobantes de Retribución</h2>
           </div>
         </template>
         
         <div class="space-y-6">
-          <!-- Subir comprobante de retribución -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              {{ viatico.url_payment_receipt ? 'Reemplazar Comprobante de Retribución' : 'Subir Comprobante de Retribución' }}
-            </label>
-            <FileUploader 
-              ref="fileUploaderRef" 
-              :multiple="false" 
-              :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.pdf', '.doc', '.docx']"
-              @file-added="handleFileAdded"
-              @file-removed="handleFileRemoved" 
-              :show-save-button="false"
-              :initial-files="viatico.url_payment_receipt ? [{ id: 0, file_name: 'Comprobante de retribución actual', file_url: viatico.url_payment_receipt, type: isImageFile(viatico.url_payment_receipt) ? 'image' : (isPdfFile(viatico.url_payment_receipt) ? 'pdf' : 'file'), size: 0, lastModified: 0, file_ext: getFileExtension(viatico.url_payment_receipt) }] : []"
-            />
-            <UButton 
-              v-if="selectedFile"
-              icon="i-heroicons-arrow-up-tray"
-              @click="handleUploadFile"
+          <div class="flex items-center justify-between gap-4 flex-wrap">
+            <UButton
+              icon="i-heroicons-plus-circle"
               color="primary"
-              class="mt-3 w-full"
-              :loading="uploadingFile"
+              @click="openAgregarRetribucion"
             >
-              Subir Comprobante de Retribución
+              Agregar pago
             </UButton>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Total a pagar: <span class="font-semibold">{{ formatCurrency(Number(viatico.total_amount), 'PEN') }}</span>
+              <span v-if="pendingRetribuciones.length" class="ml-2">
+                — Suma: <span class="font-semibold" :class="sumaPending === totalAPagar ? 'text-green-600' : 'text-amber-600'">{{ formatCurrency(sumaPending, 'PEN') }}</span>
+              </span>
+            </p>
+          </div>
+
+          <!-- Lista de retribuciones pendientes (vista previa) -->
+          <div v-if="pendingRetribuciones.length" class="space-y-3">
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Comprobantes a guardar (vista previa)</p>
+            <div
+              v-for="(item, index) in pendingRetribuciones"
+              :key="item.id"
+              class="flex items-center gap-4 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+            >
+              <span class="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 text-sm font-semibold">{{ index + 1 }}</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.voucher.name }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ item.banco }} — {{ formatCurrency(item.monto, 'PEN') }}</p>
+              </div>
+              <div v-if="isPendingFileImage(item.voucher)" class="w-12 h-12 rounded border border-gray-200 dark:border-gray-600 overflow-hidden flex-shrink-0">
+                <img :src="pendingPreviewUrl(item)" alt="" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="w-12 h-12 rounded border border-gray-200 dark:border-gray-600 flex items-center justify-center flex-shrink-0 bg-gray-100 dark:bg-gray-700">
+                <UIcon name="i-heroicons-document" class="w-6 h-6 text-gray-500" />
+              </div>
+              <UButton icon="i-heroicons-trash" color="error" variant="ghost" size="xs" @click="removePendingRetribucion(item.id)" />
+            </div>
+            <UButton
+              class="w-full"
+              icon="i-heroicons-check"
+              color="primary"
+              :disabled="!canGuardarTodo"
+              :loading="uploadingFile"
+              @click="handleGuardarTodo"
+            >
+              Guardar
+            </UButton>
+            <p v-if="pendingRetribuciones.length && !sumaCoincideConTotal" class="text-xs text-amber-600 dark:text-amber-400">
+              Las retribuciones se guardarán pero el viático permanecerá en Pendiente hasta que la suma coincida con el total.
+            </p>
           </div>
         </div>
       </UCard>
@@ -333,17 +396,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useViaticos } from '~/composables/useViaticos'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { formatDateTimeToDmy, formatCurrency } from '~/utils/formatters'
 import { ROLES } from '~/constants/roles'
-import FileUploader from '~/components/commons/FileUploader.vue'
+import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import { USelect } from '#components'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
-import type { UpdateViaticoRequest, ViaticoPago } from '~/types/viatico'
+import type { UpdateViaticoRequest, ViaticoPago, ViaticoRetribucion } from '~/types/viatico'
 import type { FileItem } from '~/types/commons/file'
 
 const route = useRoute()
@@ -353,14 +416,145 @@ const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const overlay = useOverlay()
 const modalPreview = overlay.create(ModalPreview)
+const createPagoModal = overlay.create(CreatePagoModal)
 
 const viatico = computed(() => currentViatico.value)
 const isAdmin = computed(() => hasRole(ROLES.ADMINISTRACION))
-const selectedFile = ref<File | null>(null)
 const selectedStatus = ref<string>('')
 const uploadingFile = ref(false)
 const deletingFile = ref(false)
-const fileUploaderRef = ref<InstanceType<typeof FileUploader> | null>(null)
+const deletingRetribucionId = ref<number | null>(null)
+
+/** Retribuciones pendientes de guardar (banco, monto, archivo); al dar Guardar todo se suben y se confirma si suma = total */
+interface PendingRetribucion {
+  id: string
+  banco: string
+  monto: number
+  fecha_cierre?: string
+  voucher: File
+}
+const pendingRetribuciones = ref<PendingRetribucion[]>([])
+const totalAPagar = computed(() => Number(viatico.value?.total_amount ?? 0))
+const sumaPending = computed(() => pendingRetribuciones.value.reduce((s, p) => s + p.monto, 0))
+/** Puede guardar si hay al menos una retribución pendiente (aunque la suma no coincida con el total) */
+const canGuardarTodo = computed(() => pendingRetribuciones.value.length > 0)
+/** La suma de pendientes coincide con el total a pagar → al guardar se pasará a Confirmado */
+const sumaCoincideConTotal = computed(() => Math.abs(sumaPending.value - totalAPagar.value) < 0.02)
+
+const pendingPreviewUrls = ref<Map<string, string>>(new Map())
+function pendingPreviewUrl(item: PendingRetribucion): string {
+  return pendingPreviewUrls.value.get(item.id) ?? ''
+}
+function isPendingFileImage(file: File): boolean {
+  return file.type.startsWith('image/')
+}
+function registerPendingPreview(id: string, file: File) {
+  if (!file.type.startsWith('image/')) return
+  const url = URL.createObjectURL(file)
+  pendingPreviewUrls.value.set(id, url)
+}
+function unregisterPendingPreview(id: string) {
+  const url = pendingPreviewUrls.value.get(id)
+  if (url) URL.revokeObjectURL(url)
+  pendingPreviewUrls.value.delete(id)
+}
+
+function formatFechaToYMD(fecha: { year: number; month: number; day: number } | null | undefined): string | undefined {
+  if (!fecha || typeof fecha.year !== 'number' || typeof fecha.month !== 'number' || typeof fecha.day !== 'number') return undefined
+  const y = fecha.year
+  const m = String(fecha.month).padStart(2, '0')
+  const d = String(fecha.day).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function openAgregarRetribucion() {
+  createPagoModal.open({
+    clienteNombre: 'Comprobante de retribución',
+    currency: 'PEN',
+    tituloComprobante: 'Comprobante de retribución',
+    onSave: (data: any) => {
+      const banco = Array.isArray(data.banco) ? data.banco[0] : data.banco
+      const monto = Number(data.monto)
+      if (!data.voucher || !banco || Number.isNaN(monto)) return
+      const id = crypto.randomUUID()
+      const fecha_cierre = formatFechaToYMD(data.fecha)
+      const item: PendingRetribucion = { id, banco, monto, fecha_cierre, voucher: data.voucher }
+      pendingRetribuciones.value.push(item)
+      registerPendingPreview(id, data.voucher)
+      createPagoModal.close()
+    },
+    onClose: () => createPagoModal.close()
+  })
+}
+
+function removePendingRetribucion(id: string) {
+  unregisterPendingPreview(id)
+  pendingRetribuciones.value = pendingRetribuciones.value.filter(p => p.id !== id)
+}
+
+async function handleGuardarTodo() {
+  if (pendingRetribuciones.value.length === 0 || !viatico.value) return
+  try {
+    uploadingFile.value = true
+    await withSpinner(async () => {
+      for (const item of pendingRetribuciones.value) {
+        await updateViatico(viatico.value!.id, {
+          payment_receipt_file: item.voucher,
+          payment_receipt_banco: item.banco,
+          payment_receipt_monto: item.monto,
+          payment_receipt_fecha_cierre: item.fecha_cierre ?? undefined
+        })
+      }
+      pendingRetribuciones.value.forEach(p => unregisterPendingPreview(p.id))
+      pendingRetribuciones.value = []
+      showSuccess('Retribuciones guardadas', 'Los comprobantes se han guardado. El estado se actualiza en el servidor según el total retribuido.')
+      await loadViaticoById(viatico.value!.id)
+    })
+  } catch (err: any) {
+    showError('Error al guardar', err?.message ?? 'Error desconocido')
+  } finally {
+    uploadingFile.value = false
+  }
+}
+
+onUnmounted(() => {
+  pendingRetribuciones.value.forEach(p => unregisterPendingPreview(p.id))
+})
+
+/** Lista a mostrar: retribuciones del backend o un item legacy por url_payment_receipt */
+const retribucionesList = computed(() => {
+  const r = viatico.value?.retribuciones
+  if (r && r.length > 0) return r
+  const url = viatico.value?.url_payment_receipt
+  if (url) return [{ id: 0, viatico_id: viatico.value!.id, file_path: '', file_url: url, file_original_name: 'Comprobante de retribución' }] as (ViaticoRetribucion & { file_url?: string })[]
+  return []
+})
+
+function retribucionUrl(item: ViaticoRetribucion & { file_url?: string | null }): string | null {
+  return item.file_url ?? (item as any).file_path ?? null
+}
+
+function isRetribucionImage(item: ViaticoRetribucion & { file_url?: string | null }): boolean {
+  const url = retribucionUrl(item)
+  if (!url) return false
+  const ext = getFileExtension(url).toLowerCase()
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)
+}
+
+function openRetribucionModal(item: ViaticoRetribucion & { file_url?: string | null }) {
+  const url = retribucionUrl(item)
+  if (!url) return
+  const fileItem: FileItem = {
+    id: item.id,
+    file_name: item.file_original_name || 'Comprobante',
+    file_url: url,
+    type: isRetribucionImage(item) ? 'image' : (getFileExtension(url).toLowerCase() === 'pdf' ? 'pdf' : 'file'),
+    size: 0,
+    lastModified: 0,
+    file_ext: getFileExtension(url)
+  }
+  modalPreview.open({ file: fileItem, isOpen: true })
+}
 
 const statusOptions = [
   { label: 'Pendiente', value: 'PENDING' },
@@ -435,14 +629,6 @@ function openPagoFile(pago: ViaticoPago) {
   modalPreview.open({ file: fileItem, isOpen: true })
 }
 
-const handleFileAdded = (file: File) => {
-  selectedFile.value = file
-}
-
-const handleFileRemoved = () => {
-  selectedFile.value = null
-}
-
 const openComprobanteModal = (url: string | null | undefined, name: string) => {
   if (!url) return
   
@@ -460,27 +646,6 @@ const openComprobanteModal = (url: string | null | undefined, name: string) => {
     file: fileItem,
     isOpen: true
   })
-}
-
-const handleUploadFile = async () => {
-  if (!selectedFile.value || !viatico.value) return
-
-  try {
-    uploadingFile.value = true
-    await withSpinner(async () => {
-      const data: UpdateViaticoRequest = {
-        payment_receipt_file: selectedFile.value!
-      }
-      await updateViatico(viatico.value!.id, data)
-      showSuccess('Comprobante subido', 'El comprobante de retribución ha sido subido exitosamente y el estado cambió a Confirmado')
-      selectedFile.value = null
-      await loadViaticoById(viatico.value!.id)
-    })
-  } catch (err: any) {
-    showError('Error al subir comprobante', err.message || 'Error desconocido')
-  } finally {
-    uploadingFile.value = false
-  }
 }
 
 const handleDeleteFile = async () => {
@@ -505,6 +670,32 @@ const handleDeleteFile = async () => {
         showError('Error al eliminar comprobante', err.message || 'Error desconocido')
       } finally {
         deletingFile.value = false
+      }
+    }
+  )
+}
+
+const handleDeleteRetribucion = async (retribucionId: number) => {
+  if (!viatico.value) return
+  if (retribucionId === 0) {
+    handleDeleteFile()
+    return
+  }
+  showConfirmation(
+    'Eliminar comprobante',
+    '¿Estás seguro de que deseas eliminar este comprobante de retribución?',
+    async () => {
+      try {
+        deletingRetribucionId.value = retribucionId
+        await withSpinner(async () => {
+          await updateViatico(viatico.value!.id, { delete_retribucion_id: retribucionId })
+          showSuccess('Comprobante eliminado', 'El comprobante ha sido eliminado.')
+          await loadViaticoById(viatico.value!.id)
+        })
+      } catch (err: any) {
+        showError('Error al eliminar comprobante', err.message || 'Error desconocido')
+      } finally {
+        deletingRetribucionId.value = null
       }
     }
   )

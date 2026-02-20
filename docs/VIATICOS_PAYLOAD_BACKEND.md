@@ -73,3 +73,40 @@ En ese caso el backend puede seguir creando un viático con un único comprobant
 3. Si no hay items, usar solo los campos planos + `receipt_file` como hasta ahora.
 
 Si me indicas stack del backend (Laravel, Node, etc.), puedo bajar esto a código de ejemplo (controlador + validación).
+
+---
+
+## Retribuciones (comprobantes de pago subidos por admin) y WhatsApp
+
+### Endpoint de actualización (subir retribuciones)
+
+Cuando el front envía **un comprobante de retribución** (admin), hace **una petición por archivo** al endpoint de actualización del viático, por ejemplo:
+
+- **Método:** `POST`
+- **URL:** `/api/viaticos/update/{id}`
+- **Content-Type:** `multipart/form-data`
+
+Campos relevantes por cada llamada:
+
+| Campo                       | Tipo   | Descripción |
+|----------------------------|--------|-------------|
+| `payment_receipt_file`      | File   | Archivo del comprobante |
+| `payment_receipt_banco`      | string | Banco (opcional) |
+| `payment_receipt_monto`     | string | Monto (opcional) |
+| `payment_receipt_fecha_cierre` | string | Fecha cierre YYYY-MM-DD (opcional) |
+
+Cada llamada crea **una fila nueva** en la tabla de retribuciones del viático.
+
+### Columna `sended_at` en retribuciones
+
+- Añadir en la tabla de retribuciones una columna **`sended_at`** (datetime, nullable).
+- **Cuando se guarda una retribución nueva:** enviar **1 mensaje de WhatsApp** por ese comprobante (al usuario del viático o al flujo que tengan) y, tras enviar correctamente, actualizar `sended_at = now()` en esa fila.
+- **Validación para no reenviar:** si una retribución ya tiene `sended_at` distinto de null, **no** volver a enviar WhatsApp por ese comprobante (evitar duplicados al reabrir o reutilizar datos).
+
+Resumen:
+
+1. **1 WhatsApp por cada archivo** de retribución subido (una notificación por comprobante).
+2. **Actualizar `sended_at`** en la fila de la retribución cuando el mensaje se haya enviado.
+3. **No enviar** WhatsApp para retribuciones que ya tengan `sended_at` informado.
+
+El frontend espera que las respuestas del API incluyan en cada retribución el campo `sended_at` (ISO datetime o null) para mostrarlo en la UI.

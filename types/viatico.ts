@@ -1,3 +1,21 @@
+/** Un comprobante de retribución (varios por viático) */
+export interface ViaticoRetribucion {
+  id: number
+  viatico_id: number
+  file_path: string
+  file_original_name?: string | null
+  banco?: string | null
+  monto?: number | string | null
+  fecha_cierre?: string | null
+  orden?: number
+  /** URL pública del archivo (llenada por el backend en respuestas) */
+  file_url?: string | null
+  created_at?: string
+  updated_at?: string
+  /** Fecha/hora en que se envió el mensaje de WhatsApp por este comprobante (null = no enviado). El backend debe enviar 1 WhatsApp por cada retribución nueva y actualizar este campo para no reenviar. */
+  sended_at?: string | null
+}
+
 /** Un pago/evidencia del viático (concepto, monto, archivo) */
 export interface ViaticoPago {
   id: number
@@ -22,6 +40,8 @@ export interface Viatico {
   expense_description: string
   total_amount: number | string
   status: 'PENDING' | 'CONFIRMED' | 'REJECTED'
+  /** Código correlativo al confirmar: VI2026001, VI2026002, ... (VI + año + índice) */
+  codigo_confirmado?: string | null
   receipt_file: string | null
   payment_receipt_file: string | null
   return_date: string | null
@@ -37,6 +57,8 @@ export interface Viatico {
   }
   /** Evidencias por concepto (múltiples items de pago) */
   pagos?: ViaticoPago[]
+  /** Comprobantes de retribución (múltiples) */
+  retribuciones?: ViaticoRetribucion[]
 }
 
 /** Un item de pago: concepto, monto y comprobante. id solo para pagos existentes (edición). */
@@ -69,8 +91,18 @@ export interface CreateViaticoRequest {
 export interface UpdateViaticoRequest {
   status?: 'PENDING' | 'CONFIRMED' | 'REJECTED'
   receipt_file?: File | null
-  payment_receipt_file?: File | null // Comprobante de retribución subido por admin
+  /** Añadir un comprobante de retribución (admin) */
+  payment_receipt_file?: File | null
+  /** Banco de la retribución (al subir comprobante) */
+  payment_receipt_banco?: string | null
+  /** Monto de la retribución (al subir comprobante) */
+  payment_receipt_monto?: number | null
+  /** Fecha cierre de la retribución YYYY-MM-DD (al subir comprobante) */
+  payment_receipt_fecha_cierre?: string | null
+  /** Eliminar todos los comprobantes de retribución y pasar a Pendiente */
   delete_file?: boolean
+  /** Eliminar una retribución concreta por id */
+  delete_retribucion_id?: number | null
   /** Actualizar datos del viático (mismo payload que create) */
   subject?: string
   reimbursement_date?: string

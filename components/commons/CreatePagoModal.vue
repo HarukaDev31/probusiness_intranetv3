@@ -3,7 +3,7 @@
         <template #header>
             <div class="text-center align-middle flex-1">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    {{ editComprobante ? 'Editar comprobante' : (soloComprobante ? 'Subir comprobante' : 'Registrar Pago de Cliente') }}
+                    {{ editComprobante ? 'Editar comprobante' : (soloComprobante ? 'Subir comprobante' : 'Registrar Pago ') }}
                 </h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">
                     <span class="font-medium">{{ tituloComprobante || props.clienteNombre }}</span>
@@ -71,47 +71,17 @@
                             <UIcon name="i-heroicons-document" class="w-5 h-5 text-gray-500" />
                             <span class="text-sm truncate flex-1">{{ initialVoucher.name }}</span>
                         </div>
-                        <template v-else>
-                            <!-- Vista previa cuando hay archivo seleccionado -->
-                            <div
-                                v-if="selectedFile"
-                                class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800/50"
-                            >
-                                <div class="p-3 flex items-start gap-3">
-                                    <div v-if="isImageFile(selectedFile)" class="flex-shrink-0">
-                                        <img
-                                            :src="previewObjectUrl"
-                                            alt="Vista previa"
-                                            class="w-20 h-20 object-cover rounded border border-gray-200 dark:border-gray-600"
-                                        />
-                                    </div>
-                                    <div v-else class="flex-shrink-0 w-14 h-14 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                        <UIcon name="i-heroicons-document" class="w-8 h-8 text-gray-500" />
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ selectedFile.name }}</p>
-                                        <p class="text-xs text-gray-500">{{ formatFileSize(selectedFile.size) }}</p>
-                                    </div>
-                                    <UButton
-                                        icon="i-heroicons-x-mark"
-                                        color="neutral"
-                                        variant="ghost"
-                                        size="xs"
-                                        @click="clearSelectedFile"
-                                    />
-                                </div>
-                            </div>
-                            <FileUploader
-                                v-else
-                                ref="fileUploaderRef"
-                                :show-remove-button="true"
-                                :accepted-types="['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar']"
-                                :multiple="false"
-                                @file-added="handleFileAdded"
+                        <FileUploader
+                            v-else
+                            ref="fileUploaderRef"
+                            :show-remove-button="true"
+                            :accepted-types="['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar']"
+                            :multiple="false"
+                            :model-files="selectedFile ? [selectedFile] : []"
+                            @file-added="handleFileAdded"
                                 @file-removed="handleFileRemoved"
-                                :show-save-button="false"
-                            />
-                        </template>
+                            :show-save-button="false"
+                        />
                     </UFormField>
                 </div>
             </div>
@@ -120,10 +90,8 @@
         <!-- Footer Actions -->
         <template #footer="{ close }">
             <div class="flex justify-end space-x-3">
-                <UButton label="Cancelar" size="xl" color="neutral" variant="ghost" @click="() => { emit('close'); close() }" />
-                <UButton :label="soloComprobante ? 'Aceptar' : 'Guardar'" size="xl" color="primary" @click="() => {
-                    handleSave()
-                }" />
+                <UButton label="Cancelar" size="xl" color="neutral" variant="ghost" @click="() => { props.onClose?.(); emit('close'); close() }" />
+                <UButton :label="soloComprobante ? 'Aceptar' : 'Guardar'" size="xl" color="primary" @click="() => handleSave()" />
             </div>
         </template>
     </UModal>
@@ -155,6 +123,10 @@ interface Props {
     tituloComprobante?: string
     /** Si se pasa, el modal está en modo edición: prefill monto/banco/fecha y muestra preview del comprobante actual (no subida). */
     editComprobante?: EditComprobante
+    /** Callback al guardar (cuando se abre por overlay.open({ onSave })). */
+    onSave?: (data: any) => void
+    /** Callback al cerrar (cuando se abre por overlay.open({ onClose })). */
+    onClose?: () => void
 }
 const props = withDefaults(defineProps<Props>(), {
     currency: 'USD',
@@ -302,7 +274,8 @@ const resetForm = () => {
 
 
 
-const handleFileRemoved = (index: number) => {
+const handleFileRemoved = (_index: number) => {
+    selectedFile.value = null
     formData.value.voucher = null as File | null
 }
 
@@ -318,8 +291,11 @@ function handleEditFileRemoved(indexOrId: number) {
 const handleSave = () => {
     if (props.soloComprobante && !props.editComprobante) {
         if (!selectedFile.value) return
-        emit('save', { voucher: selectedFile.value })
+        const data = { voucher: selectedFile.value }
+        if (props.onSave) props.onSave(data)
+        else emit('save', data)
         emit('close')
+        props.onClose?.()
         return
     }
 
@@ -327,13 +303,16 @@ const handleSave = () => {
     if (props.editComprobante) {
         if (!formData.value.monto || formData.value.banco.length === 0 || !fecha.value) return
         const bancoVal = Array.isArray(formData.value.banco) ? formData.value.banco[0] : formData.value.banco
-        emit('save', {
+        const data = {
             monto: formData.value.monto,
             banco: bancoVal,
             fecha: fecha.value,
             voucher: selectedFileForReplace.value ?? undefined,
-        })
+        }
+        if (props.onSave) props.onSave(data)
+        else emit('save', data)
         emit('close')
+        props.onClose?.()
         return
     }
 
@@ -351,8 +330,11 @@ const handleSave = () => {
         fecha: fecha.value
     }
 
-    emit('save', pagoData)
+    // Solo una vía: si el padre pasó onSave, usarlo; si no, emitir (evita doble ejecución en overlay)
+    if (props.onSave) props.onSave(pagoData)
+    else emit('save', pagoData)
     emit('close')
+    props.onClose?.()
 }
 </script>
 

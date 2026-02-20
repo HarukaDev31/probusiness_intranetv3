@@ -186,20 +186,20 @@ const sidebarCategories = computed(() => {
     const parentName = p.No_Menu ?? p.Nombre ?? p.name ?? 'Sin nombre'
     const parentIcon = convertIconToHeroicons(p.Txt_Css_Icons)
     const parentRouteRaw = p.No_Menu_Url ?? p.Ruta ?? p.route ?? ''
-    const parentRoute = ((parentRouteRaw === '#' && (!p.url_intranet_v2 || p.url_intranet_v2 === '/')) || (parentRouteRaw === '' && !p.url_intranet_v2)) ? '' : convertUrlToRoute(parentRouteRaw, p.url_intranet_v2)
+    const parentRoute = ((parentRouteRaw === '#' && (!p.url_intranet_v2 || p.url_intranet_v2 === '/')) || (parentRouteRaw === '' && !p.url_intranet_v2)) ? '' : convertUrlToRoute(parentRouteRaw, p.url_intranet_v2);
 
     const children = (p.Hijos ?? []).map((h: any) => {
       const childId = String(h.ID_Menu ?? h.id ?? '')
       const childName = h.No_Menu ?? h.Nombre ?? h.name ?? 'Sin nombre'
       const childIcon = convertIconToHeroicons(h.Txt_Css_Icons)
       const childRouteRaw = h.No_Menu_Url ?? h.Ruta ?? h.route ?? ''
-      const childRoute = ((childRouteRaw === '#'  && (!h.url_intranet_v2 || h.url_intranet_v2 === '/')) || (childRouteRaw === '' && !h.url_intranet_v2)) ? '' : convertUrlToRoute(childRouteRaw, h.url_intranet_v2)
+      const childRoute = ((childRouteRaw === '#' && (!h.url_intranet_v2 || h.url_intranet_v2 === '/')) || (childRouteRaw === '' && !h.url_intranet_v2)) ? '' : convertUrlToRoute(childRouteRaw, h.url_intranet_v2);
       const subChildren = (h.SubHijos ?? []).map((s: any) => {
         const sId = String(s.ID_Menu ?? s.id ?? '')
         const sName = s.No_Menu ?? s.Nombre ?? s.name ?? 'Sin nombre'
         const sIcon = convertIconToHeroicons(s.Txt_Css_Icons)
         const sRouteRaw = s.No_Menu_Url ?? s.Ruta ?? s.route ?? ''
-        const sRoute = ((sRouteRaw === '#'  && (!s.url_intranet_v2 || s.url_intranet_v2 === '/')) || sRouteRaw === '') ? '' : convertUrlToRoute(sRouteRaw, s.url_intranet_v2)
+        const sRoute = ((sRouteRaw === '#' && (!s.url_intranet_v2 || s.url_intranet_v2 === '/')) || (sRouteRaw === '' && !s.url_intranet_v2)) ? '' : convertUrlToRoute(sRouteRaw, s.url_intranet_v2);
         return {
           id: sId,
           name: sName,

@@ -186,11 +186,26 @@ export class ViaticoService extends BaseService {
       }
 
       if (data.payment_receipt_file !== undefined) {
-        if (data.payment_receipt_file === null) {
+        if (data.payment_receipt_file === null && data.delete_file !== true) {
           formData.append('delete_file', 'true')
         } else if (data.payment_receipt_file instanceof File) {
           formData.append('payment_receipt_file', data.payment_receipt_file)
+          if (data.payment_receipt_banco != null && data.payment_receipt_banco !== '') {
+            formData.append('payment_receipt_banco', data.payment_receipt_banco)
+          }
+          if (data.payment_receipt_monto != null && !Number.isNaN(Number(data.payment_receipt_monto))) {
+            formData.append('payment_receipt_monto', String(data.payment_receipt_monto))
+          }
+          if (data.payment_receipt_fecha_cierre != null && data.payment_receipt_fecha_cierre !== '') {
+            formData.append('payment_receipt_fecha_cierre', data.payment_receipt_fecha_cierre)
+          }
         }
+      }
+      if (data.delete_file === true) {
+        formData.append('delete_file', 'true')
+      }
+      if (data.delete_retribucion_id !== undefined && data.delete_retribucion_id !== null) {
+        formData.append('delete_retribucion_id', String(data.delete_retribucion_id))
       }
 
       const response = await this.apiCall<ViaticoResponse>(`${this.baseUrl}/update/${id}`, {

@@ -15,7 +15,7 @@
       :primary-search-value="search"
       :show-primary-search="true" 
       :showPrimarySearchLabel="false" 
-      :primary-search-placeholder="'Buscar por asunto o descripción'"
+      :primary-search-placeholder="'Buscar por asunto, descripción o monto'"
       :show-filters="true" 
       :filter-config="filterConfig" 
       :filters-value="filters" 
@@ -43,7 +43,9 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed, h } from 'vue'
 import { useViaticos } from '~/composables/useViaticos'
+import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
+import { ROLES } from '~/constants/roles'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
@@ -51,13 +53,16 @@ import { UButton, UBadge } from '#components'
 import { formatDateTimeToDmy, formatCurrency } from '~/utils/formatters'
 import CreateViaticoModal from '~/components/viaticos/CreateViaticoModal.vue'
 import EvidenciasModal from '~/components/viaticos/EvidenciasModal.vue'
+import RetribucionesModal from '~/components/viaticos/RetribucionesModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
-import type { CreateViaticoRequest, ViaticoPago } from '~/types/viatico'
+import type { CreateViaticoRequest, ViaticoPago, ViaticoRetribucion } from '~/types/viatico'
 import type { FileItem } from '~/types/commons/file'
 
 const { viaticos, loading, error, pagination, loadViaticos, createViatico, updateViatico, getStatusColor, getStatusLabel, deleteViatico } = useViaticos()
+const { hasRole } = useUserRole()
 const { isDesktop } = useIsDesktop()
 const { showSuccess, showError, showConfirmation } = useModal()
+const isAdmin = computed(() => hasRole(ROLES.ADMINISTRACION))
 const { withSpinner } = useSpinner()
 
 const search = ref('')
@@ -66,7 +71,17 @@ const filters = ref<Record<string, any>>({})
 const overlay = useOverlay()
 const createViaticoModal = overlay.create(CreateViaticoModal)
 const evidenciasModal = overlay.create(EvidenciasModal)
+const retribucionesModal = overlay.create(RetribucionesModal)
 const modalPreview = overlay.create(ModalPreview)
+
+/** Lista de retribuciones a mostrar: array del backend o legacy url_payment_receipt como único ítem */
+function getRetribucionesList(row: any): (ViaticoRetribucion & { file_url?: string | null })[] {
+  const r = row.retribuciones
+  if (r && Array.isArray(r) && r.length > 0) return r
+  const url = row.url_payment_receipt
+  if (url) return [{ id: 0, viatico_id: row.id, file_path: '', file_url: url, file_original_name: 'Comprobante de retribución' }] as (ViaticoRetribucion & { file_url?: string })[]
+  return []
+}
 
 const handleNewButtonClick = () => {
   createViaticoModal.open({
@@ -97,12 +112,16 @@ const columns: TableColumn<any>[] = [
     header: 'ID',
     cell: ({ row }: { row: any }) => row.index + 1
   },
+  ...(isAdmin ? [{
+    accessorKey: 'codigo_confirmado',
+    header: 'Código',
+    cell: ({ row }: { row: any }) => row.original.codigo_confirmado || '—'
+  }] : []),
   {
     accessorKey: 'subject',
     header: 'Asunto',
     cell: ({ row }: { row: any }) => row.original.subject
   },
-
   {
     accessorKey: 'reimbursement_date',
     header: 'Fecha Reintegro',
@@ -192,28 +211,29 @@ const columns: TableColumn<any>[] = [
     accessorKey: 'payment_receipt_file',
     header: 'Retribución',
     cell: ({ row }: { row: any }) => {
-      if (row.original.url_payment_receipt) {
-        return h(UButton, {
-          icon: 'i-heroicons-eye',
-          size: 'xs',
-          color: 'primary',
-          variant: 'ghost',
-          onClick: () => {
-            const fileItem: FileItem = {
-              id: 0,
-              file_name: row.original.url_payment_receipt,
-              file_url: row.original.url_payment_receipt,
-              type: 'image',
-              size: 0,
-              lastModified: 0,
-              file_ext: 'jpg'
+      const retribucionesList = getRetribucionesList(row.original)
+      if (retribucionesList.length > 0) {
+        return h('div', { class: 'flex items-center gap-2' }, [
+          h(UBadge, {
+            color: 'primary' as const,
+            variant: 'soft',
+            size: 'xs',
+            label: `${retribucionesList.length} ${retribucionesList.length === 1 ? 'comprobante' : 'comprobantes'}`
+          }),
+          h(UButton, {
+            icon: 'i-heroicons-eye',
+            size: 'xs',
+            color: 'primary',
+            variant: 'ghost',
+            label: 'Ver',
+            onClick: () => {
+              retribucionesModal.open({
+                retribuciones: retribucionesList,
+                subject: row.original.subject
+              })
             }
-            modalPreview.open({
-              file: fileItem,
-              isOpen: true
-            })
-          }
-        })
+          })
+        ])
       }
       return '-'
     }
