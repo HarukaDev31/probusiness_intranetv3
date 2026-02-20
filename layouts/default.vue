@@ -186,7 +186,7 @@ const sidebarCategories = computed(() => {
     const parentName = p.No_Menu ?? p.Nombre ?? p.name ?? 'Sin nombre'
     const parentIcon = convertIconToHeroicons(p.Txt_Css_Icons)
     const parentRouteRaw = p.No_Menu_Url ?? p.Ruta ?? p.route ?? ''
-    const parentRoute = (parentRouteRaw === '#' || parentRouteRaw === '') ? '' : convertUrlToRoute(parentRouteRaw, p.url_intranet_v2)
+    const parentRoute = ((parentRouteRaw === '#' && (!p.url_intranet_v2 || p.url_intranet_v2 === '/')) || (parentRouteRaw === '' && !p.url_intranet_v2)) ? '' : convertUrlToRoute(parentRouteRaw, p.url_intranet_v2)
 
     const children = (p.Hijos ?? []).map((h: any) => {
       const childId = String(h.ID_Menu ?? h.id ?? '')
