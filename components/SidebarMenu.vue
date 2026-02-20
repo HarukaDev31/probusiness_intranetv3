@@ -103,6 +103,7 @@
 
                           <div v-show="expanded[String(child.id)]" class="pl-6 mt-1 space-y-1">
                             <template v-for="sub in child.children" :key="sub.id">
+                              
                               <UButton variant="ghost" class="w-full text-sm gap-2 py-1 rounded-md"
                                 :class="[isActiveRoute(sub.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0' : 'justify-start px-2']"
                                 @click="handleNavigation(sub.route)"
@@ -126,6 +127,7 @@
 
                         <!-- Child simple -->
                         <div v-else>
+                   
                           <UButton variant="ghost" class="w-full text-sm gap-2 py-2 px-2 rounded-md"
                             :class="[isActiveRoute(child.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'justify-start px-2']"
                             @click="handleNavigation(child.route)"
@@ -347,6 +349,7 @@ const hideSidebarOnMobile = () => {
 }
 
 const handleNavigation = async (route: string) => {
+  console.log('route', route)
   if (!route) return
   await navigateTo(route)
   hideSidebarOnMobile()
@@ -355,6 +358,7 @@ const handleNavigation = async (route: string) => {
 const navigateOrToggle = async (item: any) => {
   // si tiene ruta válida, navegamos; si no, toggle
   const route = item?.route
+  console.log('route', route)
   if (route && route !== '' && route !== '#') {
     await navigateTo(route)
     hideSidebarOnMobile()

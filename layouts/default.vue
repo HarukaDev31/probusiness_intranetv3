@@ -193,14 +193,13 @@ const sidebarCategories = computed(() => {
       const childName = h.No_Menu ?? h.Nombre ?? h.name ?? 'Sin nombre'
       const childIcon = convertIconToHeroicons(h.Txt_Css_Icons)
       const childRouteRaw = h.No_Menu_Url ?? h.Ruta ?? h.route ?? ''
-      const childRoute = (childRouteRaw === '#' || childRouteRaw === '') ? '' : convertUrlToRoute(childRouteRaw, h.url_intranet_v2)
-
+      const childRoute = ((childRouteRaw === '#'  && (!h.url_intranet_v2 || h.url_intranet_v2 === '/')) || (childRouteRaw === '' && !h.url_intranet_v2)) ? '' : convertUrlToRoute(childRouteRaw, h.url_intranet_v2)
       const subChildren = (h.SubHijos ?? []).map((s: any) => {
         const sId = String(s.ID_Menu ?? s.id ?? '')
         const sName = s.No_Menu ?? s.Nombre ?? s.name ?? 'Sin nombre'
         const sIcon = convertIconToHeroicons(s.Txt_Css_Icons)
         const sRouteRaw = s.No_Menu_Url ?? s.Ruta ?? s.route ?? ''
-        const sRoute = (sRouteRaw === '#' || sRouteRaw === '') ? '' : convertUrlToRoute(sRouteRaw, s.url_intranet_v2)
+        const sRoute = ((sRouteRaw === '#'  && (!s.url_intranet_v2 || s.url_intranet_v2 === '/')) || sRouteRaw === '') ? '' : convertUrlToRoute(sRouteRaw, s.url_intranet_v2)
         return {
           id: sId,
           name: sName,
