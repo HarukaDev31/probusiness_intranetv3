@@ -771,10 +771,7 @@ export const useCalendarStore = () => {
       const myCharge = charges.find((c: { user_id: number; status?: string }) => c.user_id === Number(currentId.value))
       if (myCharge?.status === 'COMPLETADO') return ['#9ca3af']
     }
-    if (options?.usePriority) {
-      return [PRIORITY_COLORS[event.priority] ?? '#3b82f6']
-    }
-    // Prioridad 1: color de la actividad (catálogo) — prevalece sobre consolidado
+    // Para todos los roles: actividad > consolidado > prioridad (el color de actividad prevalece)
     const activityId = event.activity_id != null ? Number(event.activity_id) : null
     if (activityId != null && !Number.isNaN(activityId)) {
       const catalogItem = state.activityCatalog.value.find(
@@ -784,7 +781,6 @@ export const useCalendarStore = () => {
         return [String(catalogItem.color_code).trim()]
       }
     }
-    // Prioridad 2: color por consolidado
     if (event.contenedor_id) {
       const consolidadoConfig = state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
       if (consolidadoConfig) return [consolidadoConfig.color_code]
