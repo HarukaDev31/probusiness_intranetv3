@@ -148,6 +148,8 @@ export interface CalendarActivityCatalogItem {
   id: number
   name: string
   orden: number
+  /** Color opcional para la actividad en el calendario (hex). Prioridad sobre color de consolidado. */
+  color_code?: string | null
 }
 
 // ============================================
@@ -225,6 +227,8 @@ export interface CalendarEvent {
  */
 export interface CreateCalendarEventRequest {
   name: string
+  /** ID de la actividad del catálogo (para color y tipo) */
+  activity_id?: number | null
   priority?: CalendarEventPriority
   contenedor_id?: number | null
   notes?: string | null

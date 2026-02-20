@@ -532,8 +532,10 @@ const submit = async () => {
     }).filter((v): v is number => typeof v === 'number')
   }
 
+  const activityId = form.value.activity_id ?? selectedActivity.value?.value ?? null
   const data: CreateCalendarEventRequest = {
     name: form.value.name.trim(),
+    activity_id: activityId != null ? Number(activityId) : null,
     priority: form.value.priority,
     contenedor_id: extractValue(form.value.contenedor_id),
     notes: form.value.notes.trim() || null,

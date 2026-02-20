@@ -32,7 +32,34 @@ Listado de contenedores (abiertos o completados) según filtros.
 
 ---
 
-### 2. Estado permiso por tipo **por cotización** (por fila)
+### 2. GET `/api/carga-consolidada/contenedor/valid-containers-documentacion`
+
+Endpoint **ligero** para el modal de crear/editar trámite (permisos). Devuelve solo contenedores cuyo **`estado_documentacion` no está completado** (p. ej. pendiente, en proceso), sin paginación ni el payload pesado del listado principal.
+
+**Método:** `GET`  
+**Query params:** ninguno (opcional: los que el backend necesite para filtros internos).
+
+**Respuesta esperada (cuadrada con el frontend para el select del modal):**
+
+```json
+{
+  "success": true,
+  "data": [
+    { "id": 1, "carga": "101" },
+    { "id": 2, "carga": "102" }
+  ]
+}
+```
+
+- **`data`**: array de objetos. Cada uno debe tener al menos:
+  - **`id`** (number): ID del contenedor (se usa como `value` en el select).
+  - **`carga`** (string o number, opcional): número de carga; el frontend muestra en el select como `#carga`. Si no se envía, se usa `#id`.
+
+El frontend mapea cada item a `{ id, carga }` para rellenar las opciones del select "Selecciona el consolidado" (label: `#carga`, value: `id`).
+
+---
+
+### 3. Estado permiso por tipo **por cotización** (por fila)
 
 En las páginas de detalle (cotizaciones/clientes), el estado de permiso por tipo se obtiene **por fila (por cotización)**, no por contenedor. Los endpoints que devuelven listas de cotizaciones o de pagos por contenedor deben incluir **`estado_permiso_por_tipo`** en cada elemento de la lista cuando el rol sea Coordinación, Documentación, Jefe Importación o Cotizador:
 
@@ -45,7 +72,7 @@ Estructura: `[{ id_tipo_permiso?: number, nombre_permiso: string, estado: string
 
 ---
 
-### 3. GET `/api/carga-consolidada/contenedor/pasos/{id}`
+### 4. GET `/api/carga-consolidada/contenedor/pasos/{id}`
 
 Pasos disponibles para un contenedor (vista pasos).
 

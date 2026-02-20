@@ -2182,6 +2182,8 @@ const confirmDelete = async () => {
 onMounted(async () => {
   // Inicializar datos del store (responsables, contenedores, colores, catálogo)
   await initializeStore()
+  // Refrescar catálogo de actividades (colores) para que getEventColors use el color de la actividad
+  await loadActivityCatalog(true)
   // Si no es jefe, por defecto mostrar solo "mis" eventos (filtro responsable = yo)
   if (!isJefeImportaciones.value && (filters.value.responsable_id === undefined || filters.value.responsable_id === null)) {
     const uid = Number(currentUserId.value) || 0
@@ -2212,6 +2214,19 @@ watch([currentDate, viewMode], () => {
   // Si no hay una transición pendiente, cargar inmediatamente (para cambios que no activan animación)
   if (!pendingLoadEvents.value) {
     loadEvents()
+  }
+})
+
+// Al volver del catálogo de actividades, refrescar catálogo y eventos para que se pinten los colores
+watch(() => route.path, async (to, from) => {
+  const fromCatalog = from && (from === '/calendar/actividades-catalogo' || from.endsWith('/actividades-catalogo'))
+  if (to === '/calendar' && fromCatalog) {
+    await loadActivityCatalog(true)
+    if (viewMode.value === 'activities') {
+      await loadActivitiesData(true)
+    } else {
+      await getEvents(undefined, true)
+    }
   }
 })
 

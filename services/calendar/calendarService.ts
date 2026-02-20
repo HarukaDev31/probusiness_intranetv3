@@ -395,13 +395,15 @@ export class CalendarService extends BaseService {
   }
 
   /**
-   * Actualizar nombre de actividad del catálogo
+   * Actualizar nombre y/o color de actividad del catálogo
    */
-  static async updateActivityCatalog(id: number, name: string): Promise<CalendarActivityCatalogItem> {
+  static async updateActivityCatalog(id: number, name: string, colorCode?: string | null): Promise<CalendarActivityCatalogItem> {
     try {
+      const body: { name: string; color_code?: string | null } = { name }
+      if (colorCode !== undefined) body.color_code = colorCode || null
       const response = await this.apiCall<{ success: boolean; data: CalendarActivityCatalogItem }>(`${this.baseUrl}/activity-catalog/${id}`, {
         method: 'PUT',
-        body: { name }
+        body
       })
       return response.data
     } catch (error) {

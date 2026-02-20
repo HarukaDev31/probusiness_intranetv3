@@ -84,10 +84,20 @@ export function useTramitesAduana() {
   async function loadConsolidados(opciones?: { sinCompletarDocumentacion?: boolean }) {
     loadingConsolidados.value = true
     try {
+      // Modal de permisos: endpoint ligero valid-containers-documentacion (carga + año)
+      if (opciones?.sinCompletarDocumentacion === true) {
+        const res = await ConsolidadoService.getValidContainersDocumentacion()
+        const raw = res?.data ?? []
+        consolidados.value = raw.map((item) => ({
+          id: item.id,
+          carga: item.carga != null ? String(item.carga) : String(item.id),
+        })) as Contenedor[]
+        return
+      }
       const res = await ConsolidadoService.getConsolidadoData({
         limit: 500,
         page: 1,
-        completado: opciones?.sinCompletarDocumentacion === true ? false : undefined,
+        completado: undefined,
       })
       consolidados.value = res?.data ?? []
     } catch {

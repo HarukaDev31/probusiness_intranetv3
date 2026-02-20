@@ -277,6 +277,12 @@ const sidebarCategories = computed(() => {
 
 // Función para convertir iconos de FontAwesome a Heroicons
 const convertIconToHeroicons = (faIcon: string): string => {
+  if (!faIcon) return ''
+  // Pass-through: ya está en formato iconify (heroicons:home, mdi:account, tabler:home, i-heroicons-home)
+  if (faIcon.includes(':') || faIcon.startsWith('i-')) return faIcon
+  // Pass-through: URL de icono personalizado (/storage/..., https://...)
+  if (faIcon.startsWith('/') || faIcon.startsWith('http')) return faIcon
+
   const iconMap: Record<string, string> = {
     'fa fa-home': 'i-heroicons-home',
     'fas fa-boxes': 'solar:box-outline',

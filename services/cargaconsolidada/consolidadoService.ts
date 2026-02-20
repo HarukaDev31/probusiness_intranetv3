@@ -1,4 +1,4 @@
-import type { Contenedor, ContenedorPasosResponse, ContenedorResponse } from '../../types/cargaconsolidada/contenedor'
+import type { Contenedor, ContenedorPasosResponse, ContenedorResponse, ValidContainersDocumentacionResponse } from '../../types/cargaconsolidada/contenedor'
 import { BaseService } from '../base/BaseService'
 export interface ConsolidadoParams {
     page?: number
@@ -117,6 +117,18 @@ export class ConsolidadoService extends BaseService {
             throw error
         }
     }
+
+    /**
+     * Consolidados con documentación no completada (modal crear/editar trámite).
+     * GET api/carga-consolidada/contenedor/valid-containers-documentacion
+     */
+    static async getValidContainersDocumentacion(): Promise<ValidContainersDocumentacionResponse> {
+        const response = await this.apiCall<ValidContainersDocumentacionResponse>(`${this.baseUrl}/valid-containers-documentacion`, {
+            method: 'GET'
+        })
+        return response
+    }
+
     static async getContenedoresDisponibles(): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/cargas-disponibles`, {

@@ -108,6 +108,85 @@
               </template>
             </div>
 
+            <!-- Color (solo si no está editando nombre): popover con predeterminados + confirmar -->
+            <div v-if="editingId !== item.id" class="flex items-center shrink-0">
+              <UPopover :open="editingColorId === item.id" @update:open="(open: boolean) => !open && cancelColorEdit()">
+                <UButton
+                  variant="outline"
+                  size="xs"
+                  class="!p-1.5 min-w-0"
+                  :disabled="updatingColorId === item.id"
+                  title="Cambiar color de la actividad"
+                  @click="openColorEdit(item)"
+                >
+                  <span
+                    class="block w-6 h-6 rounded border border-gray-300 dark:border-gray-600"
+                    :style="{ backgroundColor: (editingColorId === item.id ? pendingColorValue : item.color_code) || '#9ca3af' }"
+                  />
+                </UButton>
+                <template #content>
+                  <div class="p-3 w-64 space-y-3">
+                    <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Color en el calendario</p>
+                    <!-- Predeterminados -->
+                    <div class="flex flex-wrap gap-1.5">
+                      <button
+                        v-for="c in PREDEFINED_COLORS"
+                        :key="c"
+                        type="button"
+                        class="w-7 h-7 rounded border-2 transition-transform hover:scale-110"
+                        :class="(pendingColorValue || item.color_code) === c ? 'border-gray-900 dark:border-white ring-1 ring-offset-1' : 'border-gray-300 dark:border-gray-600'"
+                        :style="{ backgroundColor: c }"
+                        :title="c"
+                        @click="setPendingColor(c)"
+                      />
+                    </div>
+                    <!-- Personalizado -->
+                    <div class="flex items-center gap-2">
+                      <input
+                        type="color"
+                        :value="pendingColorValue || item.color_code || '#9ca3af'"
+                        class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer bg-transparent"
+                        @input="setPendingColor(($event.target as HTMLInputElement).value)"
+                      />
+                      <span class="text-xs text-gray-500 dark:text-gray-400">Personalizado</span>
+                    </div>
+                    <!-- Quitar color (usar default) -->
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        class="w-8 h-8 rounded border-2 border-dashed border-gray-400 dark:border-gray-500 flex items-center justify-center"
+                        title="Sin color (usar predeterminado del calendario)"
+                        @click="setPendingColor(null)"
+                      >
+                        <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-gray-500" />
+                      </button>
+                      <span class="text-xs text-gray-500 dark:text-gray-400">Sin color</span>
+                    </div>
+                    <!-- Botones -->
+                    <div class="flex gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
+                      <UButton
+                        size="xs"
+                        label="Cancelar"
+                        variant="ghost"
+                        color="neutral"
+                        block
+                        @click="cancelColorEdit"
+                      />
+                      <UButton
+                        size="xs"
+                        label="Aplicar"
+                        color="primary"
+                        block
+                        :loading="updatingColorId === item.id"
+                        :disabled="pendingColorValue === (item.color_code ?? null)"
+                        @click="confirmColorChange(item)"
+                      />
+                    </div>
+                  </div>
+                </template>
+              </UPopover>
+            </div>
+
             <!-- Acciones -->
             <div class="flex items-center gap-1 shrink-0">
               <template v-if="editingId === item.id">
@@ -227,6 +306,47 @@ async function confirmEdit(id: number) {
     }
   } finally {
     updatingId.value = null
+  }
+}
+
+// ─── Color: predeterminados + confirmación ───
+const PREDEFINED_COLORS = [
+  '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#1f2937'
+]
+
+const editingColorId = ref<number | null>(null)
+const pendingColorValue = ref<string | null>(null)
+const updatingColorId = ref<number | null>(null)
+
+function openColorEdit(item: CalendarActivityCatalogItem) {
+  editingColorId.value = item.id
+  pendingColorValue.value = item.color_code ?? null
+}
+
+function setPendingColor(hex: string | null) {
+  pendingColorValue.value = hex
+}
+
+function cancelColorEdit() {
+  editingColorId.value = null
+  pendingColorValue.value = null
+}
+
+async function confirmColorChange(item: CalendarActivityCatalogItem) {
+  const hex = pendingColorValue.value != null && pendingColorValue.value.trim() ? pendingColorValue.value.trim() : null
+  updatingColorId.value = item.id
+  try {
+    const ok = await updateActivityInCatalog(item.id, item.name, hex)
+    if (ok) {
+      const idx = localItems.value.findIndex(i => i.id === item.id)
+      if (idx !== -1) localItems.value[idx] = { ...localItems.value[idx], color_code: hex || undefined }
+      cancelColorEdit()
+    } else {
+      showError('Error', 'No se pudo actualizar el color.')
+    }
+  } finally {
+    updatingColorId.value = null
   }
 }
 

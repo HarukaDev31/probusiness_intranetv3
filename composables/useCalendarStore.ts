@@ -102,14 +102,18 @@ export const useCalendarStore = () => {
   const transformEvent = (event: CalendarEvent): CalendarEvent => {
     const title = event.name || event.title || 'Sin título'
 
-    let color = '#3b82f6'
-    if (event.contenedor_id) {
-      const consolidadoConfig = state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
-      if (consolidadoConfig) {
-        color = consolidadoConfig.color_code
+    // Misma prioridad que getEventColors: actividad > consolidado > prioridad (solo para .color del evento)
+    let color = PRIORITY_COLORS[event.priority] || '#3b82f6'
+    const activityId = event.activity_id != null ? Number(event.activity_id) : null
+    if (activityId != null && !Number.isNaN(activityId)) {
+      const catalogItem = state.activityCatalog.value.find(a => Number(a.id) === activityId)
+      if (catalogItem?.color_code && String(catalogItem.color_code).trim()) {
+        color = String(catalogItem.color_code).trim()
       }
-    } else {
-      color = PRIORITY_COLORS[event.priority] || color
+    }
+    if (color === (PRIORITY_COLORS[event.priority] || '#3b82f6') && event.contenedor_id) {
+      const consolidadoConfig = state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
+      if (consolidadoConfig) color = consolidadoConfig.color_code
     }
 
     let startDate = event.start_date
@@ -426,13 +430,22 @@ export const useCalendarStore = () => {
     }
   }
 
-  const updateActivityInCatalog = async (id: number, name: string): Promise<boolean> => {
+  const updateActivityInCatalog = async (id: number, name: string, colorCode?: string | null): Promise<boolean> => {
     try {
       state.loading.value = true
-      const updated = await CalendarService.updateActivityCatalog(id, name)
+      const updated = await CalendarService.updateActivityCatalog(id, name, colorCode)
       const index = state.activityCatalog.value.findIndex(a => a.id === id)
       if (index !== -1) {
         state.activityCatalog.value[index] = updated
+      }
+      // Re-aplicar color a eventos que usan esta actividad para que el calendario se actualice sin editar
+      const activityIdNum = Number(id)
+      if (state.events.value.length > 0) {
+        state.events.value = state.events.value.map(ev => {
+          const evActivityId = ev.activity_id != null ? Number(ev.activity_id) : null
+          if (evActivityId === activityIdNum) return transformEvent(ev)
+          return ev
+        })
       }
       return true
     } catch (err: any) {
@@ -761,7 +774,17 @@ export const useCalendarStore = () => {
     if (options?.usePriority) {
       return [PRIORITY_COLORS[event.priority] ?? '#3b82f6']
     }
-    // Color por consolidado
+    // Prioridad 1: color de la actividad (catálogo) — prevalece sobre consolidado
+    const activityId = event.activity_id != null ? Number(event.activity_id) : null
+    if (activityId != null && !Number.isNaN(activityId)) {
+      const catalogItem = state.activityCatalog.value.find(
+        a => Number(a.id) === activityId
+      )
+      if (catalogItem?.color_code && String(catalogItem.color_code).trim()) {
+        return [String(catalogItem.color_code).trim()]
+      }
+    }
+    // Prioridad 2: color por consolidado
     if (event.contenedor_id) {
       const consolidadoConfig = state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
       if (consolidadoConfig) return [consolidadoConfig.color_code]

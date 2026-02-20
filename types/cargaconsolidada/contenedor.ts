@@ -39,6 +39,19 @@ export interface ContenedorResponse {
     data: Contenedor[],
     pagination: PaginationInfo
 }
+
+/** Item del endpoint valid-containers-documentacion (dropdown permisos). */
+export interface ValidContainersDocumentacionItem {
+    id: number
+    carga?: string | number
+}
+
+/** Respuesta GET .../contenedor/valid-containers-documentacion */
+export interface ValidContainersDocumentacionResponse {
+    success?: boolean
+    data: ValidContainersDocumentacionItem[]
+}
+
 export interface ContenedorFilters {
    fecha_inicio?: string
    fecha_fin?: string
