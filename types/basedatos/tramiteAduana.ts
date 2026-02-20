@@ -33,8 +33,16 @@ export interface TramiteAduana {
   entidad?: { id: number; nombre: string }
   tipos_permiso: TramiteAduanaTipoPermisoItem[]
   cliente?: { id: number; nombre?: string; ruc?: string; telefono?: string; email?: string }
-  /** Suma de montos de pagos (vouchers) registrados en pago servicio */
+  /** Suma de montos de pagos (vouchers) registrados en pago servicio (subidos por documentación) */
   total_pago_servicio?: number
+  /** Cantidad de pagos de servicio del trámite */
+  pagos_servicio_count?: number
+  /** Cantidad de pagos de servicio con estado CONFIRMADO (verificación) */
+  pagos_servicio_confirmados?: number
+  /** Suma de montos de comprobantes del tramitador subidos en verificación */
+  total_comprobantes_tramitador?: number
+  /** Suma de montos de comprobantes de derecho por id_tipo_permiso (ej. { "1": 100, "2": 200 }) */
+  total_comprobantes_derecho_por_tipo?: Record<string, number>
 }
 
 export interface CreateTramiteAduanaRequest {

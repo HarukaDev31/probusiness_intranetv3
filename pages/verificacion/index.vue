@@ -924,7 +924,13 @@ const permisosColumns: TableColumn<TramiteAduana>[] = [
   {
     accessorKey: 'entidad',
     header: 'Entidad',
-    cell: ({ row }: { row: any }) => h('span', row.original.entidad?.nombre ?? '-'),
+    cell: ({ row }: { row: any }) => {
+      const e = row.original.entidad
+      const nombre = (e && typeof e === 'object' && e !== null && 'nombre' in e)
+        ? (e.nombre ?? '')
+        : (typeof e === 'string' ? e : '')
+      return h('span', nombre.trim() || '-')
+    },
   },
   {
     accessorKey: 'tipo_permiso',
@@ -940,11 +946,18 @@ const permisosColumns: TableColumn<TramiteAduana>[] = [
     header: 'Servicio',
     cell: ({ row }: { row: any }) => {
       const t = row.original
-      const monto = Number(t.precio) || 0
-      const pagado = Number(t.total_pago_servicio) || 0
-      const isPagado = monto > 0 && pagado >= monto
-      const bg = isPagado ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-200' : 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-200'
-      return h('span', { class: `inline-flex px-2 py-1 rounded text-xs font-medium border ${bg}` }, `S/. ${monto.toFixed(2)}`)
+      // Suma de todos los pagos_servicio subidos por documentación
+      const sumaPagos = Number(t.total_pago_servicio) || 0
+      const total = Number(t.pagos_servicio_count) || 0
+      const confirmados = Number(t.pagos_servicio_confirmados) || 0
+      // Gris: ninguno confirmado; Amarillo: alguno confirmado; Verde: todos confirmados (y hay al menos uno)
+      const bg =
+        total === 0 || confirmados === 0
+          ? 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300'
+          : confirmados < total
+            ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-200'
+            : 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-200'
+      return h('span', { class: `inline-flex px-2 py-1 rounded text-xs font-medium border ${bg}` }, `S/. ${sumaPagos.toFixed(2)}`)
     },
   },
   {

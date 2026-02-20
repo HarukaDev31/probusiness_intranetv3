@@ -31,6 +31,8 @@ export interface Contenedor {
     multa: string
     observaciones: string
     pais: Pais
+    /** Estado del permiso por tipo (backend puede enviar cuando role=Coordinación/Documentación). */
+    estado_permiso_por_tipo?: Array<{ id_tipo_permiso?: number; nombre_permiso: string; estado: string }>
 }
 export interface ContenedorResponse {
     success: boolean

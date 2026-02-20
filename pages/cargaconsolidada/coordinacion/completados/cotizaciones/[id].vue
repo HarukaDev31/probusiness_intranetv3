@@ -125,6 +125,33 @@ import PagoGrid from '~/components/PagoGrid.vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones.vue'
 
+function getPermisoEstadoClass(estado: string): string {
+    const k = estado as keyof typeof STATUS_BG_CLASSES
+    if (STATUS_BG_CLASSES[k]) return STATUS_BG_CLASSES[k]
+    if (estado === 'Completo') return STATUS_BG_CLASSES.Completado
+    if (estado === 'Pendiente') return STATUS_BG_CLASSES.Pendiente
+    if (estado === 'EN_TRAMITE' || estado === 'SD') return STATUS_BG_CLASSES.COTIZADO
+    return STATUS_BG_CLASSES.WAIT
+}
+function renderEstadoPermisoPorTipo(list: Array<{ id_tipo_permiso?: number; nombre_permiso: string; estado: string }>, idTramite?: number) {
+    if (!list?.length) return null
+    return h('div', { class: 'flex flex-col gap-1 mt-1' }, list.map((p) => {
+        const content = h(USelect as any, {
+            modelValue: p.estado,
+            disabled: true,
+            items: [{ label: `${p.nombre_permiso}: ${p.estado}`, value: p.estado }],
+            class: ['min-w-36 text-xs', getPermisoEstadoClass(p.estado)].filter(Boolean).join(' '),
+        })
+        if (idTramite != null && p.id_tipo_permiso != null) {
+            return h('div', {
+                class: 'cursor-pointer hover:opacity-80 transition-opacity',
+                onClick: () => navigateTo(`/basedatos/permisos/documentos/${idTramite}?tab=${p.id_tipo_permiso}`),
+            }, [content])
+        }
+        return content
+    }))
+}
+
 const { getCotizacionProveedor,
     updateProveedorEstado,
     updateProveedor,
@@ -506,6 +533,9 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
             const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
+            const permisoBlock = (currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('coordinacion')))
+                ? renderEstadoPermisoPorTipo(row.original.estado_permiso_por_tipo ?? [], row.original.id_tramite)
+                : null
             return h('div', { class: '' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
@@ -534,8 +564,9 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                             )
                         )
                     )
-                ]) : null  
-            ])
+                ]) : null,
+                permisoBlock
+            ].filter(Boolean))
         }
     },
     {
@@ -729,6 +760,9 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
             const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
+            const permisoBlock = (currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('coordinacion')))
+                ? renderEstadoPermisoPorTipo(row.original.estado_permiso_por_tipo ?? [], row.original.id_tramite)
+                : null
             return h('div', { class: 'py-2' }, [
                 h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
@@ -757,8 +791,9 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                             )
                         )
                     )
-                ]) : null            
-            ])
+                ]) : null,
+                permisoBlock
+            ].filter(Boolean))
         }
         },
     {
@@ -855,7 +890,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             const estado = row.getValue('estado_cotizador')
             const color = getEstadoColor(estado)
 
-            return h(USelect as any, {
+            const selectNode = h(USelect as any, {
                 items: filterConfigProspectos.value
                     .find((filter: any) => filter.key === 'estado_cotizador')?.options
                     .filter((option: any) => option.inrow) || [],
@@ -869,6 +904,10 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     }
                 }
             })
+            const permisoBlock = currentRole.value === ROLES.COTIZADOR
+                ? renderEstadoPermisoPorTipo(row.original.estado_permiso_por_tipo ?? [], row.original.id_tramite)
+                : null
+            return h('div', { class: 'flex flex-col' }, [ selectNode, permisoBlock ].filter(Boolean))
         }
     },
     {
@@ -966,7 +1005,7 @@ const getPagosColumns = () => {
             accessorKey: 'estado_pago',
             header: 'Estado',
             cell: ({ row }: { row: any }) => {
-                return h(USelect as any, {
+                const selectNode = h(USelect as any, {
                     modelValue: row.original.estado_pago,
                     disabled: true,
                     items: [
@@ -976,9 +1015,8 @@ const getPagosColumns = () => {
                         { label: 'SOBREPAGO', value: 'SOBREPAGO' },
                     ],
                     class: STATUS_BG_PAGOS_CLASSES[row.original.estado_pago as keyof typeof STATUS_BG_PAGOS_CLASSES],
-
                 })
-
+                return selectNode
             }
         },
 

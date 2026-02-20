@@ -57,15 +57,17 @@ export interface EnviarRecordatoriosResponse {
 
 export class GeneralService extends BaseService {
     static baseUrl = 'api/carga-consolidada/contenedor/clientes/general'
-    static async getClientes(idConsolidado: number, filters: any, search: string, itemsPerPage: number, currentPage: number ) {
+    static async getClientes(idConsolidado: number, filters: any, search: string, itemsPerPage: number, currentPage: number, role?: string ) {
         try {
+            const params: Record<string, any> = {
+                search,
+                itemsPerPage,
+                currentPage
+            }
+            if (role) params.role = role
             const response = await this.apiCall<any>(`${this.baseUrl}/${idConsolidado}`, {
                 method: 'GET',
-                params: {
-                    search,
-                    itemsPerPage,
-                    currentPage
-                }
+                params
             })
             return response
         } catch (error) {

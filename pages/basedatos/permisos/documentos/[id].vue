@@ -359,14 +359,25 @@
           <!-- F. Caducidad (por tipo de permiso de la pestaña activa) -->
           <div v-if="activeSection" class="pt-2 border-t border-gray-100 dark:border-gray-700">
             <span class="text-xs font-medium text-gray-500 dark:text-gray-400">F. Caducidad ({{ activeSection.nombre }}):</span>
-            <UInput
-              :model-value="activeSection.f_caducidad ?? ''"
-              type="date"
-              size="sm"
-              class="mt-1 w-40"
-              :disabled="!canUpload"
-              @change="(e: Event) => handleFCaducidadChange((e.target as HTMLInputElement).value)"
-            />
+            <template v-if="canUpload">
+              <UPopover class="mt-1 block w-40">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  size="sm"
+                  icon="i-heroicons-calendar-days"
+                  class="w-full justify-start"
+                >
+                  {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : 'Seleccionar fecha' }}
+                </UButton>
+                <template #content>
+                  <UCalendar v-model="(fCaducidadDate as any)" class="p-2 w-full" @update:model-value="onFCaducidadDateChange" />
+                </template>
+              </UPopover>
+            </template>
+            <p v-else class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+              {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : '—' }}
+            </p>
           </div>
         </div>
       </UCard>
@@ -428,6 +439,8 @@ import { TramiteAduanaService } from '~/services/basedatos/tramiteAduanaService'
 import { TramiteAduanaDocumentoService } from '~/services/basedatos/tramiteAduanaDocumentoService'
 import type { TramiteCategoria, TramiteDocumento, PagoConDatos } from '~/types/basedatos/tramiteAduana'
 import type { FileItem } from '~/types/commons/file'
+import { CalendarDate, getLocalTimeZone, parseDate, type DateValue } from '@internationalized/date'
+import { DateFormatter } from '@internationalized/date'
 
 definePageMeta({ layout: 'default' })
 
@@ -456,6 +469,7 @@ const { hasRole, fetchCurrentUser } = useUserRole()
 const overlay = useOverlay()
 const createPagoModal = overlay.create(CreatePagoModal)
 
+/** Solo documentación, coordinación y jefe pueden subir/editar/eliminar. Otros roles: todo solo visualización; FileUploader visible solo para descargar. */
 const canUpload = computed(() =>
   hasRole([ROLES.COORDINACION, ROLES.DOCUMENTACION, ROLES.JEFE_IMPORTACIONES])
 )
@@ -570,6 +584,28 @@ function setSegUploaderRef(tipoId: number | null, catId: number, el: any) {
 const activeSection = computed(() =>
   tiposPermisoSections.value.find(s => s.id_tipo_permiso === activeTab.value) ?? null
 )
+
+/** F. Caducidad: date picker (Nuxt UI Calendar) */
+const dfCaducidad = new DateFormatter('es-ES', { dateStyle: 'short' })
+function parseFechaCaducidad(s: string | null | undefined): CalendarDate | null {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null
+  try {
+    return parseDate(s) as CalendarDate
+  } catch {
+    return null
+  }
+}
+function calendarDateToYMD(d: CalendarDate): string {
+  return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+}
+const fCaducidadDate = ref<DateValue | null>(null)
+watch(activeSection, (sec) => {
+  fCaducidadDate.value = parseFechaCaducidad(sec?.f_caducidad ?? '')
+}, { immediate: true })
+function onFCaducidadDateChange(d: DateValue | null) {
+  if (!d) return
+  handleFCaducidadChange(calendarDateToYMD(d as CalendarDate))
+}
 
 /** Modal Nuevo documento: nuevo file para esa sección y ese tipo_permiso (sin selector de categoría) */
 const showNuevoDocModal = ref(false)
@@ -1038,7 +1074,13 @@ onMounted(async () => {
   fetchCurrentUser()
   await loadDocumentos(tramiteId)
   if (tiposPermisoSections.value.length) {
-    activeTab.value = tiposPermisoSections.value[0].id_tipo_permiso
+    const tabQuery = route.query.tab
+    const tabId = typeof tabQuery === 'string' ? parseInt(tabQuery, 10) : NaN
+    if (Number.isInteger(tabId) && tiposPermisoSections.value.some(s => s.id_tipo_permiso === tabId)) {
+      activeTab.value = tabId
+    } else {
+      activeTab.value = tiposPermisoSections.value[0].id_tipo_permiso
+    }
   }
 })
 </script>

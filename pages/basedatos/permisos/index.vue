@@ -19,10 +19,10 @@
     :show-filters="true"
     :filter-config="filterConfig"
     :filters-value="filters"
-    :show-new-button="true"
+    :show-new-button="canCreateOrEditPermiso"
     new-button-label="Crear permiso"
     :on-new-button-click="openCreateModal"
-    empty-state-message="No hay trámites registrados. Haz clic en «Crear permiso» para agregar uno."
+    :empty-state-message="canCreateOrEditPermiso ? 'No hay trámites registrados. Haz clic en «Crear permiso» para agregar uno.' : 'No hay trámites registrados.'"
     :show-body-top="true"
     @update:primary-search="handlePrimarySearch"
     @update:search-query="handlePrimarySearch"
@@ -47,6 +47,8 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import type { TramiteAduana, TramiteAduanaTipoPermisoItem, TramiteEstado, CreateTramiteAduanaRequest } from '~/types/basedatos/tramiteAduana'
 import { TRAMITE_ESTADOS } from '~/types/basedatos/tramiteAduana'
 import { TramiteAduanaCatalogoService } from '~/services/basedatos/tramiteAduanaCatalogoService'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
 
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
@@ -88,7 +90,14 @@ const {
 
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
+const { currentRole } = useUserRole()
 const overlay = useOverlay()
+
+/** Solo Documentación, Coordinación y Jefe Importación pueden crear/editar/eliminar permisos y subir archivos; el resto solo visual */
+const canCreateOrEditPermiso = computed(() => {
+  const role = currentRole.value
+  return role === ROLES.DOCUMENTACION || role === ROLES.COORDINACION || role === ROLES.JEFE_IMPORTACIONES
+})
 const permisoModal = overlay.create(PermisoTramiteModal)
 
 const selectedTramite = ref<TramiteAduana | null>(null)
@@ -172,9 +181,18 @@ const tableColumns = computed<TableColumn<TramiteAduana>[]>(() => [
     header: 'Derecho tramite',
     cell: ({ row }) => {
       const tipos = row.original.tipos_permiso ?? []
+      const totalesDerecho = (row.original as any).total_comprobantes_derecho_por_tipo ?? {}
       if (tipos.length === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
       return h('div', { class: 'flex flex-col gap-1.5' }, tipos.map((tp: TramiteAduanaTipoPermisoItem) => {
-        return h('div', { class: 'text-sm text-gray-600 dark:text-gray-400 py-0.5 min-h-7 flex items-center' }, `S/.${Number(tp.derecho_entidad).toFixed(2)}`)
+        const requerido = Number(tp.derecho_entidad) || 0
+        const subido = Number(totalesDerecho[String(tp.id)] ?? 0) || 0
+        const bg =
+          subido === 0
+            ? 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700 dark:text-gray-300'
+            : subido < requerido
+              ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-200'
+              : 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-200'
+        return h('div', { class: `text-sm py-0.5 min-h-7 flex items-center px-2 py-1 rounded border ${bg}` }, `S/.${requerido.toFixed(2)}`)
       }))
     },
   },
@@ -183,22 +201,35 @@ const tableColumns = computed<TableColumn<TramiteAduana>[]>(() => [
     header: 'Tramitador',
     cell: ({ row }) => {
       const v = row.original.tramitador
-      if (v == null || (typeof v === 'number' && Number.isNaN(v))) return h('span', { class: 'text-gray-400 text-sm' }, '-')
-      return h('span', { class: 'text-sm text-gray-700 dark:text-gray-300' }, `S/.${Number(v).toFixed(2)}`)
+      const totalTramitador = Number((row.original as any).total_comprobantes_tramitador ?? 0) || 0
+      const requerido = v != null && !Number.isNaN(Number(v)) ? Number(v) : 0
+      if (requerido === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      const bg =
+        totalTramitador === 0
+          ? 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700 dark:text-gray-300'
+          : totalTramitador < requerido
+            ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-200'
+            : 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-200'
+      return h('span', { class: `text-sm px-2 py-1 rounded border ${bg}` }, `S/.${requerido.toFixed(2)}`)
     },
   },
   {
-    accessorKey: 'precio',
-    header: 'Servicio',
-    cell: ({ row }) => h('span', { class: 'text-sm' }, `S/.${Number(row.original.precio).toFixed(2)}`),
-  },
-  {
     accessorKey: 'total_pago_servicio',
-    header: 'Pago servicio',
+    header: 'Servicio',
     cell: ({ row }) => {
-      const v = row.original.total_pago_servicio
-      const n = v != null && !Number.isNaN(Number(v)) ? Number(v) : 0
-      return h('span', { class: 'text-sm' }, `S/.${n.toFixed(2)}`)
+      const t = row.original
+      const requerido = Number(t.precio) || 0
+      const subido = Number(t.total_pago_servicio) || 0
+      const totalPagos = Number(t.pagos_servicio_count) || 0
+      const confirmados = Number(t.pagos_servicio_confirmados) || 0
+      const todosConfirmados = totalPagos > 0 && confirmados === totalPagos
+      const bg =
+        subido === 0
+          ? 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700 dark:text-gray-300'
+          : subido < requerido || !todosConfirmados
+            ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-200'
+            : 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-200'
+      return h('span', { class: `text-sm px-2 py-1 rounded border ${bg}` }, `S/.${subido.toFixed(2)}`)
     },
   },
   {
@@ -296,22 +327,26 @@ const tableColumns = computed<TableColumn<TramiteAduana>[]>(() => [
         title: 'Ver documentos',
         onClick: () => navigateTo(`/basedatos/permisos/documentos/${row.original.id}`),
       }),
-      h(UButton as any, {
-        icon: 'i-heroicons-pencil-square',
-        variant: 'ghost',
-        size: 'xs',
-        color: 'primary',
-        title: 'Editar',
-        onClick: () => openEditModal(row.original),
-      }),
-      h(UButton as any, {
-        icon: 'i-heroicons-trash',
-        variant: 'ghost',
-        size: 'xs',
-        color: 'red',
-        title: 'Eliminar',
-        onClick: () => confirmDelete(row.original),
-      }),
+      ...(canCreateOrEditPermiso.value
+        ? [
+            h(UButton as any, {
+              icon: 'i-heroicons-pencil-square',
+              variant: 'ghost',
+              size: 'xs',
+              color: 'primary',
+              title: 'Editar',
+              onClick: () => openEditModal(row.original),
+            }),
+            h(UButton as any, {
+              icon: 'i-heroicons-trash',
+              variant: 'ghost',
+              size: 'xs',
+              color: 'red',
+              title: 'Eliminar',
+              onClick: () => confirmDelete(row.original),
+            }),
+          ]
+        : []),
     ]),
   },
 ])

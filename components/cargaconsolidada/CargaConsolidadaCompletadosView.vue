@@ -268,7 +268,7 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }) => {
       const estado = row.getValue('estado_china') as string
       const color = getColorByEstado(estado)
-      return h(USelect as any, {
+      const selectNode = h(USelect as any, {
         modelValue: estado,
         variant: 'subtle',
         color: color,
@@ -280,6 +280,7 @@ const columns: TableColumn<any>[] = [
           { label: 'COMPLETADO', value: 'COMPLETADO' },
         ],
       })
+      return selectNode
     },
   },
   { accessorKey: 'cbm_total_peru', header: 'CBM Perú', cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
@@ -426,11 +427,12 @@ const almacenColumns: TableColumn<any>[] = [
     cell: ({ row }) => {
       const estado = row.getValue('estado_china') as string
       const color = getColorByEstado(estado)
-      return h(UBadge, {
+      const badgeNode = h(UBadge, {
         color,
         variant: 'subtle',
         label: getEstadoLabel(estado),
       })
+      return badgeNode
     },
   },
   {

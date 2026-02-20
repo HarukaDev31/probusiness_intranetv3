@@ -27,9 +27,25 @@ Listado de contenedores (abiertos o completados) según filtros.
     - Filtrado o lógica de negocio que dependa del rol (columnas, estados, etc.)
 - Si el usuario **no** es Jefe Importación, ignorar el query `role` y seguir usando solo el rol del token.
 
+**Campo opcional por contenedor (vista Coordinación / Documentación):**
+- **`estado_permiso_por_tipo`** (array, opcional): **por fila/por cotización** (no por contenedor). Cada contenedor en el listado puede incluir este array con el estado del permiso por tipo asociado a esa cotización. Estructura: `[{ id_tipo_permiso?: number, nombre_permiso: string, estado: string }]`. El front lo muestra en la columna Estado debajo del estado principal (estado_china / estado_documentacion).
+
 ---
 
-### 2. GET `/api/carga-consolidada/contenedor/pasos/{id}`
+### 2. Estado permiso por tipo **por cotización** (por fila)
+
+En las páginas de detalle (cotizaciones/clientes), el estado de permiso por tipo se obtiene **por fila (por cotización)**, no por contenedor. Los endpoints que devuelven listas de cotizaciones o de pagos por contenedor deben incluir **`estado_permiso_por_tipo`** en cada elemento de la lista cuando el rol sea Coordinación, Documentación, Jefe Importación o Cotizador:
+
+- **GET** `.../contenedor/cotizaciones/{idContenedor}` (prospectos): cada cotización en `data` debe incluir `estado_permiso_por_tipo` (array) calculado a partir de `ConsolidadoCotizacionAduanaTramite` con `id_cotizacion` = esa cotización.
+- **GET** `.../cotizaciones-pagos/{idContenedor}` (pagos en tab cotizaciones): cada fila debe incluir `estado_permiso_por_tipo`.
+- **GET** `.../contenedor/clientes/pagos/{idContenedor}` (pagos en tab clientes): cada fila debe incluir `estado_permiso_por_tipo`.
+- **GET** `.../contenedor/clientes/general/{idContenedor}` (tab general de clientes): cada elemento en `data` debe incluir `estado_permiso_por_tipo` (array) cuando el rol sea Documentación, Coordinación, Jefe Importación o Cotizador (o cuando la petición envíe `role` con uno de esos valores). El front lo usa en la columna Estado del perfil Documentación.
+
+Estructura: `[{ id_tipo_permiso?: number, nombre_permiso: string, estado: string }, ...]`.
+
+---
+
+### 3. GET `/api/carga-consolidada/contenedor/pasos/{id}`
 
 Pasos disponibles para un contenedor (vista pasos).
 

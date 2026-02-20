@@ -134,6 +134,34 @@ import { FILE_ICONS_MAP } from '~/constants/file'
 const ModalAcciones = defineAsyncComponent(() => import('~/components/cargaconsolidada/clientes/ModalAcciones.vue'))
 const PagoGrid = defineAsyncComponent(() => import('~/components/PagoGrid.vue'))
 const SectionHeader = defineAsyncComponent(() => import('~/components/commons/SectionHeader.vue'))
+
+function getPermisoEstadoClass(estado: string): string {
+    const k = estado as keyof typeof STATUS_BG_CLASSES
+    if (STATUS_BG_CLASSES[k]) return STATUS_BG_CLASSES[k]
+    if (estado === 'Completo') return STATUS_BG_CLASSES.Completado
+    if (estado === 'Pendiente') return STATUS_BG_CLASSES.Pendiente
+    if (estado === 'EN_TRAMITE' || estado === 'SD') return STATUS_BG_CLASSES.COTIZADO
+    return STATUS_BG_CLASSES.WAIT
+}
+function renderEstadoPermisoPorTipo(list: Array<{ id_tipo_permiso?: number; nombre_permiso: string; estado: string }>, idTramite?: number) {
+    if (!list?.length) return null
+    return h('div', { class: 'flex flex-col gap-1 mt-1' }, list.map((p) => {
+        const content = h(USelect as any, {
+            modelValue: p.estado,
+            disabled: true,
+            items: [{ label: `${p.nombre_permiso}: ${p.estado}`, value: p.estado }],
+            class: ['min-w-36 text-xs', getPermisoEstadoClass(p.estado)].filter(Boolean).join(' '),
+        })
+        if (idTramite != null && p.id_tipo_permiso != null) {
+            return h('div', {
+                class: 'cursor-pointer hover:opacity-80 transition-opacity',
+                onClick: () => navigateTo(`/basedatos/permisos/documentos/${idTramite}?tab=${p.id_tipo_permiso}`),
+            }, [content])
+        }
+        return content
+    }))
+}
+
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
@@ -808,7 +836,7 @@ const columnsDocumentacion: TableColumn<any>[] = [
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }: { row: any }) => {
-            return h(USelect as any, {
+            const selectNode = h(USelect as any, {
                 label: row.original.status_cliente_doc,
                 class: STATUS_BG_CLASSES[row.original.status_cliente_doc as keyof typeof STATUS_BG_CLASSES],
                 variant: 'soft',
@@ -835,6 +863,10 @@ const columnsDocumentacion: TableColumn<any>[] = [
                     }
                 }
             })
+            const permisoBlock = (currentRole.value === ROLES.DOCUMENTACION || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('documentacion')))
+                ? renderEstadoPermisoPorTipo(row.original.estado_permiso_por_tipo ?? [], row.original.id_tramite)
+                : null
+            return h('div', { class: 'flex flex-col' }, [ selectNode, permisoBlock ].filter(Boolean))
         }
     },
     {
