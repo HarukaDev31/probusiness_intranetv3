@@ -2,10 +2,10 @@
     <div class="space-y-4">
         <!-- Zona de subida solo visible si no hay archivos iniciales o si es multiple -->
         <div v-if="showDropZone">
-            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div>
+            <div class="flex items-center justify-between gap-3 p-4 border border-gray-200 rounded-lg">
+                <div class="min-w-0">
                     <p class="text-sm">{{ customMessage || 'Selecciona o arrastra tu archivo aquí' }}</p>
-                    <p class="text-xs">Formatos: {{ acceptedTypesText }}</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 truncate" :title="acceptedTypesText">{{ acceptedTypesText }}</p>
                 </div>
                 <UButton  v-if="!disabled" color="neutral" variant="soft" class="whitespace-nowrap" @click.stop="handleSelectFiles">
                     Subir archivo
@@ -33,14 +33,14 @@
                 :key="item.key"
                 class="flex items-center justify-between p-3 rounded-lg border border-gray-200"
             >
-                <div class="flex items-center gap-3" @click="openFile(item.raw)">
+                <div class="flex items-center gap-3 min-w-0 flex-1" @click="openFile(item.raw)">
                     <FileIcon :file="item.raw" class="w-8 h-8" />
-                    <div>
-                        <p class="text-sm font-medium" :class="item.isInitial ? 'select-none cursor-default' : ''" style="word-break: break-all;">{{ item.name }}</p>
-                        <p class="text-xs" :class="item.isInitial ? 'select-none cursor-default text-gray-500' : 'text-gray-500'">{{ item.sizeText }}</p>
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium truncate" :class="item.isInitial ? 'select-none cursor-default' : ''" :title="item.name">{{ item.name }}</p>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400" :class="item.isInitial ? 'select-none cursor-default' : ''">{{ item.sizeText }}</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-1">
+                <div class="flex items-center shrink-0">
                     <template v-if="item.isInitial">
                         <UButton variant="ghost" class="p-2" title="Descargar" color="secondary" @click="downloadFileExisting((item.raw as FileItem).file_url)">
                             <UIcon name="i-heroicons-arrow-down-tray" />

@@ -27,7 +27,9 @@
         ref="scrollContainer"
         class="pdf-viewport"
         @mousedown="onDragStart"
-        @touchstart.passive="onTouchStart"
+        @touchstart.prevent="onTouchStart"
+        @touchmove.prevent="onTouchMove"
+        @touchend="onTouchEnd"
       >
         <div v-if="!isPdfLoaded" class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-gray-100 dark:bg-gray-800">
           <UIcon name="i-heroicons-document-text" class="w-10 h-10 sm:w-16 sm:h-16 text-gray-400 animate-pulse" />
@@ -208,40 +210,76 @@ const onDragEnd = () => {
   window.removeEventListener('mouseup', onDragEnd)
 }
 
-// --- Touch drag ---
+// --- Touch: 1 dedo = pan, 2 dedos = pinch zoom ---
+let touchMode: 'none' | 'pan' | 'pinch' = 'none'
 let touchStartX = 0
 let touchStartY = 0
 let touchScrollX = 0
 let touchScrollY = 0
+let pinchStartDist = 0
+let pinchStartScale = 1.0
+
+function getTouchDist(e: TouchEvent): number {
+  const [a, b] = [e.touches[0], e.touches[1]]
+  return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY)
+}
 
 const onTouchStart = (e: TouchEvent) => {
   const container = scrollContainer.value
-  if (!container || e.touches.length !== 1) return
-  if (container.scrollWidth <= container.clientWidth && container.scrollHeight <= container.clientHeight) return
-  const t = e.touches[0]
-  touchStartX = t.clientX
-  touchStartY = t.clientY
-  touchScrollX = container.scrollLeft
-  touchScrollY = container.scrollTop
-  container.addEventListener('touchmove', onTouchMove, { passive: false })
-  container.addEventListener('touchend', onTouchEnd)
+  if (!container) return
+
+  if (e.touches.length === 2) {
+    touchMode = 'pinch'
+    pinchStartDist = getTouchDist(e)
+    pinchStartScale = currentScale.value
+    e.preventDefault()
+    return
+  }
+
+  if (e.touches.length === 1) {
+    touchMode = 'pan'
+    const t = e.touches[0]
+    touchStartX = t.clientX
+    touchStartY = t.clientY
+    touchScrollX = container.scrollLeft
+    touchScrollY = container.scrollTop
+  }
 }
+
+let pinchRafId: number | null = null
 
 const onTouchMove = (e: TouchEvent) => {
   const container = scrollContainer.value
-  if (!container || e.touches.length !== 1) return
-  e.preventDefault()
-  const t = e.touches[0]
-  container.scrollLeft = touchScrollX - (t.clientX - touchStartX)
-  container.scrollTop = touchScrollY - (t.clientY - touchStartY)
+  if (!container) return
+
+  if (touchMode === 'pinch' && e.touches.length === 2) {
+    e.preventDefault()
+    if (pinchRafId) return
+    pinchRafId = requestAnimationFrame(async () => {
+      pinchRafId = null
+      const dist = getTouchDist(e)
+      const ratio = dist / pinchStartDist
+      let newScale = +(pinchStartScale * ratio).toFixed(2)
+      newScale = Math.max(minScale.value, Math.min(maxScale.value, newScale))
+      if (Math.abs(newScale - currentScale.value) >= 0.05) {
+        await applyZoom(newScale)
+      }
+    })
+    return
+  }
+
+  if (touchMode === 'pan' && e.touches.length === 1) {
+    const canScroll = container.scrollWidth > container.clientWidth || container.scrollHeight > container.clientHeight
+    if (!canScroll) return
+    e.preventDefault()
+    const t = e.touches[0]
+    container.scrollLeft = touchScrollX - (t.clientX - touchStartX)
+    container.scrollTop = touchScrollY - (t.clientY - touchStartY)
+  }
 }
 
 const onTouchEnd = () => {
-  const container = scrollContainer.value
-  if (container) {
-    container.removeEventListener('touchmove', onTouchMove)
-    container.removeEventListener('touchend', onTouchEnd)
-  }
+  touchMode = 'none'
 }
 
 const loadPDF = async () => {
@@ -285,7 +323,6 @@ const loadPDF = async () => {
 
 const openSignatureModal = () => {
   firmaModal.open({
-    onClose: () => firmaModal.close(),
     onConfirm: async (data) => {
       firmaModal.close()
       const result = await signCargoEntrega({

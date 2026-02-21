@@ -1,7 +1,7 @@
 <template>
   <div class="md:p-6">
     <!-- Skeleton Loading -->
-    <div v-if="loading" class="max-w-6xl mx-auto space-y-6">
+    <div v-if="loading" class="max-w-8xl mx-auto space-y-6">
       <div class="flex items-center justify-between mb-6">
         <USkeleton class="h-10 w-24 rounded" />
         <USkeleton class="h-9 w-28 rounded-lg" />
@@ -45,48 +45,50 @@
     </div>
 
     <!-- Contenido principal -->
-    <div v-else class="max-w-6xl mx-auto space-y-6">
+    <div v-else class="max-w-8xl mx-auto space-y-6">
       <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4 min-w-0">
           <UButton
             icon="i-heroicons-arrow-left"
             variant="ghost"
             color="neutral"
+            size="sm"
             @click="navigateTo('/basedatos/permisos')"
-          >
-            Volver
-          </UButton>
-          <div v-if="tramiteInfo">
-            <p class="text-lg font-semibold text-gray-900 dark:text-white">
+          />
+          <div v-if="tramiteInfo" class="min-w-0">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white truncate">
               {{ tramiteInfo.cliente || 'Sin cliente' }}
-            </p>
-            <p v-if="tramiteInfo.consolidado" class="text-sm text-gray-500 dark:text-gray-400">
-              Carga {{ tramiteInfo.consolidado }}
-            </p>
+            </h1>
+            <div class="flex items-center gap-2 mt-1">
+              <UBadge v-if="tramiteInfo.consolidado" color="primary" variant="subtle" size="sm">
+                Carga {{ tramiteInfo.consolidado }}
+              </UBadge>
+              <UBadge v-if="tabs.length === 1 && tiposPermisoSections.length" color="neutral" variant="subtle" size="sm">
+                {{ tiposPermisoSections[0].nombre }}
+              </UBadge>
+            </div>
           </div>
         </div>
-        <UButton
-          v-if="!loading && tiposPermisoSections.length && canUpload"
-          label="Guardar"
-          icon="i-heroicons-check"
-          color="primary"
-          :loading="saving"
-          @click="guardarTodo"
-        />
-      </div>
-
-      <!-- Tabs -->
-      <div v-if="tiposPermisoSections.length">
-        <UTabs
-          v-model="activeTab"
-          :color="activeTab ? 'primary' : 'neutral'"
-          :items="tabs"
-          size="sm"
-          variant="pill"
-          class="mb-1 w-80 h-15"
-          v-if="tabs.length > 1"
-        />
+        <div class="flex items-center gap-3 shrink-0">
+          <UTabs
+            v-if="tiposPermisoSections.length && tabs.length > 1"
+            v-model="activeTab"
+            :color="activeTab ? 'primary' : 'neutral'"
+            :items="tabs"
+            size="sm"
+            variant="pill"
+          />
+          <UButton
+            v-if="!loading && tiposPermisoSections.length && canUpload"
+            label="Guardar todo"
+            icon="i-heroicons-check"
+            color="primary"
+            size="lg"
+            :loading="saving"
+            @click="guardarTodo"
+          />
+        </div>
       </div>
 
       <!-- Grid principal -->
@@ -97,12 +99,12 @@
           <template v-if="tiposPermisoSections.length">
             <template v-for="sec in tiposPermisoSections" :key="sec.id_tipo_permiso">
               <div v-show="activeTab === sec.id_tipo_permiso">
-                <UCard class="bg-white dark:bg-gray-800">
+                <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-blue-500">
                   <template #header>
                     <div class="flex items-center justify-between gap-3 flex-wrap">
-                      <div class="flex items-center gap-2">
-                        <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-500" />
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Documentos por trámite</h2>
+                      <div class="flex items-center gap-2.5">
+                        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-bold">1</span>
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Documentos por trámite</h2>
                       </div>
                       <UButton
                         v-if="canUpload"
@@ -120,7 +122,7 @@
                     <div class="space-y-5">
                       <template v-for="cat in categoriasParaTipo(sec.id_tipo_permiso, 'documentos_tramite')" :key="cat.id">
                         <div class="space-y-1.5">
-                          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ cat.nombre }}</label>
+                          <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ cat.nombre }}</label>
                           <FileUploader
                             :ref="(el: any) => setDocUploaderRef(sec.id_tipo_permiso, cat.id, el)"
                             :multiple="false"
@@ -136,9 +138,9 @@
 
                       <template v-for="pending in pendingPorTipo(sec.id_tipo_permiso, 'documentos_tramite')" :key="pending.id">
                         <div class="space-y-1.5">
-                          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                          <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             {{ pending.nombre }}
-                            <UBadge color="warning" variant="soft" size="xs" class="ml-1">pendiente</UBadge>
+                            <UBadge color="warning" variant="soft" size="xs" class="ml-1 normal-case tracking-normal">pendiente</UBadge>
                           </label>
                           <FileUploader
                             :multiple="false"
@@ -158,7 +160,7 @@
                     </div>
 
                     <div class="space-y-1.5">
-                      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Fotos</label>
+                      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fotos</label>
                       <FileUploader
                         :ref="(el: any) => setFotosUploaderRef(sec.id_tipo_permiso, el)"
                         :multiple="false"
@@ -177,29 +179,72 @@
           </template>
 
           <!-- SECCIÓN 3: Seguimiento -->
-          <UCard class="bg-white dark:bg-gray-800">
+          <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-purple-500">
             <template #header>
               <div class="flex items-center justify-between gap-3 flex-wrap">
-                <div class="flex items-center gap-2">
-                  <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5 text-purple-500" />
-                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Seguimiento</h2>
+                <div class="flex items-center gap-2.5">
+                  <span class="flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 text-xs font-bold">2</span>
+                  <h2 class="text-lg font-bold text-gray-900 dark:text-white">Seguimiento</h2>
                 </div>
-                <UButton
-                  v-if="canUpload && activeSection"
-                  label="Nuevo documento"
-                  icon="i-heroicons-document-plus"
-                  size="sm"
-                  color="primary"
-                  variant="soft"
-                  @click="openNuevoDocModal('seguimiento', activeSection.id_tipo_permiso)"
-                />
+                <div class="flex items-center gap-3">
+                  <div v-if="activeSection" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700/50">
+                    <UIcon name="i-heroicons-calendar-days" class="w-3.5 h-3.5 text-purple-500" />
+                    <span class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Caduca:</span>
+                    <template v-if="canUpload">
+                      <UPopover>
+                        <UButton
+                          color="neutral"
+                          variant="link"
+                          size="xs"
+                          class="font-semibold text-purple-600 dark:text-purple-400 !p-0"
+                        >
+                          {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : 'Sin fecha' }}
+                        </UButton>
+                        <template #content>
+                          <UCalendar v-model="(fCaducidadDate as any)" class="p-2 w-full" @update:model-value="onFCaducidadDateChange" />
+                        </template>
+                      </UPopover>
+                    </template>
+                    <span v-else class="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                      {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : '—' }}
+                    </span>
+                  </div>
+                  <UButton
+                    v-if="canUpload && activeSection"
+                    label="Nuevo documento"
+                    icon="i-heroicons-document-plus"
+                    size="sm"
+                    color="primary"
+                    variant="soft"
+                    @click="openNuevoDocModal('seguimiento', activeSection.id_tipo_permiso)"
+                  />
+                </div>
               </div>
             </template>
 
-            <div class="space-y-6">
+            <div class="space-y-5">
+              <!-- F. Caducidad visible en móvil -->
+              <div v-if="activeSection" class="sm:hidden flex items-center gap-2 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/30">
+                <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-purple-500 shrink-0" />
+                <span class="text-xs text-gray-500 dark:text-gray-400">Caduca:</span>
+                <template v-if="canUpload">
+                  <UPopover>
+                    <UButton color="neutral" variant="link" size="xs" class="font-semibold text-purple-600 dark:text-purple-400 !p-0">
+                      {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : 'Sin fecha' }}
+                    </UButton>
+                    <template #content>
+                      <UCalendar v-model="(fCaducidadDate as any)" class="p-2 w-full" @update:model-value="onFCaducidadDateChange" />
+                    </template>
+                  </UPopover>
+                </template>
+                <span v-else class="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                  {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : '—' }}
+                </span>
+              </div>
+
               <div v-if="activeSection" class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div v-for="cat in categoriasSeguimientoPorTipo(activeSection.id_tipo_permiso)" :key="cat.id" class="space-y-1.5">
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ cat.nombre }}</label>
+                  <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ cat.nombre }}</label>
                   <FileUploader
                     :ref="(el: any) => setSegUploaderRef(activeSection.id_tipo_permiso, cat.id, el)"
                     :key="`seg-${activeSection.id_tipo_permiso}-${cat.id}-${getSeguimientoDocPorCategoria(activeSection, cat.id)?.id ?? 0}`"
@@ -214,9 +259,9 @@
                 </div>
 
                 <div v-for="pending in pendingPorTipo(activeSection.id_tipo_permiso, 'seguimiento')" :key="pending.id" class="space-y-1.5">
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {{ pending.nombre }}
-                    <UBadge color="warning" variant="soft" size="xs" class="ml-1">pendiente</UBadge>
+                    <UBadge color="warning" variant="soft" size="xs" class="ml-1 normal-case tracking-normal">pendiente</UBadge>
                   </label>
                   <FileUploader
                     :multiple="false"
@@ -230,8 +275,8 @@
               </div>
 
               <!-- RH o Factura del tramitador -->
-              <div v-if="categoriaRH" class="border-t border-gray-200 dark:border-gray-700 pt-5">
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">RH o Factura del tramitador</label>
+              <div v-if="categoriaRH" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">RH o Factura del tramitador</label>
                 <FileUploader
                   :ref="(el: any) => setSegUploaderRef(null, categoriaRH.id, el)"
                   :key="`seg-rh-${seguimientoCompartido.map(d => d.id).sort().join('-')}`"
@@ -244,58 +289,31 @@
                   @file-removed="(idOrIndex: number) => handleDelete(idOrIndex)"
                 />
               </div>
-
-              <!-- F. Caducidad -->
-              <div v-if="activeSection" class="border-t border-gray-200 dark:border-gray-700 pt-5">
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">F. Caducidad ({{ activeSection.nombre }})</label>
-                <template v-if="canUpload">
-                  <UPopover class="block w-44">
-                    <UButton
-                      color="neutral"
-                      variant="outline"
-                      size="sm"
-                      icon="i-heroicons-calendar-days"
-                      class="w-full justify-start"
-                    >
-                      {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : 'Seleccionar fecha' }}
-                    </UButton>
-                    <template #content>
-                      <UCalendar v-model="(fCaducidadDate as any)" class="p-2 w-full" @update:model-value="onFCaducidadDateChange" />
-                    </template>
-                  </UPopover>
-                </template>
-                <p v-else class="text-sm text-gray-700 dark:text-gray-300">
-                  {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : '—' }}
-                </p>
-              </div>
             </div>
           </UCard>
         </div>
 
-        <!-- Columna derecha: Pago servicio -->
-        <div class="space-y-6">
-          <!-- SECCIÓN 2: Pago servicio -->
-          <UCard class="bg-white dark:bg-gray-800">
+        <!-- Columna derecha: Pago servicio (sticky en desktop) -->
+        <div class="lg:sticky lg:top-6 space-y-6 self-start">
+          <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-green-500">
             <template #header>
-              <div class="flex items-center justify-between gap-3 flex-wrap">
-                <div class="flex items-center gap-2">
-                  <UIcon name="i-heroicons-banknotes" class="w-5 h-5 text-green-500" />
-                  <div>
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Pago servicio</h2>
-                    <p v-if="totalMontoPagoServicio !== null" class="text-sm font-semibold text-green-600 dark:text-green-400">
-                      Total: S/ {{ totalMontoPagoServicio.toFixed(2) }}
-                    </p>
-                  </div>
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <span class="flex items-center justify-center w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-xs font-bold shrink-0">3</span>
+                  <h2 class="text-lg font-bold text-gray-900 dark:text-white truncate">Pagos</h2>
                 </div>
                 <UButton
                   v-if="canUpload"
-                  label="Agregar"
                   icon="i-heroicons-plus"
-                  size="sm"
+                  size="xs"
                   color="primary"
                   variant="soft"
                   @click="openCreatePagoModal()"
                 />
+              </div>
+              <div v-if="totalMontoPagoServicio !== null" class="mt-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-center">
+                <span class="block text-[11px] uppercase tracking-wider text-green-600/70 dark:text-green-400/70 font-medium">Total pagado</span>
+                <span class="block text-2xl font-extrabold text-green-600 dark:text-green-400 mt-0.5">S/ {{ totalMontoPagoServicio.toFixed(2) }}</span>
               </div>
             </template>
 
@@ -303,39 +321,50 @@
               <div
                 v-for="item in pagosParaMostrar"
                 :key="item.document.id"
-                class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800/50"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
               >
-                <div
-                  class="relative aspect-square max-h-40 w-full overflow-hidden bg-gray-100 dark:bg-gray-700 group cursor-pointer"
-                  role="button"
-                  tabindex="0"
-                  @click="openPreviewPago(item.document)"
-                  @keydown.enter="openPreviewPago(item.document)"
-                >
-                  <img
-                    v-if="isImage(item.document.extension)"
-                    :src="item.document.url"
-                    :alt="item.document.nombre_original"
-                    class="w-full h-full object-contain pointer-events-none"
-                  />
-                  <div v-else class="w-full h-full flex flex-col items-center justify-center p-2 pointer-events-none">
-                    <UIcon name="i-heroicons-document" class="w-10 h-10 text-gray-400" />
-                    <span class="text-xs text-gray-500 truncate w-full text-center mt-1">{{ item.document.nombre_original || item.document.extension }}</span>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50">
+                  <div
+                    class="relative w-14 h-14 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 group cursor-pointer hover:ring-2 hover:ring-primary-400 transition-shadow shrink-0"
+                    role="button"
+                    tabindex="0"
+                    @click="openPreviewPago(item.document)"
+                    @keydown.enter="openPreviewPago(item.document)"
+                  >
+                    <img
+                      v-if="isImage(item.document.extension)"
+                      :src="item.document.url"
+                      :alt="item.document.nombre_original"
+                      class="w-full h-full object-cover pointer-events-none"
+                    />
+                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 pointer-events-none">
+                      <UIcon name="i-heroicons-document" class="w-6 h-6 text-gray-400" />
+                    </div>
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      <UIcon name="i-heroicons-eye" class="w-4 h-4 text-white" />
+                    </div>
+                    <button
+                      v-if="canUpload"
+                      type="button"
+                      class="absolute -top-0.5 -right-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] leading-none z-10"
+                      aria-label="Eliminar"
+                      @click.stop="handleDelete(item.document.id)"
+                    >×</button>
                   </div>
-                  <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <UIcon name="i-heroicons-eye" class="w-6 h-6 text-white" />
+                  <div class="flex-1 min-w-0">
+                    <template v-if="!canUpload">
+                      <p class="text-base font-bold text-green-600 dark:text-green-400">S/ {{ item.monto ?? '—' }}</p>
+                      <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                        <span v-if="item.banco" class="font-medium text-gray-700 dark:text-gray-300">{{ item.banco }}</span>
+                        <span v-if="item.banco && item.fecha_pago"> · </span>
+                        <span>{{ item.fecha_pago ?? '' }}</span>
+                      </p>
+                    </template>
+                    <p v-else class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ item.document.nombre_original || item.document.extension }}</p>
                   </div>
-                  <button
-                    v-if="canUpload"
-                    type="button"
-                    class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs leading-none z-10"
-                    aria-label="Eliminar"
-                    @click.stop="handleDelete(item.document.id)"
-                  >×</button>
                 </div>
-
-                <div class="p-3 space-y-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                  <template v-if="canUpload">
+                <div v-if="canUpload" class="p-3 space-y-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <div class="grid grid-cols-2 gap-2">
                     <UFormField label="Monto" size="sm">
                       <UInput v-model="getPagoEdit(item).monto" type="number" placeholder="0" step="0.01" size="sm" />
                     </UFormField>
@@ -350,24 +379,10 @@
                         @update:model-value="(v) => setBancoSelectForPagoEdit(item, v)"
                       />
                     </UFormField>
-                    <UFormField label="F. cierre" size="sm">
-                      <UInput v-model="getPagoEdit(item).fecha_cierre" type="date" size="sm" />
-                    </UFormField>
-                  </template>
-                  <template v-else>
-                    <div class="flex items-center gap-2 text-sm">
-                      <span class="text-gray-500 dark:text-gray-400">Monto:</span>
-                      <span class="font-medium text-gray-900 dark:text-white">{{ item.monto ?? '—' }}</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-sm">
-                      <span class="text-gray-500 dark:text-gray-400">Banco:</span>
-                      <span class="font-medium text-gray-900 dark:text-white">{{ item.banco ?? '—' }}</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-sm">
-                      <span class="text-gray-500 dark:text-gray-400">F. cierre:</span>
-                      <span class="font-medium text-gray-900 dark:text-white">{{ item.fecha_pago ?? '—' }}</span>
-                    </div>
-                  </template>
+                  </div>
+                  <UFormField label="F. cierre" size="sm">
+                    <UInput v-model="getPagoEdit(item).fecha_cierre" type="date" size="sm" />
+                  </UFormField>
                 </div>
               </div>
 
@@ -376,41 +391,47 @@
                 <div
                   v-for="(p, idx) in pendingPagos"
                   :key="p.id"
-                  class="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden"
+                  class="rounded-xl border-2 border-dashed border-primary-300 dark:border-primary-700 overflow-hidden"
                 >
-                  <div class="relative aspect-square max-h-40 w-full overflow-hidden bg-gray-100 dark:bg-gray-700">
-                    <img
-                      v-if="isPendingSlotImage(p)"
-                      :src="p.previewUrl!"
-                      alt="Voucher"
-                      class="w-full h-full object-contain"
-                    />
-                    <div v-else class="w-full h-full flex flex-col items-center justify-center p-2">
-                      <UIcon name="i-heroicons-document" class="w-10 h-10 text-gray-400" />
-                      <span class="text-xs text-gray-500 truncate w-full text-center mt-1">{{ p.voucher?.name }}</span>
-                    </div>
-                    <button
-                      class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none z-10"
-                      aria-label="Quitar"
-                      @click.stop="removePendingPago(idx)"
-                    >×</button>
-                  </div>
-
-                  <div class="p-3 space-y-2 bg-white dark:bg-gray-800">
-                    <UFormField label="Monto" size="sm">
-                      <UInput v-model="p.monto" type="number" placeholder="0" step="0.01" size="sm" />
-                    </UFormField>
-                    <UFormField label="Banco" size="sm">
-                      <USelectMenu
-                        :model-value="getPendingBancoOpt(p)"
-                        :items="BANCOS_OPTIONS"
-                        value-attribute="value"
-                        placeholder="Banco"
-                        size="sm"
-                        class="w-full"
-                        @update:model-value="(v) => setPendingBanco(p, v)"
+                  <div class="flex items-center gap-3 p-3 bg-primary-50/50 dark:bg-primary-900/10">
+                    <div class="relative w-14 h-14 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shrink-0">
+                      <img
+                        v-if="isPendingSlotImage(p)"
+                        :src="p.previewUrl!"
+                        alt="Voucher"
+                        class="w-full h-full object-cover"
                       />
-                    </UFormField>
+                      <div v-else class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                        <UIcon name="i-heroicons-document" class="w-6 h-6 text-gray-400" />
+                      </div>
+                      <button
+                        class="absolute -top-0.5 -right-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] leading-none z-10"
+                        aria-label="Quitar"
+                        @click.stop="removePendingPago(idx)"
+                      >×</button>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ p.voucher?.name }}</p>
+                      <UBadge color="warning" variant="soft" size="xs" class="mt-0.5">nuevo</UBadge>
+                    </div>
+                  </div>
+                  <div class="p-3 space-y-2 bg-white dark:bg-gray-800 border-t border-primary-200 dark:border-primary-800">
+                    <div class="grid grid-cols-2 gap-2">
+                      <UFormField label="Monto" size="sm">
+                        <UInput v-model="p.monto" type="number" placeholder="0" step="0.01" size="sm" />
+                      </UFormField>
+                      <UFormField label="Banco" size="sm">
+                        <USelectMenu
+                          :model-value="getPendingBancoOpt(p)"
+                          :items="BANCOS_OPTIONS"
+                          value-attribute="value"
+                          placeholder="Banco"
+                          size="sm"
+                          class="w-full"
+                          @update:model-value="(v) => setPendingBanco(p, v)"
+                        />
+                      </UFormField>
+                    </div>
                     <UFormField label="F. cierre" size="sm">
                       <UInput :model-value="getPendingFechaStr(p)" type="date" size="sm" @update:model-value="(v) => setPendingFechaStr(p, v)" />
                     </UFormField>
@@ -419,8 +440,8 @@
               </template>
 
               <!-- Estado vacío -->
-              <div v-if="pagosParaMostrar.length === 0 && pendingPagos.length === 0" class="text-center py-8">
-                <UIcon name="i-heroicons-banknotes" class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+              <div v-if="pagosParaMostrar.length === 0 && pendingPagos.length === 0" class="text-center py-6">
+                <UIcon name="i-heroicons-banknotes" class="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
                 <p class="text-sm text-gray-500 dark:text-gray-400 italic">Sin pagos registrados</p>
               </div>
             </div>
@@ -432,8 +453,13 @@
     <!-- Modal Nuevo documento -->
     <UModal v-model:open="showNuevoDocModal">
       <template #content>
-        <UCard class="p-5 space-y-4">
-          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Nuevo documento</h3>
+        <UCard class="p-6 space-y-5">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center justify-center w-9 h-9 rounded-lg bg-primary-100 dark:bg-primary-900/30">
+              <UIcon name="i-heroicons-document-plus" class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </span>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Nuevo documento</h3>
+          </div>
           <UFormField label="Nombre del documento" required>
             <UInput v-model="nuevoDocNombre" placeholder="Ej: Factura comercial, Expediente..." />
           </UFormField>
@@ -447,7 +473,7 @@
               @file-removed="() => { nuevoDocFile = null }"
             />
           </UFormField>
-          <div class="flex justify-end gap-2 pt-2">
+          <div class="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
             <UButton label="Cancelar" variant="ghost" color="neutral" @click="closeNuevoDocModal" />
             <UButton
               label="Agregar"

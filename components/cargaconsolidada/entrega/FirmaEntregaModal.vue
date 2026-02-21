@@ -81,18 +81,15 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 
 interface Props {
   onConfirm?: (data: { nombre: string; dni: string; signatureData: string }) => void | Promise<void>
-  onClose?: () => void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   onConfirm: undefined,
-  onClose: undefined
 })
 
 const emit = defineEmits<{ (e: 'close'): void }>()
 
 const handleClose = () => {
-  props.onClose?.()
   emit('close')
 }
 
