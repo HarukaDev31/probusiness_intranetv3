@@ -1,389 +1,435 @@
 <template>
-  <UCard class="p-6 space-y-8">
-    <!-- Header -->
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <UButton
-          icon="i-heroicons-arrow-left"
-          variant="ghost"
-          color="neutral"
-          size="sm"
-          @click="navigateTo('/basedatos/permisos')"
-        />
-        <div>
-          <p v-if="tramiteInfo" class="text-base font-medium text-gray-900 dark:text-white">
-            {{ tramiteInfo.cliente || 'Sin cliente' }}
-            <template v-if="tramiteInfo.consolidado">
-              <span class="text-gray-500 dark:text-gray-400 font-normal"> — Carga {{ tramiteInfo.consolidado }}</span>
+  <div class="md:p-6">
+    <!-- Skeleton Loading -->
+    <div v-if="loading" class="max-w-6xl mx-auto space-y-6">
+      <div class="flex items-center justify-between mb-6">
+        <USkeleton class="h-10 w-24 rounded" />
+        <USkeleton class="h-9 w-28 rounded-lg" />
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+          <UCard>
+            <template #header>
+              <USkeleton class="h-6 w-48 rounded" />
             </template>
-          </p>
+            <div class="space-y-4">
+              <div v-for="i in 3" :key="i" class="space-y-2">
+                <USkeleton class="h-4 w-32 rounded" />
+                <USkeleton class="h-14 w-full rounded-lg" />
+              </div>
+            </div>
+          </UCard>
+        </div>
+        <div class="space-y-6">
+          <UCard>
+            <template #header>
+              <USkeleton class="h-6 w-36 rounded" />
+            </template>
+            <USkeleton class="h-48 w-full rounded-lg" />
+          </UCard>
+          <UCard>
+            <template #header>
+              <USkeleton class="h-6 w-40 rounded" />
+            </template>
+            <USkeleton class="h-48 w-full rounded-lg" />
+          </UCard>
         </div>
       </div>
-      <UButton
-        v-if="!loading && tiposPermisoSections.length && canUpload"
-        label="Guardar"
-        icon="i-heroicons-check"
-        size="sm"
-        color="primary"
-        :loading="saving"
-        @click="guardarTodo"
-      />
     </div>
-
-    <!-- Skeleton loading -->
-    <template v-if="loading">
-      <div class="space-y-4">
-        <USkeleton class="h-10 w-64 rounded-lg" />
-        <div v-for="i in 3" :key="i" class="space-y-3">
-          <USkeleton class="h-6 w-48" />
-          <USkeleton class="h-16 w-full rounded-lg" />
-        </div>
-      </div>
-    </template>
 
     <!-- Error -->
-    <div v-else-if="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
-      <p class="text-red-600 dark:text-red-400">{{ error }}</p>
-      <UButton label="Reintentar" variant="soft" color="error" size="sm" class="mt-2" @click="loadDocumentos(tramiteId)" />
+    <div v-else-if="error" class="text-center py-12">
+      <UIcon name="i-heroicons-exclamation-triangle" class="w-12 h-12 text-red-400 mx-auto mb-3" />
+      <p class="text-red-600 dark:text-red-400 mb-4">{{ error }}</p>
+      <UButton label="Reintentar" variant="soft" color="error" @click="loadDocumentos(tramiteId)" />
     </div>
 
-    <template v-else>
-      <!-- TABS: una pestaña por tipo de permiso -->
+    <!-- Contenido principal -->
+    <div v-else class="max-w-6xl mx-auto space-y-6">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <UButton
+            icon="i-heroicons-arrow-left"
+            variant="ghost"
+            color="neutral"
+            @click="navigateTo('/basedatos/permisos')"
+          >
+            Volver
+          </UButton>
+          <div v-if="tramiteInfo">
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ tramiteInfo.cliente || 'Sin cliente' }}
+            </p>
+            <p v-if="tramiteInfo.consolidado" class="text-sm text-gray-500 dark:text-gray-400">
+              Carga {{ tramiteInfo.consolidado }}
+            </p>
+          </div>
+        </div>
+        <UButton
+          v-if="!loading && tiposPermisoSections.length && canUpload"
+          label="Guardar"
+          icon="i-heroicons-check"
+          color="primary"
+          :loading="saving"
+          @click="guardarTodo"
+        />
+      </div>
+
+      <!-- Tabs -->
       <div v-if="tiposPermisoSections.length">
         <UTabs
           v-model="activeTab"
           :color="activeTab ? 'primary' : 'neutral'"
-          
           :items="tabs"
           size="sm"
           variant="pill"
           class="mb-1 w-80 h-15"
           v-if="tabs.length > 1"
         />
+      </div>
 
-        <!-- SECCIÓN 1: Documentos por trámite — FileUploader inline (Factura comercial, Ficha técnica, Fotos) -->
-        <template v-for="sec in tiposPermisoSections" :key="sec.id_tipo_permiso">
-          <div v-show="activeTab === sec.id_tipo_permiso" class="space-y-6">
-            <UCard class="p-5">
-              <div class="flex items-center justify-between gap-3 mb-4">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                    <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+      <!-- Grid principal -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Columna izquierda: Documentos por trámite + Seguimiento -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- SECCIÓN 1: Documentos por trámite -->
+          <template v-if="tiposPermisoSections.length">
+            <template v-for="sec in tiposPermisoSections" :key="sec.id_tipo_permiso">
+              <div v-show="activeTab === sec.id_tipo_permiso">
+                <UCard class="bg-white dark:bg-gray-800">
+                  <template #header>
+                    <div class="flex items-center justify-between gap-3 flex-wrap">
+                      <div class="flex items-center gap-2">
+                        <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-blue-500" />
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Documentos por trámite</h2>
+                      </div>
+                      <UButton
+                        v-if="canUpload"
+                        label="Nuevo documento"
+                        icon="i-heroicons-document-plus"
+                        size="sm"
+                        color="primary"
+                        variant="soft"
+                        @click="openNuevoDocModal('documentos_tramite', sec.id_tipo_permiso)"
+                      />
+                    </div>
+                  </template>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-5">
+                      <template v-for="cat in categoriasParaTipo(sec.id_tipo_permiso, 'documentos_tramite')" :key="cat.id">
+                        <div class="space-y-1.5">
+                          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ cat.nombre }}</label>
+                          <FileUploader
+                            :ref="(el: any) => setDocUploaderRef(sec.id_tipo_permiso, cat.id, el)"
+                            :multiple="false"
+                            :initial-files="getDocumentosPorCategoria(sec.documentos_tramite, cat.id).map(docToFileItem)"
+                            :show-save-button="!!canUpload"
+                            :show-remove-button="!!canUpload"
+                            :read-only="!canUpload"
+                            @save-file="(file: File) => onSaveDocTramite(file, sec.id_tipo_permiso, 'documentos_tramite', cat.nombre, cat.id)"
+                            @file-removed="(idOrIndex: number) => handleDelete(idOrIndex)"
+                          />
+                        </div>
+                      </template>
+
+                      <template v-for="pending in pendingPorTipo(sec.id_tipo_permiso, 'documentos_tramite')" :key="pending.id">
+                        <div class="space-y-1.5">
+                          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                            {{ pending.nombre }}
+                            <UBadge color="warning" variant="soft" size="xs" class="ml-1">pendiente</UBadge>
+                          </label>
+                          <FileUploader
+                            :multiple="false"
+                            :model-files="[pending.file]"
+                            :show-save-button="false"
+                            :show-remove-button="!!canUpload"
+                            :read-only="!canUpload"
+                            @file-removed="removePendingDoc(pending.id)"
+                          />
+                        </div>
+                      </template>
+
+                      <div v-if="categoriasParaTipo(sec.id_tipo_permiso, 'documentos_tramite').length === 0 && pendingPorTipo(sec.id_tipo_permiso, 'documentos_tramite').length === 0" class="text-center py-6">
+                        <UIcon name="i-heroicons-document-minus" class="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                        <p class="text-sm text-gray-400 italic">Sin categorías</p>
+                      </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Fotos</label>
+                      <FileUploader
+                        :ref="(el: any) => setFotosUploaderRef(sec.id_tipo_permiso, el)"
+                        :multiple="false"
+                        :initial-files="sec.fotos.map(docToFileItem)"
+                        :show-save-button="!!canUpload"
+                        :show-remove-button="!!canUpload"
+                        :read-only="!canUpload"
+                        @save-file="(file: File) => uploadDocumentoTramite(file, sec.id_tipo_permiso, 'fotos', 'foto')"
+                        @file-removed="(idOrIndex: number) => handleDelete(idOrIndex)"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">1. Documentos por trámite</h2>
-                  </div>
+                </UCard>
+              </div>
+            </template>
+          </template>
+
+          <!-- SECCIÓN 3: Seguimiento -->
+          <UCard class="bg-white dark:bg-gray-800">
+            <template #header>
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5 text-purple-500" />
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Seguimiento</h2>
                 </div>
                 <UButton
-                  v-if="canUpload"
+                  v-if="canUpload && activeSection"
                   label="Nuevo documento"
                   icon="i-heroicons-document-plus"
                   size="sm"
                   color="primary"
                   variant="soft"
-                  @click="openNuevoDocModal('documentos_tramite', sec.id_tipo_permiso)"
+                  @click="openNuevoDocModal('seguimiento', activeSection.id_tipo_permiso)"
                 />
               </div>
+            </template>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Documentos por categoría: FileUploader por categoría -->
-                <div class="space-y-4">
-                  <template v-for="cat in categoriasParaTipo(sec.id_tipo_permiso, 'documentos_tramite')" :key="cat.id">
-                    <div class="space-y-1">
-                      <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ cat.nombre }}:</span>
-                      <FileUploader
-                        :ref="(el: any) => setDocUploaderRef(sec.id_tipo_permiso, cat.id, el)"
-                        :multiple="false"
-                        :initial-files="getDocumentosPorCategoria(sec.documentos_tramite, cat.id).map(docToFileItem)"
-                        :show-save-button="!!canUpload"
-                        :show-remove-button="!!canUpload"
-                        :read-only="!canUpload"
-                        @save-file="(file: File) => onSaveDocTramite(file, sec.id_tipo_permiso, 'documentos_tramite', cat.nombre, cat.id)"
-                        @file-removed="(idOrIndex: number) => handleDelete(idOrIndex)"
-                      />
-                    </div>
-                  </template>
-                  <!-- Categorías pendientes (nuevo documento): se suben al hacer "Guardar todo" -->
-                  <template v-for="pending in pendingPorTipo(sec.id_tipo_permiso, 'documentos_tramite')" :key="pending.id">
-                    <div class="space-y-1">
-                      <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ pending.nombre }} <span class="text-amber-600 dark:text-amber-400">(pendiente)</span>:</span>
-                      <FileUploader
-                        :multiple="false"
-                        :model-files="[pending.file]"
-                        :show-save-button="false"
-                        :show-remove-button="!!canUpload"
-                        :read-only="!canUpload"
-                        @file-removed="removePendingDoc(pending.id)"
-                      />
-                    </div>
-                  </template>
-                  <p v-if="categoriasParaTipo(sec.id_tipo_permiso, 'documentos_tramite').length === 0 && pendingPorTipo(sec.id_tipo_permiso, 'documentos_tramite').length === 0" class="text-sm text-gray-400 italic">Sin categorías</p>
-                </div>
-
-                <!-- Fotos -->
-                <div class="space-y-1">
-                  <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Fotos:</span>
+            <div class="space-y-6">
+              <div v-if="activeSection" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div v-for="cat in categoriasSeguimientoPorTipo(activeSection.id_tipo_permiso)" :key="cat.id" class="space-y-1.5">
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ cat.nombre }}</label>
                   <FileUploader
-                    :ref="(el: any) => setFotosUploaderRef(sec.id_tipo_permiso, el)"
+                    :ref="(el: any) => setSegUploaderRef(activeSection.id_tipo_permiso, cat.id, el)"
+                    :key="`seg-${activeSection.id_tipo_permiso}-${cat.id}-${getSeguimientoDocPorCategoria(activeSection, cat.id)?.id ?? 0}`"
                     :multiple="false"
-                    :initial-files="sec.fotos.map(docToFileItem)"
+                    :initial-files="docToFileItems(getSeguimientoDocPorCategoria(activeSection, cat.id))"
                     :show-save-button="!!canUpload"
                     :show-remove-button="!!canUpload"
                     :read-only="!canUpload"
-                    @save-file="(file: File) => uploadDocumentoTramite(file, sec.id_tipo_permiso, 'fotos', 'foto')"
+                    @save-file="(file: File) => uploadSeguimientoSlot(file, cat.id, activeSection.id_tipo_permiso, cat.nombre)"
                     @file-removed="(idOrIndex: number) => handleDelete(idOrIndex)"
                   />
                 </div>
-              </div>
-            </UCard>
-          </div>
-        </template>
-      </div>
 
-      <!-- SECCIÓN 2: Pago servicio — global para todo el permiso (CreatePagoModal) -->
-      <UCard class="p-5">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
-              <UIcon name="i-heroicons-banknotes" class="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">2. Pago servicio</h2>
-              <p v-if="totalMontoPagoServicio !== null" class="text-sm font-medium text-green-600 dark:text-green-400 mt-0.5">
-                Total: S/ {{ totalMontoPagoServicio.toFixed(2) }}
-              </p>
-            </div>
-          </div>
-          <UButton
-            v-if="canUpload"
-            label="Agregar pago"
-            icon="i-heroicons-plus"
-            size="sm"
-            color="primary"
-            variant="soft"
-            @click="openCreatePagoModal()"
-          />
-        </div>
-        <div class="space-y-3">
-          <!-- Cada pago en una tarjeta: imagen + datos (monto, banco, f. cierre), uno debajo del otro -->
-          <div class="flex flex-col gap-3">
-            <div
-              v-for="item in pagosParaMostrar"
-              :key="item.document.id"
-              class="flex flex-wrap items-stretch gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
-            >
-              <div
-                class="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 group cursor-pointer hover:ring-2 hover:ring-primary-400 transition-shadow shrink-0"
-                role="button"
-                tabindex="0"
-                @click="openPreviewPago(item.document)"
-                @keydown.enter="openPreviewPago(item.document)"
-              >
-                <img
-                  v-if="isImage(item.document.extension)"
-                  :src="item.document.url"
-                  :alt="item.document.nombre_original"
-                  class="w-full h-full object-contain pointer-events-none bg-gray-50 dark:bg-gray-800"
+                <div v-for="pending in pendingPorTipo(activeSection.id_tipo_permiso, 'seguimiento')" :key="pending.id" class="space-y-1.5">
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    {{ pending.nombre }}
+                    <UBadge color="warning" variant="soft" size="xs" class="ml-1">pendiente</UBadge>
+                  </label>
+                  <FileUploader
+                    :multiple="false"
+                    :model-files="[pending.file]"
+                    :show-save-button="false"
+                    :show-remove-button="!!canUpload"
+                    :read-only="!canUpload"
+                    @file-removed="removePendingDoc(pending.id)"
+                  />
+                </div>
+              </div>
+
+              <!-- RH o Factura del tramitador -->
+              <div v-if="categoriaRH" class="border-t border-gray-200 dark:border-gray-700 pt-5">
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">RH o Factura del tramitador</label>
+                <FileUploader
+                  :ref="(el: any) => setSegUploaderRef(null, categoriaRH.id, el)"
+                  :key="`seg-rh-${seguimientoCompartido.map(d => d.id).sort().join('-')}`"
+                  :multiple="false"
+                  :initial-files="seguimientoCompartido.map(docToFileItem)"
+                  :show-save-button="!!canUpload"
+                  :show-remove-button="!!canUpload"
+                  :read-only="!canUpload"
+                  @save-file="(file: File) => uploadSeguimientoSlot(file, categoriaRH.id, null, categoriaRH.nombre)"
+                  @file-removed="(idOrIndex: number) => handleDelete(idOrIndex)"
                 />
-                <div v-else class="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 p-1 pointer-events-none">
-                  <UIcon name="i-heroicons-document" class="w-8 h-8 text-gray-500" />
-                  <span class="text-xs text-gray-500 truncate w-full text-center px-1">{{ item.document.nombre_original || item.document.extension }}</span>
-                </div>
-                <div
-                  class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                >
-                  <UIcon name="i-heroicons-eye" class="w-6 h-6 text-white" />
-                </div>
-                <button
-                  v-if="canUpload"
-                  type="button"
-                  class="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs leading-none z-10"
-                  aria-label="Eliminar"
-                  @click.stop="handleDelete(item.document.id)"
-                >×</button>
               </div>
-              <div class="flex flex-wrap items-end gap-3 p-2 rounded-lg min-w-0 flex-1">
+
+              <!-- F. Caducidad -->
+              <div v-if="activeSection" class="border-t border-gray-200 dark:border-gray-700 pt-5">
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">F. Caducidad ({{ activeSection.nombre }})</label>
                 <template v-if="canUpload">
-                  <UFormField label="Monto" class="w-24">
-                    <UInput v-model="getPagoEdit(item).monto" type="number" placeholder="0" step="0.01" size="sm" />
-                  </UFormField>
-                  <UFormField label="Banco" class="w-28">
-                    <USelectMenu
-                      :model-value="getBancoSelectForPagoEdit(item)"
-                      :items="BANCOS_OPTIONS"
-                      value-attribute="value"
-                      placeholder="Banco"
+                  <UPopover class="block w-44">
+                    <UButton
+                      color="neutral"
+                      variant="outline"
                       size="sm"
-                      class="w-full"
-                      @update:model-value="(v) => setBancoSelectForPagoEdit(item, v)"
-                    />
-                  </UFormField>
-                  <UFormField label="F. cierre" class="w-36">
-                    <UInput v-model="getPagoEdit(item).fecha_cierre" type="date" size="sm" />
-                  </UFormField>
+                      icon="i-heroicons-calendar-days"
+                      class="w-full justify-start"
+                    >
+                      {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : 'Seleccionar fecha' }}
+                    </UButton>
+                    <template #content>
+                      <UCalendar v-model="(fCaducidadDate as any)" class="p-2 w-full" @update:model-value="onFCaducidadDateChange" />
+                    </template>
+                  </UPopover>
                 </template>
-                <template v-else>
-                  <div class="text-xs font-medium text-gray-600 dark:text-gray-400">
-                    <span class="text-gray-500 dark:text-gray-500">Monto:</span> {{ item.monto ?? '—' }}
-                  </div>
-                  <div class="text-xs font-medium text-gray-600 dark:text-gray-400">
-                    <span class="text-gray-500 dark:text-gray-500">Banco:</span> {{ item.banco ?? '—' }}
-                  </div>
-                  <div class="text-xs font-medium text-gray-600 dark:text-gray-400">
-                    <span class="text-gray-500 dark:text-gray-500">F. cierre:</span> {{ item.fecha_pago ?? '—' }}
-                  </div>
-                </template>
+                <p v-else class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : '—' }}
+                </p>
               </div>
             </div>
-            <!-- Slots de pago pendientes (cada uno con imagen + datos) -->
-            <template v-if="canUpload">
+          </UCard>
+        </div>
+
+        <!-- Columna derecha: Pago servicio -->
+        <div class="space-y-6">
+          <!-- SECCIÓN 2: Pago servicio -->
+          <UCard class="bg-white dark:bg-gray-800">
+            <template #header>
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-heroicons-banknotes" class="w-5 h-5 text-green-500" />
+                  <div>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Pago servicio</h2>
+                    <p v-if="totalMontoPagoServicio !== null" class="text-sm font-semibold text-green-600 dark:text-green-400">
+                      Total: S/ {{ totalMontoPagoServicio.toFixed(2) }}
+                    </p>
+                  </div>
+                </div>
+                <UButton
+                  v-if="canUpload"
+                  label="Agregar"
+                  icon="i-heroicons-plus"
+                  size="sm"
+                  color="primary"
+                  variant="soft"
+                  @click="openCreatePagoModal()"
+                />
+              </div>
+            </template>
+
+            <div class="space-y-3">
               <div
-                v-for="(p, idx) in pendingPagos"
-                :key="p.id"
-                class="flex flex-wrap items-stretch gap-3 p-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-600"
+                v-for="item in pagosParaMostrar"
+                :key="item.document.id"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800/50"
               >
                 <div
-                  class="relative w-24 h-24 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shrink-0"
+                  class="relative aspect-square max-h-40 w-full overflow-hidden bg-gray-100 dark:bg-gray-700 group cursor-pointer"
+                  role="button"
+                  tabindex="0"
+                  @click="openPreviewPago(item.document)"
+                  @keydown.enter="openPreviewPago(item.document)"
                 >
                   <img
-                    v-if="isPendingSlotImage(p)"
-                    :src="p.previewUrl!"
-                    alt="Voucher"
-                    class="w-full h-full object-contain bg-gray-50 dark:bg-gray-800"
+                    v-if="isImage(item.document.extension)"
+                    :src="item.document.url"
+                    :alt="item.document.nombre_original"
+                    class="w-full h-full object-contain pointer-events-none"
                   />
-                  <div v-else class="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 p-1">
-                    <UIcon name="i-heroicons-document" class="w-8 h-8 text-gray-500" />
-                    <span class="text-xs text-gray-500 truncate w-full text-center px-1">{{ p.voucher?.name }}</span>
+                  <div v-else class="w-full h-full flex flex-col items-center justify-center p-2 pointer-events-none">
+                    <UIcon name="i-heroicons-document" class="w-10 h-10 text-gray-400" />
+                    <span class="text-xs text-gray-500 truncate w-full text-center mt-1">{{ item.document.nombre_original || item.document.extension }}</span>
+                  </div>
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <UIcon name="i-heroicons-eye" class="w-6 h-6 text-white" />
                   </div>
                   <button
-                    class="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none z-10"
-                    aria-label="Quitar"
-                    @click.stop="removePendingPago(idx)"
+                    v-if="canUpload"
+                    type="button"
+                    class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs leading-none z-10"
+                    aria-label="Eliminar"
+                    @click.stop="handleDelete(item.document.id)"
                   >×</button>
                 </div>
-                <div class="flex flex-wrap items-end gap-2 p-2 rounded-lg min-w-0 flex-1">
-                  <UFormField label="Monto" class="w-24">
-                    <UInput v-model="p.monto" type="number" placeholder="0" step="0.01" size="sm" />
-                  </UFormField>
-                  <UFormField label="Banco" class="w-28">
-                    <USelectMenu
-                      :model-value="getPendingBancoOpt(p)"
-                      :items="BANCOS_OPTIONS"
-                      value-attribute="value"
-                      placeholder="Banco"
-                      size="sm"
-                      class="w-full"
-                      @update:model-value="(v) => setPendingBanco(p, v)"
-                    />
-                  </UFormField>
-                  <UFormField label="F. cierre" class="w-36">
-                    <UInput :model-value="getPendingFechaStr(p)" type="date" size="sm" @update:model-value="(v) => setPendingFechaStr(p, v)" />
-                  </UFormField>
+
+                <div class="p-3 space-y-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <template v-if="canUpload">
+                    <UFormField label="Monto" size="sm">
+                      <UInput v-model="getPagoEdit(item).monto" type="number" placeholder="0" step="0.01" size="sm" />
+                    </UFormField>
+                    <UFormField label="Banco" size="sm">
+                      <USelectMenu
+                        :model-value="getBancoSelectForPagoEdit(item)"
+                        :items="BANCOS_OPTIONS"
+                        value-attribute="value"
+                        placeholder="Banco"
+                        size="sm"
+                        class="w-full"
+                        @update:model-value="(v) => setBancoSelectForPagoEdit(item, v)"
+                      />
+                    </UFormField>
+                    <UFormField label="F. cierre" size="sm">
+                      <UInput v-model="getPagoEdit(item).fecha_cierre" type="date" size="sm" />
+                    </UFormField>
+                  </template>
+                  <template v-else>
+                    <div class="flex items-center gap-2 text-sm">
+                      <span class="text-gray-500 dark:text-gray-400">Monto:</span>
+                      <span class="font-medium text-gray-900 dark:text-white">{{ item.monto ?? '—' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                      <span class="text-gray-500 dark:text-gray-400">Banco:</span>
+                      <span class="font-medium text-gray-900 dark:text-white">{{ item.banco ?? '—' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                      <span class="text-gray-500 dark:text-gray-400">F. cierre:</span>
+                      <span class="font-medium text-gray-900 dark:text-white">{{ item.fecha_pago ?? '—' }}</span>
+                    </div>
+                  </template>
                 </div>
               </div>
-             
-            </template>
-          </div>
-        </div>
-      </UCard>
 
-      <!-- SECCIÓN 3: Seguimiento — Expediente/Decreto/Hoja (según pestaña activa) + RH y F. Caducidad, todo en una sola vista -->
-      <UCard class="p-5">
-        <div class="flex items-center justify-between gap-3 mb-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center">
-              <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">3. Seguimiento</h2>
-            </div>
-          </div>
-          <UButton
-            v-if="canUpload && activeSection"
-            label="Nuevo documento"
-            icon="i-heroicons-document-plus"
-            size="sm"
-            color="primary"
-            variant="soft"
-            @click="openNuevoDocModal('seguimiento', activeSection.id_tipo_permiso)"
-          />
-        </div>
-
-        <div class="space-y-6">
-          <!-- Expediente, Decreto, Hoja resumen -->
-          <div v-if="activeSection" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div v-for="cat in categoriasSeguimientoPorTipo(activeSection.id_tipo_permiso)" :key="cat.id" class="space-y-1">
-              <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ cat.nombre }}:</span>
-              <FileUploader
-                :ref="(el: any) => setSegUploaderRef(activeSection.id_tipo_permiso, cat.id, el)"
-                :key="`seg-${activeSection.id_tipo_permiso}-${cat.id}-${getSeguimientoDocPorCategoria(activeSection, cat.id)?.id ?? 0}`"
-                :multiple="false"
-                :initial-files="docToFileItems(getSeguimientoDocPorCategoria(activeSection, cat.id))"
-                :show-save-button="!!canUpload"
-                :show-remove-button="!!canUpload"
-                :read-only="!canUpload"
-                @save-file="(file: File) => uploadSeguimientoSlot(file, cat.id, activeSection.id_tipo_permiso, cat.nombre)"
-                @file-removed="(idOrIndex: number) => handleDelete(idOrIndex)"
-              />
-            </div>
-            <!-- Seguimiento pendientes (nuevo documento): se suben al hacer "Guardar todo" -->
-            <div v-for="pending in pendingPorTipo(activeSection.id_tipo_permiso, 'seguimiento')" :key="pending.id" class="space-y-1">
-              <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ pending.nombre }} <span class="text-amber-600 dark:text-amber-400">(pendiente)</span>:</span>
-              <FileUploader
-                :multiple="false"
-                :model-files="[pending.file]"
-                :show-save-button="false"
-                :show-remove-button="!!canUpload"
-                :read-only="!canUpload"
-                @file-removed="removePendingDoc(pending.id)"
-              />
-            </div>
-          </div>
-
-          <!-- RH o Factura del tramitador -->
-          <div v-if="categoriaRH" class="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">RH o Factura del tramitador</p>
-            <FileUploader
-              :ref="(el: any) => setSegUploaderRef(null, categoriaRH.id, el)"
-              :key="`seg-rh-${seguimientoCompartido.map(d => d.id).sort().join('-')}`"
-              :multiple="false"
-              :initial-files="seguimientoCompartido.map(docToFileItem)"
-              :show-save-button="!!canUpload"
-              :show-remove-button="!!canUpload"
-              :read-only="!canUpload"
-              @save-file="(file: File) => uploadSeguimientoSlot(file, categoriaRH.id, null, categoriaRH.nombre)"
-              @file-removed="(idOrIndex: number) => handleDelete(idOrIndex)"
-            />
-          </div>
-
-          <!-- F. Caducidad (por tipo de permiso de la pestaña activa) -->
-          <div v-if="activeSection" class="pt-2 border-t border-gray-100 dark:border-gray-700">
-            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">F. Caducidad ({{ activeSection.nombre }}):</span>
-            <template v-if="canUpload">
-              <UPopover class="mt-1 block w-40">
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  size="sm"
-                  icon="i-heroicons-calendar-days"
-                  class="w-full justify-start"
+              <!-- Slots de pago pendientes -->
+              <template v-if="canUpload">
+                <div
+                  v-for="(p, idx) in pendingPagos"
+                  :key="p.id"
+                  class="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden"
                 >
-                  {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : 'Seleccionar fecha' }}
-                </UButton>
-                <template #content>
-                  <UCalendar v-model="(fCaducidadDate as any)" class="p-2 w-full" @update:model-value="onFCaducidadDateChange" />
-                </template>
-              </UPopover>
-            </template>
-            <p v-else class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-              {{ fCaducidadDate ? dfCaducidad.format(fCaducidadDate.toDate(getLocalTimeZone())) : '—' }}
-            </p>
-          </div>
-        </div>
-      </UCard>
-    </template>
+                  <div class="relative aspect-square max-h-40 w-full overflow-hidden bg-gray-100 dark:bg-gray-700">
+                    <img
+                      v-if="isPendingSlotImage(p)"
+                      :src="p.previewUrl!"
+                      alt="Voucher"
+                      class="w-full h-full object-contain"
+                    />
+                    <div v-else class="w-full h-full flex flex-col items-center justify-center p-2">
+                      <UIcon name="i-heroicons-document" class="w-10 h-10 text-gray-400" />
+                      <span class="text-xs text-gray-500 truncate w-full text-center mt-1">{{ p.voucher?.name }}</span>
+                    </div>
+                    <button
+                      class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none z-10"
+                      aria-label="Quitar"
+                      @click.stop="removePendingPago(idx)"
+                    >×</button>
+                  </div>
 
-    <!-- Modal Nuevo documento: crea un nuevo file para la sección y tipo_permiso actual (nombre + FileUploader) -->
+                  <div class="p-3 space-y-2 bg-white dark:bg-gray-800">
+                    <UFormField label="Monto" size="sm">
+                      <UInput v-model="p.monto" type="number" placeholder="0" step="0.01" size="sm" />
+                    </UFormField>
+                    <UFormField label="Banco" size="sm">
+                      <USelectMenu
+                        :model-value="getPendingBancoOpt(p)"
+                        :items="BANCOS_OPTIONS"
+                        value-attribute="value"
+                        placeholder="Banco"
+                        size="sm"
+                        class="w-full"
+                        @update:model-value="(v) => setPendingBanco(p, v)"
+                      />
+                    </UFormField>
+                    <UFormField label="F. cierre" size="sm">
+                      <UInput :model-value="getPendingFechaStr(p)" type="date" size="sm" @update:model-value="(v) => setPendingFechaStr(p, v)" />
+                    </UFormField>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Estado vacío -->
+              <div v-if="pagosParaMostrar.length === 0 && pendingPagos.length === 0" class="text-center py-8">
+                <UIcon name="i-heroicons-banknotes" class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p class="text-sm text-gray-500 dark:text-gray-400 italic">Sin pagos registrados</p>
+              </div>
+            </div>
+          </UCard>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Nuevo documento -->
     <UModal v-model:open="showNuevoDocModal">
       <template #content>
         <UCard class="p-5 space-y-4">
@@ -413,14 +459,14 @@
         </UCard>
       </template>
     </UModal>
-  </UCard>
 
-  <!-- Vista previa de voucher (pago guardado) -->
-  <ModalPreview
-    :is-open="previewModalOpen"
-    :file="previewFile"
-    @close="previewModalOpen = false; previewFile = null"
-  />
+    <!-- Vista previa de voucher (pago guardado) -->
+    <ModalPreview
+      :is-open="previewModalOpen"
+      :file="previewFile"
+      @close="previewModalOpen = false; previewFile = null"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">

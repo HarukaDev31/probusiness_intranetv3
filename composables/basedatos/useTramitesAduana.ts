@@ -2,8 +2,9 @@ import { ref, computed } from 'vue'
 import { TramiteAduanaService } from '~/services/basedatos/tramiteAduanaService'
 import { TramiteAduanaCatalogoService, type TramiteAduanaEntidad, type TramiteAduanaTipoPermiso } from '~/services/basedatos/tramiteAduanaCatalogoService'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
-import { GeneralService } from '~/services/cargaconsolidada/clientes/generalService'
+import { CotizacionService } from '~/services/cargaconsolidada/cotizacionService'
 import type { TramiteAduana, CreateTramiteAduanaRequest } from '~/types/basedatos/tramiteAduana'
+import { ROLES } from '~/constants/roles'
 import type { Contenedor } from '~/types/cargaconsolidada/contenedor'
 
 export function useTramitesAduana() {
@@ -109,6 +110,10 @@ export function useTramitesAduana() {
 
   const clientesByConsolidado = ref<Array<{ id: number; nombre?: string; ruc?: string; telefono?: string; email?: string }>>([])
   const loadingClientes = ref(false)
+  /**
+   * Carga clientes del consolidado usando el endpoint index de cotizaciones (CotizacionController)
+   * con rol Coordinación, para tener la misma info que ve coordinación.
+   */
   async function loadClientesByConsolidado(idConsolidado: number) {
     if (!idConsolidado) {
       clientesByConsolidado.value = []
@@ -116,14 +121,18 @@ export function useTramitesAduana() {
     }
     loadingClientes.value = true
     try {
-      const res = await GeneralService.getClientes(idConsolidado, {}, '', 500, 1)
-      const list = res?.data ?? res ?? []
+      const res = await CotizacionService.getCotizaciones(idConsolidado, {
+        role: ROLES.COORDINACION,
+        limit: 500,
+        page: 1,
+      } as any)
+      const list = res?.data ?? []
       clientesByConsolidado.value = Array.isArray(list) ? list.map((c: any) => ({
-        id: c.id_cotizacion,
-        nombre: c.nombre ?? c.razon_social,
-        ruc: c.ruc ?? c.numero_documento,
-        telefono: c.telefono ?? c.celular,
-        email: c.email ?? c.correo,
+        id: c.id,
+        nombre: c.nombre,
+        ruc: c.documento,
+        telefono: c.telefono,
+        email: c.correo,
       })) : []
     } catch {
       clientesByConsolidado.value = []

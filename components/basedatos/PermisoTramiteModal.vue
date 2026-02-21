@@ -24,7 +24,6 @@
         <p v-if="!isEdit" class="text-sm text-gray-500 dark:text-gray-400">
           Creando permiso:
         </p>
-
         <!-- Consolidado * -->
         <UFormField label="Selecciona el consolidado" required :error="errors.id_consolidado">
           <USelectMenu
