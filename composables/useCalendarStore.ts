@@ -430,10 +430,15 @@ export const useCalendarStore = () => {
     }
   }
 
-  const updateActivityInCatalog = async (id: number, name: string, colorCode?: string | null): Promise<boolean> => {
+  const updateActivityInCatalog = async (
+    id: number,
+    name: string,
+    colorCode?: string | null,
+    extras?: { allow_saturday?: boolean; allow_sunday?: boolean; default_priority?: number }
+  ): Promise<boolean> => {
     try {
       state.loading.value = true
-      const updated = await CalendarService.updateActivityCatalog(id, name, colorCode)
+      const updated = await CalendarService.updateActivityCatalog(id, name, colorCode, extras)
       const index = state.activityCatalog.value.findIndex(a => a.id === id)
       if (index !== -1) {
         state.activityCatalog.value[index] = updated

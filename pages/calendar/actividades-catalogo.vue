@@ -47,14 +47,26 @@
               <UIcon name="i-heroicons-bars-3" class="w-5 h-5 text-primary-500" />
               <h2 class="text-base font-semibold">Actividades</h2>
             </div>
-            <UButton
-              v-if="orderChanged"
-              label="Guardar orden"
-              color="primary"
-              size="sm"
-              :loading="reordering"
-              @click="handleReorder"
-            />
+            <div class="flex items-center gap-2">
+              <UButton
+                v-if="optionsChanged"
+                label="Guardar cambios"
+                color="primary"
+                size="sm"
+                icon="i-heroicons-check"
+                :loading="savingOptions"
+                @click="handleSaveOptions"
+              />
+              <UButton
+                v-if="orderChanged"
+                label="Guardar orden"
+                color="primary"
+                variant="outline"
+                size="sm"
+                :loading="reordering"
+                @click="handleReorder"
+              />
+            </div>
           </div>
         </template>
 
@@ -78,7 +90,7 @@
             v-for="(item, index) in localItems"
             :key="item.id"
             draggable="true"
-            class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing select-none"
+            class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing select-none space-y-2"
             :class="{
               'border-primary-500 opacity-50': dragIndex === index,
               'border-transparent': dragIndex !== index,
@@ -89,144 +101,133 @@
             @drop="onDrop(index)"
             @dragend="onDragEnd"
           >
-            <!-- Grip -->
-            <UIcon name="i-heroicons-bars-2" class="w-5 h-5 text-gray-400 shrink-0" />
+            <!-- Fila principal: grip + nombre + color + acciones -->
+            <div class="flex items-center gap-3">
+              <UIcon name="i-heroicons-bars-2" class="w-5 h-5 text-gray-400 shrink-0" />
 
-            <!-- Nombre / Edición inline -->
-            <div class="flex-1 min-w-0">
-              <template v-if="editingId === item.id">
-                <UInput
-                  v-model="editingName"
-                  size="sm"
-                  autofocus
-                  @keydown.enter="confirmEdit(item.id)"
-                  @keydown.escape="cancelEdit"
-                />
-              </template>
-              <template v-else>
-                <p class="font-medium text-gray-900 dark:text-white truncate">{{ item.name }}</p>
-              </template>
-            </div>
-
-            <!-- Color (solo si no está editando nombre): popover con predeterminados + confirmar -->
-            <div v-if="editingId !== item.id" class="flex items-center shrink-0">
-              <UPopover :open="editingColorId === item.id" @update:open="(open: boolean) => !open && cancelColorEdit()">
-                <UButton
-                  variant="outline"
-                  size="xs"
-                  class="!p-1.5 min-w-0"
-                  :disabled="updatingColorId === item.id"
-                  title="Cambiar color de la actividad"
-                  @click="openColorEdit(item)"
-                >
-                  <span
-                    class="block w-6 h-6 rounded border border-gray-300 dark:border-gray-600"
-                    :style="{ backgroundColor: (editingColorId === item.id ? pendingColorValue : item.color_code) || '#9ca3af' }"
+              <div class="flex-1 min-w-0">
+                <template v-if="editingId === item.id">
+                  <UInput
+                    v-model="editingName"
+                    size="sm"
+                    autofocus
+                    @keydown.enter="confirmEdit(item.id)"
+                    @keydown.escape="cancelEdit"
                   />
-                </UButton>
-                <template #content>
-                  <div class="p-3 w-64 space-y-3">
-                    <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Color en el calendario</p>
-                    <!-- Predeterminados -->
-                    <div class="flex flex-wrap gap-1.5">
-                      <button
-                        v-for="c in PREDEFINED_COLORS"
-                        :key="c"
-                        type="button"
-                        class="w-7 h-7 rounded border-2 transition-transform hover:scale-110"
-                        :class="(pendingColorValue || item.color_code) === c ? 'border-gray-900 dark:border-white ring-1 ring-offset-1' : 'border-gray-300 dark:border-gray-600'"
-                        :style="{ backgroundColor: c }"
-                        :title="c"
-                        @click="setPendingColor(c)"
-                      />
-                    </div>
-                    <!-- Personalizado -->
-                    <div class="flex items-center gap-2">
-                      <input
-                        type="color"
-                        :value="pendingColorValue || item.color_code || '#9ca3af'"
-                        class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer bg-transparent"
-                        @input="setPendingColor(($event.target as HTMLInputElement).value)"
-                      />
-                      <span class="text-xs text-gray-500 dark:text-gray-400">Personalizado</span>
-                    </div>
-                    <!-- Quitar color (usar default) -->
-                    <div class="flex items-center gap-2">
-                      <button
-                        type="button"
-                        class="w-8 h-8 rounded border-2 border-dashed border-gray-400 dark:border-gray-500 flex items-center justify-center"
-                        title="Sin color (usar predeterminado del calendario)"
-                        @click="setPendingColor(null)"
-                      >
-                        <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-gray-500" />
-                      </button>
-                      <span class="text-xs text-gray-500 dark:text-gray-400">Sin color</span>
-                    </div>
-                    <!-- Botones -->
-                    <div class="flex gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
-                      <UButton
-                        size="xs"
-                        label="Cancelar"
-                        variant="ghost"
-                        color="neutral"
-                        block
-                        @click="cancelColorEdit"
-                      />
-                      <UButton
-                        size="xs"
-                        label="Aplicar"
-                        color="primary"
-                        block
-                        :loading="updatingColorId === item.id"
-                        :disabled="pendingColorValue === (item.color_code ?? null)"
-                        @click="confirmColorChange(item)"
-                      />
-                    </div>
-                  </div>
                 </template>
-              </UPopover>
+                <template v-else>
+                  <p class="font-medium text-gray-900 dark:text-white truncate">{{ item.name }}</p>
+                </template>
+              </div>
+
+              <div v-if="editingId !== item.id" class="flex items-center shrink-0">
+                <UPopover :open="editingColorId === item.id" @update:open="(open: boolean) => !open && cancelColorEdit()">
+                  <UButton
+                    variant="outline"
+                    size="xs"
+                    class="!p-1.5 min-w-0"
+                    :disabled="updatingColorId === item.id"
+                    title="Cambiar color de la actividad"
+                    @click="openColorEdit(item)"
+                  >
+                    <span
+                      class="block w-6 h-6 rounded border border-gray-300 dark:border-gray-600"
+                      :style="{ backgroundColor: (editingColorId === item.id ? pendingColorValue : item.color_code) || '#9ca3af' }"
+                    />
+                  </UButton>
+                  <template #content>
+                    <div class="p-3 w-64 space-y-3">
+                      <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Color en el calendario</p>
+                      <div class="flex flex-wrap gap-1.5">
+                        <button
+                          v-for="c in PREDEFINED_COLORS"
+                          :key="c"
+                          type="button"
+                          class="w-7 h-7 rounded border-2 transition-transform hover:scale-110"
+                          :class="(pendingColorValue || item.color_code) === c ? 'border-gray-900 dark:border-white ring-1 ring-offset-1' : 'border-gray-300 dark:border-gray-600'"
+                          :style="{ backgroundColor: c }"
+                          :title="c"
+                          @click="setPendingColor(c)"
+                        />
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <input
+                          type="color"
+                          :value="pendingColorValue || item.color_code || '#9ca3af'"
+                          class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer bg-transparent"
+                          @input="setPendingColor(($event.target as HTMLInputElement).value)"
+                        />
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Personalizado</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button
+                          type="button"
+                          class="w-8 h-8 rounded border-2 border-dashed border-gray-400 dark:border-gray-500 flex items-center justify-center"
+                          title="Sin color (usar predeterminado del calendario)"
+                          @click="setPendingColor(null)"
+                        >
+                          <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-gray-500" />
+                        </button>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Sin color</span>
+                      </div>
+                      <div class="flex gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
+                        <UButton size="xs" label="Cancelar" variant="ghost" color="neutral" block @click="cancelColorEdit" />
+                        <UButton size="xs" label="Aplicar" color="primary" block :loading="updatingColorId === item.id" :disabled="pendingColorValue === (item.color_code ?? null)" @click="confirmColorChange(item)" />
+                      </div>
+                    </div>
+                  </template>
+                </UPopover>
+              </div>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <template v-if="editingId === item.id">
+                  <UButton icon="i-heroicons-check" size="xs" color="primary" variant="ghost" :loading="updatingId === item.id" @click="confirmEdit(item.id)" />
+                  <UButton icon="i-heroicons-x-mark" size="xs" color="neutral" variant="ghost" @click="cancelEdit" />
+                </template>
+                <template v-else>
+                  <UTooltip text="Editar nombre">
+                    <UButton icon="i-heroicons-pencil-square" size="xs" color="primary" variant="ghost" @click="startEdit(item)" />
+                  </UTooltip>
+                  <UTooltip text="Eliminar actividad">
+                    <UButton icon="i-heroicons-trash" size="xs" color="error" variant="ghost" :loading="deletingId === item.id" @click="handleDelete(item.id)" />
+                  </UTooltip>
+                </template>
+              </div>
             </div>
 
-            <!-- Acciones -->
-            <div class="flex items-center gap-1 shrink-0">
-              <template v-if="editingId === item.id">
-                <UButton
-                  icon="i-heroicons-check"
-                  size="xs"
-                  color="primary"
-                  variant="ghost"
-                  :loading="updatingId === item.id"
-                  @click="confirmEdit(item.id)"
+            <!-- Fila secundaria: opciones de programación (solo local, se guardan con botón) -->
+            <div v-if="editingId !== item.id" class="flex items-center gap-4 pl-8 flex-wrap">
+              <label class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  :checked="item.allow_saturday"
+                  class="rounded border-gray-300 dark:border-gray-600 text-primary-500 focus:ring-primary-500 w-3.5 h-3.5"
+                  @change="setLocalOption(item.id, 'allow_saturday', ($event.target as HTMLInputElement).checked)"
                 />
-                <UButton
-                  icon="i-heroicons-x-mark"
-                  size="xs"
-                  color="neutral"
-                  variant="ghost"
-                  @click="cancelEdit"
+                Sábado
+              </label>
+              <label class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  :checked="item.allow_sunday"
+                  class="rounded border-gray-300 dark:border-gray-600 text-primary-500 focus:ring-primary-500 w-3.5 h-3.5"
+                  @change="setLocalOption(item.id, 'allow_sunday', ($event.target as HTMLInputElement).checked)"
                 />
-              </template>
-              <template v-else>
-                <UTooltip text="Editar nombre">
-                  <UButton
-                    icon="i-heroicons-pencil-square"
-                    size="xs"
-                    color="primary"
-                    variant="ghost"
-                    @click="startEdit(item)"
-                  />
-                </UTooltip>
-                <UTooltip text="Eliminar actividad">
-                  <UButton
-                    icon="i-heroicons-trash"
-                    size="xs"
-                    color="error"
-                    variant="ghost"
-                    :loading="deletingId === item.id"
-                    @click="handleDelete(item.id)"
-                  />
-                </UTooltip>
-              </template>
+                Domingo
+              </label>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs text-gray-600 dark:text-gray-400">Prioridad:</span>
+                <select
+                  :value="item.default_priority ?? 0"
+                  class="text-xs rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 py-0.5 px-1.5 focus:ring-primary-500 focus:border-primary-500"
+                  @change="setLocalOption(item.id, 'default_priority', Number(($event.target as HTMLSelectElement).value))"
+                >
+                  <option :value="0">Normal</option>
+                  <option :value="1">Media</option>
+                  <option :value="2">Alta</option>
+                </select>
+              </div>
+              <span v-if="isItemOptionChanged(item.id)" class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="Cambios sin guardar" />
             </div>
           </div>
         </div>
@@ -347,6 +348,49 @@ async function confirmColorChange(item: CalendarActivityCatalogItem) {
     }
   } finally {
     updatingColorId.value = null
+  }
+}
+
+// ─── Opciones de programación (solo local, se persisten con "Guardar cambios") ───
+function setLocalOption(id: number, field: 'allow_saturday' | 'allow_sunday' | 'default_priority', value: boolean | number) {
+  const idx = localItems.value.findIndex(i => i.id === id)
+  if (idx === -1) return
+  localItems.value[idx] = { ...localItems.value[idx], [field]: value }
+}
+
+function isItemOptionChanged(id: number): boolean {
+  const local = localItems.value.find(i => i.id === id)
+  const original = activityCatalog.value.find(i => i.id === id)
+  if (!local || !original) return false
+  return (!!local.allow_saturday) !== (!!original.allow_saturday)
+    || (!!local.allow_sunday) !== (!!original.allow_sunday)
+    || (local.default_priority ?? 0) !== (original.default_priority ?? 0)
+}
+
+const optionsChanged = computed(() => localItems.value.some(item => isItemOptionChanged(item.id)))
+const savingOptions = ref(false)
+
+async function handleSaveOptions() {
+  const changed = localItems.value.filter(item => isItemOptionChanged(item.id))
+  if (changed.length === 0) return
+  savingOptions.value = true
+  let allOk = true
+  try {
+    for (const item of changed) {
+      const ok = await updateActivityInCatalog(item.id, item.name, undefined, {
+        allow_saturday: !!item.allow_saturday,
+        allow_sunday: !!item.allow_sunday,
+        default_priority: item.default_priority ?? 0,
+      })
+      if (!ok) allOk = false
+    }
+    if (allOk) {
+      showSuccess('Guardado', 'Las opciones de programación se han actualizado.')
+    } else {
+      showError('Error', 'Algunas opciones no se pudieron guardar.')
+    }
+  } finally {
+    savingOptions.value = false
   }
 }
 

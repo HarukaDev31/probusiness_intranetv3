@@ -130,29 +130,19 @@
             :key="dayIndex"
             class="min-h-[145px] max-h-[180px] overflow-hidden transition-colors flex flex-col relative"
             :class="day.isCurrentMonth
-              ? 'border-r-2 border-b-2  border-gray-300 dark:border-gray-600 ' +
+              ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' +
                 (day.isWeekend
-                  ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed select-none calendar-day-disabled'
-                  : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
+                  ? 'bg-gray-100 dark:bg-gray-800/70'
+                  : 'bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
               : 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-800/50 pointer-events-none'"
-            @click="(e) => { if (day.isWeekend) { e.stopPropagation(); e.preventDefault(); return }; if (day.isCurrentMonth) handleDayClick(day.date) }"
+            @click="day.isCurrentMonth && handleDayClick(day.date)"
           >
-         
-            <!-- Overlay rayas en días deshabilitados (fin de semana); captura clic para no abrir modal -->
-            <div
-              v-if="day.isCurrentMonth && day.isWeekend"
-              class="absolute inset-0 z-10 cursor-not-allowed calendar-day-disabled-pattern"
-              aria-hidden="true"
-              @click.stop.prevent
-            />
-            <!-- Número del día: en todas las celdas (z-[11] para quedar sobre el overlay gris de fines de semana) -->
-            <div class="p-2 md:p-2.5 relative z-[11]">
+            <div class="p-2 md:p-2.5 relative">
               <span
                 class="text-sm font-medium"
                 :class="{
-                  'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday && !day.isWeekend,
-                  'text-primary-600 dark:text-primary-400 font-bold': day.isCurrentMonth && day.isToday && !day.isWeekend,
-                  'text-gray-400 dark:text-gray-500': day.isCurrentMonth && day.isWeekend,
+                  'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday,
+                  'text-primary-600 dark:text-primary-400 font-bold': day.isCurrentMonth && day.isToday,
                   'text-gray-400 dark:text-gray-600': !day.isCurrentMonth
                 }"
               >
@@ -207,35 +197,25 @@
                   / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                 </span>
               </span>
-            </div>
-            <!-- Avatares en la columna sábado: responsables únicos de toda la fila -->
-            <div
-              v-if="getUniqueResponsablesInRow(eventRow).length"
-              class="absolute left-[71.43%] top-0 h-full max-w-[14.28%] flex items-center gap-0.5 flex-nowrap pointer-events-auto"
-              style="width: max-content;"
-            >
-              <UTooltip
-                v-for="resp in getUniqueResponsablesInRow(eventRow).slice(0, 3)"
-                :key="resp.id"
-                :text="resp.nombre"
-              >
-                <UAvatar
-                  :src="resp.avatar || undefined"
-                  :alt="resp.nombre"
-                  size="sm"
-                  class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
-                  :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
-                />
-              </UTooltip>
-              <button
-                v-if="getUniqueResponsablesInRow(eventRow).length > 3"
-                type="button"
-                class="w-6 h-6 min-w-[24px] min-h-[24px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 shrink-0"
-                title="Ver todos los responsables"
-                @click.stop="openResponsablesModal(getAvatarSpansInRow(eventRow)[0]?.event)"
-              >
-                +{{ getUniqueResponsablesInRow(eventRow).length - 3 }}
-              </button>
+              <div v-if="eventSpan.isEnd && getEventResponsables(eventSpan.event).length" class="flex items-center gap-0.5 shrink-0 ml-auto">
+                <UTooltip
+                  v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
+                  :key="resp.id"
+                  :text="resp.nombre"
+                >
+                  <UAvatar
+                    :src="resp.avatar || undefined"
+                    :alt="resp.nombre"
+                    size="3xs"
+                    class="ring-1 ring-white/30 shrink-0"
+                    :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+                  />
+                </UTooltip>
+                <span
+                  v-if="getEventResponsables(eventSpan.event).length > 2"
+                  class="text-[9px] font-bold opacity-80"
+                >+{{ getEventResponsables(eventSpan.event).length - 2 }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -275,27 +255,19 @@
                       :key="dayIndex"
                       class="min-h-[145px] max-h-[180px] overflow-hidden transition-colors flex flex-col relative"
                       :class="day.isCurrentMonth
-                        ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 ' +
+                        ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' +
                           (day.isWeekend
-                            ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed select-none calendar-day-disabled'
-                            : 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
+                            ? 'bg-gray-100 dark:bg-gray-800/70'
+                            : 'bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
                         : 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-800/50 pointer-events-none'"
-                      @click="(e) => { if (day.isWeekend) { e.stopPropagation(); e.preventDefault(); return }; if (day.isCurrentMonth) handleDayClick(day.date) }"
+                      @click="day.isCurrentMonth && handleDayClick(day.date)"
                     >
-                      <div
-                        v-if="day.isCurrentMonth && day.isWeekend"
-                        class="absolute inset-0 z-10 cursor-not-allowed calendar-day-disabled-pattern"
-                        aria-hidden="true"
-                        @click.stop.prevent
-                      />
-                      <!-- Número del día: en todas las celdas (z-[11] para quedar sobre el overlay gris de fines de semana) -->
-                      <div class="p-2 md:p-2.5 relative z-[11]">
+                      <div class="p-2 md:p-2.5 relative">
                         <span
                           class="text-sm font-medium"
                           :class="{
-                            'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday && !day.isWeekend,
-                            'text-primary-600 dark:text-primary-400 font-bold': day.isCurrentMonth && day.isToday && !day.isWeekend,
-                            'text-gray-400 dark:text-gray-500': day.isCurrentMonth && day.isWeekend,
+                            'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday,
+                            'text-primary-600 dark:text-primary-400 font-bold': day.isCurrentMonth && day.isToday,
                             'text-gray-400 dark:text-gray-600': !day.isCurrentMonth
                           }"
                         >
@@ -348,35 +320,25 @@
                               / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                             </span>
                           </span>
-                        </div>
-                        <!-- Avatares en la columna sábado: responsables únicos de toda la fila -->
-                        <div
-                          v-if="getUniqueResponsablesInRow(eventRow).length"
-                          class="absolute left-[71.43%] top-0 h-full max-w-[14.28%] flex items-center gap-0.5 flex-nowrap pointer-events-auto"
-                          style="width: max-content;"
-                        >
-                          <UTooltip
-                            v-for="resp in getUniqueResponsablesInRow(eventRow).slice(0, 3)"
-                            :key="resp.id"
-                            :text="resp.nombre"
-                          >
-                            <UAvatar
-                              :src="resp.avatar || undefined"
-                              :alt="resp.nombre"
-                              size="sm"
-                              class="ring-1 ring-gray-300 dark:ring-gray-600 shrink-0"
-                              :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
-                            />
-                          </UTooltip>
-                          <button
-                            v-if="getUniqueResponsablesInRow(eventRow).length > 3"
-                            type="button"
-                            class="w-6 h-6 min-w-[24px] min-h-[24px] rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 shrink-0"
-                            title="Ver todos los responsables"
-                            @click.stop="openResponsablesModal(getAvatarSpansInRow(eventRow)[0]?.event)"
-                          >
-                            +{{ getUniqueResponsablesInRow(eventRow).length - 3 }}
-                          </button>
+                          <div v-if="eventSpan.isEnd && getEventResponsables(eventSpan.event).length" class="flex items-center gap-0.5 shrink-0 ml-auto">
+                            <UTooltip
+                              v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
+                              :key="resp.id"
+                              :text="resp.nombre"
+                            >
+                              <UAvatar
+                                :src="resp.avatar || undefined"
+                                :alt="resp.nombre"
+                                size="3xs"
+                                class="ring-1 ring-white/30 shrink-0"
+                                :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+                              />
+                            </UTooltip>
+                            <span
+                              v-if="getEventResponsables(eventSpan.event).length > 2"
+                              class="text-[9px] font-bold opacity-80"
+                            >+{{ getEventResponsables(eventSpan.event).length - 2 }}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -404,19 +366,17 @@
           :key="day.date"
           class="p-2 md:p-3 text-center border-l-2 border-gray-300 dark:border-gray-600 min-w-[80px] md:min-w-0 relative"
           :class="{
-            'bg-primary-50 dark:bg-primary-900/20': day.isToday && !day.isWeekend,
-            'bg-gray-200 dark:bg-gray-700 calendar-day-disabled select-none': day.isWeekend,
+            'bg-primary-50 dark:bg-primary-900/20': day.isToday,
+            'bg-gray-100 dark:bg-gray-800/70': day.isWeekend && !day.isToday,
             'bg-gray-50 dark:bg-gray-900': !day.isToday && !day.isWeekend
           }"
         >
-          <div v-if="day.isWeekend" class="absolute inset-0 pointer-events-none calendar-day-disabled-pattern" aria-hidden="true" />
-          <div class="text-[10px] md:text-xs relative z-[1]" :class="day.isWeekend ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'">{{ day.dayName }}</div>
+          <div class="text-[10px] md:text-xs" :class="'text-gray-500 dark:text-gray-400'">{{ day.dayName }}</div>
           <div
-            class="text-sm md:text-lg font-semibold relative z-[1]"
+            class="text-sm md:text-lg font-semibold"
             :class="{
-              'text-primary-600 dark:text-primary-400': day.isToday && !day.isWeekend,
-              'text-gray-400 dark:text-gray-500': day.isWeekend,
-              'text-gray-900 dark:text-white': !day.isToday && !day.isWeekend
+              'text-primary-600 dark:text-primary-400': day.isToday,
+              'text-gray-900 dark:text-white': !day.isToday
             }"
           >
             {{ day.day }}
@@ -438,9 +398,8 @@
           v-for="day in weekDaysData"
           :key="day.date"
           class="border-r-2 border-b-2 border-gray-300 dark:border-gray-600 relative min-w-[80px] md:min-w-0"
-          :class="{ 'bg-gray-200 dark:bg-gray-700 calendar-day-disabled': day.isWeekend }"
+          :class="{ 'bg-gray-100 dark:bg-gray-800/70': day.isWeekend }"
         >
-          <div v-if="day.isWeekend" class="absolute inset-0 pointer-events-none calendar-day-disabled-pattern" aria-hidden="true" />
           <div
             v-for="hour in hours"
             :key="hour"
@@ -848,7 +807,6 @@ const openEventFromMoreModal = (event: CalendarEvent) => {
 }
 // Eventos que tocan un día concreto dentro de una semana (por columna 0-6)
 const getEventsForDayInWeek = (week: { days: any[], eventRows: EventSpan[][] }, dayIndex: number): CalendarEvent[] => {
-  if (week.days[dayIndex]?.isWeekend) return []
   const byId = new Map<number, CalendarEvent>()
   week.eventRows.forEach(row => {
     row.forEach(span => {
@@ -1337,25 +1295,10 @@ interface EventSpan {
   isEnd: boolean
 }
 
-// Columnas 0 = Lunes, 5 = Sábado, 6 = Domingo. Segmentos solo días laborables (no sáb/dom).
+// Columnas 0 = Lunes … 5 = Sábado, 6 = Domingo. Un solo segmento continuo (incluye sáb/dom).
 const getWeekdaySegments = (startCol: number, endCol: number): { startCol: number, endCol: number }[] => {
-  const segments: { startCol: number, endCol: number }[] = []
-  let runStart: number | null = null
-  for (let col = startCol; col <= endCol; col++) {
-    if (col === 5 || col === 6) {
-      if (runStart !== null) {
-        const end = 4
-        if (end >= runStart) segments.push({ startCol: runStart, endCol: end })
-        runStart = null
-      }
-      continue
-    }
-    if (runStart === null) runStart = col
-  }
-  if (runStart !== null) {
-    segments.push({ startCol: runStart, endCol: Math.min(endCol, 4) })
-  }
-  return segments
+  if (startCol > endCol) return []
+  return [{ startCol, endCol }]
 }
 
 // Agrupar días por semanas y calcular posiciones de eventos multi-día
@@ -1705,7 +1648,7 @@ const weekDaysData = computed(() => {
       dayName: weekDays[dowMonFirst],
       isToday: isSameDay(date, today(getLocalTimeZone())),
       isWeekend,
-      events: isWeekend ? [] : getEventsForDate(date)
+      events: getEventsForDate(date)
     })
   }
   return days
@@ -1764,10 +1707,8 @@ const shouldShowEventTitle = (event: CalendarEvent, dateStr: string) => {
   return position === 'start' || position === 'single'
 }
 
-// Eventos del día actual para la vista de día (no mostrar en sábado/domingo)
 const dayEvents = computed(() => {
   const d = currentDate.value as CalendarDate
-  if (isDateWeekend(d)) return []
   return getEventsForDate(d)
 })
 
@@ -2277,16 +2218,6 @@ definePageMeta({
 </script>
 
 <style scoped>
-/* Días deshabilitados (fin de semana): mismo cuadro con patrón para notar que no están activos */
-.calendar-day-disabled-pattern {
-  background-color: #F2F3F4;
-}
-
-:deep(.dark) .calendar-day-disabled-pattern,
-:global(.dark) .calendar-day-disabled-pattern {
-  background-color: #F2F3F4;
-}
-
 /* Animación de pase de página */
 .slide-fade-enter-active {
   transition: all 0.3s ease-out;

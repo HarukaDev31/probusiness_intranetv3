@@ -150,6 +150,9 @@ export interface CalendarActivityCatalogItem {
   orden: number
   /** Color opcional para la actividad en el calendario (hex). Prioridad sobre color de consolidado. */
   color_code?: string | null
+  allow_saturday?: boolean
+  allow_sunday?: boolean
+  default_priority?: number
 }
 
 // ============================================

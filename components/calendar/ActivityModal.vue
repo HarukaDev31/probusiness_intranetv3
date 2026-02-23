@@ -16,15 +16,24 @@
 
     <template #body>
       <div class="space-y-5">
+        <!-- Consolidado/Contenedor (primero para filtrar actividades) -->
+        <UFormField label="Consolidado" required>
+          <USelectMenu :model-value="selectedContenedorOption" :items="contenedorOptions" value-attribute="value"
+            placeholder="Seleccionar consolidado" size="lg" class="w-full" searchable
+            searchable-placeholder="Buscar consolidado..." @update:model-value="onContenedorChange" />
+        </UFormField>
+
         <!-- Seleccionar o crear actividad -->
         <UFormField label="Actividad" required :error="errors.name">
           <div class="space-y-2">
-            <!-- Dropdown con botón crear -->
             <div class="flex gap-2 items-center">
-              <USelectMenu v-model="selectedActivity" :items="activityOptions" placeholder="Seleccionar actividad"
+              <USelectMenu v-model="selectedActivity" :items="activityOptions" :placeholder="loadingUsedActivities ? 'Cargando actividades...' : 'Seleccionar actividad'"
                 size="lg" class="flex-1" searchable searchable-placeholder="Buscar actividad..."
+                :disabled="form.contenedor_id == null || loadingUsedActivities"
+                :loading="loadingUsedActivities"
                 @update:model-value="handleActivitySelect" />
               <UButton icon="i-heroicons-plus" color="primary" variant="outline" size="lg" title="Crear nueva actividad"
+                :disabled="form.contenedor_id == null || loadingUsedActivities"
                 @click="openCreateActivityModal" />
               <UTooltip v-if="hasCatalogActivityId && (calendarPermissions?.canDeleteActivity ?? false)"
                 text="Editar nombre de esta actividad">
@@ -37,8 +46,7 @@
                   title="Eliminar del catálogo" @click.stop.prevent="openDeleteConfirmModal" />
               </UTooltip>
             </div>
-
-
+            <p v-if="form.contenedor_id == null" class="text-xs text-amber-500">Selecciona un consolidado primero</p>
           </div>
         </UFormField>
 
@@ -55,31 +63,32 @@
           @save="handleEditActivity"
         />
 
-        <!-- Fechas -->
+        <!-- Fechas (deshabilitadas hasta seleccionar actividad) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <UFormField label="Fecha de inicio" required :error="errors.start_date">
-            <UPopover>
+            <UPopover :disabled="!selectedActivity">
               <UButton color="neutral" variant="outline" icon="i-heroicons-calendar" class="w-full justify-start"
-                size="lg">
+                size="lg" :disabled="!selectedActivity">
                 {{ startDate ? formatDisplayDate(startDate) : 'Seleccionar fecha' }}
               </UButton>
               <template #content>
-                <UCalendar v-model="startDate" class="p-2" :is-date-disabled="isWeekendDisabled" />
+                <UCalendar v-model="startDate" class="p-2" :is-date-disabled="isDateDisabledForActivity" />
               </template>
             </UPopover>
           </UFormField>
 
           <UFormField label="Fecha de fin" required :error="errors.end_date">
-            <UPopover>
+            <UPopover :disabled="!selectedActivity">
               <UButton color="neutral" variant="outline" icon="i-heroicons-calendar" class="w-full justify-start"
-                size="lg">
+                size="lg" :disabled="!selectedActivity">
                 {{ endDate ? formatDisplayDate(endDate) : 'Seleccionar fecha' }}
               </UButton>
               <template #content>
-                <UCalendar v-model="endDate" class="p-2" :is-date-disabled="isWeekendDisabled" />
+                <UCalendar v-model="endDate" class="p-2" :is-date-disabled="isDateDisabledForActivity" />
               </template>
             </UPopover>
           </UFormField>
+          <p v-if="!selectedActivity && !isEdit" class="text-xs text-amber-500 col-span-full">Selecciona una actividad primero</p>
         </div>
 
         <!-- Prioridad (solo editable si tiene permiso) -->
@@ -89,13 +98,6 @@
               :variant="form.priority === option.value ? 'solid' : 'outline'" :color="option.color" size="md"
               class="flex-1" @click="form.priority = option.value" />
           </div>
-        </UFormField>
-
-        <!-- Consolidado/Contenedor -->
-        <UFormField label="Consolidado">
-          <USelectMenu :model-value="selectedContenedorOption" :items="contenedorOptions" value-attribute="value"
-            placeholder="Seleccionar consolidado" size="lg" class="w-full" searchable
-            searchable-placeholder="Buscar consolidado..." @update:model-value="onContenedorChange" />
         </UFormField>
 
         <!-- Responsables (solo si tiene permiso) -->
@@ -161,6 +163,7 @@ import type {
   CreateCalendarEventRequest
 } from '~/types/calendar'
 import { PRIORITY_OPTIONS } from '~/constants/calendar'
+import { CalendarService } from '~/services/calendar/calendarService'
 import CreateActivityNameModal from '~/components/calendar/CreateActivityNameModal.vue'
 import EditActivityNameModal from '~/components/calendar/EditActivityNameModal.vue'
 import { useModal } from '~/composables/commons/useModal'
@@ -170,6 +173,9 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 interface ActivityOption {
   id: number
   name: string
+  allow_saturday?: boolean
+  allow_sunday?: boolean
+  default_priority?: number
 }
 
 interface Props {
@@ -263,6 +269,35 @@ const isWeekendDisabled = (date: DateValue): boolean => {
   }
 }
 
+// Item completo del catálogo para la actividad seleccionada
+const selectedCatalogItem = computed(() => {
+  const id = selectedActivity.value?.value ?? form.value.activity_id
+  if (id == null) return null
+  return props.actividadesPredefinidas.find(a => a.id === id) ?? null
+})
+
+/** Deshabilita fechas según la configuración de la actividad seleccionada (sáb/dom). */
+const isDateDisabledForActivity = (date: DateValue): boolean => {
+  if (!date) return false
+  try {
+    const d =
+      typeof (date as { toDate?: (zone: string) => Date }).toDate === 'function'
+        ? (date as { toDate: (zone: string) => Date }).toDate(getLocalTimeZone())
+        : new Date(
+          (date as { year: number }).year,
+          ((date as { month: number }).month ?? 1) - 1,
+          (date as { day: number }).day
+        )
+    const dayOfWeek = d.getDay()
+    const catalog = selectedCatalogItem.value
+    if (dayOfWeek === 6) return !(catalog?.allow_saturday)
+    if (dayOfWeek === 0) return !(catalog?.allow_sunday)
+    return false
+  } catch {
+    return false
+  }
+}
+
 // Estado del formulario
 const form = ref({
   name: '',
@@ -299,13 +334,43 @@ const hasCatalogActivityId = computed(() => {
 
 const priorityOptions = PRIORITY_OPTIONS
 
-// Combinar actividades predefinidas con las locales (nuevas creadas)
+// IDs de actividades ya usadas para el contenedor seleccionado (obtenidas del backend)
+const usedActivityIds = ref<Set<number>>(new Set())
+const loadingUsedActivities = ref(false)
+
+const fetchUsedActivities = async (contenedorId: number | null) => {
+  if (contenedorId == null) {
+    usedActivityIds.value = new Set()
+    return
+  }
+  loadingUsedActivities.value = true
+  try {
+    const response = await CalendarService.getEvents({ contenedor_ids: [contenedorId] })
+    const events = response?.data ?? response ?? []
+    const editingEventId = props.event?.id ?? null
+    const ids = new Set<number>()
+    for (const ev of (Array.isArray(events) ? events : [])) {
+      if (ev.id === editingEventId) continue
+      if (ev.activity_id != null) ids.add(ev.activity_id)
+    }
+    usedActivityIds.value = ids
+  } catch {
+    usedActivityIds.value = new Set()
+  } finally {
+    loadingUsedActivities.value = false
+  }
+}
+
+// Combinar actividades predefinidas con las locales, filtrar las ya usadas en el contenedor
 const activityOptions = computed(() => {
   const allActivities = [...props.actividadesPredefinidas, ...localActivities.value]
-  return allActivities.map(a => ({
-    label: a.name,
-    value: a.id
-  }))
+  const used = usedActivityIds.value
+  return allActivities
+    .filter(a => !used.has(a.id))
+    .map(a => ({
+      label: a.name,
+      value: a.id
+    }))
 })
 
 const contenedorOptions = computed(() => {
@@ -334,12 +399,18 @@ const selectedContenedorOption = computed(() => {
   const id = form.value.contenedor_id
   return contenedorOptions.value.find((o: ContenedorOption) => o.value === id) ?? null
 })
-const onContenedorChange = (payload: ContenedorOption | number | null) => {
+const onContenedorChange = async (payload: ContenedorOption | number | null) => {
   if (payload == null) {
     form.value.contenedor_id = null
-    return
+  } else {
+    form.value.contenedor_id = typeof payload === 'object' && 'value' in payload ? payload.value : (typeof payload === 'number' ? payload : null)
   }
-  form.value.contenedor_id = typeof payload === 'object' && 'value' in payload ? payload.value : (typeof payload === 'number' ? payload : null)
+  // Limpiar actividad seleccionada al cambiar de contenedor
+  selectedActivity.value = null
+  form.value.name = ''
+  form.value.activity_id = null
+  // Obtener actividades ya usadas para el nuevo contenedor
+  await fetchUsedActivities(form.value.contenedor_id)
 }
 
 const responsableOptions = computed(() => {
@@ -367,6 +438,10 @@ const handleActivitySelect = (selected: { label: string; value: number } | null)
   if (selected) {
     form.value.name = selected.label
     form.value.activity_id = selected.value
+    const catalog = props.actividadesPredefinidas.find(a => a.id === selected.value)
+    if (catalog?.default_priority != null) {
+      form.value.priority = catalog.default_priority as CalendarEventPriority
+    }
   } else {
     form.value.name = ''
     form.value.activity_id = null
@@ -600,7 +675,7 @@ const openDeleteConfirmModal = () => {
 }
 
 // Inicializar formulario
-const initializeForm = () => {
+const initializeForm = async () => {
   errors.value = {}
   isCreateActivityModalOpen.value = false
   isCreatingActivity.value = false
@@ -614,6 +689,9 @@ const initializeForm = () => {
     form.value.notes = props.event.notes || ''
     form.value.responsable_ids = props.event.charges?.map(c => c.user_id) || []
 
+    // Cargar actividades usadas para el contenedor del evento
+    await fetchUsedActivities(form.value.contenedor_id)
+
     // Buscar si la actividad existe en las predefinidas (por nombre o por id de catálogo)
     const existingActivity = props.actividadesPredefinidas.find(
       a => a.name === form.value.name || a.id === props.event?.activity_id
@@ -621,7 +699,6 @@ const initializeForm = () => {
     if (existingActivity) {
       selectedActivity.value = { label: existingActivity.name, value: existingActivity.id }
     } else if (form.value.name) {
-      // Si tiene nombre pero no está en las predefinidas, mostrar el nombre
       selectedActivity.value = null
     } else {
       selectedActivity.value = null
