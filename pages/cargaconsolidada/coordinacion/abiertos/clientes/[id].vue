@@ -907,7 +907,7 @@ const getColumnsGeneral = () => {
         case ROLES.DOCUMENTACION:
             return columnsDocumentacion
         case ROLES.JEFE_IMPORTACIONES:
-            return columnsDocumentacion
+            return columnsCoordinacion
         case ROLES.COORDINACION:
         case ROLES.JEFE_IMPORTACIONES:
             return columnsCoordinacion
@@ -1657,7 +1657,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
     }
 }
 onMounted(() => {
-    if (currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) {
+    if (currentRole.value === ROLES.DOCUMENTACION ) {
         tabs.value = [
             {
                 label: 'Documentacion',

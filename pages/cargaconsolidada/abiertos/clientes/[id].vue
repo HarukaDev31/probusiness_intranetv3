@@ -1653,7 +1653,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
     }
 }
 onMounted(() => {
-    if (currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) {
+    if (currentRole.value === ROLES.DOCUMENTACION ) {
         tabs.value = [
             {
                 label: 'Documentacion',
@@ -1661,7 +1661,7 @@ onMounted(() => {
             }
         ]
     }
-    else if (currentRole.value === ROLES.COORDINACION) {
+    else if (currentRole.value === ROLES.COORDINACION ) {
         tabs.value = [
             {
                 label: 'Seguimiento',

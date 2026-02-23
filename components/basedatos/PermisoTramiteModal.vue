@@ -715,7 +715,12 @@ async function handleCreateEntidad(name: string) {
       emit('entity-created', created)
       props.onEntityCreated?.(created)
       openCreateEntidadModal.value = false
+    } else {
+      showErrorThenBlockClose('Error', 'No se pudo crear la entidad. Es posible que ya exista una con ese nombre.')
     }
+  } catch (e: any) {
+    const msg = e?.response?.data?.error || e?.data?.error || e?.message || 'No se pudo crear la entidad'
+    showErrorThenBlockClose('Error', msg)
   } finally {
     savingEntidad.value = false
   }
@@ -733,9 +738,12 @@ async function handleCreateTipoPermiso(name: string) {
         tiposPermisoRows.value[idx].selectedOption = { label: created.nombre_permiso, value: created.id }
       }
       openCreateTipoPermisoModal.value = false
+    } else {
+      showErrorThenBlockClose('Error', 'No se pudo crear el tipo de permiso. Es posible que ya exista uno con ese nombre.')
     }
-  } catch {
-    // Parent shows error
+  } catch (e: any) {
+    const msg = e?.response?.data?.error || e?.data?.error || e?.message || 'No se pudo crear el tipo de permiso'
+    showErrorThenBlockClose('Error', msg)
   } finally {
     savingTipoPermiso.value = false
   }

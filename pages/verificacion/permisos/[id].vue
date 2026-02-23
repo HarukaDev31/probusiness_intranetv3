@@ -1,364 +1,293 @@
 <template>
-  <div class="p-6 max-w-5xl mx-auto">
-    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-      <UButton icon="i-heroicons-arrow-left" color="neutral" variant="ghost" @click="navigateTo('/verificacion?tab=permisos')">
-        Regresar
-      </UButton>
-      <div class="flex items-center gap-3">
-        <p v-if="hasPendientes" class="text-sm text-amber-600 dark:text-amber-400 hidden sm:block">
-          Hay cambios sin guardar. Haz clic en Guardar para enviar.
-        </p>
-        <UButton
-          icon="i-heroicons-check"
-          color="primary"
-          :loading="saving"
-          :disabled="!isAdministracion"
-          @click="handleSave"
-        >
-          Guardar
-        </UButton>
+  <div class="md:p-6">
+    <!-- Skeleton Loading -->
+    <div v-if="loading" class="max-w-6xl mx-auto space-y-6">
+      <div class="flex items-center justify-between mb-6">
+        <USkeleton class="h-10 w-32 rounded" />
+        <USkeleton class="h-9 w-28 rounded-lg" />
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+          <UCard><template #header><USkeleton class="h-6 w-48 rounded" /></template><div class="space-y-3"><USkeleton v-for="i in 2" :key="i" class="h-28 w-full rounded-lg" /></div></UCard>
+          <UCard><template #header><USkeleton class="h-6 w-40 rounded" /></template><USkeleton class="h-24 w-full rounded-lg" /></UCard>
+        </div>
+        <div><UCard><template #header><USkeleton class="h-6 w-36 rounded" /></template><div class="space-y-3"><USkeleton v-for="i in 3" :key="i" class="h-20 w-full rounded-lg" /></div></UCard></div>
       </div>
     </div>
 
-    <!-- Resumen -->
-    <div class="mb-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-      <div class="text-lg font-semibold text-gray-900 dark:text-white flex flex-row justify-between flex-wrap gap-2">
-        <span>{{ tramite?.cliente?.nombre || 'Permiso' }}</span>
-        <div class="flex gap-4">
-          <span>Importe: <span class="text-primary-600">{{ formatCurrency(totalImporte, 'PEN') }}</span></span>
-          <span>Pagado: <span class="text-primary-600">{{ formatCurrency(totalPagado, 'PEN') }}</span></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 1. Verificación pagos de servicio -->
-    <section class="mb-8">
-      <div class="flex items-center gap-2 mb-4">
-        <UIcon name="i-heroicons-banknotes" class="w-5 h-5 text-primary-500" />
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Importe servicio</h2>
-      </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        Verifica el estado de cada pago (Conforme / Pendiente / Observado). Solo se guarda al hacer clic en <strong>Guardar</strong> arriba.
-      </p>
-      <div v-if="loading" class="animate-pulse h-24 bg-gray-200 dark:bg-gray-700 rounded" />
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div
-          v-for="(pago, idx) in pagosConDatos"
-          :key="pago.document?.id ?? idx"
-          class="rounded-lg border p-4 transition-colors duration-200"
-          :class="cardClassByEstado(estadosServicio[idx])"
-        >
-          <h4 class="font-medium text-gray-900 dark:text-white mb-2">Servicio</h4>
-          <div class="space-y-1 text-sm">
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">Monto:</span>
-              <span class="font-medium">{{ formatCurrency(parseFloat(pago.monto || '0'), 'PEN') }}</span>
+    <!-- Contenido principal -->
+    <div v-else class="max-w-6xl mx-auto space-y-6">
+      <!-- Header -->
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4 min-w-0">
+          <UButton icon="i-heroicons-arrow-left" variant="ghost" color="neutral" size="sm" @click="navigateTo('/verificacion?tab=permisos')" />
+          <div class="min-w-0">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white truncate">
+              {{ tramite?.cliente?.nombre || 'Permiso' }}
+            </h1>
+            <div class="flex items-center gap-3 mt-1 text-sm">
+              <span class="text-gray-500 dark:text-gray-400">Importe: <strong class="text-gray-900 dark:text-white">{{ formatCurrency(totalImporte, 'PEN') }}</strong></span>
+              <span class="text-gray-500 dark:text-gray-400">Pagado: <strong class="text-green-600 dark:text-green-400">{{ formatCurrency(totalPagado, 'PEN') }}</strong></span>
             </div>
-            <div class="flex justify-between" v-if="pago.fecha_pago">
-              <span class="text-gray-600 dark:text-gray-400">Fecha:</span>
-              <span class="font-medium">{{ formatDateTimeToDmy(pago.fecha_pago) }}</span>
-            </div>
-            <div class="flex justify-between" v-if="pago.banco">
-              <span class="text-gray-600 dark:text-gray-400">Banco:</span>
-              <span class="font-medium">{{ pago.banco }}</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-gray-600 dark:text-gray-400">Voucher:</span>
-              <button
-                v-if="pago.document?.url"
-                type="button"
-                class="text-xs text-primary-600 hover:underline truncate max-w-28"
-                @click="openPreview(pago.document.url, pago.document.nombre_original)"
-              >
-                {{ pago.document.nombre_original || 'Ver' }}
-              </button>
-              <span v-else class="text-xs text-gray-500">Sin comprobante</span>
-            </div>
-          </div>
-          <div class="mt-3">
-            <USelect
-              v-if="isAdministracion"
-              v-model="estadosServicio[idx]"
-              :items="estadosOptions"
-              placeholder="Conforme"
-              size="sm"
-              @update:model-value="(val) => onEstadoServicioChange(idx, val)"
-            />
-            <span
-              v-else
-              class="inline-flex px-2 py-1 rounded text-xs font-medium"
-              :class="estadoServicioBadgeClass(estadosServicio[idx])"
-            >
-              {{ estadoServicioLabel(estadosServicio[idx]) }}
-            </span>
           </div>
         </div>
-        <div v-if="!loading && (!pagosConDatos || pagosConDatos.length === 0)" class="col-span-full text-sm text-gray-500">
-          No hay pagos de servicio registrados.
-        </div>
-      </div>
-    </section>
-
-    <!-- 2. Derecho trámite x tipo_permiso -->
-    <section class="mb-8">
-      <div class="flex items-center gap-2 mb-4">
-        <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-primary-500" />
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Derecho trámite</h2>
-      </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        Expediente o CPB se cargan desde Documentación. Aquí solo puedes subir <strong>Comprobantes</strong> (voucher de pago).
-      </p>
-      <div v-if="loading" class="animate-pulse h-32 bg-gray-200 dark:bg-gray-700 rounded-xl" />
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div
-          v-for="tipo in tramite?.tipos_permiso ?? []"
-          :key="tipo.id"
-          class="rounded-xl border p-4 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 shadow-sm"
-        >
-          <!-- Monto, Entidad, T. Permiso, Pagado comprobantes -->
-          <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-4">
-            <div>
-              <span class="text-gray-500 dark:text-gray-400">Monto</span>
-              <p class="font-semibold text-gray-900 dark:text-white">{{ formatCurrency(Number(tipo.derecho_entidad || 0), 'PEN') }}</p>
-            </div>
-            <div>
-              <span class="text-gray-500 dark:text-gray-400">Entidad</span>
-              <p class="font-medium text-gray-900 dark:text-white">{{ tramite?.entidad?.nombre ?? '-' }}</p>
-            </div>
-            <div class="col-span-2">
-              <span class="text-gray-500 dark:text-gray-400">T. Permiso</span>
-              <p class="font-medium text-gray-900 dark:text-white">{{ tipo.nombre_permiso }}</p>
-            </div>
-            <div class="col-span-2">
-              <span class="text-gray-500 dark:text-gray-400">Pagado </span>
-              <p class="font-semibold text-primary-600 dark:text-primary-400">{{ formatCurrency(totalPagadoDerechoByTipo[tipo.id] || 0, 'PEN') }}</p>
-            </div>
-          </div>
-
-          <!-- Expediente o CPB: solo lectura con FileUploader (desde Documentación) -->
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Expediente o CPB <span class="italic">(desde Documentación)</span></p>
-          <FileUploader
-            v-if="docToFileItems(getDocumentosTipo(tipo.id)).length > 0"
-            :initial-files="docToFileItems(getDocumentosTipo(tipo.id))"
-            :read-only="true"
-            :show-save-button="false"
-            :show-remove-button="false"
-          />
-          <p v-else class="text-sm text-gray-400 dark:text-gray-500 py-2">Se cargan desde Documentación</p>
-
-          <!-- Comprobantes: guardados (tabla pagos_permiso_derecho_tramite) + subir más -->
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-4 mb-2">Comprobantes <span class="italic">(subir aquí)</span></p>
-          <div class="flex flex-wrap items-center gap-2">
-            <!-- Comprobantes ya guardados: clic abre modal edición -->
-            <template v-for="c in (comprobantesDerechoPorTipo[tipo.id] || [])" :key="c.id">
-              <div class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 min-w-0">
-                <button
-                  type="button"
-                  class="flex items-center gap-2 min-w-0 flex-1 text-left"
-                  @click="openEditDerecho(tipo, c)"
-                >
-                  <img
-                    v-if="c.url && isImageUrl(c.url)"
-                    :src="c.url"
-                    alt="Preview"
-                    class="w-12 h-12 object-cover rounded flex-shrink-0"
-                  />
-                  <div v-else class="w-12 h-12 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                    <UIcon name="i-heroicons-document" class="w-6 h-6 text-primary-500" />
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-xs text-gray-500">Monto: {{ formatCurrency(parseFloat(comprobantesEditsDerecho[c.id]?.monto ?? c.monto ?? '0') || 0, 'PEN') }}</p>
-                    <p class="text-xs text-gray-500">Banco: {{ comprobantesEditsDerecho[c.id]?.banco ?? c.banco ?? '-' }}</p>
-                    <p class="text-xs text-gray-500">Fecha: {{ formatDateTimeToDmy(comprobantesEditsDerecho[c.id]?.fecha_cierre ?? c.fecha_cierre ?? '') || '-' }}</p>
-                  </div>
-                </button>
-                <UButton
-                  v-if="isAdministracion"
-                  icon="i-heroicons-trash"
-                  color="error"
-                  variant="ghost"
-                  size="xs"
-                  title="Eliminar comprobante"
-                  @click.stop="confirmarEliminarComprobanteDerecho(tipo.id, c.id)"
-                />
-              </div>
-            </template>
-            <!-- Pendientes: varios por tipo, con preview -->
-            <template v-for="(pend, idx) in (pendingPagosDerecho[tipo.id] || [])" :key="'pend-' + tipo.id + '-' + idx">
-              <div class="flex items-center gap-2 p-2 rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50/50 dark:bg-gray-800 min-w-0">
-                <img
-                  v-if="isImageFile(pend.voucher)"
-                  :src="getPendingFilePreviewUrl(tipo.id, idx)"
-                  alt="Vista previa"
-                  class="w-12 h-12 object-cover rounded flex-shrink-0"
-                />
-                <div v-else class="w-12 h-12 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                  <UIcon name="i-heroicons-document" class="w-6 h-6 text-gray-500" />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-xs text-gray-500">Monto: {{ formatCurrency(parseFloat(pend.monto || '0') || 0, 'PEN') }}</p>
-                  <p class="text-xs text-gray-500">Banco: {{ pend.banco || '-' }}</p>
-                  <p class="text-xs text-gray-500">Fecha: {{ formatDateTimeToDmy(pend.fecha_cierre) || '-' }}</p>
-                  <p class="text-xs text-amber-600 dark:text-amber-400">Pendiente de guardar</p>
-                </div>
-                <UButton
-                  v-if="isAdministracion"
-                  icon="i-heroicons-x-mark"
-                  color="neutral"
-                  variant="ghost"
-                  size="xs"
-                  title="Quitar"
-                  @click.stop="quitarPendienteDerecho(tipo.id, idx)"
-                />
-              </div>
-            </template>
-            <button
-              type="button"
-              class="w-16 h-16 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 flex items-center justify-center flex-shrink-0 transition-colors"
-              @click="openModalDerechoTramite(tipo)"
-              title="Subir comprobante"
-            >
-              <UIcon name="i-heroicons-plus" class="w-7 h-7 text-gray-400" />
-            </button>
-          </div>
-
-          <!-- Estado -->
-          <div class="mt-4">
-            <span
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium"
-              :class="(totalPagadoDerechoByTipo[tipo.id] || 0) >= Number(tipo.derecho_entidad || 0) ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-200' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'"
-            >
-              <UIcon :name="(totalPagadoDerechoByTipo[tipo.id] || 0) >= Number(tipo.derecho_entidad || 0) ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-4 h-4" />
-              {{ (totalPagadoDerechoByTipo[tipo.id] || 0) >= Number(tipo.derecho_entidad || 0) ? 'Pagado' : 'Pendiente' }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 3. Tramitador -->
-    <section class="mb-8">
-      <div class="flex items-center gap-2 mb-4">
-        <UIcon name="i-heroicons-user-circle" class="w-5 h-5 text-primary-500" />
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Tramitador</h2>
-      </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        RH o Factura se carga desde Documentación. Aquí solo puedes subir <strong>Comprobantes</strong> del tramitador.
-      </p>
-      <div v-if="loading" class="animate-pulse h-24 bg-gray-200 dark:bg-gray-700 rounded-xl" />
-      <div
-        v-else
-        class="rounded-xl border p-4 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm"
-      >
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <div class="font-medium text-gray-900 dark:text-white">RH o Factura</div>
-            <div class="text-sm text-gray-500">Compartido por permiso</div>
-          </div>
-          <div class="flex items-center gap-3 text-sm">
-            <span>Monto: <strong>{{ formatCurrency(Number(tramite?.tramitador || 0), 'PEN') }}</strong></span>
-            <span>Pagado : <strong class="text-primary-600 dark:text-primary-400">{{ formatCurrency(totalPagadoTramitador, 'PEN') }}</strong></span>
-          </div>
-        </div>
-        <!-- RH o Factura: solo lectura con FileUploader (desde Documentación) -->
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-4 mb-2">RH o Factura <span class="italic">(desde Documentación)</span></p>
-        <FileUploader
-          v-if="docToFileItems(seguimientoCompartido).length > 0"
-          :initial-files="docToFileItems(seguimientoCompartido)"
-          :read-only="true"
-          :show-save-button="false"
-          :show-remove-button="false"
-        />
-        <p v-else class="text-sm text-gray-400 dark:text-gray-500 py-2">Se cargan desde Documentación</p>
-        <!-- Comprobantes tramitador: guardados (tabla pagos_permiso_tramite) + subir más -->
-        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subir comprobantes</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Usa el botón para abrir el modal y adjuntar el comprobante de pago del tramitador.</p>
-          <div class="flex flex-wrap items-center gap-2">
-            <!-- Comprobantes ya guardados: clic abre modal edición -->
-            <template v-for="c in comprobantesTramitador" :key="c.id">
-              <div class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 min-w-0">
-                <button
-                  type="button"
-                  class="flex items-center gap-2 min-w-0 flex-1 text-left"
-                  @click="openEditTramitador(c)"
-                >
-                  <img
-                    v-if="c.url && isImageUrl(c.url)"
-                    :src="c.url"
-                    alt="Preview"
-                    class="w-12 h-12 object-cover rounded flex-shrink-0"
-                  />
-                  <div v-else class="w-12 h-12 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                    <UIcon name="i-heroicons-document" class="w-6 h-6 text-primary-500" />
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-xs text-gray-500">Monto: {{ formatCurrency(parseFloat(comprobantesEditsTramitador[c.id]?.monto ?? c.monto ?? '0') || 0, 'PEN') }}</p>
-                    <p class="text-xs text-gray-500">Banco: {{ comprobantesEditsTramitador[c.id]?.banco ?? c.banco ?? '-' }}</p>
-                    <p class="text-xs text-gray-500">Fecha: {{ formatDateTimeToDmy(comprobantesEditsTramitador[c.id]?.fecha_cierre ?? c.fecha_cierre ?? '') || '-' }}</p>
-                  </div>
-                </button>
-                <UButton
-                  v-if="isAdministracion"
-                  icon="i-heroicons-trash"
-                  color="error"
-                  variant="ghost"
-                  size="xs"
-                  title="Eliminar comprobante"
-                  @click.stop="confirmarEliminarComprobanteTramitador(c.id)"
-                />
-              </div>
-            </template>
-            <!-- Pendientes tramitador: varios con preview -->
-            <template v-for="(pend, idx) in pendingPagoTramitador" :key="'tram-' + idx">
-              <div class="flex items-center gap-2 p-2 rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50/50 dark:bg-gray-800 min-w-0">
-                <img
-                  v-if="isImageFile(pend.voucher)"
-                  :src="getTramitadorPreviewUrl(idx)"
-                  alt="Vista previa"
-                  class="w-12 h-12 object-cover rounded flex-shrink-0"
-                />
-                <div v-else class="w-12 h-12 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                  <UIcon name="i-heroicons-document" class="w-6 h-6 text-gray-500" />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-xs text-gray-500">Monto: {{ formatCurrency(parseFloat(pend.monto || '0') || 0, 'PEN') }}</p>
-                  <p class="text-xs text-gray-500">Banco: {{ pend.banco || '-' }}</p>
-                  <p class="text-xs text-gray-500">Fecha: {{ formatDateTimeToDmy(pend.fecha_cierre) || '-' }}</p>
-                  <p class="text-xs text-amber-600 dark:text-amber-400">Pendiente de guardar</p>
-                </div>
-                <UButton
-                  v-if="isAdministracion"
-                  icon="i-heroicons-x-mark"
-                  color="neutral"
-                  variant="ghost"
-                  size="xs"
-                  title="Quitar"
-                  @click.stop="quitarPendienteTramitador(idx)"
-                />
-              </div>
-            </template>
-            <button
-              type="button"
-              class="w-16 h-16 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 flex items-center justify-center flex-shrink-0 transition-colors"
-              @click="openModalTramitador"
-              title="Subir comprobante"
-            >
-              <UIcon name="i-heroicons-plus" class="w-7 h-7 text-gray-400" />
-            </button>
-          </div>
-        </div>
-        <div class="mt-4">
-          <span
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium"
-            :class="totalPagadoTramitador >= Number(tramite?.tramitador || 0) ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-200' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'"
+        <div class="flex items-center gap-3 shrink-0">
+          <p v-if="hasPendientes" class="text-xs text-amber-600 dark:text-amber-400 hidden lg:block max-w-48">
+            Cambios sin guardar
+          </p>
+          <UButton
+            icon="i-heroicons-check"
+            color="primary"
+            size="lg"
+            :loading="saving"
+            :disabled="!isAdministracion"
+            @click="handleSave"
           >
-            <UIcon :name="totalPagadoTramitador >= Number(tramite?.tramitador || 0) ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-4 h-4" />
-            {{ totalPagadoTramitador >= Number(tramite?.tramitador || 0) ? 'Pagado' : 'Pendiente' }}
-          </span>
+            Guardar todo
+          </UButton>
         </div>
       </div>
-    </section>
+
+      <!-- Grid principal -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Columna izquierda: Derecho trámite + Tramitador -->
+        <div class="lg:col-span-2 space-y-6">
+
+          <!-- SECCIÓN: Derecho trámite -->
+          <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-blue-500">
+            <template #header>
+              <div class="flex items-center gap-2.5">
+                <span class="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-bold">1</span>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Derecho trámite</h2>
+              </div>
+            </template>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div
+                v-for="tipo in tramite?.tipos_permiso ?? []"
+                :key="tipo.id"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+              >
+                <!-- Cabecera del tipo -->
+                <div class="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+                  <div class="flex items-center justify-between gap-2">
+                    <p class="text-sm font-bold text-gray-900 dark:text-white truncate">{{ tipo.nombre_permiso }}</p>
+                    <span
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium shrink-0"
+                      :class="(totalPagadoDerechoByTipo[tipo.id] || 0) >= Number(tipo.derecho_entidad || 0) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'"
+                    >
+                      <UIcon :name="(totalPagadoDerechoByTipo[tipo.id] || 0) >= Number(tipo.derecho_entidad || 0) ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3" />
+                      {{ (totalPagadoDerechoByTipo[tipo.id] || 0) >= Number(tipo.derecho_entidad || 0) ? 'Pagado' : 'Pendiente' }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-4 mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <span>Monto: <strong class="text-gray-900 dark:text-white">{{ formatCurrency(Number(tipo.derecho_entidad || 0), 'PEN') }}</strong></span>
+                    <span>Pagado: <strong class="text-green-600 dark:text-green-400">{{ formatCurrency(totalPagadoDerechoByTipo[tipo.id] || 0, 'PEN') }}</strong></span>
+                  </div>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">{{ tramite?.entidad?.nombre ?? '-' }}</p>
+                </div>
+
+                <div class="p-4 space-y-4">
+                  <!-- Expediente o CPB -->
+                  <div>
+                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Expediente o CPB</label>
+                    <FileUploader
+                      v-if="docToFileItems(getDocumentosTipo(tipo.id)).length > 0"
+                      :initial-files="docToFileItems(getDocumentosTipo(tipo.id))"
+                      :read-only="true"
+                      :show-save-button="false"
+                      :show-remove-button="false"
+                    />
+                    <p v-else class="text-xs text-gray-400 dark:text-gray-500 mt-1 italic">Desde Documentación</p>
+                  </div>
+
+                  <!-- Comprobantes -->
+                  <div>
+                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comprobantes</label>
+                    <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                      <template v-for="c in (comprobantesDerechoPorTipo[tipo.id] || [])" :key="c.id">
+                        <div class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 min-w-0">
+                          <button type="button" class="flex items-center gap-2 min-w-0 flex-1 text-left" @click="openEditDerecho(tipo, c)">
+                            <img v-if="c.url && isImageUrl(c.url)" :src="c.url" alt="Preview" class="w-10 h-10 object-cover rounded flex-shrink-0" />
+                            <div v-else class="w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                              <UIcon name="i-heroicons-document" class="w-5 h-5 text-gray-400" />
+                            </div>
+                            <div class="min-w-0 flex-1">
+                              <p class="text-xs font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(parseFloat(comprobantesEditsDerecho[c.id]?.monto ?? c.monto ?? '0') || 0, 'PEN') }}</p>
+                              <p class="text-[11px] text-gray-500">{{ comprobantesEditsDerecho[c.id]?.banco ?? c.banco ?? '-' }} · {{ formatDateTimeToDmy(comprobantesEditsDerecho[c.id]?.fecha_cierre ?? c.fecha_cierre ?? '') || '-' }}</p>
+                            </div>
+                          </button>
+                          <UButton v-if="isAdministracion" icon="i-heroicons-trash" color="error" variant="ghost" size="xs" title="Eliminar comprobante" @click.stop="confirmarEliminarComprobanteDerecho(tipo.id, c.id)" />
+                        </div>
+                      </template>
+
+                      <template v-for="(pend, idx) in (pendingPagosDerecho[tipo.id] || [])" :key="'pend-' + tipo.id + '-' + idx">
+                        <div class="flex items-center gap-2 p-2 rounded-lg border border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 min-w-0">
+                          <img v-if="isImageFile(pend.voucher)" :src="getPendingFilePreviewUrl(tipo.id, idx)" alt="Vista previa" class="w-10 h-10 object-cover rounded flex-shrink-0" />
+                          <div v-else class="w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                            <UIcon name="i-heroicons-document" class="w-5 h-5 text-gray-400" />
+                          </div>
+                          <div class="min-w-0 flex-1">
+                            <p class="text-xs font-semibold text-gray-900 dark:text-white">{{ formatCurrency(parseFloat(pend.monto || '0') || 0, 'PEN') }}</p>
+                            <p class="text-[11px] text-gray-500">{{ pend.banco || '-' }} · {{ formatDateTimeToDmy(pend.fecha_cierre) || '-' }}</p>
+                            <UBadge color="warning" variant="soft" size="xs">nuevo</UBadge>
+                          </div>
+                          <UButton v-if="isAdministracion" icon="i-heroicons-x-mark" color="neutral" variant="ghost" size="xs" title="Quitar" @click.stop="quitarPendienteDerecho(tipo.id, idx)" />
+                        </div>
+                      </template>
+
+                      <button type="button" class="w-12 h-12 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 flex items-center justify-center flex-shrink-0 transition-colors" @click="openModalDerechoTramite(tipo)" title="Subir comprobante">
+                        <UIcon name="i-heroicons-plus" class="w-5 h-5 text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </UCard>
+
+          <!-- SECCIÓN: Tramitador -->
+          <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-purple-500">
+            <template #header>
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-2.5">
+                  <span class="flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 text-xs font-bold">2</span>
+                  <h2 class="text-lg font-bold text-gray-900 dark:text-white">Tramitador</h2>
+                </div>
+                <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                  <span>Monto: <strong class="text-gray-900 dark:text-white">{{ formatCurrency(Number(tramite?.tramitador || 0), 'PEN') }}</strong></span>
+                  <span>Pagado: <strong class="text-green-600 dark:text-green-400">{{ formatCurrency(totalPagadoTramitador, 'PEN') }}</strong></span>
+                  <span
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                    :class="totalPagadoTramitador >= Number(tramite?.tramitador || 0) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'"
+                  >
+                    <UIcon :name="totalPagadoTramitador >= Number(tramite?.tramitador || 0) ? 'i-heroicons-check-circle' : 'i-heroicons-clock'" class="w-3 h-3" />
+                    {{ totalPagadoTramitador >= Number(tramite?.tramitador || 0) ? 'Pagado' : 'Pendiente' }}
+                  </span>
+                </div>
+              </div>
+            </template>
+
+            <div class="space-y-5">
+              <!-- RH o Factura -->
+              <div>
+                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">RH o Factura <span class="normal-case tracking-normal italic">(desde Documentación)</span></label>
+                <div class="mt-1.5">
+                  <FileUploader
+                    v-if="docToFileItems(seguimientoCompartido).length > 0"
+                    :initial-files="docToFileItems(seguimientoCompartido)"
+                    :read-only="true"
+                    :show-save-button="false"
+                    :show-remove-button="false"
+                  />
+                  <p v-else class="text-xs text-gray-400 dark:text-gray-500 italic">Desde Documentación</p>
+                </div>
+              </div>
+
+              <!-- Comprobantes tramitador -->
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comprobantes</label>
+                <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                  <template v-for="c in comprobantesTramitador" :key="c.id">
+                    <div class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 min-w-0">
+                      <button type="button" class="flex items-center gap-2 min-w-0 flex-1 text-left" @click="openEditTramitador(c)">
+                        <img v-if="c.url && isImageUrl(c.url)" :src="c.url" alt="Preview" class="w-10 h-10 object-cover rounded flex-shrink-0" />
+                        <div v-else class="w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                          <UIcon name="i-heroicons-document" class="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <p class="text-xs font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(parseFloat(comprobantesEditsTramitador[c.id]?.monto ?? c.monto ?? '0') || 0, 'PEN') }}</p>
+                          <p class="text-[11px] text-gray-500">{{ comprobantesEditsTramitador[c.id]?.banco ?? c.banco ?? '-' }} · {{ formatDateTimeToDmy(comprobantesEditsTramitador[c.id]?.fecha_cierre ?? c.fecha_cierre ?? '') || '-' }}</p>
+                        </div>
+                      </button>
+                      <UButton v-if="isAdministracion" icon="i-heroicons-trash" color="error" variant="ghost" size="xs" title="Eliminar comprobante" @click.stop="confirmarEliminarComprobanteTramitador(c.id)" />
+                    </div>
+                  </template>
+
+                  <template v-for="(pend, idx) in pendingPagoTramitador" :key="'tram-' + idx">
+                    <div class="flex items-center gap-2 p-2 rounded-lg border border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 min-w-0">
+                      <img v-if="isImageFile(pend.voucher)" :src="getTramitadorPreviewUrl(idx)" alt="Vista previa" class="w-10 h-10 object-cover rounded flex-shrink-0" />
+                      <div v-else class="w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                        <UIcon name="i-heroicons-document" class="w-5 h-5 text-gray-400" />
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-xs font-semibold text-gray-900 dark:text-white">{{ formatCurrency(parseFloat(pend.monto || '0') || 0, 'PEN') }}</p>
+                        <p class="text-[11px] text-gray-500">{{ pend.banco || '-' }} · {{ formatDateTimeToDmy(pend.fecha_cierre) || '-' }}</p>
+                        <UBadge color="warning" variant="soft" size="xs">nuevo</UBadge>
+                      </div>
+                      <UButton v-if="isAdministracion" icon="i-heroicons-x-mark" color="neutral" variant="ghost" size="xs" title="Quitar" @click.stop="quitarPendienteTramitador(idx)" />
+                    </div>
+                  </template>
+
+                  <button type="button" class="w-12 h-12 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 flex items-center justify-center flex-shrink-0 transition-colors" @click="openModalTramitador" title="Subir comprobante">
+                    <UIcon name="i-heroicons-plus" class="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </UCard>
+        </div>
+
+        <!-- Columna derecha: Verificación pagos (sticky) -->
+        <div class="lg:sticky lg:top-6 self-start">
+          <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-green-500">
+            <template #header>
+              <div class="flex items-center gap-2.5">
+                <span class="flex items-center justify-center w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 text-xs font-bold">3</span>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Verificación pagos</h2>
+              </div>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Conforme / Pendiente / Observado</p>
+            </template>
+
+            <div class="space-y-3">
+              <div
+                v-for="(pago, idx) in pagosConDatos"
+                :key="pago.document?.id ?? idx"
+                class="rounded-xl p-3 transition-colors duration-200"
+                :class="cardClassByEstado(estadosServicio[idx])"
+              >
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <span class="text-lg font-bold text-gray-900 dark:text-white">{{ formatCurrency(parseFloat(pago.monto || '0'), 'PEN') }}</span>
+                  <button
+                    v-if="pago.document?.url"
+                    type="button"
+                    class="text-[11px] text-primary-600 hover:underline truncate max-w-24"
+                    @click="openPreview(pago.document.url, pago.document.nombre_original)"
+                  >
+                    Ver voucher
+                  </button>
+                </div>
+                <div class="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400 mb-2.5">
+                  <span v-if="pago.banco">{{ pago.banco }}</span>
+                  <span v-if="pago.fecha_pago">{{ formatDateTimeToDmy(pago.fecha_pago) }}</span>
+                  <span v-if="!pago.banco && !pago.fecha_pago">Sin detalles</span>
+                </div>
+                <USelect
+                  v-if="isAdministracion"
+                  v-model="estadosServicio[idx]"
+                  :items="estadosOptions"
+                  placeholder="Conforme"
+                  size="sm"
+                  @update:model-value="(val) => onEstadoServicioChange(idx, val)"
+                />
+                <span
+                  v-else
+                  class="inline-flex px-2 py-1 rounded text-xs font-medium"
+                  :class="estadoServicioBadgeClass(estadosServicio[idx])"
+                >
+                  {{ estadoServicioLabel(estadosServicio[idx]) }}
+                </span>
+              </div>
+
+              <div v-if="!loading && (!pagosConDatos || pagosConDatos.length === 0)" class="text-center py-6">
+                <UIcon name="i-heroicons-banknotes" class="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p class="text-sm text-gray-400 italic">Sin pagos registrados</p>
+              </div>
+            </div>
+          </UCard>
+        </div>
+      </div>
+    </div>
 
     <ModalPreview
       :is-open="!!previewFile"
@@ -366,7 +295,6 @@
       @close="previewFile = null"
     />
 
-    <!-- Modal subir/editar comprobante: subida (monto, banco, fecha, voucher) o edición (solo monto, banco, fecha). -->
     <CreatePagoModal
       v-if="showComprobanteModal"
       :cliente-nombre="tramite?.cliente?.nombre ?? 'Permiso'"
