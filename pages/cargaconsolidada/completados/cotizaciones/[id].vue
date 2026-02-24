@@ -1050,7 +1050,8 @@ const getPagosColumns = () => {
             header: 'Adelantos',
             cell: ({ row }: { row: any }) => {
                 const pagos = row.original.pagos || []
-                return !row.original.id_contenedor_pago ? h(PagoGrid, {
+                console.log(row.original.id_contenedor_pago, id)
+                return row.original.id_contenedor_pago == id || row.original.id_contenedor_pago == null ? h(PagoGrid, {
                     numberOfPagos: 4,
                     pagoDetails: pagos,
                     clienteNombre: row.original.nombre,
