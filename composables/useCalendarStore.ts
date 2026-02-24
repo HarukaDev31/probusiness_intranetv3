@@ -743,17 +743,27 @@ export const useCalendarStore = () => {
   })
 
   const visibleActivities = computed(() => {
-    let list = calendarPermissions.value.canViewAllActivities
-      ? state.events.value
-      : myActivities.value
     const responsableIds = state.filters.value.responsable_ids
     const responsableId = state.filters.value.responsable_id
+    let list: typeof state.events.value
+    if (calendarPermissions.value.canViewAllActivities) {
+      list = state.events.value
+    } else {
+      // No jefe: "Todos" = todos los eventos que devolvió la API; "Yo" = solo donde soy responsable
+      if (responsableId != null && typeof responsableId === 'number') {
+        list = state.events.value.filter(activity =>
+          activity.charges?.some(charge => charge.user_id === responsableId) ?? false
+        )
+      } else {
+        list = state.events.value
+      }
+    }
     if (responsableIds?.length) {
       const idSet = new Set(responsableIds)
       list = list.filter(activity =>
         activity.charges?.some(charge => idSet.has(charge.user_id)) ?? false
       )
-    } else if (responsableId != null && typeof responsableId === 'number') {
+    } else if (responsableId != null && typeof responsableId === 'number' && calendarPermissions.value.canViewAllActivities) {
       list = list.filter(activity =>
         activity.charges?.some(charge => charge.user_id === responsableId) ?? false
       )

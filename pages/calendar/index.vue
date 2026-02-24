@@ -246,7 +246,7 @@
                   </div>
                   <div
                     v-for="(week, weekIndex) in monthData.weeks"
-                    :key="weekIndex"
+                    :key="`${monthIndex}-${weekIndex}`"
                     class="relative"
                   >
                     <div class="grid grid-cols-7">
@@ -298,7 +298,7 @@
                       >
                         <div
                           v-for="eventSpan in eventRow"
-                          :key="`${eventSpan.event.id}-${eventSpan.startCol}`"
+                          :key="`range-${monthIndex}-${weekIndex}-${rowIndex}-${eventSpan.event.id}-${eventSpan.startCol}`"
                           class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1"
                           :class="{
                             'rounded-l-md': eventSpan.isStart,
@@ -1295,10 +1295,41 @@ interface EventSpan {
   isEnd: boolean
 }
 
-// Columnas 0 = Lunes … 5 = Sábado, 6 = Domingo. Un solo segmento continuo (incluye sáb/dom).
-const getWeekdaySegments = (startCol: number, endCol: number): { startCol: number, endCol: number }[] => {
-  if (startCol > endCol) return []
-  return [{ startCol, endCol }]
+// Columnas 0 = Lunes … 5 = Sábado, 6 = Domingo.
+// Solo muestra el evento en sáb/dom si el evento cae exclusivamente en fin de semana; si va de jueves a lunes, solo jueves, viernes y lunes.
+const getWeekdaySegments = (
+  startCol: number,
+  endCol: number,
+  weekDays: { dateStr: string }[],
+  event: { start_date?: string, end_date?: string }
+): { startCol: number, endCol: number }[] => {
+  if (startCol > endCol || !event.start_date || !event.end_date) return []
+  const isWeekendDate = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const day = new Date(y, m - 1, d).getDay() // 0 = Domingo, 6 = Sábado
+    return day === 0 || day === 6
+  }
+  const eventOnlyWeekend = isWeekendDate(event.start_date) && isWeekendDate(event.end_date)
+  const includeCol = (col: number) => {
+    const inRange = weekDays[col]?.dateStr >= event.start_date && weekDays[col]?.dateStr <= event.end_date
+    if (!inRange) return false
+    if (col <= 4) return true // Lunes–Viernes siempre
+    return eventOnlyWeekend // Sáb/Dom solo si el evento es solo fin de semana
+  }
+  const segments: { startCol: number, endCol: number }[] = []
+  let segStart: number | null = null
+  for (let col = startCol; col <= endCol; col++) {
+    if (includeCol(col)) {
+      if (segStart === null) segStart = col
+    } else {
+      if (segStart !== null) {
+        segments.push({ startCol: segStart, endCol: col - 1 })
+        segStart = null
+      }
+    }
+  }
+  if (segStart !== null) segments.push({ startCol: segStart, endCol })
+  return segments
 }
 
 // Agrupar días por semanas y calcular posiciones de eventos multi-día
@@ -1351,7 +1382,7 @@ const calendarWeeks = computed(() => {
         if (dayDate <= event.end_date) endCol = col
       }
       
-      const segments = getWeekdaySegments(startCol, endCol)
+      const segments = getWeekdaySegments(startCol, endCol, weekDays, event)
       const origIsStart = event.start_date >= weekStartDate && event.start_date <= weekEndDate
       const origIsEnd = event.end_date >= weekStartDate && event.end_date <= weekEndDate
       
@@ -1521,7 +1552,8 @@ const getCalendarDaysForMonth = (year: number, month: number) => {
   return days
 }
 
-// Semanas de un mes para la vista de rango (misma estructura que calendarWeeks)
+// Semanas de un mes para la vista de rango (misma estructura que calendarWeeks).
+// Solo muestra eventos en columnas que pertenecen al mes actual (no repite eventos del mes anterior al inicio).
 const getCalendarWeeksForMonth = (year: number, month: number) => {
   const days = getCalendarDaysForMonth(year, month)
   const weeks: { days: any[], eventRows: EventSpan[][] }[] = []
@@ -1530,6 +1562,13 @@ const getCalendarWeeksForMonth = (year: number, month: number) => {
     const weekDays = days.slice(i, i + 7)
     const weekStartDate = weekDays[0].dateStr
     const weekEndDate = weekDays[6].dateStr
+
+    // Columnas que pertenecen al mes que estamos mostrando (year, month)
+    const currentMonthCols: number[] = []
+    for (let c = 0; c < 7; c++) {
+      const d = weekDays[c]
+      if (d.date?.year === year && d.date?.month === month) currentMonthCols.push(c)
+    }
 
     const weekEvents = visibleEvents.value.filter(event => {
       const eventStart = event.start_date
@@ -1562,17 +1601,25 @@ const getCalendarWeeksForMonth = (year: number, month: number) => {
         if (dayDate <= event.end_date) endCol = col
       }
 
-      const segments = getWeekdaySegments(startCol, endCol)
-      const origIsStart = event.start_date >= weekStartDate && event.start_date <= weekEndDate
-      const origIsEnd = event.end_date >= weekStartDate && event.end_date <= weekEndDate
+      // Aplicar lógica fin de semana: no mostrar en sáb/dom salvo que el evento sea solo fin de semana
+      const segments = getWeekdaySegments(startCol, endCol, weekDays, event)
+      // En vista de rango: recortar cada segmento al mes actual
+      for (const seg of segments) {
+        const clipStart = currentMonthCols.find(c => c >= seg.startCol && c <= seg.endCol)
+        const clipEnd = currentMonthCols.length ? [...currentMonthCols].reverse().find(c => c >= seg.startCol && c <= seg.endCol) : undefined
+        if (clipStart === undefined || clipEnd === undefined) continue
 
-      segments.forEach((seg, segIdx) => {
+        const dayDateStart = weekDays[clipStart].dateStr
+        const dayDateEnd = weekDays[clipEnd].dateStr
+        const origIsStart = event.start_date >= dayDateStart && event.start_date <= dayDateEnd
+        const origIsEnd = event.end_date >= dayDateStart && event.end_date <= dayDateEnd
+
         const span: EventSpan = {
           event,
-          startCol: seg.startCol,
-          endCol: seg.endCol,
-          isStart: origIsStart && segIdx === 0,
-          isEnd: origIsEnd && segIdx === segments.length - 1
+          startCol: clipStart,
+          endCol: clipEnd,
+          isStart: origIsStart,
+          isEnd: origIsEnd
         }
         let placed = false
         for (const row of eventRows) {
@@ -1588,7 +1635,7 @@ const getCalendarWeeksForMonth = (year: number, month: number) => {
         if (!placed) {
           eventRows.push([span])
         }
-      })
+      }
     })
 
     weeks.push({ days: weekDays, eventRows })
