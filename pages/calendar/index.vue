@@ -202,6 +202,11 @@
                   v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
                   :key="resp.id"
                   :text="resp.nombre"
+                  :content="{
+      align: 'center',
+      side: 'top',
+      sideOffset: 8
+    }"
                 >
                   <UAvatar
                     :src="resp.avatar || undefined"
@@ -325,6 +330,12 @@
                               v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
                               :key="resp.id"
                               :text="resp.nombre"
+                              :content="{
+      align: 'center',
+      side: 'top',
+      sideOffset: 8
+    }"
+              
                             >
                               <UAvatar
                                 :src="resp.avatar || undefined"
@@ -2176,6 +2187,16 @@ onMounted(async () => {
   if (!isJefeImportaciones.value && (filters.value.responsable_id === undefined || filters.value.responsable_id === null)) {
     const uid = Number(currentUserId.value) || 0
     if (uid) setFilter('responsable_id', uid)
+  }
+  // Si no es jefe, por defecto filtrar por el 1er y último día del mes actual
+  if (!isJefeImportaciones.value && (!filters.value.start_date || !filters.value.end_date)) {
+    const y = currentDate.value.year
+    const m = currentDate.value.month
+    const firstDayStr = `${y}-${String(m).padStart(2, '0')}-01`
+    const firstDay = parseDate(firstDayStr)
+    const lastDay = firstDay.set({ day: firstDay.calendar.getDaysInMonth(firstDay) })
+    const lastDayStr = `${lastDay.year}-${String(lastDay.month).padStart(2, '0')}-${String(lastDay.day).padStart(2, '0')}`
+    setDateRange(firstDayStr, lastDayStr)
   }
   loadEvents()
   // Actualizar URL inicial si no hay parámetros

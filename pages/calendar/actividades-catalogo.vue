@@ -222,7 +222,7 @@
                   class="text-xs rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 py-0.5 px-1.5 focus:ring-primary-500 focus:border-primary-500"
                   @change="setLocalOption(item.id, 'default_priority', Number(($event.target as HTMLSelectElement).value))"
                 >
-                  <option :value="0">Normal</option>
+                  <option :value="0">Baja</option>
                   <option :value="1">Media</option>
                   <option :value="2">Alta</option>
                 </select>

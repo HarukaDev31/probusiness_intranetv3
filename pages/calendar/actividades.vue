@@ -102,9 +102,9 @@
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Actividad</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">F. inicio</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">F. fin</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Consolidado</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300"># Consolidado</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Inicio</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Fin</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Duración</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Responsables</th>
                 <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
@@ -120,13 +120,13 @@
                   {{ activity.name || activity.title }}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                  {{ activity.contenedor?.nombre || activity.contenedor?.codigo || '-' }}
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                   {{ formatDate(activity.start_date || getFirstDate(activity)) }}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                   {{ formatDate(activity.end_date || getLastDate(activity)) }}
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                  {{ activity.contenedor?.nombre || activity.contenedor?.codigo || '-' }}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                   {{ calculateDuration(activity) }} días
@@ -176,9 +176,9 @@
               <template v-if="loading">
                 <tr v-for="i in 6" :key="i" class="animate-pulse">
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-44"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-14"></div></td>
                   <td class="px-4 py-3"><div class="flex gap-1"><div class="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div></div></td>
                   <td class="px-4 py-3 text-right"><div class="flex gap-1 justify-end"><div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div><div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div></div></td>

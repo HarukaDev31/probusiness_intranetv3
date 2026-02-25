@@ -775,18 +775,17 @@ export const useCalendarStore = () => {
   // UTILIDADES PARA EVENTOS MULTI-DÍA
   // ============================================
 
+  /**
+   * Color del evento en el calendario.
+   * Orden para todos: 1) gris si está completada, 2) color de actividad (catálogo), 3) color consolidado, 4) color por prioridad.
+   */
   const getEventColors = (event: CalendarEvent, options?: { usePriority?: boolean }): string[] => {
     const charges = event.charges || []
-    // Jefe: gris si todos los miembros completaron el evento
-    if (!options?.usePriority && charges.length > 0 && charges.every((c: { status?: string }) => c.status === 'COMPLETADO')) {
+    // 1. Gris si la actividad está completada (todos los responsables en COMPLETADO)
+    if (charges.length > 0 && charges.every((c: { status?: string }) => c.status === 'COMPLETADO')) {
       return ['#9ca3af']
     }
-    // No-jefe: gris si yo completé (mi charge está en COMPLETADO)
-    if (options?.usePriority && charges.length > 0) {
-      const myCharge = charges.find((c: { user_id: number; status?: string }) => c.user_id === Number(currentId.value))
-      if (myCharge?.status === 'COMPLETADO') return ['#9ca3af']
-    }
-    // Para todos los roles: actividad > consolidado > prioridad (el color de actividad prevalece)
+    // 2. Color de actividad definido por el jefe (catálogo)
     const activityId = event.activity_id != null ? Number(event.activity_id) : null
     if (activityId != null && !Number.isNaN(activityId)) {
       const catalogItem = state.activityCatalog.value.find(
@@ -796,10 +795,12 @@ export const useCalendarStore = () => {
         return [String(catalogItem.color_code).trim()]
       }
     }
+    // 3. Color de consolidado
     if (event.contenedor_id) {
       const consolidadoConfig = state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
       if (consolidadoConfig) return [consolidadoConfig.color_code]
     }
+    // 4. Color por prioridad
     return [PRIORITY_COLORS[event.priority] || '#3b82f6']
   }
 

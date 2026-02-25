@@ -138,12 +138,12 @@
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Actividad</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300"># Consolidado</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Estado</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Prioridad</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Consolidado</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Inicio</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Fin</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Duración</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">F. Inicio</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">F. Fin</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Responsables</th>
                 <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Notas</th>
@@ -158,6 +158,11 @@
                 <!-- Actividad -->
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">
                   {{ activity.name || activity.title }}
+                </td>
+
+                <!-- # Consolidado -->
+                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                  {{ activity.contenedor?.nombre || activity.contenedor?.codigo || '-' }}
                 </td>
 
                 <!-- Estado -->
@@ -180,24 +185,19 @@
                   />
                 </td>
 
-                <!-- Consolidado -->
+                <!-- Fecha Inicio -->
                 <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                  {{ activity.contenedor?.nombre || activity.contenedor?.codigo || '-' }}
+                  {{ formatDate(activity.start_date || getFirstDate(activity)) }}
+                </td>
+
+                <!-- Fecha Fin -->
+                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                  {{ formatDate(activity.end_date || getLastDate(activity)) }}
                 </td>
 
                 <!-- Duración -->
                 <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                   {{ calculateDuration(activity) }} days
-                </td>
-
-                <!-- F. Inicio -->
-                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                  {{ formatDate(activity.start_date || getFirstDate(activity)) }}
-                </td>
-
-                <!-- F. Fin -->
-                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                  {{ formatDate(activity.end_date || getLastDate(activity)) }}
                 </td>
 
                 <!-- Responsables -->
@@ -290,12 +290,12 @@
               <template v-if="loading">
                 <tr v-for="i in 6" :key="i" class="animate-pulse">
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
                   <td class="px-4 py-3"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20"></div></td>
                   <td class="px-4 py-3"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div></td>
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-14"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div></td>
                   <td class="px-4 py-3"><div class="flex gap-1"><div class="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div><div class="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div></div></td>
                   <td class="px-4 py-3 text-center"><div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28"></div></td>
