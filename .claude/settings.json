@@ -1,10 +1,24 @@
 {
   "permissions": {
-    "additionalDirectories": [
-      "c:\\Users\\User\\OneDrive\\Desktop\\Proyectos\\Probusiness\\probusiness_intranetv2_back\\routes\\modules"
-    ],
     "allow": [
-      "Bash(\"c:/Users/User/OneDrive/Desktop/Proyectos/Probusiness/probusiness_intranetv2_back/database/migrations/2026_02_18_100003_add_tipo_permiso_seccion_to_tramite_aduana_documentos.php\":*)"
+      "Bash(\"c:/Users/User/OneDrive/Desktop/Proyectos/Probusiness/probusiness_intranetv2_back/database/migrations/2026_02_18_100003_add_tipo_permiso_seccion_to_tramite_aduana_documentos.php\":*)",
+      "Read(//c/Users/Lenovo/Desktop/Proyectos/Probusiness/intranet_back/**)",
+      "Read(//c/Users/Lenovo/.claude/projects/c--Users-Lenovo-Desktop-Proyectos-Probusiness-probusiness-intranetv3/fc8fa0a1-9b6c-4532-a098-e2b80ac47005/tool-results/**)",
+      "Bash(npm install --save-dev storybook@latest @storybook-vue/nuxt @storybook/addon-essentials @storybook/addon-interactions @storybook/addon-links @storybook/addon-a11y)",
+      "Bash(npm install --save-dev storybook@^9.0.5 @storybook-vue/nuxt@^9.0.1 @storybook/addon-essentials@^9.0.5 @storybook/addon-interactions@^9.0.5 @storybook/addon-links@^9.0.5 @storybook/addon-a11y@^9.0.5)",
+      "Bash(npm view @storybook-vue/nuxt version)",
+      "Bash(npm view @storybook-vue/nuxt peerDependencies)",
+      "Bash(npm install --save-dev storybook@~9.0.5 @storybook-vue/nuxt@9.0.1)",
+      "Bash(npm view @storybook/addon-essentials versions --json)",
+      "Bash(node -e \"const v=JSON.parse\\(require\\(''fs''\\).readFileSync\\(''/dev/stdin'',''utf8''\\)\\); console.log\\(v.filter\\(x=>x.startsWith\\(''9.0''\\)\\).slice\\(-5\\).join\\(''\\\\n''\\)\\)\")",
+      "Bash(npm view @storybook/addon-essentials@9.0.18 version)",
+      "Bash(find /c/Users/Lenovo/Desktop/Proyectos/Probusiness/probusiness_intranetv3 -name \"*.vue\" -not -path \"*/node_modules/*\" -exec wc -l {} +)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\User\\OneDrive\\Desktop\\Proyectos\\Probusiness\\probusiness_intranetv2_back\\routes\\modules",
+      "c:\\Users\\Lenovo\\Desktop\\Proyectos\\Probusiness\\intranet_back\\routes\\modules",
+      "c:\\Users\\Lenovo\\Desktop\\Proyectos\\Probusiness\\probusiness_intranetv3",
+      "c:\\Users\\Lenovo\\Desktop\\Proyectos\\Probusiness\\intranet_back\\app\\Traits"
     ]
   }
 }

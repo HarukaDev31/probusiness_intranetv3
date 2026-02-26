@@ -23,6 +23,7 @@ export const useCotizacion = () => {
     })
     const packingList = ref<any>(null)
     const headersCotizaciones = ref<Header[]>([])
+    const headersPagos = ref<Header[]>([])
     const loadingHeaders = ref(false)
     const search = ref('')
     const itemsPerPage = ref(100)
@@ -39,10 +40,19 @@ export const useCotizacion = () => {
         estado_china: 'todos',
     
     })
+    // AbortController para cancelar requests anteriores en vuelo
+    let currentAbortController: AbortController | null = null
     // request sequencing to avoid applying out-of-order responses
     const latestRequestId = ref(0)
-    
+
     const getCotizaciones = async (id: number) => {
+        // Cancelar request anterior si todavía está en vuelo
+        if (currentAbortController) {
+            currentAbortController.abort()
+        }
+        currentAbortController = new AbortController()
+        const signal = currentAbortController.signal
+
         try {
             loading.value = true
             const requestId = ++latestRequestId.value
@@ -76,14 +86,16 @@ export const useCotizacion = () => {
             if (route.query.idCotizacion) {
                 params.idCotizacion = route.query.idCotizacion
             }
-          
-            const response = await CotizacionService.getCotizaciones(id,params)
+
+            const response = await CotizacionService.getCotizaciones(id, params, signal)
             // only apply response if it's the latest request
             if (requestId === latestRequestId.value) {
                 cotizaciones.value = response.data
                 pagination.value = response.pagination
             }
-        } catch (err) {
+        } catch (err: any) {
+            // Ignorar errores de cancelación (request abortada intencionalmente)
+            if (err?.name === 'AbortError') return
             error.value = err as string
         } finally {
             loading.value = false
@@ -165,6 +177,12 @@ export const useCotizacion = () => {
                 : Object.values(response.data ?? {})
 
             headersCotizaciones.value = headers as Header[]
+
+            const extraPagos = Array.isArray(response.data_pagos)
+                ? response.data_pagos
+                : Object.values(response.data_pagos ?? {})
+            headersPagos.value = [...(headers as Header[]), ...(extraPagos as Header[])]
+
             carga.value = response.carga
             packingList.value = response.lista_embarque_url
             return response
@@ -253,6 +271,7 @@ export const useCotizacion = () => {
         currentPage,
         filters,
         headersCotizaciones,
+        headersPagos,
         getCotizaciones,
         refreshCotizacionFile,
         deleteCotizacion,

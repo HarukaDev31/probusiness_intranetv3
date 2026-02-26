@@ -16,16 +16,21 @@ export class BaseService {
       
       return result as T
     } catch (error: any) {
+      // Re-lanzar AbortError sin modificar para que los composables puedan detectarlo
+      if (error?.name === 'AbortError') {
+        throw error
+      }
+
       const status = error?.status || error?.statusCode
       const backendMessage = error?.data?.message || error?.message || 'Error desconocido'
-      
+
       console.error('❌ BaseService - Error en apiCall:', {
         status,
         message: backendMessage,
         endpoint,
         fullError: error
       })
-      
+
       throw new Error(backendMessage)
     }
   }

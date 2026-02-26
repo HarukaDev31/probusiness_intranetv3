@@ -108,7 +108,7 @@
                                     <div class="flex space-x-1 p-2 bg-gray-50 dark:bg-gray-800 overflow-x-auto">
                                         <button
                                             v-for="(sheet, index) in excelData.sheets"
-                                            :key="index"
+                                            :key="sheet.name"
                                             @click="activeSheet = index"
                                             :class="[
                                                 'px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap',

@@ -10,7 +10,7 @@
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             @export="exportData" :hide-back-button="false"
-            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
             :show-body-top="true">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -33,7 +33,7 @@
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
-            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.CONTABILIDAD) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`"
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -71,22 +71,22 @@
                 </div>
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3 md:flex hidden" />
-                <UButton v-if="currentRole === ROLES.COORDINACION" icon="i-heroicons-arrow-down-tray" color="success"
+                <UButton v-if="currentRole === ROLES.COORDINACION || currentRole == ROLES.CONTABILIDAD" icon="i-heroicons-arrow-down-tray" color="success"
                     label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
             </template>
         </DataTable>
         <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
             :show-pagination="false" :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos"
             :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
-            :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
-            :filter-config="filterConfig" :show-export="false"
+            :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="currentRole === ROLES.CONTABILIDAD"
+            :filter-config="getFilterConfigPagos()" :show-export="false"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
-            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
+            @filter-change="handleFilterChangePagos" :show-body-top="true" :hide-back-button="false"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.CONTABILIDAD) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
-                    <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
+                    <SectionHeader :title="`Contenedor #${carga}`" :headers="headersPagos"
                         :loading="loadingPagos || loadingHeaders" />
                     <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
                         v-if="tabs.length > 1" />
@@ -108,7 +108,7 @@ import { formatDate, formatCurrency } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
-import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
+import { USelect, UInput, UButton, UIcon, UBadge, UTooltip } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
 import CreateProspectoModal from '~/components/cargaconsolidada/CreateProspectoModal.vue'
@@ -191,6 +191,7 @@ const { cotizaciones,
     filters: filtersCotizaciones,
     getCotizaciones,
     headersCotizaciones,
+    headersPagos,
     getHeaders,
     carga,
     loadingHeaders,
@@ -211,7 +212,7 @@ const {
     filtersPagos,
     getCotizacionPagos,
     handleSearchPagos,
-    headersPagos
+    handleFilterChange: handleFilterChangePagos,
 } = useCotizacionPagos()
 
 // Registrar/eliminar pagos para el grid de adelantos
@@ -233,6 +234,18 @@ import SimpleUploadFileModal from '~/components/commons/SimpleUploadFile.vue'
 import StatusOptionsModal from '~/components/cargaconsolidada/StatusOptionsModal.vue'
 const loadTabs = () => {
     switch (currentRole.value) {
+        case ROLES.CONTABILIDAD:
+            tabs.value = [
+                {
+                    label: 'Pagos',
+                    value: 'pagos'
+                },
+                {
+                    label: 'Prospectos',
+                    value: 'prospectos'
+                }
+            ]
+            break
         case ROLES.COORDINACION:
             tabs.value = [
                 {
@@ -247,7 +260,6 @@ const loadTabs = () => {
                     label: 'Pagos',
                     value: 'pagos'
                 }
-
             ]
             break
         case ROLES.COTIZADOR:
@@ -439,8 +451,40 @@ const filterConfigProspectos = ref([
     }
 
 ])
+// Filtros tab Pagos (solo Contabilidad): inspección y estado de pago
+const filterConfigPagos = ref([
+    {
+        key: 'estado_inspeccion',
+        label: 'Inspección',
+        type: 'select',
+        placeholder: 'Seleccionar inspección',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: true },
+            { label: 'Pendiente', value: 'Pendiente', inrow: true },
+            { label: 'Inspeccionado', value: 'Inspeccionado', inrow: true },
+            { label: 'Completado', value: 'Completado', inrow: true }
+        ]
+    },
+    {
+        key: 'estado_pago',
+        label: 'Estado de pago',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: [
+            { label: 'Todos', value: 'todos', inrow: true },
+            { label: 'PENDIENTE', value: 'PENDIENTE', inrow: true },
+            { label: 'PAGADO', value: 'PAGADO', inrow: true },
+            { label: 'ADELANTO', value: 'ADELANTO', inrow: true },
+            { label: 'SOBREPAGO', value: 'SOBREPAGO', inrow: true }
+        ]
+    }
+])
+const getFilterConfigPagos = () => {
+    if (currentRole.value === ROLES.CONTABILIDAD) return filterConfigPagos.value
+    return []
+}
 const getFilterPerRole = () => {
-    if (currentRole.value === ROLES.COORDINACION) {
+    if (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD) {
         return filterConfigProspectosCoordinacion.value
     } else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
         return filterConfigProspectosAlmacen.value
@@ -532,7 +576,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
             const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
-            const permisoBlock = (currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('coordinacion')))
+            const permisoBlock = (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('coordinacion')))
                 ? renderEstadoPermisoPorTipo(row.original.estado_permiso_por_tipo ?? [], row.original.id_tramite)
                 : null
             return h('div', { class: '' }, [
@@ -619,57 +663,16 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'cotizacion',
         header: 'Cotizacion',
         cell: ({ row }: { row: any }) => {
-            // div with 3 button with icons file ,refresh an delete
-            return h('div', {
-                class: 'flex flex-row gap-2'
-            }, [
-                !row.original.cotizacion_file_url ? h(UButton, {
-                    icon: 'i-heroicons-arrow-up-tray',
-                    variant: 'ghost',
-                    size: 'xs',
-                    //add tooltip
-                    tooltip: 'Subir Cotizacion',
-                    onClick: () => {
-                        handleUpdateCotizacion(row.original.id)
-                    }
-                }) : null,
+            return h('div', { class: 'flex flex-row gap-2' }, [
                 row.original.cotizacion_file_url ? h('div', {
                     innerHTML: CUSTOMIZED_ICONS.EXCEL,
                     class: 'cursor-pointer',
                     onClick: () => {
                         downloadFile(row.original.cotizacion_file_url)
                     }
-                }) : null,
-                row.original.cotizacion_file_url ? h(UButton, {
-                    icon: 'i-heroicons-arrow-path',
-                    variant: 'ghost',
-                    size: 'xs',
-                    color: 'secondary',
-                    onClick: () => {
-                        handleRefresh(row.original.id)
-                    }
-                }) : null,
-                row.original.cotizacion_file_url ? h(UButton, {
-                    icon: 'i-heroicons-trash',
-                    variant: 'ghost',
-                    size: 'xs',
-                    color: 'secondary',
-                    onClick: () => {
-                        handleDeleteFile(row.original.id)
-                    }
-                }) : null,
-                h(UButton, {
-                    icon: 'i-heroicons-arrow-right',
-                    variant: 'ghost',
-                    size: 'xs',
-                    color: 'info',
-                    onClick: () => {
-                        handleMoveCotizacion(row.original.id)
-                    }
-                })
+                }) : null
             ])
         }
-
     },
     //action cols borrar cot
     {
@@ -707,7 +710,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         navigateTo(`/cargaconsolidada/completados/cotizaciones/documentacion/${row.original.id}?soloVista=1`)
                     }
                 }),
-                h(UButton, {
+                currentRole.value !== ROLES.CONTABILIDAD ? h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
                     activeColor: 'error',
@@ -715,7 +718,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     onClick: () => {
                         handleDelete(row.original.id)
                     }
-                })
+                }) : null
             ])
         }
     }
@@ -759,7 +762,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             const cotizacion_contrato_firmado_url = String(pick(['cotizacion_contrato_firmado_url']) || '')
             const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
-            const permisoBlock = (currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('coordinacion')))
+            const permisoBlock = (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('coordinacion')))
                 ? renderEstadoPermisoPorTipo(row.original.estado_permiso_por_tipo ?? [], row.original.id_tramite)
                 : null
             return h('div', { class: 'py-2' }, [
@@ -847,39 +850,16 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         accessorKey: 'cotizacion',
         header: 'Cotizacion',
         cell: ({ row }: { row: any }) => {
-            // div with 3 button with icons file ,refresh an delete
-            return h('div', {
-                class: 'flex flex-row gap-2'
-            }, [
-                !row.original.cotizacion_file_url ? h(UButton, {
-                    icon: 'i-heroicons-arrow-up-tray',
-                    variant: 'ghost',
-                    size: 'xs',
-                    //add tooltip
-                    tooltip: 'Subir Cotizacion',
-                    onClick: () => {
-                        handleUpdateCotizacion(row.original.id)
-                    }
-                }) : null,
+            return h('div', { class: 'flex flex-row gap-2' }, [
                 row.original.cotizacion_file_url ? h('div', {
                     innerHTML: CUSTOMIZED_ICONS.EXCEL,
                     class: 'cursor-pointer',
                     onClick: () => {
                         downloadFile(row.original.cotizacion_file_url)
                     }
-                }) : null,
-                row.original.cotizacion_file_url ? h(UButton, {
-                    icon: 'i-heroicons-trash',
-                    variant: 'ghost',
-                    size: 'xs',
-                    color: 'secondary',
-                    onClick: () => {
-                        handleDeleteFile(row.original.id)
-                    }
-                }) : null,
+                }) : null
             ])
         }
-
     },
     {
         accessorKey: 'estado_cotizador',
@@ -925,7 +905,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         handleRefresh(row.original.id)
                     }
                 }) : null,
-                row.original.estado_cotizador !== 'CONFIRMADO' && currentId.value === ID_JEFEVENTAS ? h(UButton, {
+                row.original.estado_cotizador !== 'CONFIRMADO' && currentId.value === ID_JEFEVENTAS && currentRole.value !== ROLES.CONTABILIDAD ? h(UButton, {
                 icon: 'i-heroicons-trash',
                 variant: 'ghost',
                 activeColor: 'error',
@@ -967,15 +947,15 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         }
     }
 ])
-//N.	Nombre	DNI/RUC	Whatsapp	T. Cliente	Estado	Conceptop	Importe	Pagado	Adelantos
+// Columnas tab Pagos: N° Contacto T. Cliente Acciones Inspección Estado Concepto Importe Pagado Diferencia (+ Adelantos solo Coordinación)
 const getPagosColumns = () => {
+    const nuxtApp = useNuxtApp()
+    const isContabilidad = currentRole.value === ROLES.CONTABILIDAD
     return [
         {
             accessorKey: 'index',
             header: 'N°',
-            cell: ({ row }: { row: any }) => {
-                return row.index + 1
-            }
+            cell: ({ row }: { row: any }) => row.index + 1
         },
         {
             accessorKey: 'contacto',
@@ -996,29 +976,81 @@ const getPagosColumns = () => {
         {
             accessorKey: 'tipo_cliente',
             header: 'T. Cliente',
+            cell: ({ row }: { row: any }) => row.original.tipo_cliente
+        },
+        {
+            accessorKey: 'acciones',
+            header: 'Acciones',
             cell: ({ row }: { row: any }) => {
-                return row.original.tipo_cliente
+                return h('div', { class: 'flex items-center' }, [
+                    h(UTooltip, { text: 'Enviar recordatorio de pago', placement: 'top' }, {
+                        default: () => h(UButton, {
+                            icon: 'material-symbols:send-outline',
+                            color: 'primary',
+                            variant: 'ghost',
+                            onClick: () => {
+                                showConfirmation(
+                                    'Confirmar envío',
+                                    '¿Está seguro de enviar un recordatorio de pago a este cliente?',
+                                    async () => {
+                                        try {
+                                            await withSpinner(async () => {
+                                                const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
+                                                const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
+                                                if (res && (res as any).success) {
+                                                    showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
+                                                    getCotizacionPagos(Number(id))
+                                                    getHeaders(Number(id))
+                                                } else {
+                                                    showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
+                                                }
+                                            }, 'Enviando recordatorio...')
+                                        } catch (err) {
+                                            console.error('Error send reminder:', err)
+                                            showError('Error', 'Error al enviar recordatorio')
+                                        }
+                                    }
+                                )
+                            }
+                        })
+                    })
+                ])
+            }
+        },
+        {
+            accessorKey: 'estado_inspeccion',
+            header: 'Inspección',
+            cell: ({ row }: { row: any }) => {
+                const estado = row.original.estado_inspeccion || 'Pendiente'
+                // Colores: gris Pendiente, verde Inspeccionado, azul Completado
+                const INSPECCION_CLASSES: Record<string, string> = {
+                    Pendiente: 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white',
+                    Inspeccionado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
+                    Completado: 'bg-blue-500 text-white dark:bg-blue-500 dark:text-white'
+                }
+                const cls = INSPECCION_CLASSES[estado] || INSPECCION_CLASSES.Pendiente
+                return h(UButton as any, {
+                    disabled: true,
+                    class: cls,
+                    label: estado
+                })
             }
         },
         {
             accessorKey: 'estado_pago',
             header: 'Estado',
-            cell: ({ row }: { row: any }) => {
-                const selectNode = h(USelect as any, {
-                    modelValue: row.original.estado_pago,
-                    disabled: true,
-                    items: [
-                        { label: 'PENDIENTE', value: 'PENDIENTE' },
-                        { label: 'PAGADO', value: 'PAGADO' },
-                        { label: 'ADELANTO', value: 'ADELANTO' },
-                        { label: 'SOBREPAGO', value: 'SOBREPAGO' },
-                    ],
-                    class: STATUS_BG_PAGOS_CLASSES[row.original.estado_pago as keyof typeof STATUS_BG_PAGOS_CLASSES],
-                })
-                return selectNode
-            }
+            cell: ({ row }: { row: any }) => h(USelect as any, {
+                modelValue: row.original.estado_pago,
+                disabled: true,
+                items: [
+                    { label: 'PENDIENTE', value: 'PENDIENTE' },
+                    { label: 'PAGADO', value: 'PAGADO' },
+                    { label: 'ADELANTO', value: 'ADELANTO' },
+                    { label: 'SOBREPAGO', value: 'SOBREPAGO' },
+                ],
+                class: STATUS_BG_PAGOS_CLASSES[row.original.estado_pago as keyof typeof STATUS_BG_PAGOS_CLASSES],
+            })
         },
-
         {
             accessorKey: 'concepto',
             header: 'Concepto',
@@ -1034,33 +1066,32 @@ const getPagosColumns = () => {
             header: 'Pagado',
             cell: ({ row }: { row: any }) => formatCurrency(row.original.total_pagos)
         },
-        /**adleantos "pagos": [
-                {
-                    "id": 291,
-                    "monto": "1237.6000",
-                    "fecha_pago": "2025-07-30",
-                    "estado": "PENDIENTE",
-                    "is_confirmed": 0,
-                    "banco": "BCP",
-                    "voucher_url": "https:\/\/intranet.probusiness.pe\/assets\/cargaconsolidada\/pagos\/1753917804_WhatsApp%20Image%202025-07-30%20at%206.22.03%20PM.jpeg"
-                }
-            ] */
         {
+            accessorKey: 'diferencia',
+            header: 'Diferencia',
+            cell: ({ row }: { row: any }) => {
+                const diff = row.original.diferencia ?? (Number(row.original.monto) - Number(row.original.total_pagos))
+                return formatCurrency(diff)
+            }
+        },
+         {
             accessorKey: 'adelantos',
             header: 'Adelantos',
             cell: ({ row }: { row: any }) => {
                 const pagos = row.original.pagos || []
-                console.log(row.original.id_contenedor_pago, id)
-                return row.original.id_contenedor_pago == id || row.original.id_contenedor_pago == null ? h(PagoGrid, {
+                const showGrid = row.original.id_contenedor_pago == id || row.original.id_contenedor_pago == null
+                if (!showGrid) return null
+                return h(PagoGrid, {
                     numberOfPagos: 4,
                     pagoDetails: pagos,
                     clienteNombre: row.original.nombre,
                     currency: 'USD',
+                    showDelete: !isContabilidad,
                     onSave: (data) => {
-                        const formData = new FormData();
+                        const formData = new FormData()
                         for (const key in data) {
                             if (data[key] !== undefined && data[key] !== null) {
-                                formData.append(key, data[key]);
+                                formData.append(key, data[key])
                             }
                         }
                         formData.append('idPedido', row.original.id_cotizacion)
@@ -1076,7 +1107,6 @@ const getPagosColumns = () => {
                                 showError('Error al registrar pago', response.error, { persistent: true })
                             }
                         }, 'registrarPago')
-
                     },
                     onDelete: (pagoId: number) => {
                         showConfirmation(
@@ -1099,8 +1129,7 @@ const getPagosColumns = () => {
                             }
                         )
                     }
-                }) :
-                    null
+                })
             }
         }
     ]
@@ -1214,7 +1243,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     placeholder: 'Seleccionar estado',
                     modelValue: proveedor.estados,
                     class: 'w-full w-30',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD,
                     'onUpdate:modelValue': (value: any) => {
                         console.log(value, row.original)
 
@@ -1284,7 +1313,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 const rawValue = proveedor.arrive_date_china || proveedor.arrive_date || ''
                 const rawDatePart = rawValue && String(rawValue).includes('T') ? String(rawValue).split('T')[0] : (rawValue && String(rawValue).includes(' ') ? String(rawValue).split(' ')[0] : rawValue)
                 const displayedValue = formatDateForInput(rawDatePart)
-                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || currentRole.value === ROLES.COORDINACION)
+                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD)
 
                 return h('div', { class: 'flex flex-col gap-1' }, [
                     h(UInput as any, {
@@ -1389,7 +1418,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
                     class: 'w-full w-25',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
                     }
@@ -1409,7 +1438,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full w-30',
-                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -1638,7 +1667,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     placeholder: 'Seleccionar estado',
                     modelValue: proveedor.estados,
                     class: 'w-full w-30',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD,
                     'onUpdate:modelValue': (value: any) => {
                         console.log(value, row.original)
                         proveedor.estados = value
@@ -1705,7 +1734,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 const rawValue = proveedor.arrive_date_china || proveedor.arrive_date || ''
                 const rawDatePart = rawValue && String(rawValue).includes('T') ? String(rawValue).split('T')[0] : (rawValue && String(rawValue).includes(' ') ? String(rawValue).split(' ')[0] : rawValue)
                 const displayedValue = formatDateForInput(rawDatePart)
-                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || currentRole.value === ROLES.COORDINACION)
+                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD)
 
                 return h('div', { class: 'flex flex-col gap-1' }, [
                     h(UInput as any, {
@@ -1790,7 +1819,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full w-25',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier = value
                     }
@@ -1810,7 +1839,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
                     class: 'w-full w-25',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
                     }
@@ -1830,7 +1859,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full w-30',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -2165,7 +2194,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.supplier,
                     class: 'w-full',
                     variant: 'none',
-                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: string) => {
                         proveedor.supplier = value
                     }
@@ -2186,7 +2215,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.code_supplier,
                     class: 'w-full',
                     variant: 'none',
-                    disabled: currentRole.value !== ROLES.COORDINACION,
+                    disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD,
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
                     }
@@ -2207,7 +2236,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full',
                     variant: 'none',
-                    disabled: currentRole.value !== ROLES.COORDINACION && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -2505,6 +2534,7 @@ const handleSendRecordatorioFirma = async (idCotizacion: number) => {
 const getProespectosColumns = () => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
+        case ROLES.CONTABILIDAD:
             return prospectosCoordinacionColumns.value
         default:
             return prospectosColumns.value
@@ -2515,6 +2545,7 @@ const getEmbarqueColumns = () => {
         case ROLES.CONTENEDOR_ALMACEN:
             return embarqueCotizadorColumnsAlmacen.value
         case ROLES.COORDINACION:
+        case ROLES.CONTABILIDAD:
             return embarqueCoordinacionColumns.value
         default:
             return embarqueCotizadorColumns.value
@@ -2657,7 +2688,7 @@ const updateProveedorData = async (row: any) => {
             formData.append('supplier_phone', data.supplier_phone)
         }
     }
-    if (currentRole.value === ROLES.COORDINACION) {
+    if (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD) {
         data.supplier = row.supplier ?? []
         data.code_supplier = row.code_supplier ?? []
         data.supplier_phone = row.supplier_phone ?? []
@@ -2700,9 +2731,10 @@ onMounted(() => {
 
     if (tabQuery) {
         tab.value = tabQuery as string
+    } else if (currentRole.value === ROLES.CONTABILIDAD) {
+        tab.value = 'pagos'
     } else {
-        // Ensure we access the inner array on the ref and guard empty state
-        tab.value = (tabs.value && tabs.value.length > 0) ? tabs.value[0].value : '' // Cambiar a 'prospectos' como tab inicial
+        tab.value = (tabs.value && tabs.value.length > 0) ? tabs.value[0].value : ''
     }
 })
 </script>

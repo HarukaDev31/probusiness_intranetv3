@@ -12,7 +12,7 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
@@ -35,7 +35,7 @@
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true" :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`">
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados"
@@ -83,7 +83,7 @@
                 :show-secondary-search="false" :show-filters="false" :filters-value="filtersVariacion"
                 :show-export="false" :show-body-top="true" :hide-back-button="false" :show-pagination="false"
                 @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.CONTABILIDAD) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
@@ -107,7 +107,7 @@
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersPagos" :show-export="false" :hide-back-button="false" :show-body-top="true"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.CONTABILIDAD) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchPagos" @page-change="handlePagePagosChange"
                 @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos">
@@ -181,7 +181,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
-const tab = ref<string>(isCoordinacion.value || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
+const tab = ref<string>(isCoordinacion.value || currentRole.value === ROLES.CONTABILIDAD || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
@@ -436,7 +436,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
             return !row.original.id_contenedor_pago ? h(PagoGrid, {
                 pagoDetails: pagos,
                 currency: 'USD',
-                numberOfPagos: currentRole.value == ROLES.COORDINACION ? 4 : pagos.length,
+                numberOfPagos: (currentRole.value == ROLES.COORDINACION || currentRole.value == ROLES.CONTABILIDAD) ? 4 : pagos.length,
                 clienteNombre: row.original.nombre,
                 onSave: (data) => {
                     const formData = new FormData();
@@ -480,7 +480,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
                         }
                     )
                 },
-                showDelete: currentRole.value == ROLES.COORDINACION,
+                showDelete: (currentRole.value == ROLES.COORDINACION || currentRole.value == ROLES.CONTABILIDAD),
             }) : null
         }
     }
@@ -907,6 +907,7 @@ const getColumnsGeneral = () => {
         case ROLES.JEFE_IMPORTACIONES:
             return columnsDocumentacion
         case ROLES.COORDINACION:
+        case ROLES.CONTABILIDAD:
             return columnsCoordinacion
         default:
             return columns
@@ -916,6 +917,7 @@ const getColumnsGeneral = () => {
 const getColumnsEmbarcados = (): TableColumn<any>[] => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
+        case ROLES.CONTABILIDAD:
             return columnsEmbarcadosCoordinacion.value
         default:
             return columnsEmbarcados.value
@@ -1661,7 +1663,7 @@ onMounted(() => {
             }
         ]
     }
-    else if (currentRole.value === ROLES.COORDINACION ) {
+    else if (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD) {
         tabs.value = [
             {
                 label: 'Seguimiento',

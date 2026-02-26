@@ -682,14 +682,12 @@ const onTableMouseMove = (e: MouseEvent) => {
   
   // Zona izquierda
   if (mouseX < EDGE_ZONE && scrollableEl.scrollLeft > 0) {
-    console.log('[AutoScroll] ✅ Zona IZQUIERDA')
     showLeftIndicator.value = true
     showRightIndicator.value = false
     if (!autoScrollTimer.value) startAutoScroll('left')
   }
   // Zona derecha
   else if (mouseX > containerWidth - EDGE_ZONE && scrollableEl.scrollLeft < maxScroll) {
-    console.log('[AutoScroll] ✅ Zona DERECHA')
     showLeftIndicator.value = false
     showRightIndicator.value = true
     if (!autoScrollTimer.value) startAutoScroll('right')

@@ -7,7 +7,9 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.0",
@@ -31,6 +33,7 @@
     "@iconify-json/tabler": "^1.2.23",
     "@iconify-json/vscode-icons": "^1.2.30",
     "@nuxt/typescript-build": "^3.0.2",
+    "@storybook-vue/nuxt": "^9.0.1",
     "@types/node": "^24.3.0",
     "@types/pusher-js": "^4.2.2",
     "@types/vue": "^1.0.31",
@@ -38,6 +41,7 @@
     "@vue/tsconfig": "^0.8.0",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
+    "storybook": "~9.0.5",
     "typescript": "^5.9.2",
     "vue-tsc": "^3.0.5"
   }

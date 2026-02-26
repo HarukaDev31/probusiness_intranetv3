@@ -445,7 +445,10 @@ export const useCalendarStore = () => {
       }
       // Re-aplicar color a eventos que usan esta actividad para que el calendario se actualice sin editar
       const activityIdNum = Number(id)
-      if (state.events.value.length > 0) {
+      const hasAffectedEvents = state.events.value.some(
+        ev => ev.activity_id != null && Number(ev.activity_id) === activityIdNum
+      )
+      if (hasAffectedEvents) {
         state.events.value = state.events.value.map(ev => {
           const evActivityId = ev.activity_id != null ? Number(ev.activity_id) : null
           if (evActivityId === activityIdNum) return transformEvent(ev)
@@ -700,37 +703,39 @@ export const useCalendarStore = () => {
   // ============================================
 
   const visibleEvents = computed(() => {
-    let list = state.events.value.filter(event => {
-      if (event.charges && event.charges.length > 0) {
-        const isAssigned = event.charges.some(charge => charge.user_id === Number(currentId.value))
-        if (isAssigned) return true
-      }
-      if (event.is_public) return true
-      if (event.is_for_me && event.created_by === Number(currentId.value)) return true
-      if (event.role_name && event.role_name === currentRole.value) return true
-      if (event.created_by === Number(currentId.value)) return true
-      
-      const hasLegacyFields = event.is_public !== undefined || 
-                              event.is_for_me !== undefined || 
-                              event.role_name !== undefined || 
-                              event.created_by !== undefined
-      if (!hasLegacyFields) return true
-      
-      return false
-    })
     const responsableIds = state.filters.value.responsable_ids
     const responsableId = state.filters.value.responsable_id
-    if (responsableIds?.length) {
-      const idSet = new Set(responsableIds)
-      list = list.filter(event =>
-        event.charges?.some(charge => idSet.has(charge.user_id)) ?? false
-      )
-    } else if (responsableId != null && typeof responsableId === 'number') {
-      list = list.filter(event =>
-        event.charges?.some(charge => charge.user_id === responsableId) ?? false
-      )
-    }
-    return list
+    const idSet = responsableIds?.length ? new Set(responsableIds) : null
+    const currentIdNum = Number(currentId.value)
+
+    return state.events.value.filter(event => {
+      // Verificar visibilidad del evento (acceso del usuario actual)
+      let visible = false
+      if (event.charges && event.charges.length > 0) {
+        if (event.charges.some(charge => charge.user_id === currentIdNum)) visible = true
+      }
+      if (!visible) {
+        if (event.is_public) visible = true
+        else if (event.is_for_me && event.created_by === currentIdNum) visible = true
+        else if (event.role_name && event.role_name === currentRole.value) visible = true
+        else if (event.created_by === currentIdNum) visible = true
+        else {
+          const hasLegacyFields = event.is_public !== undefined ||
+            event.is_for_me !== undefined ||
+            event.role_name !== undefined ||
+            event.created_by !== undefined
+          if (!hasLegacyFields) visible = true
+        }
+      }
+      if (!visible) return false
+
+      // Aplicar filtro de responsable en el mismo pass
+      if (idSet) return event.charges?.some(charge => idSet.has(charge.user_id)) ?? false
+      if (responsableId != null && typeof responsableId === 'number') {
+        return event.charges?.some(charge => charge.user_id === responsableId) ?? false
+      }
+      return true
+    })
   })
 
   const myActivities = computed(() => {
@@ -745,30 +750,31 @@ export const useCalendarStore = () => {
   const visibleActivities = computed(() => {
     const responsableIds = state.filters.value.responsable_ids
     const responsableId = state.filters.value.responsable_id
-    let list: typeof state.events.value
-    if (calendarPermissions.value.canViewAllActivities) {
-      list = state.events.value
-    } else {
-      // No jefe: "Todos" = todos los eventos que devolvió la API; "Yo" = solo donde soy responsable
-      if (responsableId != null && typeof responsableId === 'number') {
-        list = state.events.value.filter(activity =>
-          activity.charges?.some(charge => charge.user_id === responsableId) ?? false
-        )
-      } else {
-        list = state.events.value
+    const canViewAll = calendarPermissions.value.canViewAllActivities
+    const idSet = responsableIds?.length ? new Set(responsableIds) : null
+    const hasResponsableId = responsableId != null && typeof responsableId === 'number'
+
+    // Optimización: sin filtros activos, devolver directamente sin iterar
+    if (canViewAll && !idSet && !hasResponsableId) {
+      return state.events.value
+    }
+
+    return state.events.value.filter(activity => {
+      // Filtro de visibilidad para no-jefe (en el mismo pass)
+      if (!canViewAll && hasResponsableId) {
+        if (!(activity.charges?.some(charge => charge.user_id === responsableId) ?? false)) return false
       }
-    }
-    if (responsableIds?.length) {
-      const idSet = new Set(responsableIds)
-      list = list.filter(activity =>
-        activity.charges?.some(charge => idSet.has(charge.user_id)) ?? false
-      )
-    } else if (responsableId != null && typeof responsableId === 'number' && calendarPermissions.value.canViewAllActivities) {
-      list = list.filter(activity =>
-        activity.charges?.some(charge => charge.user_id === responsableId) ?? false
-      )
-    }
-    return list
+
+      // Filtro por responsable_ids (aplica a todos)
+      if (idSet) return activity.charges?.some(charge => idSet.has(charge.user_id)) ?? false
+
+      // Filtro por responsable_id único (jefe o no-jefe sin idSet)
+      if (hasResponsableId && canViewAll) {
+        return activity.charges?.some(charge => charge.user_id === responsableId) ?? false
+      }
+
+      return true
+    })
   })
 
   // ============================================

@@ -3,6 +3,7 @@ export const STATUS_BG_CLASSES = {
     RECIBIENDO: 'bg-blue-500 text-white dark:bg-blue-500 dark:text-white',
     COMPLETADO: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
     Completado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
+    Inspeccionado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
     Pendiente: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white',
     Incompleto: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
     WAITING: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white',
@@ -40,6 +41,9 @@ export const STATUS_BG_PAGOS_CLASSES = {
     SOBREPAGO: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
     CONFIRMADO: 'bg-green-600 text-white dark:bg-green-600 dark:text-white',
     OBSERVADO: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
+    COTIZADO: 'bg-blue-500 text-white dark:bg-blue-500 dark:text-white',
+    COBRANDO: 'bg-amber-500 text-white dark:bg-amber-500 dark:text-white',
+    AJUSTADO: 'bg-indigo-500 text-white dark:bg-indigo-500 dark:text-white',
 } as const
 
 export const CUSTOMIZED_ICONS = {

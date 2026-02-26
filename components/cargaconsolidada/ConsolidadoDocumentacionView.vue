@@ -10,7 +10,7 @@
         <UButton v-if="role === ROLES.DOCUMENTACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.COORDINACION" label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning" size="sm"
           @click="handleNuevoDocumento" class="whitespace-nowrap" />
       </div>
-      <div class="flex items-center gap-3 flex-wrap" v-if="role === ROLES.ADMINISTRACION">
+      <div class="flex items-center gap-3 flex-wrap" v-if="role === ROLES.ADMINISTRACION || role === ROLES.CONTABILIDAD">
         <UButton label="Descargar plantillas"
           variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
           @click="handleDownloadAllAdministracion" />
@@ -58,7 +58,7 @@
             :accepted-types="acceptedFileTypes"
             :custom-message="uploadMessage"
             :immediate="false"
-            :show-remove-button="folder.id != 1"
+            :show-remove-button="folder.id != 1 && role == ROLES.DOCUMENTACION"
             :showSaveButton="true"
             :initial-files="folder.file_url ? [{
               id: typeof folder.id === 'number' ? folder.id : 0,

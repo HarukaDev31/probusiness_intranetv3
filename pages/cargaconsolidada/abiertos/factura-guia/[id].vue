@@ -15,6 +15,17 @@
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
+          <div v-if="currentRole === ROLES.CONTABILIDAD" class="flex justify-end">
+            <UButton
+              icon="i-heroicons-paper-airplane"
+              color="primary"
+              variant="solid"
+              size="sm"
+              @click="handleEnviarFormulario"
+            >
+              Enviar formulario
+            </UButton>
+          </div>
         </div>
       </template>
     </DataTable>
@@ -27,6 +38,7 @@ import { useGeneral } from '~/composables/cargaconsolidada/factura-guia/useGener
 import { USelect, UBadge, UButton, UTooltip } from '#components'
 import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/CotizacionFinalSimpleUploadFile.vue'
 import SendDocumentModal from '~/components/cargaconsolidada/factura-guia/SendDocumentModal.vue'
+import EnviarFormularioModal from '~/components/cargaconsolidada/factura-guia/EnviarFormularioModal.vue'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import type { TableColumn } from '@nuxt/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
@@ -43,6 +55,7 @@ const id = Number(route.params.id)
 const overlay = useOverlay()
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 const sendDocumentModal = overlay.create(SendDocumentModal)
+const enviarFormularioModal = overlay.create(EnviarFormularioModal)
 // Modal state for creating pagos
 const { currentRole, currentId } = useUserRole()
 const selectedCliente = ref('')
@@ -60,6 +73,8 @@ const generalColumnsByRole = computed<TableColumn<any>[]>(() => {
   switch (currentRole.value) {
     case ROLES.ADMINISTRACION:
       return generalColumnsAdministrador.value || []
+    case ROLES.CONTABILIDAD:
+      return generalColumnsContabilidad.value || []
     default:
       return generalColumns.value || []
   }
@@ -440,6 +455,162 @@ const generalColumns = ref<TableColumn<any>[]>([
     }
   }
 ])
+
+const generalColumnsContabilidad = ref<TableColumn<any>[]>([
+  {
+    accessorKey: 'nro',
+    header: 'N°',
+    cell: ({ row }: { row: any }) => row.index + 1
+  },
+  {
+    accessorKey: 'contacto',
+    header: 'Contacto',
+    cell: ({ row }: { row: any }) => {
+      const nombre = row.original?.nombre || ''
+      const documento = row.original?.documento || ''
+      const telefono = row.original?.telefono || ''
+      const correo = row.original?.correo || ''
+      return h('div', { class: 'py-2 w-full whitespace-normal' }, [
+        h('div', { class: 'font-medium' }, nombre),
+        h('div', { class: 'text-sm text-gray-500' }, documento),
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, correo)
+      ])
+    }
+  },
+  {
+    accessorKey: 'tipo_cliente',
+    header: 'T. Cliente',
+    cell: ({ row }: { row: any }) => row.original.name
+  },
+  {
+    accessorKey: 'registrado',
+    header: 'Registrado',
+    cell: ({ row }: { row: any }) =>
+      h(UBadge, {
+        label: row.original.registrado ? 'Sí' : 'No',
+        color: row.original.registrado ? 'success' : 'neutral'
+      })
+  },
+  {
+    accessorKey: 'tipo_comprobante',
+    header: 'T. Comprobante',
+    cell: ({ row }: { row: any }) => {
+      const comprobantes = row.original.comprobantes as Array<{ tipo_comprobante?: string | null }> | undefined
+      if (!comprobantes?.length) return h('span', { class: 'text-gray-400 text-sm' }, '—')
+      return h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) =>
+        c.tipo_comprobante
+          ? h(UBadge, { key: i, label: c.tipo_comprobante, color: 'info', variant: 'soft' })
+          : h(UBadge, { key: i, label: '—', color: 'neutral', variant: 'soft' })
+      ))
+    }
+  },
+  {
+    accessorKey: 'total_comprobantes',
+    header: 'Valor Comprobante',
+    cell: ({ row }: { row: any }) => {
+      const comprobantes = row.original.comprobantes as Array<{ valor_comprobante?: number | null }> | undefined
+      if (!comprobantes?.length) return h('span', { class: 'text-gray-400 text-sm' }, '—')
+      return h('div', { class: 'flex flex-col gap-0.5 text-sm' }, comprobantes.map((c, i) => {
+        const val = c.valor_comprobante
+        return h('span', { key: i, class: 'font-medium' }, val != null ? `S/ ${Number(val).toFixed(2)}` : '—')
+      }))
+    }
+  },
+  {
+    accessorKey: 'total_detracciones',
+    header: 'Detracción',
+    cell: ({ row }: { row: any }) => {
+      const comprobantes = row.original.comprobantes as Array<{ detraccion?: { monto: number; file_url?: string } | null }> | undefined
+      if (!comprobantes?.length) return h('span', { class: 'text-gray-400 text-sm' }, '—')
+      return h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) => {
+        const d = c.detraccion
+        if (!d) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
+        const monto = h('span', { class: 'text-sm font-medium' }, `S/ ${Number(d.monto).toFixed(2)}`)
+        if (d.file_url) {
+          return h('div', { key: i, class: 'flex flex-col gap-0.5' }, [
+            monto,
+            h('a', { href: d.file_url, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1 text-primary text-xs hover:underline' }, ['Ver constancia'])
+          ])
+        }
+        return h('span', { key: i }, monto)
+      }))
+    }
+  },
+  {
+    accessorKey: 'comprobante_pdf',
+    header: 'Comprobante (PDF)',
+    cell: ({ row }: { row: any }) => {
+      const comprobantes = row.original.comprobantes as Array<{ comprobante_file_url?: string | null; file_name?: string | null }> | undefined
+      if (!comprobantes?.length) return h('span', { class: 'text-gray-400 text-sm' }, '—')
+      return h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) =>
+        c.comprobante_file_url
+          ? h('a', {
+            key: i,
+            href: c.comprobante_file_url,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            class: 'inline-flex items-center gap-1 text-primary text-sm hover:underline'
+          }, [c.file_name || 'Ver comprobante'])
+          : h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
+      ))
+    }
+  },
+  {
+    accessorKey: 'guia_r_',
+    header: 'Guía R.',
+    cell: ({ row }: { row: any }) => {
+      if (row.original.guia_remision_url) {
+        return h(UButton, {
+          icon: 'i-heroicons-arrow-down-tray',
+          color: 'primary',
+          variant: 'outline',
+          size: 'xs',
+          onClick: () => window.open(row.original.guia_remision_url, '_blank')
+        })
+      }
+      return h('span', { class: 'text-gray-400 text-sm' }, '—')
+    }
+  },
+  {
+    accessorKey: 'estado',
+    header: 'Estado',
+    cell: ({ row }: { row: any }) => {
+      const estado = row.original.estado_cotizacion_final || 'PENDIENTE'
+      const colorMap: Record<string, string> = {
+        PAGADO: 'success', AJUSTADO: 'error', SOBREPAGO: 'warning', PENDIENTE: 'neutral', COTIZADO: 'info'
+      }
+      return h(UBadge, { label: estado, color: colorMap[estado] || 'neutral', variant: 'soft' })
+    }
+  },
+  {
+    accessorKey: 'acciones',
+    header: 'Acciones',
+    cell: ({ row }: { row: any }) =>
+      h(UTooltip, { text: 'Ver detalle contabilidad', placement: 'top' }, {
+        default: () => h(UButton, {
+          icon: 'i-heroicons-eye',
+          color: 'primary',
+          variant: 'ghost',
+          size: 'sm',
+          onClick: () => {
+            navigateTo(`/cargaconsolidada/contabilidad/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
+          }
+        })
+      })
+  }
+])
+
+const handleEnviarFormulario = () => {
+  enviarFormularioModal.open({
+    idContenedor: id,
+    onClose: () => enviarFormularioModal.close(),
+    onSent: () => {
+      enviarFormularioModal.close()
+      showSuccess('Formularios enviados', 'Los mensajes de WhatsApp fueron enviados correctamente.')
+    }
+  })
+}
 
 const handleUploadFacturaComercial = async (data: { file?: File, files?: File[] }, idCotizacion: number) => {
   await withSpinner(async () => {

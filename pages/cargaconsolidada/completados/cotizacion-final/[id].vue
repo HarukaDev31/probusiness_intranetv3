@@ -26,23 +26,29 @@
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers"
             :loading="loadingGeneral || loadingHeaders" />
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
+          <div class="flex items-center gap-3 flex-wrap">
+            <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
+            <span v-if="fPuerto" class="text-sm text-gray-600 dark:text-gray-400">F. Límite pago: {{ fPuerto }}</span>
+          </div>
         </div>
       </template>
     </DataTable>
-    <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="pagosColumns"
+    <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="getPagosColumns()"
       :loading="loadingPagos || loadingHeaders" title="" :icon="''" :current-page="currentPagePagos"
       :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
-      :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
-      :filter-config="filterConfigPagos" :show-export="false"
+      :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="currentRole === ROLES.CONTABILIDAD"
+      :filter-config="currentRole === ROLES.CONTABILIDAD ? filterConfigPagos : []" :show-export="false"
       empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
       :show-pagination="false" @filter-change="handleFilterChangePagos" :show-body-top="true">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headers"
+          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headersPagos.length ? headersPagos : headers"
             :loading="loadingPagos || loadingHeaders" />
-          <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
+          <div class="flex items-center gap-3 flex-wrap">
+            <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
+            <span v-if="fPuerto" class="text-sm text-gray-600 dark:text-gray-400">F. Límite pago: {{ fPuerto }}</span>
+          </div>
         </div>
 
       </template>
@@ -53,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useGeneral } from '~/composables/cargaconsolidada/cotizacion-final/useGeneral'
 import { usePagos } from '~/composables/cargaconsolidada/cotizacion-final/usePagos'
 import { USelect, UBadge, UButton } from '#components'
@@ -64,14 +70,14 @@ import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-fina
 import PagoGrid from '~/components/PagoGrid.vue'
 import type { TableColumn } from '@nuxt/ui'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
-import { STATUS_BG_CLASSES } from '~/constants/ui'
+import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { ROLES } from '~/constants/roles'
 import { UTooltip } from '#components'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const { currentRole } = useUserRole()
-const { general, loadingGeneral, updateEstadoCotizacionFinal, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, carga, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, headersPagos, carga, fPuerto, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
 const { registrarPagoFinal, deletePago } = usePagosClientes()
@@ -85,11 +91,12 @@ const selectedCliente = ref('')
 // Tab state
 const activeTab = ref('') as Ref<string>
 
-// Tab configuration
-const tabs = [
-  { value: 'general', label: 'General' },
-  { value: 'pagos', label: 'Pagos' }
-]
+// Tab configuration: para CONTABILIDAD primero Pagos luego General
+const tabs = computed(() =>
+  currentRole.value === ROLES.CONTABILIDAD
+    ? [{ value: 'pagos', label: 'Pagos' }, { value: 'general', label: 'General' }]
+    : [{ value: 'general', label: 'General' }, { value: 'pagos', label: 'Pagos' }]
+)
 const handleUploadFactura = () => {
   simpleUploadFileModal.open({
     title: 'Subir Factura',
@@ -337,14 +344,14 @@ const generalColumns = ref<TableColumn<any>[]>([
               handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)
             }
           }),
-          h(UButton, {
+          currentRole.value !== ROLES.CONTABILIDAD ? h(UButton, {
             icon: 'i-heroicons-trash',
             color: 'error',
             variant: 'ghost',
             onClick: () => {
               deleteCotizacionFinal(row.original.id_cotizacion)
             }
-          })
+          }) : null
         ])
 
       } else {
@@ -562,85 +569,142 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
     }
   }
 ])
-const pagosColumns = ref<TableColumn<any>[]>([
-  {
-    accessorKey: 'nro',
-    header: 'N°',
-    cell: ({ row }: { row: any }) => {
-      return row.index + 1
+const getPagosColumns = (): TableColumn<any>[] => {
+  const isContabilidad = currentRole.value === ROLES.CONTABILIDAD
+  const base: TableColumn<any>[] = [
+    {
+      accessorKey: 'nro',
+      header: 'N°',
+      cell: ({ row }: { row: any }) => row.index + 1
+    },
+    {
+      accessorKey: 'contacto',
+      header: 'Contacto',
+      cell: ({ row }: { row: any }) => {
+        const nombre = row.original?.nombre || ''
+        const documento = row.original?.documento || ''
+        const telefono = row.original?.telefono || ''
+        const correo = row.original?.correo || ''
+        return h('div', { class: '' }, [
+          h('div', { class: 'font-medium' }, nombre || '—'),
+          h('div', { class: 'text-sm text-gray-500' }, documento || ''),
+          h('div', { class: 'text-sm text-gray-500' }, telefono || ''),
+          h('div', { class: 'text-sm text-gray-500' }, correo || '')
+        ])
+      }
+    },
+    { accessorKey: 'tipo_cliente', header: 'T. Cliente' },
+  ]
+  if (isContabilidad) {
+    base.push(
+      {
+        accessorKey: 'acciones',
+        header: 'Acciones',
+        cell: ({ row }: { row: any }) => h(UTooltip, { text: 'Enviar recordatorio de pago', placement: 'top' }, {
+          default: () => h(UButton, {
+            icon: 'material-symbols:send-outline',
+            color: 'primary',
+            variant: 'ghost',
+            onClick: () => {
+              showConfirmation(
+                'Confirmar envío',
+                '¿Está seguro de enviar un recordatorio de pago a este cliente?',
+                async () => {
+                  try {
+                    await withSpinner(async () => {
+                      const nuxtApp = useNuxtApp()
+                      const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
+                      const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
+                      if (res && (res as any).success) {
+                        showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
+                        await getPagos(Number(id))
+                        await getHeaders(Number(id))
+                      } else {
+                        showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
+                      }
+                    }, 'Enviando recordatorio...')
+                  } catch (err) {
+                    console.error('Error send reminder:', err)
+                    showError('Error', 'Error al enviar recordatorio')
+                  }
+                }
+              )
+            }
+          })
+        })
+      },
+      {
+        accessorKey: 'estado_cotizacion_final',
+        header: 'Estado',
+        cell: ({ row }: { row: any }) => {
+          const estado = row.original.estado_cotizacion_final || 'PENDIENTE'
+          const items = [
+            { label: 'PENDIENTE', value: 'PENDIENTE' },
+            { label: 'COTIZADO', value: 'COTIZADO' },
+            { label: 'COBRANDO', value: 'COBRANDO' },
+            { label: 'PAGADO', value: 'PAGADO' },
+            { label: 'AJUSTADO', value: 'AJUSTADO' },
+            { label: 'SOBREPAGO', value: 'SOBREPAGO' },
+          ]
+          const cls = STATUS_BG_PAGOS_CLASSES[estado as keyof typeof STATUS_BG_PAGOS_CLASSES] ?? 'bg-gray-500 text-white'
+          return h(USelect as any, {
+            modelValue: estado,
+            disabled: true,
+            items,
+            class: cls,
+          })
+        }
+      },
+      {
+        accessorKey: 'concepto',
+        header: 'Concepto',
+        cell: () => 'Logística + impuestos'
+      }
+    )
+  }
+  base.push(
+    {
+      accessorKey: 'total_logistica_impuestos',
+      header: 'Importe',
+      cell: ({ row }: { row: any }) => formatCurrency(row.original.total_logistica_impuestos)
+    },
+    {
+      accessorKey: 'pagado',
+      header: 'Pagado',
+      cell: ({ row }: { row: any }) => formatCurrency(row.original.total_pagos)
     }
-  },
-  {
-
-    accessorKey: 'contacto',
-    header: 'Contacto',
-    cell: ({ row }: { row: any }) => {
-      const nombre = row.original?.nombre || ''
-      const documento = row.original?.documento || ''
-      const telefono = row.original?.telefono || ''
-      const correo = row.original?.correo || ''
-      return h('div', { class: '' }, [
-        h('div', { class: 'font-medium' }, nombre || '—'),
-        h('div', { class: 'text-sm text-gray-500' }, documento || ''),
-        h('div', { class: 'text-sm text-gray-500' }, telefono || ''),
-        h('div', { class: 'text-sm text-gray-500' }, correo || '')
-      ])
-    }
-  },
-
-
-  {
-    accessorKey: 'tipo_cliente',
-    header: 'T. Cliente'
-  },
-
-
-  {
-    accessorKey: 'total_logistica_impuestos',
-    header: 'Importe',
-    cell: ({ row }: { row: any }) => {
-      return formatCurrency(row.original.total_logistica_impuestos)
-    }
-  },
-  {
-    accessorKey: 'pagado',
-    header: 'Pagado',
-    cell: ({ row }: { row: any }) => {
-      return formatCurrency(row.original.total_pagos)
-    }
-  },
-  {
+  )
+  if (isContabilidad) {
+    base.push({
+      accessorKey: 'diferencia',
+      header: 'Diferencia',
+      cell: ({ row }: { row: any }) => formatCurrency(row.original.diferencia ?? 0)
+    })
+  }
+  base.push({
     accessorKey: 'adelantos',
     header: 'Adelantos',
     cell: ({ row }: { row: any }) => {
-      let MAX_PAYMENTS = 4;
-      //IF apagar > MAX_PAYMENTS and length(pagos) > MAX_PAYMENTS then MAX_PAYMENTS ++
-      const totalLogisticaImpuestos = Number(Number(row.original.total_logistica_impuestos).toFixed(2));
-      const totalPagos = Number(Number(row.original.total_pagos).toFixed(2));
-      const pagos = JSON.parse(row.original.pagos || '[]');
-      const pagosLength = pagos.length;
-      
+      let MAX_PAYMENTS = 4
+      const totalLogisticaImpuestos = Number(Number(row.original.total_logistica_impuestos).toFixed(2))
+      const totalPagos = Number(Number(row.original.total_pagos).toFixed(2))
+      const pagos = JSON.parse(row.original.pagos || '[]')
+      const pagosLength = pagos.length
       if (pagosLength >= MAX_PAYMENTS) {
-        if (totalLogisticaImpuestos > totalPagos) {
-          MAX_PAYMENTS = pagosLength + 1;
-        } else if (totalLogisticaImpuestos >= totalPagos) {
-          MAX_PAYMENTS = pagosLength;
-        }
+        if (totalLogisticaImpuestos > totalPagos) MAX_PAYMENTS = pagosLength + 1
+        else if (totalLogisticaImpuestos >= totalPagos) MAX_PAYMENTS = pagosLength
       }
-      return (!row.original.id_contenedor_destino || row.original.id_contenedor_destino == row.original.id_contenedor) ?
-        h(PagoGrid,
-          {
+      return (!row.original.id_contenedor_destino || row.original.id_contenedor_destino == row.original.id_contenedor)
+        ? h(PagoGrid, {
             numberOfPagos: MAX_PAYMENTS,
             pagoDetails: pagos,
             clienteNombre: row.original.nombre,
             currency: 'USD',
             showDelete: true,
-            onSave: (data) => {
-              const formData = new FormData();
+            onSave: (data: any) => {
+              const formData = new FormData()
               for (const key in data) {
-                if (data[key] !== undefined && data[key] !== null) {
-                  formData.append(key, data[key]);
-                }
+                if (data[key] !== undefined && data[key] !== null) formData.append(key, data[key])
               }
               formData.append('idPedido', row.original.id_cotizacion)
               formData.append('idContenedor', row.original.id_contenedor)
@@ -655,7 +719,6 @@ const pagosColumns = ref<TableColumn<any>[]>([
                   showError('Error al registrar pago', response.error, { persistent: true })
                 }
               }, 'registrarPagoFinal')
-
             },
             onDelete: (pagoId: number) => {
               showConfirmation(
@@ -678,11 +741,12 @@ const pagosColumns = ref<TableColumn<any>[]>([
                 }
               )
             }
-          }
-        ) : null
+          })
+        : null
     }
-  }
-])
+  })
+  return base
+}
 const overlay = useOverlay()
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 const deleteCotizacionFinal = async (idCotizacion: number) => {
@@ -742,8 +806,10 @@ onMounted(async () => {
   const tabQuery = route.query.tab
   if (tabQuery) {
     activeTab.value = tabQuery as string
+  } else if (currentRole.value === ROLES.CONTABILIDAD) {
+    activeTab.value = 'pagos'
   } else {
-    activeTab.value = tabs[0].value
+    activeTab.value = tabs.value[0].value
   }
   if (activeTab.value === 'general') {
     await getGeneral(Number(id))

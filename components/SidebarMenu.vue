@@ -67,7 +67,7 @@
 
                   <transition name="fade" enter-active-class="transition-all duration-150"
                     leave-active-class="transition-all duration-150">
-                    <div v-show="expanded[String(item.id)]" class="mt-1 space-y-1"
+                    <div v-if="expanded[String(item.id)]" class="mt-1 space-y-1"
                       :class="[collapsed ? 'px-0' : 'pl-10']">
                       <template v-for="child in item.children" :key="child.id">
                         <!-- Child con sub-hijos -->
@@ -101,7 +101,7 @@
                             </button>
                           </div>
 
-                          <div v-show="expanded[String(child.id)]" class="pl-6 mt-1 space-y-1">
+                          <div v-if="expanded[String(child.id)]" class="pl-6 mt-1 space-y-1">
                             <template v-for="sub in child.children" :key="sub.id">
                               
                               <UButton variant="ghost" class="w-full text-sm gap-2 py-1 rounded-md"

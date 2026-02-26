@@ -32,6 +32,7 @@ export const usePagos = () => {
                 { label: 'Todos', value: 'todos' },
                 { label: 'PENDIENTE', value: 'PENDIENTE' },
                 { label: 'COTIZADO', value: 'COTIZADO' },
+                { label: 'COBRANDO', value: 'COBRANDO' },
                 { label: 'PAGADO', value: 'PAGADO' },
                 { label: 'AJUSTADO', value: 'AJUSTADO' },
                 { label: 'SOBREPAGO', value: 'SOBREPAGO' },
@@ -41,11 +42,10 @@ export const usePagos = () => {
     const getPagos = async (id: number) => {
         try {
             loadingPagos.value = true
-            const params = {
+            const params: any = {
                 page: currentPagePagos.value,
                 per_page: itemsPerPagePagos.value,
-                ...filtersPagos.value,
-
+                filters: { ...filtersPagos.value }
             }
             if (searchPagos.value) {
                 params.search = searchPagos.value
@@ -61,6 +61,15 @@ export const usePagos = () => {
     }
     const handleSearchPagos = (search: string) => {
         searchPagos.value = search
+        getPagos(Number(id))
+    }
+    const handleFilterChangePagos = (filterType: string, value: string) => {
+        if (value === 'todos' || value === '') {
+            const { [filterType]: _, ...rest } = filtersPagos.value
+            filtersPagos.value = rest
+        } else {
+            filtersPagos.value = { ...filtersPagos.value, [filterType]: value }
+        }
         getPagos(Number(id))
     }
     const registrarPago = async (formData: FormData) => {
@@ -85,6 +94,7 @@ export const usePagos = () => {
         getPagos,
         totalRecordsPagos,
         handleSearchPagos,
+        handleFilterChangePagos,
         registrarPago
     }
 }   

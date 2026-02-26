@@ -114,8 +114,13 @@ export interface DataTableEmits {
   'retry': []
 } 
 export interface HeaderResponse {
-  data: Header[] | Header
+  data: Header[] | Record<string, Header>
+  data_pagos?: Header[] | Record<string, Header>
   success: boolean,
   carga?: string,
   lista_embarque_url?: string
+  /** Fecha límite de pago (contenedor) - usado en cotización final */
+  f_puerto?: string
+  /** Total diferencia entre lo pagado e impuestos + logística (cotización final, tab Pagos) */
+  total_diferencia_impuestos_logistica?: string | number
 }

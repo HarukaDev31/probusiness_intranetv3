@@ -28,11 +28,12 @@ export class CotizacionService extends BaseService {
                 throw error
             }
         }
-    static async getCotizaciones(id: number, filters: CotizacionFilters) {
+    static async getCotizaciones(id: number, filters: CotizacionFilters, signal?: AbortSignal) {
         try {
             const response = await this.apiCall<CotizacionResponse>(`${this.baseUrl}/cotizaciones/${id}`, {
                 method: 'GET',
-                params: filters
+                params: filters,
+                ...(signal ? { signal } : {})
             })
             return response
         } catch (error) {

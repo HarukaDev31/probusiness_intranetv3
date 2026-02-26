@@ -163,8 +163,23 @@ export const useGeneral = () => {
         try {
             loadingHeaders.value = true
             const response = await GeneralService.getHeaders(id)
-            headers.value = response.data
+            const data = response.data
+            const headersArray = Array.isArray(data) ? data : Object.values(data ?? {})
+            headers.value = headersArray
             carga.value = response.carga
+            fPuerto.value = response.f_puerto ?? null
+            // Tab Pagos: headers + total diferencia (desde backend) o data_pagos
+            const extra: any[] = []
+            if (response.data_pagos != null) {
+                const raw = response.data_pagos
+                const arr = Array.isArray(raw) ? raw : Object.values(raw)
+                extra.push(...arr.map((h: any) => ({
+                    label: h?.label ?? '',
+                    value: h?.value != null ? String(h.value) : 'N/A',
+                    icon: h?.icon ?? 'heroicons:currency-dollar',
+                })))
+            }
+            headersPagos.value = [...headersArray, ...extra]
             loadingHeaders.value = false
         } catch (err) {
             loadingHeaders.value = false
@@ -172,7 +187,9 @@ export const useGeneral = () => {
         }
     }
     const headers = ref<any[]>([])
+    const headersPagos = ref<any[]>([])
     const carga = ref<string | null>(null)
+    const fPuerto = ref<string | null>(null)
     const loadingHeaders = ref(false)
     return {
         general,
@@ -197,7 +214,9 @@ export const useGeneral = () => {
         handleItemsPerPageChangeGeneral,
         getHeaders,
         headers,
+        headersPagos,
         carga,
+        fPuerto,
         loadingHeaders,
         handleDownloadCotizacionFinalPDF,
         handleDeleteCotizacionFinal

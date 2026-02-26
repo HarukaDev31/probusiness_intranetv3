@@ -1,5 +1,5 @@
 import { CotizacionPagosService } from "~/services/cargaconsolidada/cotizacion-pagosService"
-import type { FilterConfig, PaginationInfo, Header } from "~/types/data-table"
+import type { PaginationInfo, Header } from "~/types/data-table"
 
 export const useCotizacionPagos = () => {
     const cotizacionPagos = ref<any[]>([])
@@ -24,18 +24,25 @@ export const useCotizacionPagos = () => {
         searchPagos.value = searchTerm
         await getCotizacionPagos(Number(idPagos))
     }
-    const filtersPagos = ref<FilterConfig[]>([])
+    const filtersPagos = ref<Record<string, string>>({})
     const headersPagos = ref<Header[]>([])
     const getCotizacionPagos = async (id: number) => {
         loadingPagos.value = true
         error.value = null
         try {
-            // The Pagos section only uses the search parameter — filters are not handled here
-            const params = {
+            const route = useRoute()
+            const raw = filtersPagos.value || {}
+            const filters: Record<string, string> = {}
+            if (raw.estado_inspeccion && raw.estado_inspeccion !== 'todos') filters.estado_inspeccion = raw.estado_inspeccion
+            if (raw.estado_pago && raw.estado_pago !== 'todos') filters.estado_pago = raw.estado_pago
+            const params: any = {
                 search: searchPagos.value
             }
+            if (Object.keys(filters).length) params.filters = filters
+            const idCotizacionQuery = route.query.idCotizacion
+            if (idCotizacionQuery != null && idCotizacionQuery !== '') params.id_cotizacion = idCotizacionQuery
             const response = await CotizacionPagosService.getCotizacionesPagos(id, params)
-            cotizacionPagos.value = response.data
+            cotizacionPagos.value = response.data ?? []
             paginationPagos.value = response.pagination
         } catch (err: any) {
             error.value = err.message || 'Error al obtener las cotizaciones de pagos'
@@ -48,18 +55,8 @@ export const useCotizacionPagos = () => {
         searchPagos.value = searchTerm
         await getCotizacionPagos(Number(idPagos))
     }
-    const handleFilterChange = async (key: string, value: any) => {
-        try {
-            // keep filters as a simple object map for backend consumption
-            // filtersPagos was declared as FilterConfig[] but some usages expect a map-like object
-            // We'll treat it as an any here to avoid type mismatches and send to service
-            const currentFilters: any = filtersPagos.value || {}
-            currentFilters[key] = value
-            filtersPagos.value = currentFilters as any
-        } catch (e) {
-            // defensive
-            filtersPagos.value = { [key]: value } as any
-        }
+    const handleFilterChange = async (key: string, value: string) => {
+        filtersPagos.value = { ...filtersPagos.value, [key]: value }
         await getCotizacionPagos(Number(idPagos))
     }
     const handlePageChange = async (page: number) => {

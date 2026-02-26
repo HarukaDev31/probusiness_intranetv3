@@ -5,7 +5,7 @@
       <PageHeader title="" subtitle="" icon="" :hide-back-button="false" class="w-full"
         @back="navigateTo(`/cargaconsolidada/documentacion/completados/pasos/${id}`)" />
       <div class=" hidden md:flex items-center gap-3 flex-wrap md:mb-4 w-full md:justify-end"
-        v-if="currentRole === ROLES.COORDINACION">
+        v-if="currentRole === ROLES.COORDINACION || currentRole === ROLES.CONTABILIDAD">
         <UButton label="Subir Factura" icon="i-heroicons-arrow-up-tray" color="primary" variant="outline"
           @click="handleUploadFactura" class="whitespace-nowrap" />
         <UButton label="Plantilla General" icon="i-heroicons-arrow-down-tray" color="primary" variant="outline"

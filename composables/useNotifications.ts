@@ -43,15 +43,10 @@ export const useNotifications = () => {
 
   // Método para cambiar de página
   const changePage = async (newPage: number) => {
-    console.log('changePage called with:', newPage, 'current:', currentPage.value, 'totalPages:', totalPages.value)
     if (newPage !== currentPage.value && newPage >= 1 && newPage <= totalPages.value) {
-      console.log('Changing page from', currentPage.value, 'to', newPage)
       currentPage.value = newPage
       filters.value.page = newPage
-      console.log('Filters updated:', filters.value)
       await fetchNotifications()
-    } else {
-      console.log('Page change rejected:', { newPage, current: currentPage.value, totalPages: totalPages.value })
     }
   }
 
@@ -70,44 +65,23 @@ export const useNotifications = () => {
         filters.value = updatedFilters
       }
 
-      console.log('fetchNotifications called with filters:', filters.value)
       const response = await NotificationService.getNotifications(filters.value)
-      
-      console.log('Respuesta completa del API:', response)
-      console.log('response.data:', response.data)
-      console.log('response.data.conteos:', response.data.conteos)
-      
+
       notifications.value = response.data.data
       currentPage.value = response.data.current_page
       totalPages.value = response.data.last_page
       totalItems.value = response.data.total
       itemsPerPage.value = response.data.per_page
-      
+
       // Actualizar conteos desde la respuesta del API - SIEMPRE usar los conteos del API
       if (response.conteos) {
         totalCount.value = Number(response.conteos.total) || 0
         unreadCount.value = Number(response.conteos.no_leidas) || 0
         readCount.value = Number(response.conteos.leidas) || 0
-        
-        console.log('Conteos actualizados desde API:', {
-          total: totalCount.value,
-          no_leidas: unreadCount.value,
-          leidas: readCount.value,
-          raw_conteos: response.data.conteos
-        })
       } else {
         console.error('ERROR: No se encontraron conteos en la respuesta del API')
         // Si no vienen conteos, mantener los valores actuales (no calcular)
       }
-      
-      console.log('Response received:', {
-        current_page: response.data.current_page,
-        last_page: response.data.last_page,
-        total: response.data.total,
-        per_page: response.data.per_page,
-        data_length: response.data.data.length,
-        conteos: response.data.conteos
-      })
 
     } catch (err: any) {
       error.value = err.message || 'Error al cargar notificaciones'
@@ -130,16 +104,15 @@ export const useNotifications = () => {
   const markAsRead = async (id: number) => {
     try {
       await NotificationService.markAsRead(id)
-      
-      // Actualizar estado local
+
+      // Actualizar estado local y conteos sin necesidad de refetch
       const notification = notifications.value.find(n => n.id === id)
       if (notification && !notification.estado_usuario.leida) {
         notification.estado_usuario.leida = true
         notification.estado_usuario.fecha_lectura = new Date().toISOString()
+        unreadCount.value = Math.max(0, unreadCount.value - 1)
+        readCount.value = readCount.value + 1
       }
-      
-      // Recargar notificaciones para obtener conteos actualizados del API
-      await fetchNotifications()
     } catch (err: any) {
       error.value = err.message || 'Error al marcar como leída'
       console.error('Error marking as read:', err)
@@ -165,7 +138,6 @@ export const useNotifications = () => {
       })
 
       const allUnreadIds = allUnreadResponse.data.data.map(n => n.id)
-      console.log('Total unread IDs to mark:', allUnreadIds.length, 'out of', unreadCount.value)
 
       if (allUnreadIds.length === 0) {
         loading.value = false
@@ -184,7 +156,6 @@ export const useNotifications = () => {
           additionalPages.push(...pageResponse.data.data.map(n => n.id))
         }
         allUnreadIds.push(...additionalPages)
-        console.log('Total unread IDs after fetching all pages:', allUnreadIds.length)
       }
 
       // Marcar todas como leídas en el backend
@@ -197,10 +168,10 @@ export const useNotifications = () => {
           notification.estado_usuario.fecha_lectura = new Date().toISOString()
         }
       })
-      
-      // Recargar las notificaciones para obtener conteos actualizados del API
-      // NO actualizar conteos manualmente, siempre usar los del API
-      await fetchNotifications()
+
+      // Actualizar conteos localmente sin refetch
+      readCount.value = readCount.value + unreadCount.value
+      unreadCount.value = 0
     } catch (err: any) {
       error.value = err.message || 'Error al marcar todas como leídas'
       console.error('Error marking all as read:', err)

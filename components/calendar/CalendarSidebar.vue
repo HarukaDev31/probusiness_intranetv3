@@ -42,8 +42,8 @@
           {{ day }}
         </div>
         <div
-          v-for="(day, index) in miniCalendarDays"
-          :key="index"
+          v-for="day in miniCalendarDays"
+          :key="String(day.date)"
           class="text-center py-0.5 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors min-h-[22px] flex items-center justify-center"
           :class="{
             'text-gray-400 dark:text-gray-600': !day.isCurrentMonth,

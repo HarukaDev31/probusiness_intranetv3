@@ -33,7 +33,7 @@ export default defineNuxtConfig({
       minify: 'terser',
       terserOptions: {
         compress: {
-          drop_console: false, // true para quitar console.* en producción
+          drop_console: true,
         },
         format: {
           comments: false,
@@ -96,9 +96,6 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'manifest', href: '/manifest.json' },
-        // Preconnect para recursos externos
-        { rel: 'preconnect', href: 'https://intranet.probusiness.pe' },
-        { rel: 'dns-prefetch', href: 'https://intranet.probusiness.pe' },
       ],
 
     },
@@ -119,11 +116,14 @@ export default defineNuxtConfig({
   
   // Configuración de iconos
   icon: {
-    // Usar iconos locales instalados
-    collections: ['heroicons', 'fa', 'vscode-icons', 'mdi', 'tabler'],
+    // Usar solo colecciones realmente usadas en el app (tabler no se usa)
+    collections: ['heroicons', 'fa', 'vscode-icons', 'mdi'],
     provider: 'iconify',
-    fallbackToApi: true,
-    mode: 'css'
+    // SVG mode: iconos servidos desde el servidor Nuxt local (lee @iconify-json/* instalados)
+    // Funciona con nombres dinámicos (:name="variable") sin peticiones a API externa
+    mode: 'svg',
+    // Sin fallback a Iconify API - todos los iconos se resuelven desde paquetes locales
+    fallbackToApi: false,
   },
  
   // Configuración de variables de entorno

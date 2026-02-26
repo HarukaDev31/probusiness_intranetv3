@@ -131,8 +131,8 @@
           </div>
           <div class="flex gap-3 overflow-x-auto pb-2">
             <div 
-              v-for="(documento, index) in existingDocuments" 
-              :key="index"
+              v-for="(documento, index) in existingDocuments"
+              :key="documento"
               class="relative flex-shrink-0 w-32 h-32 border-2 rounded-lg flex items-center justify-center transition-all cursor-pointer"
               :class="documentsToDelete.includes(index) 
                 ? 'border-red-500 bg-red-50 dark:bg-red-900/20' 
