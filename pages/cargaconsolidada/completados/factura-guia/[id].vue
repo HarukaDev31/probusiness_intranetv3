@@ -626,6 +626,17 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
             }
           })
         }),
+        h(UTooltip, { text: 'Ver formulario comprobante', placement: 'top' }, {
+          default: () => h(UButton, {
+            icon: 'i-heroicons-document-text',
+            color: 'neutral',
+            variant: 'ghost',
+            size: 'sm',
+            onClick: () => {
+              navigateTo(`/cargaconsolidada/contabilidad/factura-guia/formulario-comprobante/${row.original.id_cotizacion}`)
+            }
+          })
+        }),
         h(UTooltip, { text: 'Acciones WhatsApp', placement: 'top' }, {
           default: () => h(UButton, {
             icon: 'iconamoon:menu-burger-horizontal',

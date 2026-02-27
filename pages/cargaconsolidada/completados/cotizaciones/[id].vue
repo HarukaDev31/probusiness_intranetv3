@@ -16,8 +16,14 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingCotizaciones || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
-                        v-if="tabs.length > 1" />
+                    <div class="flex items-center justify-between gap-3">
+                        <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
+                            v-if="tabs.length > 1" />
+                        <span v-if="currentRole === ROLES.CONTABILIDAD && fCierre"
+                            class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                            F. Límite pago: {{ formatDate(fCierre) }}
+                        </span>
+                    </div>
                 </div>
             </template>
             <template #actions>
@@ -39,8 +45,14 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loading || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
-                        v-if="tabs.length > 1" />
+                    <div class="flex items-center justify-between gap-3">
+                        <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
+                            v-if="tabs.length > 1" />
+                        <span v-if="currentRole === ROLES.CONTABILIDAD && fCierre"
+                            class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                            F. Límite pago: {{ formatDate(fCierre) }}
+                        </span>
+                    </div>
                 </div>
             </template>
             <template #actions>
@@ -88,8 +100,14 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersPagos"
                         :loading="loadingPagos || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
-                        v-if="tabs.length > 1" />
+                    <div class="flex items-center justify-between gap-3">
+                        <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
+                            v-if="tabs.length > 1" />
+                        <span v-if="currentRole === ROLES.CONTABILIDAD && fCierre"
+                            class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                            F. Límite pago: {{ formatDate(fCierre) }}
+                        </span>
+                    </div>
                 </div>
             </template>
             <template #actions>
@@ -198,6 +216,7 @@ const { cotizaciones,
     resetFiltersCotizacion,
     packingList,
     exportData: exportProspectosData,
+    fCierre,
 } = useCotizacion()
 const {
     cotizacionPagos,
@@ -1017,30 +1036,7 @@ const getPagosColumns = () => {
                 ])
             }
         },
-        {
-            accessorKey: 'estado_inspeccion',
-            header: 'Inspección',
-            cell: ({ row }: { row: any }) => {
-                const estado = row.original.estado_inspeccion || 'Pendiente'
-                // Colores: gris Pendiente, verde Inspeccionado, azul Completado
-                const INSPECCION_CLASSES: Record<string, string> = {
-                    Pendiente: 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white',
-                    Inspeccionado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
-                    Completado: 'bg-blue-500 text-white dark:bg-blue-500 dark:text-white'
-                }
-                const cls = INSPECCION_CLASSES[estado] || INSPECCION_CLASSES.Pendiente
-                return h(USelect as any, {
-                    modelValue: estado,
-                    disabled: true,
-                    items: [
-                        { label: 'Pendiente', value: 'Pendiente' },
-                        { label: 'Inspeccionado', value: 'Inspeccionado' },
-                        { label: 'Completado', value: 'Completado' }
-                    ],
-                    class: cls
-                })
-            }
-        },
+
         {
             accessorKey: 'estado_pago',
             header: 'Estado',
