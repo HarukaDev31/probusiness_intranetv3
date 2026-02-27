@@ -542,13 +542,14 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     accessorKey: 'comprobante_pdf',
     header: 'Comprobante (PDF)',
     cell: ({ row }: { row: any }) => {
-      const comprobantes = row.original.comprobantes as Array<{ comprobante_file_url?: string | null; file_name?: string | null }> | undefined
+      const comprobantes = row.original.comprobantes as Array<{ comprobante_file_url?: string | null; file_url?: string | null; file_name?: string | null }> | undefined
       if (!comprobantes?.length) return h('span', { class: 'text-gray-400 text-sm' }, '—')
       return h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) => {
-        if (!c.comprobante_file_url) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
+        const url = c.file_url ?? c.comprobante_file_url
+        if (!url) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
         return h('a', {
           key: i,
-          href: c.comprobante_file_url,
+          href: url,
           target: '_blank',
           rel: 'noopener noreferrer',
           class: 'flex flex-col gap-0.5 text-primary text-sm hover:underline'

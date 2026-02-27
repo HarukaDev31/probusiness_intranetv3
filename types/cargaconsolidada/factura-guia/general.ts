@@ -1,13 +1,16 @@
 import type { PaginationInfo } from '~/types/data-table'
 
-/** Un comprobante en la lista de factura-guía (contabilidad) */
+/** Un comprobante en la lista de factura-guía (contabilidad). La URL del archivo es siempre autofirmada (file_url / comprobante_file_url). */
 export interface ComprobanteListItem {
     id: number
     tipo_comprobante: string | null
     valor_comprobante: number | null
     tiene_detraccion: boolean
     detraccion: { monto: number; file_url?: string } | null
+    /** URL absoluta autofirmada del comprobante (no se expone file_path) */
     comprobante_file_url: string | null
+    /** Misma URL autofirmada; usar esta o comprobante_file_url para abrir el PDF */
+    file_url: string | null
     file_name: string | null
 }
 
