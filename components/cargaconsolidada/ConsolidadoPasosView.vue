@@ -65,7 +65,7 @@ const props = withDefaults(
   {}
 )
 
-const { currentId } = useUserRole()
+const { currentId, currentRole } = useUserRole()
 const { getConsolidadoPasos, pasos, loading } = useConsolidado(toRef(props, 'role'))
 
 const route = useRoute()
@@ -91,10 +91,14 @@ const formatNombre = (s: string) => {
 }
 
 const pasosMap = computed(() => ({
-  'COTIZACION': `${props.basePath}/cotizaciones/${id}?tab=prospectos`,
+  'COTIZACION': currentRole.value === ROLES.CONTABILIDAD
+    ? `${props.basePath}/cotizaciones/${id}?tab=pagos`
+    : `${props.basePath}/cotizaciones/${id}?tab=prospectos`,
   'CLIENTES': `${props.basePath}/clientes/${id}`,
   'DOCUMENTACION': `${props.basePath}/documentacion/${id}`,
-  'COTIZACION FINAL': `${props.basePath}/cotizacion-final/${id}?tab=general`,
+  'COTIZACION FINAL': currentRole.value === ROLES.CONTABILIDAD
+    ? `${props.basePath}/cotizacion-final/${id}?tab=pagos`
+    : `${props.basePath}/cotizacion-final/${id}?tab=general`,
   'FACTURA Y GUIA': `${props.basePath}/factura-guia/${id}`,
   'ADUANA': `${props.basePath}/aduana/${id}`,
   'ENTREGA': `${props.basePath}/entrega/${id}`,

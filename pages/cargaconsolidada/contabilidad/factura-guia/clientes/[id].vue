@@ -8,7 +8,101 @@
       @back="$router.back()"
     />
 
-    <LoadingState v-if="loading" message="Cargando información..." class="mt-8" />
+    <!-- Skeleton de carga -->
+    <div v-if="loading" class="flex flex-col lg:flex-row gap-6 mt-6">
+      <!-- Izquierda: tarjetas principales -->
+      <div class="flex-1 space-y-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <USkeleton class="h-4 w-32" />
+            <USkeleton class="h-4 w-24" />
+          </div>
+          <USkeleton class="h-8 w-56 rounded-md" />
+          <div class="space-y-2 mt-2">
+            <div v-for="i in 3" :key="`sk-comp-${i}`" class="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+              <div class="flex items-center gap-3 min-w-0">
+                <USkeleton class="w-5 h-5 rounded" />
+                <div class="space-y-1 w-40">
+                  <USkeleton class="h-3 w-full" />
+                  <USkeleton class="h-3 w-24" />
+                </div>
+              </div>
+              <USkeleton class="h-6 w-16 rounded-md" />
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <USkeleton class="h-4 w-32" />
+            <USkeleton class="h-4 w-24" />
+          </div>
+          <div class="space-y-2">
+            <div v-for="i in 2" :key="`sk-det-${i}`" class="rounded-lg border border-orange-100 dark:border-orange-900/30 bg-orange-50/40 dark:bg-orange-900/10 p-3 space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <USkeleton class="w-5 h-5 rounded" />
+                  <div class="space-y-1 w-40">
+                    <USkeleton class="h-3 w-full" />
+                    <USkeleton class="h-3 w-24" />
+                  </div>
+                </div>
+                <USkeleton class="h-6 w-16 rounded-md" />
+              </div>
+              <div class="pl-7 space-y-2">
+                <USkeleton class="h-3 w-40" />
+                <USkeleton class="h-3 w-24" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
+          <USkeleton class="h-4 w-40" />
+          <USkeleton class="h-8 w-52 rounded-md" />
+          <div class="space-y-2 mt-1">
+            <div v-for="i in 2" :key="`sk-guia-${i}`" class="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+              <div class="flex items-center gap-3 min-w-0">
+                <USkeleton class="w-5 h-5 rounded" />
+                <USkeleton class="h-3 w-40" />
+              </div>
+              <USkeleton class="h-6 w-10 rounded-md" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Derecha: estado documentos + resumen + nota -->
+      <div class="w-full lg:w-72 space-y-6 mt-6 lg:mt-0">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
+          <USkeleton class="h-4 w-40" />
+          <div class="space-y-3 mt-2">
+            <div v-for="i in 3" :key="`sk-doc-${i}`" class="flex items-center justify-between">
+              <USkeleton class="h-3 w-28" />
+              <USkeleton class="h-5 w-5 rounded-full" />
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
+          <USkeleton class="h-4 w-32" />
+          <div class="space-y-2">
+            <div v-for="i in 3" :key="`sk-res-${i}`" class="flex items-center justify-between">
+              <USkeleton class="h-3 w-28" />
+              <USkeleton class="h-3 w-16" />
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
+          <USkeleton class="h-4 w-32" />
+          <USkeleton class="h-20 w-full rounded-md" />
+          <div class="flex justify-end">
+            <USkeleton class="h-8 w-24 rounded-md" />
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div v-else class="flex flex-col lg:flex-row gap-6 mt-6">
       <!-- ── Panel izquierdo: Comprobantes + Detracciones + Guía ──────────── -->
@@ -188,19 +282,56 @@
 
         <!-- Guía de Remisión -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <h2 class="font-semibold text-base mb-3">Guía de Remisión</h2>
-          <div v-if="panel?.guia_remision_url" class="flex items-center gap-3">
-            <UIcon name="i-heroicons-document-text" class="text-green-500 w-5 h-5 flex-shrink-0" />
-            <span class="text-sm">{{ panel.guia_remision_file_name }}</span>
-            <UButton
-              icon="i-heroicons-arrow-down-tray"
-              color="primary"
-              variant="ghost"
-              size="xs"
-              @click="openFile(panel.guia_remision_url)"
-            />
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold text-base">Guía de Remisión</h2>
           </div>
-          <div v-else class="text-sm text-gray-400">No se ha subido guía de remisión.</div>
+
+          <div class="mb-3">
+            <UButton
+              icon="i-heroicons-arrow-up-tray"
+              color="primary"
+              variant="outline"
+              size="sm"
+              @click="triggerGuia"
+            >
+              Subir guía (PDF/Word)
+            </UButton>
+            <input ref="fileInputGuia" type="file" accept=".pdf,.doc,.docx" class="hidden" @change="handleUploadGuia" />
+          </div>
+
+          <div v-if="!guiasRemisionList.length" class="text-sm text-gray-400 py-3 text-center">
+            Aún no hay guías de remisión subidas.
+          </div>
+          <div v-else class="space-y-2">
+            <div
+              v-for="guia in guiasRemisionList"
+              :key="guia.id"
+              class="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700"
+            >
+              <div class="flex items-center gap-3 min-w-0">
+                <UIcon name="i-heroicons-document-text" class="text-green-500 w-5 h-5 flex-shrink-0" />
+                <span class="text-sm font-medium truncate">{{ guia.file_name || 'Guía de remisión' }}</span>
+              </div>
+              <div class="flex gap-1 flex-shrink-0">
+                <UButton
+                  v-if="guia.file_url"
+                  icon="i-heroicons-arrow-down-tray"
+                  color="primary"
+                  variant="ghost"
+                  size="xs"
+                  @click="openFile(guia.file_url)"
+                />
+                <UButton
+                  v-if="guia.id"
+                  icon="i-heroicons-trash"
+                  color="error"
+                  variant="ghost"
+                  size="xs"
+                  @click="handleDeleteGuia(guia.id)"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -286,8 +417,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { UButton, UBadge, UIcon, UTextarea } from '#components'
+import { UButton, UBadge, UIcon, UTextarea, USkeleton } from '#components'
 import { useContabilidadDetalle } from '~/composables/cargaconsolidada/factura-guia/useContabilidadDetalle'
+import { GeneralService } from '~/services/cargaconsolidada/factura-guia/generalService'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 
@@ -315,6 +447,7 @@ const { withSpinner } = useSpinner()
 
 const fileInputComprobante = ref<HTMLInputElement | null>(null)
 const fileInputConstancia = ref<HTMLInputElement | null>(null)
+const fileInputGuia = ref<HTMLInputElement | null>(null)
 const savingNota = ref(false)
 const pendingComprobanteId = ref<number | null>(null)
 
@@ -330,6 +463,17 @@ const totalConstanciasPagadas = computed(() =>
     .reduce((sum: number, c: any) => sum + Number(c.constancia.monto_detraccion), 0)
 )
 
+// Lista de guías de remisión (múltiples por cotización)
+const guiasRemisionList = computed(() => {
+  const list = panel.value?.guias_remision
+  if (Array.isArray(list)) return list
+  // Compat: si el backend solo envía guia_remision_url, mostrar una entrada
+  if (panel.value?.guia_remision_url) {
+    return [{ id: 0, file_name: panel.value.guia_remision_file_name || 'Guía', file_url: panel.value.guia_remision_url }]
+  }
+  return []
+})
+
 const formatMoney = (val: number | null | undefined) => {
   if (!val && val !== 0) return '0.00'
   return Number(val).toFixed(2)
@@ -344,6 +488,44 @@ const triggerComprobante = () => fileInputComprobante.value?.click()
 const triggerConstancia = (comprobanteId: number) => {
   pendingComprobanteId.value = comprobanteId
   fileInputConstancia.value?.click()
+}
+
+const triggerGuia = () => fileInputGuia.value?.click()
+
+const handleUploadGuia = async (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  await withSpinner(async () => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('idCotizacion', String(id))
+    const res = await GeneralService.uploadGuiaRemision(formData)
+    if (res?.success !== false) {
+      showSuccess('Guía subida', 'La guía de remisión se subió correctamente y se verá en la tabla de Factura y Guía.')
+      await getDetalle(id)
+    } else {
+      showError('Error', (res as any)?.message || 'Error al subir guía')
+    }
+    if (fileInputGuia.value) fileInputGuia.value.value = ''
+  }, 'Subiendo guía...')
+}
+
+const handleDeleteGuia = (guiaId: number) => {
+  showConfirmation(
+    'Eliminar guía de remisión',
+    '¿Está seguro de que desea eliminar esta guía?',
+    async () => {
+      await withSpinner(async () => {
+        const res = await GeneralService.deleteGuiaRemision(guiaId)
+        if (res?.success !== false) {
+          showSuccess('Eliminada', 'Guía de remisión eliminada correctamente.')
+          await getDetalle(id)
+        } else {
+          showError('Error', (res as any)?.message || 'Error al eliminar guía')
+        }
+      }, 'Eliminando...')
+    }
+  )
 }
 
 const handleUploadComprobante = async (event: Event) => {

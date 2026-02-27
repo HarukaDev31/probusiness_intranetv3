@@ -1029,10 +1029,15 @@ const getPagosColumns = () => {
                     Completado: 'bg-blue-500 text-white dark:bg-blue-500 dark:text-white'
                 }
                 const cls = INSPECCION_CLASSES[estado] || INSPECCION_CLASSES.Pendiente
-                return h(UButton as any, {
+                return h(USelect as any, {
+                    modelValue: estado,
                     disabled: true,
-                    class: cls,
-                    label: estado
+                    items: [
+                        { label: 'Pendiente', value: 'Pendiente' },
+                        { label: 'Inspeccionado', value: 'Inspeccionado' },
+                        { label: 'Completado', value: 'Completado' }
+                    ],
+                    class: cls
                 })
             }
         },

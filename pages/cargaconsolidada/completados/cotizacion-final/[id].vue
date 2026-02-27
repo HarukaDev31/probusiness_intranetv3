@@ -638,15 +638,15 @@ const getPagosColumns = (): TableColumn<any>[] => {
         header: 'Estado',
         cell: ({ row }: { row: any }) => {
           const estado = row.original.estado_cotizacion_final || 'PENDIENTE'
+          const pagadoVerificado = row.original.pagado_verificado === true
           const items = [
             { label: 'PENDIENTE', value: 'PENDIENTE' },
-            { label: 'COTIZADO', value: 'COTIZADO' },
-            { label: 'COBRANDO', value: 'COBRANDO' },
+            { label: 'ADELANTO', value: 'ADELANTO' },
             { label: 'PAGADO', value: 'PAGADO' },
-            { label: 'AJUSTADO', value: 'AJUSTADO' },
-            { label: 'SOBREPAGO', value: 'SOBREPAGO' },
           ]
-          const cls = STATUS_BG_PAGOS_CLASSES[estado as keyof typeof STATUS_BG_PAGOS_CLASSES] ?? 'bg-gray-500 text-white'
+          const cls = estado === 'PAGADO'
+            ? (pagadoVerificado ? 'bg-green-500 text-white dark:bg-green-500 dark:text-white' : 'bg-white text-gray-700 dark:bg-gray-200 dark:text-gray-700 border border-gray-300 dark:border-gray-500')
+            : (STATUS_BG_PAGOS_CLASSES[estado as keyof typeof STATUS_BG_PAGOS_CLASSES] ?? 'bg-gray-500 text-white')
           return h(USelect as any, {
             modelValue: estado,
             disabled: true,
