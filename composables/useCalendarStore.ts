@@ -783,7 +783,8 @@ export const useCalendarStore = () => {
 
   /**
    * Color del evento en el calendario.
-   * Orden para todos: 1) gris si está completada, 2) color de actividad (catálogo), 3) color consolidado, 4) color por prioridad.
+   * Jefe:     1) completado, 2) actividad, 3) consolidado, 4) prioridad.
+   * No-jefe:  1) completado, 2) prioridad, 3) actividad, 4) consolidado.
    */
   const getEventColors = (event: CalendarEvent, options?: { usePriority?: boolean }): string[] => {
     const charges = event.charges || []
@@ -791,23 +792,32 @@ export const useCalendarStore = () => {
     if (charges.length > 0 && charges.every((c: { status?: string }) => c.status === 'COMPLETADO')) {
       return ['#9ca3af']
     }
-    // 2. Color de actividad definido por el jefe (catálogo)
+
     const activityId = event.activity_id != null ? Number(event.activity_id) : null
-    if (activityId != null && !Number.isNaN(activityId)) {
-      const catalogItem = state.activityCatalog.value.find(
-        a => Number(a.id) === activityId
-      )
-      if (catalogItem?.color_code && String(catalogItem.color_code).trim()) {
-        return [String(catalogItem.color_code).trim()]
-      }
+    const catalogItem = activityId != null && !Number.isNaN(activityId)
+      ? state.activityCatalog.value.find(a => Number(a.id) === activityId)
+      : null
+    const activityColor = catalogItem?.color_code && String(catalogItem.color_code).trim()
+      ? String(catalogItem.color_code).trim()
+      : null
+    const consolidadoConfig = event.contenedor_id
+      ? state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
+      : null
+    const consolidadoColor = consolidadoConfig?.color_code ?? null
+    const priorityColor = PRIORITY_COLORS[event.priority] || '#3b82f6'
+
+    if (options?.usePriority) {
+      // No-jefe: prioridad → actividad → consolidado
+      if (priorityColor) return [priorityColor]
+      if (activityColor) return [activityColor]
+      if (consolidadoColor) return [consolidadoColor]
+      return ['#3b82f6']
     }
-    // 3. Color de consolidado
-    if (event.contenedor_id) {
-      const consolidadoConfig = state.consolidadoColorConfig.value.find(c => c.contenedor_id === event.contenedor_id)
-      if (consolidadoConfig) return [consolidadoConfig.color_code]
-    }
-    // 4. Color por prioridad
-    return [PRIORITY_COLORS[event.priority] || '#3b82f6']
+
+    // Jefe: actividad → consolidado → prioridad
+    if (activityColor) return [activityColor]
+    if (consolidadoColor) return [consolidadoColor]
+    return [priorityColor]
   }
 
   const getEventPosition = (event: CalendarEvent, dateStr: string): 'start' | 'middle' | 'end' | 'single' | null => {

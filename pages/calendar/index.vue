@@ -1444,9 +1444,18 @@ const getEventResponsables = (event: CalendarEvent) => {
   return fromCharges.length ? fromCharges : []
 }
 
-// Color de evento según rol: Jefe → responsables; otros → prioridad
+// Usar orden de prioridad solo cuando es no-jefe Y hay un responsable específico seleccionado.
+// Si está en "Todos" (responsable_id y responsable_ids vacíos), usar el mismo orden que jefe.
+const useEventPriority = computed(() => {
+  if (isJefeImportaciones.value) return false
+  const hasSingle = !!filters.value.responsable_id
+  const hasMultiple = Array.isArray(filters.value.responsable_ids) && (filters.value.responsable_ids as number[]).length > 0
+  return hasSingle || hasMultiple
+})
+
+// Color de evento según rol y filtro de responsable
 const getEventDisplayColor = (event: CalendarEvent) => {
-  return getEventColors(event, { usePriority: !isJefeImportaciones.value })[0]
+  return getEventColors(event, { usePriority: useEventPriority.value })[0]
 }
 
 // Indicador de prioridad (icono) para perfiles no-Jefe
@@ -1460,7 +1469,7 @@ const getPriorityIcon = (priority: CalendarEventPriority) => {
 
 // Estilo para eventos multi-día
 const getMultiDayEventStyle = (span: EventSpan) => {
-  const colors = getEventColors(span.event, { usePriority: !isJefeImportaciones.value })
+  const colors = getEventColors(span.event, { usePriority: useEventPriority.value })
   
   let background: string
   if (colors.length === 1) {
@@ -1732,7 +1741,7 @@ const getEventBarClasses = (event: CalendarEvent, dateStr: string) => {
 }
 
 const getEventBarStyle = (event: CalendarEvent, dateStr: string) => {
-  const colors = getEventColors(event, { usePriority: !isJefeImportaciones.value })
+  const colors = getEventColors(event, { usePriority: useEventPriority.value })
   const position = getEventPosition(event, dateStr)
   
   let background: string
