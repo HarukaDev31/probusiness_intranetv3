@@ -214,6 +214,16 @@ const generalColumns = ref<TableColumn<any>[]>([
   },
 
   {
+    accessorKey: 'tipo_entrega',
+    header: 'T. Entrega',
+    cell: ({ row }: { row: any }) => {
+      const val = row.original.tipo_entrega
+      if (!val) return '—'
+      return h(UBadge, { label: val, color: val === 'Lima' ? 'primary' : 'warning', variant: 'subtle' })
+    }
+  },
+
+  {
     accessorKey: 'volumen_final',
     header: 'Volumen',
     cell: ({ row }: { row: any }) => {

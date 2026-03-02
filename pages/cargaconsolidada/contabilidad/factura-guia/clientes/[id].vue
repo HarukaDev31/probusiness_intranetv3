@@ -128,21 +128,23 @@
             </span>
           </div>
 
-          <!-- Uploader (muestra también los comprobantes ya subidos) -->
-          <div class="mb-3">
-            <FileUploader
-              :multiple="true"
-              :immediate="false"
-              :show-save-button="false"
-              :accepted-types="['.pdf','.doc','.docx']"
-              custom-message="Selecciona o arrastra comprobantes (PDF/Word). Se subirán al presionar «Guardar»."
-              :initial-files="initialComprobantes"
-              :model-files="pendingComprobantes"
-              @files-selected="onComprobantesSelected"
-              @file-removed="onComprobantesRemoved"
-              @files-cleared="clearPendingComprobantes"
-              @error="(msg) => showError('Error', msg)"
-            />
+          <div class="space-y-3">
+            <div v-for="slot in 3" :key="`comp-slot-${slot}`">
+              <p class="text-xs text-gray-500 mb-1">Comprobante {{ slot }}</p>
+              <FileUploader
+                :multiple="false"
+                :immediate="false"
+                :show-save-button="false"
+                :accepted-types="['.pdf','.doc','.docx']"
+                :custom-message="`Selecciona o arrastra el comprobante ${slot} (PDF/Word).`"
+                :initial-files="getComprobanteSlotInitial(slot - 1)"
+                :model-files="pendingComprobantes[slot - 1] || []"
+                @files-selected="(files) => onComprobanteSlotSelected(slot - 1, files)"
+                @file-removed="() => clearComprobanteSlot(slot - 1)"
+                @files-cleared="() => clearComprobanteSlot(slot - 1)"
+                @error="(msg) => showError('Error', msg)"
+              />
+            </div>
           </div>
         </div>
 
@@ -251,20 +253,23 @@
             <h2 class="font-semibold text-base">Guía de Remisión</h2>
           </div>
 
-          <div class="mb-3">
-            <FileUploader
-              :multiple="true"
-              :immediate="false"
-              :show-save-button="false"
-              :accepted-types="['.pdf','.doc','.docx']"
-              custom-message="Selecciona o arrastra guías (PDF/Word). Se subirán al presionar «Guardar»."
-              :initial-files="initialGuias"
-              :model-files="pendingGuia"
-              @files-selected="onGuiaSelected"
-              @file-removed="onGuiaRemoved"
-              @files-cleared="clearPendingGuia"
-              @error="(msg) => showError('Error', msg)"
-            />
+          <div class="space-y-3">
+            <div v-for="slot in 3" :key="`guia-slot-${slot}`">
+              <p class="text-xs text-gray-500 mb-1">Guía {{ slot }}</p>
+              <FileUploader
+                :multiple="false"
+                :immediate="false"
+                :show-save-button="false"
+                :accepted-types="['.pdf','.doc','.docx']"
+                :custom-message="`Selecciona o arrastra la guía ${slot} (PDF/Word).`"
+                :initial-files="getGuiaSlotInitial(slot - 1)"
+                :model-files="pendingGuias[slot - 1] || []"
+                @files-selected="(files) => onGuiaSlotSelected(slot - 1, files)"
+                @file-removed="() => clearGuiaSlot(slot - 1)"
+                @files-cleared="() => clearGuiaSlot(slot - 1)"
+                @error="(msg) => showError('Error', msg)"
+              />
+            </div>
           </div>
         </div>
 
@@ -385,8 +390,8 @@ const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 
 const savingAll = ref(false)
-const pendingComprobantes = ref<File[]>([])
-const pendingGuia = ref<File[]>([])
+const pendingComprobantes = ref<File[][]>([[], [], []])
+const pendingGuias = ref<File[][]>([[], [], []])
 const pendingConstancias = ref<Record<number, File[]>>({})
 
 // Comprobantes que tienen detracción (para la sección de Detracciones)
@@ -412,36 +417,35 @@ const guiasRemisionList = computed(() => {
   return []
 })
 
-// Archivos iniciales (ya subidos) para el FileUploader de comprobantes
-const initialComprobantes = computed(() =>
-  (comprobantes.value || []).map((c: any) => {
-    const tipo = c.tipo_comprobante || '—'
-    const montoText = c.valor_comprobante ? formatCurrency(c.valor_comprobante, 'USD') : '—'
-    const label = `Tipo: ${tipo}   Monto: ${montoText}`
-    return {
-      id: c.id,
-      file_name: label,
-      file_url: c.file_url,
-      type: c.mime_type || 'application/pdf',
-      size: c.size ?? 0,
-      lastModified: Date.now(),
-      file_ext: (c.file_name || '').split('.').pop() || '',
-    }
-  })
-)
+const getComprobanteSlotInitial = (index: number) => {
+  const c = (comprobantes.value || [])[index]
+  if (!c) return []
+  const tipo = c.tipo_comprobante || '—'
+  const montoText = c.valor_comprobante ? formatCurrency(c.valor_comprobante, 'USD') : '—'
+  return [{
+    id: c.id,
+    file_name: `Tipo: ${tipo}   Monto: ${montoText}`,
+    file_url: c.file_url,
+    type: c.mime_type || 'application/pdf',
+    size: c.size ?? 0,
+    lastModified: Date.now(),
+    file_ext: (c.file_name || '').split('.').pop() || '',
+  }]
+}
 
-// Archivos iniciales (ya subidos) para el FileUploader de guías
-const initialGuias = computed(() =>
-  (guiasRemisionList.value || []).map((g: any) => ({
+const getGuiaSlotInitial = (index: number) => {
+  const g = guiasRemisionList.value[index]
+  if (!g) return []
+  return [{
     id: g.id,
-    file_name: g.file_name || 'Guía de remisión',
+    file_name: g.file_name || `Guía ${index + 1}`,
     file_url: g.file_url,
     type: 'application/pdf',
     size: g.size ?? 0,
     lastModified: Date.now(),
     file_ext: (g.file_name || '').split('.').pop() || '',
-  }))
-)
+  }]
+}
 
 const formatMoney = (val: number | null | undefined) => {
   if (!val && val !== 0) return '0.00'
@@ -452,24 +456,26 @@ const openFile = (url: string) => {
   window.open(url, '_blank')
 }
 
-const onComprobantesSelected = (files: File[]) => {
-  pendingComprobantes.value = [...pendingComprobantes.value, ...files]
+const onComprobanteSlotSelected = (index: number, files: File[]) => {
+  const next = [...pendingComprobantes.value]
+  next[index] = files?.length ? [files[0]] : []
+  pendingComprobantes.value = next
 }
-const onComprobantesRemoved = (index: number) => {
-  pendingComprobantes.value.splice(index, 1)
-}
-const clearPendingComprobantes = () => {
-  pendingComprobantes.value = []
+const clearComprobanteSlot = (index: number) => {
+  const next = [...pendingComprobantes.value]
+  next[index] = []
+  pendingComprobantes.value = next
 }
 
-const onGuiaSelected = (files: File[]) => {
-  pendingGuia.value = [...pendingGuia.value, ...files]
+const onGuiaSlotSelected = (index: number, files: File[]) => {
+  const next = [...pendingGuias.value]
+  next[index] = files?.length ? [files[0]] : []
+  pendingGuias.value = next
 }
-const onGuiaRemoved = (index: number) => {
-  pendingGuia.value.splice(index, 1)
-}
-const clearPendingGuia = () => {
-  pendingGuia.value = []
+const clearGuiaSlot = (index: number) => {
+  const next = [...pendingGuias.value]
+  next[index] = []
+  pendingGuias.value = next
 }
 
 const setConstanciaFile = (comprobanteId: number, files: File[]) => {
@@ -507,7 +513,7 @@ const handleGuardarTodo = async () => {
   try {
     await withSpinner(async () => {
       // 1) Batch comprobantes
-      const comprobanteFiles = pendingComprobantes.value
+      const comprobanteFiles = pendingComprobantes.value.flat().filter(Boolean) as File[]
       if (comprobanteFiles.length) {
         const res = await uploadComprobantesBatch(comprobanteFiles, id)
         if (!res.success) {
@@ -527,8 +533,8 @@ const handleGuardarTodo = async () => {
         }
       }
 
-      // 3) Guía (múltiples)
-      const guiaFiles = pendingGuia.value
+      // 3) Guías por slot
+      const guiaFiles = pendingGuias.value.flat().filter(Boolean) as File[]
       if (guiaFiles.length) {
         const res = await GeneralService.uploadGuiasRemisionBatch(id, guiaFiles)
         if (res?.success === false) {
@@ -543,8 +549,8 @@ const handleGuardarTodo = async () => {
       }
 
       // refrescar
-      pendingComprobantes.value = []
-      pendingGuia.value = []
+      pendingComprobantes.value = [[], [], []]
+      pendingGuias.value = [[], [], []]
       pendingConstancias.value = {}
       await getDetalle(id)
 
