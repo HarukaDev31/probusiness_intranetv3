@@ -640,18 +640,14 @@ const clearDateFilter = () => {
 }
 
 const handleStatusUpdate = async (eventId: number, status: CalendarEventStatus) => {
-  let success: boolean
-  if (calendarPermissions.value.canEditAnyStatus) {
-    success = await updateEventStatus(eventId, status)
-  } else {
+  if (!calendarPermissions.value.canEditAnyStatus) {
     const activity = visibleActivities.value.find(a => a.id === eventId)
-    const myCharge = activity ? getMyCharge(activity) : undefined
-    if (!myCharge) {
+    if (!activity?.charges?.some(c => c.user_id === Number(currentUserId.value))) {
       showError('Error', 'No puedes actualizar el estado de esta actividad')
       return
     }
-    success = await updateChargeStatus(myCharge.id, status)
   }
+  const success = await updateEventStatus(eventId, status)
   if (success) {
     showSuccess('Éxito', 'Estado actualizado correctamente')
     await applyFilters()
