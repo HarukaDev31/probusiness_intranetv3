@@ -14,7 +14,7 @@
       :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
-          <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headers" :loading="loadingGeneral || loadingHeaders" />
+          <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headersFormatted" :loading="loadingGeneral || loadingHeaders" />
           <div v-if="currentRole === ROLES.CONTABILIDAD" class="flex justify-end">
             <UButton
               icon="i-heroicons-paper-airplane"
@@ -47,15 +47,41 @@ import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useWhatsapp } from '~/composables/cargaconsolidada/factura-guia/useWhatsapp'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
+import ModalPreview from '~/components/commons/ModalPreview.vue'
+import { formatCurrency } from '~/utils/formatters'
 const { withSpinner } = useSpinner()
+const cellWrap = (classAdd: string) => (content: any) => h('div', { class: `py-2 px-1 min-w-0 ${classAdd}` }, content)
+
+// Header "Total comprobantes" formateado en dólares
+// Headers con Total comprobantes y Total detracciones formateados en dólares (vienen del backend vía getHeaders)
+const headersFormatted = computed(() => {
+  if (!headers.value?.length) return []
+  return headers.value.map((h: { label?: string; value?: string | number; icon?: string; por_usuario?: unknown }) => {
+    const label = (h.label || '').toLowerCase()
+    const isTotalComprobantes = label.includes('total') && label.includes('comprobante')
+    const isTotalDetracciones = label.includes('total') && label.includes('detraccion')
+    if (isTotalComprobantes || isTotalDetracciones) {
+      const num = Number(h.value)
+      const currency = isTotalComprobantes ? 'USD' : 'PEN'
+      return { ...h, value: Number.isFinite(num) ? formatCurrency(num, currency) : (h.value ?? 'N/A') }
+    }
+    return h
+  })
+})
 const { showSuccess, showError, showConfirmation } = useModal()
 const { sendFactura, sendGuia } = useWhatsapp()
 const route = useRoute()
 const id = Number(route.params.id)
 const overlay = useOverlay()
+const modalPreview = overlay.create(ModalPreview)
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 const sendDocumentModal = overlay.create(SendDocumentModal)
 const enviarFormularioModal = overlay.create(EnviarFormularioModal)
+
+function openPreview (url: string, fileName: string) {
+  modalPreview.open({ file: { file_url: url, file_name: fileName }, isOpen: true })
+}
+
 // Modal state for creating pagos
 const { currentRole, currentId } = useUserRole()
 const selectedCliente = ref('')
@@ -460,49 +486,52 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
   {
     accessorKey: 'nro',
     header: 'N°',
-    cell: ({ row }: { row: any }) => row.index + 1
+    cell: ({ row }: { row: any }) => cellWrap('w-12 text-center')(row.index + 1)
   },
   {
     accessorKey: 'contacto',
     header: 'Contacto',
     cell: ({ row }: { row: any }) => {
       const nombre = row.original?.nombre || ''
-      const documento = row.original?.documento || ''
       const telefono = row.original?.telefono || ''
-      const correo = row.original?.correo || ''
-      return h('div', { class: 'py-2 w-full whitespace-normal' }, [
-        h('div', { class: 'font-medium' }, nombre),
-        h('div', { class: 'text-sm text-gray-500' }, documento),
-        h('div', { class: 'text-sm text-gray-500' }, telefono),
-        h('div', { class: 'text-sm text-gray-500' }, correo)
-      ])
+      const nodes: any[] = [
+        h('div', { class: 'font-medium text-gray-900 dark:text-white break-words line-clamp-2 min-w-0' }, nombre),
+        ...(telefono ? [h('div', { class: 'text-sm text-gray-500 dark:text-gray-400' }, telefono)] : [])
+      ]
+      return cellWrap('max-w-[200px] min-w-0')(nodes)
     }
   },
   {
     accessorKey: 'tipo_cliente',
     header: 'T. Cliente',
-    cell: ({ row }: { row: any }) => row.original.name
+    cell: ({ row }: { row: any }) => cellWrap('')(row.original.tipo_cliente_nombre ?? row.original.name ?? '—')
   },
   {
     accessorKey: 'registrado',
     header: 'Registrado',
-    cell: ({ row }: { row: any }) =>
-      h(UBadge, {
-        label: row.original.registrado ? 'Sí' : 'No',
-        color: row.original.registrado ? 'success' : 'neutral'
-      })
+    cell: ({ row }: { row: any }) => cellWrap('')(h(UBadge, {
+      label: row.original.registrado ? 'Sí' : 'No',
+      color: row.original.registrado ? 'success' : 'neutral',
+      variant: 'soft',
+      size: 'xs'
+    }))
+  },
+  {
+    accessorKey: 'tipo_entrega',
+    header: 'T. Entrega',
+    cell: ({ row }: { row: any }) => cellWrap('')(row.original.tipo_entrega ?? '—')
   },
   {
     accessorKey: 'tipo_comprobante',
     header: 'T. Comprobante',
     cell: ({ row }: { row: any }) => {
       const comprobantes = row.original.comprobantes as Array<{ tipo_comprobante?: string | null }> | undefined
-      if (!comprobantes?.length) return h('span', { class: 'text-gray-400 text-sm' }, '—')
-      return h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) =>
+      if (!comprobantes?.length) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      return cellWrap('')(h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) =>
         c.tipo_comprobante
-          ? h(UBadge, { key: i, label: c.tipo_comprobante, color: 'info', variant: 'soft' })
-          : h(UBadge, { key: i, label: '—', color: 'neutral', variant: 'soft' })
-      ))
+          ? h(UBadge, { key: i, label: c.tipo_comprobante, color: 'info', variant: 'soft', size: 'xs' })
+          : h(UBadge, { key: i, label: '—', color: 'neutral', variant: 'soft', size: 'xs' })
+      )))
     }
   },
   {
@@ -510,11 +539,11 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     header: 'Valor Comprobante',
     cell: ({ row }: { row: any }) => {
       const comprobantes = row.original.comprobantes as Array<{ valor_comprobante?: number | null }> | undefined
-      if (!comprobantes?.length) return h('span', { class: 'text-gray-400 text-sm' }, '—')
-      return h('div', { class: 'flex flex-col gap-0.5 text-sm' }, comprobantes.map((c, i) => {
+      if (!comprobantes?.length) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      return cellWrap('text-right')(h('div', { class: 'flex flex-col gap-0.5 text-sm' }, comprobantes.map((c, i) => {
         const val = c.valor_comprobante
-        return h('span', { key: i, class: 'font-medium' }, val != null ? `S/ ${Number(val).toFixed(2)}` : '—')
-      }))
+        return h('span', { key: i, class: 'font-medium tabular-nums' }, val != null ? formatCurrency(Number(val), 'USD') : '—')
+      })))
     }
   },
   {
@@ -522,57 +551,64 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     header: 'Detracción',
     cell: ({ row }: { row: any }) => {
       const comprobantes = row.original.comprobantes as Array<{ detraccion?: { monto: number; file_url?: string } | null }> | undefined
-      if (!comprobantes?.length) return h('span', { class: 'text-gray-400 text-sm' }, '—')
-      return h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) => {
+      if (!comprobantes?.length) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      return cellWrap('')(h('div', { class: 'flex flex-col gap-1.5' }, comprobantes.map((c, i) => {
         const d = c.detraccion
         if (!d) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
-        const monto = h('span', { class: 'text-sm font-medium' }, `S/ ${Number(d.monto).toFixed(2)}`)
+        const monto = `S/ ${Number(d.monto).toFixed(2)}`
         if (d.file_url) {
-          return h('div', { key: i, class: 'flex flex-col gap-0.5' }, [
-            monto,
-            h('a', { href: d.file_url, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1 text-primary text-xs hover:underline' }, ['Ver constancia'])
+          return h('div', { key: i, class: 'inline-flex items-center gap-1.5 flex-nowrap' }, [
+            h('span', { class: 'text-sm font-medium tabular-nums' }, monto),
+            h(UButton, {
+              icon: 'i-heroicons-eye',
+              size: 'xs',
+              color: 'primary',
+              variant: 'soft',
+              'aria-label': 'Ver constancia',
+              onClick: () => openPreview(d.file_url!, 'Constancia.pdf')
+            }, { default: () => 'Ver' })
           ])
         }
-        return h('span', { key: i }, monto)
-      }))
+        return h('span', { key: i, class: 'text-sm font-medium tabular-nums' }, monto)
+      })))
     }
   },
   {
     accessorKey: 'comprobante_pdf',
     header: 'Comprobante (PDF)',
     cell: ({ row }: { row: any }) => {
-      console.log(row.original.comprobantes)
       const comprobantes = row.original.comprobantes as Array<{ comprobante_file_url?: string | null; file_url?: string | null; file_name?: string | null }> | undefined
-      if (!comprobantes?.length) return h('span', { class: 'text-gray-400 text-sm' }, '—')
-      console.log(comprobantes)
-      return h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) => {
+      if (!comprobantes?.length) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      return cellWrap('')(h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) => {
         const url = c.file_url ?? c.comprobante_file_url
-        return url
-          ? h('a', {
-            key: i,
-            href: url,
-            target: '_blank',
-            rel: 'noopener noreferrer',
-            class: 'inline-flex items-center gap-1 text-primary text-sm hover:underline'
-          }, [c.file_name || 'Ver comprobante'])
-          : h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
-      }))
+        const fileName = c.file_name || 'Comprobante.pdf'
+        if (!url) return h(UButton, { key: i, icon: 'vscode-icons:file-type-pdf2', color: 'neutral', variant: 'ghost', size: 'xs', disabled: true }, '—')
+        return h(UButton, {
+          key: i,
+          icon: 'i-heroicons-eye',
+          size: 'xs',
+          color: 'primary',
+          variant: 'soft',
+          'aria-label': 'Ver comprobante',
+          onClick: () => openPreview(url, fileName)
+        })
+      })))
     }
   },
   {
     accessorKey: 'guia_r_',
     header: 'Guía R.',
     cell: ({ row }: { row: any }) => {
-      if (row.original.guia_remision_url) {
-        return h(UButton, {
-          icon: 'i-heroicons-arrow-down-tray',
-          color: 'primary',
-          variant: 'outline',
-          size: 'xs',
-          onClick: () => window.open(row.original.guia_remision_url, '_blank')
-        })
-      }
-      return h('span', { class: 'text-gray-400 text-sm' }, '—')
+      const url = row.original.guia_remision_url
+      if (!url) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      return cellWrap('')(h(UButton, {
+        icon: 'i-heroicons-eye',
+        size: 'xs',
+        color: 'primary',
+        variant: 'soft',
+        'aria-label': 'Ver guía',
+        onClick: () => openPreview(url, 'Guía.pdf')
+      }))
     }
   },
   {
@@ -580,27 +616,26 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     header: 'Estado',
     cell: ({ row }: { row: any }) => {
       const estado = row.original.estado_cotizacion_final || 'PENDIENTE'
-      const colorMap: Record<string, string> = {
+      const colorMap: Record<string, 'success' | 'error' | 'warning' | 'neutral' | 'info'> = {
         PAGADO: 'success', AJUSTADO: 'error', SOBREPAGO: 'warning', PENDIENTE: 'neutral', COTIZADO: 'info'
       }
-      return h(UBadge, { label: estado, color: colorMap[estado] || 'neutral', variant: 'soft' })
+      return cellWrap('')(h(UBadge, { label: estado, color: colorMap[estado] || 'neutral', variant: 'soft', size: 'xs' }))
     }
   },
   {
     accessorKey: 'acciones',
     header: 'Acciones',
-    cell: ({ row }: { row: any }) =>
-      h(UTooltip, { text: 'Ver detalle contabilidad', placement: 'top' }, {
-        default: () => h(UButton, {
-          icon: 'i-heroicons-eye',
-          color: 'primary',
-          variant: 'ghost',
-          size: 'sm',
-          onClick: () => {
-            navigateTo(`/cargaconsolidada/contabilidad/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
-          }
-        })
+    cell: ({ row }: { row: any }) => cellWrap('')(h(UTooltip, { text: 'Ver detalle contabilidad', placement: 'top' }, {
+      default: () => h(UButton, {
+        icon: 'i-heroicons-eye',
+        color: 'primary',
+        variant: 'ghost',
+        size: 'sm',
+        onClick: () => {
+          navigateTo(`/cargaconsolidada/contabilidad/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
+        }
       })
+    }))
   }
 ])
 

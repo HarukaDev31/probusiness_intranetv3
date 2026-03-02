@@ -36,8 +36,16 @@ export const useContabilidadDetalle = () => {
         return ContabilidadService.uploadComprobante(formData)
     }
 
+    const uploadComprobantesBatch = async (files: File[], idCotizacion: number) => {
+        return ContabilidadService.uploadComprobantesBatch(idCotizacion, files)
+    }
+
     const uploadConstancia = async (file: File, comprobanteId: number) => {
         return ContabilidadService.uploadConstancia(comprobanteId, file)
+    }
+
+    const uploadConstanciasBatch = async (items: Array<{ comprobanteId: number; file: File }>) => {
+        return ContabilidadService.uploadConstanciasBatch(items)
     }
 
     const deleteComprobante = async (id: number) => {
@@ -62,7 +70,9 @@ export const useContabilidadDetalle = () => {
         nota,
         getDetalle,
         uploadComprobante,
+        uploadComprobantesBatch,
         uploadConstancia,
+        uploadConstanciasBatch,
         deleteComprobante,
         deleteConstancia,
         saveNota,

@@ -21,7 +21,7 @@
                             v-if="tabs.length > 1" />
                         <span v-if="currentRole === ROLES.CONTABILIDAD && fCierre"
                             class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                            F. Límite pago: {{ formatDate(fCierre) }}
+                            F. Límite pago: {{ formatDateTimeToDmy(fCierre) }}
                         </span>
                     </div>
                 </div>
@@ -45,14 +45,8 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loading || loadingHeaders" />
-                    <div class="flex items-center justify-between gap-3">
-                        <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
-                            v-if="tabs.length > 1" />
-                        <span v-if="currentRole === ROLES.CONTABILIDAD && fCierre"
-                            class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                            F. Límite pago: {{ formatDate(fCierre) }}
-                        </span>
-                    </div>
+                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
+                        v-if="tabs.length > 1" />
                 </div>
             </template>
             <template #actions>
@@ -105,7 +99,7 @@
                             v-if="tabs.length > 1" />
                         <span v-if="currentRole === ROLES.CONTABILIDAD && fCierre"
                             class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                            F. Límite pago: {{ formatDate(fCierre) }}
+                            F. Límite pago: {{ formatDateTimeToDmy(fCierre) }}
                         </span>
                     </div>
                 </div>
@@ -122,7 +116,7 @@ import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
-import { formatDate, formatCurrency } from '~/utils/formatters'
+import { formatDate, formatCurrency, formatDateTimeToDmy } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
@@ -1036,7 +1030,29 @@ const getPagosColumns = () => {
                 ])
             }
         },
-
+        ...(isContabilidad ? [{
+            accessorKey: 'estado_inspeccion',
+            header: 'Inspección',
+            cell: ({ row }: { row: any }) => {
+                const estado = row.original.estado_inspeccion || 'Pendiente'
+                const INSPECCION_CLASSES: Record<string, string> = {
+                    Pendiente: 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white',
+                    Inspeccionado: 'bg-blue-500 text-white dark:bg-blue-500 dark:text-white',
+                    Completado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white'
+                }
+                const cls = INSPECCION_CLASSES[estado] || INSPECCION_CLASSES.Pendiente
+                return h(USelect as any, {
+                    modelValue: estado,
+                    disabled: true,
+                    items: [
+                        { label: 'Pendiente', value: 'Pendiente' },
+                        { label: 'Inspeccionado', value: 'Inspeccionado' },
+                        { label: 'Completado', value: 'Completado' }
+                    ],
+                    class: cls
+                })
+            }
+        }] : []),
         {
             accessorKey: 'estado_pago',
             header: 'Estado',

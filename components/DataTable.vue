@@ -68,11 +68,25 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {{ filter.label }}
                     </label>
-                    <!-- Filtro de tipo date -->
-                    <UInput v-if="filter.type === 'date'"
-                      :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
-                      :placeholder="filter.placeholder" class="w-full"  
-                      @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
+                    <!-- Filtro de tipo date: UCalendar en popover -->
+                    <UPopover v-if="filter.type === 'date'" :open="undefined">
+                      <UButton
+                        color="neutral"
+                        variant="outline"
+                        icon="i-lucide-calendar"
+                        class="w-full justify-start"
+                        :class="{ 'text-gray-400 dark:text-gray-500': !(filtersValue && filtersValue[filter.key]) }"
+                      >
+                        {{ (filtersValue && filtersValue[filter.key]) ? filterValueToDisplayLabel(filtersValue[filter.key]) : (filter.placeholder || 'Seleccionar fecha') }}
+                      </UButton>
+                      <template #content>
+                        <UCalendar
+                          :model-value="filterValueToCalendarDate(filtersValue && filtersValue[filter.key])"
+                          @update:model-value="(d) => handleFilterChange(filter.key, calendarDateToFilterValue(d))"
+                          class="p-2"
+                        />
+                      </template>
+                    </UPopover>
                     <!-- Filtro de tipo select: model-value no vacío (fallback primera opción) para cumplir SelectItem -->
                     <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
                         @update:model-value="(value) => handleFilterChange(filter.key, value)"
@@ -117,10 +131,24 @@
                       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ filter.label }}
                       </label>
-                      <UInput v-if="filter.type === 'date'"
-                        :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
-                        :placeholder="filter.placeholder" class="w-full"
-                        @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
+                      <UPopover v-if="filter.type === 'date'" :open="undefined">
+                        <UButton
+                          color="neutral"
+                          variant="outline"
+                          icon="i-lucide-calendar"
+                          class="w-full justify-start"
+                          :class="{ 'text-gray-400 dark:text-gray-500': !(filtersValue && filtersValue[filter.key]) }"
+                        >
+                          {{ (filtersValue && filtersValue[filter.key]) ? filterValueToDisplayLabel(filtersValue[filter.key]) : (filter.placeholder || 'Seleccionar fecha') }}
+                        </UButton>
+                        <template #content>
+                          <UCalendar
+                            :model-value="filterValueToCalendarDate(filtersValue && filtersValue[filter.key])"
+                            @update:model-value="(d) => handleFilterChange(filter.key, calendarDateToFilterValue(d))"
+                            class="p-2"
+                          />
+                        </template>
+                      </UPopover>
                       <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
                           @update:model-value="(value) => handleFilterChange(filter.key, value)"
                           @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
@@ -184,8 +212,8 @@
       </div>
     </div>
 
-    <!-- Table Section -->
-    <div class="relative overflow-hidden" ref="tableWrapperRef" style="width: 100%;">
+    <!-- Table Section (sin overflow-hidden en el wrapper para que position:sticky del thead funcione) -->
+    <div class="relative" ref="tableWrapperRef" style="width: 100%;">
       <!-- Sombra izquierda -->
       <div 
         v-if="showLeftIndicator"
@@ -200,19 +228,26 @@
       <div 
         ref="tableContainerRef"
         class="table-scroll-container"
-        style="max-height: calc(100vh - 250px);"
+        style="height: calc(100vh - 250px); max-height: calc(100vh - 250px); min-height: 280px;"
         @mousemove="onTableMouseMove"
         @mouseleave="onTableMouseLeave"
         @scroll="onTableScroll"
       >
         <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky :columns="columns" :loading="loading"
           :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
-          :ui="Object.keys(tableMeta).length>0?{th: 'font-normal text-xs lg:text-sm px-2 py-1 md:px-4 md:py-3.5'}:{
+          :ui="Object.keys(tableMeta).length>0?{
+            // Importante: quitar overflow del root interno de UTable.
+            // Si el root tiene overflow-* pero el scroll real ocurre en .table-scroll-container, sticky no se activa.
+            root: 'relative overflow-visible',
+            th: 'sticky top-0 z-30 font-normal text-xs lg:text-sm px-2 py-1 md:px-4 md:py-3.5 bg-[#f0f4f9] dark:bg-gray-900',
+            thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)]',
+          }:{
+            root: 'relative overflow-visible',
             base: 'min-w-full',
             tbody: 'border-separate border-spacing-y-6',
             td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
-            th: 'font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5',
-            thead: 'sticky top-0 z-30 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15',
+            th: 'sticky top-0 z-30 font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5 bg-[#f0f4f9] dark:bg-gray-900',
+            thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)]',
             tr: 'border-[#f0f4f9] dark:border-gray-900',
           }"
           >
@@ -290,7 +325,9 @@ import { ROLES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 const { hasRole, isCoordinacion,currentRole } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
-import { formatDateForInput } from '../utils/data-table'
+import { formatDateForInput, formatDateForDisplay } from '../utils/data-table'
+import { parseDate } from '@internationalized/date'
+import type { CalendarDate } from '@internationalized/date'
 import { setContentNarrow } from '../composables/usePageLayout'
 import { navigateTo, useRouter } from '#imports'
 const UButton = resolveComponent('UButton')
@@ -370,6 +407,28 @@ const {
   onItemsPerPageChange,
   filtersValue
 } = useDataTable(props, emit)
+
+// Helpers para filtros de fecha con UCalendar (string <-> CalendarDate)
+function filterValueToCalendarDate (value: string | undefined): CalendarDate | null {
+  if (!value || typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const iso = trimmed.includes('/') ? formatDateForInput(trimmed) : trimmed
+  try {
+    return parseDate(iso) as CalendarDate
+  } catch {
+    return null
+  }
+}
+function calendarDateToFilterValue (d: CalendarDate | import('@internationalized/date').CalendarDateTime | import('@internationalized/date').ZonedDateTime | { start: unknown } | unknown[] | null | undefined): string {
+  if (!d || Array.isArray(d) || typeof (d as { start?: unknown }).start !== 'undefined') return ''
+  const date = d as { year: number; month: number; day: number }
+  return `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
+}
+function filterValueToDisplayLabel (value: string | undefined): string {
+  if (!value || typeof value !== 'string') return ''
+  return value.includes('/') ? value : formatDateForDisplay(value)
+}
 
 const router = useRouter()
 
@@ -1279,6 +1338,13 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   scrollbar-color: #9ca3af #e5e7eb;
 }
 
+/* Evitar que wrappers internos (Nuxt UI) creen un scroll-container extra.
+   Si hay un overflow-* interno, sticky header no se activa porque el scroll real ocurre en .table-scroll-container. */
+.table-scroll-container .overflow-x-auto,
+.table-scroll-container .overflow-auto {
+  overflow: visible !important;
+}
+
 /* Forzar que la tabla tenga ancho mínimo para scroll */
 .table-scroll-container table {
   min-width: 800px;
@@ -1331,16 +1397,32 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   background: #1f2937;
 }
 
-/* Headers sticky */
+/* Headers sticky - el contenedor tiene height fijo para que el scroll sea interno y el thead se quede fijo */
 .table-scroll-container table thead {
-  position: sticky;
-  top: 0;
+  position: sticky !important;
+  top: 0 !important;
   z-index: 30;
   background: #f0f4f9;
+  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.05);
+}
+
+.table-scroll-container table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 31;
+  background: #f0f4f9 !important;
 }
 
 .dark .table-scroll-container table thead {
   background: #111827;
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+.dark .table-scroll-container table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 31;
+  background: #111827 !important;
 }
 
 /* Sombras laterales para indicar scroll horizontal */

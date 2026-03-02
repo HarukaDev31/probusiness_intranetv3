@@ -37,6 +37,7 @@
                     <FileIcon :file="item.raw" class="w-8 h-8" />
                     <div class="min-w-0">
                         <p class="text-sm font-medium truncate" :class="item.isInitial ? 'select-none cursor-default' : ''" :title="item.name">{{ item.name }}</p>
+                        <p v-if="metaText(item.raw)" class="text-[11px] text-gray-600 dark:text-gray-300">{{ metaText(item.raw) }}</p>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400" :class="item.isInitial ? 'select-none cursor-default' : ''">{{ item.sizeText }}</p>
                     </div>
                 </div>
@@ -88,6 +89,8 @@ interface Props {
     showRemoveButton?: boolean
     /** Solo ver/descargar: oculta la zona de subida y no permite añadir ni quitar. */
     readOnly?: boolean
+    /** Renderiza texto extra por archivo (por ejemplo Tipo/Monto). */
+    metaRenderer?: (file: File | FileItem) => string | null
 }
 
 interface Emits {
@@ -111,7 +114,8 @@ const props = withDefaults(defineProps<Props>(), {
     immediate: true,
     showSaveButton: false,
     showRemoveButton: true,
-    readOnly: false
+    readOnly: false,
+    metaRenderer: undefined
 })
 
 const emit = defineEmits<Emits>()
@@ -127,6 +131,14 @@ const acceptedTypesText = computed(() => {
         ?.map(type => type.replace('.', '').toUpperCase())
         .join(', ')
 })
+
+const metaText = (file: File | FileItem): string | null => {
+    if (typeof props.metaRenderer === 'function') {
+        const v = props.metaRenderer(file)
+        return v || ''
+    }
+    return ''
+}
 
 /** Lista a mostrar como archivos seleccionados: la que controla el padre (modelFiles) o la interna (selectedFiles). */
 const displayedSelectedFiles = computed(() =>

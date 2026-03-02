@@ -76,5 +76,8 @@ export interface General {
     tipo_comprobante?: string | null
     comprobante_file_url?: string | null
     detraccion_file_url?: string | null
+    /** true SOLO si existe al menos un registro en consolidado_comprobante_forms con id_cotizacion = esta cotización. Backend: ConsolidadoComprobanteForm::where('id_cotizacion', $idCotizacion)->exists(); si no hay fila debe ser false. */
     registrado?: boolean
+    /** Tipo de entrega: "Lima" o "Provincia" según exista formulario de entrega y su tipo (no free-text). Backend: desde tabla/formulario de entrega por id_cotizacion. */
+    tipo_entrega?: string | null
 }

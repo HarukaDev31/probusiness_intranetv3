@@ -1,12 +1,23 @@
 <template>
   <div class="p-6">
-    <PageHeader
-      :title="`Contabilidad — ${cliente?.nombre || ''}`"
-      :subtitle="`Consolidado #${$route.query.carga || ''}`"
-      icon=""
-      :hide-back-button="false"
-      @back="$router.back()"
-    />
+    <div class="flex items-start justify-between gap-4">
+      <PageHeader
+        :title="`Contabilidad — ${cliente?.nombre || ''}`"
+        :subtitle="`Consolidado #${$route.query.carga || ''}`"
+        icon=""
+        :hide-back-button="false"
+        @back="$router.back()"
+      />
+      <UButton
+        color="primary"
+        variant="solid"
+        size="sm"
+        :loading="savingAll"
+        @click="handleGuardarTodo"
+      >
+        Guardar
+      </UButton>
+    </div>
 
     <!-- Skeleton de carga -->
     <div v-if="loading" class="flex flex-col lg:flex-row gap-6 mt-6">
@@ -113,66 +124,25 @@
           <div class="flex items-center justify-between mb-3">
             <h2 class="font-semibold text-base">Comprobantes</h2>
             <span class="text-sm text-gray-500">
-              Total: <span class="font-semibold text-primary-600">{{ formatCurrency(totalComprobantes,'PEN') }}</span>
+              Total: <span class="font-semibold text-primary-600">{{ formatCurrency(totalComprobantes,'USD') }}</span>
             </span>
           </div>
 
-          <!-- Upload button -->
+          <!-- Uploader (muestra también los comprobantes ya subidos) -->
           <div class="mb-3">
-            <UButton
-              icon="i-heroicons-arrow-up-tray"
-              color="primary"
-              variant="outline"
-              size="sm"
-              @click="triggerComprobante"
-            >
-              Subir comprobante (PDF/Word)
-            </UButton>
-            <input ref="fileInputComprobante" type="file" accept=".pdf,.doc,.docx" class="hidden" @change="handleUploadComprobante" />
-          </div>
-
-          <!-- List -->
-          <div v-if="comprobantes.length === 0" class="text-sm text-gray-400 py-3 text-center">
-            No se han subido comprobantes aún.
-          </div>
-          <div v-else class="space-y-2">
-            <div
-              v-for="item in comprobantes"
-              :key="item.id"
-              class="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700"
-            >
-              <div class="flex items-center gap-3 min-w-0">
-                <UIcon name="i-heroicons-document-text" class="text-blue-500 w-5 h-5 flex-shrink-0" />
-                <div class="min-w-0">
-                  <p class="text-sm font-medium truncate">{{ item.file_name }}</p>
-                  <div class="flex flex-wrap gap-2 mt-0.5">
-                    <UBadge v-if="item.tipo_comprobante" :label="item.tipo_comprobante" color="info" variant="soft" size="xs" />
-                    <span v-if="item.valor_comprobante" class="text-xs text-gray-500">
-                      Total: {{ formatMoney(item.valor_comprobante) }}
-                    </span>
-                    <UBadge v-if="item.tiene_detraccion" label="Con detracción" color="warning" variant="soft" size="xs" />
-                    <UBadge v-if="item.extracted_by_ai" label="IA" color="primary" variant="subtle" size="xs" />
-                  </div>
-                </div>
-              </div>
-              <div class="flex gap-1 flex-shrink-0">
-                <UButton
-                  v-if="item.file_url"
-                  icon="i-heroicons-arrow-down-tray"
-                  color="primary"
-                  variant="ghost"
-                  size="xs"
-                  @click="openFile(item.file_url)"
-                />
-                <UButton
-                  icon="i-heroicons-trash"
-                  color="error"
-                  variant="ghost"
-                  size="xs"
-                  @click="handleDeleteComprobante(item.id)"
-                />
-              </div>
-            </div>
+            <FileUploader
+              :multiple="true"
+              :immediate="false"
+              :show-save-button="false"
+              :accepted-types="['.pdf','.doc','.docx']"
+              custom-message="Selecciona o arrastra comprobantes (PDF/Word). Se subirán al presionar «Guardar»."
+              :initial-files="initialComprobantes"
+              :model-files="pendingComprobantes"
+              @files-selected="onComprobantesSelected"
+              @file-removed="onComprobantesRemoved"
+              @files-cleared="clearPendingComprobantes"
+              @error="(msg) => showError('Error', msg)"
+            />
           </div>
         </div>
 
@@ -181,7 +151,7 @@
           <div class="flex items-center justify-between mb-3">
             <h2 class="font-semibold text-base">Detracciones</h2>
             <span class="text-sm text-gray-500">
-              Declarado: <span class="font-semibold text-warning-600">S/ {{ formatMoney(totalDetracciones) }}</span>
+              Declarado: <span class="font-semibold text-warning-600">{{ formatCurrency(totalDetracciones, 'PEN') }}</span>
             </span>
           </div>
 
@@ -253,31 +223,26 @@
                   </div>
                 </div>
 
-                <!-- Sin constancia: botón para subir -->
-                <div v-else class="flex items-center gap-2">
-                  <UButton
-                    icon="i-heroicons-arrow-up-tray"
-                    color="warning"
-                    variant="outline"
-                    size="xs"
-                    @click="triggerConstancia(item.id)"
-                  >
-                    Subir constancia de pago
-                  </UButton>
-                  <span class="text-xs text-gray-400">Constancia SUNAT (PDF)</span>
+                <!-- Sin constancia: uploader (se sube al Guardar) -->
+                <div v-else class="space-y-2">
+                  <FileUploader
+                    :multiple="false"
+                    :immediate="false"
+                    :show-save-button="false"
+                    :accepted-types="['.pdf','.doc','.docx']"
+                    custom-message="Selecciona constancia SUNAT (PDF/Word). Se subirá al presionar «Guardar»."
+                    :model-files="pendingConstancias[item.id] || []"
+                    @files-selected="(files) => setConstanciaFile(item.id, files)"
+                    @file-removed="() => clearConstanciaFile(item.id)"
+                    @files-cleared="() => clearConstanciaFile(item.id)"
+                    @error="(msg) => showError('Error', msg)"
+                  />
+                  <div class="text-xs text-gray-400">Comprobante: {{ item.file_name }}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Input oculto compartido para constancias -->
-          <input
-            ref="fileInputConstancia"
-            type="file"
-            accept=".pdf,.doc,.docx"
-            class="hidden"
-            @change="handleUploadConstancia"
-          />
         </div>
 
         <!-- Guía de Remisión -->
@@ -287,50 +252,19 @@
           </div>
 
           <div class="mb-3">
-            <UButton
-              icon="i-heroicons-arrow-up-tray"
-              color="primary"
-              variant="outline"
-              size="sm"
-              @click="triggerGuia"
-            >
-              Subir guía (PDF/Word)
-            </UButton>
-            <input ref="fileInputGuia" type="file" accept=".pdf,.doc,.docx" class="hidden" @change="handleUploadGuia" />
-          </div>
-
-          <div v-if="!guiasRemisionList.length" class="text-sm text-gray-400 py-3 text-center">
-            Aún no hay guías de remisión subidas.
-          </div>
-          <div v-else class="space-y-2">
-            <div
-              v-for="guia in guiasRemisionList"
-              :key="guia.id"
-              class="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700"
-            >
-              <div class="flex items-center gap-3 min-w-0">
-                <UIcon name="i-heroicons-document-text" class="text-green-500 w-5 h-5 flex-shrink-0" />
-                <span class="text-sm font-medium truncate">{{ guia.file_name || 'Guía de remisión' }}</span>
-              </div>
-              <div class="flex gap-1 flex-shrink-0">
-                <UButton
-                  v-if="guia.file_url"
-                  icon="i-heroicons-arrow-down-tray"
-                  color="primary"
-                  variant="ghost"
-                  size="xs"
-                  @click="openFile(guia.file_url)"
-                />
-                <UButton
-                  v-if="guia.id"
-                  icon="i-heroicons-trash"
-                  color="error"
-                  variant="ghost"
-                  size="xs"
-                  @click="handleDeleteGuia(guia.id)"
-                />
-              </div>
-            </div>
+            <FileUploader
+              :multiple="true"
+              :immediate="false"
+              :show-save-button="false"
+              :accepted-types="['.pdf','.doc','.docx']"
+              custom-message="Selecciona o arrastra guías (PDF/Word). Se subirán al presionar «Guardar»."
+              :initial-files="initialGuias"
+              :model-files="pendingGuia"
+              @files-selected="onGuiaSelected"
+              @file-removed="onGuiaRemoved"
+              @files-cleared="clearPendingGuia"
+              @error="(msg) => showError('Error', msg)"
+            />
           </div>
         </div>
 
@@ -339,33 +273,45 @@
       <!-- ── Panel derecho: Estado documentos + Nota ──────────────────────── -->
       <div class="w-full lg:w-72 space-y-6">
 
-        <!-- Estado de documentos -->
+        <!-- Ruta Comercial (como en diseño) -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <h2 class="font-semibold text-base mb-4">Estado de documentos</h2>
+          <h2 class="font-semibold text-base mb-4">Ruta Comercial</h2>
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Cotización Inicial</span>
-              <UIcon
-                :name="panel?.tiene_cotizacion_inicial ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'"
-                :class="panel?.tiene_cotizacion_inicial ? 'text-green-500' : 'text-gray-300'"
-                class="w-5 h-5"
+              <span class="text-sm text-gray-600">Cotización inicial</span>
+              <UButton
+                v-if="panel?.cotizacion_inicial_url"
+                icon="i-heroicons-eye"
+                color="primary"
+                variant="ghost"
+                size="xs"
+                @click="openFile(panel.cotizacion_inicial_url)"
               />
+              <span v-else class="text-xs text-gray-400">—</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Cotización Final</span>
-              <UIcon
-                :name="panel?.tiene_cotizacion_final ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'"
-                :class="panel?.tiene_cotizacion_final ? 'text-green-500' : 'text-gray-300'"
-                class="w-5 h-5"
+              <span class="text-sm text-gray-600">Cotización final</span>
+              <UButton
+                v-if="panel?.cotizacion_final_url"
+                icon="i-heroicons-eye"
+                color="primary"
+                variant="ghost"
+                size="xs"
+                @click="openFile(panel.cotizacion_final_url)"
               />
+              <span v-else class="text-xs text-gray-400">—</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Contrato</span>
-              <UIcon
-                :name="panel?.tiene_contrato ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'"
-                :class="panel?.tiene_contrato ? 'text-green-500' : 'text-gray-300'"
-                class="w-5 h-5"
+              <UButton
+                v-if="panel?.contrato_url"
+                icon="i-heroicons-eye"
+                color="primary"
+                variant="ghost"
+                size="xs"
+                @click="openFile(panel.contrato_url)"
               />
+              <span v-else class="text-xs text-gray-400">—</span>
             </div>
           </div>
         </div>
@@ -375,15 +321,15 @@
           <h2 class="font-semibold text-base mb-2">Resumen</h2>
           <div class="flex items-center justify-between text-sm">
             <span class="text-gray-500">Total comprobantes</span>
-            <span class="font-semibold text-primary-600">{{ formatMoney(totalComprobantes) }}</span>
+            <span class="font-semibold text-primary-600">{{ formatCurrency(totalComprobantes, 'USD') }}</span>
           </div>
           <div class="flex items-center justify-between text-sm">
             <span class="text-gray-500">Detracciones declarado</span>
-            <span class="font-semibold text-warning-600">S/ {{ formatMoney(totalDetracciones) }}</span>
+            <span class="font-semibold text-warning-600">{{ formatCurrency(totalDetracciones, 'PEN') }}</span>
           </div>
           <div v-if="totalConstanciasPagadas > 0" class="flex items-center justify-between text-sm border-t border-gray-100 pt-2 mt-2">
             <span class="text-gray-500">Constancias pagadas</span>
-            <span class="font-semibold text-green-600">S/ {{ formatMoney(totalConstanciasPagadas) }}</span>
+            <span class="font-semibold text-green-600">{{ formatCurrency(totalConstanciasPagadas, 'PEN') }}</span>
           </div>
         </div>
 
@@ -397,17 +343,6 @@
             size="sm"
             class="w-full"
           />
-          <div class="flex justify-end mt-2">
-            <UButton
-              size="sm"
-              color="primary"
-              variant="solid"
-              :loading="savingNota"
-              @click="handleSaveNota"
-            >
-              Guardar nota
-            </UButton>
-          </div>
         </div>
 
       </div>
@@ -422,6 +357,9 @@ import { useContabilidadDetalle } from '~/composables/cargaconsolidada/factura-g
 import { GeneralService } from '~/services/cargaconsolidada/factura-guia/generalService'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import FileUploader from '~/components/commons/FileUploader.vue'
+import type { FileItem } from '~/types/commons/file'
+import { formatCurrency } from '~/utils/formatters'
 
 const route = useRoute()
 const id = Number(route.params.id)
@@ -435,8 +373,9 @@ const {
   panel,
   nota,
   getDetalle,
-  uploadComprobante,
+  uploadComprobantesBatch,
   uploadConstancia,
+  uploadConstanciasBatch,
   deleteComprobante,
   deleteConstancia,
   saveNota,
@@ -445,11 +384,10 @@ const {
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 
-const fileInputComprobante = ref<HTMLInputElement | null>(null)
-const fileInputConstancia = ref<HTMLInputElement | null>(null)
-const fileInputGuia = ref<HTMLInputElement | null>(null)
-const savingNota = ref(false)
-const pendingComprobanteId = ref<number | null>(null)
+const savingAll = ref(false)
+const pendingComprobantes = ref<File[]>([])
+const pendingGuia = ref<File[]>([])
+const pendingConstancias = ref<Record<number, File[]>>({})
 
 // Comprobantes que tienen detracción (para la sección de Detracciones)
 const comprobantesConDetraccion = computed(() =>
@@ -474,6 +412,37 @@ const guiasRemisionList = computed(() => {
   return []
 })
 
+// Archivos iniciales (ya subidos) para el FileUploader de comprobantes
+const initialComprobantes = computed(() =>
+  (comprobantes.value || []).map((c: any) => {
+    const tipo = c.tipo_comprobante || '—'
+    const montoText = c.valor_comprobante ? formatCurrency(c.valor_comprobante, 'USD') : '—'
+    const label = `Tipo: ${tipo}   Monto: ${montoText}`
+    return {
+      id: c.id,
+      file_name: label,
+      file_url: c.file_url,
+      type: c.mime_type || 'application/pdf',
+      size: c.size ?? 0,
+      lastModified: Date.now(),
+      file_ext: (c.file_name || '').split('.').pop() || '',
+    }
+  })
+)
+
+// Archivos iniciales (ya subidos) para el FileUploader de guías
+const initialGuias = computed(() =>
+  (guiasRemisionList.value || []).map((g: any) => ({
+    id: g.id,
+    file_name: g.file_name || 'Guía de remisión',
+    file_url: g.file_url,
+    type: 'application/pdf',
+    size: g.size ?? 0,
+    lastModified: Date.now(),
+    file_ext: (g.file_name || '').split('.').pop() || '',
+  }))
+)
+
 const formatMoney = (val: number | null | undefined) => {
   if (!val && val !== 0) return '0.00'
   return Number(val).toFixed(2)
@@ -483,31 +452,33 @@ const openFile = (url: string) => {
   window.open(url, '_blank')
 }
 
-const triggerComprobante = () => fileInputComprobante.value?.click()
-
-const triggerConstancia = (comprobanteId: number) => {
-  pendingComprobanteId.value = comprobanteId
-  fileInputConstancia.value?.click()
+const onComprobantesSelected = (files: File[]) => {
+  pendingComprobantes.value = [...pendingComprobantes.value, ...files]
+}
+const onComprobantesRemoved = (index: number) => {
+  pendingComprobantes.value.splice(index, 1)
+}
+const clearPendingComprobantes = () => {
+  pendingComprobantes.value = []
 }
 
-const triggerGuia = () => fileInputGuia.value?.click()
+const onGuiaSelected = (files: File[]) => {
+  pendingGuia.value = [...pendingGuia.value, ...files]
+}
+const onGuiaRemoved = (index: number) => {
+  pendingGuia.value.splice(index, 1)
+}
+const clearPendingGuia = () => {
+  pendingGuia.value = []
+}
 
-const handleUploadGuia = async (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  await withSpinner(async () => {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('idCotizacion', String(id))
-    const res = await GeneralService.uploadGuiaRemision(formData)
-    if (res?.success !== false) {
-      showSuccess('Guía subida', 'La guía de remisión se subió correctamente y se verá en la tabla de Factura y Guía.')
-      await getDetalle(id)
-    } else {
-      showError('Error', (res as any)?.message || 'Error al subir guía')
-    }
-    if (fileInputGuia.value) fileInputGuia.value.value = ''
-  }, 'Subiendo guía...')
+const setConstanciaFile = (comprobanteId: number, files: File[]) => {
+  pendingConstancias.value = { ...pendingConstancias.value, [comprobanteId]: files?.length ? [files[0]] : [] }
+}
+const clearConstanciaFile = (comprobanteId: number) => {
+  const next = { ...pendingConstancias.value }
+  delete next[comprobanteId]
+  pendingConstancias.value = next
 }
 
 const handleDeleteGuia = (guiaId: number) => {
@@ -516,7 +487,10 @@ const handleDeleteGuia = (guiaId: number) => {
     '¿Está seguro de que desea eliminar esta guía?',
     async () => {
       await withSpinner(async () => {
-        const res = await GeneralService.deleteGuiaRemision(guiaId)
+        // Si es un item real (id>0) eliminar el registro individual; si no, fallback legacy (borra todas/legacy por cotización)
+        const res = guiaId > 0
+          ? await GeneralService.deleteGuiaRemisionItem(guiaId)
+          : await GeneralService.deleteGuiaRemision(id)
         if (res?.success !== false) {
           showSuccess('Eliminada', 'Guía de remisión eliminada correctamente.')
           await getDetalle(id)
@@ -528,37 +502,57 @@ const handleDeleteGuia = (guiaId: number) => {
   )
 }
 
-const handleUploadComprobante = async (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  await withSpinner(async () => {
-    const res = await uploadComprobante(file, id)
-    if (res.success) {
-      showSuccess('Comprobante subido', res.extracted ? 'Datos extraídos con IA correctamente.' : 'Archivo subido. No se pudo extraer datos automáticamente.')
-      await getDetalle(id)
-    } else {
-      showError('Error', res.message || 'Error al subir comprobante')
-    }
-    if (fileInputComprobante.value) fileInputComprobante.value.value = ''
-  }, 'Subiendo y analizando comprobante...')
-}
+const handleGuardarTodo = async () => {
+  savingAll.value = true
+  try {
+    await withSpinner(async () => {
+      // 1) Batch comprobantes
+      const comprobanteFiles = pendingComprobantes.value
+      if (comprobanteFiles.length) {
+        const res = await uploadComprobantesBatch(comprobanteFiles, id)
+        if (!res.success) {
+          showError('Error', res.message || 'Error al subir comprobantes')
+        }
+      }
 
-const handleUploadConstancia = async (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file || !pendingComprobanteId.value) return
-  const comprobanteId = pendingComprobanteId.value
-  pendingComprobanteId.value = null
-  await withSpinner(async () => {
-    const res = await uploadConstancia(file, comprobanteId)
-    if (res.success) {
-      const monto = res.data?.monto_detraccion ? ` S/ ${Number(res.data.monto_detraccion).toFixed(2)}` : ''
-      showSuccess('Constancia subida', res.extracted ? `Monto pagado extraído:${monto}` : 'Archivo subido. No se pudo extraer el monto automáticamente.')
+      // 2) Batch constancias (solo las seleccionadas)
+      const constanciasItems = Object.entries(pendingConstancias.value)
+        .map(([cid, files]) => ({ comprobanteId: Number(cid), file: files?.[0] }))
+        .filter((x) => !!x.file)
+        .map((x) => ({ comprobanteId: x.comprobanteId, file: x.file as File }))
+      if (constanciasItems.length) {
+        const res = await uploadConstanciasBatch(constanciasItems)
+        if (!res.success) {
+          showError('Error', res.message || 'Error al subir constancias')
+        }
+      }
+
+      // 3) Guía (múltiples)
+      const guiaFiles = pendingGuia.value
+      if (guiaFiles.length) {
+        const res = await GeneralService.uploadGuiasRemisionBatch(id, guiaFiles)
+        if (res?.success === false) {
+          showError('Error', (res as any)?.message || 'Error al subir guías')
+        }
+      }
+
+      // 4) Nota
+      const notaRes = await saveNota(id)
+      if (!notaRes.success) {
+        showError('Error', notaRes.message || 'Error al guardar nota')
+      }
+
+      // refrescar
+      pendingComprobantes.value = []
+      pendingGuia.value = []
+      pendingConstancias.value = {}
       await getDetalle(id)
-    } else {
-      showError('Error', res.message || 'Error al subir constancia')
-    }
-    if (fileInputConstancia.value) fileInputConstancia.value.value = ''
-  }, 'Subiendo y analizando constancia de pago...')
+
+      showSuccess('Guardado', 'Cambios guardados correctamente.')
+    }, 'Guardando...')
+  } finally {
+    savingAll.value = false
+  }
 }
 
 const handleDeleteComprobante = (itemId: number) => {
@@ -595,20 +589,6 @@ const handleDeleteConstancia = (itemId: number) => {
       }, 'Eliminando...')
     }
   )
-}
-
-const handleSaveNota = async () => {
-  savingNota.value = true
-  try {
-    const res = await saveNota(id)
-    if (res.success) {
-      showSuccess('Nota guardada', 'La nota interna se guardó correctamente.')
-    } else {
-      showError('Error', res.message || 'Error al guardar nota')
-    }
-  } finally {
-    savingNota.value = false
-  }
 }
 
 onMounted(async () => {

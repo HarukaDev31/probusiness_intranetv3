@@ -69,14 +69,14 @@ const filterConfig = ref([
         key:         'fecha_inicio',
         label:       'F. Inspección Inicio',
         type:        'date',
-        placeholder: 'Selecciona una fecha',
+        placeholder: 'dd/mm/yyyy',
         options:     [],
     },
     {
         key:         'fecha_fin',
         label:       'F. Inspección Fin',
         type:        'date',
-        placeholder: 'Selecciona una fecha',
+        placeholder: 'dd/mm/yyyy',
         options:     [],
     },
     {
@@ -231,18 +231,7 @@ const getColumns = (): TableColumn<any>[] => [
     {
         accessorKey: 'diferencia',
         header:      'Diferencia',
-        cell:        ({ row }: { row: any }) => {
-            const diff  = row.original.diferencia ?? 0
-            const isPaid = diff <= 0
-            return isPaid
-                ? h(UBadge as any, {
-                    color:   'success',
-                    variant: 'solid',
-                    label:   formatCurrency(Math.abs(diff)),
-                    class:   'min-w-16 justify-center',
-                })
-                : h('span', {}, formatCurrency(diff))
-        },
+        cell:        ({ row }: { row: any }) => formatCurrency(row.original.diferencia ?? 0),
     },
     {
         accessorKey: 'adelantos',

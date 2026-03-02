@@ -57,6 +57,9 @@ export const useGeneral  = () => {
             loadingGeneral.value = false
         }
     }
+    /** Obtiene los headers del contenedor (carga, total comprobantes, total detracciones, etc.).
+     * La API GET .../general/{id}/headers devuelve response.data = array de { label, value, icon? }.
+     * Las sumas (Total comprobantes, Total detracciones) las calcula el backend. */
     const getHeaders = async (id: number) => {
         try {
             loadingHeaders.value = true
