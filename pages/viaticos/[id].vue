@@ -386,7 +386,7 @@
               Guardar
             </UButton>
             <p v-if="pendingRetribuciones.length && !sumaCoincideConTotal" class="text-xs text-amber-600 dark:text-amber-400">
-              Las retribuciones se guardarán pero el viático permanecerá en Pendiente hasta que la suma coincida con el total.
+              Las retribuciones se guardarán pero el viático permanecerá en Pendiente hasta que la suma sea mayor o igual al total.
             </p>
           </div>
         </div>
@@ -438,8 +438,10 @@ const totalAPagar = computed(() => Number(viatico.value?.total_amount ?? 0))
 const sumaPending = computed(() => pendingRetribuciones.value.reduce((s, p) => s + p.monto, 0))
 /** Puede guardar si hay al menos una retribución pendiente (aunque la suma no coincida con el total) */
 const canGuardarTodo = computed(() => pendingRetribuciones.value.length > 0)
-/** La suma de pendientes coincide con el total a pagar → al guardar se pasará a Confirmado */
-const sumaCoincideConTotal = computed(() => Math.abs(sumaPending.value - totalAPagar.value) < 0.02)
+/** Suma de retribuciones ya guardadas en el backend */
+const sumaExistentes = computed(() => retribucionesList.value.reduce((s, r) => s + Number((r as any).monto ?? 0), 0))
+/** La suma total (existentes + pendientes) es >= el total a pagar → al guardar se pasará a Confirmado */
+const sumaCoincideConTotal = computed(() => sumaExistentes.value + sumaPending.value >= totalAPagar.value - 0.02)
 
 const pendingPreviewUrls = ref<Map<string, string>>(new Map())
 function pendingPreviewUrl(item: PendingRetribucion): string {
