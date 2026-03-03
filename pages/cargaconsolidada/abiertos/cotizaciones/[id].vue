@@ -680,7 +680,15 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'cotizacion',
         header: 'Cotizacion',
         cell: ({ row }: { row: any }) => {
+            //add if url_cotizacion_pdf  show pdf
             return h('div', { class: 'flex flex-row gap-2' }, [
+                row.original.url_cotizacion_pdf ? h('div', {
+                    innerHTML: CUSTOMIZED_ICONS.PDF,
+                    class: 'cursor-pointer',
+                    onClick: () => {
+                        downloadFile(row.original.url_cotizacion_pdf)
+                    }
+                }) : null,
                 row.original.cotizacion_file_url ? h('div', {
                     innerHTML: CUSTOMIZED_ICONS.EXCEL,
                     class: 'cursor-pointer',
@@ -873,6 +881,13 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         header: 'Cotizacion',
         cell: ({ row }: { row: any }) => {
             return h('div', { class: 'flex flex-row gap-2' }, [
+                row.original.url_cotizacion_pdf ? h('div', {
+                    innerHTML: CUSTOMIZED_ICONS.PDF,
+                    class: 'cursor-pointer',
+                    onClick: () => {
+                        downloadFile(row.original.url_cotizacion_pdf)
+                    }
+                }) : null,
                 row.original.cotizacion_file_url ? h('div', {
                     innerHTML: CUSTOMIZED_ICONS.EXCEL,
                     class: 'cursor-pointer',
