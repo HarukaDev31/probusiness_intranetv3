@@ -83,7 +83,13 @@ export default defineNuxtConfig({
       },
       title: 'ProBusiness - Intranet | Sistema de gestion Interna',
       meta: [
-        // Structured Data
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: 'Sistema de gestión interna de ProBusiness. Administración de clientes, carga consolidada, verificación y operaciones.' },
+        { name: 'theme-color', content: '#ea580c' },
+        { name: 'color-scheme', content: 'light dark' },
+        { name: 'referrer', content: 'strict-origin-when-cross-origin' },
+        { name: 'robots', content: 'noindex, nofollow' },
         { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
@@ -91,13 +97,17 @@ export default defineNuxtConfig({
         { name: 'format-detection', content: 'telephone=no' }
       ],
       link: [
+        // Preconnect para Google Fonts (mejora LCP evitando bloqueo de render)
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        // Fuente Epilogue vía link (no render-blocking vs @import en CSS)
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Epilogue:wght@300;400;500;600;700;800&display=swap' },
         { rel: 'icon', type: 'image/x-icon', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'manifest', href: '/manifest.json' },
       ],
-
     },
   },
   ui: {

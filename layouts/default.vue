@@ -1,5 +1,10 @@
 <template>
   <div class="min-h-screen bg-[#f0f4f9] dark:bg-gray-900 flex">
+  <!-- Skip link para accesibilidad (teclado / lectores de pantalla) -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded focus:outline-none focus:ring-2 focus:ring-primary-800">
+    Saltar al contenido principal
+  </a>
+
   <!-- Sidebar -->
   <SidebarMenu v-model="sidebarVisible" :user="user" :menu-categories="sidebarCategories" @collapsed-change="(v) => sidebarCollapsed = v" />
 
@@ -20,7 +25,7 @@
       </header>
 
       <!-- Page Content -->
-      <main ref="mainContentRef" :class="['flex-1 min-h-0 p-3 bg-[#f0f4f9] dark:bg-gray-900 flex flex-col', route.path.startsWith('/calendar') ? 'overflow-hidden' : '']" :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}">
+      <main id="main-content" ref="mainContentRef" :class="['flex-1 min-h-0 p-3 bg-[#f0f4f9] dark:bg-gray-900 flex flex-col', route.path.startsWith('/calendar') ? 'overflow-hidden' : '']" :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}">
         <div class="">
           <!-- <Breadcrumbs /> -->
         </div>
