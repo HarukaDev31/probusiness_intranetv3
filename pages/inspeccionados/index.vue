@@ -190,11 +190,11 @@ const getColumns = (): TableColumn<any>[] => [
         cell:        ({ row }: { row: any }) => {
             const estado = row.original.estado_inspeccion || 'Pendiente'
             const cls    = INSPECCION_CLASSES[estado] || INSPECCION_CLASSES.Pendiente
-            return h(UButton as any, {
+            return h(USelect as any, {
+                items: filterConfig.value.find((filter: any) => filter.key === 'estado_inspeccion')?.options || [],
+                modelValue: estado,
                 disabled: true,
-                class:    ['min-w-28 justify-center', cls].join(' '),
-                label:    estado,
-                size:     'sm',
+                class: [cls],
             })
         },
     },
