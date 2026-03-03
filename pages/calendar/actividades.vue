@@ -189,43 +189,25 @@
         </div>
         <!-- Paginación -->
         <div
-          v-if="eventsPagination && eventsPagination.total > 0"
+          v-if="eventsPagination"
           class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700"
         >
           <div class="flex items-center gap-3">
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              Mostrando
-              {{ (eventsPagination.current_page - 1) * eventsPagination.per_page + 1 }}
-              -
-              {{ Math.min(eventsPagination.current_page * eventsPagination.per_page, eventsPagination.total) }}
-              de {{ eventsPagination.total }}
-            </span>
             <USelectMenu
               v-model="perPageOption"
               :items="perPageOptions"
-              value-attribute="value"
-              class="w-28"
-            />
-          </div>
-          <div class="flex items-center gap-2">
-            <UButton
-              icon="i-heroicons-chevron-left"
-              variant="outline"
               size="sm"
-              :disabled="eventsPagination.current_page <= 1 || loading"
-              @click="goToPage(eventsPagination.current_page - 1)"
+              class="w-36"
             />
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              Página {{ eventsPagination.current_page }} de {{ eventsPagination.last_page }}
-            </span>
-            <UButton
-              icon="i-heroicons-chevron-right"
-              variant="outline"
-              size="sm"
-              :disabled="eventsPagination.current_page >= eventsPagination.last_page || loading"
-              @click="goToPage(eventsPagination.current_page + 1)"
-            />
+            <span class="text-sm text-gray-500 dark:text-gray-400">{{ eventsPagination.total }} registros</span>
           </div>
+          <UPagination
+            v-model:page="page"
+            :total="eventsPagination.total"
+            :items-per-page="perPage"
+            size="sm"
+            @update:page="goToPage"
+          />
         </div>
       </UCard>
     </div>
@@ -258,7 +240,8 @@ const {
   getResponsableColor,
   createActivityInCatalog,
   deleteActivityFromCatalog,
-  initialize
+  initialize,
+  clearFilters
 } = useCalendarStore()
 
 const { showSuccess, showError, showConfirmation } = useModal()
@@ -603,6 +586,7 @@ const confirmDelete = (activity: CalendarEvent) => {
 // Inicialización
 onMounted(async () => {
   await initialize()
+  clearFilters()
   await applyFilters()
 })
 

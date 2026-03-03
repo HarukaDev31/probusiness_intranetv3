@@ -41,6 +41,7 @@ const state = {
   activityCatalog: ref<CalendarActivityCatalogItem[]>([]),
   teamProgress: ref<TeamProgress | null>(null),
   responsableProgress: ref<ResponsableProgress[]>([]),
+  myProgressStats: ref<{ total: number; completadas: number; en_progreso: number; pendientes: number } | null>(null),
   
   // Estado de carga
   loading: ref(false),
@@ -174,6 +175,9 @@ export const useCalendarStore = () => {
         state.eventsPagination.value = response.meta
       } else if (appliedFilters.page === undefined && appliedFilters.per_page === undefined) {
         state.eventsPagination.value = null
+      }
+      if ((response as any).my_progress) {
+        state.myProgressStats.value = (response as any).my_progress
       }
       state.lastFetch.events.value = Date.now()
       ;(state as any)._lastFiltersKey = filtersKey
@@ -498,20 +502,25 @@ export const useCalendarStore = () => {
   // PROGRESO
   // ============================================
 
-  const loadProgress = async (force: boolean = false) => {
+  const loadProgress = async (filters?: CalendarFilters, force: boolean = false) => {
     if (!calendarPermissions.value.canViewTeamProgress) {
       return
     }
-    
-    if (!shouldRefetch('progress', force) && state.teamProgress.value) {
+
+    // Si se pasan filtros explícitos siempre refresca (ignorar caché)
+    const hasExplicitFilters = filters && Object.keys(filters).some(k => (filters as any)[k] !== undefined)
+    if (!hasExplicitFilters && !shouldRefetch('progress', force) && state.teamProgress.value) {
       return { team: state.teamProgress.value, by_responsable: state.responsableProgress.value }
     }
-    
+
     try {
-      const data = await CalendarService.getProgress(state.filters.value)
+      const appliedFilters = hasExplicitFilters ? filters! : state.filters.value
+      const data = await CalendarService.getProgress(appliedFilters)
       state.teamProgress.value = data.team
       state.responsableProgress.value = data.by_responsable
-      state.lastFetch.progress.value = Date.now()
+      if (!hasExplicitFilters) {
+        state.lastFetch.progress.value = Date.now()
+      }
       return data
     } catch (err: any) {
       console.error('Error al cargar progreso:', err)
@@ -976,6 +985,7 @@ export const useCalendarStore = () => {
     activityCatalog: computed(() => state.activityCatalog.value),
     teamProgress: computed(() => state.teamProgress.value),
     responsableProgress: computed(() => state.responsableProgress.value),
+    myProgressStats: computed(() => state.myProgressStats.value),
     loading: computed(() => state.loading.value),
     error: computed(() => state.error.value),
     filters: computed(() => state.filters.value),

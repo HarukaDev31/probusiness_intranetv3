@@ -95,29 +95,41 @@
             @update:model-value="applyFilters"
           />
 
-          <!-- Responsable (múltiple) -->
-          <USelectMenu
-            v-if="calendarPermissions.canFilterByResponsable"
-            v-model="responsableModelValue"
-            :items="responsableOptionsMulti"
-            value-key="value"
-            :placeholder="filterResponsableIds.length ? `${filterResponsableIds.length} seleccionado(s)` : 'Todos'"
-            size="sm"
-            class="w-40"
-            multiple
-            :search-input="{ placeholder: 'Buscar...' }"
-          >
-            <template #item="{ item }">
-              <div class="flex items-center gap-2">
-                <div
-                  v-if="(item?.value ?? null) != null && item?.value !== RESPONSABLE_TODOS_VALUE"
-                  class="w-3 h-3 rounded-full shrink-0"
-                  :style="{ backgroundColor: (item as any)?.color || '#6B7280' }"
-                />
-                <span class="text-sm">{{ (item as any)?.label }}</span>
-              </div>
-            </template>
-          </USelectMenu>
+          <!-- Responsable -->
+          <template v-if="calendarPermissions.canFilterByResponsable">
+            <!-- No-Jefe: solo Todos / Yo (select simple) -->
+            <USelectMenu
+              v-if="!isJefeImportaciones"
+              v-model="nonJefeResponsableModel"
+              :items="[{ label: 'Todos', value: 'todos' }, { label: 'Yo', value: 'yo' }]"
+              size="sm"
+              class="w-36"
+              @update:model-value="onNonJefeResponsableChange"
+            />
+            <!-- Jefe: multi-select con todos los responsables -->
+            <USelectMenu
+              v-else
+              v-model="responsableModelValue"
+              :items="responsableOptionsMulti"
+              value-key="value"
+              :placeholder="filterResponsableIds.length ? `${filterResponsableIds.length} seleccionado(s)` : 'Todos'"
+              size="sm"
+              class="w-40"
+              multiple
+              :search-input="{ placeholder: 'Buscar...' }"
+            >
+              <template #item="{ item }">
+                <div class="flex items-center gap-2">
+                  <div
+                    v-if="(item?.value ?? null) != null && item?.value !== RESPONSABLE_TODOS_VALUE"
+                    class="w-3 h-3 rounded-full shrink-0"
+                    :style="{ backgroundColor: (item as any)?.color || '#6B7280' }"
+                  />
+                  <span class="text-sm">{{ (item as any)?.label }}</span>
+                </div>
+              </template>
+            </USelectMenu>
+          </template>
 
           <!-- Consolidado (múltiple) -->
           <USelectMenu
@@ -304,6 +316,28 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Paginación -->
+        <div v-if="eventsPagination" class="flex items-center justify-between pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 flex-wrap gap-3">
+          <div class="flex items-center gap-3">
+            <USelectMenu
+              v-model="perPageOption"
+              :items="perPageOptions"
+              size="sm"
+              class="w-36"
+            />
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              {{ eventsPagination.total }} registros
+            </span>
+          </div>
+          <UPagination
+            v-model:page="page"
+            :total="eventsPagination.total"
+            :items-per-page="perPage"
+            size="sm"
+            @update:page="goToPage"
+          />
+        </div>
       </UCard>
     </div>
 
@@ -375,6 +409,7 @@ import ActivityTrackingModal from '~/components/calendar/ActivityTrackingModal.v
 const {
   visibleActivities,
   eventsPagination,
+  myProgressStats,
   responsables,
   contenedores,
   loading,
@@ -388,7 +423,8 @@ const {
   updateEventNotes,
   updateChargeNotes,
   getResponsableColor,
-  initialize
+  initialize,
+  clearFilters
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
@@ -447,29 +483,17 @@ const dateFilterLabel = computed(() => {
   return 'Buscar Fecha'
 })
 
-// Mi progreso (por actividad: cuento actividades donde soy participante y su estado es único para todos)
+// Mi progreso: viene del servidor para reflejar TODAS las páginas, no solo la actual
 const myProgress = computed(() => {
-  const userId = Number(currentUserId.value)
-  let total = 0
-  let completadas = 0
-  let enProgreso = 0
-  let pendientes = 0
-
-  visibleActivities.value.forEach(activity => {
-    const isParticipant = activity.charges?.some(c => c.user_id === userId)
-    if (!isParticipant) return
-    total++
-    const charges = activity.charges || []
-    const statuses = charges.map(c => c.status || 'PENDIENTE')
-    const allCompleted = statuses.every(s => s === 'COMPLETADO')
-    const hasProgress = statuses.some(s => s === 'PROGRESO' || s === 'COMPLETADO')
-    const status = allCompleted ? 'COMPLETADO' : hasProgress ? 'PROGRESO' : 'PENDIENTE'
-    if (status === 'COMPLETADO') completadas++
-    else if (status === 'PROGRESO') enProgreso++
-    else pendientes++
-  })
-
-  return { total, completadas, enProgreso, pendientes }
+  if (myProgressStats.value) {
+    return {
+      total:      myProgressStats.value.total,
+      completadas: myProgressStats.value.completadas,
+      enProgreso:  myProgressStats.value.en_progreso,
+      pendientes:  myProgressStats.value.pendientes,
+    }
+  }
+  return { total: 0, completadas: 0, enProgreso: 0, pendientes: 0 }
 })
 
 const statusOptions = computed(() => {
@@ -491,7 +515,25 @@ const priorityOptions = computed(() => {
 const RESPONSABLE_TODOS_VALUE = -1
 const CONTENEDOR_ALL_VALUE = '__all__' as const
 
+// --- Responsable para no-Jefe (select simple) ---
+const nonJefeResponsableModel = ref<{ label: string; value: string } | null>(null)
+const onNonJefeResponsableChange = (val: any) => {
+  const v = typeof val === 'object' && val ? val.value : val
+  if (v === 'yo') {
+    filterResponsableIds.value = [Number(currentUserId.value)]
+  } else {
+    filterResponsableIds.value = []
+  }
+  applyFilters()
+}
+
 const responsableOptionsMulti = computed(() => {
+  if (!isJefeImportaciones.value) {
+    return [
+      { label: 'Todos', value: RESPONSABLE_TODOS_VALUE },
+      { label: 'Yo', value: Number(currentUserId.value) }
+    ]
+  }
   const options: { label: string; value: number; color?: string }[] = [
     { label: 'Todos', value: RESPONSABLE_TODOS_VALUE }
   ]
@@ -739,6 +781,11 @@ const handleTrackingStatusUpdate = async (chargeId: number, status: CalendarEven
 // Inicialización
 onMounted(async () => {
   await initialize()
+  clearFilters()
+  if (!isJefeImportaciones.value) {
+    nonJefeResponsableModel.value = { label: 'Yo', value: 'yo' }
+    filterResponsableIds.value = [Number(currentUserId.value)]
+  }
   await applyFilters()
 })
 
