@@ -59,8 +59,8 @@ const { withSpinner } = useSpinner()
 const { showSuccess, showError, showConfirmation } = useModal()
 
 const INSPECCION_CLASSES: Record<string, string> = {
-    Inspeccionado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
-    Completado:    'bg-blue-500  text-white dark:bg-blue-500  dark:text-white',
+    Completado:    'bg-green-500 text-white dark:bg-green-500 dark:text-white',
+    Inspeccionado: 'bg-blue-500  text-white dark:bg-blue-500  dark:text-white',
     Pendiente:     'bg-gray-400  text-white dark:bg-gray-400  dark:text-white',
 }
 
