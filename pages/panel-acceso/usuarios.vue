@@ -1,218 +1,207 @@
 <template>
-  <div class="p-6">
-    <PageHeader title="Gestión de Usuarios" icon="i-heroicons-users" />
+  <DataTable
+    title="Gestión de Usuarios"
+    icon="i-heroicons-users"
+    :data="usuarios"
+    :columns="columns"
+    :loading="loading"
+    :show-primary-search="true"
+    primary-search-placeholder="Buscar usuario..."
+    :show-new-button="true"
+    new-button-label="Agregar Usuario"
+    :on-new-button-click="() => openModal()"
+    empty-state-message="No hay usuarios registrados."
+    :hide-back-button="true"
+    @update:primary-search="onSearch"
+  />
 
-    <!-- Filtros -->
-    <div class="mb-4 flex flex-wrap items-center gap-3">
-      <UInput
-        v-model="search"
-        placeholder="Buscar usuario..."
-        icon="i-heroicons-magnifying-glass"
-        class="w-64"
-        @input="onSearchInput"
-      />
-      <div class="flex-1" />
-      <UButton
-        icon="i-heroicons-plus"
-        label="Agregar Usuario"
-        @click="openModal()"
-      />
-    </div>
-
-    <!-- Tabla -->
-    <UCard :ui="{ body: 'p-0' }">
-      <UTable
-        :data="usuarios"
-        :columns="columns"
-        :loading="loading"
-        :empty-state="{ icon: 'i-heroicons-users', label: 'No hay usuarios registrados' }"
-        class="w-full"
-      >
-        <!-- Cargo -->
-        <template #cargo-cell="{ row }">
-          <UBadge variant="soft" color="primary">{{ (row.original as UsuarioAdmin).cargo || '—' }}</UBadge>
+  <!-- Modal Crear/Editar -->
+  <UModal v-model:open="showModal">
+    <template #content>
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">
+              {{ editingUsuario ? 'Editar Usuario' : 'Nuevo Usuario' }}
+            </h3>
+            <UButton icon="i-heroicons-x-mark" variant="ghost" @click="showModal = false" />
+          </div>
         </template>
 
-        <!-- Estado -->
-        <template #estado-cell="{ row }">
-          <UBadge :color="(row.original as UsuarioAdmin).estado === 1 ? 'success' : 'neutral'">
-            {{ (row.original as UsuarioAdmin).estado === 1 ? 'Activo' : 'Inactivo' }}
-          </UBadge>
-        </template>
-
-        <!-- Acciones -->
-        <template #actions-cell="{ row }">
-          <div class="flex justify-end gap-1">
-            <UButton
-              size="xs"
-              icon="i-heroicons-pencil"
-              color="primary"
-              variant="ghost"
-              @click="openModal(row.original as UsuarioAdmin)"
+        <form @submit.prevent="submitForm" class="space-y-4">
+          <!-- Cargo -->
+          <UFormField label="Cargo / Grupo" required>
+            <USelectMenu
+              v-model="selectedGrupo"
+              :items="gruposOptions"
+              placeholder="Seleccionar cargo"
+              class="w-full"
             />
+          </UFormField>
+
+          <div class="grid grid-cols-2 gap-4">
+            <UFormField label="Email (usuario)" required>
+              <UInput
+                v-model="form.usuario"
+                placeholder="email@empresa.com"
+                type="email"
+                maxlength="100"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="Nombres y Apellidos">
+              <UInput
+                v-model="form.nombres_apellidos"
+                placeholder="Nombres completos"
+                maxlength="100"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <UFormField
+              :label="editingUsuario ? 'Nueva Contraseña (dejar vacío = no cambiar)' : 'Contraseña'"
+              :required="!editingUsuario"
+            >
+              <UInput
+                v-model="form.password"
+                type="password"
+                placeholder="Contraseña"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="Celular">
+              <UInput
+                v-model="form.celular"
+                placeholder="9 dígitos"
+                maxlength="9"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+
+          <UFormField label="Estado" required>
+            <USelectMenu
+              v-model="selectedEstado"
+              :items="estadoOptions"
+              class="w-full"
+            />
+          </UFormField>
+
+          <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
+        </form>
+
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton variant="outline" label="Cancelar" @click="showModal = false" />
             <UButton
-              size="xs"
-              icon="i-heroicons-trash"
-              color="error"
-              variant="ghost"
-              @click="confirmDelete(row.original as UsuarioAdmin)"
+              label="Guardar"
+              icon="i-heroicons-check"
+              :loading="saving"
+              @click="submitForm"
             />
           </div>
         </template>
-      </UTable>
-    </UCard>
+      </UCard>
+    </template>
+  </UModal>
 
-    <!-- Modal Crear/Editar -->
-    <UModal v-model:open="showModal">
-      <template #content>
-        <UCard class="max-w-2xl mx-auto">
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold">
-                {{ editingUsuario ? 'Editar Usuario' : 'Nuevo Usuario' }}
-              </h3>
-              <UButton icon="i-heroicons-x-mark" variant="ghost" @click="showModal = false" />
-            </div>
-          </template>
-
-          <form @submit.prevent="submitForm" class="space-y-4">
-            <!-- Cargo -->
-            <UFormField label="Cargo / Grupo" required>
-              <USelectMenu
-                v-model="selectedGrupo"
-                :items="gruposOptions"
-                placeholder="Seleccionar cargo"
-                class="w-full"
-              />
-            </UFormField>
-
-            <div class="grid grid-cols-2 gap-4">
-              <!-- Email / Usuario -->
-              <UFormField label="Email (usuario)" required>
-                <UInput
-                  v-model="form.usuario"
-                  placeholder="email@empresa.com"
-                  type="email"
-                  maxlength="100"
-                  class="w-full"
-                />
-              </UFormField>
-
-              <!-- Nombres -->
-              <UFormField label="Nombres y Apellidos">
-                <UInput
-                  v-model="form.nombres_apellidos"
-                  placeholder="Nombres completos"
-                  maxlength="100"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <!-- Password -->
-              <UFormField
-                :label="editingUsuario ? 'Nueva Contraseña (dejar vacío = no cambiar)' : 'Contraseña'"
-                :required="!editingUsuario"
-              >
-                <UInput
-                  v-model="form.password"
-                  type="password"
-                  placeholder="Contraseña"
-                  class="w-full"
-                />
-              </UFormField>
-
-              <!-- Celular -->
-              <UFormField label="Celular">
-                <UInput
-                  v-model="form.celular"
-                  placeholder="9 dígitos"
-                  maxlength="9"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
-
-            <!-- Estado -->
-            <UFormField label="Estado" required>
-              <USelectMenu
-                v-model="selectedEstado"
-                :items="estadoOptions"
-                class="w-full"
-              />
-            </UFormField>
-
-            <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
-          </form>
-
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton variant="outline" label="Cancelar" @click="showModal = false" />
-              <UButton
-                label="Guardar"
-                icon="i-heroicons-check"
-                :loading="saving"
-                @click="submitForm"
-              />
-            </div>
-          </template>
-        </UCard>
-      </template>
-    </UModal>
-
-    <!-- Modal Confirmar Eliminación -->
-    <UModal v-model:open="showDeleteModal">
-      <template #content>
-        <UCard>
-          <template #header>
-            <h3 class="text-lg font-semibold text-red-600">Confirmar Eliminación</h3>
-          </template>
-          <p>
-            ¿Deseas eliminar el usuario <strong>{{ deletingUsuario?.usuario }}</strong>?
-            Se eliminarán también sus permisos de menú.
-          </p>
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton variant="outline" label="Cancelar" @click="showDeleteModal = false" />
-              <UButton
-                color="error"
-                label="Eliminar"
-                icon="i-heroicons-trash"
-                :loading="deleting"
-                @click="deleteUsuario"
-              />
-            </div>
-          </template>
-        </UCard>
-      </template>
-    </UModal>
-  </div>
+  <!-- Modal Confirmar Eliminación -->
+  <UModal v-model:open="showDeleteModal">
+    <template #content>
+      <UCard>
+        <template #header>
+          <h3 class="text-lg font-semibold text-red-600">Confirmar Eliminación</h3>
+        </template>
+        <p>
+          ¿Deseas eliminar el usuario <strong>{{ deletingUsuario?.usuario }}</strong>?
+          Se eliminarán también sus permisos de menú.
+        </p>
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton variant="outline" label="Cancelar" @click="showDeleteModal = false" />
+            <UButton
+              color="error"
+              label="Eliminar"
+              icon="i-heroicons-trash"
+              :loading="deleting"
+              @click="deleteUsuario"
+            />
+          </div>
+        </template>
+      </UCard>
+    </template>
+  </UModal>
 </template>
 
 <script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
 import { UsuarioAdminService } from '~/services/panelAcceso/usuarioAdminService'
 import { OptionsService }      from '~/services/panelAcceso/optionsService'
 import type { UsuarioAdmin }   from '~/services/panelAcceso/usuarioAdminService'
 import AuthService from '~/services/authService'
+
+// Render components
+const UButton = resolveComponent('UButton')
+const UBadge  = resolveComponent('UBadge')
 
 const authUser  = (AuthService.getInstance() as any).currentUser
 const empresaId = computed(() => authUser?.raw?.ID_Empresa ?? 1)
 const orgId     = computed(() => authUser?.raw?.ID_Organizacion ?? 1)
 
 // ─── Columnas ─────────────────────────────────────────────────────────────────
-const columns = [
-  { accessorKey: 'cargo',             header: 'Cargo' },
-  { accessorKey: 'usuario',           header: 'Usuario (Email)' },
-  { accessorKey: 'nombres_apellidos', header: 'Nombres y Apellidos' },
-  { accessorKey: 'estado',            header: 'Estado' },
-  { id: 'actions',                    header: '' },
+const columns: TableColumn<UsuarioAdmin>[] = [
+  {
+    accessorKey: 'cargo',
+    header: 'Cargo',
+    cell: ({ row }) => h(UBadge as any, { variant: 'soft', color: 'primary' }, () => row.original.cargo || '—'),
+  },
+  {
+    accessorKey: 'usuario',
+    header: 'Usuario (Email)',
+  },
+  {
+    accessorKey: 'nombres_apellidos',
+    header: 'Nombres y Apellidos',
+    cell: ({ row }) => row.original.nombres_apellidos || '—',
+  },
+  {
+    accessorKey: 'estado',
+    header: 'Estado',
+    cell: ({ row }) => h(
+      UBadge as any,
+      { color: row.original.estado === 1 ? 'success' : 'neutral' },
+      () => row.original.estado === 1 ? 'Activo' : 'Inactivo'
+    ),
+  },
+  {
+    id: 'actions',
+    header: '',
+    cell: ({ row }) => h('div', { class: 'flex justify-end gap-1' }, [
+      h(UButton as any, {
+        size: 'xs',
+        icon: 'i-heroicons-pencil',
+        color: 'primary',
+        variant: 'ghost',
+        onClick: () => openModal(row.original),
+      }),
+      h(UButton as any, {
+        size: 'xs',
+        icon: 'i-heroicons-trash',
+        color: 'error',
+        variant: 'ghost',
+        onClick: () => confirmDelete(row.original),
+      }),
+    ]),
+  },
 ]
 
 // ─── Tabla ─────────────────────────────────────────────────────────────────────
 const usuarios = ref<UsuarioAdmin[]>([])
 const loading  = ref(false)
-const search   = ref('')
 
 // ─── Selects del modal ────────────────────────────────────────────────────────
 const gruposOptions = ref<{ label: string; value: number }[]>([])
@@ -242,21 +231,21 @@ const form = reactive({
 })
 
 // ─── Data loading ─────────────────────────────────────────────────────────────
-async function loadUsuarios() {
+async function loadUsuarios(search?: string) {
   loading.value = true
   const res = await UsuarioAdminService.getUsuarios({
     empresa_id: empresaId.value,
     org_id:     orgId.value,
-    search:     search.value || undefined,
+    search:     search || undefined,
   })
   usuarios.value = res.data ?? []
   loading.value = false
 }
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
-function onSearchInput() {
+function onSearch(value: string) {
   if (searchTimeout) clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(loadUsuarios, 300)
+  searchTimeout = setTimeout(() => loadUsuarios(value), 300)
 }
 
 async function loadGrupos() {
@@ -325,9 +314,7 @@ async function submitForm() {
     celular:           form.celular || undefined,
     estado:            estadoId,
   }
-  if (form.password) {
-    payload.password = form.password
-  }
+  if (form.password) payload.password = form.password
 
   const res = editingUsuario.value
     ? await UsuarioAdminService.updateUsuario(editingUsuario.value.id, payload)
