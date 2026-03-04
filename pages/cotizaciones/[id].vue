@@ -1913,13 +1913,9 @@ watch(currentStep, async (step) => {
   if (step === 4) {
     await fetchVendedores()
     await fetchContenedores()
-    // Inicializar los valores de extras con los calculados si no han sido modificados
-    if (tarifaExtraProveedorManual.value === 0) {
-      tarifaExtraProveedorManual.value = calculatedExtraProveedores.value
-    }
-    if (tarifaExtraItemManual.value === 0) {
-      tarifaExtraItemManual.value = calculatedExtraItems.value
-    }
+    // Siempre recalcular según el estado actual de proveedores e ítems
+    tarifaExtraProveedorManual.value = calculatedExtraProveedores.value
+    tarifaExtraItemManual.value = calculatedExtraItems.value
   }
 })
 </script>

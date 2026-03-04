@@ -788,8 +788,9 @@ export const useCalculadoraImportacion = () => {
       }))
 
       tarifaDescuento.value = Number(payload.tarifa_descuento || payload.tarifaDescuento || 0)
-      tarifaExtraProveedorManual.value = Number(payload.tarifa_total_extra_proveedor || payload.tarifaTotalExtraProveedor || 0)
-      tarifaExtraItemManual.value = Number(payload.tarifa_total_extra_item || payload.tarifaTotalExtraItem || 0)
+      // Recalculate based on loaded providers/items instead of using stale stored values
+      tarifaExtraProveedorManual.value = calculatedExtraProveedores.value
+      tarifaExtraItemManual.value = calculatedExtraItems.value
       selectedVendedor.value = payload.id_usuario || payload.vendedor || null
       selectedContenedor.value = payload.id_carga_consolidada_contenedor || payload.id_carga_consolidada_contenedor || null
       // Cargar tipo de cambio, usar 3.7 como valor por defecto si es null o undefined
