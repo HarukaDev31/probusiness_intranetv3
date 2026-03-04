@@ -2,12 +2,21 @@
     <div class="space-y-4">
         <!-- Zona de subida solo visible si no hay archivos iniciales o si es multiple -->
         <div v-if="showDropZone">
-            <div class="flex items-center justify-between gap-3 p-4 border border-gray-200 rounded-lg">
-                <div class="min-w-0">
-                    <p class="text-sm">{{ customMessage || 'Selecciona o arrastra tu archivo aquí' }}</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 truncate" :title="acceptedTypesText">{{ acceptedTypesText }}</p>
+            <div
+                class="flex items-center justify-between gap-3 p-4 border-2 border-dashed rounded-lg transition-colors select-none"
+                :class="isDragOver ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700'"
+                @dragenter.prevent="handleDragEnter"
+                @dragover.prevent="handleDragOver"
+                @dragleave.prevent="handleDragLeave"
+                @drop.prevent="handleDrop"
+            >
+                <div class="min-w-0 pointer-events-none">
+                    <p class="text-sm font-medium" :class="isDragOver ? 'text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'">
+                        {{ isDragOver ? 'Suelta el archivo aquí' : (customMessage || 'Arrastra un archivo aquí o haz clic en «Subir»') }}
+                    </p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5" :title="acceptedTypesText">{{ acceptedTypesText }}</p>
                 </div>
-                <UButton  v-if="!disabled" color="neutral" variant="soft" class="whitespace-nowrap" @click.stop="handleSelectFiles">
+                <UButton v-if="!disabled" color="neutral" variant="soft" class="whitespace-nowrap flex-shrink-0" @click.stop="handleSelectFiles">
                     Subir archivo
                 </UButton>
             </div>
@@ -15,15 +24,6 @@
             <!-- Input oculto para la selección de archivos -->
             <input type="file" ref="fileInput" class="hidden" :multiple="multiple" :accept="acceptedTypes?.join(',')"
                 @change="handleFileInputChange" />
-
-            <!-- Zona de drop -->
-            <div v-show="isDragOver" class="fixed inset-0 z-50 flex items-center justify-center"
-                @dragover.prevent="handleDragOver" @dragleave.prevent="handleDragLeave" @drop.prevent="handleDrop">
-                <div class="bg-white p-8 rounded-lg shadow-lg text-center">
-                    <UIcon name="i-heroicons-arrow-up-tray" class="text-6xl text-primary-500 mb-4" />
-                    <p class="text-lg font-medium">Suelta los archivos aquí</p>
-                </div>
-            </div>
         </div>
 
         <!-- Una sola lista: primero seleccionados (pendientes de subir), luego ya subidos -->
@@ -125,6 +125,7 @@ const { withSpinner } = useSpinner()
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFiles = ref<File[]>([])
 const isDragOver = ref(false)
+const dragCounter = ref(0)
 
 const acceptedTypesText = computed(() => {
     return props.acceptedTypes
@@ -193,18 +194,28 @@ const handleFileInputChange = (event: Event) => {
     }
 }
 
+const handleDragEnter = (event: DragEvent) => {
+    event.preventDefault()
+    dragCounter.value++
+    isDragOver.value = true
+}
+
 const handleDragOver = (event: DragEvent) => {
     event.preventDefault()
-    isDragOver.value = true
 }
 
 const handleDragLeave = (event: DragEvent) => {
     event.preventDefault()
-    isDragOver.value = false
+    dragCounter.value--
+    if (dragCounter.value <= 0) {
+        dragCounter.value = 0
+        isDragOver.value = false
+    }
 }
 
 const handleDrop = (event: DragEvent) => {
     event.preventDefault()
+    dragCounter.value = 0
     isDragOver.value = false
     if (event.dataTransfer?.files) {
         const files = Array.from(event.dataTransfer.files)

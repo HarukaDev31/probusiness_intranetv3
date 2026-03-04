@@ -79,7 +79,8 @@ const headersFormatted = computed(() => {
     const label = (h.label || '').toLowerCase()
     const isTotalComprobantes = label.includes('total') && label.includes('comprobante')
     const isTotalDetracciones = label.includes('total') && label.includes('detraccion')
-    if (isTotalComprobantes || isTotalDetracciones) {
+    const isDetraccionPagado = label.includes('detraccion') && label.includes('pagado')
+    if (isTotalComprobantes || isTotalDetracciones || isDetraccionPagado) {
       const num = Number(h.value)
       const currency = isTotalComprobantes ? 'USD' : 'PEN'
       return { ...h, value: Number.isFinite(num) ? formatCurrency(num, currency) : (h.value ?? 'N/A') }
@@ -499,12 +500,12 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     cell: ({ row }: { row: any }) => {
       const idContenedorPago = row.original.id_contenedor_pago
       const otroContenedor = idContenedorPago != null && idContenedorPago !== id
-      if (otroContenedor) return cellWrap('')(h(UBadge, { label: 'X', color: 'error', variant: 'soft', size: 'md' }))
-      return cellWrap('')(h(UBadge, {
+      if (otroContenedor) return cellWrap('flex justify-center')(h(UBadge, { label: 'X', color: 'error', variant: 'solid', size: 'lg' }))
+      return cellWrap('flex justify-center')(h(UBadge, {
         label: row.original.registrado ? 'Sí' : 'No',
         color: row.original.registrado ? 'success' : 'error',
-        variant: 'soft',
-        size: 'md'
+        variant: 'solid',
+        size: 'lg'
       }))
     }
   },
@@ -517,13 +518,9 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     accessorKey: 'tipo_comprobante',
     header: 'T. Comprobante',
     cell: ({ row }: { row: any }) => {
-      const comprobantes = row.original.comprobantes as Array<{ tipo_comprobante?: string | null }> | undefined
-      if (!comprobantes?.length) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
-      return cellWrap('')(h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) =>
-        c.tipo_comprobante
-          ? h(UBadge, { key: i, label: c.tipo_comprobante, color: 'info', variant: 'soft', size: 'xs' })
-          : h(UBadge, { key: i, label: '—', color: 'neutral', variant: 'soft', size: 'xs' })
-      )))
+      const val = row.original.form_tipo_comprobante as string | null | undefined
+      if (!val) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      return cellWrap('')(h(UBadge, { label: val, color: 'info', variant: 'soft', size: 'xs' }))
     }
   },
   {
@@ -547,21 +544,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
       return cellWrap('')(h('div', { class: 'flex flex-col gap-1.5' }, comprobantes.map((c, i) => {
         const d = c.detraccion
         if (!d) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
-        const monto = `S/ ${Number(d.monto).toFixed(2)}`
-        if (d.file_url) {
-          return h('div', { key: i, class: 'inline-flex items-center gap-1.5 flex-nowrap' }, [
-            h('span', { class: 'text-sm font-medium tabular-nums' }, monto),
-            h(UButton, {
-              icon: 'i-heroicons-eye',
-              size: 'xs',
-              color: 'primary',
-              variant: 'soft',
-              'aria-label': 'Ver constancia',
-              onClick: () => openPreview(d.file_url!, 'Constancia.pdf')
-            }, { default: () => '' })
-          ])
-        }
-        return h('span', { key: i, class: 'text-sm font-medium tabular-nums' }, monto)
+        return h('span', { key: i, class: 'text-sm font-medium tabular-nums' }, `S/ ${Number(d.monto).toFixed(2)}`)
       })))
     }
   },
@@ -574,13 +557,13 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
       return cellWrap('')(h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) => {
         const url = c.file_path ?? c.comprobante_file_url
         const fileName = c.file_name || 'Comprobante.pdf'
-        if (!url) return h(UButton, { key: i, icon: 'vscode-icons:file-type-pdf2', color: 'neutral', variant: 'ghost', size: 'xs', disabled: true }, '—')
+        if (!url) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
         return h(UButton, {
           key: i,
-          icon: 'i-heroicons-eye',
-          size: 'xs',
-          color: 'primary',
-          variant: 'soft',
+          icon: 'vscode-icons:file-type-pdf2',
+          size: 'sm',
+          color: 'error',
+          variant: 'ghost',
           'aria-label': 'Ver comprobante',
           onClick: () => openPreview(url, fileName)
         })
@@ -690,6 +673,15 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
                 }
               })
             }
+          })
+        }),
+        h(UTooltip, { text: 'Enviar formulario', placement: 'top' }, {
+          default: () => h(UButton, {
+            icon: 'i-heroicons-paper-airplane',
+            color: 'primary',
+            variant: 'ghost',
+            size: 'sm',
+            onClick: () => handleEnviarFormulario()
           })
         })
       ]))

@@ -60,7 +60,8 @@ const headersFormatted = computed(() => {
     const label = (h.label || '').toLowerCase()
     const isTotalComprobantes = label.includes('total') && label.includes('comprobante')
     const isTotalDetracciones = label.includes('total') && label.includes('detraccion')
-    if (isTotalComprobantes || isTotalDetracciones) {
+    const isDetraccionPagado = label.includes('detraccion') && label.includes('pagado')
+    if (isTotalComprobantes || isTotalDetracciones || isDetraccionPagado) {
       const num = Number(h.value)
       const currency = isTotalComprobantes ? 'USD' : 'PEN'
       return { ...h, value: Number.isFinite(num) ? formatCurrency(num, currency) : (h.value ?? 'N/A') }
@@ -509,11 +510,11 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
   {
     accessorKey: 'registrado',
     header: 'Registrado',
-    cell: ({ row }: { row: any }) => cellWrap('')(h(UBadge, {
+    cell: ({ row }: { row: any }) => cellWrap('flex justify-center')(h(UBadge, {
       label: row.original.registrado ? 'Sí' : 'No',
       color: row.original.registrado ? 'success' : 'neutral',
-      variant: 'soft',
-      size: 'md'
+      variant: 'solid',
+      size: 'lg'
     }))
   },
   {
@@ -525,13 +526,9 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     accessorKey: 'tipo_comprobante',
     header: 'T. Comprobante',
     cell: ({ row }: { row: any }) => {
-      const comprobantes = row.original.comprobantes as Array<{ tipo_comprobante?: string | null }> | undefined
-      if (!comprobantes?.length) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
-      return cellWrap('')(h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) =>
-        c.tipo_comprobante
-          ? h(UBadge, { key: i, label: c.tipo_comprobante, color: 'info', variant: 'soft', size: 'xs' })
-          : h(UBadge, { key: i, label: '—', color: 'neutral', variant: 'soft', size: 'xs' })
-      )))
+      const val = row.original.form_tipo_comprobante as string | null | undefined
+      if (!val) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      return cellWrap('')(h(UBadge, { label: val, color: 'info', variant: 'soft', size: 'xs' }))
     }
   },
   {
@@ -555,21 +552,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
       return cellWrap('')(h('div', { class: 'flex flex-col gap-1.5' }, comprobantes.map((c, i) => {
         const d = c.detraccion
         if (!d) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
-        const monto = `S/ ${Number(d.monto).toFixed(2)}`
-        if (d.file_url) {
-          return h('div', { key: i, class: 'inline-flex items-center gap-1.5 flex-nowrap' }, [
-            h('span', { class: 'text-sm font-medium tabular-nums' }, monto),
-            h(UButton, {
-              icon: 'i-heroicons-eye',
-              size: 'xs',
-              color: 'primary',
-              variant: 'soft',
-              'aria-label': 'Ver constancia',
-              onClick: () => openPreview(d.file_url!, 'Constancia.pdf')
-            }, { default: () => 'Ver' })
-          ])
-        }
-        return h('span', { key: i, class: 'text-sm font-medium tabular-nums' }, monto)
+        return h('span', { key: i, class: 'text-sm font-medium tabular-nums' }, `S/ ${Number(d.monto).toFixed(2)}`)
       })))
     }
   },
@@ -582,13 +565,13 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
       return cellWrap('')(h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) => {
         const url = c.file_url ?? c.comprobante_file_url
         const fileName = c.file_name || 'Comprobante.pdf'
-        if (!url) return h(UButton, { key: i, icon: 'vscode-icons:file-type-pdf2', color: 'neutral', variant: 'ghost', size: 'xs', disabled: true }, '—')
+        if (!url) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
         return h(UButton, {
           key: i,
-          icon: 'i-heroicons-eye',
-          size: 'xs',
-          color: 'primary',
-          variant: 'soft',
+          icon: 'vscode-icons:file-type-pdf2',
+          size: 'sm',
+          color: 'error',
+          variant: 'ghost',
           'aria-label': 'Ver comprobante',
           onClick: () => openPreview(url, fileName)
         })
@@ -599,15 +582,30 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     accessorKey: 'guia_r_',
     header: 'Guía R.',
     cell: ({ row }: { row: any }) => {
-      const url = row.original.guia_remision_url
-      if (!url) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      const guias = row.original.guias_remision as Array<{ id: number; file_name: string; file_url: string | null }> | undefined
+      const legacyUrl = row.original.guia_remision_url as string | null | undefined
+      const activeGuias = guias?.filter((g: any) => g.file_url) ?? []
+      if (!activeGuias.length && !legacyUrl) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      if (activeGuias.length) {
+        return cellWrap('')(h('div', { class: 'flex flex-col gap-1' }, activeGuias.map((g: any, i: number) =>
+          h(UButton, {
+            key: i,
+            icon: 'i-heroicons-eye',
+            size: 'xs',
+            color: 'primary',
+            variant: 'soft',
+            'aria-label': 'Ver guía',
+            onClick: () => openPreview(g.file_url, g.file_name || 'Guía.pdf')
+          })
+        )))
+      }
       return cellWrap('')(h(UButton, {
         icon: 'i-heroicons-eye',
         size: 'xs',
         color: 'primary',
         variant: 'soft',
         'aria-label': 'Ver guía',
-        onClick: () => openPreview(url, 'Guía.pdf')
+        onClick: () => openPreview(legacyUrl!, 'Guía.pdf')
       }))
     }
   },
@@ -625,17 +623,28 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
   {
     accessorKey: 'acciones',
     header: 'Acciones',
-    cell: ({ row }: { row: any }) => cellWrap('')(h(UTooltip, { text: 'Ver detalle contabilidad', placement: 'top' }, {
-      default: () => h(UButton, {
-        icon: 'i-heroicons-eye',
-        color: 'primary',
-        variant: 'ghost',
-        size: 'sm',
-        onClick: () => {
-          navigateTo(`/cargaconsolidada/contabilidad/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
-        }
+    cell: ({ row }: { row: any }) => cellWrap('')(h('div', { class: 'flex items-center gap-1' }, [
+      h(UTooltip, { text: 'Ver detalle contabilidad', placement: 'top' }, {
+        default: () => h(UButton, {
+          icon: 'i-heroicons-eye',
+          color: 'primary',
+          variant: 'ghost',
+          size: 'sm',
+          onClick: () => {
+            navigateTo(`/cargaconsolidada/contabilidad/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
+          }
+        })
+      }),
+      h(UTooltip, { text: 'Enviar formulario', placement: 'top' }, {
+        default: () => h(UButton, {
+          icon: 'i-heroicons-paper-airplane',
+          color: 'primary',
+          variant: 'ghost',
+          size: 'sm',
+          onClick: () => handleEnviarFormulario()
+        })
       })
-    }))
+    ]))
   }
 ])
 
