@@ -6,7 +6,7 @@
                 :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
                 :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
                 :show-filters="false" :filters-value="filtersGeneral"
-                :show-export="(currentId == ID_JEFEVENTAS) ? true : false" :show-body-top="true"
+                :show-export="(currentId == ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false" :show-body-top="true"
                 :show-pagination="false" @export="exportData"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
@@ -141,7 +141,7 @@ import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
+import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import type { TableColumn } from '@nuxt/ui'
 import PagoGrid from '~/components/PagoGrid.vue'

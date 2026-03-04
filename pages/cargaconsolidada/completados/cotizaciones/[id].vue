@@ -5,7 +5,7 @@
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
-            :show-export="(currentId == ID_JEFEVENTAS) ? true : false"
+            :show-export="(currentId == ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false"
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
