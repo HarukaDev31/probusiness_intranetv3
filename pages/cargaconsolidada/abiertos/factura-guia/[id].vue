@@ -39,6 +39,8 @@ import { USelect, UBadge, UButton, UTooltip } from '#components'
 import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/CotizacionFinalSimpleUploadFile.vue'
 import SendDocumentModal from '~/components/cargaconsolidada/factura-guia/SendDocumentModal.vue'
 import EnviarFormularioModal from '~/components/cargaconsolidada/factura-guia/EnviarFormularioModal.vue'
+import ContabilidadSendModal from '~/components/cargaconsolidada/factura-guia/ContabilidadSendModal.vue'
+import type { ContabilidadAction } from '~/components/cargaconsolidada/factura-guia/ContabilidadSendModal.vue'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import type { TableColumn } from '@nuxt/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
@@ -70,7 +72,7 @@ const headersFormatted = computed(() => {
   })
 })
 const { showSuccess, showError, showConfirmation } = useModal()
-const { sendFactura, sendGuia } = useWhatsapp()
+const { sendFactura, sendGuia, sendComprobantes, sendGuiasContabilidad, sendDetracciones, sendFormularioContabilidad } = useWhatsapp()
 const route = useRoute()
 const id = Number(route.params.id)
 const overlay = useOverlay()
@@ -78,6 +80,7 @@ const modalPreview = overlay.create(ModalPreview)
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 const sendDocumentModal = overlay.create(SendDocumentModal)
 const enviarFormularioModal = overlay.create(EnviarFormularioModal)
+const contabilidadSendModal = overlay.create(ContabilidadSendModal)
 
 function openPreview (url: string, fileName: string) {
   modalPreview.open({ file: { file_url: url, file_name: fileName }, isOpen: true })
@@ -623,30 +626,89 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
   {
     accessorKey: 'acciones',
     header: 'Acciones',
-    cell: ({ row }: { row: any }) => cellWrap('')(h('div', { class: 'flex items-center gap-1' }, [
-      h(UTooltip, { text: 'Ver detalle contabilidad', placement: 'top' }, {
-        default: () => h(UButton, {
-          icon: 'i-heroicons-eye',
-          color: 'primary',
-          variant: 'ghost',
-          size: 'sm',
-          onClick: () => {
-            navigateTo(`/cargaconsolidada/contabilidad/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
-          }
+    cell: ({ row }: { row: any }) => {
+      const clienteNombre = row.original?.nombre || 'Cliente'
+      return cellWrap('')(h('div', { class: 'flex items-center gap-1 flex-wrap' }, [
+        h(UTooltip, { text: 'Ver detalle contabilidad', placement: 'top' }, {
+          default: () => h(UButton, {
+            icon: 'i-heroicons-eye',
+            color: 'primary',
+            variant: 'ghost',
+            size: 'sm',
+            onClick: () => {
+              navigateTo(`/cargaconsolidada/contabilidad/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
+            }
+          })
+        }),
+        h(UTooltip, { text: 'Ver formulario comprobante', placement: 'top' }, {
+          default: () => h(UButton, {
+            icon: 'i-heroicons-document-text',
+            color: 'neutral',
+            variant: 'ghost',
+            size: 'sm',
+            onClick: () => {
+              navigateTo(`/cargaconsolidada/contabilidad/factura-guia/formulario-comprobante/${row.original.id_cotizacion}`)
+            }
+          })
+        }),
+        h(UTooltip, { text: 'Acciones WhatsApp', placement: 'top' }, {
+          default: () => h(UButton, {
+            icon: 'iconamoon:menu-burger-horizontal',
+            color: 'success',
+            variant: 'ghost',
+            size: 'sm',
+            onClick: () => {
+              contabilidadSendModal.open({
+                idCotizacion: row.original.id_cotizacion,
+                clienteNombre,
+                onClose: () => contabilidadSendModal.close(),
+                onSend: async (action: ContabilidadAction) => {
+                  await handleContabilidadSendAction(row.original.id_cotizacion, action)
+                }
+              })
+            }
+          })
+        }),
+        h(UTooltip, { text: 'Enviar formulario', placement: 'top' }, {
+          default: () => h(UButton, {
+            icon: 'i-heroicons-paper-airplane',
+            color: 'primary',
+            variant: 'ghost',
+            size: 'sm',
+            onClick: () => handleEnviarFormulario()
+          })
         })
-      }),
-      h(UTooltip, { text: 'Enviar formulario', placement: 'top' }, {
-        default: () => h(UButton, {
-          icon: 'i-heroicons-paper-airplane',
-          color: 'primary',
-          variant: 'ghost',
-          size: 'sm',
-          onClick: () => handleEnviarFormulario()
-        })
-      })
-    ]))
+      ]))
+    }
   }
 ])
+
+const handleContabilidadSendAction = async (idCotizacion: number, action: ContabilidadAction) => {
+  await withSpinner(async () => {
+    try {
+      let response
+      const labelMap: Record<ContabilidadAction, string> = {
+        comprobantes: 'comprobantes',
+        guias: 'guías de remisión',
+        detracciones: 'constancias de detracción',
+        formulario: 'formulario'
+      }
+      if (action === 'comprobantes') response = await sendComprobantes(idCotizacion)
+      else if (action === 'guias') response = await sendGuiasContabilidad(idCotizacion)
+      else if (action === 'detracciones') response = await sendDetracciones(idCotizacion)
+      else response = await sendFormularioContabilidad(idCotizacion)
+
+      if (response.success) {
+        showSuccess('Enviado por WhatsApp', `Los ${labelMap[action]} se enviaron correctamente.`)
+        contabilidadSendModal.close()
+      } else {
+        showError('Error al enviar', response.error || `No se pudo enviar los ${labelMap[action]} por WhatsApp`)
+      }
+    } catch (error: any) {
+      showError('Error al enviar', error?.message || 'Error inesperado al enviar por WhatsApp')
+    }
+  }, 'Enviando por WhatsApp...')
+}
 
 const handleEnviarFormulario = () => {
   enviarFormularioModal.open({

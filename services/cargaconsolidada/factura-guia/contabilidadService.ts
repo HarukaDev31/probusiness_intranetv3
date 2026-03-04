@@ -80,6 +80,25 @@ export class ContabilidadService extends BaseService {
         return this.apiCall(`${BASE_URL}/clientes/${idContenedor}`)
     }
 
+    static async getComprobanteForm(idCotizacion: number): Promise<{ success: boolean; data: any }> {
+        return this.apiCall(`${BASE_URL}/comprobante-form/${idCotizacion}`)
+    }
+
+    static async updateComprobanteForm(idCotizacion: number, data: {
+        tipo_comprobante: string
+        destino_entrega?: string | null
+        razon_social?: string | null
+        ruc?: string | null
+        nombre_completo?: string | null
+        dni_carnet?: string | null
+    }): Promise<{ success: boolean; message: string; data?: any }> {
+        return this.apiCall(`${BASE_URL}/comprobante-form/${idCotizacion}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' }
+        })
+    }
+
     static async enviarFormulario(idContenedor: number, cotizacionIds: number[]): Promise<{
         success: boolean
         enviados: any[]
