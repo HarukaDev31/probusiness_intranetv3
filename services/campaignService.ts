@@ -14,6 +14,7 @@ export interface CampaignData {
   Fe_Inicio: string
   Fe_Fin: string
   Dias_Seleccionados: string[]
+  No_Campana?: string
 }
 
 export interface CampaignFilters {

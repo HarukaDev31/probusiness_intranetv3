@@ -196,6 +196,7 @@ const columns = ref<TableColumn<CursoItem>[]>([
         cell: ({ row }: { row: any }) => {
             //create a select with the campanas in filterConfig with key campana and select with row.original.ID_Campana
             return h(USelect as any, {
+                class: 'w-full',
                 modelValue: row.original.ID_Campana,
                 'onUpdate:modelValue': (value: any) => {
                     row.original.ID_Campana = value
