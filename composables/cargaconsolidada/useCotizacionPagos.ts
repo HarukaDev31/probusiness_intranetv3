@@ -30,7 +30,6 @@ export const useCotizacionPagos = () => {
         loadingPagos.value = true
         error.value = null
         try {
-            const route = useRoute()
             const raw = filtersPagos.value || {}
             const filters: Record<string, string> = {}
             if (raw.estado_inspeccion && raw.estado_inspeccion !== 'todos') filters.estado_inspeccion = raw.estado_inspeccion

@@ -16,8 +16,14 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingCotizaciones || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
-                        v-if="tabs.length > 1" />
+                    <div class="flex items-center gap-4">
+                        <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
+                            v-if="tabs.length > 1" />
+                        <span v-if="currentRole === ROLES.CONTABILIDAD && fCierre"
+                            class="text-xs md:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                            F. Límite pago: {{ formatDateTimeToDmy(fCierre) }}
+                        </span>
+                    </div>
                 </div>
             </template>
             <template #actions>
@@ -39,8 +45,14 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loading || loadingHeaders" />
-                    <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
-                        v-if="tabs.length > 1" />
+                    <div class="flex items-center gap-4">
+                        <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
+                            v-if="tabs.length > 1" />
+                        <span v-if="currentRole === ROLES.CONTABILIDAD && fCierre"
+                            class="text-xs md:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                            F. Límite pago: {{ formatDateTimeToDmy(fCierre) }}
+                        </span>
+                    </div>
                 </div>
             </template>
             <template #actions>
@@ -88,11 +100,11 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersPagos"
                         :loading="loadingPagos || loadingHeaders" />
-                    <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-4">
                         <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
                             v-if="tabs.length > 1" />
                         <span v-if="currentRole === ROLES.CONTABILIDAD && fCierre"
-                            class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                            class="text-xs md:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                             F. Límite pago: {{ formatDateTimeToDmy(fCierre) }}
                         </span>
                     </div>

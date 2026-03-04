@@ -799,6 +799,7 @@ const scrollToTop = () => {
   try {
     if (tableContainerRef.value) {
       tableContainerRef.value.scrollTop = 0
+      tableContainerRef.value.scrollLeft = 0
     }
     if (componentRootRef.value) {
       componentRootRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -877,7 +878,15 @@ onMounted(() => {
     nextTick(() => {
       updateScrollIndicators()
       updateNarrowness()
+      if (tableContainerRef.value) tableContainerRef.value.scrollLeft = 0
     })
+
+    // Re-run after CSS transitions settle (sidebar animation ~300ms)
+    setTimeout(() => {
+      updateNarrowness()
+      updateScrollIndicators()
+      if (tableContainerRef.value) tableContainerRef.value.scrollLeft = 0
+    }, 350)
 
     // keep narrowness updated on window resize too
     window.addEventListener('resize', updateNarrowness, { passive: true })

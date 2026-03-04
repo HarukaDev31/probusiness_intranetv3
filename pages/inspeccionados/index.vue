@@ -57,10 +57,11 @@ const {
 const { registrarPago, deletePago } = usePagos()
 const { withSpinner } = useSpinner()
 const { showSuccess, showError, showConfirmation } = useModal()
+const nuxtApp = useNuxtApp()
 
 const INSPECCION_CLASSES: Record<string, string> = {
-    Completado:    'bg-green-500 text-white dark:bg-green-500 dark:text-white',
-    Inspeccionado: 'bg-blue-500  text-white dark:bg-blue-500  dark:text-white',
+    Completado:    'bg-sky-400   text-white dark:bg-sky-400   dark:text-white',
+    Inspeccionado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
     Pendiente:     'bg-gray-400  text-white dark:bg-gray-400  dark:text-white',
 }
 
@@ -105,22 +106,27 @@ const filterConfig = ref([
     },
 ])
 
-const openWhatsapp = (row: any) => {
-    const phone = (row.telefono ?? '').replace(/\D/g, '')
-    if (!phone) {
-        showError('Sin teléfono', 'Este cliente no tiene teléfono registrado.')
-        return
-    }
-    const diferencia = row.diferencia ?? 0
-    const monto      = formatCurrency(row.monto)
-    const pagado     = formatCurrency(row.total_pagos)
-    const pendiente  = formatCurrency(diferencia)
-    const nombre     = row.nombre ?? 'Cliente'
-    const campana    = row.campana ?? ''
-    const msg = encodeURIComponent(
-        `Estimado/a ${nombre}, le informamos que tiene un saldo pendiente de ${pendiente} (Importe: ${monto} | Pagado: ${pagado}) correspondiente a su carga de la campaña ${campana}. Por favor, comuníquese con nosotros para coordinar el pago. Gracias.`
+const sendReminderPago = (item: any) => {
+    showConfirmation(
+        'Confirmar envío',
+        '¿Está seguro de enviar un recordatorio de pago a este cliente?',
+        async () => {
+            try {
+                await withSpinner(async () => {
+                    const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${item.id_cotizacion}/send-reminder-pago`
+                    const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
+                    if (res && (res as any).success) {
+                        showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
+                    } else {
+                        showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
+                    }
+                }, 'Enviando recordatorio...')
+            } catch (err) {
+                console.error('Error send reminder:', err)
+                showError('Error', 'Error al enviar recordatorio')
+            }
+        }
     )
-    window.open(`https://api.whatsapp.com/send?phone=51${phone}&text=${msg}`, '_blank')
 }
 
 const getColumns = (): TableColumn<any>[] => [
@@ -163,13 +169,13 @@ const getColumns = (): TableColumn<any>[] => [
         cell:        ({ row }: { row: any }) => {
             const item = row.original
             return h('div', { class: 'flex items-center gap-1' }, [
-                h(UTooltip, { text: 'Enviar recordatorio de pago por WhatsApp' }, {
+                h(UTooltip, { text: 'Enviar recordatorio de pago', placement: 'top' }, {
                     default: () => h(UButton, {
-                        icon:    'i-heroicons-paper-airplane',
+                        icon:    'material-symbols:send-outline',
                         color:   'primary',
                         variant: 'ghost',
                         size:    'sm',
-                        onClick: () => openWhatsapp(item),
+                        onClick: () => sendReminderPago(item),
                     }),
                 }),
                 h(UTooltip, { text: 'Ver cotizaciones del contenedor' }, {

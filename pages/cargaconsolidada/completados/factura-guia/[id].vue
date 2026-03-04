@@ -499,12 +499,12 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     cell: ({ row }: { row: any }) => {
       const idContenedorPago = row.original.id_contenedor_pago
       const otroContenedor = idContenedorPago != null && idContenedorPago !== id
-      if (otroContenedor) return cellWrap('')(h(UBadge, { label: 'X', color: 'error', variant: 'soft', size: 'xs' }))
+      if (otroContenedor) return cellWrap('')(h(UBadge, { label: 'X', color: 'error', variant: 'soft', size: 'md' }))
       return cellWrap('')(h(UBadge, {
         label: row.original.registrado ? 'Sí' : 'No',
         color: row.original.registrado ? 'success' : 'error',
         variant: 'soft',
-        size: 'xs'
+        size: 'md'
       }))
     }
   },

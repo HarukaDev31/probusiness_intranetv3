@@ -513,7 +513,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
       label: row.original.registrado ? 'Sí' : 'No',
       color: row.original.registrado ? 'success' : 'neutral',
       variant: 'soft',
-      size: 'xs'
+      size: 'md'
     }))
   },
   {

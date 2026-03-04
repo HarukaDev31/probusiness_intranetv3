@@ -643,20 +643,32 @@ const getPagosColumns = (): TableColumn<any>[] => {
         accessorKey: 'estado_cotizacion_final',
         header: 'Estado',
         cell: ({ row }: { row: any }) => {
-          const estado = row.original.estado_cotizacion_final || 'PENDIENTE'
-          const items = [
-            { label: 'PENDIENTE', value: 'PENDIENTE' },
-            { label: 'COTIZADO', value: 'COTIZADO' },
-            { label: 'COBRANDO', value: 'COBRANDO' },
-            { label: 'PAGADO', value: 'PAGADO' },
-            { label: 'AJUSTADO', value: 'AJUSTADO' },
-            { label: 'SOBREPAGO', value: 'SOBREPAGO' },
-          ]
-          const cls = STATUS_BG_PAGOS_CLASSES[estado as keyof typeof STATUS_BG_PAGOS_CLASSES] ?? 'bg-gray-500 text-white'
+          const pagos = JSON.parse(row.original.pagos || '[]')
+          const monto = Number(row.original.total_logistica_impuestos) || 0
+          const totalPagos = Number(row.original.total_pagos) || 0
+          let estado: string
+          let cls: string
+          if (pagos.length === 0 || totalPagos === 0) {
+            estado = 'PENDIENTE'
+            cls = 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+          } else if (Math.round(totalPagos * 100) < Math.round(monto * 100)) {
+            estado = 'ADELANTO'
+            cls = 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white'
+          } else {
+            const todosConfirmados = pagos.every((p: any) => p.status === 'CONFIRMADO')
+            estado = 'PAGADO'
+            cls = todosConfirmados
+              ? 'bg-green-600 text-white dark:bg-green-600 dark:text-white'
+              : 'bg-white text-gray-700 dark:bg-gray-200 dark:text-gray-700 border border-gray-300'
+          }
           return h(USelect as any, {
             modelValue: estado,
             disabled: true,
-            items,
+            items: [
+              { label: 'PENDIENTE', value: 'PENDIENTE' },
+              { label: 'ADELANTO', value: 'ADELANTO' },
+              { label: 'PAGADO', value: 'PAGADO' },
+            ],
             class: cls,
           })
         }
