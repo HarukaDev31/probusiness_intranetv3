@@ -140,7 +140,7 @@
                 :initial-files="getComprobanteSlotInitial(slot - 1)"
                 :model-files="pendingComprobantes[slot - 1] || []"
                 @files-selected="(files) => onComprobanteSlotSelected(slot - 1, files)"
-                @file-removed="() => clearComprobanteSlot(slot - 1)"
+                @file-removed="(fileId) => onComprobanteSlotRemoved(slot - 1, fileId)"
                 @files-cleared="() => clearComprobanteSlot(slot - 1)"
                 @error="(msg) => showError('Error', msg)"
               />
@@ -265,7 +265,7 @@
                 :initial-files="getGuiaSlotInitial(slot - 1)"
                 :model-files="pendingGuias[slot - 1] || []"
                 @files-selected="(files) => onGuiaSlotSelected(slot - 1, files)"
-                @file-removed="() => clearGuiaSlot(slot - 1)"
+                @file-removed="(fileId) => onGuiaSlotRemoved(slot - 1, fileId)"
                 @files-cleared="() => clearGuiaSlot(slot - 1)"
                 @error="(msg) => showError('Error', msg)"
               />
@@ -466,6 +466,14 @@ const clearComprobanteSlot = (index: number) => {
   next[index] = []
   pendingComprobantes.value = next
 }
+const onComprobanteSlotRemoved = (index: number, fileIdOrIndex: number) => {
+  const initial = getComprobanteSlotInitial(index)
+  if (initial.length > 0 && initial[0].id === fileIdOrIndex) {
+    handleDeleteComprobante(fileIdOrIndex)
+  } else {
+    clearComprobanteSlot(index)
+  }
+}
 
 const onGuiaSlotSelected = (index: number, files: File[]) => {
   const next = [...pendingGuias.value]
@@ -476,6 +484,14 @@ const clearGuiaSlot = (index: number) => {
   const next = [...pendingGuias.value]
   next[index] = []
   pendingGuias.value = next
+}
+const onGuiaSlotRemoved = (index: number, fileIdOrIndex: number) => {
+  const initial = getGuiaSlotInitial(index)
+  if (initial.length > 0 && initial[0].id === fileIdOrIndex) {
+    handleDeleteGuia(fileIdOrIndex)
+  } else {
+    clearGuiaSlot(index)
+  }
 }
 
 const setConstanciaFile = (comprobanteId: number, files: File[]) => {

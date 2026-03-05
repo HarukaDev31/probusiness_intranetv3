@@ -482,10 +482,17 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     cell: ({ row }: { row: any }) => {
       const nombre = row.original?.nombre || ''
       const telefono = row.original?.telefono || ''
+      const tipo_comprobante = row.original?.comprobante_form?.tipo_comprobante || ''
+      const registrado = row.original?.registrado || false
+      const razon_social = row.original?.comprobante_form?.razon_social || ''
+      const ruc = row.original?.comprobante_form?.ruc || ''
       const nodes: any[] = [
         h('div', { class: 'font-medium text-gray-900 dark:text-white break-words line-clamp-2 min-w-0' }, nombre),
         ...(telefono ? [h('div', { class: 'text-sm text-gray-500 dark:text-gray-400' }, telefono)] : [])
       ]
+      if (registrado && tipo_comprobante === 'FACTURA') {
+        nodes.push(h('div', { class: 'font-medium text-gray-900 dark:text-white break-words line-clamp-2 min-w-0' }, `${razon_social}  ${ruc}`))
+      }
       return cellWrap('max-w-[200px] min-w-0')(nodes)
     }
   },
@@ -520,7 +527,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     cell: ({ row }: { row: any }) => {
       const val = row.original.form_tipo_comprobante as string | null | undefined
       if (!val) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
-      return cellWrap('')(h(UBadge, { label: val, color: 'info', variant: 'soft', size: 'xs' }))
+      return cellWrap('text-center')(h('span', { class: 'text-gray-400 text-sm' }, val))
     }
   },
   {
@@ -553,15 +560,15 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     header: 'Comprobante (PDF)',
     cell: ({ row }: { row: any }) => {
       const comprobantes = row.original.comprobantes as Array<{ comprobante_file_url?: string | null; file_path?: string | null; file_name?: string | null }> | undefined
-      if (!comprobantes?.length) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
-      return cellWrap('')(h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) => {
+      if (!comprobantes?.length) return cellWrap('text-center')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      return cellWrap('text-center')(h('div', { class: 'flex flex-col gap-1 justify-center items-center' }, comprobantes.map((c, i) => {
         const url = c.file_path ?? c.comprobante_file_url
         const fileName = c.file_name || 'Comprobante.pdf'
         if (!url) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
         return h(UButton, {
           key: i,
           icon: 'vscode-icons:file-type-pdf2',
-          size: 'sm',
+          size: 'xl',
           color: 'error',
           variant: 'ghost',
           'aria-label': 'Ver comprobante',
@@ -576,15 +583,15 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     cell: ({ row }: { row: any }) => {
       const guias = row.original.guias_remision || []
       const hasGuias = guias.length > 0 || !!row.original.guia_remision_url
-      if (!hasGuias) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
+      if (!hasGuias) return cellWrap('text-center')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
       const items = guias.length ? guias : [{ file_url: row.original.guia_remision_url, file_name: 'Guía' }]
-      return cellWrap('')(h('div', { class: 'flex flex-wrap gap-1' }, items.map((g: any, i: number) =>
+      return cellWrap('text-center')(h('div', { class: 'flex flex-wrap gap-1 justify-center items-center' }, items.map((g: any, i: number) =>
         h(UButton, {
           key: i,
-          icon: 'i-heroicons-eye',
-          size: 'xs',
+          icon: 'vscode-icons:file-type-pdf2',
+          size: 'xl',
           color: 'primary',
-          variant: 'soft',
+          variant: 'ghost',
           'aria-label': 'Ver guía',
           onClick: () => { if (g.file_url) openPreview(g.file_url, g.file_name || 'Guía.pdf') }
         })
@@ -648,7 +655,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
         }),
         h(UTooltip, { text: 'Ver formulario comprobante', placement: 'top' }, {
           default: () => h(UButton, {
-            icon: 'i-heroicons-document-text',
+            icon: 'i-heroicons-pencil-square',
             color: 'neutral',
             variant: 'ghost',
             size: 'sm',
@@ -675,15 +682,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
             }
           })
         }),
-        h(UTooltip, { text: 'Enviar formulario', placement: 'top' }, {
-          default: () => h(UButton, {
-            icon: 'i-heroicons-paper-airplane',
-            color: 'primary',
-            variant: 'ghost',
-            size: 'sm',
-            onClick: () => handleEnviarFormulario()
-          })
-        })
+       
       ]))
     }
   }

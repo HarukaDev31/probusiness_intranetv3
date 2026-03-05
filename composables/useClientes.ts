@@ -85,13 +85,13 @@ export const useClientes = () => {
     try {
       // Combinar parámetros locales con los pasados
       const queryParams: ClientesQueryParams = {
-        currentPage: params.currentPage || currentPage.value,
-        itemsPerPage: params.itemsPerPage || itemsPerPage.value,
-        search: params.search || search.value,
-        categoria: params.categoria || filters.value.categoria,
-        fecha_inicio: params.fecha_inicio || filters.value.fecha_inicio,
-        fecha_fin: params.fecha_fin || filters.value.fecha_fin,
-        servicio: params.servicio || filters.value.servicio
+        currentPage: params.currentPage ?? currentPage.value,
+        itemsPerPage: params.itemsPerPage ?? itemsPerPage.value,
+        search: params.search !== undefined ? params.search : search.value,
+        categoria: params.categoria ?? filters.value.categoria,
+        fecha_inicio: params.fecha_inicio ?? filters.value.fecha_inicio,
+        fecha_fin: params.fecha_fin ?? filters.value.fecha_fin,
+        servicio: params.servicio ?? filters.value.servicio
       }
 
       // Solo incluir parámetros que tengan valor
@@ -148,20 +148,18 @@ export const useClientes = () => {
   // Timeout para el debounce de búsqueda
   let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
-  const handleSearch = async (searchTerm: string) => {
-    // Actualizar el valor de búsqueda inmediatamente para que se refleje en el input
+  const handleSearch = (searchTerm: string) => {
+    // Actualizar ambos refs inmediatamente para que el input no se "pegue"
     search.value = searchTerm
-    
-    // Limpiar el timeout anterior si existe
-    if (searchTimeout) {
-      clearTimeout(searchTimeout)
-    }
-    
-    // Crear un nuevo timeout que ejecutará la búsqueda después de 500ms de inactividad
+    primarySearch.value = searchTerm
+
+    if (searchTimeout) clearTimeout(searchTimeout)
+
     searchTimeout = setTimeout(async () => {
-      await loadClientes({ currentPage: 1, search: searchTerm })
+      // Usar search.value en lugar de searchTerm capturado, por si cambió durante el debounce
+      await loadClientes({ currentPage: 1, search: search.value })
       searchTimeout = null
-    }, 500)
+    }, 350)
   }
 
   // Función para convertir fecha de DD/MM/YYYY a YYYY-MM-DD

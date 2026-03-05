@@ -79,7 +79,7 @@
               <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.red_social }}</div>
           </div>
         </div>
-        <div v-if="cliente?.id_user || cliente?.primer_servicio?.servicio == 'Curso'" class="mt-6 w-full">
+        <div v-if="cliente?.id_user || cliente?.primer_servicio?.servicio == 'Curso'" class="mt-6 w-full flex flex-col gap-2">
           <UButton 
             @click="handleEnviarInstruccionesRecuperacionContrasena" 
             color="primary" 
@@ -89,6 +89,17 @@
           >
             Enviar mensaje de recuperación de contraseña
           </UButton>
+          <UButton
+            @click="handleCopiarMensajeRecuperacionContrasena(cliente?.nombre)"
+            color="success"
+            icon="i-heroicons-clipboard"
+            :loading="copiandoMensajeRecuperacionContrasena"
+            class="w-full"
+          >
+            Copiar mensaje de recuperación de contraseña
+          </UButton>
+
+
         </div>
       </div>
 
@@ -136,7 +147,7 @@ const cliente = ref<Cliente | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const enviandoInstrucciones = ref(false)
-
+const copiandoMensajeRecuperacionContrasena = ref(false)
 // Composables
 const { enviarInstruccionesRecuperacionContrasena } = useClientes()
 const { showConfirmation, showSuccess, showError } = useModal()
@@ -280,7 +291,24 @@ const handleEnviarInstruccionesRecuperacionContrasena = async () => {
   }
 }
 
+const mensajeRecuperacionContrasena = ref(`Mensaje: 
+Hola @nombrecliente! 👋
 
+Para recuperar tu contraseña, puedes hacerlo a través del siguiente enlace:
+https://clientes.probusiness.pe/recuperar-contrasena
+
+Si tienes algún problema, no dudes en contactarnos.
+
+¡Saludos!
+  Equipo Probusiness`)
+
+const handleCopiarMensajeRecuperacionContrasena = (nombre: string) => {
+  navigator.clipboard.writeText(mensajeRecuperacionContrasena.value.replace('@nombrecliente', nombre))
+  copiandoMensajeRecuperacionContrasena.value = true
+  //show toast notification
+  showSuccess('Éxito', 'Mensaje copiado correctamente')
+  setTimeout(() => copiandoMensajeRecuperacionContrasena.value = false,1000)
+}
 
 // Initialize
 onMounted(() => {
