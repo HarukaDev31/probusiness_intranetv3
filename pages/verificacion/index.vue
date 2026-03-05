@@ -41,6 +41,12 @@
               ]">
                 Permisos
               </button>
+              <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Boletín Químico
+              </button>
             </div>
           </div>
         </template>
@@ -91,6 +97,12 @@
               ]">
                 Permisos
               </button>
+              <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Boletín Químico
+              </button>
             </div>
           </div>
         </template>
@@ -119,6 +131,7 @@
               <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos</button>
               <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
               <button type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isPermisos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Permisos</button>
+              <button type="button" @click="activeTab = 'boletin-quimico'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isBoletinQuimico ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Boletín Químico</button>
             </div>
           </div>
         </template>
@@ -168,12 +181,55 @@
               ]">
                 Permisos
               </button>
+              <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Boletín Químico
+              </button>
             </div>
           </div>
         </template>
         <!-- Estado de error -->
         <template #error-state>
           <ErrorState :message="errorDelivery || 'Error desconocido'" />
+        </template>
+      </DataTable>
+    </div>
+
+    <div v-else-if="activeTab === 'boletin-quimico'">
+      <DataTable
+        title="Verificación"
+        subtitle="Boletín Químico"
+        icon="i-heroicons-beaker"
+        :show-title="true"
+        :data="boletinData"
+        :columns="boletinColumns"
+        :loading="loadingBoletin"
+        :current-page="paginationBoletin.current_page"
+        :total-pages="paginationBoletin.last_page"
+        :total-records="paginationBoletin.total"
+        :items-per-page="itemsPerPageBoletin"
+        :primary-search-value="searchBoletin"
+        :show-primary-search="true"
+        primary-search-placeholder="Buscar por cliente o consolidado"
+        :show-filters="false"
+        empty-state-message="No hay registros de boletín químico."
+        :show-body-top="true"
+        @update:primary-search="handleSearchBoletin"
+        @page-change="handlePageChangeBoletin"
+        @items-per-page-change="handleItemsPerPageChangeBoletin"
+      >
+        <template #body-top>
+          <div class="w-50 mb-6 flex items-center">
+            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
+              <button type="button" @click="activeTab = 'consolidado'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isConsolidado ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Consolidado</button>
+              <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos</button>
+              <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isPermisos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Permisos</button>
+              <button type="button" @click="activeTab = 'boletin-quimico'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Boletín Químico</button>
+            </div>
+          </div>
         </template>
       </DataTable>
     </div>
@@ -195,7 +251,7 @@ import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS } from '~/constants/cursos'
 import { ROLES } from '~/constants/roles'
 import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '~/utils/consolidado'
 import { getEstadoColor as getEstadoColorCursos, formatCurrency as formatCurrencyCursos, formatPhoneNumber as formatPhoneNumberCursos } from '~/utils/cursos'
-import { UButton, USelect } from '#components'
+import { UButton, USelect, UBadge } from '#components'
 import DynamicModal from '~/components/DynamicModal.vue'
 import type { ModalData } from '~/composables/commons/useModal'
 import PagoGrid from '~/components/PagoGrid.vue'
@@ -203,7 +259,11 @@ import { STATUS_BG_CLASSES } from '~/constants/ui'
 import type { TramiteAduana, TramiteAduanaTipoPermisoItem } from '~/types/basedatos/tramiteAduana'
 import { TRAMITE_ESTADOS } from '~/types/basedatos/tramiteAduana'
 import { formatDateTimeToDmy } from '~/utils/formatters'
+import { BoletinQuimicoService } from '~/services/basedatos/boletinQuimicoService'
+import type { BoletinQuimicoRow } from '~/services/basedatos/boletinQuimicoService'
+import type { PagosDetails } from '~/types/cargaconsolidada/clientes/pagos'
 
+const router = useRouter()
 const { hasRole } = useUserRole()
 const isAdministracion = computed(() => hasRole(ROLES.ADMINISTRACION))
 
@@ -224,6 +284,7 @@ const isConsolidado = computed(() => activeTab.value === 'consolidado')
 const isCursos = computed(() => activeTab.value === 'cursos')
 const isDelivery = computed(() => activeTab.value === 'delivery')
 const isPermisos = computed(() => activeTab.value === 'permisos')
+const isBoletinQuimico = computed(() => activeTab.value === 'boletin-quimico')
 
 const modalVisible = ref(false)
 const modalMessage = ref<ModalData | null>(null)
@@ -328,6 +389,153 @@ const {
   totalItems: totalRecordsPermisos
 } = useTramitesAduana()
 const permisosData = computed(() => tramitesPermisos.value || [])
+
+// Boletín Químico (verificación)
+const boletinData = ref<BoletinQuimicoRow[]>([])
+const loadingBoletin = ref(false)
+const searchBoletin = ref('')
+const itemsPerPageBoletin = ref(50)
+const paginationBoletin = ref({ current_page: 1, last_page: 1, per_page: 50, total: 0, from: 0, to: 0 })
+async function loadBoletin () {
+  loadingBoletin.value = true
+  try {
+    const res = await BoletinQuimicoService.getList({
+      page: paginationBoletin.value.current_page,
+      per_page: itemsPerPageBoletin.value,
+      search: searchBoletin.value || undefined
+    })
+    if (res.success) {
+      boletinData.value = res.data
+      paginationBoletin.value = res.pagination
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loadingBoletin.value = false
+  }
+}
+function handleSearchBoletin (v: string) {
+  searchBoletin.value = v
+  paginationBoletin.value.current_page = 1
+  loadBoletin()
+}
+function handlePageChangeBoletin (page: number) {
+  paginationBoletin.value.current_page = page
+  loadBoletin()
+}
+function handleItemsPerPageChangeBoletin (per: number) {
+  itemsPerPageBoletin.value = per
+  paginationBoletin.value.current_page = 1
+  loadBoletin()
+}
+function estadoBoletinLabel (estado: string) {
+  if (estado === 'pagado') return 'Pagado'
+  if (estado === 'pagado_gris') return 'Pagado'
+  if (estado === 'adelanto_pagado') return 'Adelanto'
+  return 'Pendiente'
+}
+/** Cuatro estados. Verde solo cuando estado es pagado Y todos los pagos están confirmados; si no, gris. */
+function estadoBoletinSelectClass (estado: string, item?: { pagos_details?: { status: string }[] }) {
+  const pagos = item?.pagos_details || []
+  const allConfirmados = pagos.length > 0 && pagos.every((p) => p.status === 'CONFIRMADO')
+  if (estado === 'pagado') return allConfirmados ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 border-green-200 dark:border-green-800' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+  if (estado === 'pagado_gris') return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+  if (estado === 'adelanto_pagado') return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 border-amber-200 dark:border-amber-800'
+  return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+}
+const BoletinEstadoOptions = [
+  { label: 'Pendiente', value: 'pendiente' },
+  { label: 'Adelanto', value: 'adelanto_pagado' },
+  { label: 'Pagado (gris)', value: 'pagado_gris' },
+  { label: 'Pagado', value: 'pagado' }
+]
+const boletinColumns = computed<TableColumn<BoletinQuimicoRow>[]>(() => [
+  { accessorKey: 'cliente', header: 'Cliente', cell: ({ row }) => h('span', row.original.cliente) },
+  { accessorKey: 'consolidado', header: 'Consolidado', cell: ({ row }) => h('span', row.original.consolidado) },
+  {
+    accessorKey: 'items',
+    header: 'Items',
+    cell: ({ row }) => {
+      const items = row.original.items || []
+      const lines = items.map((i) => h('div', { class: 'text-sm', key: i.id }, i.item_nombre))
+      return h('div', { class: 'flex flex-col gap-1' }, lines.length ? lines : '—')
+    }
+  },
+  {
+    accessorKey: 'monto_boletin',
+    header: 'Monto por ítem',
+    cell: ({ row }) => {
+      const items = row.original.items || []
+      const lines = items.map((i) => h('div', { class: 'text-sm', key: i.id }, formatCurrency(i.monto_boletin, 'PEN')))
+      return h('div', { class: 'flex flex-col gap-1' }, lines.length ? lines : '—')
+    }
+  },
+  {
+    accessorKey: 'estado',
+    header: 'Estado',
+    cell: ({ row }) => {
+      const items = row.original.items || []
+      const selects = items.map((it) => h(USelect as any, {
+        key: it.id,
+        modelValue: it.estado,
+        items: BoletinEstadoOptions,
+        valueAttribute: 'value',
+        disabled: true,
+        variant: 'subtle',
+        class: `text-sm py-1.5 px-2 rounded-md border w-full min-w-[120px] ${estadoBoletinSelectClass(it.estado, it)}`
+      }))
+      return h('div', { class: 'flex flex-col gap-1' }, selects.length ? selects : '—')
+    }
+  },
+  {
+    accessorKey: 'adelantos',
+    header: 'Adelantos',
+    cell: ({ row }) => {
+      const r = row.original
+      const items = r.items || []
+      return h('div', { class: 'flex flex-col gap-2' }, items.map((item) => {
+        const details: PagosDetails[] = (item.pagos_details || []).map((p: any) => ({
+          id_pago: p.id_pago,
+          monto: String(p.monto),
+          status: p.status,
+          concepto: typeof p.concepto === 'object' ? p.concepto?.name : p.concepto,
+          payment_date: p.payment_date || '',
+          banco: p.banco || '',
+          voucher_url: p.voucher_url || ''
+        }))
+        return h(PagoGrid, {
+          key: item.id,
+          numberOfPagos: Math.max(1, details.length),
+          pagoDetails: details,
+          clienteNombre: r.cliente,
+          currency: 'PEN',
+          showDelete: false
+        })
+      }))
+    }
+  },
+  {
+    accessorKey: 'acciones',
+    header: 'Acciones',
+    cell: ({ row }) => {
+      const items = row.original.items || []
+      if (items.length === 0) return h('span', '—')
+      return h(UButton, {
+        size: 'xs',
+        color: 'primary',
+        variant: 'soft',
+        icon: 'i-heroicons-eye',
+        onClick: () => {
+          router.push({
+            path: '/verificacion/boletin-quimico/ver',
+            query: { ids: items.map((i: { id: number }) => i.id).join(',') },
+            state: { items, cliente: row.original.cliente, consolidado: row.original.consolidado } as any
+          })
+        }
+      })
+    }
+  }
+])
 
 // Configuración de filtros para consolidado
 // Opciones de cargas derivadas de los datos (únicas y ordenadas de menor a mayor)
@@ -1157,6 +1365,8 @@ onMounted(async () => {
     await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
   } else if (activeTab.value === 'permisos' && isAdministracion.value) {
     await loadPermisosVerificacion({ page: 1 })
+  } else if (activeTab.value === 'boletin-quimico') {
+    await loadBoletin()
   }
 })
 watch(activeTab, async (newTab, oldTab) => {
@@ -1183,6 +1393,10 @@ watch(activeTab, async (newTab, oldTab) => {
     navigateTo(`/verificacion?tab=permisos`)
     try { searchPermisos.value = '' } catch (e) { /* ignore */ }
     await loadPermisosVerificacion({ page: 1 })
+  } else if (newTab === 'boletin-quimico') {
+    navigateTo(`/verificacion?tab=boletin-quimico`)
+    try { searchBoletin.value = '' } catch (e) { /* ignore */ }
+    await loadBoletin()
   }
 })
 </script>
