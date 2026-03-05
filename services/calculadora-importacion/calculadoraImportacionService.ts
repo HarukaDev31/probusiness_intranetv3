@@ -95,4 +95,42 @@ export class CalculadoraImportacionService extends BaseService {
             throw new Error('No se pudo cambiar el estado de la cotización')
         }
     }
+
+    /** Documentos asociados a cotización calculadora */
+    static async getDocumentosCotizacion(id: number): Promise<{ success: boolean; data: any[]; cotizacion: any }> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/${id}/documentos`)
+            return response
+        } catch (error) {
+            console.error('Error al obtener documentos de la cotización:', error)
+            throw error
+        }
+    }
+
+    static async uploadDocumentoCotizacion(id: number, file: File): Promise<{ success: boolean; data?: any; message?: string }> {
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+            const response = await this.apiCall<any>(`${this.baseUrl}/${id}/documentos`, {
+                method: 'POST',
+                body: formData
+            })
+            return response
+        } catch (error) {
+            console.error('Error al subir documento:', error)
+            throw error
+        }
+    }
+
+    static async deleteDocumentoCotizacion(idDocumento: number): Promise<{ success: boolean; message?: string }> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/documentos/${idDocumento}`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error) {
+            console.error('Error al eliminar documento:', error)
+            throw error
+        }
+    }
 }

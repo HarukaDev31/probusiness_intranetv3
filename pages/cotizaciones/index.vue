@@ -207,7 +207,17 @@ const columns: TableColumn<any>[] = [
             handleDuplicate(row.original.id)
           }
         }),
-       
+        h(UButton, {
+          color: 'neutral',
+          size: 'sm',
+          variant: 'ghost',
+          icon: 'i-heroicons-folder-open',
+          label: '',
+          title: 'Documentos asociados',
+          onClick: () => {
+            handleDocumentos(row.original.id)
+          }
+        }),
       ])
     }
   }
@@ -267,6 +277,9 @@ const handleDelete = (id: string) => {
 }
 const handleEdit = (id: string) => {
   navigateTo(`/cotizaciones/${id}`)
+}
+const handleDocumentos = (id: string) => {
+  navigateTo(`/cotizaciones/documentos/${id}/`)
 }
 const handleDuplicate = (id: string) => {
   showConfirmation('Duplicar Cotización', '¿Estás seguro de que deseas duplicar esta cotización?',
