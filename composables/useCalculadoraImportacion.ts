@@ -138,13 +138,15 @@ export const useCalculadoraImportacion = () => {
     estado: 'todos', // Inicializar con 'todos' para consistencia
     completado: false,
     campania: '', // Agregar filtro de campaña
-    estado_calculadora: '' // Agregar filtro de estado de calculadora
+    estado_calculadora: '', // Agregar filtro de estado de calculadora
+    vendedor: ''
   })
 
-  // Agregar opciones de filtro para campaña y estado
+  // Agregar opciones de filtro para campaña, estado y vendedor
   const filterOptions = ref<FilterOptions>({
     contenedores: [],
-    estadoCalculadora: []
+    estadoCalculadora: [],
+    vendedores: []
   })
 
   const tarifasSelect = computed(() => {
@@ -659,6 +661,9 @@ export const useCalculadoraImportacion = () => {
       if (filters.value.estado_calculadora && filters.value.estado_calculadora !== '' && filters.value.estado_calculadora !== 'todos') {
         params.estado_calculadora = filters.value.estado_calculadora
       }
+      if (filters.value.vendedor && filters.value.vendedor !== '' && filters.value.vendedor !== 'todos') {
+        params.vendedor = filters.value.vendedor
+      }
 
       const response = await CalculadoraImportacionService.getCotizaciones(params)
       cotizaciones.value = response.data
@@ -669,6 +674,7 @@ export const useCalculadoraImportacion = () => {
       if (response.filters) {
         filterOptions.value.contenedores = response.filters.contenedores || []
         filterOptions.value.estadoCalculadora = response.filters.estadoCalculadora || []
+        filterOptions.value.vendedores = response.filters.vendedores || []
       }
     } catch (error) {
       console.error('Error al obtener cotizaciones:', error)
@@ -701,6 +707,35 @@ export const useCalculadoraImportacion = () => {
     pagination.value.current_page = 1
     await getCotizaciones()
   }
+
+  /** Exporta la lista de cotizaciones (con filtros actuales). El backend devuelve XLSX con estilos. */
+  const exportCotizacionesList = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const params: Record<string, string | number | undefined> = {}
+      if (search.value.trim()) params.search = search.value.trim()
+      if (filters.value.fecha_inicio) params.fecha_inicio = filters.value.fecha_inicio
+      if (filters.value.fecha_fin) params.fecha_fin = filters.value.fecha_fin
+      if (filters.value.estado && filters.value.estado !== 'todos') params.estado = filters.value.estado
+      if (filters.value.campania && filters.value.campania !== '' && filters.value.campania !== 'todas') params.campania = filters.value.campania
+      if (filters.value.estado_calculadora && filters.value.estado_calculadora !== '' && filters.value.estado_calculadora !== 'todos') params.estado_calculadora = filters.value.estado_calculadora
+      if (filters.value.vendedor && filters.value.vendedor !== '' && filters.value.vendedor !== 'todos') params.vendedor = filters.value.vendedor
+
+      const blob = await CalculadoraImportacionService.exportListCotizaciones(params)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `cotizaciones_calculadora_${new Date().toISOString().split('T')[0]}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      return { success: true }
+    } catch (err: any) {
+      console.error('Error al exportar cotizaciones:', err)
+      return { success: false, error: err?.message || 'Error al exportar' }
+    }
+  }
+
   const deleteCotizacionCalculadora = async (id: number) => {
     try {
       const response = await CalculadoraImportacionService.deleteCotizacion(id)
@@ -856,6 +891,7 @@ export const useCalculadoraImportacion = () => {
     handlePageChange,
     handleItemsPerPageChange,
     handleFilterChange,
+    exportCotizacionesList,
     estadoCotizaciones,
     deleteCotizacionCalculadora,
     duplicateCotizacionCalculadora,

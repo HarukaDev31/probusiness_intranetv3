@@ -88,6 +88,7 @@ export interface CotizacionFilters {
   completado: boolean
   campania: string
   estado_calculadora: string
+  vendedor: string
 }
 
 export interface FilterOption {
@@ -99,4 +100,5 @@ export interface FilterOption {
 export interface FilterOptions {
   contenedores: FilterOption[]
   estadoCalculadora: FilterOption[]
+  vendedores: FilterOption[]
 }

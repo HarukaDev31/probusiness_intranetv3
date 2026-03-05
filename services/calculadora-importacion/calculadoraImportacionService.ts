@@ -133,4 +133,27 @@ export class CalculadoraImportacionService extends BaseService {
             throw error
         }
     }
+
+    /** Exportar listado de cotizaciones a XLSX (backend devuelve el archivo con estilos) */
+    static async exportListCotizaciones(params: Record<string, string | number | undefined>): Promise<Blob> {
+        try {
+            const queryString = new URLSearchParams()
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== '' && value !== null) {
+                    queryString.append(key, String(value))
+                }
+            })
+            const response = await this.apiCall<Blob>(`${this.baseUrl}/export-list?${queryString.toString()}`, {
+                method: 'GET',
+                responseType: 'blob',
+                headers: {
+                    Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            })
+            return response
+        } catch (error) {
+            console.error('Error al exportar cotizaciones:', error)
+            throw error
+        }
+    }
 }

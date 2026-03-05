@@ -9,7 +9,8 @@
       empty-state-message="No se encontraron cotizaciones que coincidan con los criterios de búsqueda."
       :show-new-button="isDesktop" new-button-label="Crear Cotización" :on-new-button-click="handleNewButtonClick"
       @update:search-query="handleSearch" @update:primary-search="handleSearch"
-      @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @filter-change="handleFilterChange">
+      @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @filter-change="handleFilterChange"
+      @export="handleExport">
 
 
       <template #error-state>
@@ -21,7 +22,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
-const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora } = useCalculadoraImportacion()
+const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, exportCotizacionesList } = useCalculadoraImportacion()
 import type { TableColumn } from '@nuxt/ui'
 import { UButton, USelect } from '#components'
 import MoveCotizacionModal from '~/components/cargaconsolidada/MoveCotizacionModal.vue'
@@ -309,6 +310,21 @@ const handleSend = (id: string) => {
     }
   })
 }
+const handleExport = async () => {
+  try {
+    await withSpinner(async () => {
+      const result = await exportCotizacionesList()
+      if (result.success) {
+        showSuccess('Exportado', 'El listado se descargó correctamente.', { duration: 3000 })
+      } else {
+        showError('Error al exportar', result.error ?? 'No se pudo exportar el listado.')
+      }
+    }, 'Exportando...')
+  } catch (e: any) {
+    showError('Error al exportar', e?.message ?? 'No se pudo exportar.')
+  }
+}
+
 onMounted(() => {
   getCotizaciones()
 })
@@ -352,6 +368,19 @@ const filterConfig = computed<FilterConfig[]>(() => [
       ...(filterOptions.value.estadoCalculadora || []).map((item: any) => ({
         label: item.label,
         value: item.value.toString()
+      }))
+    ]
+  },
+  {
+    key: 'vendedor',
+    label: 'Vendedor',
+    type: 'select',
+    placeholder: 'Seleccionar vendedor',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      ...(filterOptions.value.vendedores || []).map((item: any) => ({
+        label: item.label ?? item.nombre ?? `Usuario ${item.value}`,
+        value: String(item.value ?? item.id)
       }))
     ]
   }
