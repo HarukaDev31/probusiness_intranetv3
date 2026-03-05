@@ -36,6 +36,7 @@ export const useEntrega = () => {
   }
   const delivery = ref<DeliveryRow[]>([])
   const cargasDisponiblesDelivery = ref<any[]>([])
+  const totalesDelivery = ref<{ label: string; value: string; icon?: string }[]>([])
 
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -879,6 +880,7 @@ export const useEntrega = () => {
         if (responseData.cargas_disponibles) {
           cargasDisponiblesDelivery.value = responseData.cargas_disponibles
         }
+        totalesDelivery.value = responseData.headers ?? []
         pagination.value = responseData.pagination || {
           current_page: page,
           last_page: 1,
@@ -961,6 +963,7 @@ export const useEntrega = () => {
     fetchDeliveryData,
     updateFiltersDelivery,
     clearFiltersDelivery,
-    cargasDisponiblesDelivery
+    cargasDisponiblesDelivery,
+    totalesDelivery
   }
 }

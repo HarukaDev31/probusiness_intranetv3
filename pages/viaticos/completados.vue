@@ -19,7 +19,6 @@
       :show-filters="true" 
       :filter-config="filterConfig" 
       :filters-value="filters" 
-      :show-export="false"
       :show-skeleton="true"
       :skeleton-rows="6"
       :skeleton-cols="9"
@@ -29,6 +28,10 @@
       @page-change="handlePageChange" 
       @items-per-page-change="handleItemsPerPageChange" 
       @filter-change="handleFilterChange"
+      @export="exportViaticos('CONFIRMED')"
+      :headers="headers"
+      :show-headers="true"
+      :show-export="true"
     >
       <template #error-state>
         <ErrorState :message="error || 'Error desconocido'" />
@@ -51,14 +54,13 @@ import ModalPreview from '~/components/commons/ModalPreview.vue'
 import type { FileItem } from '~/types/commons/file'
 import type { ViaticoPago } from '~/types/viatico'
 
-const { viaticos, loading, error, pagination, loadCompletados, getStatusColor, getStatusLabel } = useViaticos()
+const { viaticos, loading, error, pagination,headers, filters, loadCompletados, exportViaticos, getStatusColor, getStatusLabel } = useViaticos()
 const { hasRole } = useUserRole()
 const overlay = useOverlay()
 const evidenciasModal = overlay.create(EvidenciasModal)
 const modalPreview = overlay.create(ModalPreview)
 
 const search = ref('')
-const filters = ref<Record<string, any>>({})
 
 // Verificar que sea administración
 const isAdmin = computed(() => hasRole(ROLES.ADMINISTRACION))
@@ -224,7 +226,15 @@ const filterConfig = computed<FilterConfig[]>(() => [
     type: 'date',
     placeholder: 'DD/MM/YYYY',
     options: []
-  }
+  },
+
+  {
+    key: 'area_solicitante',
+    label: 'Área Solicitante',
+    type: 'select',
+    placeholder: 'Seleccionar área solicitante',
+    options: []
+  },
 ])
 
 // Watchers

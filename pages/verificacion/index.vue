@@ -9,10 +9,10 @@
         :loading="loadingConsolidado" :current-page="currentPage" :total-pages="totalPages"
         :total-records="totalRecords" :items-per-page="itemsPerPage" :primary-search-value="search"
         :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigConsolidado"
-        :filters-value="filtersConsolidado" :show-export="false"
+        :filters-value="filtersConsolidado" :show-export="false" :headers="headersConsolidado"
         empty-state-message="No se encontraron registros de consolidado." @update:primary-search="handleSearch"
         @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
-        @filter-change="handleFilterChange" :show-body-top="true">
+        @filter-change="handleFilterChange" :show-body-top="true" :show-headers="true">
         <!-- Botón de filtros personalizado -->
         <template #body-top>
           <div class="w-50 my-3 flex items-center">
@@ -43,15 +43,6 @@
               </button>
             </div>
           </div>
-          <div class="my-3 mr-20 flex justify-end items-center">
-            <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total:
-              <span
-                class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
-                {{ formatCurrency(totalImporteConsolidado) }}
-              </span>
-            </div>
-          </div>
         </template>
 
         <!-- Estado de error -->
@@ -67,10 +58,11 @@
         :loading="loadingCursos" :current-page="currentPageCursos" :total-pages="totalPagesCursos"
         :total-records="totalRecordsCursos" :items-per-page="itemsPerPageCursos" :primary-search-value="searchCursos"
         :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigCursos"
-        :filters-value="filtersCursos" :show-export="false" empty-state-message="No se encontraron registros de cursos."
+        :filters-value="filtersCursos" :show-export="false" :headers="headersCursos"
+        empty-state-message="No se encontraron registros de cursos."
         @update:primary-search="handleSearch" @page-change="handlePageChange"
         @items-per-page-change="handleItemsPerPageChange" @export="exportCursosData" @filter-change="handleFilterChange"
-        :show-body-top="true">
+        :show-body-top="true" :show-headers="true">
 
         <template #body-top>
           <div class="w-50 mb-6 flex items-center">
@@ -99,15 +91,6 @@
               ]">
                 Permisos
               </button>
-            </div>
-          </div>
-          <div class="my-3 mr-20 flex justify-end items-center">
-            <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total:
-              <span
-                class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
-                {{ formatCurrency(totalImporteCursos, 'PEN') }}
-              </span>
             </div>
           </div>
         </template>
@@ -150,11 +133,13 @@
       <DataTable title="Delivery" icon="i-heroicons-truck" :data="deliveryData" :columns="deliveryColumns"
         :loading="loadingDelivery" :current-page="currentPageDelivery" :total-pages="totalPagesDelivery"
         :total-records="totalRecordsDelivery" :items-per-page="itemsPerPageDelivery"
+        :show-summary="true"
         :primary-search-value="searchDelivery" :show-secondary-search="false" :show-filters="true"
         :filter-config="filterConfigDelivery" :filters-value="filtersDelivery" :show-export="false"
-        empty-state-message="No se encontraron registros de delivery." @update:primary-search="handleSearch"
-        @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportDeliveryData"
-        @filter-change="handleFilterChange" :show-body-top="true">
+        :headers="totalesDelivery" empty-state-message="No se encontraron registros de delivery."
+        @update:primary-search="handleSearch" @page-change="handlePageChange"
+        @items-per-page-change="handleItemsPerPageChange" @export="exportDeliveryData"
+        @filter-change="handleFilterChange" :show-body-top="true" :show-headers="true">
 
         <template #body-top>
           <div class="w-50 mb-6 flex items-center">
@@ -183,15 +168,6 @@
               ]">
                 Permisos
               </button>
-            </div>
-          </div>
-          <div class="my-3 mr-20 flex justify-end items-center">
-            <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total:
-              <span
-                class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
-                {{ formatCurrency(totalImporteDelivery, 'PEN') }}
-              </span>
             </div>
           </div>
         </template>
@@ -288,7 +264,8 @@ const {
   totalRecords,
   currentPage,
   itemsPerPage,
-  search
+  search,
+  headersConsolidado
 } = useConsolidado()
 
 // Composable de cursos
@@ -312,7 +289,8 @@ const {
   totalRecordsCursos,
   currentPageCursos,
   itemsPerPageCursos,
-  searchCursos
+  searchCursos,
+  headersCursos
 } = usePagos()
 
 // Composable de entrega para delivery
@@ -335,7 +313,8 @@ const {
   fetchDeliveryData,
   updateFiltersDelivery,
   clearFiltersDelivery,
-  cargasDisponiblesDelivery
+  cargasDisponiblesDelivery,
+  totalesDelivery
 } = useEntrega()
 
 // Permisos (solo para ADMINISTRACION)
@@ -975,15 +954,6 @@ const permisosColumns: TableColumn<TramiteAduana>[] = [
   },
 ]
 
-const totalImporteConsolidado = computed(() =>
-  consolidadoData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
-)
-const totalImporteCursos = computed(() =>
-  cursosData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
-)
-const totalImporteDelivery = computed(() =>
-  deliveryData.value.reduce((sum, item) => sum + (Number(item.pagado) || 0), 0)
-)
 
 // Computed para el total del consolidado (asegurar que sea un número)
 const totalAmountConsolidadoComputed = computed(() => {

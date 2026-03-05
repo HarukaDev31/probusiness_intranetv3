@@ -12,11 +12,20 @@ export const useViaticos = () => {
   const currentViatico = ref<Viatico | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const headers = ref<{ label: string; value: string; icon?: string }[]>([])
   const pagination = ref({
     current_page: 1,
     last_page: 1,
     per_page: 10,
     total: 0
+  })
+
+  const filters = ref<ViaticoFilters>({
+    fecha_inicio: '',
+    fecha_fin: '',
+    requesting_area: '',
+    area_solicitante: '',
+    search: ''
   })
 
   /**
@@ -28,10 +37,11 @@ export const useViaticos = () => {
       error.value = null
 
       const response = await ViaticoService.getViaticos(filters)
-      
+
       if (response.success) {
         viaticos.value = response.data
         pagination.value = response.pagination
+        headers.value = (response as any).headers ?? []
       } else {
         throw new Error('Error al cargar viáticos')
       }
@@ -52,16 +62,17 @@ export const useViaticos = () => {
       error.value = null
 
       const response = await ViaticoService.getPendientes(filters)
-      
+
       if (response.success) {
         viaticos.value = response.data
         pagination.value = response.pagination
+        headers.value = (response as any).headers ?? []
       } else {
-        throw new Error('Error al cargar viáticos pendientes')
+        throw new Error('Error al cargar viáticos')
       }
     } catch (err: any) {
-      error.value = err.message || 'Error al cargar viáticos pendientes'
-      console.error('Error en loadPendientes:', err)
+      error.value = err.message || 'Error al cargar viáticos'
+      console.error('Error en loadViaticos:', err)
     } finally {
       loading.value = false
     }
@@ -76,16 +87,17 @@ export const useViaticos = () => {
       error.value = null
 
       const response = await ViaticoService.getCompletados(filters)
-      
+
       if (response.success) {
         viaticos.value = response.data
         pagination.value = response.pagination
+        headers.value = (response as any).headers ?? []
       } else {
-        throw new Error('Error al cargar viáticos completados')
+        throw new Error('Error al cargar viáticos')
       }
     } catch (err: any) {
-      error.value = err.message || 'Error al cargar viáticos completados'
-      console.error('Error en loadCompletados:', err)
+      error.value = err.message || 'Error al cargar viáticos'
+      console.error('Error en loadViaticos:', err)
     } finally {
       loading.value = false
     }
@@ -100,7 +112,7 @@ export const useViaticos = () => {
       error.value = null
 
       const response = await ViaticoService.getViaticoById(id)
-      
+
       if (response.success) {
         currentViatico.value = response.data
       } else {
@@ -124,7 +136,7 @@ export const useViaticos = () => {
       error.value = null
 
       const response = await ViaticoService.createViatico(data)
-      
+
       if (response.success) {
         // Recargar la lista después de crear
         await loadViaticos()
@@ -150,7 +162,7 @@ export const useViaticos = () => {
       error.value = null
 
       const response = await ViaticoService.updateViatico(id, data)
-      
+
       if (response.success) {
         // Actualizar el viático actual si es el mismo
         if (currentViatico.value?.id === id) {
@@ -180,7 +192,7 @@ export const useViaticos = () => {
       error.value = null
 
       const response = await ViaticoService.deleteViatico(id)
-      
+
       if (response.success) {
         // Recargar la lista después de eliminar
         await loadViaticos()
@@ -194,6 +206,27 @@ export const useViaticos = () => {
       throw err
     } finally {
       loading.value = false
+    }
+  }
+
+  /**
+   * Exportar viáticos como CSV
+   */
+  const exportViaticos = async (status?: string,) => {
+    try {
+      console.log(filters.value)
+      const blob = await ViaticoService.exportViaticos(status, filters.value)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `viaticos_${new Date().toISOString().split('T')[0]}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      error.value = err.message || 'Error al exportar'
+      throw err
     }
   }
 
@@ -221,6 +254,10 @@ export const useViaticos = () => {
     return labels[status] || status
   }
 
+  const updateFilters = (newFilters: ViaticoFilters) => {
+    filters.value = newFilters
+  }
+
   return {
     // State
     viaticos,
@@ -228,7 +265,9 @@ export const useViaticos = () => {
     loading,
     error,
     pagination,
-    
+    headers,
+    filters,
+    updateFilters,
     // Methods
     loadViaticos,
     loadPendientes,
@@ -237,7 +276,8 @@ export const useViaticos = () => {
     createViatico,
     updateViatico,
     deleteViatico,
-    
+    exportViaticos,
+
     // Helpers
     getStatusColor,
     getStatusLabel

@@ -6,6 +6,7 @@ export const useConsolidado = () => {
   // State
   const cargasDisponibles = ref<{ value: string; label: string }[]>([])
   const consolidadoData = ref<ConsolidadoItem[]>([])
+  const headersConsolidado = ref<{ label: string; value: string; icon?: string }[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const pagination = ref<PaginationInfo>({
@@ -112,6 +113,7 @@ export const useConsolidado = () => {
       const response = await ConsolidadoService.getConsolidadoPagos(filtersWithPagination)
       consolidadoData.value = response.data
       pagination.value = response.pagination
+      headersConsolidado.value = (response as any).headers ?? []
 
       // Populate cargasDisponibles from response (backend envía label en formato "#carga -año")
       const apiCargas = (response as any)?.cargas_disponibles ?? (response as any)?.filters?.cargas ?? []
@@ -133,15 +135,12 @@ export const useConsolidado = () => {
   const updateEstadoPago = async (id: number, estado: string) => {
     try {
       await ConsolidadoService.updateEstadoPago(id, estado)
-      
+
       // Actualizar el estado local
       const item = consolidadoData.value.find(item => item.id === id)
       if (item) {
         item.estado_pago = estado
       }
-
-      //Actualizar el estado y mandar a la api
-      await ConsolidadoService.updateEstadoPago(id, estado)
 
       return { success: true }
     } catch (err) {
@@ -269,6 +268,7 @@ export const useConsolidado = () => {
     totalPaid,
     filteredData,
     itemsPerPage,
+    headersConsolidado,
     // Methods
     fetchConsolidadoData,
     updateEstadoPago,

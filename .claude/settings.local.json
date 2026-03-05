@@ -6,7 +6,8 @@
       "Bash(git commit:*)",
       "Read(//c/Users/User/OneDrive/Desktop/Proyectos/Probusiness/probusiness_intranetv2_back/**)",
       "Read(//c/Users/User/OneDrive/Desktop/Proyectos/Probusiness/probusiness_intranetv2_back/app/**)",
-      "Read(//c/Users/User/OneDrive/Desktop/Proyectos/Probusiness/**)"
+      "Read(//c/Users/User/OneDrive/Desktop/Proyectos/Probusiness/**)",
+      "Bash(ls \"c:\\\\Users\\\\Lenovo\\\\Desktop\\\\Proyectos\\\\Probusiness\\\\probusiness_intranetv3\\\\pages\\\\cargaconsolidada\\\\contabilidad\\\\factura-guia\"\" 2>/dev/null || echo \"DIR_NOT_FOUND \")"
     ],
     "additionalDirectories": [
       "c:\\Users\\Lenovo\\Desktop\\Proyectos\\Probusiness\\intranet_back\\app\\Models\\CargaConsolidada"
