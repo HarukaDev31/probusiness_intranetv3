@@ -338,7 +338,7 @@ const { isDesktop } = useIsDesktop()
 const props = withDefaults(defineProps<DataTableProps>(), DATA_TABLE_DEFAULTS)
 
 // Emits
-const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'items-per-page-change', 'page-change'] )
+const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change'] )
 
 // Computed writable para v-model:page
 const currentPageModel = computed({

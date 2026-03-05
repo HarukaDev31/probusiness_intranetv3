@@ -6,10 +6,11 @@
   <DataTable title="" :show-pagination="false" :data="general" :columns="generalColumnsByRole" :loading="loadingGeneral || loadingHeaders"
       icon="" :current-page="currentPageGeneral" :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
       :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
-      :show-filters="false" :filter-config="filterConfigGeneral" :show-export="false"
+      :show-filters="true" :filter-config="filterConfigGeneral" :show-export="false"
       empty-state-message="No se encontraron registros de general." @update:primary-search="handleSearchGeneral"
       @page-change="handlePageChangeGeneral" @items-per-page-change="handleItemsPerPageChangeGeneral"
-      @filter-change="handleFilterChangeGeneral" :hide-back-button="false" :show-primary-search="false"
+      @filter-change="handleFilterChangeGeneral" @clear-filters="handleClearFiltersGeneral" :hide-back-button="false" :show-primary-search="true"
+      :primary-search-placeholder="'Buscar por nombre o teléfono'" :filters-value="filtersGeneral"
       :show-body-top="true"
       :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `/cargaconsolidada/completados/pasos/${id}` : `/cargaconsolidada/completados`">
       <template #body-top>
@@ -44,7 +45,7 @@ import type { ContabilidadAction } from '~/components/cargaconsolidada/factura-g
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import type { TableColumn } from '@nuxt/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, uploadFacturaComercial, uploadGuiaRemision, headers, carga, loadingHeaders, getHeaders, deleteFacturaComercial, deleteGuiaRemision } = useGeneral()
+const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, filtersGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, handleClearFiltersGeneral, uploadFacturaComercial, uploadGuiaRemision, headers, carga, loadingHeaders, getHeaders, deleteFacturaComercial, deleteGuiaRemision } = useGeneral()
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useWhatsapp } from '~/composables/cargaconsolidada/factura-guia/useWhatsapp'
@@ -508,9 +509,10 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
         ...(telefono ? [h('div', { class: 'text-sm text-gray-500 dark:text-gray-400' }, telefono)] : [])
       ]
       if (registrado && tipo_comprobante === 'FACTURA') {
-        nodes.push(h('div', { class: 'font-medium text-gray-900 dark:text-white break-words line-clamp-2 min-w-0' }, `${razon_social}  ${ruc}`))
+        if (razon_social) nodes.push(h('div', { class: 'font-medium text-gray-900 dark:text-white break-words line-clamp-2 min-w-0' }, razon_social))
+        if (ruc) nodes.push(h('div', { class: 'text-sm text-gray-500 dark:text-gray-400' }, ruc))
       }
-      return cellWrap('max-w-[200px] min-w-0 whitespace-normal')(nodes)
+      return cellWrap('max-w-[200px] min-w-0 whitespace-normal flex flex-col gap-0.5')(nodes)
     }
   },
   {

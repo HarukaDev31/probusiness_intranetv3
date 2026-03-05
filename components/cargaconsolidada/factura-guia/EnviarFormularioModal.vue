@@ -148,7 +148,11 @@ onMounted(async () => {
   try {
     const res = await ContabilidadService.getClientesContenedor(props.idContenedor)
     if (res.success) {
-      clientes.value = res.data
+      // Solo clientes de este contenedor: id_contenedor_pago nulo o igual al contenedor actual
+      const idContenedor = props.idContenedor
+      clientes.value = (res.data || []).filter(
+        (c: any) => c.id_contenedor_pago == null || c.id_contenedor_pago === idContenedor
+      )
     }
   } catch (e) {
     console.error('Error al cargar clientes:', e)
