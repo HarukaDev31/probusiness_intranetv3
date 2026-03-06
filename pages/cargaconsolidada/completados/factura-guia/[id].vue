@@ -548,12 +548,16 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     accessorKey: 'total_detracciones',
     header: 'Detracción',
     cell: ({ row }: { row: any }) => {
-      const comprobantes = row.original.comprobantes as Array<{ tiene_detraccion?: boolean; detraccion?: { monto: number; file_url?: string } | null }> | undefined
+      const comprobantes = row.original.comprobantes as Array<{ tiene_detraccion?: boolean; detraccion?: { monto: number; monto_pagado?: number | null; file_url?: string } | null }> | undefined
       if (!comprobantes?.length) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
-      return cellWrap('')(h('div', { class: 'flex flex-col gap-1.5' }, comprobantes.map((c, i) => {
+      return cellWrap('')(h('div', { class: 'flex flex-col gap-1' }, comprobantes.map((c, i) => {
         const d = c.detraccion
-        if (!d) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
-        return h('span', { key: i, class: 'text-sm font-medium tabular-nums' }, `S/ ${Number(d.monto).toFixed(2)}`)
+        if (!c.tiene_detraccion || !d) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
+        const required = Number(d.monto || 0)
+        const paid = Number(d.monto_pagado ?? 0)
+        const estado = required > 0 && paid >= required ? 'pagado' : 'adelanto'
+        const bgClass = estado === 'pagado' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200'
+        return h('span', { key: i, class: `rounded-md px-2 py-0.5 text-sm font-medium tabular-nums inline-block w-fit ${bgClass}` }, `S/ ${required.toFixed(2)}`)
       })))
     }
   },
