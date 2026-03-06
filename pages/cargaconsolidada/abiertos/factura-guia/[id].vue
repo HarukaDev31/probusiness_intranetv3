@@ -525,7 +525,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
     header: 'Registrado',
     cell: ({ row }: { row: any }) => cellWrap('flex justify-center')(h(UBadge, {
       label: row.original.registrado ? 'Sí' : 'No',
-      color: row.original.registrado ? 'success' : 'neutral',
+      color: row.original.registrado ? 'success' : 'error',
       variant: 'solid',
       size: 'lg'
     }))
