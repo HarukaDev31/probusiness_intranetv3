@@ -700,12 +700,12 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         downloadFile(row.original.cotizacion_file_url)
                     }
                 }) : null,
-                showBorrarResubir ? h(UButton, {
+                showBorrarResubir && !row.original.cotizacion_file_url ? h(UButton, {
                     icon: 'i-heroicons-arrow-up-tray',
                     variant: 'ghost',
                     size: 'xs',
                     color: 'primary',
-                    title: 'Subir / Reemplazar cotización',
+                    title: 'Subir cotización',
                     onClick: () => {
                         handleUpdateCotizacion(row.original.id)
                     }
@@ -899,12 +899,42 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         accessorKey: 'cotizacion',
         header: 'Cotizacion',
         cell: ({ row }: { row: any }) => {
-            return h('div', { class: 'flex flex-row gap-2' }, [
+            const isCotizador = currentRole.value === ROLES.COTIZADOR
+            const noFromCalculator = !row.original.from_calculator
+            const showBorrarResubir = isCotizador && noFromCalculator
+            return h('div', { class: 'flex flex-row gap-2 flex-wrap items-center' }, [
+                row.original.url_cotizacion_pdf ? h('div', {
+                    innerHTML: CUSTOMIZED_ICONS.PDF,
+                    class: 'cursor-pointer',
+                    onClick: () => {
+                        downloadFile(row.original.url_cotizacion_pdf)
+                    }
+                }) : null,
                 row.original.cotizacion_file_url ? h('div', {
                     innerHTML: CUSTOMIZED_ICONS.EXCEL,
                     class: 'cursor-pointer',
                     onClick: () => {
                         downloadFile(row.original.cotizacion_file_url)
+                    }
+                }) : null,
+                showBorrarResubir && !row.original.cotizacion_file_url ? h(UButton, {
+                    icon: 'i-heroicons-arrow-up-tray',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'primary',
+                    title: 'Subir cotización',
+                    onClick: () => {
+                        handleUpdateCotizacion(row.original.id)
+                    }
+                }) : null,
+                showBorrarResubir && row.original.cotizacion_file_url ? h(UButton, {
+                    icon: 'i-heroicons-trash',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'error',
+                    title: 'Eliminar archivo de cotización',
+                    onClick: () => {
+                        handleDeleteFile(row.original.id)
                     }
                 }) : null
             ])
