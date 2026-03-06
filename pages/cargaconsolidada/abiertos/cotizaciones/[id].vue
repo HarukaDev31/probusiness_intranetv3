@@ -692,8 +692,10 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'cotizacion',
         header: 'Cotizacion',
         cell: ({ row }: { row: any }) => {
-            //add if url_cotizacion_pdf  show pdf
-            return h('div', { class: 'flex flex-row gap-2' }, [
+            const isCotizador = currentRole.value === ROLES.COTIZADOR
+            const noFromCalculator = !row.original.from_calculator
+            const showBorrarResubir = isCotizador && noFromCalculator
+            return h('div', { class: 'flex flex-row gap-2 flex-wrap items-center' }, [
                 row.original.url_cotizacion_pdf ? h('div', {
                     innerHTML: CUSTOMIZED_ICONS.PDF,
                     class: 'cursor-pointer',
@@ -706,6 +708,26 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     class: 'cursor-pointer',
                     onClick: () => {
                         downloadFile(row.original.cotizacion_file_url)
+                    }
+                }) : null,
+                showBorrarResubir ? h(UButton, {
+                    icon: 'i-heroicons-arrow-up-tray',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'primary',
+                    title: 'Subir / Reemplazar cotización',
+                    onClick: () => {
+                        handleUpdateCotizacion(row.original.id)
+                    }
+                }) : null,
+                showBorrarResubir && row.original.cotizacion_file_url ? h(UButton, {
+                    icon: 'i-heroicons-trash',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'error',
+                    title: 'Eliminar archivo de cotización',
+                    onClick: () => {
+                        handleDeleteFile(row.original.id)
                     }
                 }) : null
             ])
