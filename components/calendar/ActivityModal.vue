@@ -103,28 +103,34 @@
         <!-- Responsables (solo si tiene permiso) -->
         <UFormField v-if="calendarPermissions.canAssignResponsables" label="Responsables" :error="errors.responsables">
           <div class="space-y-3">
-            <USelectMenu :model-value="selectedResponsableOptions" :items="responsableOptions" value-attribute="value"
+            <USelectMenu v-model="responsableSelection" :items="responsableOptions"
               placeholder="Seleccionar responsables" size="lg" class="w-full" multiple searchable
-              searchable-placeholder="Buscar responsable..." @update:model-value="onResponsablesChange">
+              searchable-placeholder="Buscar responsable...">
               <template #item="{ item }">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 w-full">
                   <div class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: item.color || '#6B7280' }" />
-                  <span>{{ item.label }}</span>
+                  <span class="flex-1">{{ item.label }}</span>
+                  <UIcon v-if="isResponsableSelected(item)" name="i-heroicons-check" class="w-5 h-5 text-primary-500 shrink-0" />
                 </div>
               </template>
             </USelectMenu>
 
-            <!-- Mostrar responsables seleccionados (id puede ser número u objeto según USelectMenu) -->
-            <div v-if="form.responsable_ids.length > 0" class="flex flex-wrap gap-2">
-              <UBadge v-for="(item, index) in form.responsable_ids" :key="toResponsableId(item) ?? index" variant="soft"
-                size="lg" class="pr-1">
-                <div class="flex items-center gap-1">
-                  <div class="w-2 h-2 rounded-full"
-                    :style="{ backgroundColor: getResponsableColorById(toResponsableId(item)) }" />
-                  <span>{{ getResponsableNameById(toResponsableId(item)) }}</span>
-                  <UButton icon="i-heroicons-x-mark" variant="ghost" size="xs" class="ml-1"
-                    @click="removeResponsable(item)" />
-                </div>
+            <!-- Mostrar responsables seleccionados o "Sin responsable" -->
+            <div class="flex flex-wrap gap-2">
+              <template v-if="form.responsable_ids.length > 0">
+                <UBadge v-for="(item, index) in form.responsable_ids" :key="toResponsableId(item) ?? index" variant="soft"
+                  size="lg" class="pr-1">
+                  <div class="flex items-center gap-1">
+                    <div class="w-2 h-2 rounded-full"
+                      :style="{ backgroundColor: getResponsableColorById(toResponsableId(item)) }" />
+                    <span>{{ getResponsableNameById(toResponsableId(item)) }}</span>
+                    <UButton icon="i-heroicons-x-mark" variant="ghost" size="xs" class="ml-1"
+                      @click="removeResponsable(item)" />
+                  </div>
+                </UBadge>
+              </template>
+              <UBadge v-else variant="soft" size="lg" class="text-gray-500">
+                <span>Sin responsable</span>
               </UBadge>
             </div>
 
@@ -416,25 +422,68 @@ const onContenedorChange = async (payload: ContenedorOption | number | null) => 
   await fetchUsedActivities(form.value.contenedor_id)
 }
 
+/** Valor especial para "Sin responsable" (no es un user_id real). */
+const SIN_RESPONSABLE_VALUE = 0
+
 const responsableOptions = computed(() => {
-  return props.responsables.map(r => ({
+  const list = props.responsables.map(r => ({
     label: r.nombre,
     value: r.id,
     color: props.getResponsableColor(r.id, r.nombre)
   }))
+  return [{ label: 'Sin responsable', value: SIN_RESPONSABLE_VALUE, color: '#9ca3af' }, ...list]
 })
 
 type ResponsableOption = { label: string; value: number; color: string }
-const selectedResponsableOptions = computed(() => {
-  const ids = form.value.responsable_ids
-  return responsableOptions.value.filter((o: ResponsableOption) =>
-    ids.some((id: number | unknown) => toResponsableId(id) === o.value)
-  )
-})
-const onResponsablesChange = (payload: ResponsableOption[] | number[] | unknown) => {
-  const arr = Array.isArray(payload) ? payload : []
-  form.value.responsable_ids = arr.map((item: unknown) => toResponsableId(item)).filter((id): id is number => typeof id === 'number')
+
+/** Selección actual: array de opciones (objetos). Sin value-key para que USelectMenu compare por objeto. */
+const responsableSelection = ref<ResponsableOption[]>([])
+
+/** Última selección aplicada (ids), para saber si el usuario acaba de elegir "Sin responsable" o un responsable real. */
+const lastAppliedResponsableIds = ref<number[]>([])
+
+function isResponsableSelected(item: ResponsableOption): boolean {
+  return responsableSelection.value.some(s => s.value === item.value)
 }
+
+/** Exclusión mutua: "Sin responsable" y responsables reales no pueden estar a la vez.
+ * - Si hay ambos: si antes solo había responsables reales → el usuario acaba de elegir "Sin responsable" → dejamos solo "Sin responsable".
+ * - Si hay ambos: si antes había "Sin responsable" o vacío → el usuario acaba de elegir un responsable → dejamos solo los reales.
+ * - Si solo "Sin responsable" o vacío → form = []. */
+watch(responsableSelection, (val) => {
+  const raw = Array.isArray(val) ? val : []
+  const ids = raw.map((o: ResponsableOption) => o.value).filter((id): id is number => typeof id === 'number')
+  const hasSinResponsable = ids.includes(SIN_RESPONSABLE_VALUE)
+  const realIds = ids.filter(id => id !== SIN_RESPONSABLE_VALUE)
+  const opts = responsableOptions.value
+  const prevHadOnlyReal = lastAppliedResponsableIds.value.length > 0 && !lastAppliedResponsableIds.value.includes(SIN_RESPONSABLE_VALUE)
+
+  if (hasSinResponsable && realIds.length > 0) {
+    if (prevHadOnlyReal) {
+      responsableSelection.value = [opts[0]]
+      form.value.responsable_ids = []
+      lastAppliedResponsableIds.value = [SIN_RESPONSABLE_VALUE]
+    } else {
+      responsableSelection.value = opts.filter(o => realIds.includes(o.value))
+      form.value.responsable_ids = realIds
+      lastAppliedResponsableIds.value = realIds
+    }
+    return
+  }
+  if (realIds.length > 0) {
+    form.value.responsable_ids = realIds
+    lastAppliedResponsableIds.value = realIds
+    if (hasSinResponsable) {
+      responsableSelection.value = opts.filter(o => realIds.includes(o.value))
+    }
+  } else {
+    form.value.responsable_ids = []
+    lastAppliedResponsableIds.value = [SIN_RESPONSABLE_VALUE]
+    if (raw.length === 0) {
+      responsableSelection.value = [opts[0]]
+    }
+  }
+}, { deep: true })
 
 // Funciones para manejo de actividades
 const handleActivitySelect = (selected: { label: string; value: number } | null) => {
@@ -468,6 +517,13 @@ const handleCreateNewActivity = async (name: string) => {
     if (props.onCreateActivity) {
       const newActivity = await props.onCreateActivity(name)
       if (newActivity) {
+        localActivities.value.push({
+          id: newActivity.id,
+          name: newActivity.name,
+          allow_saturday: newActivity.allow_saturday,
+          allow_sunday: newActivity.allow_sunday,
+          default_priority: newActivity.default_priority
+        })
         form.value.name = newActivity.name
         form.value.activity_id = newActivity.id
         selectedActivity.value = { label: newActivity.name, value: newActivity.id }
@@ -541,11 +597,13 @@ const toResponsableId = (item: number | { value?: number } | unknown): number =>
 }
 
 const getResponsableNameById = (id: number): string => {
+  if (id === SIN_RESPONSABLE_VALUE) return 'Sin responsable'
   const responsable = props.responsables.find(r => r.id === id)
   return responsable?.nombre || 'Desconocido'
 }
 
 const getResponsableColorById = (id: number): string => {
+  if (id === SIN_RESPONSABLE_VALUE) return '#9ca3af'
   const responsable = props.responsables.find(r => r.id === id)
   return props.getResponsableColor(id, responsable?.nombre)
 }
@@ -579,10 +637,6 @@ const validate = (): boolean => {
     }
   }
 
-  if (props.calendarPermissions.canAssignResponsables && form.value.responsable_ids.length === 0) {
-    errors.value.responsables = 'Debe asignar al menos un responsable'
-  }
-
   return Object.keys(errors.value).length === 0
 }
 
@@ -603,11 +657,12 @@ const submit = async () => {
   }
 
   const extractIds = (vals: any[]): number[] => {
-    return vals.map(v => {
+    const raw = vals.map(v => {
       if (typeof v === 'number') return v
       if (typeof v === 'object' && 'value' in v) return v.value
       return v
     }).filter((v): v is number => typeof v === 'number')
+    return raw.filter(id => id !== SIN_RESPONSABLE_VALUE)
   }
 
   const activityId = form.value.activity_id ?? selectedActivity.value?.value ?? null
@@ -693,6 +748,11 @@ const initializeForm = async () => {
     form.value.contenedor_id = rawContenedorId != null ? Number(rawContenedorId) : null
     form.value.notes = props.event.notes || ''
     form.value.responsable_ids = props.event.charges?.map(c => c.user_id) || []
+    const opts = responsableOptions.value
+    responsableSelection.value = form.value.responsable_ids.length
+      ? opts.filter(o => form.value.responsable_ids.includes(o.value))
+      : [opts[0]]
+    lastAppliedResponsableIds.value = form.value.responsable_ids.length ? [...form.value.responsable_ids] : [SIN_RESPONSABLE_VALUE]
 
     // Cargar actividades usadas para el contenedor del evento
     await fetchUsedActivities(form.value.contenedor_id)
@@ -738,6 +798,8 @@ const initializeForm = async () => {
       responsable_ids: [],
       notes: ''
     }
+    responsableSelection.value = [responsableOptions.value[0]]
+    lastAppliedResponsableIds.value = [SIN_RESPONSABLE_VALUE]
     selectedActivity.value = null
 
     // Fecha inicial: la pasada (ej. día clicado) o hoy

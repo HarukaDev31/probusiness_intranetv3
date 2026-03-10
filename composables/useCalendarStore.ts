@@ -171,16 +171,28 @@ export const useCalendarStore = () => {
     return calendarConfig.value?.usa_consolidado ?? true
   })
 
-  const jefeColorOrder = computed(
-    () =>
-      calendarConfig.value?.color_priority_order?.jefe ??
-      ['ACTIVIDAD', 'CONSOLIDADO', 'USUARIO', 'PRIORIDAD', 'COMPLETADO']
-  )
-  const miembroColorOrder = computed(
-    () =>
-      calendarConfig.value?.color_priority_order?.miembro ??
-      ['USUARIO', 'PRIORIDAD', 'ACTIVIDAD', 'CONSOLIDADO', 'COMPLETADO']
-  )
+  const defaultJefeOrder = ['ACTIVIDAD', 'CONSOLIDADO', 'USUARIO', 'PRIORIDAD', 'COMPLETADO']
+  const defaultMiembroOrder = ['USUARIO', 'PRIORIDAD', 'ACTIVIDAD', 'CONSOLIDADO', 'COMPLETADO']
+
+  /** Orden guardado en role-groups para el jefe; solo usa default si la API no devuelve array con elementos. */
+  const jefeColorOrder = computed(() => {
+    const raw = calendarConfig.value?.color_priority_order?.jefe
+    if (Array.isArray(raw) && raw.length > 0) return raw
+    return defaultJefeOrder
+  })
+  /** Orden guardado en role-groups para el miembro; solo usa default si la API no devuelve array con elementos. */
+  const miembroColorOrder = computed(() => {
+    const raw = calendarConfig.value?.color_priority_order?.miembro
+    if (Array.isArray(raw) && raw.length > 0) return raw
+    return defaultMiembroOrder
+  })
+
+  /** Orden de prioridad de colores según el rol del usuario en el grupo actual (el de la config). */
+  const effectiveColorOrder = computed(() => {
+    const roleType = calendarConfig.value?.role_group?.role_type
+    if (roleType === 'JEFE') return jefeColorOrder.value
+    return miembroColorOrder.value
+  })
 
   const showEventDetails = computed(() => {
     return calendarConfig.value?.show_event_details ?? false
@@ -807,6 +819,9 @@ export const useCalendarStore = () => {
       let visible = false
       if (event.charges && event.charges.length > 0) {
         if (event.charges.some(charge => charge.user_id === currentIdNum)) visible = true
+      } else {
+        // Sin responsables: visible para todos los del grupo (el backend ya filtró por grupo)
+        visible = true
       }
       if (!visible) {
         if (event.is_public) visible = true
@@ -824,9 +839,9 @@ export const useCalendarStore = () => {
       if (!visible) return false
 
       // Aplicar filtro de responsable en el mismo pass
-      if (idSet) return event.charges?.some(charge => idSet.has(charge.user_id)) ?? false
+      if (idSet) return (event.charges?.length ? event.charges.some(charge => idSet.has(charge.user_id)) : false) || (event.charges?.length === 0)
       if (responsableId != null && typeof responsableId === 'number') {
-        return event.charges?.some(charge => charge.user_id === responsableId) ?? false
+        return (event.charges?.some(charge => charge.user_id === responsableId) ?? false) || (event.charges?.length === 0)
       }
       return true
     })
@@ -854,6 +869,9 @@ export const useCalendarStore = () => {
     }
 
     return state.events.value.filter(activity => {
+      const noCharges = !activity.charges?.length
+      if (noCharges) return true
+
       // Filtro de visibilidad para no-jefe (en el mismo pass)
       if (!canViewAll && hasResponsableId) {
         if (!(activity.charges?.some(charge => charge.user_id === responsableId) ?? false)) return false
@@ -895,22 +913,26 @@ export const useCalendarStore = () => {
     const consolidadoColor = consolidadoConfig?.color_code ?? null
     const priorityColor = PRIORITY_COLORS[event.priority] || '#3b82f6'
 
-    // Color de perfil por usuario (primer responsable del evento)
+    // Color de perfil por usuario (primer responsable del evento).
+    // Priorizar el color que viene en la API (charge.user.color) para que miembros vean el color de perfil
+    // aunque no tengan cargado el colorConfig del calendario del jefe.
     let userProfileColor: string | null = null
     if (Array.isArray((event as any).responsables) && (event as any).responsables.length > 0) {
-      const r = (event as any).responsables[0] as { id: number; nombre?: string }
-      userProfileColor = getResponsableColor(r.id, r.nombre)
+      const r = (event as any).responsables[0] as { id: number; nombre?: string; color?: string }
+      const apiColor = r.color && String(r.color).trim()
+      userProfileColor = apiColor || getResponsableColor(r.id, r.nombre)
     } else if (Array.isArray(event.charges) && event.charges.length > 0) {
       const c = event.charges[0] as any
       const uid = c.user_id ?? c.user?.id
       const nombre = c.user?.nombre
+      const apiColor = c.user?.color && String(c.user.color).trim()
       if (uid != null) {
-        userProfileColor = getResponsableColor(uid, nombre)
+        userProfileColor = apiColor || getResponsableColor(uid, nombre)
       }
     }
 
-    // Orden configurable por grupo según rol del usuario
-    const order = isJefeImportaciones.value ? jefeColorOrder.value : miembroColorOrder.value
+    // Orden definido en role-groups según rol (JEFE vs MIEMBRO) del usuario en el grupo actual
+    const order = effectiveColorOrder.value
     for (const key of order) {
       if (key === 'PRIORIDAD' && priorityColor) return [priorityColor]
       if (key === 'ACTIVIDAD' && activityColor) return [activityColor]

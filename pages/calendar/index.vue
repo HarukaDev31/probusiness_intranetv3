@@ -2279,7 +2279,8 @@ onMounted(async () => {
     const lastDayStr = `${lastDay.year}-${String(lastDay.month).padStart(2, '0')}-${String(lastDay.day).padStart(2, '0')}`
     setDateRange(firstDayStr, lastDayStr)
   }
-  loadEvents()
+  // Esperar eventos para que la primera pintura use ya la config de colores (orden jefe/miembro)
+  await loadEvents()
   // Actualizar URL inicial si no hay parámetros
   if (!route.query.year && !route.query.month) {
     updateUrl()
