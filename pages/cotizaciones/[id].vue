@@ -1198,11 +1198,22 @@ const saveCotizacion = async () => {
 
 const onClienteSelected = (cliente: any) => {
   if (cliente && typeof cliente === 'object') {
+    // Nombre / empresa
     clienteInfo.value.nombre = cliente.nombre || ''
-    clienteInfo.value.dni = cliente.documento || ''
-    clienteInfo.value.correo = cliente.correo || ''
     clienteInfo.value.empresa = cliente.razon_social || cliente.empresa || ''
-    clienteInfo.value.ruc = cliente.ruc || ''
+
+    // Documento según tipo de documento seleccionado en el formulario
+    if (clienteInfo.value.tipoDocumento === 'RUC') {
+      // Cuando el formulario está en modo RUC, usar cliente.documento como RUC
+      clienteInfo.value.ruc = cliente.documento || cliente.ruc || ''
+      clienteInfo.value.dni = ''
+    } else {
+      // Modo DNI: documento se trata como DNI y el RUC, si existe, va en su propio campo
+      clienteInfo.value.dni = cliente.documento || ''
+      clienteInfo.value.ruc = cliente.ruc || ''
+    }
+
+    clienteInfo.value.correo = cliente.correo || ''
 
     // Guardar el whatsapp como string
     const whatsappValue = cliente.whatsapp || cliente.celular || cliente.label || ''

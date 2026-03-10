@@ -792,15 +792,26 @@ export const useCalculadoraImportacion = () => {
       if (!payload) return null
 
       const cliente = payload.cliente || {}
+      // Determinar tipo de documento primero
+      const tipoDocumento = cliente.tipo_documento || payload.tipo_documento || 'DNI'
+      clienteInfo.value.tipoDocumento = tipoDocumento
+
       clienteInfo.value.nombre = cliente.nombre || payload.nombre_cliente || ''
-      clienteInfo.value.dni = cliente.documento || payload.dni_cliente || ''
-      clienteInfo.value.ruc = cliente.ruc || payload.ruc_cliente || ''
       clienteInfo.value.empresa = cliente.empresa || payload.razon_social || ''
+
+      if (tipoDocumento === 'RUC') {
+        // Cuando es RUC, el backend está enviando el RUC en cliente.documento
+        clienteInfo.value.ruc = cliente.documento || payload.ruc_cliente || ''
+        clienteInfo.value.dni = ''
+      } else {
+        // Caso DNI (u otro): documento se trata como DNI y el RUC, si existe, viene en su propio campo
+        clienteInfo.value.dni = cliente.documento || payload.dni_cliente || ''
+        clienteInfo.value.ruc = cliente.ruc || payload.ruc_cliente || ''
+      }
       clienteInfo.value.correo = cliente.correo || payload.correo_cliente || ''
       clienteInfo.value.whatsapp = payload.whatsapp_cliente ?? cliente.telefono ?? ''
       clienteInfo.value.tipoCliente = payload.tipo_cliente || clienteInfo.value.tipoCliente
       clienteInfo.value.qtyProveedores = Number(payload.qty_proveedores || payload.qtyProveedores || 0)
-      clienteInfo.value.tipoDocumento = cliente.tipo_documento || payload.tipo_documento || 'DNI'
 
       proveedores.value = (payload.proveedores || []).map((p: any, idx: number) => ({
         id:  p.id || (idx + 1).toString(),
