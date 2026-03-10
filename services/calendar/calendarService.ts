@@ -63,6 +63,8 @@ export interface CalendarRoleGroupConfig {
   jefe_color_priority_order?: string | null
   /** Orden de prioridad de colores para rol MIEMBRO (CSV) */
   miembro_color_priority_order?: string | null
+  /** Mostrar más detalles en los eventos del calendario para este grupo */
+  show_event_details?: boolean | null
 }
 
 export interface CalendarConfigResponse {
@@ -85,6 +87,8 @@ export interface CalendarConfigResponse {
       jefe: string[]
       miembro: string[]
     }
+    /** Mostrar más detalles en los eventos del calendario (configurable por grupo) */
+    show_event_details?: boolean | null
     usa_consolidado: boolean
   }
 }
@@ -236,6 +240,7 @@ export class CalendarService extends BaseService {
       jefe_color_priority_order?: string | null
       miembro_color_priority_order?: string | null
       usa_consolidado?: boolean
+      show_event_details?: boolean | null
     }
   ): Promise<CalendarRoleGroupConfig> {
     const response = await this.apiCall<{ success: boolean; data: CalendarRoleGroupConfig }>(

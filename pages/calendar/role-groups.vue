@@ -314,11 +314,24 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-2 pt-2">
-                <UToggle v-model="groupConfigForm.usa_consolidado" />
-                <span class="text-sm text-gray-700 dark:text-gray-300">
-                  Este grupo usa consolidado en el calendario
-                </span>
+              <div class="flex flex-col gap-3 pt-2">
+                <div class="flex items-center gap-2">
+                  <UToggle v-model="groupConfigForm.usa_consolidado" />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">
+                    Este grupo usa consolidado en el calendario
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <USwitch
+                    v-model="groupConfigForm.show_event_details"
+                    unchecked-icon="i-lucide-x"
+                    checked-icon="i-lucide-check"
+                  />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">
+                    Ver detalles (nombre del responsable principal) en los eventos del calendario
+                  </span>
+                </div>
               </div>
 
               <div class="flex justify-end gap-2 pt-2">
@@ -374,12 +387,14 @@ const groupConfigForm = ref<{
   color_consolidado: string | null
   color_completado: string | null
   usa_consolidado: boolean
+  show_event_details: boolean
 }>({
   color_prioridad: null,
   color_actividad: null,
   color_consolidado: null,
   color_completado: null,
-  usa_consolidado: true
+  usa_consolidado: true,
+  show_event_details: false
 })
 
 const savingConfig = ref(false)
@@ -407,6 +422,7 @@ const allSources = [
   { key: 'PRIORIDAD', label: 'Prioridad' },
   { key: 'ACTIVIDAD', label: 'Actividad' },
   { key: 'CONSOLIDADO', label: 'Consolidado' },
+  { key: 'USUARIO', label: 'Por perfil' },
   { key: 'COMPLETADO', label: 'Completado' }
 ]
 
@@ -448,8 +464,8 @@ const resetGroupForm = () => {
 const loadGroups = async () => {
   try {
     loadingGroups.value = true
-    const data = await CalendarService.getRoleGroups()
-    groups.value = data
+    const data = await CalendarService.getMyRoleGroups()
+    groups.value = data.filter((g: CalendarRoleGroup) => g.role_type === 'JEFE')
     if (!selectedGroupId.value && groups.value.length > 0) {
       selectGroup(groups.value[0])
     }
@@ -600,20 +616,27 @@ const loadGroupConfig = async () => {
     const cfg = await CalendarService.getRoleGroupConfig(selectedGroupId.value)
     const group = groups.value.find(g => g.id === selectedGroupId.value)
     groupConfigForm.value.usa_consolidado = group?.usa_consolidado ?? true
+    groupConfigForm.value.show_event_details = cfg?.show_event_details ?? false
 
-    const jefeCsv = cfg?.jefe_color_priority_order || 'ACTIVIDAD,CONSOLIDADO,PRIORIDAD,COMPLETADO'
-    const miembroCsv = cfg?.miembro_color_priority_order || 'PRIORIDAD,ACTIVIDAD,CONSOLIDADO,COMPLETADO'
+    const jefeCsv = cfg?.jefe_color_priority_order || 'ACTIVIDAD,CONSOLIDADO,USUARIO,PRIORIDAD,COMPLETADO'
+    const miembroCsv = cfg?.miembro_color_priority_order || 'USUARIO,PRIORIDAD,ACTIVIDAD,CONSOLIDADO,COMPLETADO'
 
     const jefeKeys = jefeCsv.split(',').map(s => s.trim()).filter(Boolean)
     const miembroKeys = miembroCsv.split(',').map(s => s.trim()).filter(Boolean)
 
-    const mapOrder = (keys: string[]) =>
-      keys
+    const mapOrder = (keys: string[]) => {
+      const ordered = keys
         .map(k => allSources.find(s => s.key === k))
         .filter((s): s is { key: string; label: string } => !!s)
+      const orderedKeys = new Set(ordered.map(s => s.key))
+      const missing = allSources.filter(s => !orderedKeys.has(s.key))
+      return [...ordered, ...missing]
+    }
 
-    jefeOrder.value = mapOrder(jefeKeys.length ? jefeKeys : ['ACTIVIDAD', 'CONSOLIDADO', 'PRIORIDAD', 'COMPLETADO'])
-    miembroOrder.value = mapOrder(miembroKeys.length ? miembroKeys : ['PRIORIDAD', 'ACTIVIDAD', 'CONSOLIDADO', 'COMPLETADO'])
+    const defaultJefe = ['ACTIVIDAD', 'CONSOLIDADO', 'USUARIO', 'PRIORIDAD', 'COMPLETADO']
+    const defaultMiembro = ['USUARIO', 'PRIORIDAD', 'ACTIVIDAD', 'CONSOLIDADO', 'COMPLETADO']
+    jefeOrder.value = mapOrder(jefeKeys.length ? jefeKeys : defaultJefe)
+    miembroOrder.value = mapOrder(miembroKeys.length ? miembroKeys : defaultMiembro)
   } catch (err: any) {
     console.error('Error al obtener configuración de grupo:', err)
     showError('Error', err?.message || 'Ocurrió un error al obtener la configuración')
@@ -629,7 +652,8 @@ const saveGroupConfig = async () => {
     await CalendarService.updateRoleGroupConfig(selectedGroupId.value, {
       jefe_color_priority_order: jefeCsv,
       miembro_color_priority_order: miembroCsv,
-      usa_consolidado: groupConfigForm.value.usa_consolidado
+      usa_consolidado: groupConfigForm.value.usa_consolidado,
+      show_event_details: groupConfigForm.value.show_event_details
     })
     showSuccess('Configuración guardada', 'La configuración se guardó correctamente')
     await loadGroups()

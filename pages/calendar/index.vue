@@ -141,7 +141,7 @@
           <div
             v-for="(day, dayIndex) in week.days"
             :key="dayIndex"
-            class="min-h-[145px] max-h-[180px] overflow-hidden transition-colors flex flex-col relative"
+            class="min-h-[165px] max-h-[200px] overflow-hidden transition-colors flex flex-col relative"
             :class="day.isCurrentMonth
               ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' +
                 (day.isWeekend
@@ -184,12 +184,12 @@
           <div
             v-for="(eventRow, rowIndex) in week.eventRows.slice(0, MAX_VISIBLE_EVENT_ROWS)"
             :key="rowIndex"
-            class="relative h-6 md:h-7 mb-1"
+            class="relative h-9 md:h-10 mb-1"
           >
             <div
               v-for="eventSpan in eventRow"
               :key="`${eventSpan.event.id}-${eventSpan.startCol}`"
-              class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1"
+              class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1 py-0.5"
               :class="{
                 'rounded-l-md': eventSpan.isStart,
                 'rounded-r-md': eventSpan.isEnd,
@@ -205,7 +205,15 @@
                 <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
                   <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
                 </UTooltip>
-                <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
+                <span class="truncate flex flex-col gap-0.5 min-w-0 flex-1">
+                  <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
+                  <span
+                    v-if="showEventDetails && eventSpan.event.notes"
+                    class="truncate text-[10px] md:text-[11px] opacity-90 leading-tight"
+                  >
+                    {{ String(eventSpan.event.notes).slice(0, 80) }}
+                  </span>
+                </span>
                 <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
                   / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                 </span>
@@ -271,7 +279,7 @@
                     <div
                       v-for="(day, dayIndex) in week.days"
                       :key="dayIndex"
-                      class="min-h-[145px] max-h-[180px] overflow-hidden transition-colors flex flex-col relative"
+                      class="min-h-[165px] max-h-[200px] overflow-hidden transition-colors flex flex-col relative"
                       :class="day.isCurrentMonth
                         ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' +
                           (day.isWeekend
@@ -312,12 +320,12 @@
                       <div
                         v-for="(eventRow, rowIndex) in week.eventRows.slice(0, MAX_VISIBLE_EVENT_ROWS)"
                         :key="rowIndex"
-                        class="relative h-6 md:h-7 mb-1"
+                        class="relative h-9 md:h-10 mb-1"
                       >
                         <div
                           v-for="eventSpan in eventRow"
                           :key="`range-${monthIndex}-${weekIndex}-${rowIndex}-${eventSpan.event.id}-${eventSpan.startCol}`"
-                          class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1"
+                          class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1 py-0.5"
                           :class="{
                             'rounded-l-md': eventSpan.isStart,
                             'rounded-r-md': eventSpan.isEnd,
@@ -333,7 +341,15 @@
                             <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
                               <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
                             </UTooltip>
-                            <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
+                            <span class="truncate flex flex-col gap-0.5 min-w-0 flex-1">
+                              <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
+                              <span
+                                v-if="showEventDetails && eventSpan.event.notes"
+                                class="truncate text-[10px] md:text-[11px] opacity-90 leading-tight"
+                              >
+                                {{ String(eventSpan.event.notes).slice(0, 80) }}
+                              </span>
+                            </span>
                             <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
                               / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                             </span>
@@ -723,10 +739,12 @@ const {
   clearFilters,
   setDateRange,
   initialize: initializeStore,
+  invalidateCache,
   refresh,
   currentRoleGroupId,
   myRoleGroups,
-  getCalendarRoute
+  getCalendarRoute,
+  showEventDetails
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
@@ -2236,8 +2254,10 @@ const confirmDelete = async () => {
 
 // Cargar eventos al montar
 onMounted(async () => {
-  // Inicializar datos del store (responsables, contenedores, colores, catálogo)
-  await initializeStore()
+  // Hard reset al entrar: invalidar todos los cachés y recargar toda la info desde cero.
+  // El resto de vistas que usen el store verán estos datos actualizados.
+  invalidateCache()
+  await initializeStore(true)
   // Añadir role_group_id a la URL si tenemos grupo y no está en la ruta (para que todas las peticiones lo envíen)
   if (currentRoleGroupId.value != null && route.query.role_group_id == null) {
     await router.replace({ path: route.path, query: { ...route.query, role_group_id: String(currentRoleGroupId.value) } })

@@ -172,11 +172,19 @@ export const useCalendarStore = () => {
   })
 
   const jefeColorOrder = computed(
-    () => calendarConfig.value?.color_priority_order?.jefe ?? ['ACTIVIDAD', 'CONSOLIDADO', 'PRIORIDAD', 'COMPLETADO']
+    () =>
+      calendarConfig.value?.color_priority_order?.jefe ??
+      ['ACTIVIDAD', 'CONSOLIDADO', 'USUARIO', 'PRIORIDAD', 'COMPLETADO']
   )
   const miembroColorOrder = computed(
-    () => calendarConfig.value?.color_priority_order?.miembro ?? ['PRIORIDAD', 'ACTIVIDAD', 'CONSOLIDADO', 'COMPLETADO']
+    () =>
+      calendarConfig.value?.color_priority_order?.miembro ??
+      ['USUARIO', 'PRIORIDAD', 'ACTIVIDAD', 'CONSOLIDADO', 'COMPLETADO']
   )
+
+  const showEventDetails = computed(() => {
+    return calendarConfig.value?.show_event_details ?? false
+  })
 
   // ============================================
   // EVENTOS / ACTIVIDADES
@@ -313,12 +321,13 @@ export const useCalendarStore = () => {
   const loadMyRoleGroups = async (): Promise<CalendarRoleGroup[]> => {
     try {
       const groups = await CalendarService.getMyRoleGroups()
-      state.myRoleGroups.value = groups
-      // Si no hay grupo activo pero sí grupos, seleccionar el primero por defecto
-      if (state.currentRoleGroupId.value == null && groups.length > 0) {
-        state.currentRoleGroupId.value = groups[0].id
+      const jefeGroups = groups.filter((g: CalendarRoleGroup) => g.role_type === 'JEFE')
+      state.myRoleGroups.value = jefeGroups
+      // Si no hay grupo activo pero sí grupos donde es jefe, seleccionar el primero por defecto
+      if (state.currentRoleGroupId.value == null && jefeGroups.length > 0) {
+        state.currentRoleGroupId.value = jefeGroups[0].id
       }
-      return groups
+      return jefeGroups
     } catch (err) {
       console.error('Error al cargar grupos de calendario del usuario:', err)
       state.myRoleGroups.value = []
@@ -367,15 +376,15 @@ export const useCalendarStore = () => {
   }
 
   const updateUserColor = async (userId: number, colorCode: string): Promise<boolean> => {
+    const hex = colorCode.startsWith('#') ? colorCode : `#${colorCode}`
     try {
       state.loading.value = true
-      await CalendarService.updateUserColor({ user_id: userId, color_code: colorCode })
-      // Actualizar en la lista local
+      await CalendarService.updateUserColor({ user_id: userId, color_code: hex })
       const index = state.colorConfig.value.findIndex(c => c.user_id === userId)
       if (index !== -1) {
-        state.colorConfig.value[index].color_code = colorCode
+        state.colorConfig.value[index].color_code = hex
       } else {
-        state.colorConfig.value.push({ user_id: userId, color_code: colorCode } as CalendarUserColorConfig)
+        state.colorConfig.value.push({ user_id: userId, color_code: hex } as CalendarUserColorConfig)
       }
       return true
     } catch (err: any) {
@@ -886,12 +895,27 @@ export const useCalendarStore = () => {
     const consolidadoColor = consolidadoConfig?.color_code ?? null
     const priorityColor = PRIORITY_COLORS[event.priority] || '#3b82f6'
 
+    // Color de perfil por usuario (primer responsable del evento)
+    let userProfileColor: string | null = null
+    if (Array.isArray((event as any).responsables) && (event as any).responsables.length > 0) {
+      const r = (event as any).responsables[0] as { id: number; nombre?: string }
+      userProfileColor = getResponsableColor(r.id, r.nombre)
+    } else if (Array.isArray(event.charges) && event.charges.length > 0) {
+      const c = event.charges[0] as any
+      const uid = c.user_id ?? c.user?.id
+      const nombre = c.user?.nombre
+      if (uid != null) {
+        userProfileColor = getResponsableColor(uid, nombre)
+      }
+    }
+
     // Orden configurable por grupo según rol del usuario
     const order = isJefeImportaciones.value ? jefeColorOrder.value : miembroColorOrder.value
     for (const key of order) {
       if (key === 'PRIORIDAD' && priorityColor) return [priorityColor]
       if (key === 'ACTIVIDAD' && activityColor) return [activityColor]
       if (key === 'CONSOLIDADO' && consolidadoColor) return [consolidadoColor]
+      if (key === 'USUARIO' && userProfileColor) return [userProfileColor]
     }
     return ['#3b82f6']
   }
@@ -1149,6 +1173,9 @@ export const useCalendarStore = () => {
     initialize,
     invalidateCache,
     refresh,
+
+    // UI
+    showEventDetails,
 
     /** Ruta de calendario con role_group_id en query (para que el backend sepa el grupo en cada petición). */
     getCalendarRoute: (path: string) => {

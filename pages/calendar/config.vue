@@ -154,6 +154,26 @@
         </div>
       </UCard>
 
+      <!-- Link a colores por usuario -->
+      <UCard>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <UIcon name="i-heroicons-user-circle" class="w-5 h-5 text-primary-500" />
+            <div>
+              <h3 class="font-medium text-gray-900 dark:text-white">Colores por Usuario</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Definir el color de cada responsable en el calendario
+              </p>
+            </div>
+          </div>
+          <UButton
+            label="Configurar"
+            variant="outline"
+            @click="navigateTo(getCalendarRoute('/calendar/colores-usuarios'))"
+          />
+        </div>
+      </UCard>
+
       <!-- Link a grupos de roles -->
       <UCard>
         <div class="flex items-center justify-between">
