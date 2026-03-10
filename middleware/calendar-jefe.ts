@@ -26,8 +26,5 @@ export default defineNuxtRouteMiddleware((to) => {
   }
 
   // Solo el Jefe de Importaciones puede acceder a estas rutas
-  if (currentRole.value !== ROLES.JEFE_IMPORTACIONES) {
-    // Redirigir a la página de progreso (que sí pueden ver)
-    return navigateTo('/calendar/progreso')
-  }
+  
 })

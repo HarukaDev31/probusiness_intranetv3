@@ -67,7 +67,7 @@ export default defineNuxtConfig({
       chunkSizeWarningLimit: 1000,
     },
     optimizeDeps: {
-      include: ['vue', 'vue-router', '@nuxt/icon', 'defu'],
+      include: ['vue', 'vue-router', '@nuxt/icon', 'defu', 'vuedraggable'],
       exclude: ['chart.js', 'xlsx', 'pusher-js'], // Cargar bajo demanda
     }
   },

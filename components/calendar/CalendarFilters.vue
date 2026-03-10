@@ -3,8 +3,8 @@
     class="flex items-center gap-3 md:gap-4 shrink-0"
     :class="inline ? 'flex-nowrap' : 'flex-wrap p-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 gap-3 md:gap-4'"
   >
-    <!-- Filtro por Consolidado/Contenedor (múltiple, como en vista progreso) -->
-    <div v-if="calendarPermissions.canFilterByContenedor" class="flex items-center gap-2 shrink-0">
+    <!-- Filtro por Consolidado/Contenedor: se muestra cuando el grupo usa consolidado -->
+    <div v-if="calendarPermissions.usaConsolidado === true" class="flex items-center gap-2 shrink-0">
       <span class="text-base text-gray-500 dark:text-gray-400 hidden lg:inline shrink-0">Consolidado</span>
       <USelectMenu
         v-model="contenedorModelValue"

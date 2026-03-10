@@ -16,8 +16,8 @@
 
     <template #body>
       <div class="space-y-5">
-        <!-- Consolidado/Contenedor (primero para filtrar actividades) -->
-        <UFormField label="Consolidado" required>
+        <!-- Consolidado/Contenedor (solo si el grupo usa consolidado) -->
+        <UFormField v-if="usaConsolidado" label="Consolidado" required>
           <USelectMenu :model-value="selectedContenedorOption" :items="contenedorOptions" value-attribute="value"
             placeholder="Seleccionar consolidado" size="lg" class="w-full" searchable
             searchable-placeholder="Buscar consolidado..." @update:model-value="onContenedorChange" />
@@ -29,11 +29,11 @@
             <div class="flex gap-2 items-center">
               <USelectMenu v-model="selectedActivity" :items="activityOptions" :placeholder="loadingUsedActivities ? 'Cargando actividades...' : 'Seleccionar actividad'"
                 size="lg" class="flex-1" searchable searchable-placeholder="Buscar actividad..."
-                :disabled="form.contenedor_id == null || loadingUsedActivities"
+                :disabled="(usaConsolidado && form.contenedor_id == null) || loadingUsedActivities"
                 :loading="loadingUsedActivities"
                 @update:model-value="handleActivitySelect" />
               <UButton icon="i-heroicons-plus" color="primary" variant="outline" size="lg" title="Crear nueva actividad"
-                :disabled="form.contenedor_id == null || loadingUsedActivities"
+                :disabled="(usaConsolidado && form.contenedor_id == null) || loadingUsedActivities"
                 @click="openCreateActivityModal" />
               <UTooltip v-if="hasCatalogActivityId && (calendarPermissions?.canDeleteActivity ?? false)"
                 text="Editar nombre de esta actividad">
@@ -46,7 +46,7 @@
                   title="Eliminar del catálogo" @click.stop.prevent="openDeleteConfirmModal" />
               </UTooltip>
             </div>
-            <p v-if="form.contenedor_id == null" class="text-xs text-amber-500">Selecciona un consolidado primero</p>
+            <p v-if="usaConsolidado && form.contenedor_id == null" class="text-xs text-amber-500">Selecciona un consolidado primero</p>
           </div>
         </UFormField>
 
@@ -188,6 +188,8 @@ interface Props {
   initialDate?: string
   /** Clave que cambia en cada open() del overlay para poder reabrir el modal (misma instancia) */
   openKey?: number | string
+  /** Si el grupo de calendario usa consolidado; si es false no se muestra ni se envía contenedor_id */
+  usaConsolidado?: boolean
   // Catálogo de actividades predefinidas
   actividadesPredefinidas?: ActivityOption[]
   // Callbacks para overlay (onClose puede venir como función o como array desde useOverlay)
@@ -203,6 +205,7 @@ const props = withDefaults(defineProps<Props>(), {
   event: null,
   loading: false,
   initialDate: undefined,
+  usaConsolidado: true,
   actividadesPredefinidas: () => [],
   onSave: undefined,
   onDelete: undefined,
@@ -339,7 +342,7 @@ const usedActivityIds = ref<Set<number>>(new Set())
 const loadingUsedActivities = ref(false)
 
 const fetchUsedActivities = async (contenedorId: number | null) => {
-  if (contenedorId == null) {
+  if (props.usaConsolidado === false || contenedorId == null) {
     usedActivityIds.value = new Set()
     return
   }
@@ -612,7 +615,7 @@ const submit = async () => {
     name: form.value.name.trim(),
     activity_id: activityId != null ? Number(activityId) : null,
     priority: form.value.priority,
-    contenedor_id: extractValue(form.value.contenedor_id),
+    contenedor_id: props.usaConsolidado !== false ? extractValue(form.value.contenedor_id) : null,
     notes: form.value.notes.trim() || null,
     start_date: formatDate(startDate.value!),
     end_date: formatDate(endDate.value!),
@@ -684,7 +687,9 @@ const initializeForm = async () => {
     form.value.name = props.event.name || props.event.title || ''
     form.value.activity_id = props.event.activity_id ?? null
     form.value.priority = props.event.priority ?? 0
-    const rawContenedorId = props.event.contenedor_id ?? props.event.contenedor?.id ?? null
+    const rawContenedorId = props.usaConsolidado !== false
+      ? (props.event.contenedor_id ?? props.event.contenedor?.id ?? null)
+      : null
     form.value.contenedor_id = rawContenedorId != null ? Number(rawContenedorId) : null
     form.value.notes = props.event.notes || ''
     form.value.responsable_ids = props.event.charges?.map(c => c.user_id) || []

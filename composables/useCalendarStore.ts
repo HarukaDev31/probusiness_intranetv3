@@ -1,4 +1,4 @@
-import { CalendarService } from "~/services/calendar/calendarService"
+import { CalendarService, type CalendarRoleGroup } from "~/services/calendar/calendarService"
 import type {
   CalendarEvent,
   CalendarFilters,
@@ -17,7 +17,7 @@ import type {
 } from "~/types/calendar"
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useUserRole } from '~/composables/auth/useUserRole'
-import { ROLES, getCalendarPermissions } from '~/constants/roles'
+import type { CalendarConfigResponse } from '~/services/calendar/calendarService'
 import { markCalendarActionByCurrentUser } from '~/config/websocket/events/calendar'
 import { DEFAULT_RESPONSABLE_COLORS } from '~/constants/calendar'
 
@@ -77,11 +77,21 @@ const state = {
   CACHE_TTL: 5 * 60 * 1000,
   
   // Flag para saber si ya se inicializó
-  initialized: ref(false)
+  initialized: ref(false),
+
+  // Configuración de calendario (permisos, rol, colores) — compartida entre todas las vistas
+  calendarConfig: ref<CalendarConfigResponse['data'] | null>(null),
+
+  // Id del grupo de calendario activo (para usuarios en varios grupos). Se envía en todas las peticiones y se sincroniza con la URL.
+  currentRoleGroupId: ref<number | null>(null),
+
+  // Grupos de calendario del usuario (para selector de calendarios en index.vue)
+  myRoleGroups: ref<CalendarRoleGroup[]>([])
 }
 
 export const useCalendarStore = () => {
   const { currentRole, currentId } = useUserRole()
+  const route = useRoute()
 
   // ============================================
   // HELPERS DE CACHÉ
@@ -137,20 +147,36 @@ export const useCalendarStore = () => {
   }
 
   // ============================================
-  // PERMISOS
+  // PERMISOS Y CONFIGURACIÓN (desde backend)
   // ============================================
 
+  const calendarConfig = state.calendarConfig
+
   const calendarPermissions = computed(() => {
-    return getCalendarPermissions(currentRole.value as any)
+    return calendarConfig.value?.permissions ?? {}
   })
 
   const isJefeImportaciones = computed(() => {
-    return currentRole.value === ROLES.JEFE_IMPORTACIONES
+    return calendarConfig.value?.role_group?.role_type === 'JEFE'
   })
 
   const isCoordinacionOrDocumentacion = computed(() => {
-    return currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES
+    const roleType = calendarConfig.value?.role_group?.role_type
+    // En el nuevo esquema de grupos de calendario solo hay JEFE o MIEMBRO.
+    // Ambos se consideran parte del equipo para efectos de filtros/vistas.
+    return roleType === 'JEFE' || roleType === 'MIEMBRO'
   })
+
+  const usaConsolidado = computed(() => {
+    return calendarConfig.value?.usa_consolidado ?? true
+  })
+
+  const jefeColorOrder = computed(
+    () => calendarConfig.value?.color_priority_order?.jefe ?? ['ACTIVIDAD', 'CONSOLIDADO', 'PRIORIDAD', 'COMPLETADO']
+  )
+  const miembroColorOrder = computed(
+    () => calendarConfig.value?.color_priority_order?.miembro ?? ['PRIORIDAD', 'ACTIVIDAD', 'CONSOLIDADO', 'COMPLETADO']
+  )
 
   // ============================================
   // EVENTOS / ACTIVIDADES
@@ -168,7 +194,11 @@ export const useCalendarStore = () => {
     try {
       state.loading.value = true
       state.error.value = null
-      const appliedFilters = { ...state.filters.value, ...filters }
+      const appliedFilters: CalendarFilters = {
+        ...state.filters.value,
+        ...filters,
+        role_group_id: state.currentRoleGroupId.value ?? undefined
+      }
       const response = await CalendarService.getEvents(appliedFilters)
       state.events.value = (response.data || []).map(transformEvent)
       if (response.meta) {
@@ -272,6 +302,26 @@ export const useCalendarStore = () => {
       return data
     } catch (err: any) {
       console.error('Error al cargar responsables:', err)
+      return []
+    }
+  }
+
+  // ============================================
+  // GRUPOS DEL USUARIO (selector de calendarios)
+  // ============================================
+
+  const loadMyRoleGroups = async (): Promise<CalendarRoleGroup[]> => {
+    try {
+      const groups = await CalendarService.getMyRoleGroups()
+      state.myRoleGroups.value = groups
+      // Si no hay grupo activo pero sí grupos, seleccionar el primero por defecto
+      if (state.currentRoleGroupId.value == null && groups.length > 0) {
+        state.currentRoleGroupId.value = groups[0].id
+      }
+      return groups
+    } catch (err) {
+      console.error('Error al cargar grupos de calendario del usuario:', err)
+      state.myRoleGroups.value = []
       return []
     }
   }
@@ -404,12 +454,17 @@ export const useCalendarStore = () => {
   // ============================================
 
   const loadActivityCatalog = async (force: boolean = false) => {
+    const roleGroupId = state.currentRoleGroupId.value
+    if (roleGroupId == null) {
+      state.activityCatalog.value = []
+      return []
+    }
     if (!shouldRefetch('activityCatalog', force) && state.activityCatalog.value.length > 0) {
       return state.activityCatalog.value
     }
-    
+
     try {
-      const data = await CalendarService.getActivityCatalog()
+      const data = await CalendarService.getActivityCatalog(roleGroupId)
       state.activityCatalog.value = data
       state.lastFetch.activityCatalog.value = Date.now()
       return data
@@ -420,9 +475,14 @@ export const useCalendarStore = () => {
   }
 
   const createActivityInCatalog = async (name: string): Promise<CalendarActivityCatalogItem | null> => {
+    const roleGroupId = state.currentRoleGroupId.value
+    if (roleGroupId == null) {
+      state.error.value = 'No hay grupo de calendario seleccionado'
+      return null
+    }
     try {
       state.loading.value = true
-      const activity = await CalendarService.createActivityCatalog(name)
+      const activity = await CalendarService.createActivityCatalog(name, roleGroupId)
       state.activityCatalog.value = [...state.activityCatalog.value, activity]
       return activity
     } catch (err: any) {
@@ -440,9 +500,14 @@ export const useCalendarStore = () => {
     colorCode?: string | null,
     extras?: { allow_saturday?: boolean; allow_sunday?: boolean; default_priority?: number }
   ): Promise<boolean> => {
+    const roleGroupId = state.currentRoleGroupId.value
+    if (roleGroupId == null) {
+      state.error.value = 'No hay grupo de calendario seleccionado'
+      return false
+    }
     try {
       state.loading.value = true
-      const updated = await CalendarService.updateActivityCatalog(id, name, colorCode, extras)
+      const updated = await CalendarService.updateActivityCatalog(id, name, colorCode, extras, roleGroupId)
       const index = state.activityCatalog.value.findIndex(a => a.id === id)
       if (index !== -1) {
         state.activityCatalog.value[index] = updated
@@ -470,8 +535,13 @@ export const useCalendarStore = () => {
   }
 
   const reorderActivityCatalog = async (ids: number[]): Promise<boolean> => {
+    const roleGroupId = state.currentRoleGroupId.value
+    if (roleGroupId == null) {
+      state.error.value = 'No hay grupo de calendario seleccionado'
+      return false
+    }
     try {
-      await CalendarService.reorderActivityCatalog(ids)
+      await CalendarService.reorderActivityCatalog(ids, roleGroupId)
       // Reordenar localmente para reflejar el cambio sin recarga
       const sorted = ids
         .map(id => state.activityCatalog.value.find(a => a.id === id))
@@ -486,8 +556,13 @@ export const useCalendarStore = () => {
   }
 
   const deleteActivityFromCatalog = async (catalogId: number): Promise<boolean> => {
+    const roleGroupId = state.currentRoleGroupId.value
+    if (roleGroupId == null) {
+      state.error.value = 'No hay grupo de calendario seleccionado'
+      return false
+    }
     try {
-      await CalendarService.deleteActivityCatalog(catalogId)
+      await CalendarService.deleteActivityCatalog(catalogId, roleGroupId)
       state.activityCatalog.value = state.activityCatalog.value.filter(a => a.id !== catalogId)
       state.lastFetch.activityCatalog.value = 0
       return true
@@ -514,7 +589,8 @@ export const useCalendarStore = () => {
     }
 
     try {
-      const appliedFilters = hasExplicitFilters ? filters! : state.filters.value
+      const baseFilters = hasExplicitFilters ? filters! : state.filters.value
+      const appliedFilters = { ...baseFilters, role_group_id: state.currentRoleGroupId.value ?? undefined }
       const data = await CalendarService.getProgress(appliedFilters)
       state.teamProgress.value = data.team
       state.responsableProgress.value = data.by_responsable
@@ -790,11 +866,6 @@ export const useCalendarStore = () => {
   // UTILIDADES PARA EVENTOS MULTI-DÍA
   // ============================================
 
-  /**
-   * Color del evento en el calendario.
-   * Jefe:     1) completado, 2) actividad, 3) consolidado, 4) prioridad.
-   * No-jefe:  1) completado, 2) prioridad, 3) actividad, 4) consolidado.
-   */
   const getEventColors = (event: CalendarEvent, options?: { usePriority?: boolean }): string[] => {
     const charges = event.charges || []
     // 1. Gris si la actividad está completada (todos los responsables en COMPLETADO)
@@ -815,18 +886,14 @@ export const useCalendarStore = () => {
     const consolidadoColor = consolidadoConfig?.color_code ?? null
     const priorityColor = PRIORITY_COLORS[event.priority] || '#3b82f6'
 
-    if (options?.usePriority) {
-      // No-jefe: prioridad → actividad → consolidado
-      if (priorityColor) return [priorityColor]
-      if (activityColor) return [activityColor]
-      if (consolidadoColor) return [consolidadoColor]
-      return ['#3b82f6']
+    // Orden configurable por grupo según rol del usuario
+    const order = isJefeImportaciones.value ? jefeColorOrder.value : miembroColorOrder.value
+    for (const key of order) {
+      if (key === 'PRIORIDAD' && priorityColor) return [priorityColor]
+      if (key === 'ACTIVIDAD' && activityColor) return [activityColor]
+      if (key === 'CONSOLIDADO' && consolidadoColor) return [consolidadoColor]
     }
-
-    // Jefe: actividad → consolidado → prioridad
-    if (activityColor) return [activityColor]
-    if (consolidadoColor) return [consolidadoColor]
-    return [priorityColor]
+    return ['#3b82f6']
   }
 
   const getEventPosition = (event: CalendarEvent, dateStr: string): 'start' | 'middle' | 'end' | 'single' | null => {
@@ -940,6 +1007,15 @@ export const useCalendarStore = () => {
 
     state.loading.value = true
     try {
+      // Cargar mis grupos de calendario y, si hay más de uno, usar role_group_id de la URL o el primero.
+      const groups = await loadMyRoleGroups()
+      const roleGroupIdFromQuery = route.query.role_group_id ? Number(route.query.role_group_id) : null
+      const effectiveRoleGroupId = roleGroupIdFromQuery ?? (state.currentRoleGroupId.value ?? (groups[0]?.id ?? null))
+
+      const config = await CalendarService.getCalendarConfig(effectiveRoleGroupId ?? undefined)
+      calendarConfig.value = config
+      state.currentRoleGroupId.value = config.role_group?.id ?? null
+
       await Promise.all([
         loadResponsables(force),
         loadContenedores(force),
@@ -969,6 +1045,10 @@ export const useCalendarStore = () => {
   const refresh = async () => {
     invalidateCache()
     await initialize(true)
+    // Si el usuario es JEFE, limpiar filtros de responsable para que vea todo el equipo
+    if (calendarConfig.value?.role_group?.role_type === 'JEFE') {
+      clearFilters()
+    }
     await getEvents(state.filters.value, true)
   }
 
@@ -992,11 +1072,14 @@ export const useCalendarStore = () => {
     eventsPagination: computed(() => state.eventsPagination.value),
     initialized: computed(() => state.initialized.value),
     currentUserId: currentId,
+    currentRoleGroupId: computed(() => state.currentRoleGroupId.value),
+    myRoleGroups: computed(() => state.myRoleGroups.value),
 
     // Permisos
     calendarPermissions,
     isJefeImportaciones,
     isCoordinacionOrDocumentacion,
+    usaConsolidado,
 
     // Eventos / Actividades
     getEvents,
@@ -1020,6 +1103,9 @@ export const useCalendarStore = () => {
 
     // Responsables
     loadResponsables,
+
+    // Grupos del usuario
+    loadMyRoleGroups,
 
     // Colores por usuario
     loadColorConfig,
@@ -1062,6 +1148,14 @@ export const useCalendarStore = () => {
     // Inicialización y caché
     initialize,
     invalidateCache,
-    refresh
+    refresh,
+
+    /** Ruta de calendario con role_group_id en query (para que el backend sepa el grupo en cada petición). */
+    getCalendarRoute: (path: string) => {
+      const id = state.currentRoleGroupId.value
+      if (id == null) return path
+      const sep = path.includes('?') ? '&' : '?'
+      return `${path}${sep}role_group_id=${id}`
+    }
   }
 }

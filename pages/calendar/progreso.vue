@@ -8,7 +8,7 @@
           variant="ghost"
           size="sm"
           label="Regresar"
-          @click="navigateTo('/calendar')"
+          @click="navigateTo(getCalendarRoute('/calendar'))"
         />
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">TABLA DE PROGRESO</h1>
       </div>
@@ -131,8 +131,9 @@
             </USelectMenu>
           </template>
 
-          <!-- Consolidado (múltiple) -->
+          <!-- Consolidado (múltiple): solo si el grupo usa consolidado -->
           <USelectMenu
+            v-if="usaConsolidado"
             v-model="contenedorModelValue"
             :items="contenedorOptionsMulti"
             value-key="value"
@@ -150,7 +151,7 @@
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Actividad</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300"># Consolidado</th>
+                <th v-if="usaConsolidado" class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300"># Consolidado</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Estado</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Prioridad</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Inicio</th>
@@ -172,8 +173,8 @@
                   {{ activity.name || activity.title }}
                 </td>
 
-                <!-- # Consolidado -->
-                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                <!-- # Consolidado: solo si el grupo usa consolidado -->
+                <td v-if="usaConsolidado" class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                   {{ activity.contenedor?.nombre || activity.contenedor?.codigo || '-' }}
                 </td>
 
@@ -414,6 +415,7 @@ const {
   contenedores,
   loading,
   calendarPermissions,
+  usaConsolidado,
   isJefeImportaciones,
   currentUserId,
   getEvents,
@@ -424,7 +426,8 @@ const {
   updateChargeNotes,
   getResponsableColor,
   initialize,
-  clearFilters
+  clearFilters,
+  getCalendarRoute
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
@@ -662,7 +665,7 @@ const applyFilters = async (force = false, resetPage = true) => {
   const priorityVal = extractValue(filterPriority.value)
   if (priorityVal !== null && priorityVal !== undefined) filters.priority = priorityVal
   if (filterResponsableIds.value.length > 0) filters.responsable_ids = filterResponsableIds.value
-  if (filterContenedorIds.value.length > 0) filters.contenedor_ids = filterContenedorIds.value
+  if (usaConsolidado.value && filterContenedorIds.value.length > 0) filters.contenedor_ids = filterContenedorIds.value
 
   await getEvents(filters, force)
 }

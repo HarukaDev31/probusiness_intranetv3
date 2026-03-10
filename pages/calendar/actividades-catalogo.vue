@@ -8,7 +8,7 @@
           variant="ghost"
           size="sm"
           label="Regresar"
-          @click="navigateTo('/calendar/config')"
+          @click="navigateTo(getCalendarRoute('/calendar/config'))"
         />
         <div>
           <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Catálogo de Actividades</h1>
@@ -250,6 +250,7 @@ const {
   updateActivityInCatalog,
   reorderActivityCatalog,
   deleteActivityFromCatalog,
+  getCalendarRoute
 } = useCalendarStore()
 
 const { showConfirmation, showSuccess, showError } = useModal()

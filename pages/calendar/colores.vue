@@ -8,7 +8,7 @@
           variant="ghost"
           size="sm"
           label="Regresar"
-          @click="navigateTo('/calendar/config')"
+          @click="navigateTo(getCalendarRoute('/calendar/config'))"
         />
         <div>
           <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Configuración de Colores</h1>
@@ -42,7 +42,23 @@
         </div>
       </UCard>
 
-      <!-- Configuración de colores -->
+      <!-- Mensaje cuando el grupo no usa consolidado -->
+      <UCard v-else-if="!usaConsolidado">
+        <div class="text-center py-8">
+          <UIcon name="i-heroicons-cube-transparent" class="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Tu grupo no usa consolidado</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            La configuración de colores por consolidado solo está disponible cuando el grupo de calendario tiene activada la opción "Usar consolidado".
+          </p>
+          <UButton
+            label="Volver a Configuración"
+            variant="outline"
+            @click="navigateTo(getCalendarRoute('/calendar/config'))"
+          />
+        </div>
+      </UCard>
+
+      <!-- Configuración de colores (solo si el grupo usa consolidado) -->
       <UCard v-else>
         <template #header>
           <div class="flex items-center justify-between">
@@ -164,10 +180,12 @@ import { COLOR_PRESETS } from '~/constants/calendar'
 const {
   contenedores,
   loading,
+  usaConsolidado,
   loadContenedores,
   loadConsolidadoColorConfig,
   updateConsolidadoColors,
   getConsolidadoColor,
+  getCalendarRoute
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()

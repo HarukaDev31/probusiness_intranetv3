@@ -10,7 +10,7 @@
               variant="ghost"
               size="sm"
               label="Regresar"
-              @click="navigateTo('/calendar/config')"
+              @click="navigateTo(getCalendarRoute('/calendar/config'))"
             />
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Registro de actividades</h1>
           </div>
@@ -80,8 +80,9 @@
           </template>
         </USelectMenu>
 
-        <!-- Consolidado (múltiple) -->
+        <!-- Consolidado (múltiple): solo si el grupo usa consolidado -->
         <USelectMenu
+          v-if="usaConsolidado"
           v-model="contenedorModelValue"
           :items="contenedorOptionsMulti"
           value-key="value"
@@ -102,7 +103,7 @@
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Actividad</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300"># Consolidado</th>
+                <th v-if="usaConsolidado" class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300"># Consolidado</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Inicio</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Fin</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Duración</th>
@@ -119,7 +120,7 @@
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
                   {{ activity.name || activity.title }}
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                <td v-if="usaConsolidado" class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                   {{ activity.contenedor?.nombre || activity.contenedor?.codigo || '-' }}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
@@ -233,6 +234,7 @@ const {
   activityCatalog,
   loading,
   calendarPermissions,
+  usaConsolidado,
   getEvents,
   createActivity,
   updateActivity,
@@ -241,7 +243,8 @@ const {
   createActivityInCatalog,
   deleteActivityFromCatalog,
   initialize,
-  clearFilters
+  clearFilters,
+  getCalendarRoute
 } = useCalendarStore()
 
 const { showSuccess, showError, showConfirmation } = useModal()
@@ -429,7 +432,7 @@ const applyFilters = async (force = false, resetPage = true) => {
   if (filterResponsableIds.value.length > 0) {
     filters.responsable_ids = filterResponsableIds.value
   }
-  if (filterContenedorIds.value.length > 0) {
+  if (usaConsolidado && filterContenedorIds.value.length > 0) {
     filters.contenedor_ids = filterContenedorIds.value
   }
   await getEvents(filters, force)
@@ -462,6 +465,7 @@ const openCreateModal = () => {
     contenedores: contenedores.value,
     calendarPermissions: calendarPermissions.value,
     getResponsableColor: getResponsableColor,
+    usaConsolidado: usaConsolidado.value,
     actividadesPredefinidas: activityCatalog.value,
     initialDate: dateStr,
     onSave: async (data: CreateCalendarEventRequest) => {
@@ -488,6 +492,7 @@ const openEditModal = (activity: CalendarEvent) => {
     contenedores: contenedores.value,
     calendarPermissions: calendarPermissions.value,
     getResponsableColor: getResponsableColor,
+    usaConsolidado: usaConsolidado.value,
     actividadesPredefinidas: activityCatalog.value,
     onSave: async (data: CreateCalendarEventRequest) => {
       await handleUpdateActivityOverlay({ ...data, id: activity.id })

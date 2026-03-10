@@ -30,12 +30,220 @@ import type {
   MoveEventRequest
 } from "~/types/calendar"
 
+export interface CalendarRoleGroup {
+  id: number
+  name: string
+  code: string | null
+  usa_consolidado: boolean
+  is_active: boolean
+  /** Solo en my-role-groups: rol del usuario dentro del grupo (JEFE, MIEMBRO, etc.) */
+  role_type?: string | null
+}
+
+export interface CalendarRoleGroupMember {
+  id: number
+  role_group_id: number
+  user_id: number
+  role_type: string
+  user?: {
+    id: number
+    nombre: string
+    email?: string | null
+  } | null
+}
+
+export interface CalendarRoleGroupConfig {
+  id: number
+  role_group_id: number
+  color_prioridad?: string | null
+  color_actividad?: string | null
+  color_consolidado?: string | null
+  color_completado?: string | null
+  /** Orden de prioridad de colores para rol JEFE (CSV: ACTIVIDAD,CONSOLIDADO,PRIORIDAD,COMPLETADO) */
+  jefe_color_priority_order?: string | null
+  /** Orden de prioridad de colores para rol MIEMBRO (CSV) */
+  miembro_color_priority_order?: string | null
+}
+
+export interface CalendarConfigResponse {
+  success: boolean
+  data: {
+    role_group: {
+      id: number
+      name: string
+      code: string | null
+      role_type: string
+    } | null
+    permissions: Record<string, boolean>
+    colors: {
+      prioridad: string | null
+      actividad: string | null
+      consolidado: string | null
+      completado: string | null
+    } | null
+    color_priority_order: {
+      jefe: string[]
+      miembro: string[]
+    }
+    usa_consolidado: boolean
+  }
+}
+
 export class CalendarService extends BaseService {
   private static baseUrl = 'api/calendar'
 
   // ============================================
   // EVENTOS/ACTIVIDADES
   // ============================================
+
+  /**
+   * Obtener configuración de calendario (grupo de rol, permisos y colores por grupo).
+   * role_group_id opcional: si el usuario está en varios grupos, indica cuál usar.
+   */
+  static async getCalendarConfig(roleGroupId?: number | null): Promise<CalendarConfigResponse['data']> {
+    try {
+      const params = new URLSearchParams()
+      if (roleGroupId != null && roleGroupId !== '') params.set('role_group_id', String(roleGroupId))
+      const qs = params.toString()
+      const response = await this.apiCall<CalendarConfigResponse>(`${this.baseUrl}/config${qs ? `?${qs}` : ''}`, {
+        method: 'GET'
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error al obtener configuración de calendario:', error)
+      throw error
+    }
+  }
+
+  // ============================================
+  // GRUPOS DE ROLES DE CALENDARIO
+  // ============================================
+
+  /** Grupos de calendario a los que pertenece el usuario autenticado (para selector de calendarios). */
+  static async getMyRoleGroups(): Promise<CalendarRoleGroup[]> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data: CalendarRoleGroup[] }>(
+        `${this.baseUrl}/my-role-groups`,
+        { method: 'GET' }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error al obtener mis grupos de calendario:', error)
+      throw error
+    }
+  }
+
+  /** Usuarios de la intranet para agregar a grupos de roles (autocomplete). search opcional. */
+  static async getIntranetUsers(search: string = ''): Promise<{ id: number; nombre: string; email: string | null }[]> {
+    const params = new URLSearchParams()
+    if (search.trim()) params.set('search', search.trim())
+    const qs = params.toString()
+    const response = await this.apiCall<{ success: boolean; data: { id: number; nombre: string; email: string | null }[] }>(
+      `${this.baseUrl}/users${qs ? `?${qs}` : ''}`,
+      { method: 'GET' }
+    )
+    return response.data ?? []
+  }
+
+  static async getRoleGroups(): Promise<CalendarRoleGroup[]> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data: CalendarRoleGroup[] }>(
+        `${this.baseUrl}/role-groups`,
+        { method: 'GET' }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error al obtener grupos de roles:', error)
+      throw error
+    }
+  }
+
+  static async createRoleGroup(body: {
+    name: string
+    code: string | null
+    usa_consolidado: boolean
+    is_active: boolean
+  }): Promise<CalendarRoleGroup> {
+    const response = await this.apiCall<{ success: boolean; data: CalendarRoleGroup }>(
+      `${this.baseUrl}/role-groups`,
+      { method: 'POST', body }
+    )
+    return response.data
+  }
+
+  static async updateRoleGroup(
+    id: number,
+    body: { name: string; code: string | null; usa_consolidado: boolean; is_active: boolean }
+  ): Promise<CalendarRoleGroup> {
+    const response = await this.apiCall<{ success: boolean; data: CalendarRoleGroup }>(
+      `${this.baseUrl}/role-groups/${id}`,
+      { method: 'PUT', body }
+    )
+    return response.data
+  }
+
+  static async deleteRoleGroup(id: number): Promise<{ success: boolean; message?: string }> {
+    return this.apiCall<{ success: boolean; message?: string }>(
+      `${this.baseUrl}/role-groups/${id}`,
+      { method: 'DELETE' }
+    )
+  }
+
+  static async getRoleGroupMembers(id: number): Promise<CalendarRoleGroupMember[]> {
+    const response = await this.apiCall<{ success: boolean; data: CalendarRoleGroupMember[] }>(
+      `${this.baseUrl}/role-groups/${id}/members`,
+      { method: 'GET' }
+    )
+    return response.data
+  }
+
+  static async addRoleGroupMember(
+    id: number,
+    body: { user_id: number; role_type: string }
+  ): Promise<CalendarRoleGroupMember> {
+    const response = await this.apiCall<{ success: boolean; data: CalendarRoleGroupMember }>(
+      `${this.baseUrl}/role-groups/${id}/members`,
+      { method: 'POST', body }
+    )
+    return response.data
+  }
+
+  static async removeRoleGroupMember(
+    id: number,
+    memberId: number
+  ): Promise<{ success: boolean; message?: string }> {
+    return this.apiCall<{ success: boolean; message?: string }>(
+      `${this.baseUrl}/role-groups/${id}/members/${memberId}`,
+      { method: 'DELETE' }
+    )
+  }
+
+  static async getRoleGroupConfig(id: number): Promise<CalendarRoleGroupConfig | null> {
+    const response = await this.apiCall<{ success: boolean; data: CalendarRoleGroupConfig | null }>(
+      `${this.baseUrl}/role-groups/${id}/config`,
+      { method: 'GET' }
+    )
+    return response.data
+  }
+
+  static async updateRoleGroupConfig(
+    id: number,
+    body: {
+      color_prioridad?: string | null
+      color_actividad?: string | null
+      color_consolidado?: string | null
+      color_completado?: string | null
+      jefe_color_priority_order?: string | null
+      miembro_color_priority_order?: string | null
+      usa_consolidado?: boolean
+    }
+  ): Promise<CalendarRoleGroupConfig> {
+    const response = await this.apiCall<{ success: boolean; data: CalendarRoleGroupConfig }>(
+      `${this.baseUrl}/role-groups/${id}/config`,
+      { method: 'PUT', body }
+    )
+    return response.data
+  }
 
   /**
    * Construye query string para GET; arrays se envían como key[]=val para que Laravel los reciba como array.
@@ -49,6 +257,8 @@ export class CalendarService extends BaseService {
         value.forEach((id: number) => params.append('contenedor_ids[]', String(id)))
       } else if (key === 'responsable_ids' && Array.isArray(value)) {
         value.forEach((id: number) => params.append('responsable_ids[]', String(id)))
+      } else if (key === 'role_group_id') {
+        params.append(key, String(value))
       } else {
         params.append(key, String(value))
       }
@@ -229,11 +439,14 @@ export class CalendarService extends BaseService {
   // ============================================
 
   /**
-   * Obtener lista de responsables disponibles (perfiles coordinación/documentación)
+   * Obtener lista de responsables (miembros del grupo). role_group_id opcional para contexto multi-grupo.
    */
-  static async getResponsables(): Promise<CalendarResponsable[]> {
+  static async getResponsables(roleGroupId?: number | null): Promise<CalendarResponsable[]> {
     try {
-      const response = await this.apiCall<ResponsablesResponse>(`${this.baseUrl}/responsables`, {
+      const params = new URLSearchParams()
+      if (roleGroupId != null && roleGroupId !== '') params.set('role_group_id', String(roleGroupId))
+      const qs = params.toString()
+      const response = await this.apiCall<ResponsablesResponse>(`${this.baseUrl}/responsables${qs ? `?${qs}` : ''}`, {
         method: 'GET'
       })
       return response.data
@@ -364,11 +577,14 @@ export class CalendarService extends BaseService {
   // ============================================
 
   /**
-   * Obtener catálogo de actividades predefinidas
+   * Obtener catálogo de actividades predefinidas del grupo indicado
    */
-  static async getActivityCatalog(): Promise<CalendarActivityCatalogItem[]> {
+  static async getActivityCatalog(roleGroupId?: number | null): Promise<CalendarActivityCatalogItem[]> {
     try {
-      const response = await this.apiCall<{ success: boolean; data: CalendarActivityCatalogItem[] }>(`${this.baseUrl}/activity-catalog`, {
+      const params = roleGroupId != null ? { role_group_id: roleGroupId } : {}
+      const query = new URLSearchParams(params as Record<string, string>).toString()
+      const url = query ? `${this.baseUrl}/activity-catalog?${query}` : `${this.baseUrl}/activity-catalog`
+      const response = await this.apiCall<{ success: boolean; data: CalendarActivityCatalogItem[] }>(url, {
         method: 'GET'
       })
       return response.data
@@ -379,13 +595,15 @@ export class CalendarService extends BaseService {
   }
 
   /**
-   * Crear una nueva actividad en el catálogo
+   * Crear una nueva actividad en el catálogo del grupo
    */
-  static async createActivityCatalog(name: string): Promise<CalendarActivityCatalogItem> {
+  static async createActivityCatalog(name: string, roleGroupId?: number | null): Promise<CalendarActivityCatalogItem> {
     try {
+      const body: Record<string, unknown> = { name }
+      if (roleGroupId != null) body.role_group_id = roleGroupId
       const response = await this.apiCall<{ success: boolean; data: CalendarActivityCatalogItem }>(`${this.baseUrl}/activity-catalog`, {
         method: 'POST',
-        body: { name }
+        body
       })
       return response.data
     } catch (error) {
@@ -395,17 +613,19 @@ export class CalendarService extends BaseService {
   }
 
   /**
-   * Actualizar nombre y/o color de actividad del catálogo
+   * Actualizar nombre y/o color de actividad del catálogo del grupo
    */
   static async updateActivityCatalog(
     id: number,
     name: string,
     colorCode?: string | null,
-    extras?: { allow_saturday?: boolean; allow_sunday?: boolean; default_priority?: number }
+    extras?: { allow_saturday?: boolean; allow_sunday?: boolean; default_priority?: number },
+    roleGroupId?: number | null
   ): Promise<CalendarActivityCatalogItem> {
     try {
       const body: Record<string, unknown> = { name }
       if (colorCode !== undefined) body.color_code = colorCode || null
+      if (roleGroupId != null) body.role_group_id = roleGroupId
       if (extras) {
         if (extras.allow_saturday !== undefined) body.allow_saturday = extras.allow_saturday
         if (extras.allow_sunday !== undefined) body.allow_sunday = extras.allow_sunday
@@ -423,13 +643,15 @@ export class CalendarService extends BaseService {
   }
 
   /**
-   * Reordenar actividades del catálogo
+   * Reordenar actividades del catálogo del grupo
    */
-  static async reorderActivityCatalog(ids: number[]): Promise<{ success: boolean; message?: string }> {
+  static async reorderActivityCatalog(ids: number[], roleGroupId?: number | null): Promise<{ success: boolean; message?: string }> {
     try {
+      const body: Record<string, unknown> = { ids }
+      if (roleGroupId != null) body.role_group_id = roleGroupId
       const response = await this.apiCall<{ success: boolean; message?: string }>(`${this.baseUrl}/activity-catalog/reorder`, {
         method: 'POST',
-        body: { ids }
+        body
       })
       return response
     } catch (error) {
@@ -439,11 +661,14 @@ export class CalendarService extends BaseService {
   }
 
   /**
-   * Eliminar actividad del catálogo
+   * Eliminar actividad del catálogo del grupo
    */
-  static async deleteActivityCatalog(id: number): Promise<{ success: boolean; message?: string }> {
+  static async deleteActivityCatalog(id: number, roleGroupId?: number | null): Promise<{ success: boolean; message?: string }> {
     try {
-      const response = await this.apiCall<{ success: boolean; message?: string }>(`${this.baseUrl}/activity-catalog/${id}`, {
+      const params = roleGroupId != null ? { role_group_id: roleGroupId } : {}
+      const query = new URLSearchParams(params as Record<string, string>).toString()
+      const url = query ? `${this.baseUrl}/activity-catalog/${id}?${query}` : `${this.baseUrl}/activity-catalog/${id}`
+      const response = await this.apiCall<{ success: boolean; message?: string }>(url, {
         method: 'DELETE'
       })
       return response
@@ -458,13 +683,13 @@ export class CalendarService extends BaseService {
   // ============================================
 
   /**
-   * Obtener estadísticas de progreso
+   * Obtener estadísticas de progreso. filters puede incluir role_group_id para contexto multi-grupo.
    */
   static async getProgress(filters?: CalendarFilters): Promise<ProgressResponse['data']> {
     try {
-      const response = await this.apiCall<ProgressResponse>(`${this.baseUrl}/progress`, {
-        method: 'GET',
-        params: filters
+      const query = this.buildCalendarQueryString(filters)
+      const response = await this.apiCall<ProgressResponse>(`${this.baseUrl}/progress${query}`, {
+        method: 'GET'
       })
       return response.data
     } catch (error) {

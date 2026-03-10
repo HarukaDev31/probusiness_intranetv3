@@ -10,7 +10,7 @@
           v-if="showCalendarFilters"
           :responsables="responsablesForFilter"
           :contenedores="contenedores"
-          :calendar-permissions="calendarPermissions"
+          :calendar-permissions="{ ...calendarPermissions, usaConsolidado }"
           :current-user-id="Number(currentUserId) || null"
           :initial-filters="filters"
           :get-responsable-color="getResponsableColor"
@@ -18,7 +18,20 @@
           compact
           @filter-change="handleFilterChange"
         />
-        <div class="flex items-center gap-1 ml-auto shrink-0">
+        <!-- Selector de calendario (grupo) cuando el usuario pertenece a más de un grupo -->
+        <div v-if="myRoleGroups.length > 1" class="ml-auto mr-4">
+          <USelectMenu
+            :model-value="selectedRoleGroupOption"
+            :items="roleGroupOptions"
+            value-attribute="value"
+            size="xs"
+            class="min-w-[220px]"
+            placeholder="Selecciona calendario"
+            @update:model-value="onRoleGroupChange"
+          />
+        </div>
+
+        <div class="flex items-center gap-1 shrink-0">
           <UButton
             v-if="isJefeImportaciones"
             icon="i-heroicons-plus"
@@ -193,7 +206,7 @@
                   <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
                 </UTooltip>
                 <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
-                <span v-if="eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
+                <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
                   / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                 </span>
               </span>
@@ -321,7 +334,7 @@
                               <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
                             </UTooltip>
                             <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
-                            <span v-if="eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
+                            <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
                               / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                             </span>
                           </span>
@@ -435,7 +448,7 @@
               </UTooltip>
               {{ event.title || event.name }}
             </div>
-            <div v-if="event.contenedor?.nombre" class="text-[10px] md:text-[11px] opacity-90 truncate">
+            <div v-if="usaConsolidado && event.contenedor?.nombre" class="text-[10px] md:text-[11px] opacity-90 truncate">
               {{ event.contenedor.nombre }}
             </div>
             <div v-if="event.start_time" class="text-[10px] opacity-90">
@@ -523,7 +536,7 @@
                     </UTooltip>
                     {{ event.title || event.name }}
                   </div>
-                  <div v-if="event.contenedor?.nombre" class="text-[10px] opacity-90 truncate">
+                  <div v-if="usaConsolidado && event.contenedor?.nombre" class="text-[10px] opacity-90 truncate">
                     {{ event.contenedor.nombre }}
                   </div>
                   <div v-if="event.start_time && event.end_time" class="text-[10px] opacity-90">
@@ -605,7 +618,7 @@
                 <span v-if="!isJefeImportaciones" class="text-[10px] text-gray-500 dark:text-gray-400 mr-1">{{ PRIORITY_LABELS[event.priority ?? 0] }} —</span>
                 {{ event.title || event.name }}
               </span>
-              <span v-if="event.contenedor?.nombre" class="text-xs text-gray-500 dark:text-gray-400 truncate block">{{ event.contenedor.nombre }}</span>
+              <span v-if="usaConsolidado && event.contenedor?.nombre" class="text-xs text-gray-500 dark:text-gray-400 truncate block">{{ event.contenedor.nombre }}</span>
             </div>
             <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400 shrink-0" />
           </li>
@@ -680,6 +693,7 @@ const {
   calendarPermissions,
   isJefeImportaciones,
   isCoordinacionOrDocumentacion,
+  usaConsolidado,
   currentUserId,
   getEvents,
   createActivity,
@@ -708,13 +722,40 @@ const {
   setFilter,
   clearFilters,
   setDateRange,
-  initialize: initializeStore
+  initialize: initializeStore,
+  refresh,
+  currentRoleGroupId,
+  myRoleGroups,
+  getCalendarRoute
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
 
 const route = useRoute()
 const router = useRouter()
+
+// Selector de calendario (grupos de calendario del usuario)
+const roleGroupOptions = computed(() =>
+  myRoleGroups.value.map(g => ({
+    label: g.code ? `${g.name} (${g.code})` : g.name,
+    value: g.id
+  }))
+)
+
+const selectedRoleGroupOption = computed(() => {
+  const id = currentRoleGroupId.value
+  if (id == null) return null
+  return roleGroupOptions.value.find(o => o.value === id) || null
+})
+
+const onRoleGroupChange = async (option: { label: string; value: number } | null) => {
+  const newId = option?.value ?? null
+  if (newId == null || newId === currentRoleGroupId.value) return
+  const query = { ...route.query, role_group_id: String(newId) }
+  await router.push({ path: route.path, query })
+  // refresh() se encargará de recargar config, responsables, eventos y progreso con el nuevo grupo
+  await refresh()
+}
 
 // Inicializar desde la ruta o valores por defecto
 const initializeFromRoute = () => {
@@ -946,6 +987,7 @@ const openActivityModal = (activity?: CalendarEvent) => {
     contenedores: contenedores.value,
     calendarPermissions: calendarPermissions.value,
     getResponsableColor: getResponsableColor,
+    usaConsolidado: usaConsolidado.value,
     actividadesPredefinidas: activityCatalog.value,
     initialDate: dateStr,
     onSave: async (data: CreateCalendarEventRequest) => {
@@ -984,7 +1026,7 @@ const handleSaveActivity = async (data: CreateCalendarEventRequest) => {
         showSuccess('Actividad actualizada', 'La actividad se ha actualizado correctamente.')
         activityModal.close()
         await loadActivitiesData()
-        await loadProgress(true)
+        await loadProgress(undefined, true)
       } else {
         showError('Error', 'No se pudo actualizar la actividad.')
       }
@@ -1000,7 +1042,7 @@ const handleSaveActivity = async (data: CreateCalendarEventRequest) => {
         showSuccess('Actividad creada', 'La actividad se ha creado correctamente.')
         activityModal.close()
         await loadActivitiesData()
-        await loadProgress(true)
+        await loadProgress(undefined, true)
       } else {
         showError('Error', 'No se pudo crear la actividad.')
       }
@@ -1075,7 +1117,7 @@ const handleUpdateStatus = async (chargeId: number, status: CalendarEventStatus)
   const success = await updateChargeStatus(chargeId, status)
   if (success) {
     showSuccess('Estado actualizado', 'El estado se ha actualizado correctamente.')
-    await loadProgress(true)
+    await loadProgress(undefined, true)
   } else {
     showError('Error', 'No se pudo actualizar el estado.')
   }
@@ -1125,7 +1167,7 @@ const handleSaveNotes = async (data: { activityNotes: string; chargeNotes: Recor
 
 // Navegar a configuración
 const openConfig = () => {
-  navigateTo('/calendar/config')
+  navigateTo(getCalendarRoute('/calendar/config'))
 }
 
 // Inicializar desde la ruta
@@ -1887,7 +1929,9 @@ const updateUrl = () => {
     params.set('month', month.toString())
     params.set('view', 'month')
   }
-  
+  if (currentRoleGroupId.value != null) {
+    params.set('role_group_id', String(currentRoleGroupId.value))
+  }
   url = `/calendar?${params.toString()}`
   router.replace(url)
 }
@@ -1981,7 +2025,7 @@ const handleDayClick = (date: CalendarDate) => {
   if (isDateWeekend(date)) return
   if (!calendarPermissions.value.canEditActivity) {
     //redirect to page /calendar/progreso
-    navigateTo('/calendar/progreso')
+    navigateTo(getCalendarRoute('/calendar/progreso'))
     return
   }
   const dateStr = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
@@ -1994,6 +2038,7 @@ const handleDayClick = (date: CalendarDate) => {
     contenedores: contenedores.value,
     calendarPermissions: calendarPermissions.value,
     getResponsableColor: getResponsableColor,
+    usaConsolidado: usaConsolidado.value,
     actividadesPredefinidas: activityCatalog.value,
     initialDate: dateStr,
     onSave: async (data: CreateCalendarEventRequest) => {
@@ -2023,6 +2068,7 @@ const openCreateActivity = () => {
     contenedores: contenedores.value,
     calendarPermissions: calendarPermissions.value,
     getResponsableColor: getResponsableColor,
+    usaConsolidado: usaConsolidado.value,
     actividadesPredefinidas: activityCatalog.value,
     initialDate: dateStr,
     onSave: async (data: CreateCalendarEventRequest) => {
@@ -2049,6 +2095,7 @@ const openCreateModal = () => {
     contenedores: contenedores.value,
     calendarPermissions: calendarPermissions.value,
     getResponsableColor: getResponsableColor,
+    usaConsolidado: usaConsolidado.value,
     actividadesPredefinidas: activityCatalog.value,
     initialDate: dateStr,
     onSave: async (data: CreateCalendarEventRequest) => {
@@ -2069,7 +2116,7 @@ const openEditModal = (event: CalendarEvent) => {
   // Abrir el modal de editar actividad
   console.log(calendarPermissions.value.canEditActivity)
   if (!calendarPermissions.value.canEditActivity) {
-    navigateTo('/calendar/progreso')
+    navigateTo(getCalendarRoute('/calendar/progreso'))
     return
   }
   activityModalOpenKey.value++
@@ -2080,6 +2127,7 @@ const openEditModal = (event: CalendarEvent) => {
     contenedores: contenedores.value,
     calendarPermissions: calendarPermissions.value,
     getResponsableColor: getResponsableColor,
+    usaConsolidado: usaConsolidado.value,
     actividadesPredefinidas: activityCatalog.value,
     onSave: async (data: CreateCalendarEventRequest) => {
       const updateData = { ...data, id: event.id }
@@ -2138,7 +2186,7 @@ const handleSaveActivityOverlay = async (data: CreateCalendarEventRequest) => {
       if (viewMode.value === 'activities') {
         await loadActivitiesData(true)
       }
-      await loadProgress(true)
+      await loadProgress(undefined, true)
     } else {
       showError('Error', 'No se pudo crear la actividad.')
     }
@@ -2158,7 +2206,7 @@ const handleUpdateActivityOverlay = async (data: CreateCalendarEventRequest & { 
       if (viewMode.value === 'activities') {
         await loadActivitiesData(true)
       }
-      await loadProgress(true)
+      await loadProgress(undefined, true)
     } else {
       showError('Error', 'No se pudo actualizar la actividad.')
     }
@@ -2190,6 +2238,10 @@ const confirmDelete = async () => {
 onMounted(async () => {
   // Inicializar datos del store (responsables, contenedores, colores, catálogo)
   await initializeStore()
+  // Añadir role_group_id a la URL si tenemos grupo y no está en la ruta (para que todas las peticiones lo envíen)
+  if (currentRoleGroupId.value != null && route.query.role_group_id == null) {
+    await router.replace({ path: route.path, query: { ...route.query, role_group_id: String(currentRoleGroupId.value) } })
+  }
   // Refrescar catálogo de actividades (colores) para que getEventColors use el color de la actividad
   await loadActivityCatalog(true)
   // Si no es jefe, por defecto mostrar solo "mis" eventos (filtro responsable = yo)
@@ -2235,15 +2287,34 @@ watch([currentDate, viewMode], () => {
   }
 })
 
-// Al volver del catálogo de actividades, refrescar catálogo y eventos para que se pinten los colores
+// Al volver desde pantallas de configuración, refrescar datos para que permisos, colores y eventos queden consistentes
 watch(() => route.path, async (to, from) => {
-  const fromCatalog = from && (from === '/calendar/actividades-catalogo' || from.endsWith('/actividades-catalogo'))
-  if (to === '/calendar' && fromCatalog) {
+  if (!from || to !== '/calendar') return
+
+  const fromCatalog =
+    from === '/calendar/actividades-catalogo' || from.endsWith('/actividades-catalogo')
+  const fromConfigLike =
+    from === '/calendar/config' ||
+    from === '/calendar/role-groups' ||
+    from === '/calendar/colores'
+
+  if (fromCatalog) {
     await loadActivityCatalog(true)
     if (viewMode.value === 'activities') {
       await loadActivitiesData(true)
     } else {
       await getEvents(undefined, true)
+    }
+    return
+  }
+
+  if (fromConfigLike) {
+    // Forzar recarga completa: configuración de calendario, permisos, colores, eventos y progreso
+    await refresh()
+    if (viewMode.value === 'activities') {
+      await loadActivitiesData(true)
+    } else {
+      await loadEvents(true)
     }
   }
 })

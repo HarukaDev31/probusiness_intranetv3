@@ -313,6 +313,8 @@ export interface CalendarFilters {
   /** Paginación: si se envían, el backend devuelve meta (current_page, last_page, per_page, total) */
   page?: number
   per_page?: number
+  /** Id del grupo de calendario (contexto multi-grupo). Se envía en todas las peticiones cuando el usuario puede estar en varios grupos. */
+  role_group_id?: number | null
 }
 
 /** Metadatos de paginación devueltos por el backend cuando se envían page y per_page */

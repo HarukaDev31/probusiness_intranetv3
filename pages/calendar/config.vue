@@ -8,7 +8,7 @@
           variant="ghost"
           size="sm"
           label="Regresar"
-          @click="navigateTo('/calendar')"
+          @click="navigateTo(getCalendarRoute('/calendar'))"
         />
         <div class="flex items-center gap-2">
           <UIcon name="i-heroicons-cog-6-tooth" class="w-6 h-6 text-primary-500" />
@@ -24,7 +24,7 @@
         <!-- Card Registro de Actividades -->
         <UCard 
           class="hover:shadow-lg transition-shadow cursor-pointer"
-          @click="navigateTo('/calendar/actividades')"
+          @click="navigateTo(getCalendarRoute('/calendar/actividades'))"
         >
           <div class="flex flex-col items-center text-center py-6">
             <div class="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center mb-4">
@@ -39,7 +39,7 @@
         <!-- Card Progreso -->
         <UCard 
           class="hover:shadow-lg transition-shadow cursor-pointer"
-          @click="navigateTo('/calendar/progreso')"
+          @click="navigateTo(getCalendarRoute('/calendar/progreso'))"
         >
           <div class="flex flex-col items-center text-center py-6">
             <div class="w-16 h-16 bg-success-100 dark:bg-success-900/30 rounded-xl flex items-center justify-center mb-4">
@@ -136,8 +136,8 @@
         </div>
       </UCard>
 
-      <!-- Link a configuración de colores -->
-      <UCard>
+      <!-- Link a configuración de colores (solo si el grupo usa consolidado) -->
+      <UCard v-if="usaConsolidado">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <UIcon name="i-heroicons-paint-brush" class="w-5 h-5 text-primary-500" />
@@ -149,7 +149,27 @@
           <UButton
             label="Configurar"
             variant="outline"
-            @click="navigateTo('/calendar/colores')"
+            @click="navigateTo(getCalendarRoute('/calendar/colores'))"
+          />
+        </div>
+      </UCard>
+
+      <!-- Link a grupos de roles -->
+      <UCard>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <UIcon name="i-heroicons-user-group" class="w-5 h-5 text-primary-500" />
+            <div>
+              <h3 class="font-medium text-gray-900 dark:text-white">Grupos de Roles</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Definir jefes y roles secundarios por grupo para el calendario
+              </p>
+            </div>
+          </div>
+          <UButton
+            label="Administrar"
+            variant="outline"
+            @click="navigateTo(getCalendarRoute('/calendar/role-groups'))"
           />
         </div>
       </UCard>
@@ -167,7 +187,7 @@
           <UButton
             label="Administrar"
             variant="outline"
-            @click="navigateTo('/calendar/actividades-catalogo')"
+            @click="navigateTo(getCalendarRoute('/calendar/actividades-catalogo'))"
           />
         </div>
       </UCard>
@@ -183,14 +203,18 @@ const {
   teamProgress,
   responsableProgress,
   loading,
+  usaConsolidado,
   loadProgress,
   getResponsableColor,
-  initialize
+  initialize,
+  getCalendarRoute
 } = useCalendarStore()
 
 onMounted(async () => {
+  // Asegurar que la config esté cargada (compartida con index; si ya se abrió el calendario, ya está)
   await initialize()
-  await loadProgress()
+  // Forzar recarga de progreso al entrar a config para que equipo y por responsable se vean
+  await loadProgress(undefined, true)
 })
 
 definePageMeta({
