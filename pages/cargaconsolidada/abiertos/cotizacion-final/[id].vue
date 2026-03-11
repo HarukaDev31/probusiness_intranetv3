@@ -693,7 +693,11 @@ const getPagosColumns = (): TableColumn<any>[] => {
     cell: ({ row }: { row: any }) => {
       let MAX_PAYMENTS = 4
       const pagos = JSON.parse(row.original.pagos || '[]')
-      if (row.original.total_logistica_impuestos > row.original.total_pagos && pagos.length >= MAX_PAYMENTS) {
+      const hayDeuda = row.original.total_logistica_impuestos > row.original.total_pagos
+      if (hayDeuda) {
+        // Con deuda: mostrar un slot vacío más para poder registrar otro pago
+        MAX_PAYMENTS = Math.max(MAX_PAYMENTS, pagos.length + 1)
+      } else if (pagos.length >= MAX_PAYMENTS) {
         MAX_PAYMENTS = pagos.length
       }
       return !row.original.id_contenedor_pago

@@ -712,9 +712,12 @@ const getPagosColumns = (): TableColumn<any>[] => {
       const totalPagos = Number(Number(row.original.total_pagos).toFixed(2))
       const pagos = JSON.parse(row.original.pagos || '[]')
       const pagosLength = pagos.length
-      if (pagosLength >= MAX_PAYMENTS) {
-        if (totalLogisticaImpuestos > totalPagos) MAX_PAYMENTS = pagosLength + 1
-        else if (totalLogisticaImpuestos >= totalPagos) MAX_PAYMENTS = pagosLength
+      const hayDeuda = totalLogisticaImpuestos > totalPagos
+      if (hayDeuda) {
+        // Con deuda: mostrar un slot vacío más para poder registrar otro pago
+        MAX_PAYMENTS = Math.max(MAX_PAYMENTS, pagosLength + 1)
+      } else if (pagosLength >= MAX_PAYMENTS) {
+        MAX_PAYMENTS = pagosLength
       }
       return (!row.original.id_contenedor_destino || row.original.id_contenedor_destino == row.original.id_contenedor)
         ? h(PagoGrid, {
