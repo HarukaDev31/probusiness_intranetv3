@@ -1163,7 +1163,9 @@ export const useCalendarStore = () => {
     try {
       // Cargar mis grupos de calendario y, si hay más de uno, usar role_group_id de la URL o el primero.
       const groups = await loadMyRoleGroups()
-      const roleGroupIdFromQuery = route.query.role_group_id ? Number(route.query.role_group_id) : null
+      const raw = route.query.role_group_id
+      const parsed = typeof raw === 'string' ? parseInt(raw, 10) : NaN
+      const roleGroupIdFromQuery = Number.isNaN(parsed) ? null : parsed
       const effectiveRoleGroupId = roleGroupIdFromQuery ?? (state.currentRoleGroupId.value ?? (groups[0]?.id ?? null))
 
       const config = await CalendarService.getCalendarConfig(effectiveRoleGroupId ?? undefined)

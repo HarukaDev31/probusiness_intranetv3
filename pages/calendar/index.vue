@@ -2357,7 +2357,9 @@ const openCreateModal = () => {
 
 const openEditModal = (event: CalendarEvent) => {
   if (!calendarPermissions.value.canEditActivity) {
-    navigateTo(getCalendarRoute('/calendar/progreso') + '?event_id=' + event.id)
+    const base = getCalendarRoute('/calendar/progreso')
+    const sep = base.includes('?') ? '&' : '?'
+    navigateTo(base + sep + 'event_id=' + event.id)
     return
   }
   activityModalOpenKey.value++

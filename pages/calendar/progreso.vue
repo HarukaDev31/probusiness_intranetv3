@@ -571,7 +571,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { CalendarDate, getLocalTimeZone, today, parseDate } from '@internationalized/date'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
@@ -1128,18 +1128,37 @@ const onDeleteSubtask = async (task: any) => {
 
 
 const route = useRoute()
+const router = useRouter()
+
+/** Corrige URL mal formada (ej. ?role_group_id=2?event_id=131) y devuelve el query normalizado para leer event_id. */
+function normalizeProgressQuery(): Record<string, string> | null {
+  if (typeof window === 'undefined') return null
+  const raw = window.location.search
+  if (!raw || !raw.includes('?event_id=')) return null
+  const fixed = raw.replace(/\?event_id=/, '&event_id=')
+  const params = new URLSearchParams(fixed)
+  const query: Record<string, string> = {}
+  params.forEach((value, key) => { query[key] = value })
+  return query
+}
 
 // Inicialización
 onMounted(async () => {
+  const normalized = normalizeProgressQuery()
+  if (normalized) {
+    await router.replace({ path: route.path, query: normalized })
+  }
+
   await initialize()
   clearFilters()
   if (!isJefeImportaciones.value) {
     nonJefeResponsableModel.value = { label: 'Yo', value: 'yo' }
     filterResponsableIds.value = [Number(currentUserId.value)]
   }
-  const eventIdFromQuery = route.query.event_id
-  if (eventIdFromQuery != null && eventIdFromQuery !== '') {
-    const id = Number(eventIdFromQuery)
+
+  const eventIdRaw = normalized?.event_id ?? route.query.event_id
+  if (eventIdRaw != null && eventIdRaw !== '') {
+    const id = Number(eventIdRaw)
     if (!Number.isNaN(id)) {
       filterEventId.value = id
       expandedActivityId.value = id
