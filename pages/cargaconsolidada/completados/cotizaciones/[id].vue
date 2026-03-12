@@ -137,6 +137,7 @@ import ModalPreview from '~/components/commons/ModalPreview.vue'
 import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
 import { useCotizacionPagos } from '~/composables/cargaconsolidada/useCotizacionPagos'
+import { useCommons } from '~/composables/cargaconsolidada/commons/useCommons'
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import SelectTipoCargaModal from '~/components/cargaconsolidada/SelectTipoCargaModal.vue'
 import PagoGrid from '~/components/PagoGrid.vue'
@@ -236,6 +237,7 @@ const {
 
 // Registrar/eliminar pagos para el grid de adelantos
 const { registrarPago, deletePago } = usePagos()
+const { forceSendCobranza } = useCommons()
 
 const showUploadPanel = ref(false)
 
@@ -1028,7 +1030,6 @@ const prospectosColumns = ref<TableColumn<any>[]>([
 ])
 // Columnas tab Pagos: N° Contacto T. Cliente Acciones Inspección Estado Concepto Importe Pagado Diferencia (+ Adelantos solo Coordinación)
 const getPagosColumns = () => {
-    const nuxtApp = useNuxtApp()
     const isContabilidad = currentRole.value === ROLES.CONTABILIDAD
     return [
         {
@@ -1074,14 +1075,16 @@ const getPagosColumns = () => {
                                     async () => {
                                         try {
                                             await withSpinner(async () => {
-                                                const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
-                                                const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
-                                                if (res && (res as any).success) {
-                                                    showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
+                                                const res = await forceSendCobranza({
+                                                    idCotizacion: row.original.id_cotizacion,
+                                                    idContainer: Number(id)
+                                                })
+                                                if (res?.success) {
+                                                    showSuccess('Recordatorio enviado', 'El proceso de cobranza se ha iniciado. El mensaje se enviará en segundo plano.')
                                                     getCotizacionPagos(Number(id))
                                                     getHeaders(Number(id))
                                                 } else {
-                                                    showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
+                                                    showError('Error', 'No se pudo enviar el recordatorio')
                                                 }
                                             }, 'Enviando recordatorio...')
                                         } catch (err) {
