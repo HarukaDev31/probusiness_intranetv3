@@ -106,6 +106,7 @@ export interface CalendarSubtask {
   calendar_event_charge_id: number
   name: string
   duration_hours: number
+  end_date?: string | null
   status: CalendarEventStatus
   created_at?: string
   updated_at?: string
@@ -230,6 +231,8 @@ export interface CalendarEvent {
   description?: string
   end_date?: string   // Última fecha de days
   duration?: number   // Días entre start_date y end_date
+  /** Estado del evento derivado de los charges (backend) */
+  status?: CalendarEventStatus
   responsables?: CalendarResponsable[]
   // Campos legacy para compatibilidad
   title?: string // Alias de name
@@ -327,6 +330,8 @@ export interface CalendarFilters {
   contenedor_ids?: number[]
   status?: CalendarEventStatus
   priority?: CalendarEventPriority
+  /** Filtrar por un único evento (ej. desde calendario para ir a progreso con esa actividad). */
+  event_id?: number | null
   /** Paginación: si se envían, el backend devuelve meta (current_page, last_page, per_page, total) */
   page?: number
   per_page?: number

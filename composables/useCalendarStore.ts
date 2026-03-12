@@ -57,7 +57,8 @@ const state = {
     contenedor_id: undefined,
     contenedor_ids: undefined,
     status: undefined,
-    priority: undefined
+    priority: undefined,
+    event_id: undefined
   }),
   
   /** Metadatos de paginación cuando getEvents se llama con page/per_page */
@@ -738,14 +739,28 @@ export const useCalendarStore = () => {
   // SUBTAREAS (POR RESPONSABLE / CHARGE)
   // ============================================
 
+  /** Calcula el estado del charge a partir de sus subtareas (misma lógica que el backend). */
+  const computeChargeStatusFromSubtasks = (subtasks: CalendarSubtask[]): CalendarEventStatus => {
+    if (!subtasks?.length) return 'PENDIENTE'
+    const allCompleted = subtasks.every(s => s.status === 'COMPLETADO')
+    if (allCompleted) return 'COMPLETADO'
+    const allPendiente = subtasks.every(s => s.status === 'PENDIENTE')
+    if (allPendiente) return 'PENDIENTE'
+    return 'PROGRESO'
+  }
+
   const createSubtask = async (
     chargeId: number,
-    payload: { name: string; duration_hours: number; status: CalendarEventStatus }
+    payload: { name: string; duration_hours: number; status: CalendarEventStatus; end_date?: string | null }
   ): Promise<CalendarSubtask | null> => {
     try {
       state.loading.value = true
       state.error.value = null
       const subtask = await CalendarService.createSubtask(chargeId, payload)
+      // Asegurar que el estado inicial sea siempre PENDIENTE para el select
+      if (!subtask.status) {
+        ;(subtask as any).status = 'PENDIENTE'
+      }
       // Añadir en la estructura local
       for (const event of state.events.value) {
         const charge = event.charges?.find(c => c.id === chargeId)
@@ -754,6 +769,7 @@ export const useCalendarStore = () => {
             ;(charge as any).subtasks = []
           }
           ;(charge.subtasks as CalendarSubtask[]).push(subtask)
+          ;(charge as any).status = computeChargeStatusFromSubtasks(charge.subtasks as CalendarSubtask[])
           break
         }
       }
@@ -769,7 +785,7 @@ export const useCalendarStore = () => {
 
   const updateSubtask = async (
     subtaskId: number,
-    payload: Partial<{ name: string; duration_hours: number; status: CalendarEventStatus }>
+    payload: Partial<{ name: string; duration_hours: number; status: CalendarEventStatus; end_date?: string | null }>
   ): Promise<boolean> => {
     try {
       state.loading.value = true
@@ -782,6 +798,7 @@ export const useCalendarStore = () => {
           const idx = charge.subtasks.findIndex(s => s.id === subtaskId)
           if (idx !== -1) {
             charge.subtasks[idx] = updated
+            ;(charge as any).status = computeChargeStatusFromSubtasks(charge.subtasks as CalendarSubtask[])
             return true
           }
         }
@@ -805,7 +822,11 @@ export const useCalendarStore = () => {
         if (!event.charges) continue
         for (const charge of event.charges) {
           if (!charge.subtasks) continue
+          const hadId = charge.subtasks.some(s => s.id === subtaskId)
           charge.subtasks = charge.subtasks.filter(s => s.id !== subtaskId)
+          if (hadId) {
+            ;(charge as any).status = computeChargeStatusFromSubtasks(charge.subtasks as CalendarSubtask[])
+          }
         }
       }
       return true
@@ -880,7 +901,8 @@ export const useCalendarStore = () => {
       contenedor_id: undefined,
       contenedor_ids: undefined,
       status: undefined,
-      priority: undefined
+      priority: undefined,
+      event_id: undefined
     }
   }
 
@@ -980,10 +1002,6 @@ export const useCalendarStore = () => {
 
   const getEventColors = (event: CalendarEvent, options?: { usePriority?: boolean }): string[] => {
     const charges = event.charges || []
-    // 1. Gris si la actividad está completada (todos los responsables en COMPLETADO)
-    if (charges.length > 0 && charges.every((c: { status?: string }) => c.status === 'COMPLETADO')) {
-      return ['#9ca3af']
-    }
 
     const activityId = event.activity_id != null ? Number(event.activity_id) : null
     const catalogItem = activityId != null && !Number.isNaN(activityId)
@@ -998,54 +1016,38 @@ export const useCalendarStore = () => {
     const consolidadoColor = consolidadoConfig?.color_code ?? null
     const priorityColor = PRIORITY_COLORS[event.priority] || '#3b82f6'
 
-    // Colores de perfil por usuario (todos los responsables del evento).
-    // Priorizar siempre el color que viene en la API (user.color / responsable.color) si existe.
-    const userColorsFromResponsables: string[] = []
-
-    if (Array.isArray((event as any).responsables) && (event as any).responsables.length > 0) {
-      for (const r of (event as any).responsables as { id: number; nombre?: string; color?: string }[]) {
-        const apiColor = r.color && String(r.color).trim()
-        const color = apiColor || getResponsableColor(r.id, r.nombre)
-        if (color) {
-          userColorsFromResponsables.push(color)
-        }
-      }
-    } else if (Array.isArray(event.charges) && event.charges.length > 0) {
+    // Colores por responsable: gris (#9ca3af) si ese charge está COMPLETADO, sino color del perfil.
+    // Así cada “mitad” del evento puede ser gris de forma independiente.
+    const userColorsFromCharges: string[] = []
+    if (Array.isArray(event.charges) && event.charges.length > 0) {
       for (const c of event.charges as any[]) {
         const uid = c.user_id ?? c.user?.id
         const nombre = c.user?.nombre
         const apiColor = c.user?.color && String(c.user.color).trim()
+        const isCompleted = c.status === 'COMPLETADO'
         if (uid != null) {
-          const color = apiColor || getResponsableColor(uid, nombre)
-          if (color) {
-            userColorsFromResponsables.push(color)
-          }
+          const profileColor = apiColor || getResponsableColor(uid, nombre)
+          userColorsFromCharges.push(isCompleted ? '#9ca3af' : (profileColor || '#3b82f6'))
         }
       }
     }
 
-    // Eliminar duplicados preservando orden
-    const uniqueUserColors: string[] = []
-    const seenColors = new Set<string>()
-    for (const color of userColorsFromResponsables) {
-      const normalized = color.toLowerCase()
-      if (!seenColors.has(normalized)) {
-        seenColors.add(normalized)
-        uniqueUserColors.push(color)
-      }
-    }
-
-    // Orden definido en role-groups según rol (JEFE vs MIEMBRO) del usuario en el grupo actual
+    // Si hay charges con colores por usuario (y orden USUARIO), devolver uno por charge (gris o perfil).
     const order = effectiveColorOrder.value
     for (const key of order) {
       if (key === 'PRIORIDAD' && priorityColor) return [priorityColor]
       if (key === 'ACTIVIDAD' && activityColor) return [activityColor]
       if (key === 'CONSOLIDADO' && consolidadoColor) return [consolidadoColor]
-      if (key === 'USUARIO' && uniqueUserColors.length > 0) {
-        return uniqueUserColors
+      if (key === 'USUARIO' && userColorsFromCharges.length > 0) {
+        return userColorsFromCharges
       }
     }
-    return ['#3b82f6']
+
+    // Sin responsables: gris si evento completado (status del evento), sino color por prioridad
+    if (charges.length === 0 && event.status === 'COMPLETADO') {
+      return ['#9ca3af']
+    }
+    return [priorityColor]
   }
 
   const getEventPosition = (event: CalendarEvent, dateStr: string): 'start' | 'middle' | 'end' | 'single' | null => {

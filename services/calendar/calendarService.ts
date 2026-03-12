@@ -766,7 +766,7 @@ export class CalendarService extends BaseService {
    */
   static async createSubtask(
     chargeId: number,
-    body: { name: string; duration_hours: number; status: CalendarEventStatus }
+    body: { name: string; duration_hours: number; status: CalendarEventStatus; end_date?: string | null }
   ): Promise<CalendarSubtask> {
     try {
       const response = await this.apiCall<{ success: boolean; data: CalendarSubtask }>(
@@ -788,7 +788,7 @@ export class CalendarService extends BaseService {
    */
   static async updateSubtask(
     subtaskId: number,
-    body: Partial<{ name: string; duration_hours: number; status: CalendarEventStatus }>
+    body: Partial<{ name: string; duration_hours: number; status: CalendarEventStatus; end_date?: string | null }>
   ): Promise<CalendarSubtask> {
     try {
       const response = await this.apiCall<{ success: boolean; data: CalendarSubtask }>(

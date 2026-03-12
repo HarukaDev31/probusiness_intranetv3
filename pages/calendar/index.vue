@@ -242,15 +242,15 @@
               <UTooltip v-if="!eventSpan.isStart" text="Continúa desde la semana anterior" class="shrink-0">
                 <span class="flex items-center justify-center w-5 h-5 rounded bg-white/20 text-[10px] font-bold">…</span>
               </UTooltip>
-              <span v-if="eventSpan.isStart" class="truncate flex items-center gap-1 min-w-0 flex-1">
+              <span v-if="eventSpan.isStart" class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
                 <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
                   <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
                 </UTooltip>
-                <span class="truncate flex flex-col gap-0.5 min-w-0 flex-1">
+                <span class="flex flex-col gap-0.5 min-w-0 flex-1 overflow-hidden">
                   <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
                   <span
                     v-if="showEventDetails && eventSpan.event.notes"
-                    class="text-[10px] md:text-[11px] opacity-90 leading-tight whitespace-pre-line break-words"
+                    class="text-[10px] md:text-[11px] opacity-90 leading-tight whitespace-pre-line break-words break-all min-w-0 w-full"
                   >
                     {{ String(eventSpan.event.notes) }}
                   </span>
@@ -259,29 +259,34 @@
                   / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                 </span>
               </span>
-              <div v-if="eventSpan.isEnd && getEventResponsables(eventSpan.event).length" class="flex items-center gap-0.5 shrink-0 ml-auto">
-                <UTooltip
-                  v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
-                  :key="resp.id"
-                  :text="resp.nombre"
-                  :content="{
-      align: 'center',
-      side: 'top',
-      sideOffset: 8
-    }"
-                >
-                  <UAvatar
-                    :src="resp.avatar || undefined"
-                    :alt="resp.nombre"
-                    size="3xs"
-                    class="ring-1 ring-white/30 shrink-0"
-                    :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+              <div v-if="eventSpan.isEnd" class="flex items-center gap-0.5 shrink-0 ml-auto">
+                <UTooltip :text="getEventStatusLabel(getEventStatus(eventSpan.event))" :content="{ align: 'center', side: 'top', sideOffset: 8 }">
+                  <UIcon
+                    :name="getEventStatusIcon(getEventStatus(eventSpan.event))"
+                    class="w-3.5 h-3.5 shrink-0 opacity-90"
+                    aria-hidden
                   />
                 </UTooltip>
-                <span
-                  v-if="getEventResponsables(eventSpan.event).length > 2"
-                  class="text-[9px] font-bold opacity-80"
-                >+{{ getEventResponsables(eventSpan.event).length - 2 }}</span>
+                <template v-if="getEventResponsables(eventSpan.event).length">
+                  <UTooltip
+                    v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
+                    :key="resp.id"
+                    :text="resp.nombre"
+                    :content="{ align: 'center', side: 'top', sideOffset: 8 }"
+                  >
+                    <UAvatar
+                      :src="resp.avatar || undefined"
+                      :alt="resp.nombre"
+                      size="3xs"
+                      class="ring-1 ring-white/30 shrink-0"
+                      :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+                    />
+                  </UTooltip>
+                  <span
+                    v-if="getEventResponsables(eventSpan.event).length > 2"
+                    class="text-[9px] font-bold opacity-80"
+                  >+{{ getEventResponsables(eventSpan.event).length - 2 }}</span>
+                </template>
               </div>
               </div>
             </div>
@@ -403,47 +408,51 @@
                           <UTooltip v-if="!eventSpan.isStart" text="Continúa desde la semana anterior" class="shrink-0">
                             <span class="flex items-center justify-center w-5 h-5 rounded bg-white/20 text-[10px] font-bold">…</span>
                           </UTooltip>
-                          <span v-if="eventSpan.isStart" class="truncate flex items-center gap-1 min-w-0 flex-1">
+                          <span v-if="eventSpan.isStart" class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
                             <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
                               <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
                             </UTooltip>
-                          <span class="truncate flex flex-col gap-0.5 min-w-0 flex-1">
-                            <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
-                            <span
-                              v-if="showEventDetails && eventSpan.event.notes"
-                              class="text-[10px] md:text-[11px] opacity-90 leading-tight whitespace-pre-line break-words"
-                            >
-                              {{ String(eventSpan.event.notes) }}
+                            <span class="flex flex-col gap-0.5 min-w-0 flex-1 overflow-hidden">
+                              <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
+                              <span
+                                v-if="showEventDetails && eventSpan.event.notes"
+                                class="text-[10px] md:text-[11px] opacity-90 leading-tight whitespace-pre-line break-words break-all min-w-0 w-full"
+                              >
+                                {{ String(eventSpan.event.notes) }}
+                              </span>
                             </span>
-                          </span>
                             <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
                               / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                             </span>
                           </span>
-                          <div v-if="eventSpan.isEnd && getEventResponsables(eventSpan.event).length" class="flex items-center gap-0.5 shrink-0 ml-auto">
-                            <UTooltip
-                              v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
-                              :key="resp.id"
-                              :text="resp.nombre"
-                              :content="{
-      align: 'center',
-      side: 'top',
-      sideOffset: 8
-    }"
-              
-                            >
-                              <UAvatar
-                                :src="resp.avatar || undefined"
-                                :alt="resp.nombre"
-                                size="3xs"
-                                class="ring-1 ring-white/30 shrink-0"
-                                :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+                          <div v-if="eventSpan.isEnd" class="flex items-center gap-0.5 shrink-0 ml-auto">
+                            <UTooltip :text="getEventStatusLabel(getEventStatus(eventSpan.event))" :content="{ align: 'center', side: 'top', sideOffset: 8 }">
+                              <UIcon
+                                :name="getEventStatusIcon(getEventStatus(eventSpan.event))"
+                                class="w-3.5 h-3.5 shrink-0 opacity-90"
+                                aria-hidden
                               />
                             </UTooltip>
-                            <span
-                              v-if="getEventResponsables(eventSpan.event).length > 2"
-                              class="text-[9px] font-bold opacity-80"
-                            >+{{ getEventResponsables(eventSpan.event).length - 2 }}</span>
+                            <template v-if="getEventResponsables(eventSpan.event).length">
+                              <UTooltip
+                                v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
+                                :key="resp.id"
+                                :text="resp.nombre"
+                                :content="{ align: 'center', side: 'top', sideOffset: 8 }"
+                              >
+                                <UAvatar
+                                  :src="resp.avatar || undefined"
+                                  :alt="resp.nombre"
+                                  size="3xs"
+                                  class="ring-1 ring-white/30 shrink-0"
+                                  :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
+                                />
+                              </UTooltip>
+                              <span
+                                v-if="getEventResponsables(eventSpan.event).length > 2"
+                                class="text-[9px] font-bold opacity-80"
+                              >+{{ getEventResponsables(eventSpan.event).length - 2 }}</span>
+                            </template>
                           </div>
                           </div>
                         </div>
@@ -1674,6 +1683,32 @@ const getPriorityIcon = (priority: CalendarEventPriority) => {
   }
 }
 
+// Estado del evento (icono único por evento): pendiente / en progreso / completado
+const getEventStatusIcon = (status: CalendarEventStatus | undefined) => {
+  switch (status) {
+    case 'COMPLETADO': return 'i-heroicons-check-circle'
+    case 'PROGRESO': return 'i-heroicons-play-circle'
+    case 'PENDIENTE':
+    default: return 'i-heroicons-clock'
+  }
+}
+const getEventStatusLabel = (status: CalendarEventStatus | undefined) => {
+  switch (status) {
+    case 'COMPLETADO': return 'Completado'
+    case 'PROGRESO': return 'En progreso'
+    case 'PENDIENTE':
+    default: return 'Pendiente'
+  }
+}
+const getEventStatus = (event: CalendarEvent): CalendarEventStatus | undefined => {
+  if (event.status) return event.status as CalendarEventStatus
+  const charges = event.charges || []
+  if (charges.length === 0) return 'PENDIENTE'
+  if (charges.every(c => c.status === 'COMPLETADO')) return 'COMPLETADO'
+  if (charges.some(c => c.status === 'PENDIENTE')) return 'PENDIENTE'
+  return 'PROGRESO'
+}
+
 // Estilo para eventos multi-día
 const getMultiDayEventStyle = (span: EventSpan) => {
   const colors = getEventColors(span.event, { usePriority: useEventPriority.value })
@@ -2321,10 +2356,8 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (event: CalendarEvent) => {
-  // Abrir el modal de editar actividad
-  console.log(calendarPermissions.value.canEditActivity)
   if (!calendarPermissions.value.canEditActivity) {
-    navigateTo(getCalendarRoute('/calendar/progreso'))
+    navigateTo(getCalendarRoute('/calendar/progreso') + '?event_id=' + event.id)
     return
   }
   activityModalOpenKey.value++

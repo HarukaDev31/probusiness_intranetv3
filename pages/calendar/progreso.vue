@@ -159,278 +159,311 @@
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Duración</th>
                 <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Responsables</th>
                 <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Notas</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr
+              <template
                 v-for="activity in visibleActivities"
                 :key="activity.id"
-                class="hover:bg-gray-50 dark:hover:bg-gray-800/50"
               >
-                <!-- Actividad -->
-                <td class="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">
-                  {{ activity.name || activity.title }}
-                </td>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <!-- Actividad -->
+                  <td class="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">
+                    {{ activity.name || activity.title }}
+                  </td>
 
-                <!-- # Consolidado: solo si el grupo usa consolidado -->
-                <td v-if="usaConsolidado" class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                  {{ activity.contenedor?.nombre || activity.contenedor?.codigo || '-' }}
-                </td>
+                  <!-- # Consolidado: solo si el grupo usa consolidado -->
+                  <td v-if="usaConsolidado" class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    {{ activity.contenedor?.nombre || activity.contenedor?.codigo || '-' }}
+                  </td>
 
-                <!-- Estado -->
-                <td class="px-4 py-3">
-                  <StatusDropdown
-                    :activity="activity"
-                    :can-edit="canEditStatus(activity)"
-                    :current-user-id="currentUserId"
-                    :is-jefe="isJefeImportaciones"
-                    @update="(eventId, status) => handleStatusUpdate(eventId, status)"
-                  />
-                </td>
+                  <!-- Estado -->
+                  <td class="px-4 py-3">
+                    <StatusDropdown
+                      :activity="activity"
+                      :can-edit="canEditStatus(activity)"
+                      :current-user-id="currentUserId"
+                      :is-jefe="isJefeImportaciones"
+                      @update="(eventId, status) => handleStatusUpdate(eventId, status)"
+                    />
+                  </td>
 
-                <!-- Prioridad -->
-                <td class="px-4 py-3">
-                  <PriorityDropdown
-                    :priority="activity.priority"
-                    :can-edit="calendarPermissions.canEditPriority"
-                    @update="(priority) => handlePriorityUpdate(activity.id, priority)"
-                  />
-                </td>
+                  <!-- Prioridad -->
+                  <td class="px-4 py-3">
+                    <PriorityDropdown
+                      :priority="activity.priority"
+                      :can-edit="calendarPermissions.canEditPriority"
+                      @update="(priority) => handlePriorityUpdate(activity.id, priority)"
+                    />
+                  </td>
 
-                <!-- Fecha Inicio -->
-                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                  {{ formatDate(activity.start_date || getFirstDate(activity)) }}
-                </td>
+                  <!-- Fecha Inicio -->
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    {{ formatDate(activity.start_date || getFirstDate(activity)) }}
+                  </td>
 
-                <!-- Fecha Fin -->
-                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                  {{ formatDate(activity.end_date || getLastDate(activity)) }}
-                </td>
+                  <!-- Fecha Fin -->
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    {{ formatDate(activity.end_date || getLastDate(activity)) }}
+                  </td>
 
-                <!-- Duración -->
-                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                  {{ calculateDuration(activity) }} days
-                </td>
+                  <!-- Duración -->
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    {{ calculateDuration(activity) }} days
+                  </td>
 
-                <!-- Responsables -->
-                <td class="px-4 py-3">
-                  <div class="flex items-center -space-x-2">
-                    <UTooltip
-                      v-for="charge in (activity.charges || []).slice(0, 3)"
-                      :key="charge.id"
-                      :text="charge.user?.nombre || 'N/A'"
-                    >
-                      <UAvatar
-                        :alt="charge.user?.nombre || 'U'"
-                        size="sm"
-                        class="ring-2 ring-white dark:ring-gray-800"
-                        :src="charge.user?.avatar"
-                        :style="{
-                          backgroundColor: getResponsableColor(charge.user_id, charge.user?.nombre),
-                          color: '#fff'
-                        }"
-                      />
-                    </UTooltip>
-                  </div>
-                </td>
-
-                <!-- Acciones -->
-                <td class="px-4 py-3 text-center">
-                  <div class="flex items-center justify-center gap-1">
-                    <UTooltip :text="expandedActivityId === activity.id ? 'Ocultar subtareas' : 'Ver subtareas'">
-                      <UButton
-                        :icon="expandedActivityId === activity.id ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'"
-                        variant="ghost"
-                        size="xs"
-                        color="primary"
-                        @click="toggleSubtasksRow(activity.id)"
-                      />
-                    </UTooltip>
-                    <UTooltip text="Ver tracking">
-                      <UButton
-                        icon="i-heroicons-clipboard-document-list"
-                        variant="ghost"
-                        size="xs"
-                        color="primary"
-                        @click="openTrackingModal(activity)"
-                      />
-                    </UTooltip>
-                  </div>
-                </td>
-
-                <!-- Notas: jefe ve/edita notas de la actividad; no-jefe ve/edita solo sus notas (charge) -->
-                <td class="px-4 py-3">
-                  <div class="max-w-xs">
-                    <template v-if="isJefeImportaciones">
-                      <p
-                        v-if="activity.notes"
-                        class="text-sm text-gray-600 dark:text-gray-400 truncate cursor-pointer hover:text-primary-600"
-                        @click="openNotesModal(activity)"
+                  <!-- Responsables -->
+                  <td class="px-4 py-3">
+                    <div class="flex items-center -space-x-2">
+                      <UTooltip
+                        v-for="charge in (activity.charges || []).slice(0, 3)"
+                        :key="charge.id"
+                        :text="charge.user?.nombre || 'N/A'"
                       >
-                        {{ activity.notes }}
-                      </p>
-                      <UButton
-                        v-else
-                        icon="i-heroicons-plus"
-                        variant="ghost"
-                        size="xs"
-                        color="neutral"
-                        @click="openNotesModal(activity)"
-                      />
-                    </template>
-                    <template v-else>
-                      <template v-if="getMyCharge(activity)">
-                        <p
-                          v-if="getMyCharge(activity)?.notes"
-                          class="text-sm text-gray-600 dark:text-gray-400 truncate cursor-pointer hover:text-primary-600"
-                          @click="openNotesModal(activity, getMyCharge(activity))"
-                        >
-                          {{ getMyCharge(activity)?.notes }}
-                        </p>
+                        <UAvatar
+                          :alt="charge.user?.nombre || 'U'"
+                          size="sm"
+                          class="ring-2 ring-white dark:ring-gray-800"
+                          :src="charge.user?.avatar"
+                          :style="{
+                            backgroundColor: getResponsableColor(charge.user_id, charge.user?.nombre),
+                            color: '#fff'
+                          }"
+                        />
+                      </UTooltip>
+                    </div>
+                  </td>
+
+                  <!-- Acciones -->
+                  <td class="px-4 py-3 text-center">
+                    <div class="flex items-center justify-center gap-1">
+                      <!-- Subtareas -->
+                      <UTooltip
+                        v-if="canOpenSubtasksRow(activity)"
+                        :text="expandedActivityId === activity.id ? 'Ocultar subtareas' : 'Ver subtareas'"
+                      >
                         <UButton
-                          v-else
-                          icon="i-heroicons-plus"
+                          :icon="expandedActivityId === activity.id ? 'i-heroicons-minus' : 'i-heroicons-plus'"
+                          variant="ghost"
+                          size="xs"
+                          color="primary"
+                          @click="toggleSubtasksRow(activity)"
+                        />
+                      </UTooltip>
+
+                      <!-- Notas: jefe ve/edita notas de la actividad; no-jefe ve/edita solo sus notas (charge) -->
+                      <UTooltip text="Notas">
+                        <UButton
+                          v-if="isJefeImportaciones || getMyCharge(activity)"
+                          icon="i-heroicons-chat-bubble-left-right"
                           variant="ghost"
                           size="xs"
                           color="neutral"
-                          @click="openNotesModal(activity, getMyCharge(activity))"
+                          @click="isJefeImportaciones ? openNotesModal(activity) : openNotesModal(activity, getMyCharge(activity)!)"
                         />
-                      </template>
-                      <span v-else class="text-sm text-gray-400 dark:text-gray-500">—</span>
-                    </template>
-                  </div>
-                </td>
-              </tr>
-
-              <!-- Fila expandida con subtareas -->
-              <tr
-                v-if="expandedActivityId === activity.id"
-                :key="`activity-subtasks-${activity.id}`"
-                class="bg-gray-50/60 dark:bg-gray-900/40"
-              >
-                <td :colspan="usaConsolidado ? 10 : 9" class="px-4 py-3">
-                  <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                      <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                        Subtareas por responsable
-                      </p>
+                      </UTooltip>
                     </div>
+                  </td>
+                </tr>
 
-                    <div
-                      v-if="(activity.charges || []).length === 0"
-                      class="text-sm text-gray-500 dark:text-gray-400"
-                    >
-                      Esta actividad no tiene responsables asignados.
-                    </div>
-
-                    <div
-                      v-for="charge in activity.charges || []"
-                      :key="charge.id"
-                      class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3"
-                    >
-                      <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2">
-                          <UAvatar
-                            :alt="charge.user?.nombre || 'U'"
-                            size="sm"
-                            :src="charge.user?.avatar"
-                            :style="{
-                              backgroundColor: getResponsableColor(charge.user_id, charge.user?.nombre),
-                              color: '#fff'
-                            }"
-                          />
-                          <div>
-                            <p class="text-sm font-medium">
-                              {{ charge.user?.nombre || 'Responsable #' + charge.user_id }}
-                            </p>
-                            <p class="text-xs text-gray-500">
-                              Estado: {{ charge.status }}
-                            </p>
-                          </div>
-                        </div>
+                <!-- Fila expandida con subtareas -->
+                <tr
+                  v-if="expandedActivityId === activity.id"
+                  :key="`activity-subtasks-${activity.id}`"
+                  class="bg-gray-50/60 dark:bg-gray-900/40"
+                >
+                  <td :colspan="usaConsolidado ? 9 : 8" class="px-4 py-3 w-full" style="min-width: 1200px;">
+                    <div class="space-y-3 w-full">
+                      <div class="flex items-center justify-between">
+                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                          Subtareas por responsable
+                        </p>
                       </div>
 
-                      <!-- Lista de subtareas -->
-                      <div v-if="(charge.subtasks || []).length > 0" class="space-y-2">
-                        <div
-                          v-for="task in charge.subtasks || []"
-                          :key="task.id"
-                          class="flex items-center gap-2 justify-between bg-white dark:bg-gray-900 rounded px-3 py-2"
-                        >
-                          <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium truncate">
-                              {{ task.name }}
-                            </p>
-                            <p class="text-xs text-gray-500">
-                              Duración: {{ task.duration_hours }} h
-                            </p>
-                          </div>
-                          <div class="flex items-center gap-2">
-                            <USelectMenu
-                              v-model="task.status"
-                              :items="statusOptionsSubtasks as any"
-                              value-attribute="value"
-                              size="xs"
-                              class="w-32"
-                              @update:model-value="(value) => onSubtaskStatusChange(task, value)"
-                            />
-                            <UButton
-                              icon="i-heroicons-trash"
-                              variant="ghost"
-                              size="xs"
-                              color="error"
-                              @click="() => onDeleteSubtask(task)"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <p v-else class="text-xs text-gray-500">
-                        Sin subtareas para este responsable.
-                      </p>
-
-                      <!-- Formulario nueva subtarea (solo para el propio responsable o jefe) -->
                       <div
-                        v-if="canManageSubtasksForCharge(charge)"
-                        class="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3"
+                        v-if="getChargesToShowForSubtasks(activity).length === 0"
+                        class="text-sm text-gray-500 dark:text-gray-400"
                       >
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
-                          <UFormField label="Nombre subtarea">
-                            <UInput
-                              v-model="newSubtaskName"
-                              placeholder="Ej. Revisar documentos"
-                            />
-                          </UFormField>
-                          <UFormField label="Duración (horas)">
-                            <UInput
-                              v-model.number="newSubtaskHours"
-                              type="number"
-                              min="0"
-                              placeholder="0"
-                            />
-                          </UFormField>
-                          <div class="flex gap-2">
-                            <USelectMenu
-                              v-model="newSubtaskStatus"
-                              :items="statusOptionsSubtasks as any"
-                              value-attribute="value"
+                        {{ isJefeImportaciones ? 'Esta actividad no tiene responsables asignados.' : 'No eres responsable de esta actividad.' }}
+                      </div>
+
+                      <div
+                        v-for="charge in getChargesToShowForSubtasks(activity)"
+                        :key="charge.id"
+                        class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3 w-full min-w-0"
+                      >
+                        <div class="flex items-center justify-between gap-2">
+                          <div class="flex items-center gap-2">
+                            <UAvatar
+                              :alt="charge.user?.nombre || 'U'"
                               size="sm"
-                              class="flex-1"
+                              :src="charge.user?.avatar"
+                              :style="{
+                                backgroundColor: getResponsableColor(charge.user_id, charge.user?.nombre),
+                                color: '#fff'
+                              }"
                             />
-                            <UButton
-                              label="Agregar"
-                              color="primary"
-                              size="sm"
-                              :loading="savingSubtask"
-                              @click="() => saveNewSubtask(charge)"
-                            />
+                            <div>
+                              <p class="text-sm font-medium">
+                                {{ charge.user?.nombre || 'Responsable #' + charge.user_id }}
+                              </p>
+                              <p class="text-xs text-gray-500">
+                                Estado: {{ charge.status }}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Lista de subtareas -->
+                        <div v-if="(charge.subtasks || []).length > 0" class="space-y-2">
+                          <div
+                            v-for="task in charge.subtasks || []"
+                            :key="task.id"
+                            class="flex flex-col gap-2 bg-white dark:bg-gray-900 rounded px-3 py-2"
+                          >
+                            <!-- Vista normal -->
+                            <template v-if="editingSubtaskId !== task.id">
+                              <div class="flex items-center gap-2 justify-between min-w-0">
+                                <div class="flex-1 min-w-0">
+                                  <p class="text-sm font-medium truncate">
+                                    {{ task.name }}
+                                  </p>
+                                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Duración: {{ task.duration_hours ?? 0 }} h
+                                  </p>
+                                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Fecha fin: {{ formatDate(task.end_date) }}
+                                  </p>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                  <USelectMenu
+                                    :model-value="getSubtaskStatusOption(task.status)"
+                                    :items="statusOptionsSubtasks as any"
+                                    value-attribute="value"
+                                    size="xs"
+                                    class="w-32"
+                                    @update:model-value="(item) => onSubtaskStatusChange(task, item)"
+                                  />
+                                  <UButton
+                                    v-if="canManageSubtasksForCharge(charge)"
+                                    icon="i-heroicons-pencil-square"
+                                    variant="ghost"
+                                    size="xs"
+                                    color="primary"
+                                    @click="() => openEditSubtask(task)"
+                                  />
+                                  <UButton
+                                    icon="i-heroicons-trash"
+                                    variant="ghost"
+                                    size="xs"
+                                    color="error"
+                                    @click="() => onDeleteSubtask(task)"
+                                  />
+                                </div>
+                              </div>
+                            </template>
+                            <!-- Formulario edición -->
+                            <template v-else>
+                              <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-end w-full">
+                                <UFormField label="Nombre">
+                                  <UInput v-model="editSubtaskName" placeholder="Nombre" size="sm" />
+                                </UFormField>
+                                <UFormField label="Duración (h)">
+                                  <UInput v-model.number="editSubtaskHours" type="number" min="0" size="sm" />
+                                </UFormField>
+                                <UFormField label="Fecha fin">
+                                  <UPopover :open="undefined">
+                                    <UButton
+                                      color="neutral"
+                                      variant="outline"
+                                      size="sm"
+                                      icon="i-lucide-calendar"
+                                      class="w-full justify-start"
+                                      :class="{ 'text-gray-400 dark:text-gray-500': !editSubtaskEndDate }"
+                                    >
+                                      {{ editSubtaskEndDate ? formatDate(calendarDateToYmd(editSubtaskEndDate) ?? '') : 'Seleccionar fecha' }}
+                                    </UButton>
+                                    <template #content>
+                                      <UCalendar v-model="editSubtaskEndDate" class="p-2" />
+                                    </template>
+                                  </UPopover>
+                                </UFormField>
+                                <UFormField label="Estado">
+                                  <USelectMenu
+                                    :model-value="getSubtaskStatusOption(editSubtaskStatus ?? 'PENDIENTE')"
+                                    :items="statusOptionsSubtasks as any"
+                                    value-attribute="value"
+                                    size="sm"
+                                    class="w-full"
+                                    @update:model-value="(item) => { editSubtaskStatus = (item && typeof item === 'object' && 'value' in item ? item.value : item) as CalendarEventStatus }"
+                                  />
+                                </UFormField>
+                              </div>
+                              <div class="flex gap-2">
+                                <UButton label="Guardar" color="primary" size="xs" :loading="savingEditSubtask" @click="() => saveEditSubtask(task)" />
+                                <UButton label="Cancelar" variant="outline" size="xs" @click="cancelEditSubtask" />
+                              </div>
+                            </template>
+                          </div>
+                        </div>
+                        <p v-else class="text-xs text-gray-500">
+                          Sin subtareas para este responsable.
+                        </p>
+
+                        <!-- Formulario nueva subtarea (solo para el propio responsable o jefe) -->
+                        <div
+                          v-if="canManageSubtasksForCharge(charge)"
+                          class="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3 w-full min-w-0"
+                        >
+                          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2 items-end w-full">
+                            <UFormField label="Nombre subtarea">
+                              <UInput
+                                v-model="newSubtaskName"
+                                placeholder="Ej. Revisar documentos"
+                              />
+                            </UFormField>
+                            <UFormField label="Duración (horas)">
+                              <UInput
+                                v-model.number="newSubtaskHours"
+                                type="number"
+                                min="0"
+                                placeholder="0"
+                              />
+                            </UFormField>
+                            <UFormField label="Fecha fin">
+                              <UPopover :open="undefined">
+                                <UButton
+                                  color="neutral"
+                                  variant="outline"
+                                  size="sm"
+                                  icon="i-lucide-calendar"
+                                  class="w-full justify-start"
+                                  :class="{ 'text-gray-400 dark:text-gray-500': !newSubtaskEndDate }"
+                                >
+                                  {{ newSubtaskEndDate ? formatDate(calendarDateToYmd(newSubtaskEndDate) ?? '') : 'Seleccionar fecha' }}
+                                </UButton>
+                                <template #content>
+                                  <UCalendar v-model="newSubtaskEndDate" class="p-2" />
+                                </template>
+                              </UPopover>
+                            </UFormField>
+                            <div class="flex items-end">
+                              <UButton
+                                label="Agregar"
+                                color="primary"
+                                size="sm"
+                                :loading="savingSubtask"
+                                class="w-full"
+                                @click="() => saveNewSubtask(charge)"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                </tr>
+              </template>
 
               <!-- Empty state -->
               <tr v-if="visibleActivities.length === 0 && !loading">
@@ -523,136 +556,6 @@
       </template>
     </UModal>
 
-    <!-- Modal de Subtareas -->
-    <UModal :open="isSubtasksModalOpen" @close="closeSubtasksModal" class="w-full max-w-3xl">
-      <template #header>
-        <h3 class="text-lg font-semibold">Subtareas por responsable</h3>
-      </template>
-
-      <template #body>
-        <div class="space-y-4">
-          <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <p class="text-sm text-gray-500">Actividad:</p>
-            <p class="font-medium">
-              {{ subtasksActivity?.name || subtasksActivity?.title }}
-            </p>
-          </div>
-
-          <div v-if="subtasksSections.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
-            Esta actividad no tiene responsables asignados.
-          </div>
-
-          <div
-            v-for="section in subtasksSections"
-            :key="section.charge.id"
-            class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <UAvatar
-                  :alt="section.charge.user?.nombre || 'U'"
-                  size="sm"
-                  :src="section.charge.user?.avatar"
-                  :style="{
-                    backgroundColor: getResponsableColor(section.charge.user_id, section.charge.user?.nombre),
-                    color: '#fff'
-                  }"
-                />
-                <div>
-                  <p class="text-sm font-medium">
-                    {{ section.charge.user?.nombre || 'Responsable #' + section.charge.user_id }}
-                  </p>
-                  <p class="text-xs text-gray-500">
-                    Estado: {{ section.charge.status }}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Lista de subtareas -->
-            <div v-if="section.subtasks.length > 0" class="space-y-2">
-              <div
-                v-for="task in section.subtasks"
-                :key="task.id"
-                class="flex items-center gap-2 justify-between bg-gray-50 dark:bg-gray-900 rounded px-3 py-2"
-              >
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium truncate">
-                    {{ task.name }}
-                  </p>
-                  <p class="text-xs text-gray-500">
-                    Duración: {{ task.duration_hours }} h
-                  </p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <USelectMenu
-                    v-model="task.status"
-                    :items="statusOptionsSubtasks as any"
-                    value-attribute="value"
-                    size="xs"
-                    class="w-32"
-                    @update:model-value="(value) => onSubtaskStatusChange(task, value)"
-                  />
-                  <UButton
-                    icon="i-heroicons-trash"
-                    variant="ghost"
-                    size="xs"
-                    color="error"
-                    @click="() => onDeleteSubtask(task)"
-                  />
-                </div>
-              </div>
-            </div>
-            <p v-else class="text-xs text-gray-500">
-              Sin subtareas para este responsable.
-            </p>
-
-            <!-- Formulario nueva subtarea (solo para el propio responsable o jefe) -->
-            <div v-if="canManageSubtasksForCharge(section.charge)" class="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3">
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
-                <UFormField label="Nombre subtarea">
-                  <UInput
-                    v-model="newSubtaskName"
-                    placeholder="Ej. Revisar documentos"
-                  />
-                </UFormField>
-                <UFormField label="Duración (horas)">
-                  <UInput
-                    v-model.number="newSubtaskHours"
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                  />
-                </UFormField>
-                <div class="flex gap-2">
-                  <USelectMenu
-                    v-model="newSubtaskStatus"
-                    :items="statusOptionsSubtasks as any"
-                    value-attribute="value"
-                    size="sm"
-                    class="flex-1"
-                  />
-                  <UButton
-                    label="Agregar"
-                    color="primary"
-                    size="sm"
-                    :loading="savingSubtask"
-                    @click="() => saveNewSubtask(section.charge)"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <template #footer>
-        <div class="flex justify-end w-full gap-2">
-          <UButton label="Cerrar" variant="ghost" @click="closeSubtasksModal" />
-        </div>
-      </template>
-    </UModal>
-
     <!-- Modal de Tracking -->
     <ActivityTrackingModal
       :open="isTrackingModalOpen"
@@ -668,6 +571,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { CalendarDate, getLocalTimeZone, today, parseDate } from '@internationalized/date'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
@@ -751,14 +655,23 @@ const savingNotes = ref(false)
 const isTrackingModalOpen = ref(false)
 const trackingActivity = ref<CalendarEvent | null>(null)
 
-// Estado de subtareas
-const isSubtasksModalOpen = ref(false)
-const subtasksActivity = ref<CalendarEvent | null>(null)
-const subtasksCharge = ref<CalendarEventCharge | null>(null)
+// Filtro por evento (desde query ?event_id= para abrir progreso desde calendario)
+const filterEventId = ref<number | null>(null)
+
+// Estado de subtareas (fila expandida en tabla)
+const expandedActivityId = ref<number | null>(null)
 const newSubtaskName = ref('')
 const newSubtaskHours = ref<number | null>(null)
-const newSubtaskStatus = ref<CalendarEventStatus>('PENDIENTE')
+const newSubtaskEndDate = ref<any>(null)
 const savingSubtask = ref(false)
+
+// Edición de subtarea
+const editingSubtaskId = ref<number | null>(null)
+const editSubtaskName = ref('')
+const editSubtaskHours = ref<number | null>(null)
+const editSubtaskEndDate = ref<any>(null)
+const editSubtaskStatus = ref<CalendarEventStatus | null>(null)
+const savingEditSubtask = ref(false)
 
 // Computed
 const dateFilterLabel = computed(() => {
@@ -885,9 +798,25 @@ const onContenedorIdsChange = (val: unknown) => {
 
 // Helpers
 const formatDate = (dateStr: string | undefined): string => {
-  if (!dateStr) return '-'
+  if (!dateStr) return '—'
   const [year, month, day] = dateStr.split('-')
   return `${day}/${month}/${year}`
+}
+
+/** Convierte string YYYY-MM-DD a valor para UCalendar. */
+const toCalendarDate = (s: string | null | undefined): any => {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null
+  try {
+    return parseDate(s)
+  } catch {
+    return null
+  }
+}
+
+/** Convierte valor de UCalendar (year/month/day) a string YYYY-MM-DD para la API. */
+const calendarDateToYmd = (d: { year: number; month: number; day: number } | null): string | null => {
+  if (!d || d.year == null || d.month == null || d.day == null) return null
+  return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
 }
 
 const getFirstDate = (activity: CalendarEvent): string => {
@@ -948,6 +877,7 @@ const applyFilters = async (force = false, resetPage = true) => {
   if (priorityVal !== null && priorityVal !== undefined) filters.priority = priorityVal
   if (filterResponsableIds.value.length > 0) filters.responsable_ids = filterResponsableIds.value
   if (usaConsolidado.value && filterContenedorIds.value.length > 0) filters.contenedor_ids = filterContenedorIds.value
+  if (filterEventId.value != null) filters.event_id = filterEventId.value
 
   await getEvents(filters, force)
 }
@@ -1063,30 +993,26 @@ const handleTrackingStatusUpdate = async (chargeId: number, status: CalendarEven
 }
 
 // Subtareas
-const subtasksSections = computed(() => {
-  if (!subtasksActivity.value || !subtasksActivity.value.charges) return []
-  return subtasksActivity.value.charges.map(charge => ({
-    charge,
-    subtasks: charge.subtasks ?? []
-  }))
-})
-
-const openSubtasksModal = (activity: CalendarEvent) => {
-  subtasksActivity.value = activity
-  subtasksCharge.value = getMyCharge(activity) || null
-  newSubtaskName.value = ''
-  newSubtaskHours.value = null
-  newSubtaskStatus.value = 'PENDIENTE' as CalendarEventStatus
-  isSubtasksModalOpen.value = true
+/** Si no es jefe, solo puede abrir la fila de subtareas cuando es responsable de la actividad. */
+const canOpenSubtasksRow = (activity: CalendarEvent): boolean => {
+  if (isJefeImportaciones.value) return true
+  return !!getMyCharge(activity)
 }
 
-const closeSubtasksModal = () => {
-  isSubtasksModalOpen.value = false
-  subtasksActivity.value = null
-  subtasksCharge.value = null
-  newSubtaskName.value = ''
-  newSubtaskHours.value = null
-  newSubtaskStatus.value = 'PENDIENTE' as CalendarEventStatus
+/** Charges a mostrar en la fila expandida: jefe ve todos; no-jefe solo el suyo. */
+const getChargesToShowForSubtasks = (activity: CalendarEvent): CalendarEventCharge[] => {
+  const charges = activity.charges || []
+  if (isJefeImportaciones.value) return charges
+  const myId = Number(currentUserId.value)
+  return charges.filter(c => c.user_id === myId)
+}
+
+const toggleSubtasksRow = (activity: CalendarEvent) => {
+  if (!canOpenSubtasksRow(activity)) {
+    showError('Error', 'Solo puedes ver subtareas de actividades donde eres responsable')
+    return
+  }
+  expandedActivityId.value = expandedActivityId.value === activity.id ? null : activity.id
 }
 
 const canManageSubtasksForCharge = (charge: CalendarEventCharge): boolean => {
@@ -1099,6 +1025,12 @@ const statusOptionsSubtasks: { label: string; value: CalendarEventStatus }[] = [
   { label: 'En progreso', value: 'PROGRESO' as CalendarEventStatus },
   { label: 'Completado', value: 'COMPLETADO' as CalendarEventStatus }
 ]
+
+/** Devuelve el ítem de opción que coincide con el status (para que USelectMenu muestre la etiqueta correcta). */
+const getSubtaskStatusOption = (status: string | undefined): { label: string; value: CalendarEventStatus } => {
+  const s = (status || 'PENDIENTE').toUpperCase()
+  return statusOptionsSubtasks.find(o => o.value === s) || statusOptionsSubtasks[0]
+}
 
 const saveNewSubtask = async (charge: CalendarEventCharge) => {
   if (!newSubtaskName.value.trim()) {
@@ -1114,14 +1046,15 @@ const saveNewSubtask = async (charge: CalendarEventCharge) => {
     const payload = {
       name: newSubtaskName.value.trim(),
       duration_hours: newSubtaskHours.value != null ? Number(newSubtaskHours.value) : 0,
-      status: newSubtaskStatus.value
+      status: 'PENDIENTE' as CalendarEventStatus,
+      end_date: calendarDateToYmd(newSubtaskEndDate.value)
     }
     const created = await createSubtask(charge.id, payload)
     if (created) {
       showSuccess('Éxito', 'Subtarea creada correctamente')
       newSubtaskName.value = ''
       newSubtaskHours.value = null
-      newSubtaskStatus.value = 'PENDIENTE' as CalendarEventStatus
+      newSubtaskEndDate.value = null
     } else {
       showError('Error', 'No se pudo crear la subtarea')
     }
@@ -1132,8 +1065,52 @@ const saveNewSubtask = async (charge: CalendarEventCharge) => {
   }
 }
 
-const onSubtaskStatusChange = async (task: any, value: any) => {
-  const status = extractValue(value) as CalendarEventStatus
+const openEditSubtask = (task: { id: number; name: string; duration_hours?: number; end_date?: string | null; status?: string }) => {
+  editingSubtaskId.value = task.id
+  editSubtaskName.value = task.name
+  editSubtaskHours.value = task.duration_hours ?? null
+  editSubtaskEndDate.value = toCalendarDate(task.end_date ?? null)
+  editSubtaskStatus.value = (task.status as CalendarEventStatus) ?? 'PENDIENTE'
+}
+
+const cancelEditSubtask = () => {
+  editingSubtaskId.value = null
+  editSubtaskName.value = ''
+  editSubtaskHours.value = null
+  editSubtaskEndDate.value = null
+  editSubtaskStatus.value = null
+}
+
+const saveEditSubtask = async (task: { id: number }) => {
+  if (!editSubtaskName.value.trim()) {
+    showError('Error', 'El nombre es obligatorio')
+    return
+  }
+  savingEditSubtask.value = true
+  try {
+    const payload = {
+      name: editSubtaskName.value.trim(),
+      duration_hours: editSubtaskHours.value != null ? Number(editSubtaskHours.value) : 0,
+      status: editSubtaskStatus.value ?? 'PENDIENTE',
+      end_date: calendarDateToYmd(editSubtaskEndDate.value)
+    }
+    const ok = await updateSubtask(task.id, payload)
+    if (ok) {
+      showSuccess('Éxito', 'Subtarea actualizada correctamente')
+      cancelEditSubtask()
+    } else {
+      showError('Error', 'No se pudo actualizar la subtarea')
+    }
+  } catch (err: any) {
+    showError('Error', err?.message || 'No se pudo actualizar la subtarea')
+  } finally {
+    savingEditSubtask.value = false
+  }
+}
+
+const onSubtaskStatusChange = async (task: any, item: any) => {
+  const status = (item && typeof item === 'object' && 'value' in item ? item.value : item) as CalendarEventStatus
+  if (!status) return
   const ok = await updateSubtask(task.id, { status })
   if (!ok) {
     showError('Error', 'No se pudo actualizar la subtarea')
@@ -1150,6 +1127,8 @@ const onDeleteSubtask = async (task: any) => {
 }
 
 
+const route = useRoute()
+
 // Inicialización
 onMounted(async () => {
   await initialize()
@@ -1157,6 +1136,14 @@ onMounted(async () => {
   if (!isJefeImportaciones.value) {
     nonJefeResponsableModel.value = { label: 'Yo', value: 'yo' }
     filterResponsableIds.value = [Number(currentUserId.value)]
+  }
+  const eventIdFromQuery = route.query.event_id
+  if (eventIdFromQuery != null && eventIdFromQuery !== '') {
+    const id = Number(eventIdFromQuery)
+    if (!Number.isNaN(id)) {
+      filterEventId.value = id
+      expandedActivityId.value = id
+    }
   }
   await applyFilters()
 })
