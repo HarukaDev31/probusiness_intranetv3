@@ -74,7 +74,7 @@ export const useCalculadoraImportacion = () => {
       limit_inf: 15.1,
       limit_sup: 9999, // 20 o más
       item_base: 20,
-      item_extra: 15, // item_max: 30
+      item_extra: 20, // item_max: 40
       tarifa: 10
     }
   ]

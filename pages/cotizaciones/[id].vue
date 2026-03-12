@@ -220,7 +220,7 @@
                     {{ formatCurrency(TARIFA_EXTRA_PROVEEDOR) }}
                   </UButton>
                 </h3>
-                <UButton v-if="proveedores.length > 1" @click="confirmDeleteProveedor(proveedor.id)" color="error"
+                <UButton v-if="proveedores.length > 1" @click="removeProveedor(proveedor.id)" color="error"
                   variant="outline" title="Eliminar proveedor">
                   <UIcon name="i-heroicons-trash" class="w-5 h-5" />
                 </UButton>
@@ -317,11 +317,10 @@
                   </div>
                   <div class="flex justify-end">
                     <div class="flex space-x-2">
-
                       <UButton @click="producto.showValoracion = !producto.showValoracion" color="primary"
                         variant="soft" size="sm" icon="i-heroicons-cog-6-tooth" />
                       <UButton v-if="proveedor.productos.length > 1"
-                        @click="confirmDeleteProducto(proveedor.id, producto.id)" color="error" variant="soft" size="sm"
+                        @click="removeProducto(proveedor.id, producto.id)" color="error" variant="soft" size="sm"
                         icon="i-heroicons-trash" title="Eliminar producto" />
                     </div>
                   </div>
@@ -1329,23 +1328,6 @@ const handleStepClick = (step: number) => {
   // Navegar al step
   goToStep(step)
 }
-
-const confirmDeleteProveedor = (proveedorId: string) => {
-  showConfirmation(
-    'Eliminar Proveedor',
-    '¿Está seguro que desea eliminar este proveedor? Esta acción no se puede deshacer.',
-    () => removeProveedor(proveedorId)
-  )
-}
-
-const confirmDeleteProducto = (proveedorId: string, productoId: string) => {
-  showConfirmation(
-    'Eliminar Producto',
-    '¿Está seguro que desea eliminar este producto? Esta acción no se puede deshacer.',
-    () => removeProducto(proveedorId, productoId)
-  )
-}
-
 
 // Computed para cálculos de proveedores
 const proveedoresResumen = computed(() => {

@@ -209,9 +209,9 @@
                   <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
                   <span
                     v-if="showEventDetails && eventSpan.event.notes"
-                    class="truncate text-[10px] md:text-[11px] opacity-90 leading-tight"
+                    class="text-[10px] md:text-[11px] opacity-90 leading-tight whitespace-pre-line break-words"
                   >
-                    {{ String(eventSpan.event.notes).slice(0, 80) }}
+                    {{ String(eventSpan.event.notes) }}
                   </span>
                 </span>
                 <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
@@ -341,15 +341,15 @@
                             <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
                               <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
                             </UTooltip>
-                            <span class="truncate flex flex-col gap-0.5 min-w-0 flex-1">
-                              <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
-                              <span
-                                v-if="showEventDetails && eventSpan.event.notes"
-                                class="truncate text-[10px] md:text-[11px] opacity-90 leading-tight"
-                              >
-                                {{ String(eventSpan.event.notes).slice(0, 80) }}
-                              </span>
+                          <span class="truncate flex flex-col gap-0.5 min-w-0 flex-1">
+                            <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
+                            <span
+                              v-if="showEventDetails && eventSpan.event.notes"
+                              class="text-[10px] md:text-[11px] opacity-90 leading-tight whitespace-pre-line break-words"
+                            >
+                              {{ String(eventSpan.event.notes) }}
                             </span>
+                          </span>
                             <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
                               / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                             </span>

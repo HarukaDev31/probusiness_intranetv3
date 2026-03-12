@@ -913,21 +913,40 @@ export const useCalendarStore = () => {
     const consolidadoColor = consolidadoConfig?.color_code ?? null
     const priorityColor = PRIORITY_COLORS[event.priority] || '#3b82f6'
 
-    // Color de perfil por usuario (primer responsable del evento).
-    // Priorizar el color que viene en la API (charge.user.color) para que miembros vean el color de perfil
-    // aunque no tengan cargado el colorConfig del calendario del jefe.
-    let userProfileColor: string | null = null
+    // Colores de perfil por usuario (todos los responsables del evento).
+    // Priorizar siempre el color que viene en la API (user.color / responsable.color) si existe.
+    const userColorsFromResponsables: string[] = []
+
     if (Array.isArray((event as any).responsables) && (event as any).responsables.length > 0) {
-      const r = (event as any).responsables[0] as { id: number; nombre?: string; color?: string }
-      const apiColor = r.color && String(r.color).trim()
-      userProfileColor = apiColor || getResponsableColor(r.id, r.nombre)
+      for (const r of (event as any).responsables as { id: number; nombre?: string; color?: string }[]) {
+        const apiColor = r.color && String(r.color).trim()
+        const color = apiColor || getResponsableColor(r.id, r.nombre)
+        if (color) {
+          userColorsFromResponsables.push(color)
+        }
+      }
     } else if (Array.isArray(event.charges) && event.charges.length > 0) {
-      const c = event.charges[0] as any
-      const uid = c.user_id ?? c.user?.id
-      const nombre = c.user?.nombre
-      const apiColor = c.user?.color && String(c.user.color).trim()
-      if (uid != null) {
-        userProfileColor = apiColor || getResponsableColor(uid, nombre)
+      for (const c of event.charges as any[]) {
+        const uid = c.user_id ?? c.user?.id
+        const nombre = c.user?.nombre
+        const apiColor = c.user?.color && String(c.user.color).trim()
+        if (uid != null) {
+          const color = apiColor || getResponsableColor(uid, nombre)
+          if (color) {
+            userColorsFromResponsables.push(color)
+          }
+        }
+      }
+    }
+
+    // Eliminar duplicados preservando orden
+    const uniqueUserColors: string[] = []
+    const seenColors = new Set<string>()
+    for (const color of userColorsFromResponsables) {
+      const normalized = color.toLowerCase()
+      if (!seenColors.has(normalized)) {
+        seenColors.add(normalized)
+        uniqueUserColors.push(color)
       }
     }
 
@@ -937,7 +956,9 @@ export const useCalendarStore = () => {
       if (key === 'PRIORIDAD' && priorityColor) return [priorityColor]
       if (key === 'ACTIVIDAD' && activityColor) return [activityColor]
       if (key === 'CONSOLIDADO' && consolidadoColor) return [consolidadoColor]
-      if (key === 'USUARIO' && userProfileColor) return [userProfileColor]
+      if (key === 'USUARIO' && uniqueUserColors.length > 0) {
+        return uniqueUserColors
+      }
     }
     return ['#3b82f6']
   }
