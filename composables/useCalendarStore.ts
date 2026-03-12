@@ -945,10 +945,10 @@ export const useCalendarStore = () => {
       }
       if (!visible) return false
 
-      // Aplicar filtro de responsable en el mismo pass
-      if (idSet) return (event.charges?.length ? event.charges.some(charge => idSet.has(charge.user_id)) : false) || (event.charges?.length === 0)
+      // Aplicar filtro de responsable en el mismo pass (excluir eventos sin responsables cuando se filtra por responsable)
+      if (idSet) return (event.charges?.length ? event.charges.some(charge => idSet.has(charge.user_id)) : false)
       if (responsableId != null && typeof responsableId === 'number') {
-        return (event.charges?.some(charge => charge.user_id === responsableId) ?? false) || (event.charges?.length === 0)
+        return event.charges?.some(charge => charge.user_id === responsableId) ?? false
       }
       return true
     })
@@ -977,7 +977,8 @@ export const useCalendarStore = () => {
 
     return state.events.value.filter(activity => {
       const noCharges = !activity.charges?.length
-      if (noCharges) return true
+      // Si hay filtro por responsable(s), no incluir actividades sin responsables
+      if (noCharges) return !idSet
 
       // Filtro de visibilidad para no-jefe (en el mismo pass)
       if (!canViewAll && hasResponsableId) {
