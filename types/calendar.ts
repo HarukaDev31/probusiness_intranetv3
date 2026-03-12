@@ -58,6 +58,8 @@ export interface CalendarEventBase {
   name: string
   contenedor_id?: number | null
   notes?: string | null
+  /** Orden manual para vista mes (drag & drop) */
+  display_order?: number | null
   created_at?: string
   updated_at?: string
   deleted_at?: string | null
@@ -93,6 +95,20 @@ export interface CalendarEventCharge {
   updated_at?: string
   // Datos extendidos del usuario (join)
   user?: CalendarResponsable
+  subtasks?: CalendarSubtask[]
+}
+
+/**
+ * Subtarea asociada a un responsable (charge) de una actividad.
+ */
+export interface CalendarSubtask {
+  id: number
+  calendar_event_charge_id: number
+  name: string
+  duration_hours: number
+  status: CalendarEventStatus
+  created_at?: string
+  updated_at?: string
 }
 
 /**
@@ -192,6 +208,7 @@ export interface CalendarEvent {
   name: string
   contenedor_id?: number | null
   notes?: string | null
+  display_order?: number | null
   created_at?: string
   updated_at?: string
   deleted_at?: string | null

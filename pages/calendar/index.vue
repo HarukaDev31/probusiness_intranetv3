@@ -114,10 +114,26 @@
             </div>
             <!-- Contenido del calendario -->
             <div v-show="!loading" class="pb-4">
-      <!-- Título del mes (estilo referencia: grande, centrado, mayúsculas) -->
-      <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-wide text-center py-3 md:py-4">
-        {{ currentPeriodTitle }}
-      </h2>
+      <!-- Título del mes + acciones -->
+      <div class="flex items-center justify-between gap-3 py-3 md:py-4">
+        <h2 class="flex-1 text-xl md:text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-wide text-center">
+          {{ currentPeriodTitle }}
+        </h2>
+        <div class="flex items-center gap-2" v-if="isJefeImportaciones && hasPendingOrder">
+          <span class="text-xs md:text-sm text-amber-600 dark:text-amber-400 font-medium">
+            Tienes cambios de orden sin guardar
+          </span>
+          <UButton
+            size="sm"
+            color="primary"
+            variant="solid"
+            icon="i-heroicons-arrow-up-tray"
+            @click="savePendingOrder"
+          >
+            Guardar orden
+          </UButton>
+        </div>
+      </div>
       <!-- Días de la semana (fondo oscuro, texto blanco) -->
       <div class="grid grid-cols-7 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-800 dark:bg-gray-900">
         <div
@@ -189,15 +205,40 @@
             <div
               v-for="eventSpan in eventRow"
               :key="`${eventSpan.event.id}-${eventSpan.startCol}`"
-              class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1 py-0.5"
-              :class="{
-                'rounded-l-md': eventSpan.isStart,
-                'rounded-r-md': eventSpan.isEnd,
-              }"
-              :style="getMultiDayEventStyle(eventSpan)"
-              :title="(eventSpan.isStart ? '' : 'Continúa desde la semana anterior. ') + getEventTooltip(eventSpan.event)"
-              @click.stop="openEditModal(eventSpan.event)"
             >
+              <!-- Preview: copia del evento que se está arrastrando, renderizada justo antes del destino -->
+              <div
+                v-if="dragOverEventId === eventSpan.event.id && draggingEventId && draggingEventId !== eventSpan.event.id"
+                class="absolute h-full flex items-center gap-1 cursor-pointer text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-none rounded shadow-lg px-1 py-0.5 border-2 border-dashed border-white/80 bg-white/10 backdrop-blur-sm"
+                :style="getMultiDayEventStyle(eventSpan)"
+              >
+                <span class="truncate flex items-center gap-1 min-w-0 flex-1">
+                  <UIcon name="i-heroicons-arrows-up-down" class="w-3.5 h-3.5 shrink-0 opacity-80" />
+                  <span class="truncate">
+                    {{ (visibleEvents.find(e => e.id === draggingEventId)?.title) || (visibleEvents.find(e => e.id === draggingEventId)?.name) || (eventSpan.event.title || eventSpan.event.name) }}
+                  </span>
+                </span>
+              </div>
+
+              <!-- Evento real -->
+              <div
+                class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1 py-0.5 transition-transform duration-150 ease-out"
+                :draggable="isJefeImportaciones"
+                :class="{
+                  'rounded-l-md': eventSpan.isStart,
+                  'rounded-r-md': eventSpan.isEnd,
+                  // Evento que se está arrastrando: hacerlo semitransparente
+                  'opacity-60 scale-95': draggingEventId === eventSpan.event.id
+                }"
+                :style="getMultiDayEventStyle(eventSpan)"
+                :title="(eventSpan.isStart ? '' : 'Continúa desde la semana anterior. ') + getEventTooltip(eventSpan.event)"
+                @click.stop="openEditModal(eventSpan.event)"
+                @dragstart="onMonthEventDragStart(eventSpan.event)"
+                @dragenter.prevent="onMonthEventDragEnter(eventSpan.event)"
+                @dragover.prevent
+                @drop.prevent="onMonthEventDrop(eventSpan.event)"
+                @dragend="onMonthEventDragEnd"
+              >
               <UTooltip v-if="!eventSpan.isStart" text="Continúa desde la semana anterior" class="shrink-0">
                 <span class="flex items-center justify-center w-5 h-5 rounded bg-white/20 text-[10px] font-bold">…</span>
               </UTooltip>
@@ -241,6 +282,7 @@
                   v-if="getEventResponsables(eventSpan.event).length > 2"
                   class="text-[9px] font-bold opacity-80"
                 >+{{ getEventResponsables(eventSpan.event).length - 2 }}</span>
+              </div>
               </div>
             </div>
           </div>
@@ -325,15 +367,39 @@
                         <div
                           v-for="eventSpan in eventRow"
                           :key="`range-${monthIndex}-${weekIndex}-${rowIndex}-${eventSpan.event.id}-${eventSpan.startCol}`"
-                          class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1 py-0.5"
-                          :class="{
-                            'rounded-l-md': eventSpan.isStart,
-                            'rounded-r-md': eventSpan.isEnd,
-                          }"
-                          :style="getMultiDayEventStyle(eventSpan)"
-                          :title="(eventSpan.isStart ? '' : 'Continúa desde la semana anterior. ') + getEventTooltip(eventSpan.event)"
-                          @click.stop="openEditModal(eventSpan.event)"
                         >
+                          <!-- Preview para vista de rango -->
+                          <div
+                            v-if="dragOverEventId === eventSpan.event.id && draggingEventId && draggingEventId !== eventSpan.event.id"
+                            class="absolute h-full flex items-center gap-1 cursor-pointer text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-none rounded shadow-lg px-1 py-0.5 border-2 border-dashed border-white/80 bg-white/10 backdrop-blur-sm"
+                            :style="getMultiDayEventStyle(eventSpan)"
+                          >
+                            <span class="truncate flex items-center gap-1 min-w-0 flex-1">
+                              <UIcon name="i-heroicons-arrows-up-down" class="w-3.5 h-3.5 shrink-0 opacity-80" />
+                              <span class="truncate">
+                                {{ (visibleEvents.find(e => e.id === draggingEventId)?.title) || (visibleEvents.find(e => e.id === draggingEventId)?.name) || (eventSpan.event.title || eventSpan.event.name) }}
+                              </span>
+                            </span>
+                          </div>
+
+                          <!-- Evento real -->
+                          <div
+                            class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1 py-0.5 transition-transform duration-150 ease-out"
+                            :draggable="isJefeImportaciones"
+                            :class="{
+                              'rounded-l-md': eventSpan.isStart,
+                              'rounded-r-md': eventSpan.isEnd,
+                              'opacity-60 scale-95': draggingEventId === eventSpan.event.id
+                            }"
+                            :style="getMultiDayEventStyle(eventSpan)"
+                            :title="(eventSpan.isStart ? '' : 'Continúa desde la semana anterior. ') + getEventTooltip(eventSpan.event)"
+                            @click.stop="openEditModal(eventSpan.event)"
+                            @dragstart="onMonthEventDragStart(eventSpan.event)"
+                            @dragenter.prevent="onMonthEventDragEnter(eventSpan.event)"
+                            @dragover.prevent
+                            @drop.prevent="onMonthEventDrop(eventSpan.event)"
+                            @dragend="onMonthEventDragEnd"
+                          >
                           <UTooltip v-if="!eventSpan.isStart" text="Continúa desde la semana anterior" class="shrink-0">
                             <span class="flex items-center justify-center w-5 h-5 rounded bg-white/20 text-[10px] font-bold">…</span>
                           </UTooltip>
@@ -378,6 +444,7 @@
                               v-if="getEventResponsables(eventSpan.event).length > 2"
                               class="text-[9px] font-bold opacity-80"
                             >+{{ getEventResponsables(eventSpan.event).length - 2 }}</span>
+                          </div>
                           </div>
                         </div>
                       </div>
@@ -747,6 +814,9 @@ const {
   showEventDetails
 } = useCalendarStore()
 
+// Solo para orden manual de eventos (vista mes)
+const { reorderEvents } = useCalendarStore()
+
 const { showSuccess, showError } = useModal()
 
 const route = useRoute()
@@ -810,7 +880,9 @@ const initializeFromRoute = () => {
   }
 }
 
-const viewMode = ref<'month' | 'week' | 'day' | 'activities' | 'range'>('month')
+const viewMode = ref<'month'>('month')
+// Evitar doble carga inicial de eventos (onMounted + watch)
+const hasLoadedInitially = ref(false)
 
 // Estado para modales de actividades
 const isNotesModalOpen = ref(false)
@@ -888,36 +960,15 @@ const getEventsForDayInWeek = (week: { days: any[], eventRows: EventSpan[][] }, 
   return Array.from(byId.values())
 }
 
-// Opciones de vista (incluye 'Rango' cuando hay fechas de meses distintos y 'activities' para Jefe/Coord)
-const viewOptions = computed(() => {
-  const options = [
-    { label: 'Día', value: 'day' },
-    { label: 'Semana', value: 'week' },
-    { label: 'Mes', value: 'month' }
-  ]
-  const start = filters.value?.start_date
-  const end = filters.value?.end_date
-  if (start && end) {
-    const [sy, sm] = start.split('-').map(Number)
-    const [ey, em] = end.split('-').map(Number)
-    if (sy !== ey || sm !== em) {
-      options.push({ label: 'Rango', value: 'range' })
-    }
-  }
-  if (isJefeImportaciones.value || isCoordinacionOrDocumentacion.value) {
-    options.push({ label: 'Actividades', value: 'activities' })
-  }
-  return options
-})
+// Solo vista de Mes: las demás vistas se han dejado de usar.
+const viewOptions = computed(() => [
+  { label: 'Mes', value: 'month' as const }
+])
 
-const handleViewModeChange = (value: 'month' | 'week' | 'day' | 'activities' | 'range') => {
-  viewMode.value = value
-  updateUrl()
-  if (value === 'activities') {
-    loadActivitiesData()
-  } else if (value === 'range') {
-    loadEventsWithRange()
-  } else {
+const handleViewModeChange = (value: 'month') => {
+  if (viewMode.value !== value) {
+    viewMode.value = value
+    updateUrl()
     pendingLoadEvents.value = true
   }
 }
@@ -1414,8 +1465,8 @@ const calendarWeeks = computed(() => {
     const weekStartDate = weekDays[0].dateStr
     const weekEndDate = weekDays[6].dateStr
     
-    // Encontrar todos los eventos que tocan esta semana
-    const weekEvents = visibleEvents.value.filter(event => {
+    // Encontrar todos los eventos que tocan esta semana (respetando orden manual pendiente si existe)
+    const weekEvents = orderedVisibleEvents.value.filter(event => {
       const eventStart = event.start_date
       const eventEnd = event.end_date
       if (!eventStart || !eventEnd) return false
@@ -1493,6 +1544,102 @@ const getEventTooltip = (event: CalendarEvent) => {
   const title = event.title || event.name
   const consolidado = event.contenedor?.nombre
   return consolidado ? `${title} — ${consolidado}` : title
+}
+
+// Orden manual (pendiente) para vista mes
+const pendingOrderIds = ref<number[] | null>(null)
+const draggingEventId = ref<number | null>(null)
+const dragOverEventId = ref<number | null>(null)
+
+const hasPendingOrder = computed(() => Array.isArray(pendingOrderIds.value) && pendingOrderIds.value.length > 0)
+
+// Lista de eventos visible respetando orden manual pendiente (si existe)
+const orderedVisibleEvents = computed(() => {
+  const base = visibleEvents.value
+
+  // Punto de partida: orden pendiente si existe, si no el orden actual de visibleEvents
+  const ids: number[] =
+    pendingOrderIds.value && pendingOrderIds.value.length > 0
+      ? [...pendingOrderIds.value]
+      : base.map(e => e.id)
+
+  const orderMap = new Map<number, number>()
+  ids.forEach((id, index) => {
+    orderMap.set(id, index)
+  })
+
+  return [...base].sort((a, b) => {
+    const ao = orderMap.has(a.id) ? (orderMap.get(a.id) as number) : Number.MAX_SAFE_INTEGER
+    const bo = orderMap.has(b.id) ? (orderMap.get(b.id) as number) : Number.MAX_SAFE_INTEGER
+    if (ao !== bo) return ao - bo
+    const aDate = a.start_date ?? ''
+    const bDate = b.start_date ?? ''
+    if (aDate === bDate) return a.id - b.id
+    return aDate < bDate ? -1 : 1
+  })
+})
+
+const onMonthEventDragStart = (event: CalendarEvent) => {
+  if (!isJefeImportaciones.value) return
+  draggingEventId.value = event.id
+}
+
+const onMonthEventDragEnter = (event: CalendarEvent) => {
+  if (!isJefeImportaciones.value) return
+  if (!draggingEventId.value) return
+
+  // Si volvemos a pasar por el mismo evento que estamos arrastrando,
+  // cancelar el preview y restaurar el orden original.
+  if (draggingEventId.value === event.id) {
+    dragOverEventId.value = null
+    return
+  }
+
+  dragOverEventId.value = event.id
+}
+
+const onMonthEventDragEnd = () => {
+  dragOverEventId.value = null
+  draggingEventId.value = null
+}
+
+const onMonthEventDrop = (targetEvent: CalendarEvent) => {
+  if (!isJefeImportaciones.value) {
+    draggingEventId.value = null
+    dragOverEventId.value = null
+    return
+  }
+  const sourceId = draggingEventId.value
+  draggingEventId.value = null
+  dragOverEventId.value = null
+  if (!sourceId || sourceId === targetEvent.id) return
+
+  const currentIds = (pendingOrderIds.value && pendingOrderIds.value.length
+    ? [...pendingOrderIds.value]
+    : orderedVisibleEvents.value.map(e => e.id))
+
+  const sourceIndex = currentIds.indexOf(sourceId)
+  const targetIndex = currentIds.indexOf(targetEvent.id)
+  if (sourceIndex === -1 || targetIndex === -1) return
+
+  const [moved] = currentIds.splice(sourceIndex, 1)
+  const newIndex = targetIndex
+  currentIds.splice(newIndex, 0, moved)
+
+  pendingOrderIds.value = currentIds
+}
+
+const savePendingOrder = async () => {
+  if (!isJefeImportaciones.value) return
+  const ids = pendingOrderIds.value
+  if (!ids || !ids.length) return
+  const ok = await reorderEvents(ids)
+  if (!ok) {
+    showError('No se pudo guardar el nuevo orden.', 'Intenta nuevamente más tarde.')
+    return
+  }
+  pendingOrderIds.value = null
+  showSuccess('Orden actualizado', 'Las actividades se han reordenado correctamente.')
 }
 
 // Responsables del evento (desde charges o responsables)
@@ -1650,7 +1797,7 @@ const getCalendarWeeksForMonth = (year: number, month: number) => {
       if (d.date?.year === year && d.date?.month === month) currentMonthCols.push(c)
     }
 
-    const weekEvents = visibleEvents.value.filter(event => {
+    const weekEvents = orderedVisibleEvents.value.filter(event => {
       const eventStart = event.start_date
       const eventEnd = event.end_date
       if (!eventStart || !eventEnd) return false
@@ -1781,13 +1928,56 @@ const weekDaysData = computed(() => {
   return days
 })
 
+// Mapa de eventos por día (YYYY-MM-DD) para evitar filtrar visibleEvents muchas veces.
+const eventsByDate = computed(() => {
+  const map = new Map<string, CalendarEvent[]>()
+  const events = visibleEvents.value
+  if (!events.length) return map
+
+  const startFilter = filters.value.start_date
+  const endFilter = filters.value.end_date
+
+  for (const event of events) {
+    const start = event.start_date
+    const end = event.end_date || event.start_date
+    if (!start || !end) continue
+
+    const startDate = new Date(start)
+    const endDate = new Date(end)
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) continue
+
+    let current = new Date(startDate.getTime())
+    while (current <= endDate) {
+      const year = current.getFullYear()
+      const month = current.getMonth() + 1
+      const day = current.getDate()
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
+      if (startFilter && dateStr < startFilter) {
+        current.setDate(current.getDate() + 1)
+        continue
+      }
+      if (endFilter && dateStr > endFilter) {
+        break
+      }
+
+      const list = map.get(dateStr)
+      if (list) {
+        list.push(event)
+      } else {
+        map.set(dateStr, [event])
+      }
+
+      current.setDate(current.getDate() + 1)
+    }
+  }
+
+  return map
+})
+
 const getEventsForDate = (date: CalendarDate) => {
   const dateStr = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
-  return visibleEvents.value.filter(event => {
-    const startDate = event.start_date
-    const endDate = event.end_date
-    return dateStr >= startDate && dateStr <= endDate
-  })
+  return eventsByDate.value.get(dateStr) ?? []
 }
 
 // Funciones para renderizar eventos multi-día con múltiples colores
@@ -2281,6 +2471,7 @@ onMounted(async () => {
   }
   // Esperar eventos para que la primera pintura use ya la config de colores (orden jefe/miembro)
   await loadEvents()
+  hasLoadedInitially.value = true
   // Actualizar URL inicial si no hay parámetros
   if (!route.query.year && !route.query.month) {
     updateUrl()
@@ -2302,8 +2493,9 @@ const onTransitionComplete = () => {
 
 // Recargar eventos cuando cambia la fecha o el modo de vista (solo si no hay transición pendiente)
 watch([currentDate, viewMode], () => {
-  // Si no hay una transición pendiente, cargar inmediatamente (para cambios que no activan animación)
-  if (!pendingLoadEvents.value) {
+  // Si no hay una transición pendiente, cargar inmediatamente (para cambios que no activan animación),
+  // pero solo después de la primera carga inicial para evitar doble skeleton.
+  if (!pendingLoadEvents.value && hasLoadedInitially.value) {
     loadEvents()
   }
 })

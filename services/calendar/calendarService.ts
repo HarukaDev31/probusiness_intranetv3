@@ -24,6 +24,8 @@ import type {
   CalendarContenedor,
   CalendarEventChargeTracking,
   CalendarActivityCatalogItem,
+  CalendarSubtask,
+  CalendarEventStatus,
   // Legacy
   CreateEventRequest,
   UpdateEventRequest,
@@ -107,7 +109,7 @@ export class CalendarService extends BaseService {
   static async getCalendarConfig(roleGroupId?: number | null): Promise<CalendarConfigResponse['data']> {
     try {
       const params = new URLSearchParams()
-      if (roleGroupId != null && roleGroupId !== '') params.set('role_group_id', String(roleGroupId))
+      if (roleGroupId != null) params.set('role_group_id', String(roleGroupId))
       const qs = params.toString()
       const response = await this.apiCall<CalendarConfigResponse>(`${this.baseUrl}/config${qs ? `?${qs}` : ''}`, {
         method: 'GET'
@@ -290,6 +292,23 @@ export class CalendarService extends BaseService {
   }
 
   /**
+   * Reordenar actividades/eventos para la vista de mes (drag & drop).
+   * Body: { ids: [eventId1, eventId2, ...] } en el orden deseado.
+   */
+  static async reorderEvents(ids: number[]): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; message?: string }>(`${this.baseUrl}/events/reorder`, {
+        method: 'POST',
+        body: { ids }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al reordenar eventos:', error)
+      throw error
+    }
+  }
+
+  /**
    * Obtener un evento específico
    */
   static async getEvent(id: number): Promise<CalendarEvent> {
@@ -449,7 +468,7 @@ export class CalendarService extends BaseService {
   static async getResponsables(roleGroupId?: number | null): Promise<CalendarResponsable[]> {
     try {
       const params = new URLSearchParams()
-      if (roleGroupId != null && roleGroupId !== '') params.set('role_group_id', String(roleGroupId))
+      if (roleGroupId != null) params.set('role_group_id', String(roleGroupId))
       const qs = params.toString()
       const response = await this.apiCall<ResponsablesResponse>(`${this.baseUrl}/responsables${qs ? `?${qs}` : ''}`, {
         method: 'GET'
@@ -734,6 +753,72 @@ export class CalendarService extends BaseService {
       return response.data
     } catch (error) {
       console.error('Error al obtener tracking de la actividad:', error)
+      throw error
+    }
+  }
+
+  // ============================================
+  // SUBTAREAS POR RESPONSABLE (CHARGE)
+  // ============================================
+
+  /**
+   * Crear una subtarea para un responsable (charge) específico.
+   */
+  static async createSubtask(
+    chargeId: number,
+    body: { name: string; duration_hours: number; status: CalendarEventStatus }
+  ): Promise<CalendarSubtask> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data: CalendarSubtask }>(
+        `${this.baseUrl}/charges/${chargeId}/subtasks`,
+        {
+          method: 'POST',
+          body
+        }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error al crear subtarea:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Actualizar una subtarea existente.
+   */
+  static async updateSubtask(
+    subtaskId: number,
+    body: Partial<{ name: string; duration_hours: number; status: CalendarEventStatus }>
+  ): Promise<CalendarSubtask> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data: CalendarSubtask }>(
+        `${this.baseUrl}/subtasks/${subtaskId}`,
+        {
+          method: 'PUT',
+          body
+        }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error al actualizar subtarea:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Eliminar una subtarea existente.
+   */
+  static async deleteSubtask(subtaskId: number): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; message?: string }>(
+        `${this.baseUrl}/subtasks/${subtaskId}`,
+        {
+          method: 'DELETE'
+        }
+      )
+      return response
+    } catch (error) {
+      console.error('Error al eliminar subtarea:', error)
       throw error
     }
   }

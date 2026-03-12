@@ -55,14 +55,14 @@
             />
             <template #content>
               <div class="p-3 flex flex-col gap-3">
-                <div class="flex flex-wrap items-start gap-4">
+              <div class="flex flex-wrap items-start gap-4">
                   <div>
                     <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Desde:</label>
                     <UCalendar v-model="filterStartDate" class="w-full" />
                   </div>
                   <div>
                     <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Hasta:</label>
-                    <UCalendar v-model="filterEndDate" class="w-full" :placeholder="endDatePlaceholder" />
+                    <UCalendar v-model="filterEndDate" class="w-full" :placeholder="endDatePlaceholder as any" />
                   </div>
                 </div>
                 <div class="flex gap-2">
@@ -237,15 +237,26 @@
 
                 <!-- Acciones -->
                 <td class="px-4 py-3 text-center">
-                  <UTooltip text="Ver tracking">
-                    <UButton
-                      icon="i-heroicons-clipboard-document-list"
-                      variant="ghost"
-                      size="xs"
-                      color="primary"
-                      @click="openTrackingModal(activity)"
-                    />
-                  </UTooltip>
+                  <div class="flex items-center justify-center gap-1">
+                    <UTooltip :text="expandedActivityId === activity.id ? 'Ocultar subtareas' : 'Ver subtareas'">
+                      <UButton
+                        :icon="expandedActivityId === activity.id ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'"
+                        variant="ghost"
+                        size="xs"
+                        color="primary"
+                        @click="toggleSubtasksRow(activity.id)"
+                      />
+                    </UTooltip>
+                    <UTooltip text="Ver tracking">
+                      <UButton
+                        icon="i-heroicons-clipboard-document-list"
+                        variant="ghost"
+                        size="xs"
+                        color="primary"
+                        @click="openTrackingModal(activity)"
+                      />
+                    </UTooltip>
+                  </div>
                 </td>
 
                 <!-- Notas: jefe ve/edita notas de la actividad; no-jefe ve/edita solo sus notas (charge) -->
@@ -288,6 +299,135 @@
                       </template>
                       <span v-else class="text-sm text-gray-400 dark:text-gray-500">—</span>
                     </template>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Fila expandida con subtareas -->
+              <tr
+                v-if="expandedActivityId === activity.id"
+                :key="`activity-subtasks-${activity.id}`"
+                class="bg-gray-50/60 dark:bg-gray-900/40"
+              >
+                <td :colspan="usaConsolidado ? 10 : 9" class="px-4 py-3">
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                        Subtareas por responsable
+                      </p>
+                    </div>
+
+                    <div
+                      v-if="(activity.charges || []).length === 0"
+                      class="text-sm text-gray-500 dark:text-gray-400"
+                    >
+                      Esta actividad no tiene responsables asignados.
+                    </div>
+
+                    <div
+                      v-for="charge in activity.charges || []"
+                      :key="charge.id"
+                      class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3"
+                    >
+                      <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                          <UAvatar
+                            :alt="charge.user?.nombre || 'U'"
+                            size="sm"
+                            :src="charge.user?.avatar"
+                            :style="{
+                              backgroundColor: getResponsableColor(charge.user_id, charge.user?.nombre),
+                              color: '#fff'
+                            }"
+                          />
+                          <div>
+                            <p class="text-sm font-medium">
+                              {{ charge.user?.nombre || 'Responsable #' + charge.user_id }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                              Estado: {{ charge.status }}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Lista de subtareas -->
+                      <div v-if="(charge.subtasks || []).length > 0" class="space-y-2">
+                        <div
+                          v-for="task in charge.subtasks || []"
+                          :key="task.id"
+                          class="flex items-center gap-2 justify-between bg-white dark:bg-gray-900 rounded px-3 py-2"
+                        >
+                          <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium truncate">
+                              {{ task.name }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                              Duración: {{ task.duration_hours }} h
+                            </p>
+                          </div>
+                          <div class="flex items-center gap-2">
+                            <USelectMenu
+                              v-model="task.status"
+                              :items="statusOptionsSubtasks as any"
+                              value-attribute="value"
+                              size="xs"
+                              class="w-32"
+                              @update:model-value="(value) => onSubtaskStatusChange(task, value)"
+                            />
+                            <UButton
+                              icon="i-heroicons-trash"
+                              variant="ghost"
+                              size="xs"
+                              color="error"
+                              @click="() => onDeleteSubtask(task)"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <p v-else class="text-xs text-gray-500">
+                        Sin subtareas para este responsable.
+                      </p>
+
+                      <!-- Formulario nueva subtarea (solo para el propio responsable o jefe) -->
+                      <div
+                        v-if="canManageSubtasksForCharge(charge)"
+                        class="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3"
+                      >
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
+                          <UFormField label="Nombre subtarea">
+                            <UInput
+                              v-model="newSubtaskName"
+                              placeholder="Ej. Revisar documentos"
+                            />
+                          </UFormField>
+                          <UFormField label="Duración (horas)">
+                            <UInput
+                              v-model.number="newSubtaskHours"
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                            />
+                          </UFormField>
+                          <div class="flex gap-2">
+                            <USelectMenu
+                              v-model="newSubtaskStatus"
+                              :items="statusOptionsSubtasks as any"
+                              value-attribute="value"
+                              size="sm"
+                              class="flex-1"
+                            />
+                            <UButton
+                              label="Agregar"
+                              color="primary"
+                              size="sm"
+                              :loading="savingSubtask"
+                              @click="() => saveNewSubtask(charge)"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -383,6 +523,136 @@
       </template>
     </UModal>
 
+    <!-- Modal de Subtareas -->
+    <UModal :open="isSubtasksModalOpen" @close="closeSubtasksModal" class="w-full max-w-3xl">
+      <template #header>
+        <h3 class="text-lg font-semibold">Subtareas por responsable</h3>
+      </template>
+
+      <template #body>
+        <div class="space-y-4">
+          <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <p class="text-sm text-gray-500">Actividad:</p>
+            <p class="font-medium">
+              {{ subtasksActivity?.name || subtasksActivity?.title }}
+            </p>
+          </div>
+
+          <div v-if="subtasksSections.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
+            Esta actividad no tiene responsables asignados.
+          </div>
+
+          <div
+            v-for="section in subtasksSections"
+            :key="section.charge.id"
+            class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <UAvatar
+                  :alt="section.charge.user?.nombre || 'U'"
+                  size="sm"
+                  :src="section.charge.user?.avatar"
+                  :style="{
+                    backgroundColor: getResponsableColor(section.charge.user_id, section.charge.user?.nombre),
+                    color: '#fff'
+                  }"
+                />
+                <div>
+                  <p class="text-sm font-medium">
+                    {{ section.charge.user?.nombre || 'Responsable #' + section.charge.user_id }}
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    Estado: {{ section.charge.status }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lista de subtareas -->
+            <div v-if="section.subtasks.length > 0" class="space-y-2">
+              <div
+                v-for="task in section.subtasks"
+                :key="task.id"
+                class="flex items-center gap-2 justify-between bg-gray-50 dark:bg-gray-900 rounded px-3 py-2"
+              >
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium truncate">
+                    {{ task.name }}
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    Duración: {{ task.duration_hours }} h
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <USelectMenu
+                    v-model="task.status"
+                    :items="statusOptionsSubtasks as any"
+                    value-attribute="value"
+                    size="xs"
+                    class="w-32"
+                    @update:model-value="(value) => onSubtaskStatusChange(task, value)"
+                  />
+                  <UButton
+                    icon="i-heroicons-trash"
+                    variant="ghost"
+                    size="xs"
+                    color="error"
+                    @click="() => onDeleteSubtask(task)"
+                  />
+                </div>
+              </div>
+            </div>
+            <p v-else class="text-xs text-gray-500">
+              Sin subtareas para este responsable.
+            </p>
+
+            <!-- Formulario nueva subtarea (solo para el propio responsable o jefe) -->
+            <div v-if="canManageSubtasksForCharge(section.charge)" class="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
+                <UFormField label="Nombre subtarea">
+                  <UInput
+                    v-model="newSubtaskName"
+                    placeholder="Ej. Revisar documentos"
+                  />
+                </UFormField>
+                <UFormField label="Duración (horas)">
+                  <UInput
+                    v-model.number="newSubtaskHours"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                  />
+                </UFormField>
+                <div class="flex gap-2">
+                  <USelectMenu
+                    v-model="newSubtaskStatus"
+                    :items="statusOptionsSubtasks as any"
+                    value-attribute="value"
+                    size="sm"
+                    class="flex-1"
+                  />
+                  <UButton
+                    label="Agregar"
+                    color="primary"
+                    size="sm"
+                    :loading="savingSubtask"
+                    @click="() => saveNewSubtask(section.charge)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end w-full gap-2">
+          <UButton label="Cerrar" variant="ghost" @click="closeSubtasksModal" />
+        </div>
+      </template>
+    </UModal>
+
     <!-- Modal de Tracking -->
     <ActivityTrackingModal
       :open="isTrackingModalOpen"
@@ -427,21 +697,24 @@ const {
   getResponsableColor,
   initialize,
   clearFilters,
-  getCalendarRoute
+  getCalendarRoute,
+  createSubtask,
+  updateSubtask,
+  deleteSubtask
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
 
 // Estado de filtros
-const filterStartDate = ref<CalendarDate | null>(null)
-const filterEndDate = ref<CalendarDate | null>(null)
+const filterStartDate = ref<any | null>(null)
+const filterEndDate = ref<any | null>(null)
 const filterStatus = ref<CalendarEventStatus | null>(null)
 const filterPriority = ref<CalendarEventPriority | null>(null)
 const filterResponsableIds = ref<number[]>([])
 const filterContenedorIds = ref<number[]>([])
 
 /** Mes que muestra el 2.º calendario (Hasta): el mes siguiente al "Desde" o al actual */
-const endDatePlaceholder = computed(() => {
+const endDatePlaceholder = computed<CalendarDate>(() => {
   const base = filterStartDate.value ?? today(getLocalTimeZone())
   const nextMonth = base.add({ months: 1 })
   return new CalendarDate(nextMonth.year, nextMonth.month, 1)
@@ -477,6 +750,15 @@ const savingNotes = ref(false)
 // Estado de tracking modal
 const isTrackingModalOpen = ref(false)
 const trackingActivity = ref<CalendarEvent | null>(null)
+
+// Estado de subtareas
+const isSubtasksModalOpen = ref(false)
+const subtasksActivity = ref<CalendarEvent | null>(null)
+const subtasksCharge = ref<CalendarEventCharge | null>(null)
+const newSubtaskName = ref('')
+const newSubtaskHours = ref<number | null>(null)
+const newSubtaskStatus = ref<CalendarEventStatus>('PENDIENTE')
+const savingSubtask = ref(false)
 
 // Computed
 const dateFilterLabel = computed(() => {
@@ -777,6 +1059,93 @@ const handleTrackingStatusUpdate = async (chargeId: number, status: CalendarEven
     await applyFilters()
   } else {
     showError('Error', 'No se pudo actualizar el estado')
+  }
+}
+
+// Subtareas
+const subtasksSections = computed(() => {
+  if (!subtasksActivity.value || !subtasksActivity.value.charges) return []
+  return subtasksActivity.value.charges.map(charge => ({
+    charge,
+    subtasks: charge.subtasks ?? []
+  }))
+})
+
+const openSubtasksModal = (activity: CalendarEvent) => {
+  subtasksActivity.value = activity
+  subtasksCharge.value = getMyCharge(activity) || null
+  newSubtaskName.value = ''
+  newSubtaskHours.value = null
+  newSubtaskStatus.value = 'PENDIENTE' as CalendarEventStatus
+  isSubtasksModalOpen.value = true
+}
+
+const closeSubtasksModal = () => {
+  isSubtasksModalOpen.value = false
+  subtasksActivity.value = null
+  subtasksCharge.value = null
+  newSubtaskName.value = ''
+  newSubtaskHours.value = null
+  newSubtaskStatus.value = 'PENDIENTE' as CalendarEventStatus
+}
+
+const canManageSubtasksForCharge = (charge: CalendarEventCharge): boolean => {
+  if (isJefeImportaciones.value) return true
+  return charge.user_id === Number(currentUserId.value)
+}
+
+const statusOptionsSubtasks: { label: string; value: CalendarEventStatus }[] = [
+  { label: 'Pendiente', value: 'PENDIENTE' as CalendarEventStatus },
+  { label: 'En progreso', value: 'PROGRESO' as CalendarEventStatus },
+  { label: 'Completado', value: 'COMPLETADO' as CalendarEventStatus }
+]
+
+const saveNewSubtask = async (charge: CalendarEventCharge) => {
+  if (!newSubtaskName.value.trim()) {
+    showError('Error', 'El nombre de la subtarea es obligatorio')
+    return
+  }
+  if (!canManageSubtasksForCharge(charge)) {
+    showError('Error', 'No puedes crear subtareas para este responsable')
+    return
+  }
+  savingSubtask.value = true
+  try {
+    const payload = {
+      name: newSubtaskName.value.trim(),
+      duration_hours: newSubtaskHours.value != null ? Number(newSubtaskHours.value) : 0,
+      status: newSubtaskStatus.value
+    }
+    const created = await createSubtask(charge.id, payload)
+    if (created) {
+      showSuccess('Éxito', 'Subtarea creada correctamente')
+      newSubtaskName.value = ''
+      newSubtaskHours.value = null
+      newSubtaskStatus.value = 'PENDIENTE' as CalendarEventStatus
+    } else {
+      showError('Error', 'No se pudo crear la subtarea')
+    }
+  } catch (err: any) {
+    showError('Error', err?.message || 'No se pudo crear la subtarea')
+  } finally {
+    savingSubtask.value = false
+  }
+}
+
+const onSubtaskStatusChange = async (task: any, value: any) => {
+  const status = extractValue(value) as CalendarEventStatus
+  const ok = await updateSubtask(task.id, { status })
+  if (!ok) {
+    showError('Error', 'No se pudo actualizar la subtarea')
+  }
+}
+
+const onDeleteSubtask = async (task: any) => {
+  const ok = await deleteSubtask(task.id)
+  if (ok) {
+    showSuccess('Éxito', 'Subtarea eliminada correctamente')
+  } else {
+    showError('Error', 'No se pudo eliminar la subtarea')
   }
 }
 

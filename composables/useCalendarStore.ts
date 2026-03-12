@@ -13,7 +13,8 @@ import type {
   CreateCalendarEventRequest,
   UpdateCalendarEventRequest,
   TeamProgress,
-  ResponsableProgress
+  ResponsableProgress,
+  CalendarSubtask
 } from "~/types/calendar"
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useUserRole } from '~/composables/auth/useUserRole'
@@ -734,6 +735,90 @@ export const useCalendarStore = () => {
   }
 
   // ============================================
+  // SUBTAREAS (POR RESPONSABLE / CHARGE)
+  // ============================================
+
+  const createSubtask = async (
+    chargeId: number,
+    payload: { name: string; duration_hours: number; status: CalendarEventStatus }
+  ): Promise<CalendarSubtask | null> => {
+    try {
+      state.loading.value = true
+      state.error.value = null
+      const subtask = await CalendarService.createSubtask(chargeId, payload)
+      // Añadir en la estructura local
+      for (const event of state.events.value) {
+        const charge = event.charges?.find(c => c.id === chargeId)
+        if (charge) {
+          if (!Array.isArray(charge.subtasks)) {
+            ;(charge as any).subtasks = []
+          }
+          ;(charge.subtasks as CalendarSubtask[]).push(subtask)
+          break
+        }
+      }
+      return subtask
+    } catch (err: any) {
+      state.error.value = err?.message || 'Error al crear subtarea'
+      console.error('Error en createSubtask:', err)
+      return null
+    } finally {
+      state.loading.value = false
+    }
+  }
+
+  const updateSubtask = async (
+    subtaskId: number,
+    payload: Partial<{ name: string; duration_hours: number; status: CalendarEventStatus }>
+  ): Promise<boolean> => {
+    try {
+      state.loading.value = true
+      state.error.value = null
+      const updated = await CalendarService.updateSubtask(subtaskId, payload)
+      for (const event of state.events.value) {
+        if (!event.charges) continue
+        for (const charge of event.charges) {
+          if (!charge.subtasks) continue
+          const idx = charge.subtasks.findIndex(s => s.id === subtaskId)
+          if (idx !== -1) {
+            charge.subtasks[idx] = updated
+            return true
+          }
+        }
+      }
+      return true
+    } catch (err: any) {
+      state.error.value = err?.message || 'Error al actualizar subtarea'
+      console.error('Error en updateSubtask:', err)
+      return false
+    } finally {
+      state.loading.value = false
+    }
+  }
+
+  const deleteSubtask = async (subtaskId: number): Promise<boolean> => {
+    try {
+      state.loading.value = true
+      state.error.value = null
+      await CalendarService.deleteSubtask(subtaskId)
+      for (const event of state.events.value) {
+        if (!event.charges) continue
+        for (const charge of event.charges) {
+          if (!charge.subtasks) continue
+          charge.subtasks = charge.subtasks.filter(s => s.id !== subtaskId)
+        }
+      }
+      return true
+    } catch (err: any) {
+      state.error.value = err?.message || 'Error al eliminar subtarea'
+      console.error('Error en deleteSubtask:', err)
+      return false
+    } finally {
+      state.loading.value = false
+    }
+  }
+
+  // ============================================
   // NOTAS
   // ============================================
 
@@ -1167,6 +1252,10 @@ export const useCalendarStore = () => {
     // Notas
     updateChargeNotes,
     updateEventNotes,
+    // Subtareas
+    createSubtask,
+    updateSubtask,
+    deleteSubtask,
 
     // Responsables
     loadResponsables,
@@ -1216,6 +1305,37 @@ export const useCalendarStore = () => {
     initialize,
     invalidateCache,
     refresh,
+
+    // Orden manual de eventos (vista mes)
+    async reorderEvents(ids: number[]): Promise<boolean> {
+      try {
+        state.loading.value = true
+        const response = await CalendarService.reorderEvents(ids)
+        if (!response?.success) {
+          return false
+        }
+        // Reordenar localmente para reflejar el cambio sin recargar
+        const orderMap = new Map<number, number>()
+        ids.forEach((id, index) => {
+          orderMap.set(id, index)
+        })
+        state.events.value = [...state.events.value].sort((a, b) => {
+          const ao = orderMap.has(a.id) ? (orderMap.get(a.id) as number) : Number.MAX_SAFE_INTEGER
+          const bo = orderMap.has(b.id) ? (orderMap.get(b.id) as number) : Number.MAX_SAFE_INTEGER
+          if (ao !== bo) return ao - bo
+          const aDate = a.start_date ?? ''
+          const bDate = b.start_date ?? ''
+          if (aDate === bDate) return a.id - b.id
+          return aDate < bDate ? -1 : 1
+        })
+        return true
+      } catch (err) {
+        console.error('Error al reordenar eventos:', err)
+        return false
+      } finally {
+        state.loading.value = false
+      } 
+    },
 
     // UI
     showEventDetails,
