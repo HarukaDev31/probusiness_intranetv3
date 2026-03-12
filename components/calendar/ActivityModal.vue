@@ -146,10 +146,20 @@
     </template>
 
     <template #footer>
-      <div class="flex justify-end gap-2 w-full">
-        <UButton label="Cancelar" variant="ghost" @click="handleClose" />
-        <UButton :label="isEdit ? 'Guardar cambios' : 'Crear actividad'" color="primary" :loading="loading"
-          @click="submit" />
+      <div class="flex items-center justify-between gap-2 w-full flex-wrap">
+        <UButton
+          v-if="isEdit && onDelete"
+          label="Eliminar"
+          color="error"
+          variant="ghost"
+          icon="i-heroicons-trash"
+          @click="handleDelete"
+        />
+        <div class="flex gap-2 ml-auto">
+          <UButton label="Cancelar" variant="ghost" @click="handleClose" />
+          <UButton :label="isEdit ? 'Guardar cambios' : 'Crear actividad'" color="primary" :loading="loading"
+            @click="submit" />
+        </div>
       </div>
     </template>
   </UModal>

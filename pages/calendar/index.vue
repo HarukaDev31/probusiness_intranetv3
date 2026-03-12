@@ -231,7 +231,6 @@
                   'opacity-60 scale-95': draggingEventId === eventSpan.event.id
                 }"
                 :style="getMultiDayEventStyle(eventSpan)"
-                :title="(eventSpan.isStart ? '' : 'Continúa desde la semana anterior. ') + getEventTooltip(eventSpan.event)"
                 @click.stop="openEditModal(eventSpan.event)"
                 @dragstart="onMonthEventDragStart(eventSpan.event)"
                 @dragenter.prevent="onMonthEventDragEnter(eventSpan.event)"
@@ -239,27 +238,29 @@
                 @drop.prevent="onMonthEventDrop(eventSpan.event)"
                 @dragend="onMonthEventDragEnd"
               >
-              <UTooltip v-if="!eventSpan.isStart" text="Continúa desde la semana anterior" class="shrink-0">
-                <span class="flex items-center justify-center w-5 h-5 rounded bg-white/20 text-[10px] font-bold">…</span>
-              </UTooltip>
-              <span v-if="eventSpan.isStart" class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
-                <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
-                  <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
-                </UTooltip>
-                <span class="flex flex-col gap-0.5 min-w-0 flex-1 overflow-hidden">
-                  <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
-                  <span
-                    v-if="showEventDetails && eventSpan.event.notes"
-                    class="text-[10px] md:text-[11px] opacity-90 leading-tight whitespace-pre-line break-words break-all min-w-0 w-full"
-                  >
-                    {{ String(eventSpan.event.notes) }}
+              <UTooltip
+                :text="getEventFullTooltip(eventSpan.event, eventSpan.isStart ? '' : 'Continúa desde la semana anterior. ')"
+                :content="{ side: 'top', sideOffset: 6 }"
+                class="contents"
+              >
+                <span v-if="!eventSpan.isStart" class="flex items-center justify-center w-5 h-5 rounded bg-white/20 text-[10px] font-bold shrink-0">…</span>
+                <span v-else class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
+                  <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
+                    <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
+                  </UTooltip>
+                  <span class="flex flex-col gap-0.5 min-w-0 flex-1 overflow-hidden min-h-0">
+                    <span class="truncate block">{{ eventSpan.event.title || eventSpan.event.name }}</span>
+                    <span
+                      v-for="(line, lineIdx) in getEventNoteLines(eventSpan.event.notes)"
+                      :key="lineIdx"
+                      class="truncate block text-[10px] md:text-[11px] opacity-90 leading-tight"
+                    >{{ line }}</span>
+                  </span>
+                  <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
+                    / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                   </span>
                 </span>
-                <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
-                  / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
-                </span>
-              </span>
-              <div v-if="eventSpan.isEnd" class="flex items-center gap-0.5 shrink-0 ml-auto">
+                <div v-if="eventSpan.isEnd" class="flex items-center gap-0.5 shrink-0 ml-auto">
                 <UTooltip :text="getEventStatusLabel(getEventStatus(eventSpan.event))" :content="{ align: 'center', side: 'top', sideOffset: 8 }">
                   <UIcon
                     :name="getEventStatusIcon(getEventStatus(eventSpan.event))"
@@ -287,7 +288,8 @@
                     class="text-[9px] font-bold opacity-80"
                   >+{{ getEventResponsables(eventSpan.event).length - 2 }}</span>
                 </template>
-              </div>
+                </div>
+              </UTooltip>
               </div>
             </div>
           </div>
@@ -296,362 +298,6 @@
             </div>
     </div>
 
-          <!-- Vista de Rango (varios meses según filtro de fechas) -->
-          <div v-else-if="viewMode === 'range'" :key="`range-${filters?.start_date}-${filters?.end_date}`" class="h-full bg-white dark:bg-gray-800 relative overflow-auto">
-            <div v-if="loading" class="absolute inset-0 z-20 bg-white dark:bg-gray-900">
-              <CalendarSkeleton view-mode="month" />
-            </div>
-            <div v-show="!loading" class="p-2 md:p-4 space-y-8 pb-6">
-              <template v-for="(monthData, monthIndex) in rangeViewData" :key="`${monthData.year}-${monthData.month}`">
-                <div class="min-w-0">
-                  <h3 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-wide text-center py-3 md:py-4">
-                    {{ monthData.title }}
-                  </h3>
-                  <div class="grid grid-cols-7 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-800 dark:bg-gray-900">
-                    <div
-                      v-for="day in weekDays"
-                      :key="day"
-                      class="py-2.5 md:py-3 px-1 text-center text-xs md:text-sm font-bold text-white"
-                    >
-                      <span class="hidden sm:inline">{{ day }}</span>
-                      <span class="sm:hidden">{{ day.charAt(0) }}</span>
-                    </div>
-                  </div>
-                  <div
-                    v-for="(week, weekIndex) in monthData.weeks"
-                    :key="`${monthIndex}-${weekIndex}`"
-                    class="relative"
-                  >
-                    <div class="grid grid-cols-7">
-                    <div
-                      v-for="(day, dayIndex) in week.days"
-                      :key="dayIndex"
-                      class="min-h-[165px] max-h-[200px] overflow-hidden transition-colors flex flex-col relative"
-                      :class="day.isCurrentMonth
-                        ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' +
-                          (day.isWeekend
-                            ? 'bg-gray-100 dark:bg-gray-800/70'
-                            : 'bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
-                        : 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-800/50 pointer-events-none'"
-                      @click="day.isCurrentMonth && handleDayClick(day.date)"
-                    >
-                      <div class="p-2 md:p-2.5 relative">
-                        <span
-                          class="text-sm font-medium"
-                          :class="{
-                            'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday,
-                            'text-primary-600 dark:text-primary-400 font-bold': day.isCurrentMonth && day.isToday,
-                            'text-gray-400 dark:text-gray-600': !day.isCurrentMonth
-                          }"
-                        >
-                          {{ day.day }}
-                        </span>
-                      </div>
-                      <!-- Ver más por día -->
-                      <div
-                        v-if="day.isCurrentMonth && getEventsForDayInWeek(week, dayIndex).length > MAX_VISIBLE_EVENT_ROWS"
-                        class="mt-auto pt-1 px-1 pointer-events-auto"
-                        @click.stop
-                      >
-                        <button
-                          type="button"
-                          class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline focus:outline-none w-full text-left"
-                          @click.stop="openMoreEventsModal(getEventsForDayInWeek(week, dayIndex).slice(MAX_VISIBLE_EVENT_ROWS), `Más eventos - ${day.day} ${monthNames[day.date.month - 1]}`)"
-                        >
-                          Ver más (+{{ getEventsForDayInWeek(week, dayIndex).length - MAX_VISIBLE_EVENT_ROWS }}) eventos
-                        </button>
-                      </div>
-                    </div>
-                    </div>
-                    <div class="absolute top-6 md:top-7 left-0 right-0 pointer-events-none z-20">
-                      <div
-                        v-for="(eventRow, rowIndex) in week.eventRows.slice(0, MAX_VISIBLE_EVENT_ROWS)"
-                        :key="rowIndex"
-                        class="relative h-9 md:h-10 mb-1"
-                      >
-                        <div
-                          v-for="eventSpan in eventRow"
-                          :key="`range-${monthIndex}-${weekIndex}-${rowIndex}-${eventSpan.event.id}-${eventSpan.startCol}`"
-                        >
-                          <!-- Preview para vista de rango -->
-                          <div
-                            v-if="dragOverEventId === eventSpan.event.id && draggingEventId && draggingEventId !== eventSpan.event.id"
-                            class="absolute h-full flex items-center gap-1 cursor-pointer text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-none rounded shadow-lg px-1 py-0.5 border-2 border-dashed border-white/80 bg-white/10 backdrop-blur-sm"
-                            :style="getMultiDayEventStyle(eventSpan)"
-                          >
-                            <span class="truncate flex items-center gap-1 min-w-0 flex-1">
-                              <UIcon name="i-heroicons-arrows-up-down" class="w-3.5 h-3.5 shrink-0 opacity-80" />
-                              <span class="truncate">
-                                {{ (visibleEvents.find(e => e.id === draggingEventId)?.title) || (visibleEvents.find(e => e.id === draggingEventId)?.name) || (eventSpan.event.title || eventSpan.event.name) }}
-                              </span>
-                            </span>
-                          </div>
-
-                          <!-- Evento real -->
-                          <div
-                            class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1 py-0.5 transition-transform duration-150 ease-out"
-                            :draggable="isJefeImportaciones"
-                            :class="{
-                              'rounded-l-md': eventSpan.isStart,
-                              'rounded-r-md': eventSpan.isEnd,
-                              'opacity-60 scale-95': draggingEventId === eventSpan.event.id
-                            }"
-                            :style="getMultiDayEventStyle(eventSpan)"
-                            :title="(eventSpan.isStart ? '' : 'Continúa desde la semana anterior. ') + getEventTooltip(eventSpan.event)"
-                            @click.stop="openEditModal(eventSpan.event)"
-                            @dragstart="onMonthEventDragStart(eventSpan.event)"
-                            @dragenter.prevent="onMonthEventDragEnter(eventSpan.event)"
-                            @dragover.prevent
-                            @drop.prevent="onMonthEventDrop(eventSpan.event)"
-                            @dragend="onMonthEventDragEnd"
-                          >
-                          <UTooltip v-if="!eventSpan.isStart" text="Continúa desde la semana anterior" class="shrink-0">
-                            <span class="flex items-center justify-center w-5 h-5 rounded bg-white/20 text-[10px] font-bold">…</span>
-                          </UTooltip>
-                          <span v-if="eventSpan.isStart" class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
-                            <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
-                              <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
-                            </UTooltip>
-                            <span class="flex flex-col gap-0.5 min-w-0 flex-1 overflow-hidden">
-                              <span class="truncate">{{ eventSpan.event.title || eventSpan.event.name }}</span>
-                              <span
-                                v-if="showEventDetails && eventSpan.event.notes"
-                                class="text-[10px] md:text-[11px] opacity-90 leading-tight whitespace-pre-line break-words break-all min-w-0 w-full"
-                              >
-                                {{ String(eventSpan.event.notes) }}
-                              </span>
-                            </span>
-                            <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
-                              / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
-                            </span>
-                          </span>
-                          <div v-if="eventSpan.isEnd" class="flex items-center gap-0.5 shrink-0 ml-auto">
-                            <UTooltip :text="getEventStatusLabel(getEventStatus(eventSpan.event))" :content="{ align: 'center', side: 'top', sideOffset: 8 }">
-                              <UIcon
-                                :name="getEventStatusIcon(getEventStatus(eventSpan.event))"
-                                class="w-3.5 h-3.5 shrink-0 opacity-90"
-                                aria-hidden
-                              />
-                            </UTooltip>
-                            <template v-if="getEventResponsables(eventSpan.event).length">
-                              <UTooltip
-                                v-for="resp in getEventResponsables(eventSpan.event).slice(0, 2)"
-                                :key="resp.id"
-                                :text="resp.nombre"
-                                :content="{ align: 'center', side: 'top', sideOffset: 8 }"
-                              >
-                                <UAvatar
-                                  :src="resp.avatar || undefined"
-                                  :alt="resp.nombre"
-                                  size="3xs"
-                                  class="ring-1 ring-white/30 shrink-0"
-                                  :style="{ backgroundColor: getResponsableColor(resp.id, resp.nombre), color: '#fff' }"
-                                />
-                              </UTooltip>
-                              <span
-                                v-if="getEventResponsables(eventSpan.event).length > 2"
-                                class="text-[9px] font-bold opacity-80"
-                              >+{{ getEventResponsables(eventSpan.event).length - 2 }}</span>
-                            </template>
-                          </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </template>
-              <p v-if="rangeViewData.length === 0 && !loading" class="text-gray-500 dark:text-gray-400 text-center py-8">
-                Selecciona un rango de fechas con meses diferentes en el filtro para ver esta vista.
-              </p>
-            </div>
-          </div>
-
-          <!-- Vista de Semana -->
-          <div v-else-if="viewMode === 'week'" :key="`week-${currentDate.year}-${currentDate.month}-${currentDate.day}`" class="h-full bg-white dark:bg-gray-800 relative">
-            <!-- Skeleton mientras carga -->
-            <div v-if="loading" class="absolute inset-0 z-20 bg-white dark:bg-gray-900">
-              <CalendarSkeleton :view-mode="viewMode" />
-            </div>
-            <!-- Contenido del calendario -->
-            <div v-show="!loading">
-      <div class="grid grid-cols-8 border-b-2 border-gray-300 dark:border-gray-600 overflow-x-auto">
-        <div class="p-2 md:p-3 text-center text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900"></div>
-        <div
-          v-for="day in weekDaysData"
-          :key="day.date"
-          class="p-2 md:p-3 text-center border-l-2 border-gray-300 dark:border-gray-600 min-w-[80px] md:min-w-0 relative"
-          :class="{
-            'bg-primary-50 dark:bg-primary-900/20': day.isToday,
-            'bg-gray-100 dark:bg-gray-800/70': day.isWeekend && !day.isToday,
-            'bg-gray-50 dark:bg-gray-900': !day.isToday && !day.isWeekend
-          }"
-        >
-          <div class="text-[10px] md:text-xs" :class="'text-gray-500 dark:text-gray-400'">{{ day.dayName }}</div>
-          <div
-            class="text-sm md:text-lg font-semibold"
-            :class="{
-              'text-primary-600 dark:text-primary-400': day.isToday,
-              'text-gray-900 dark:text-white': !day.isToday
-            }"
-          >
-            {{ day.day }}
-          </div>
-        </div>
-      </div>
-      <div class="grid grid-cols-8 overflow-x-auto">
-        <div class="border-r border-gray-200 dark:border-gray-700">
-          <div
-            v-for="hour in hours"
-            :key="hour"
-            class="h-12 md:h-16 border-b border-gray-200 dark:border-gray-700 p-1 md:p-2 text-[10px] md:text-xs text-gray-500 dark:text-gray-400"
-          >
-            <span class="hidden sm:inline">{{ hour }}</span>
-            <span class="sm:hidden">{{ hour.split(':')[0] }}</span>
-          </div>
-        </div>
-        <div
-          v-for="day in weekDaysData"
-          :key="day.date"
-          class="border-r-2 border-b-2 border-gray-300 dark:border-gray-600 relative min-w-[80px] md:min-w-0"
-          :class="{ 'bg-gray-100 dark:bg-gray-800/70': day.isWeekend }"
-        >
-          <div
-            v-for="hour in hours"
-            :key="hour"
-            class="h-12 md:h-16 border-b border-gray-200 dark:border-gray-700"
-          ></div>
-          <div
-            v-for="event in day.events.slice(0, MAX_VISIBLE_EVENT_ROWS)"
-            :key="event.id"
-            class="absolute left-0.5 md:left-1 right-0.5 md:right-1 text-[11px] md:text-xs px-2 py-1 rounded shadow-sm cursor-pointer hover:opacity-90 transition-opacity flex flex-col gap-0.5"
-            :style="{
-              backgroundColor: getEventDisplayColor(event),
-              color: '#ffffff',
-              top: getEventTopPosition(event),
-              height: getEventHeight(event)
-            }"
-            @click="openEditModal(event)"
-            @dblclick="openEditModal(event)"
-          >
-            <div class="truncate font-medium flex items-center gap-1">
-              <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[event.priority ?? 0]}`">
-                <UIcon :name="getPriorityIcon(event.priority ?? 0)" class="w-3 h-3 shrink-0 opacity-90" />
-              </UTooltip>
-              {{ event.title || event.name }}
-            </div>
-            <div v-if="usaConsolidado && event.contenedor?.nombre" class="text-[10px] md:text-[11px] opacity-90 truncate">
-              {{ event.contenedor.nombre }}
-            </div>
-            <div v-if="event.start_time" class="text-[10px] opacity-90">
-              {{ formatTime(event.start_time) }}
-            </div>
-          </div>
-          <!-- Al final de la lista del día: abrir modal con el resto (no redirigir) -->
-          <div
-            v-if="day.events.length > MAX_VISIBLE_EVENT_ROWS"
-            class="absolute left-0.5 md:left-1 right-0.5 md:right-1 text-xs font-medium text-primary-600 dark:text-primary-400 cursor-pointer hover:underline py-0.5"
-            :style="{ top: getVerMasTopPosition(day.events.slice(0, MAX_VISIBLE_EVENT_ROWS)) }"
-            @click="openMoreEventsModal(day.events.slice(MAX_VISIBLE_EVENT_ROWS), `Más eventos - ${day.dayName} ${day.day}`)"
-          >
-            Ver más (+{{ day.events.length - MAX_VISIBLE_EVENT_ROWS }}) eventos
-          </div>
-        </div>
-      </div>
-            </div>
-        </div>
-
-          <!-- Vista de Día -->
-          <div v-else-if="viewMode === 'day'" :key="`day-${currentDate.year}-${currentDate.month}-${currentDate.day}`" class="h-full bg-white dark:bg-gray-800 flex flex-col relative">
-            <!-- Skeleton mientras carga -->
-            <div v-if="loading" class="absolute inset-0 z-20 bg-white dark:bg-gray-900">
-              <CalendarSkeleton :view-mode="viewMode" />
-            </div>
-            <!-- Contenido del calendario -->
-            <div v-show="!loading" class="h-full flex flex-col">
-          <!-- Header del día -->
-          <div class="border-b border-gray-200 dark:border-gray-700 p-3 md:p-4 bg-gray-50 dark:bg-gray-900">
-            <div class="flex items-center justify-between">
-              <div>
-                <h2 class="text-lg md:text-2xl font-semibold text-gray-900 dark:text-white">
-                  {{ formatDayHeader(currentDate as CalendarDate) }}
-                </h2>
-                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {{ formatDaySubheader(currentDate as CalendarDate) }}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Horas del día -->
-          <div class="flex-1 overflow-y-auto overflow-x-auto">
-            <div class="grid grid-cols-12 min-w-[600px]">
-              <!-- Columna de horas -->
-              <div class="col-span-2 md:col-span-1 border-r border-gray-200 dark:border-gray-700">
-                <div
-                  v-for="hour in hours"
-                  :key="hour"
-                  class="h-12 md:h-16 border-b border-gray-200 dark:border-gray-700 p-1 md:p-2 text-[10px] md:text-xs text-gray-500 dark:text-gray-400"
-                >
-                  <span class="hidden sm:inline">{{ hour }}</span>
-                  <span class="sm:hidden">{{ hour.split(':')[0] }}</span>
-                </div>
-              </div>
-
-              <!-- Columna de eventos -->
-              <div class="col-span-10 md:col-span-11 relative">
-                <!-- Grid de horas -->
-                <div
-                  v-for="hour in hours"
-                  :key="hour"
-                  class="h-12 md:h-16 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  @click="handleHourClick(hour)"
-                ></div>
-
-                <!-- Eventos del día (máx 3 visibles + Ver más abre modal) -->
-                <div
-                  v-for="event in dayEvents.slice(0, MAX_VISIBLE_EVENT_ROWS)"
-                  :key="event.id"
-                  class="absolute left-1 md:left-2 right-1 md:right-2 text-[11px] md:text-xs px-2 py-1.5 rounded cursor-pointer hover:opacity-90 transition-opacity shadow-sm flex flex-col gap-0.5"
-                  :style="{
-                    backgroundColor: getEventDisplayColor(event),
-                    color: '#ffffff',
-                    top: getEventTopPosition(event),
-                    height: getEventHeight(event)
-                  }"
-                  @click="openEditModal(event)"
-                  @dblclick="openEditModal(event)"
-                >
-                  <div class="font-medium truncate flex items-center gap-1">
-                    <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[event.priority ?? 0]}`">
-                      <UIcon :name="getPriorityIcon(event.priority ?? 0)" class="w-3 h-3 shrink-0 opacity-90" />
-                    </UTooltip>
-                    {{ event.title || event.name }}
-                  </div>
-                  <div v-if="usaConsolidado && event.contenedor?.nombre" class="text-[10px] opacity-90 truncate">
-                    {{ event.contenedor.nombre }}
-                  </div>
-                  <div v-if="event.start_time && event.end_time" class="text-[10px] opacity-90">
-                    {{ formatTime(event.start_time) }} - {{ formatTime(event.end_time) }}
-                  </div>
-                  <div v-else-if="event.start_time" class="text-[10px] opacity-90">
-                    {{ formatTime(event.start_time) }}
-                  </div>
-              </div>
-              <!-- Al final de la lista: abrir modal con el resto (no redirigir) -->
-              <div
-                v-if="dayEvents.length > MAX_VISIBLE_EVENT_ROWS"
-                class="absolute left-1 md:left-2 right-1 md:right-2 text-xs font-medium text-primary-600 dark:text-primary-400 cursor-pointer hover:underline py-1.5"
-                :style="{ top: getVerMasTopPosition(dayEvents.slice(0, MAX_VISIBLE_EVENT_ROWS)) }"
-                @click="openMoreEventsModal(dayEvents.slice(MAX_VISIBLE_EVENT_ROWS), formatDayHeader(currentDate as CalendarDate))"
-              >
-                Ver más (+{{ dayEvents.length - MAX_VISIBLE_EVENT_ROWS }}) eventos
-              </div>
-            </div>
-          </div>
-            </div>
-        </div>
-          </div>
         </Transition>
       </div>
     </div>
@@ -670,7 +316,7 @@
           <UButton 
             label="Eliminar" 
             color="error" 
-            @click="viewMode === 'activities' ? confirmDeleteActivity() : confirmDelete()" 
+            @click="confirmDeleteActivity()" 
             :loading="loading" 
           />
         </div>
@@ -863,24 +509,12 @@ const initializeFromRoute = () => {
   const viewParam = route.query.view as string
 
   if (yearParam && monthParam && !isNaN(yearParam) && !isNaN(monthParam) && monthParam >= 1 && monthParam <= 12) {
-    if (dayParam && !isNaN(dayParam) && dayParam >= 1 && dayParam <= 31) {
-      // Vista de día
-      try {
-        currentDate.value = parseDate(`${yearParam}-${String(monthParam).padStart(2, '0')}-${String(dayParam).padStart(2, '0')}`) as CalendarDate
-        viewMode.value = 'day'
-      } catch {
-        currentDate.value = today(getLocalTimeZone())
-        viewMode.value = 'month'
-      }
-    } else {
-      // Vista de mes o semana
-      try {
-        currentDate.value = parseDate(`${yearParam}-${String(monthParam).padStart(2, '0')}-01`) as CalendarDate
-        viewMode.value = (viewParam === 'week' ? 'week' : 'month') as 'month' | 'week' | 'day'
-      } catch {
-        currentDate.value = today(getLocalTimeZone())
-        viewMode.value = 'month'
-      }
+    try {
+      currentDate.value = parseDate(`${yearParam}-${String(monthParam).padStart(2, '0')}-01`) as CalendarDate
+      viewMode.value = 'month'
+    } catch {
+      currentDate.value = today(getLocalTimeZone())
+      viewMode.value = 'month'
     }
   } else {
     // Valores por defecto
@@ -889,7 +523,7 @@ const initializeFromRoute = () => {
   }
 }
 
-const viewMode = ref<'month'>('month')
+const viewMode = ref<'month' | 'activities'>('month')
 // Evitar doble carga inicial de eventos (onMounted + watch)
 const hasLoadedInitially = ref(false)
 
@@ -1013,15 +647,9 @@ const handleFilterChange = async (newFilters: any) => {
     const end = newFilters.end_date
     if (start && end) {
       const [sy, sm] = start.split('-').map(Number)
-      const [ey, em] = end.split('-').map(Number)
-      if (sy !== ey || sm !== em) {
-        viewMode.value = 'range'
-      } else {
-        // Mismo mes: vista normal de mes
-        viewMode.value = 'month'
-        currentDate.value = parseDate(`${sy}-${String(sm).padStart(2, '0')}-01`) as CalendarDate
-        updateUrl()
-      }
+      viewMode.value = 'month'
+      currentDate.value = parseDate(`${sy}-${String(sm).padStart(2, '0')}-01`) as CalendarDate
+      updateUrl()
     }
   }
   // Construir payload: responsable_ids (varios) o responsable_id (uno); "Todos" = no enviar
@@ -1182,6 +810,7 @@ const confirmDeleteActivity = async () => {
       isDeleteModalOpen.value = false
       selectedEvent.value = null
       await loadActivitiesData()
+      if (viewMode.value === 'month') await loadEvents(true)
     } else {
       showError('Error', 'No se pudo eliminar la actividad.')
     }
@@ -1273,73 +902,12 @@ const currentPeriodTitle = computed(() => {
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ]
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-  if (viewMode.value === 'range' && filters.value?.start_date && filters.value?.end_date) {
-    const [sy, sm, sd] = filters.value.start_date.split('-').map(Number)
-    const [ey, em, ed] = filters.value.end_date.split('-').map(Number)
-    return `${sd} ${months[sm - 1]} ${sy} - ${ed} ${months[em - 1]} ${ey}`
-  }
-  if (viewMode.value === 'day') {
-    try {
-      // Calcular el día de la semana usando una fecha JavaScript
-      const jsDate = new Date(currentDate.value.year, currentDate.value.month - 1, currentDate.value.day)
-      const dayOfWeek = jsDate.getDay() // 0 = Domingo, 1 = Lunes, etc.
-      const dayName = days[dayOfWeek] || days[0] // Fallback a Domingo si hay error
-      return `${dayName}, ${currentDate.value.day} de ${months[currentDate.value.month - 1]}`
-    } catch {
-      return `${currentDate.value.day} de ${months[currentDate.value.month - 1]}`
-    }
-  } else if (viewMode.value === 'week') {
-    const y = currentDate.value.year
-    const m = currentDate.value.month
-    const d = currentDate.value.day
-    const currentDay = parseDate(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
-    const mondayOffset = getMondayBasedWeekday(y, m, d)
-    const monday = currentDay.subtract({ days: mondayOffset })
-    const sunday = monday.add({ days: 6 })
-    if (monday.month === sunday.month) {
-      return `${monday.day} - ${sunday.day} de ${months[monday.month - 1]} ${monday.year}`
-    } else {
-      return `${monday.day} de ${months[monday.month - 1]} - ${sunday.day} de ${months[sunday.month - 1]} ${monday.year}`
-    }
-  } else {
-    return `${months[currentDate.value.month - 1]} ${currentDate.value.year}`
-  }
+  return `${months[currentDate.value.month - 1]} ${currentDate.value.year}`
 })
 
 const currentPeriodTitleShort = computed(() => {
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-  if (viewMode.value === 'range' && filters.value?.start_date && filters.value?.end_date) {
-    const [, sm, sd] = filters.value.start_date.split('-').map(Number)
-    const [, em, ed] = filters.value.end_date.split('-').map(Number)
-    return `${sd}/${sm} - ${ed}/${em}`
-  }
-  if (viewMode.value === 'day') {
-    try {
-      const jsDate = new Date(currentDate.value.year, currentDate.value.month - 1, currentDate.value.day)
-      const dayOfWeek = jsDate.getDay()
-      const dayName = days[dayOfWeek] || days[0]
-      return `${dayName} ${currentDate.value.day}/${currentDate.value.month}`
-    } catch {
-      return `${currentDate.value.day}/${currentDate.value.month}`
-    }
-  } else if (viewMode.value === 'week') {
-    const y = currentDate.value.year
-    const m = currentDate.value.month
-    const d = currentDate.value.day
-    const currentDay = parseDate(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
-    const mondayOffset = getMondayBasedWeekday(y, m, d)
-    const monday = currentDay.subtract({ days: mondayOffset })
-    const sunday = monday.add({ days: 6 })
-    if (monday.month === sunday.month) {
-      return `${monday.day}-${sunday.day} ${months[monday.month - 1]}`
-    } else {
-      return `${monday.day} ${months[monday.month - 1]}-${sunday.day} ${months[sunday.month - 1]}`
-    }
-  } else {
-    return `${months[currentDate.value.month - 1]} ${currentDate.value.year}`
-  }
+  return `${months[currentDate.value.month - 1]} ${currentDate.value.year}`
 })
 
 // Helper para formatear fecha a string
@@ -1548,11 +1116,19 @@ const calendarWeeks = computed(() => {
   return weeks
 })
 
-// Tooltip para evento (título + consolidado)
-const getEventTooltip = (event: CalendarEvent) => {
+// Líneas de notas (para mostrar una por línea, truncando en horizontal)
+const getEventNoteLines = (notes: string | undefined): string[] => {
+  if (!notes || !String(notes).trim()) return []
+  return String(notes).split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+}
+
+// Tooltip completo: título + todas las notas (todo el texto para el tooltip)
+const getEventFullTooltip = (event: CalendarEvent, prefix = ''): string => {
   const title = event.title || event.name
   const consolidado = event.contenedor?.nombre
-  return consolidado ? `${title} — ${consolidado}` : title
+  let base = consolidado ? `${title} — ${consolidado}` : title
+  if (event.notes && String(event.notes).trim()) base += '\n' + String(event.notes).trim()
+  return prefix ? prefix + base : base
 }
 
 // Orden manual (pendiente) para vista mes
@@ -1907,34 +1483,7 @@ const getCalendarWeeksForMonth = (year: number, month: number) => {
 
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
-// Datos para la vista de rango: array de meses con sus semanas
-const rangeViewData = computed(() => {
-  if (viewMode.value !== 'range') return []
-  const start = filters.value?.start_date
-  const end = filters.value?.end_date
-  if (!start || !end) return []
-  const [startYear, startMonth] = start.split('-').map(Number)
-  const [endYear, endMonth] = end.split('-').map(Number)
-  const result: { year: number, month: number, title: string, weeks: { days: any[], eventRows: EventSpan[][] }[] }[] = []
-  let y = startYear
-  let m = startMonth
-  while (y < endYear || (y === endYear && m <= endMonth)) {
-    result.push({
-      year: y,
-      month: m,
-      title: `${monthNames[m - 1]} ${y}`,
-      weeks: getCalendarWeeksForMonth(y, m)
-    })
-    m++
-    if (m > 12) {
-      m = 1
-      y++
-    }
-  }
-  return result
-})
-
-// Calcular días de la semana para la vista semanal
+// Calcular días de la semana para la vista semanal (referencia; vistas semana/día eliminadas)
 const weekDaysData = computed(() => {
   const year = currentDate.value.year
   const month = currentDate.value.month
@@ -2151,58 +1700,26 @@ const getVerMasTopPosition = (firstEvents: CalendarEvent[]) => {
 }
 
 const updateUrl = () => {
-  const year = currentDate.value.year
-  const month = currentDate.value.month
-  const day = currentDate.value.day
-  
-  let url = '/calendar'
   const params = new URLSearchParams()
-  
-  if (viewMode.value === 'day') {
-    params.set('year', year.toString())
-    params.set('month', month.toString())
-    params.set('day', day.toString())
-    params.set('view', 'day')
-  } else if (viewMode.value === 'week') {
-    params.set('year', year.toString())
-    params.set('month', month.toString())
-    params.set('view', 'week')
-  } else {
-    params.set('year', year.toString())
-    params.set('month', month.toString())
-    params.set('view', 'month')
-  }
+  params.set('year', currentDate.value.year.toString())
+  params.set('month', currentDate.value.month.toString())
+  params.set('view', 'month')
   if (currentRoleGroupId.value != null) {
     params.set('role_group_id', String(currentRoleGroupId.value))
   }
-  url = `/calendar?${params.toString()}`
-  router.replace(url)
+  router.replace(`/calendar?${params.toString()}`)
 }
 
 const previousPeriod = () => {
-  if (viewMode.value === 'month') {
-    currentDate.value = currentDate.value.subtract({ months: 1 })
-  } else if (viewMode.value === 'week') {
-    currentDate.value = currentDate.value.subtract({ weeks: 1 })
-  } else if (viewMode.value === 'day') {
-    currentDate.value = currentDate.value.subtract({ days: 1 })
-  }
+  currentDate.value = currentDate.value.subtract({ months: 1 })
   updateUrl()
   pendingLoadEvents.value = true
-  // La petición se hará después de la animación
 }
 
 const nextPeriod = () => {
-  if (viewMode.value === 'month') {
-    currentDate.value = currentDate.value.add({ months: 1 })
-  } else if (viewMode.value === 'week') {
-    currentDate.value = currentDate.value.add({ weeks: 1 })
-  } else if (viewMode.value === 'day') {
-    currentDate.value = currentDate.value.add({ days: 1 })
-  }
+  currentDate.value = currentDate.value.add({ months: 1 })
   updateUrl()
   pendingLoadEvents.value = true
-  // La petición se hará después de la animación
 }
 
 const goToToday = () => {
@@ -2223,41 +1740,11 @@ const loadEventsWithRange = async () => {
 }
 
 const loadEvents = async (force = false) => {
-  if (viewMode.value === 'range' && filters.value?.start_date && filters.value?.end_date) {
-    await getEvents({
-      start_date: filters.value.start_date,
-      end_date: filters.value.end_date
-    }, force)
-    return
-  }
-
-  let startDate: string
-  let endDate: string
-  
-  if (viewMode.value === 'day') {
-    // Cargar solo el día actual
-    const dateStr = `${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`
-    startDate = dateStr
-    endDate = dateStr
-  } else if (viewMode.value === 'week') {
-    const y = currentDate.value.year
-    const m = currentDate.value.month
-    const d = currentDate.value.day
-    const currentDay = parseDate(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
-    const mondayOffset = getMondayBasedWeekday(y, m, d)
-    const monday = currentDay.subtract({ days: mondayOffset })
-    const sunday = monday.add({ days: 6 })
-    startDate = `${monday.year}-${String(monday.month).padStart(2, '0')}-${String(monday.day).padStart(2, '0')}`
-    endDate = `${sunday.year}-${String(sunday.month).padStart(2, '0')}-${String(sunday.day).padStart(2, '0')}`
-  } else {
-    // Modo mes: cargar todo el mes
-    const year = currentDate.value.year
-    const month = currentDate.value.month
-    startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    const lastDay = parseDate(startDate).set({ day: parseDate(startDate).calendar.getDaysInMonth(parseDate(startDate)) })
-    endDate = `${lastDay.year}-${String(lastDay.month).padStart(2, '0')}-${String(lastDay.day).padStart(2, '0')}`
-  }
-  
+  const year = currentDate.value.year
+  const month = currentDate.value.month
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+  const lastDay = parseDate(startDate).set({ day: parseDate(startDate).calendar.getDaysInMonth(parseDate(startDate)) })
+  const endDate = `${lastDay.year}-${String(lastDay.month).padStart(2, '0')}-${String(lastDay.day).padStart(2, '0')}`
   await getEvents({
     start_date: startDate,
     end_date: endDate
@@ -2567,43 +2054,22 @@ watch(() => route.path, async (to, from) => {
   }
 })
 
-// Observar cambios en la ruta para sincronizar el estado
+// Observar cambios en la ruta para sincronizar el estado (solo vista mes)
 watch(() => route.query, (newQuery) => {
   const yearParam = newQuery.year ? parseInt(newQuery.year as string) : null
   const monthParam = newQuery.month ? parseInt(newQuery.month as string) : null
-  const dayParam = newQuery.day ? parseInt(newQuery.day as string) : null
-  const viewParam = newQuery.view as string
 
   if (yearParam && monthParam && !isNaN(yearParam) && !isNaN(monthParam) && monthParam >= 1 && monthParam <= 12) {
-    if (dayParam && !isNaN(dayParam) && dayParam >= 1 && dayParam <= 31) {
-      // Vista de día
-      try {
-        const newDate = parseDate(`${yearParam}-${String(monthParam).padStart(2, '0')}-${String(dayParam).padStart(2, '0')}`) as CalendarDate
-        const newDateStr = `${newDate.year}-${String(newDate.month).padStart(2, '0')}-${String(newDate.day).padStart(2, '0')}`
-        const currentDateStr = `${currentDate.value.year}-${String(currentDate.value.month).padStart(2, '0')}-${String(currentDate.value.day).padStart(2, '0')}`
-        if (newDateStr !== currentDateStr) {
-          currentDate.value = newDate
-        }
-        if (viewMode.value !== 'day') {
-          viewMode.value = 'day'
-        }
-      } catch {
-        // Ignorar errores de parsing
+    try {
+      const newDate = parseDate(`${yearParam}-${String(monthParam).padStart(2, '0')}-01`) as CalendarDate
+      if (newDate.year !== currentDate.value.year || newDate.month !== currentDate.value.month) {
+        currentDate.value = newDate
       }
-    } else {
-      // Vista de mes o semana
-      try {
-        const newDate = parseDate(`${yearParam}-${String(monthParam).padStart(2, '0')}-01`) as CalendarDate
-        if (newDate.year !== currentDate.value.year || newDate.month !== currentDate.value.month) {
-          currentDate.value = newDate
-        }
-        const newViewMode = (viewParam === 'week' ? 'week' : 'month') as 'month' | 'week' | 'day'
-        if (viewMode.value !== newViewMode) {
-          viewMode.value = newViewMode
-        }
-      } catch {
-        // Ignorar errores de parsing
+      if (viewMode.value !== 'month') {
+        viewMode.value = 'month'
       }
+    } catch {
+      // Ignorar errores de parsing
     }
   }
 }, { immediate: false })
