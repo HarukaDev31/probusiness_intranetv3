@@ -64,6 +64,26 @@
                 <UFormField label="Empresa" required :error="errors.empresa">
                     <UInput v-model="empresa" placeholder="Ingresa el nombre de la empresa" class="w-full" />
                 </UFormField>
+                <UFormField label="Límite CBM IMO (opcional)" :error="errors.limiteCbmImo">
+                    <UInput
+                        v-model="limiteCbmImo"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Ej. 5.00"
+                        class="w-full"
+                    />
+                </UFormField>
+                <UFormField label="TC Yuan (opcional)" :error="errors.tcYuan">
+                    <UInput
+                        v-model="tcYuan"
+                        type="number"
+                        step="0.000001"
+                        min="0"
+                        placeholder="Ej. 0.138"
+                        class="w-full"
+                    />
+                </UFormField>
             </div>
         </template>
 
@@ -93,6 +113,8 @@ const carga = ref<number>()
 const mes = ref<string>()
 const pais = ref<number>()
 const empresa = ref<string>()
+const limiteCbmImo = ref<number | null>(null)
+const tcYuan = ref<number | string | null>(null)
 const hoy = new Date();
 const fechaCierre = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
 const fechaArribo = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
@@ -152,6 +174,18 @@ const validateForm = () => {
     if (!empresa.value) {
         errors.value.empresa = 'La empresa es requerida'
     }
+    if (limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)) {
+        const numeric = Number(limiteCbmImo.value)
+        if (Number.isNaN(numeric) || numeric < 0) {
+            errors.value.limiteCbmImo = 'El límite CBM IMO debe ser un número mayor o igual a 0'
+        }
+    }
+    if (tcYuan.value !== null && tcYuan.value !== ('' as any)) {
+        const numeric = Number(tcYuan.value)
+        if (Number.isNaN(numeric) || numeric < 0) {
+            errors.value.tcYuan = 'El TC Yuan debe ser un número mayor o igual a 0'
+        }
+    }
     if (!fechaCierre.value) {
         errors.value.fechaCierre = 'La fecha de cierre es requerida'
     }
@@ -180,7 +214,13 @@ const handleSubmit = async () => {
             empresa: empresa.value,
             fechaCierre: fechaCierre.value,
             fechaArribo: fechaArribo.value,
-            fechaEntrega: fechaEntrega.value
+            fechaEntrega: fechaEntrega.value,
+            limiteCbmImo: limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)
+                ? Number(limiteCbmImo.value)
+                : null,
+            tcYuan: tcYuan.value !== null && tcYuan.value !== ('' as any)
+                ? Number(tcYuan.value)
+                : null,
         })
 
     } catch (error) {
@@ -207,6 +247,10 @@ onMounted(async () => {
             fechaCierre.value = new CalendarDate(getDateParts(response.f_cierre).year, getDateParts(response.f_cierre).month, getDateParts(response.f_cierre).day)
             fechaArribo.value = new CalendarDate(getDateParts(response.f_puerto).year, getDateParts(response.f_puerto).month, getDateParts(response.f_puerto).day)
             fechaEntrega.value = new CalendarDate(getDateParts(response.f_entrega).year, getDateParts(response.f_entrega).month, getDateParts(response.f_entrega).day)
+            limiteCbmImo.value = typeof response.limite_cbm_imo === 'number' || typeof response.limite_cbm_imo === 'string'
+                ? Number(response.limite_cbm_imo)
+                : null
+            tcYuan.value = response.tc_yuan != null ? Number(response.tc_yuan) : null
         }
     }
 

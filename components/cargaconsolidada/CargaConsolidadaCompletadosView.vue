@@ -1,5 +1,26 @@
 <template>
   <div class="">
+    <!-- Barra TC Yuan global (solo Coordinación) -->
+    <div v-if="role === ROLES.COORDINACION" class="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 flex flex-wrap items-center gap-3">
+      <label class="font-medium text-gray-700 dark:text-gray-300">TC Yuan (global):</label>
+      <UInput
+        v-model="tcYuanGlobal"
+        type="number"
+        step="0.000001"
+        min="0"
+        placeholder="Ej. 0.138"
+        class="w-32"
+      />
+      <UButton
+        color="primary"
+        size="sm"
+        :loading="savingTcYuan"
+        @click="handleSaveTcYuanGlobal"
+      >
+        Guardar
+      </UButton>
+    </div>
+
     <WhatsappNumbersStatus
       :instances="[{ instanceName: 'COORDINATION', key: 'Coordinación' }, { instanceName: 'SELLS', key: 'Ventas' }]"
       :auto-refresh="true"
@@ -100,6 +121,7 @@ import { ref, h, resolveComponent, onMounted, onUnmounted, computed, toRef } fro
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
+import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import { ROLES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -150,6 +172,30 @@ const modal = overlay.create(CreateConsolidadoModal)
 const textModal = overlay.create(TextModal)
 const currentConsolidado = ref<number | null>(null)
 
+const tcYuanGlobal = ref<string | number>('')
+const savingTcYuan = ref(false)
+const fetchTcYuanGlobal = async () => {
+  if (props.role !== ROLES.COORDINACION) return
+  try {
+    const r = await ConsolidadoService.getTcYuanGlobal()
+    tcYuanGlobal.value = r.tc_yuan != null ? r.tc_yuan : ''
+  } catch (_) {
+    tcYuanGlobal.value = ''
+  }
+}
+const handleSaveTcYuanGlobal = async () => {
+  savingTcYuan.value = true
+  try {
+    const val = tcYuanGlobal.value !== '' && tcYuanGlobal.value != null ? Number(tcYuanGlobal.value) : null
+    await ConsolidadoService.updateTcYuanGlobal(val)
+    showSuccess('TC Yuan guardado', 'El tipo de cambio Yuan se ha actualizado correctamente.')
+  } catch (e: any) {
+    showError('Error al guardar TC Yuan', e?.message || 'No se pudo guardar.')
+  } finally {
+    savingTcYuan.value = false
+  }
+}
+
 const isDesktop = ref(false)
 let resizeRafId: number | null = null
 const updateIsDesktop = () => {
@@ -166,6 +212,7 @@ const updateIsDesktop = () => {
 onMounted(() => {
   updateIsDesktop()
   window.addEventListener('resize', updateIsDesktop, { passive: true })
+  fetchTcYuanGlobal()
 })
 onUnmounted(() => {
   try {
@@ -226,6 +273,8 @@ const handleCreateConsolidado = async (data: any) => {
       f_cierre: `${data.fechaCierre.year}-${data.fechaCierre.month}-${data.fechaCierre.day}`,
       f_puerto: `${data.fechaArribo.year}-${data.fechaArribo.month}-${data.fechaArribo.day}`,
       f_entrega: `${data.fechaEntrega.year}-${data.fechaEntrega.month}-${data.fechaEntrega.day}`,
+      limite_cbm_imo: data.limiteCbmImo ?? null,
+      tc_yuan: data.tcYuan ?? null,
     }
     await withSpinner(async () => {
       await createConsolidado(payload)
@@ -285,6 +334,16 @@ const columns: TableColumn<any>[] = [
   },
   { accessorKey: 'cbm_total_peru', header: 'CBM Perú', cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
   { accessorKey: 'cbm_total_china', header: 'CBM China', cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
+  {
+    accessorKey: 'limite_cbm_imo',
+    header: 'Límite CBM IMO',
+    cell: ({ row }) => {
+      const raw = (row.original as any).limite_cbm_imo
+      if (raw === null || raw === undefined || raw === '') return '—'
+      const num = Number(raw)
+      return Number.isNaN(num) ? '—' : formatNumber(num, 2)
+    },
+  },
   {
     id: 'actions',
     header: 'Acciones',

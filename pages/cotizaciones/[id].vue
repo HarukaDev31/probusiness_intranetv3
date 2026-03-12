@@ -188,6 +188,24 @@
             </div>
           </div>
 
+          <!-- Usar Yuanes y TC (paso 2 editar) — compacto -->
+          <div class="mb-4 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <UCheckbox v-model="usaYuan" label="Usar precios en Yuanes (¥)" />
+              <template v-if="usaYuan || tcYuanUsadoAlCrear != null">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Al crear: <strong class="font-mono">{{ tcYuanUsadoAlCrear != null ? Number(tcYuanUsadoAlCrear).toFixed(6) : '—' }}</strong></span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Global: <strong class="font-mono">{{ tcYuanGlobal != null ? Number(tcYuanGlobal).toFixed(6) : '—' }}</strong></span>
+                <span class="text-xs text-gray-600 dark:text-gray-300">A usar:</span>
+                <UInput v-model.number="tcYuanUsado" type="number" step="0.000001" min="0" placeholder="0.14" class="w-24" size="sm" variant="outline" />
+                <UButton size="xs" variant="outline" color="primary" @click="usarTcYuanAlCrear">Al crear</UButton>
+                <UButton size="xs" variant="outline" color="primary" @click="usarTcYuanGlobal">Global</UButton>
+              </template>
+              <template v-else>
+                <span class="text-xs text-gray-500 dark:text-gray-400">TC global: <strong class="font-mono">{{ tcYuanGlobal != null ? Number(tcYuanGlobal).toFixed(6) : '—' }}</strong></span>
+              </template>
+            </div>
+          </div>
+
           <div class="space-y-6">
             <div v-for="(proveedor, index) in proveedores" :key="proveedor.id" class="border-t pt-6">
               <div class="flex justify-between items-center mb-4">
@@ -264,12 +282,12 @@
                   </div>
                   <div class="col-span-2">
                     <label class="block text-sm font-medium  mb-2">
-                      Precio <span class="text-red-500">*</span>
+                      {{ usaYuan ? 'Precio (¥)' : 'Precio' }} <span class="text-red-500">*</span>
                     </label>
-                    <UInput class="w-full" v-model.number="producto.precio" type="number" step placeholder="0.00"
+                    <UInput class="w-full" v-model.number="producto.precio" type="number" step="0.01" placeholder="0.00"
                       size="md" variant="outline">
                       <template #leading>
-                        <span class="text-gray-500">$</span>
+                        <span class="text-gray-500">{{ usaYuan ? '¥' : '$' }}</span>
                       </template>
                     </UInput>
                   </div>
@@ -358,6 +376,11 @@
                 <UInput v-model.number="tipoCambio" type="number" step="0.01" min="0" placeholder="3.70" class="w-full"
                   size="md" variant="outline" />
               </div>
+            </div>
+            <!-- Es IMO -->
+            <div class="flex items-center gap-2">
+              <UCheckbox v-model="esImo" />
+              <span class="font-semibold text-gray-700 dark:text-gray-300">Es IMO</span>
             </div>
           </div>
 
@@ -1165,9 +1188,24 @@ const {
   fetchVendedores,
   fetchContenedores,
   loadCotizacionById,
+  esImo,
+  usaYuan,
+  tcYuanUsado,
+  tcYuanUsadoAlCrear,
+  tcYuanActual,
+  tcYuanGlobal,
+  fetchTcYuanGlobal,
   getMaxItemsByTotalCbm,
   canAddMoreItems
 } = useCalculadoraImportacion()
+
+function usarTcYuanAlCrear () {
+  if (tcYuanUsadoAlCrear.value != null) tcYuanUsado.value = tcYuanUsadoAlCrear.value
+}
+function usarTcYuanGlobal () {
+  if (tcYuanGlobal.value != null) tcYuanUsado.value = tcYuanGlobal.value
+}
+
 const saveCotizacion = async () => {
   if (selectedTarifa && selectedTarifa.value && selectedTarifa.value.label === 'MANUAL' && (!selectedTarifa.value.tarifa || selectedTarifa.value.tarifa <= 0)) {
     showError('La tarifa manual es obligatoria y debe ser mayor a 0', 'error')
@@ -1184,15 +1222,17 @@ const saveCotizacion = async () => {
   try {
     await withSpinner(async () => {
       const response = await handleEndFormulario(cotizacionId)
-      if (response.success) {
+      if (response?.success) {
         showSuccess('Cotización actualizada correctamente', 'success')
         navigateTo('/cotizaciones')
       } else {
-        showError('Error al actualizar la cotización', 'error')
+        const msg = (response as any)?.message || 'Error al actualizar la cotización'
+        showError('Error al actualizar la cotización', msg)
       }
     })
-  } catch (error) {
-    showError('Error al actualizar la cotización', 'error')
+  } catch (error: any) {
+    const msg = error?.data?.message || error?.message || 'Error al actualizar la cotización'
+    showError('Error al actualizar la cotización', msg)
   }
 }
 
@@ -1891,12 +1931,17 @@ const cotizacionId = Number(Array.isArray(rawId) ? rawId[0] : (rawId ?? 0))
 onMounted(async () => {
   await getClientesByWhatsapp('')
   await getTarifas()
+  await fetchTcYuanGlobal()
   // Si hay un id, cargar la cotización desde el composable
   if (cotizacionId) {
     try {
       await withSpinner(async () => {
         await loadCotizacionById(cotizacionId)
       })
+      // Por defecto "TC Yuan a usar" = tasa global actual al editar
+      if (tcYuanGlobal.value != null) {
+        tcYuanUsado.value = tcYuanGlobal.value
+      }
     } catch (err) {
       showError('Error al cargar la cotización', 'error')
     }

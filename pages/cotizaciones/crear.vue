@@ -215,6 +215,21 @@
             </div>
           </div>
 
+          <!-- Usar Yuanes y TC actual global (paso 2) -->
+          <div class="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+            <div class="flex items-center gap-3 flex-wrap">
+              <UCheckbox
+                v-model="usaYuan"
+                label="Usar precios en Yuanes (¥)"
+                :disabled="tcYuanGlobal == null"
+              />
+              <span class="text-sm text-gray-600 dark:text-gray-400">
+                TC actual (global): <strong>{{ tcYuanGlobal != null ? Number(tcYuanGlobal).toFixed(6) : '—' }}</strong>
+                <span v-if="usaYuan && tcYuanGlobal != null" class="ml-1">— al pasar al siguiente paso se convertirán a USD.</span>
+              </span>
+            </div>
+          </div>
+
           <div class="space-y-6">
             <div v-for="(proveedor, pIndex) in proveedores" :key="proveedor.id" class="border-t pt-6">
               <div class="flex justify-between items-center mb-4">
@@ -303,15 +318,15 @@
                             size="md" variant="outline" />
                         </div>
 
-                        <!-- Precio -->
+                        <!-- Precio (USD o Yuan según usaYuan) -->
                         <div class="col-span-2 md:col-span-2">
                           <label class="block text-sm font-medium  mb-2">
-                            Precio <span class="text-red-500">*</span>
+                            {{ usaYuan ? 'Precio (¥)' : 'Precio' }} <span class="text-red-500">*</span>
                           </label>
-                          <UInput class="w-full" v-model.number="producto.precio" type="number" step placeholder="0.00"
+                          <UInput class="w-full" v-model.number="producto.precio" type="number" step="0.01" placeholder="0.00"
                             size="md" variant="outline">
                             <template #leading>
-                              <span class="text-gray-500">$</span>
+                              <span class="text-gray-500">{{ usaYuan ? '¥' : '$' }}</span>
                             </template>
                           </UInput>
                         </div>
@@ -371,7 +386,7 @@
           <h2 class="text-2xl font-bold mb-6">Resumen</h2>
 
           <!-- Información del Cliente -->
-          <div class="flex gap-8 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex gap-8 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700 flex-wrap items-center">
             <div class="flex items-center gap-2">
               <span class="font-semibold text-gray-700 dark:text-gray-300">Cliente:</span>
               <div class="w-72">
@@ -401,6 +416,11 @@
                 <UInput v-model.number="tipoCambio" type="number" step="0.01" min="0" placeholder="3.70" class="w-full"
                   size="md" variant="outline" />
               </div>
+            </div>
+            <!-- Es IMO -->
+            <div class="flex items-center gap-2">
+              <UCheckbox v-model="esImo" />
+              <span class="font-semibold text-gray-700 dark:text-gray-300">Es IMO</span>
             </div>
           </div>
 
@@ -1180,7 +1200,11 @@ const {
   fetchVendedores,
   fetchContenedores,
   getMaxItemsByTotalCbm,
-  canAddMoreItems
+  canAddMoreItems,
+  esImo,
+  usaYuan,
+  tcYuanGlobal,
+  fetchTcYuanGlobal
 } = useCalculadoraImportacion()
 
 // `useCalculadoraImportacion` moved up; ya está declarado más arriba
@@ -1415,17 +1439,19 @@ const saveCotizacion = async () => {
   try {
     await withSpinner(async () => {
       const response = await handleEndFormulario()
-      if (response.success) {
+      if (response?.success) {
         // Al finalizar, limpiar draft para iniciar una nueva cotización
         clearDraftStorage()
         showSuccess('Cotización creada correctamente', 'success')
         navigateTo('/cotizaciones')
       } else {
-        showError('Error al crear la cotización', 'error')
+        const msg = (response as any)?.message || 'Error al crear la cotización'
+        showError('Error al crear la cotización', msg)
       }
     })
-  } catch (error) {
-    showError('Error al crear la cotización', 'error')
+  } catch (error: any) {
+    const msg = error?.data?.message || error?.message || 'Error al crear la cotización'
+    showError('Error al crear la cotización', msg)
   }
 }
 
@@ -2125,6 +2151,7 @@ onMounted(async () => {
   restoreDraftIfAny()
   await getClientesByWhatsapp('')
   await getTarifas()
+  await fetchTcYuanGlobal()
   // fetchVendedores y fetchContenedores solo en step 4
 })
 

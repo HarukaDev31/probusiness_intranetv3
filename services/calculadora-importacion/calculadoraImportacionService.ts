@@ -33,10 +33,11 @@ export class CalculadoraImportacionService extends BaseService {
                 body: saveCotizacionRequest
             })
             return response
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error al guardar cotización:', error)
-            throw new Error('No se pudo guardar la cotización')
-        }   
+            // Re-lanzar para que el caller pueda usar error.data?.message (ej. límite IMO)
+            throw error
+        }
     }
     static async getCotizaciones(params: any): Promise<any> {
         try {

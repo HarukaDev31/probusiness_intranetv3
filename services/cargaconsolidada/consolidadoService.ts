@@ -129,6 +129,21 @@ export class ConsolidadoService extends BaseService {
         return response
     }
 
+    /** GET TC Yuan global (barra superior vista consolidados). */
+    static async getTcYuanGlobal(): Promise<{ success: boolean; tc_yuan: number | null }> {
+        const response = await this.apiCall<{ success: boolean; tc_yuan: number | null }>(`${this.baseUrl}/tc-yuan-global`, { method: 'GET' })
+        return response
+    }
+
+    /** POST TC Yuan global (guardar desde barra superior). */
+    static async updateTcYuanGlobal(tcYuan: number | null): Promise<{ success: boolean; tc_yuan: number | null }> {
+        const response = await this.apiCall<{ success: boolean; tc_yuan: number | null }>(`${this.baseUrl}/tc-yuan-global`, {
+            method: 'POST',
+            body: { tc_yuan: tcYuan }
+        })
+        return response
+    }
+
     static async getContenedoresDisponibles(): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/cargas-disponibles`, {

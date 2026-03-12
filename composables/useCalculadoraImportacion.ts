@@ -3,6 +3,7 @@ import { CalculadoraImportacionService } from '~/services/calculadora-importacio
 import type { Header, PaginationInfo } from "~/types/data-table"
 import type { CotizacionFilters as CotizacionFiltersLegacy } from '~/types/cargaconsolidada/cotizaciones'
 import { CotizacionService } from '~/services/cargaconsolidada/cotizacionService'
+import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 
 export const useCalculadoraImportacion = () => {
   const currentStep = ref(1)
@@ -73,7 +74,7 @@ export const useCalculadoraImportacion = () => {
       limit_inf: 15.1,
       limit_sup: 9999, // 20 o más
       item_base: 20,
-      item_extra: 10, // item_max: 30
+      item_extra: 15, // item_max: 30
       tarifa: 10
     }
   ]
@@ -89,6 +90,12 @@ export const useCalculadoraImportacion = () => {
   const tipoCambio = ref(3.7)
   const selectedVendedor = ref<number | null>(null)
   const selectedContenedor = ref<number | null>(null)
+  const esImo = ref<boolean>(false)
+  const usaYuan = ref<boolean>(false)
+  const tcYuanUsado = ref<number | null>(null)
+  /** Solo lectura: valor con el que se creó la cotización (para mostrar en editar). */
+  const tcYuanUsadoAlCrear = ref<number | null>(null)
+  const tcYuanActual = ref<number | null>(null)
   const estadoCotizaciones = ref<any[]>([
     {
       label: 'Todos',
@@ -315,6 +322,17 @@ export const useCalculadoraImportacion = () => {
     return findTarifaByCbmAndTipo(totalCbmValue, tipoCliente)
   })
 
+  /** TC Yuan global (desde API), usado para cotización en yuanes. */
+  const tcYuanGlobal = ref<number | null>(null)
+  const fetchTcYuanGlobal = async () => {
+    try {
+      const r = await ConsolidadoService.getTcYuanGlobal()
+      tcYuanGlobal.value = r.tc_yuan ?? null
+    } catch (_) {
+      tcYuanGlobal.value = null
+    }
+  }
+
   //NUEVO RECURRENTE PREMIUM SOCIO INACTIVO
   const tipoClientes = ref<any[]>([
     {
@@ -396,6 +414,9 @@ export const useCalculadoraImportacion = () => {
       id_carga_consolidada_contenedor: selectedContenedor.value,
       tarifa: tarifaToSend,
       tipo_cambio: tipoCambio.value,
+      es_imo: esImo.value,
+      usa_yuan: usaYuan.value,
+      tc_yuan_usado: tcYuanUsado.value ?? undefined,
     }
     console.log(saveCotizacionRequest)
     const response = await CalculadoraImportacionService.saveCotizacion(saveCotizacionRequest)
@@ -406,14 +427,27 @@ export const useCalculadoraImportacion = () => {
       case 1:
         handleChangeToStep2()
         break
-      case 2:
-        // No guardar aquí
+      case 2: {
+        // Si usa yuanes, convertir precios de yuan a USD antes de pasar al paso 3
+        // usando la TC seleccionada (tcYuanUsado) y, si no existe, la global como fallback.
+        const tc = tcYuanUsado.value != null ? tcYuanUsado.value : tcYuanGlobal.value
+        if (usaYuan.value && tc != null && Number(tc) > 0) {
+          proveedores.value.forEach(proveedor => {
+            proveedor.productos.forEach((p: any) => {
+              p.precio = round10(Number(p.precio) / Number(tc))
+            })
+          })
+          // Solo inicializar tcYuanUsado si aún no tenía valor
+          if (tcYuanUsado.value == null) {
+            tcYuanUsado.value = Number(tc)
+          }
+        }
         break
+      }
       case 3:
-        // No guardar aquí, solo avanzar de paso
         break
       default:
-
+        break
     }
     if (currentStep.value < totalSteps) {
       currentStep.value++
@@ -421,6 +455,13 @@ export const useCalculadoraImportacion = () => {
   }
 
   const prevStep = () => {
+    if (currentStep.value === 3 && usaYuan.value && tcYuanUsado.value != null && Number(tcYuanUsado.value) > 0) {
+      proveedores.value.forEach(proveedor => {
+        proveedor.productos.forEach((p: any) => {
+          p.precio = round10(Number(p.precio) * Number(tcYuanUsado.value))
+        })
+      })
+    }
     if (currentStep.value > 1) {
       currentStep.value--
       return
@@ -845,6 +886,22 @@ export const useCalculadoraImportacion = () => {
       tipoCambio.value = tipoCambioValue !== null && tipoCambioValue !== undefined && tipoCambioValue !== ''
         ? Number(tipoCambioValue) 
         : 3.7
+      esImo.value = Boolean(payload.es_imo ?? false)
+      usaYuan.value = Boolean(payload.usa_yuan ?? false)
+      tcYuanUsado.value = payload.tc_yuan_usado != null ? Number(payload.tc_yuan_usado) : null
+      tcYuanUsadoAlCrear.value = payload.tc_yuan_usado != null ? Number(payload.tc_yuan_usado) : null
+      const data = response?.data
+      tcYuanActual.value = data?.tc_yuan_actual != null ? Number(data.tc_yuan_actual) : null
+
+      // Si la cotización usó yuanes, los precios en BD están en USD; convertir a yuan para mostrar en paso 2
+      if (usaYuan.value && payload.tc_yuan_usado != null && Number(payload.tc_yuan_usado) > 0) {
+        const tc = Number(payload.tc_yuan_usado)
+        proveedores.value.forEach(proveedor => {
+          proveedor.productos.forEach((p: any) => {
+            p.precio = round10(Number(p.precio) * tc)
+          })
+        })
+      }
 
       return payload
     } catch (error) {
@@ -917,6 +974,13 @@ export const useCalculadoraImportacion = () => {
     calculatedExtraItems,
     selectedVendedor,
     selectedContenedor,
+    esImo,
+    usaYuan,
+    tcYuanUsado,
+    tcYuanUsadoAlCrear,
+    tcYuanGlobal,
+    fetchTcYuanGlobal,
+    tcYuanActual,
     fetchVendedores,
     fetchContenedores,
     loadCotizacionById,

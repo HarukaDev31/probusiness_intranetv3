@@ -79,6 +79,9 @@ export interface saveCotizacionRequest {
   id_carga_consolidada_contenedor: number | null
   tarifa: Tarifa
   tipo_cambio: number
+  es_imo?: boolean
+  usa_yuan?: boolean
+  tc_yuan_usado?: number | null
 }
 
 export interface CotizacionFilters {
