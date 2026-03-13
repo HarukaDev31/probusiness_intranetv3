@@ -152,12 +152,13 @@
         :key="weekIndex"
         class="relative"
       >
-        <!-- Celdas de los días -->
+        <!-- Celdas de los días: altura mínima según el día con más eventos de la semana -->
         <div class="grid grid-cols-7 border-r-2 border-gray-300 dark:border-gray-600">
           <div
             v-for="(day, dayIndex) in week.days"
             :key="dayIndex"
-            class="min-h-[165px] max-h-[200px] overflow-hidden transition-colors flex flex-col relative"
+            class="min-h-0 overflow-hidden transition-colors flex flex-col relative"
+            :style="{ minHeight: `calc(3rem + ${Math.max(1, week.eventRows.length) * 2.75}rem)` }"
             :class="day.isCurrentMonth
               ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' +
                 (day.isWeekend
@@ -178,27 +179,13 @@
                 {{ day.day }}
               </span>
             </div>
-            <!-- Ver más por día: solo si este día tiene más de 3 eventos -->
-            <div
-              v-if="day.isCurrentMonth && getEventsForDayInWeek(week, dayIndex).length > MAX_VISIBLE_EVENT_ROWS"
-              class="mt-auto pt-1 px-1 pointer-events-auto"
-              @click.stop
-            >
-              <button
-                type="button"
-                class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline focus:outline-none w-full text-left"
-                @click.stop="openMoreEventsModal(getEventsForDayInWeek(week, dayIndex).slice(MAX_VISIBLE_EVENT_ROWS), `Más eventos - ${day.day} ${monthNames[day.date.month - 1]}`)"
-              >
-                Ver más (+{{ getEventsForDayInWeek(week, dayIndex).length - MAX_VISIBLE_EVENT_ROWS }}) eventos
-              </button>
-            </div>
           </div>
         </div>
         
-        <!-- Eventos multi-día (capa absoluta). Máx 3 filas. z-20 para quedar sobre el overlay gris del fin de semana. -->
+        <!-- Eventos multi-día (capa absoluta). Todas las filas; altura de la semana = f(máx eventos). -->
         <div class="absolute top-6 md:top-7 left-0 right-0 pointer-events-none z-20">
           <div
-            v-for="(eventRow, rowIndex) in week.eventRows.slice(0, MAX_VISIBLE_EVENT_ROWS)"
+            v-for="(eventRow, rowIndex) in week.eventRows"
             :key="rowIndex"
             class="relative h-9 md:h-10 mb-1"
           >
@@ -882,7 +869,6 @@ initializeFromRoute()
 
 // Semana empieza en lunes (col 0 = Lunes, col 6 = Domingo)
 const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-const MAX_VISIBLE_EVENT_ROWS = 3
 const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`)
 const overlay = useOverlay()
 const eventModal = overlay.create(EventModal)
@@ -1912,6 +1898,7 @@ const handleSaveActivityOverlay = async (data: CreateCalendarEventRequest) => {
     if (result) {
       showSuccess('Actividad creada', 'La actividad se ha creado correctamente.')
       activityModal.close()
+      invalidateCache('events')
       await loadEvents(true)
       if (viewMode.value === 'activities') {
         await loadActivitiesData(true)
@@ -1932,6 +1919,7 @@ const handleUpdateActivityOverlay = async (data: CreateCalendarEventRequest & { 
     if (result) {
       showSuccess('Actividad actualizada', 'La actividad se ha actualizado correctamente.')
       activityModal.close()
+      invalidateCache('events')
       await loadEvents(true)
       if (viewMode.value === 'activities') {
         await loadActivitiesData(true)
