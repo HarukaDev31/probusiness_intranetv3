@@ -248,7 +248,7 @@
                   </span>
                 </span>
                 <div v-if="eventSpan.isEnd" class="flex items-center gap-0.5 shrink-0 ml-auto">
-                <UTooltip :text="getEventStatusLabel(getEventStatus(eventSpan.event))" :content="{ align: 'center', side: 'top', sideOffset: 8 }">
+                <UTooltip v-if="getEventStatus(eventSpan.event) !== 'PENDIENTE'" :text="getEventStatusLabel(getEventStatus(eventSpan.event))" :content="{ align: 'center', side: 'top', sideOffset: 8 }">
                   <UIcon
                     :name="getEventStatusIcon(getEventStatus(eventSpan.event))"
                     class="w-3.5 h-3.5 shrink-0 opacity-90"
