@@ -64,17 +64,23 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'update', eventId: number, status: CalendarEventStatus): void
+  (e: 'update-charge', chargeId: number, status: CalendarEventStatus): void
 }>()
 
-// Estado de la actividad (uno solo para todos; si uno cambia, todos lo ven)
+const myCharge = computed(() => {
+  if (props.isJefe) return null
+  return (props.activity.charges || []).find(c => c.user_id === Number(props.currentUserId)) ?? null
+})
+
 const activityStatus = computed((): CalendarEventStatus => {
+  if (!props.isJefe && myCharge.value) {
+    return (myCharge.value.status as CalendarEventStatus) || 'PENDIENTE'
+  }
   const charges = props.activity.charges || []
   if (charges.length === 0) return 'PENDIENTE'
   const statuses = charges.map(c => c.status || 'PENDIENTE')
-  const allCompleted = statuses.every(s => s === 'COMPLETADO')
-  if (allCompleted) return 'COMPLETADO'
-  const hasProgress = statuses.some(s => s === 'PROGRESO' || s === 'COMPLETADO')
-  if (hasProgress) return 'PROGRESO'
+  if (statuses.every(s => s === 'COMPLETADO')) return 'COMPLETADO'
+  if (statuses.some(s => s === 'PROGRESO' || s === 'COMPLETADO')) return 'PROGRESO'
   return 'PENDIENTE'
 })
 
@@ -105,7 +111,11 @@ const statusItems = computed(() => {
     icon: option.value === activityStatus.value ? 'i-heroicons-check' : undefined,
     onSelect: () => {
       if (option.value !== activityStatus.value) {
-        emit('update', props.activity.id, option.value)
+        if (!props.isJefe && myCharge.value) {
+          emit('update-charge', myCharge.value.id, option.value)
+        } else {
+          emit('update', props.activity.id, option.value)
+        }
       }
     }
   }))

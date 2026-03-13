@@ -169,7 +169,18 @@
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                   <!-- Actividad -->
                   <td class="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">
-                    {{ activity.name || activity.title }}
+                    <button
+                      v-if="canOpenSubtasksRow(activity)"
+                      class="flex items-center gap-1.5 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                      @click="toggleSubtasksRow(activity)"
+                    >
+                      <UIcon
+                        :name="expandedActivityId === activity.id ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'"
+                        class="w-4 h-4 shrink-0 text-gray-400"
+                      />
+                      <span>{{ activity.name || activity.title }}</span>
+                    </button>
+                    <span v-else>{{ activity.name || activity.title }}</span>
                   </td>
 
                   <!-- # Consolidado: solo si el grupo usa consolidado -->
@@ -185,6 +196,7 @@
                       :current-user-id="currentUserId"
                       :is-jefe="isJefeImportaciones"
                       @update="(eventId, status) => handleStatusUpdate(eventId, status)"
+                      @update-charge="(chargeId, status) => handleChargeStatusUpdate(chargeId, status)"
                     />
                   </td>
 
@@ -237,21 +249,21 @@
                   <!-- Acciones -->
                   <td class="px-4 py-3 text-center">
                     <div class="flex items-center justify-center gap-1">
-                      <!-- Subtareas -->
+                      <!-- Crear subtareas -->
                       <UTooltip
-                        v-if="canOpenSubtasksRow(activity)"
-                        :text="expandedActivityId === activity.id ? 'Ocultar subtareas' : 'Ver subtareas'"
+                        v-if="canCreateSubtasksForActivity(activity)"
+                        text="Crear subtareas"
                       >
                         <UButton
-                          :icon="expandedActivityId === activity.id ? 'i-heroicons-minus' : 'i-heroicons-plus'"
+                          icon="i-heroicons-plus"
                           variant="ghost"
                           size="xs"
                           color="primary"
-                          @click="toggleSubtasksRow(activity)"
+                          @click="openCreateSubtasksModalFromActivity(activity)"
                         />
                       </UTooltip>
 
-                      <!-- Notas: jefe ve/edita notas de la actividad; no-jefe ve/edita solo sus notas (charge) -->
+                      <!-- Notas -->
                       <UTooltip text="Notas">
                         <UButton
                           v-if="isJefeImportaciones || getMyCharge(activity)"
@@ -274,11 +286,7 @@
                 >
                   <td :colspan="usaConsolidado ? 9 : 8" class="px-4 py-3 w-full" style="min-width: 1200px;">
                     <div class="space-y-3 w-full">
-                      <div class="flex items-center justify-between">
-                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                          Subtareas por responsable
-                        </p>
-                      </div>
+                      
 
                       <div
                         v-if="getChargesToShowForSubtasks(activity).length === 0"
@@ -292,27 +300,7 @@
                         :key="charge.id"
                         class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3 w-full min-w-0"
                       >
-                        <div class="flex items-center justify-between gap-2">
-                          <div class="flex items-center gap-2">
-                            <UAvatar
-                              :alt="charge.user?.nombre || 'U'"
-                              size="sm"
-                              :src="charge.user?.avatar"
-                              :style="{
-                                backgroundColor: getResponsableColor(charge.user_id, charge.user?.nombre),
-                                color: '#fff'
-                              }"
-                            />
-                            <div>
-                              <p class="text-sm font-medium">
-                                {{ charge.user?.nombre || 'Responsable #' + charge.user_id }}
-                              </p>
-                              <p class="text-xs text-gray-500">
-                                Estado: {{ charge.status }}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                       
 
                         <!-- Lista de subtareas -->
                         <div v-if="(charge.subtasks || []).length > 0" class="space-y-2">
@@ -410,55 +398,6 @@
                           Sin subtareas para este responsable.
                         </p>
 
-                        <!-- Formulario nueva subtarea (solo para el propio responsable o jefe) -->
-                        <div
-                          v-if="canManageSubtasksForCharge(charge)"
-                          class="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3 w-full min-w-0"
-                        >
-                          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2 items-end w-full">
-                            <UFormField label="Nombre subtarea">
-                              <UInput
-                                v-model="newSubtaskName"
-                                placeholder="Ej. Revisar documentos"
-                              />
-                            </UFormField>
-                            <UFormField label="Duración (horas)">
-                              <UInput
-                                v-model.number="newSubtaskHours"
-                                type="number"
-                                min="0"
-                                placeholder="0"
-                              />
-                            </UFormField>
-                            <UFormField label="Fecha fin">
-                              <UPopover :open="undefined">
-                                <UButton
-                                  color="neutral"
-                                  variant="outline"
-                                  size="sm"
-                                  icon="i-lucide-calendar"
-                                  class="w-full justify-start"
-                                  :class="{ 'text-gray-400 dark:text-gray-500': !newSubtaskEndDate }"
-                                >
-                                  {{ newSubtaskEndDate ? formatDate(calendarDateToYmd(newSubtaskEndDate) ?? '') : 'Seleccionar fecha' }}
-                                </UButton>
-                                <template #content>
-                                  <UCalendar v-model="newSubtaskEndDate" class="p-2" />
-                                </template>
-                              </UPopover>
-                            </UFormField>
-                            <div class="flex items-end">
-                              <UButton
-                                label="Agregar"
-                                color="primary"
-                                size="sm"
-                                :loading="savingSubtask"
-                                class="w-full"
-                                @click="() => saveNewSubtask(charge)"
-                              />
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </td>
@@ -556,6 +495,15 @@
       </template>
     </UModal>
 
+    <!-- Modal de Crear Subtareas (batch) -->
+    <CreateSubtasksModal
+      :open="isCreateSubtasksModalOpen"
+      :charge-name="createSubtasksChargeName"
+      :saving="savingSubtask"
+      @close="closeCreateSubtasksModal"
+      @create="handleBatchCreateSubtasks"
+    />
+
     <!-- Modal de Tracking -->
     <ActivityTrackingModal
       :open="isTrackingModalOpen"
@@ -570,7 +518,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CalendarDate, getLocalTimeZone, today, parseDate } from '@internationalized/date'
 import { useCalendarStore } from '~/composables/useCalendarStore'
@@ -580,6 +528,7 @@ import { STATUS_OPTIONS, PRIORITY_OPTIONS, countWeekdaysBetween } from '~/consta
 import StatusDropdown from '~/components/calendar/StatusDropdown.vue'
 import PriorityDropdown from '~/components/calendar/PriorityDropdown.vue'
 import ActivityTrackingModal from '~/components/calendar/ActivityTrackingModal.vue'
+import CreateSubtasksModal from '~/components/calendar/CreateSubtasksModal.vue'
 
 const {
   visibleActivities,
@@ -604,7 +553,8 @@ const {
   getCalendarRoute,
   createSubtask,
   updateSubtask,
-  deleteSubtask
+  deleteSubtask,
+  invalidateCache
 } = useCalendarStore()
 
 const { showSuccess, showError } = useModal()
@@ -660,10 +610,12 @@ const filterEventId = ref<number | null>(null)
 
 // Estado de subtareas (fila expandida en tabla)
 const expandedActivityId = ref<number | null>(null)
-const newSubtaskName = ref('')
-const newSubtaskHours = ref<number | null>(null)
-const newSubtaskEndDate = ref<any>(null)
 const savingSubtask = ref(false)
+
+// Modal de crear subtareas (batch)
+const isCreateSubtasksModalOpen = ref(false)
+const createSubtasksChargeId = ref<number | null>(null)
+const createSubtasksChargeName = ref('')
 
 // Edición de subtarea
 const editingSubtaskId = ref<number | null>(null)
@@ -913,6 +865,16 @@ const handleStatusUpdate = async (eventId: number, status: CalendarEventStatus) 
   }
 }
 
+const handleChargeStatusUpdate = async (chargeId: number, status: CalendarEventStatus) => {
+  const success = await updateChargeStatus(chargeId, status)
+  if (success) {
+    showSuccess('Éxito', 'Estado actualizado correctamente')
+    await applyFilters()
+  } else {
+    showError('Error', 'No se pudo actualizar el estado')
+  }
+}
+
 const handlePriorityUpdate = async (activityId: number, priority: CalendarEventPriority) => {
   const success = await updateEventPriority(activityId, priority)
   if (success) {
@@ -1032,34 +994,65 @@ const getSubtaskStatusOption = (status: string | undefined): { label: string; va
   return statusOptionsSubtasks.find(o => o.value === s) || statusOptionsSubtasks[0]
 }
 
-const saveNewSubtask = async (charge: CalendarEventCharge) => {
-  if (!newSubtaskName.value.trim()) {
-    showError('Error', 'El nombre de la subtarea es obligatorio')
-    return
-  }
-  if (!canManageSubtasksForCharge(charge)) {
-    showError('Error', 'No puedes crear subtareas para este responsable')
-    return
-  }
-  savingSubtask.value = true
-  try {
-    const payload = {
-      name: newSubtaskName.value.trim(),
-      duration_hours: newSubtaskHours.value != null ? Number(newSubtaskHours.value) : 0,
-      status: 'PENDIENTE' as CalendarEventStatus,
-      end_date: calendarDateToYmd(newSubtaskEndDate.value)
+const canCreateSubtasksForActivity = (activity: CalendarEvent): boolean => {
+  if (isJefeImportaciones.value) return (activity.charges || []).length > 0
+  return !!getMyCharge(activity)
+}
+
+const openCreateSubtasksModal = (charge: CalendarEventCharge) => {
+  createSubtasksChargeId.value = charge.id
+  createSubtasksChargeName.value = charge.user?.nombre || `Responsable #${charge.user_id}`
+  isCreateSubtasksModalOpen.value = true
+}
+
+const openCreateSubtasksModalFromActivity = (activity: CalendarEvent) => {
+  if (isJefeImportaciones.value) {
+    const charges = activity.charges || []
+    if (charges.length === 1) {
+      openCreateSubtasksModal(charges[0])
+    } else if (charges.length > 1) {
+      expandedActivityId.value = activity.id
     }
-    const created = await createSubtask(charge.id, payload)
-    if (created) {
-      showSuccess('Éxito', 'Subtarea creada correctamente')
-      newSubtaskName.value = ''
-      newSubtaskHours.value = null
-      newSubtaskEndDate.value = null
+    return
+  }
+  const myCharge = getMyCharge(activity)
+  if (myCharge) openCreateSubtasksModal(myCharge)
+}
+
+const closeCreateSubtasksModal = () => {
+  isCreateSubtasksModalOpen.value = false
+  createSubtasksChargeId.value = null
+  createSubtasksChargeName.value = ''
+}
+
+const handleBatchCreateSubtasks = async (items: { name: string; duration_hours: number; end_date: any }[]) => {
+  if (!createSubtasksChargeId.value || items.length === 0) return
+  savingSubtask.value = true
+  let successCount = 0
+  let failCount = 0
+  try {
+    for (const item of items) {
+      const payload = {
+        name: item.name,
+        duration_hours: item.duration_hours,
+        status: 'PENDIENTE' as CalendarEventStatus,
+        end_date: calendarDateToYmd(item.end_date)
+      }
+      const created = await createSubtask(createSubtasksChargeId.value, payload)
+      if (created) {
+        successCount++
+      } else {
+        failCount++
+      }
+    }
+    if (failCount === 0) {
+      showSuccess('Éxito', `${successCount} subtarea${successCount !== 1 ? 's' : ''} creada${successCount !== 1 ? 's' : ''} correctamente`)
+      closeCreateSubtasksModal()
     } else {
-      showError('Error', 'No se pudo crear la subtarea')
+      showError('Error parcial', `${successCount} creada(s), ${failCount} fallida(s)`)
     }
   } catch (err: any) {
-    showError('Error', err?.message || 'No se pudo crear la subtarea')
+    showError('Error', err?.message || 'No se pudieron crear las subtareas')
   } finally {
     savingSubtask.value = false
   }
@@ -1164,7 +1157,19 @@ onMounted(async () => {
       expandedActivityId.value = id
     }
   }
-  await applyFilters()
+  await applyFilters(true)
+
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+const onVisibilityChange = async () => {
+  if (document.visibilityState !== 'visible') return
+  invalidateCache('events')
+  await applyFilters(true)
+}
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 
 definePageMeta({

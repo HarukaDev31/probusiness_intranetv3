@@ -382,7 +382,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent } from 'vue'
 import { CalendarDate, getLocalTimeZone, today, parseDate, isSameDay } from '@internationalized/date'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
@@ -1991,6 +1991,22 @@ onMounted(async () => {
   if (viewMode.value === 'activities') {
     await loadActivitiesData()
   }
+
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+const onVisibilityChange = async () => {
+  if (document.visibilityState !== 'visible' || !hasLoadedInitially.value) return
+  invalidateCache('events')
+  if (viewMode.value === 'activities') {
+    await loadActivitiesData(true)
+  } else {
+    await loadEvents(true)
+  }
+}
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 
 // Función que se ejecuta cuando la transición completa
@@ -2010,7 +2026,7 @@ watch([currentDate, viewMode], () => {
   }
 })
 
-// Al volver desde pantallas de configuración, refrescar datos para que permisos, colores y eventos queden consistentes
+// Al volver desde sub-rutas del calendario, refrescar datos para que estados, permisos, colores y eventos queden consistentes
 watch(() => route.path, async (to, from) => {
   if (!from || to !== '/calendar') return
 
@@ -2020,6 +2036,8 @@ watch(() => route.path, async (to, from) => {
     from === '/calendar/config' ||
     from === '/calendar/role-groups' ||
     from === '/calendar/colores'
+  const fromProgreso =
+    from === '/calendar/progreso' || from.endsWith('/progreso')
 
   if (fromCatalog) {
     await loadActivityCatalog(true)
@@ -2032,8 +2050,17 @@ watch(() => route.path, async (to, from) => {
   }
 
   if (fromConfigLike) {
-    // Forzar recarga completa: configuración de calendario, permisos, colores, eventos y progreso
     await refresh()
+    if (viewMode.value === 'activities') {
+      await loadActivitiesData(true)
+    } else {
+      await loadEvents(true)
+    }
+    return
+  }
+
+  if (fromProgreso) {
+    invalidateCache('events')
     if (viewMode.value === 'activities') {
       await loadActivitiesData(true)
     } else {

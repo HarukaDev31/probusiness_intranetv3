@@ -40,16 +40,17 @@ export default defineNuxtPlugin(() => {
       // Con FormData el navegador debe asignar Content-Type con boundary; no fijarlo aquí
       if (isFormData) delete finalHeaders['Content-Type']
       
-      const config = {
+      const fetchConfig = {
         baseURL: API_CONFIG.baseURL,
         timeout: API_CONFIG.timeout,
         headers: finalHeaders,
+        cache: 'no-store' as RequestCache,
         ...options
       }
       
-      config.headers = finalHeaders
+      fetchConfig.headers = finalHeaders
 
-      return await $fetch<T>(endpoint, config)
+      return await $fetch<T>(endpoint, fetchConfig)
     } catch (error: any) {
       if ((error.status === 401 || error.statusCode === 401) && !endpoint.includes('/api/auth/login')) {
         handleSessionExpired()
