@@ -1320,32 +1320,20 @@ export const useCalendarStore = () => {
     // Orden manual de eventos (vista mes)
     async reorderEvents(ids: number[]): Promise<boolean> {
       try {
-        state.loading.value = true
         const response = await CalendarService.reorderEvents(ids)
-        if (!response?.success) {
-          return false
-        }
-        // Reordenar localmente para reflejar el cambio sin recargar
+        if (!response?.success) return false
         const orderMap = new Map<number, number>()
-        ids.forEach((id, index) => {
-          orderMap.set(id, index)
-        })
+        ids.forEach((id, i) => orderMap.set(id, i))
         state.events.value = [...state.events.value].sort((a, b) => {
-          const ao = orderMap.has(a.id) ? (orderMap.get(a.id) as number) : Number.MAX_SAFE_INTEGER
-          const bo = orderMap.has(b.id) ? (orderMap.get(b.id) as number) : Number.MAX_SAFE_INTEGER
-          if (ao !== bo) return ao - bo
-          const aDate = a.start_date ?? ''
-          const bDate = b.start_date ?? ''
-          if (aDate === bDate) return a.id - b.id
-          return aDate < bDate ? -1 : 1
+          const ao = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER
+          const bo = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER
+          return ao - bo || (a.start_date ?? '').localeCompare(b.start_date ?? '') || a.id - b.id
         })
         return true
       } catch (err) {
         console.error('Error al reordenar eventos:', err)
         return false
-      } finally {
-        state.loading.value = false
-      } 
+      }
     },
 
     // UI

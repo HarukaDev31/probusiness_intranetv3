@@ -120,20 +120,6 @@
         <h2 class="flex-1 text-xl md:text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-wide text-center">
           {{ currentPeriodTitle }}
         </h2>
-        <div class="flex items-center gap-2" v-if="isJefeImportaciones && hasPendingOrder">
-          <span class="text-xs md:text-sm text-amber-600 dark:text-amber-400 font-medium">
-            Tienes cambios de orden sin guardar
-          </span>
-          <UButton
-            size="sm"
-            color="primary"
-            variant="solid"
-            icon="i-heroicons-arrow-up-tray"
-            @click="savePendingOrder"
-          >
-            Guardar orden
-          </UButton>
-        </div>
       </div>
       <!-- Días de la semana (fondo oscuro, texto blanco) -->
       <div class="grid grid-cols-7 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-800 dark:bg-gray-900">
@@ -158,17 +144,20 @@
           <div
             v-for="(day, dayIndex) in week.days"
             :key="dayIndex"
-            class="min-h-0 overflow-hidden transition-colors flex flex-col relative"
+            class="min-h-0 overflow-hidden transition-all duration-300 flex flex-col relative"
             :style="{ minHeight: `calc(3rem + ${Math.max(1, week.eventRows.length) * 3.25}rem)` }"
-            :class="day.isCurrentMonth
-              ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' +
-                (day.isWeekend
-                  ? 'bg-gray-100 dark:bg-gray-800/70'
-                  : 'bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
-              : 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-800/50 pointer-events-none'"
+            :class="[
+              day.isCurrentMonth
+                ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' +
+                  (day.isWeekend
+                    ? 'bg-gray-100 dark:bg-gray-800/70'
+                    : 'bg-white dark:bg-gray-800' + (day.isToday ? ' bg-blue-50 dark:bg-blue-900/10' : ''))
+                : 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-800/50 pointer-events-none',
+              reorderingDate && day.dateStr === reorderingDate ? 'ring-2 ring-inset ring-primary-400 dark:ring-primary-500 bg-primary-50/50 dark:bg-primary-900/20' : ''
+            ]"
             @click="day.isCurrentMonth && handleDayClick(day.date)"
           >
-            <div class="p-2 md:p-2.5 relative">
+            <div class="p-2 md:p-2.5 relative flex items-center gap-1">
               <span
                 class="text-sm font-medium"
                 :class="{
@@ -178,6 +167,10 @@
                 }"
               >
                 {{ day.day }}
+              </span>
+              <span v-if="reorderingDate && day.dateStr === reorderingDate" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400">
+                <UIcon name="i-heroicons-arrow-path" class="w-3 h-3 animate-spin" />
+                <span class="text-[10px] font-medium">Guardando</span>
               </span>
             </div>
           </div>
@@ -1114,38 +1107,12 @@ const getEventFullTooltip = (event: CalendarEvent, prefix = ''): string => {
   return prefix ? prefix + base : base
 }
 
-// Orden manual (pendiente) para vista mes
-const pendingOrderIds = ref<number[] | null>(null)
+// Drag & drop reorder (auto-save)
 const draggingEventId = ref<number | null>(null)
 const dragOverEventId = ref<number | null>(null)
+const reorderingDate = ref<string | null>(null)
 
-const hasPendingOrder = computed(() => Array.isArray(pendingOrderIds.value) && pendingOrderIds.value.length > 0)
-
-// Lista de eventos visible respetando orden manual pendiente (si existe)
-const orderedVisibleEvents = computed(() => {
-  const base = visibleEvents.value
-
-  // Punto de partida: orden pendiente si existe, si no el orden actual de visibleEvents
-  const ids: number[] =
-    pendingOrderIds.value && pendingOrderIds.value.length > 0
-      ? [...pendingOrderIds.value]
-      : base.map(e => e.id)
-
-  const orderMap = new Map<number, number>()
-  ids.forEach((id, index) => {
-    orderMap.set(id, index)
-  })
-
-  return [...base].sort((a, b) => {
-    const ao = orderMap.has(a.id) ? (orderMap.get(a.id) as number) : Number.MAX_SAFE_INTEGER
-    const bo = orderMap.has(b.id) ? (orderMap.get(b.id) as number) : Number.MAX_SAFE_INTEGER
-    if (ao !== bo) return ao - bo
-    const aDate = a.start_date ?? ''
-    const bDate = b.start_date ?? ''
-    if (aDate === bDate) return a.id - b.id
-    return aDate < bDate ? -1 : 1
-  })
-})
+const orderedVisibleEvents = computed(() => visibleEvents.value)
 
 const onMonthEventDragStart = (event: CalendarEvent) => {
   if (!isJefeImportaciones.value) return
@@ -1153,17 +1120,8 @@ const onMonthEventDragStart = (event: CalendarEvent) => {
 }
 
 const onMonthEventDragEnter = (event: CalendarEvent) => {
-  if (!isJefeImportaciones.value) return
-  if (!draggingEventId.value) return
-
-  // Si volvemos a pasar por el mismo evento que estamos arrastrando,
-  // cancelar el preview y restaurar el orden original.
-  if (draggingEventId.value === event.id) {
-    dragOverEventId.value = null
-    return
-  }
-
-  dragOverEventId.value = event.id
+  if (!isJefeImportaciones.value || !draggingEventId.value) return
+  dragOverEventId.value = draggingEventId.value === event.id ? null : event.id
 }
 
 const onMonthEventDragEnd = () => {
@@ -1171,43 +1129,24 @@ const onMonthEventDragEnd = () => {
   draggingEventId.value = null
 }
 
-const onMonthEventDrop = (targetEvent: CalendarEvent) => {
-  if (!isJefeImportaciones.value) {
-    draggingEventId.value = null
-    dragOverEventId.value = null
-    return
-  }
+const onMonthEventDrop = async (targetEvent: CalendarEvent) => {
   const sourceId = draggingEventId.value
   draggingEventId.value = null
   dragOverEventId.value = null
-  if (!sourceId || sourceId === targetEvent.id) return
+  if (!isJefeImportaciones.value || !sourceId || sourceId === targetEvent.id) return
 
-  const currentIds = (pendingOrderIds.value && pendingOrderIds.value.length
-    ? [...pendingOrderIds.value]
-    : orderedVisibleEvents.value.map(e => e.id))
-
+  const currentIds = orderedVisibleEvents.value.map(e => e.id)
   const sourceIndex = currentIds.indexOf(sourceId)
   const targetIndex = currentIds.indexOf(targetEvent.id)
   if (sourceIndex === -1 || targetIndex === -1) return
 
-  const [moved] = currentIds.splice(sourceIndex, 1)
-  const newIndex = targetIndex
-  currentIds.splice(newIndex, 0, moved)
+  currentIds.splice(sourceIndex, 1)
+  currentIds.splice(targetIndex, 0, sourceId)
 
-  pendingOrderIds.value = currentIds
-}
-
-const savePendingOrder = async () => {
-  if (!isJefeImportaciones.value) return
-  const ids = pendingOrderIds.value
-  if (!ids || !ids.length) return
-  const ok = await reorderEvents(ids)
-  if (!ok) {
-    showError('No se pudo guardar el nuevo orden.', 'Intenta nuevamente más tarde.')
-    return
-  }
-  pendingOrderIds.value = null
-  showSuccess('Orden actualizado', 'Las actividades se han reordenado correctamente.')
+  reorderingDate.value = targetEvent.start_date ?? null
+  const ok = await reorderEvents(currentIds)
+  reorderingDate.value = null
+  if (!ok) showError('Error', 'No se pudo guardar el nuevo orden.')
 }
 
 // Responsables del evento (desde charges o responsables)
