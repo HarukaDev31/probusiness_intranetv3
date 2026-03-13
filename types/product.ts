@@ -107,7 +107,7 @@ export interface ProductsServiceResponse {
 export interface FilterOptionsResponse {
   status: string
   data: {
-    cargas: string[]
+    cargas: { value: string; label: string }[]
     rubros: string[]
     tipos_producto: string[]
   }
@@ -117,7 +117,7 @@ export interface FilterOptionsResponse {
 export interface FilterOptions {
   rubros: string[]
   tiposProducto: string[]
-  campanas: string[]
+  campanas: { value: string; label: string }[]
 }
 
 // Parámetros para búsqueda y paginación

@@ -348,6 +348,27 @@ export const useProducts = () => {
       return { success: false, data: [] }
     }
   }
+  const updateProductImage = async (id: number, file: File): Promise<{ success: boolean; foto?: string }> => {
+    try {
+      const response = await ProductService.updateProductImage(id, file)
+      if (response.success) {
+        await loadProducts()
+        // Cache-bust: forzar nueva URL para evitar caché del navegador
+        const t = Date.now()
+        products.value = products.value.map(p => {
+          if (p.id !== id || !p.foto) return p
+          const sep = p.foto.includes('?') ? '&' : '?'
+          return { ...p, foto: p.foto + sep + '_t=' + t }
+        })
+        return { success: true, foto: response.data?.foto }
+      }
+      return { success: false }
+    } catch (err) {
+      console.error('Error updating product image:', err)
+      return { success: false }
+    }
+  }
+
   const resetState = () => {
     products.value = []
     loading.value = false
@@ -394,6 +415,7 @@ export const useProducts = () => {
     importExcel,
     deleteExcel,
     headers,
-    getExcelsList
+    getExcelsList,
+    updateProductImage
   }
 } 

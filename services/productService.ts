@@ -242,6 +242,23 @@ export class ProductService extends BaseService {
       throw new Error(error?.data?.message || 'Error al eliminar el archivo')
     }
   }
+  static async updateProductImage(id: number, file: File): Promise<{ success: boolean; message: string; data?: { foto: string } }> {
+    try {
+      const formData = new FormData()
+      formData.append('imagen', file)
+
+      const response = await this.apiCall<{ success: boolean; message: string; data?: { foto: string } }>(`${this.baseUrl}/${id}/update-image`, {
+        method: 'POST',
+        body: formData
+      })
+
+      return response
+    } catch (error: any) {
+      console.error('Error en updateProductImage:', error)
+      return { success: false, message: error?.message || 'Error al actualizar la imagen' }
+    }
+  }
+
   static async getExcelsList(): Promise<{
     success: boolean;
     data: {
