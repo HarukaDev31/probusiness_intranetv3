@@ -337,6 +337,10 @@ export interface CalendarFilters {
   per_page?: number
   /** Id del grupo de calendario (contexto multi-grupo). Se envía en todas las peticiones cuando el usuario puede estar en varios grupos. */
   role_group_id?: number | null
+  /** Solo devolver actividades con al menos un responsable asignado */
+  has_charges?: number
+  /** Ordenar por fecha descendente (más recientes primero) */
+  order_desc?: number
 }
 
 /** Metadatos de paginación devueltos por el backend cuando se envían page y per_page */

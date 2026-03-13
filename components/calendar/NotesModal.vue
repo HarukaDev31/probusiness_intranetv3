@@ -1,5 +1,5 @@
 <template>
-  <UModal class="w-full sm:max-w-md">
+  <UModal class="w-full sm:max-w-md" @close="close">
     <template #header>
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-semibold">Notas de la actividad</h3>

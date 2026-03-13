@@ -1,5 +1,5 @@
 <template>
-  <UModal :open="open" @close="handleClose" class="w-full max-w-2xl">
+  <UModal :open="open" @update:open="v => { if (!v) handleClose() }" @close="handleClose" class="w-full max-w-2xl">
     <template #header>
       <div class="flex items-center justify-between w-full">
         <div>

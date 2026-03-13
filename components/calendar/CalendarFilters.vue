@@ -14,6 +14,7 @@
         size="md"
         :class="compact ? 'w-[160px] sm:w-[180px]' : 'w-[180px] sm:w-[220px]'"
         multiple
+        :disabled="disabled"
         :search-input="{ placeholder: 'Buscar...' }"
       />
     </div>
@@ -30,6 +31,7 @@
         size="md"
         :class="compact ? 'w-[160px] sm:w-[180px]' : 'w-[180px] sm:w-[220px]'"
         multiple
+        :disabled="disabled"
         :search-input="{ placeholder: 'Buscar...' }"
       >
         
@@ -42,6 +44,7 @@
         placeholder="Todos"
         size="md"
         :class="compact ? 'w-[160px] sm:w-[180px]' : 'w-[180px] sm:w-[220px]'"
+        :disabled="disabled"
         :search-input="{ placeholder: 'Buscar...' }"
         @update:model-value="onResponsableSelect"
       >
@@ -68,6 +71,7 @@
           variant="outline"
           size="md"
           :class="compact ? 'min-w-[160px]' : 'min-w-[180px]'"
+          :disabled="disabled"
         />
         <template #content>
           <div class="p-4 flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
@@ -108,6 +112,7 @@ interface Props {
   inline?: boolean
   /** Barra resumida: controles más estrechos y una sola fila */
   compact?: boolean
+  disabled?: boolean
   initialFilters?: {
     responsable_id?: number
     responsable_ids?: number[]
@@ -119,7 +124,7 @@ interface Props {
   getResponsableColor: (userId: number, nombre?: string) => string
 }
 
-const props = withDefaults(defineProps<Props>(), { inline: false, compact: false })
+const props = withDefaults(defineProps<Props>(), { inline: false, compact: false, disabled: false })
 
 const emit = defineEmits<{
   (e: 'filter-change', filters: { responsable_id?: number; responsable_ids?: number[]; contenedor_id?: number; contenedor_ids?: number[]; start_date?: string; end_date?: string }): void

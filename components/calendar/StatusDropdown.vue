@@ -80,8 +80,8 @@ const activityStatus = computed((): CalendarEventStatus => {
   if (charges.length === 0) return 'PENDIENTE'
   const statuses = charges.map(c => c.status || 'PENDIENTE')
   if (statuses.every(s => s === 'COMPLETADO')) return 'COMPLETADO'
-  if (statuses.some(s => s === 'PROGRESO' || s === 'COMPLETADO')) return 'PROGRESO'
-  return 'PENDIENTE'
+  if (statuses.every(s => s === 'PENDIENTE')) return 'PENDIENTE'
+  return 'PROGRESO'
 })
 
 const activityStatusLabel = computed(() => getStatusLabel(activityStatus.value))

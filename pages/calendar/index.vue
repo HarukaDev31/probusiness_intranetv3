@@ -3,9 +3,7 @@
     <!-- Main Content -->
     <div class="flex-1 flex flex-col min-h-0 min-w-0">
       <!-- Barra resumida: una sola fila (estilo referencia jefe) -->
-      <div class="flex items-center min-h-[72px] py-5 gap-2 flex-nowrap border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 md:px-5 shrink-0">
-        
-        
+      <div class="flex items-center min-h-[72px] py-5 gap-3 flex-nowrap border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 md:px-5 shrink-0">
         <CalendarFilters
           v-if="showCalendarFilters"
           :responsables="responsablesForFilter"
@@ -14,40 +12,32 @@
           :current-user-id="Number(currentUserId) || null"
           :initial-filters="filters"
           :get-responsable-color="getResponsableColor"
+          :disabled="!hasLoadedInitially"
           inline
           compact
           @filter-change="handleFilterChange"
         />
-        <!-- Selector de calendario (grupo) cuando el usuario pertenece a más de un grupo -->
-        <div v-if="myRoleGroups.length > 1" class="ml-auto mr-4">
+
+        <div class="flex items-center gap-2 ml-auto shrink-0">
           <USelectMenu
+            v-if="myRoleGroups.length > 1"
             :model-value="selectedRoleGroupOption"
             :items="roleGroupOptions"
             value-attribute="value"
             size="xs"
-            class="min-w-[220px]"
+            class="min-w-[200px]"
             placeholder="Selecciona calendario"
+            :disabled="!hasLoadedInitially"
             @update:model-value="onRoleGroupChange"
           />
-        </div>
 
-        <div class="flex items-center gap-1 shrink-0">
-          <UButton
-            v-if="isJefeImportaciones"
-            icon="i-heroicons-plus"
-            color="primary"
-            size="xs"
-            label="Crear Actividad"
-            class="hidden sm:inline-flex"
-            @click="openCreateActivity"
-          />
           <UButton
             icon="i-heroicons-chart-bar"
             variant="ghost"
             size="xs"
             label="Progreso"
             class="hidden sm:inline-flex"
-            title="Ver Progreso"
+            :disabled="!hasLoadedInitially"
             @click="navigateTo('/calendar/progreso')"
           />
           <UButton
@@ -55,9 +45,20 @@
             icon="i-heroicons-cog-6-tooth"
             variant="ghost"
             size="xs"
-            class="!p-1.5"
             label="Configuración"
+            class="hidden sm:inline-flex"
+            :disabled="!hasLoadedInitially"
             @click="openConfig"
+          />
+          <UButton
+            v-if="isJefeImportaciones"
+            icon="i-heroicons-plus"
+            color="primary"
+            size="xs"
+            label="Crear Actividad"
+            class="hidden sm:inline-flex"
+            :disabled="!hasLoadedInitially"
+            @click="openCreateActivity"
           />
         </div>
       </div>
@@ -158,7 +159,7 @@
             v-for="(day, dayIndex) in week.days"
             :key="dayIndex"
             class="min-h-0 overflow-hidden transition-colors flex flex-col relative"
-            :style="{ minHeight: `calc(3rem + ${Math.max(1, week.eventRows.length) * 2.75}rem)` }"
+            :style="{ minHeight: `calc(3rem + ${Math.max(1, week.eventRows.length) * 3.25}rem)` }"
             :class="day.isCurrentMonth
               ? 'border-r-2 border-b-2 border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/30 ' +
                 (day.isWeekend
@@ -187,7 +188,7 @@
           <div
             v-for="(eventRow, rowIndex) in week.eventRows"
             :key="rowIndex"
-            class="relative h-9 md:h-10 mb-1"
+            class="relative h-10 md:h-12 mb-1"
           >
             <div
               v-for="eventSpan in eventRow"
@@ -196,7 +197,7 @@
               <!-- Preview: copia del evento que se está arrastrando, renderizada justo antes del destino -->
               <div
                 v-if="dragOverEventId === eventSpan.event.id && draggingEventId && draggingEventId !== eventSpan.event.id"
-                class="absolute h-full flex items-center gap-1 cursor-pointer text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-none rounded shadow-lg px-1 py-0.5 border-2 border-dashed border-white/80 bg-white/10 backdrop-blur-sm"
+                class="absolute h-full flex items-center gap-1 cursor-pointer text-xs md:text-sm text-white font-medium overflow-hidden pointer-events-none rounded shadow-lg px-1.5 py-0.5 border-2 border-dashed border-white/80 bg-white/10 backdrop-blur-sm"
                 :style="getMultiDayEventStyle(eventSpan)"
               >
                 <span class="truncate flex items-center gap-1 min-w-0 flex-1">
@@ -209,7 +210,7 @@
 
               <!-- Evento real -->
               <div
-                class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-[11px] md:text-xs text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1 py-0.5 transition-transform duration-150 ease-out"
+                class="absolute h-full flex items-center gap-1 cursor-pointer hover:opacity-90 transition-opacity text-xs md:text-sm text-white font-medium overflow-hidden pointer-events-auto rounded shadow-sm px-1.5 py-0.5 transition-transform duration-150 ease-out"
                 :draggable="isJefeImportaciones"
                 :class="{
                   'rounded-l-md': eventSpan.isStart,
@@ -232,18 +233,15 @@
               >
                 <span v-if="!eventSpan.isStart" class="flex items-center justify-center w-5 h-5 rounded bg-white/20 text-[10px] font-bold shrink-0">…</span>
                 <span v-else class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
-                  <UTooltip v-if="!isJefeImportaciones" :text="`Prioridad: ${PRIORITY_LABELS[eventSpan.event.priority ?? 0]}`">
-                    <UIcon :name="getPriorityIcon(eventSpan.event.priority ?? 0)" class="w-3.5 h-3.5 shrink-0 opacity-90" />
-                  </UTooltip>
                   <span class="flex flex-col gap-0.5 min-w-0 flex-1 overflow-hidden min-h-0">
                     <span class="truncate block">{{ eventSpan.event.title || eventSpan.event.name }}</span>
                     <span
                       v-for="(line, lineIdx) in getEventNoteLines(eventSpan.event.notes)"
                       :key="lineIdx"
-                      class="truncate block text-[10px] md:text-[11px] opacity-90 leading-tight"
+                      class="truncate block text-[11px] md:text-xs opacity-90 leading-tight"
                     >{{ line }}</span>
                   </span>
-                  <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[10px] md:text-[11px]">
+                  <span v-if="usaConsolidado && eventSpan.event.contenedor?.nombre" class="shrink-0 opacity-90 text-[11px] md:text-xs">
                     / {{ eventSpan.event.contenedor.nombre.replace(/^Consolidado\s*#?/i, '#') }}
                   </span>
                 </span>
@@ -290,7 +288,7 @@
     </div>
 
     <!-- Modal de confirmación de eliminación -->
-    <UModal :open="isDeleteModalOpen" @close="isDeleteModalOpen = false">
+    <UModal :open="isDeleteModalOpen" @update:open="v => { if (!v) isDeleteModalOpen = false }" @close="isDeleteModalOpen = false">
       <template #header>
         <h3 class="text-lg font-semibold">Confirmar eliminación</h3>
       </template>
@@ -340,7 +338,6 @@
             />
             <div class="min-w-0 flex-1">
               <span class="font-medium text-gray-900 dark:text-white truncate block">
-                <span v-if="!isJefeImportaciones" class="text-[10px] text-gray-500 dark:text-gray-400 mr-1">{{ PRIORITY_LABELS[event.priority ?? 0] }} —</span>
                 {{ event.title || event.name }}
               </span>
               <span v-if="usaConsolidado && event.contenedor?.nombre" class="text-xs text-gray-500 dark:text-gray-400 truncate block">{{ event.contenedor.nombre }}</span>
@@ -353,7 +350,7 @@
     </UModal>
 
     <!-- Modal: todos los responsables del evento -->
-    <UModal :open="showResponsablesModal" @close="closeResponsablesModal">
+    <UModal :open="showResponsablesModal" @update:open="v => { if (!v) closeResponsablesModal() }" @close="closeResponsablesModal">
       <template #header>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           Responsables — {{ responsablesModalEvent?.title || responsablesModalEvent?.name || 'Evento' }}
@@ -1267,7 +1264,7 @@ const getEventStatus = (event: CalendarEvent): CalendarEventStatus | undefined =
   const charges = event.charges || []
   if (charges.length === 0) return 'PENDIENTE'
   if (charges.every(c => c.status === 'COMPLETADO')) return 'COMPLETADO'
-  if (charges.some(c => c.status === 'PENDIENTE')) return 'PENDIENTE'
+  if (charges.every(c => (c.status || 'PENDIENTE') === 'PENDIENTE')) return 'PENDIENTE'
   return 'PROGRESO'
 }
 
@@ -1962,8 +1959,6 @@ onMounted(async () => {
   if (currentRoleGroupId.value != null && route.query.role_group_id == null) {
     await router.replace({ path: route.path, query: { ...route.query, role_group_id: String(currentRoleGroupId.value) } })
   }
-  // Refrescar catálogo de actividades (colores) para que getEventColors use el color de la actividad
-  await loadActivityCatalog(true)
   // Si no es jefe, por defecto mostrar solo "mis" eventos (filtro responsable = yo)
   if (!isJefeImportaciones.value && (filters.value.responsable_id === undefined || filters.value.responsable_id === null)) {
     const uid = Number(currentUserId.value) || 0

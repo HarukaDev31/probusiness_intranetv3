@@ -129,7 +129,8 @@
                 />
               </div>
             </div>
-            <div class="w-14 text-right">
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ responsable.completadas }}/{{ responsable.total_asignadas }}</span>
               <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ responsable.porcentaje_completado }}%</span>
             </div>
           </div>
@@ -217,7 +218,10 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCalendarStore } from '~/composables/useCalendarStore'
+
+const router = useRouter()
 
 const {
   teamProgress,

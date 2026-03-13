@@ -8,7 +8,7 @@
           variant="ghost"
           size="sm"
           label="Regresar"
-          @click="navigateTo(getCalendarRoute('/calendar/config'))"
+          @click="router.back()"
         />
         <div>
           <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Configuración de Colores</h1>
@@ -53,7 +53,7 @@
           <UButton
             label="Volver a Configuración"
             variant="outline"
-            @click="navigateTo(getCalendarRoute('/calendar/config'))"
+            @click="router.back()"
           />
         </div>
       </UCard>
@@ -173,8 +173,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
+
+const router = useRouter()
 import { COLOR_PRESETS } from '~/constants/calendar'
 
 const {

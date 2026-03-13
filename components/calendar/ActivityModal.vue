@@ -2,8 +2,8 @@
 
   <UModal
     class="w-full sm:max-w-2xl"
-    :dismissible="false"
     :close="{ onClick: handleClose }"
+    @close="handleClose"
   >
     <template #header>
       <div class="flex items-center justify-between">

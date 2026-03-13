@@ -43,6 +43,7 @@ const state = {
   teamProgress: ref<TeamProgress | null>(null),
   responsableProgress: ref<ResponsableProgress[]>([]),
   myProgressStats: ref<{ total: number; completadas: number; en_progreso: number; pendientes: number } | null>(null),
+  globalProgressStats: ref<{ total: number; completadas: number; en_progreso: number; pendientes: number } | null>(null),
   
   // Estado de carga
   loading: ref(false),
@@ -230,6 +231,9 @@ export const useCalendarStore = () => {
       }
       if ((response as any).my_progress) {
         state.myProgressStats.value = (response as any).my_progress
+      }
+      if ((response as any).global_progress) {
+        state.globalProgressStats.value = (response as any).global_progress
       }
       state.lastFetch.events.value = Date.now()
       ;(state as any)._lastFiltersKey = filtersKey
@@ -945,10 +949,11 @@ export const useCalendarStore = () => {
       }
       if (!visible) return false
 
-      // Aplicar filtro de responsable en el mismo pass (excluir eventos sin responsables cuando se filtra por responsable)
-      if (idSet) return (event.charges?.length ? event.charges.some(charge => idSet.has(charge.user_id)) : false)
+      // Aplicar filtro de responsable: incluir eventos del responsable seleccionado + eventos sin responsable asignado
+      const hasNoCharges = !event.charges || event.charges.length === 0
+      if (idSet) return hasNoCharges || event.charges!.some(charge => idSet.has(charge.user_id))
       if (responsableId != null && typeof responsableId === 'number') {
-        return event.charges?.some(charge => charge.user_id === responsableId) ?? false
+        return hasNoCharges || event.charges!.some(charge => charge.user_id === responsableId)
       }
       return true
     })
@@ -1223,6 +1228,7 @@ export const useCalendarStore = () => {
     teamProgress: computed(() => state.teamProgress.value),
     responsableProgress: computed(() => state.responsableProgress.value),
     myProgressStats: computed(() => state.myProgressStats.value),
+    globalProgressStats: computed(() => state.globalProgressStats.value),
     loading: computed(() => state.loading.value),
     error: computed(() => state.error.value),
     filters: computed(() => state.filters.value),

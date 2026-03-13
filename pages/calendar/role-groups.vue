@@ -8,7 +8,7 @@
           variant="ghost"
           size="sm"
           label="Regresar"
-          @click="navigateTo(getCalendarRoute('/calendar/config'))"
+          @click="router.back()"
         />
         <div class="flex items-center gap-2">
           <UIcon name="i-heroicons-user-group" class="w-6 h-6 text-primary-500" />
@@ -356,8 +356,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { CalendarService, type CalendarRoleGroup, type CalendarRoleGroupMember, type CalendarRoleGroupConfig } from '~/services/calendar/calendarService'
 import { useCalendarStore } from '~/composables/useCalendarStore'
+
+const router = useRouter()
 import { useModal } from '~/composables/commons/useModal'
 import draggable from 'vuedraggable'
 

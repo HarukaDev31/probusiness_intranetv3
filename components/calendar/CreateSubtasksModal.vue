@@ -1,5 +1,5 @@
 <template>
-  <UModal :open="open" @close="handleClose" class="w-full max-w-2xl">
+  <UModal :open="open" @update:open="v => { if (!v) handleClose() }" @close="handleClose" class="w-full max-w-2xl">
     <template #header>
       <div class="flex items-center gap-2">
         <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
@@ -7,8 +7,11 @@
         </div>
         <div>
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Crear Subtareas</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ chargeName }}
+          <p v-if="activityName" class="text-sm text-gray-700 dark:text-gray-300 font-medium">
+            {{ activityName }}
+          </p>
+          <p v-if="activityEndDate" class="text-sm text-gray-500 dark:text-gray-400">
+            Fecha fin: {{ activityEndDate }}
           </p>
         </div>
       </div>
@@ -140,12 +143,17 @@ interface SubtaskRow {
 
 interface Props {
   open: boolean
-  chargeName: string
+  activityName?: string
+  activityEndDate?: string
+  chargeName?: string
   saving?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  saving: false
+  saving: false,
+  activityName: '',
+  activityEndDate: '',
+  chargeName: ''
 })
 
 const emit = defineEmits<{

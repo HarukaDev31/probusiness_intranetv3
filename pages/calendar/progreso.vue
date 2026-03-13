@@ -8,18 +8,43 @@
           variant="ghost"
           size="sm"
           label="Regresar"
-          @click="navigateTo(getCalendarRoute('/calendar'))"
+          @click="router.back()"
         />
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">TABLA DE PROGRESO</h1>
       </div>
     </div>
 
-    <!-- Mi Progreso (solo para no-Jefes) -->
-    <div v-if="!isJefeImportaciones" class="max-w-7xl mx-auto px-4 md:px-6 py-4">
-      <div class="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <!-- Progreso -->
+    <div class="max-w-7xl mx-auto px-4 md:px-6 py-4 space-y-3">
+      <!-- Progreso global (jefe) -->
+      <div v-if="isJefeImportaciones" class="flex flex-wrap items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <UIcon name="i-heroicons-globe-alt" class="w-5 h-5 text-primary-600" />
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Progreso global</span>
+        <div class="flex flex-wrap items-center gap-4 ml-4">
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">
+            <span class="text-xs text-gray-500 dark:text-gray-400">Total</span>
+            <span class="text-lg font-bold text-gray-900 dark:text-white">{{ globalProgress.total }}</span>
+          </div>
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-success-50 dark:bg-success-900/20 rounded-lg border border-success-200 dark:border-success-800">
+            <span class="text-xs text-success-600 dark:text-success-400">Completadas</span>
+            <span class="text-lg font-bold text-success-700 dark:text-success-400">{{ globalProgress.completadas }}</span>
+          </div>
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+            <span class="text-xs text-orange-600 dark:text-orange-400">En progreso</span>
+            <span class="text-lg font-bold text-orange-700 dark:text-orange-400">{{ globalProgress.enProgreso }}</span>
+          </div>
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+            <span class="text-xs text-warning-600 dark:text-warning-400">Pendientes</span>
+            <span class="text-lg font-bold text-warning-700 dark:text-warning-400">{{ globalProgress.pendientes }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mi progreso (no-jefe muestra solo el suyo, jefe no lo necesita) -->
+      <div v-if="!isJefeImportaciones" class="flex flex-wrap items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <UIcon name="i-heroicons-chart-bar" class="w-5 h-5 text-success-600" />
         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Mi progreso</span>
-        <div class="flex items-center gap-6 ml-4">
+        <div class="flex flex-wrap items-center gap-4 ml-4">
           <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">
             <span class="text-xs text-gray-500 dark:text-gray-400">Total</span>
             <span class="text-lg font-bold text-gray-900 dark:text-white">{{ myProgress.total }}</span>
@@ -29,7 +54,7 @@
             <span class="text-lg font-bold text-success-700 dark:text-success-400">{{ myProgress.completadas }}</span>
           </div>
           <div class="flex items-center gap-2 px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-            <span class="text-xs text-orange-600 dark:text-orange-400">Progresos</span>
+            <span class="text-xs text-orange-600 dark:text-orange-400">En progreso</span>
             <span class="text-lg font-bold text-orange-700 dark:text-orange-400">{{ myProgress.enProgreso }}</span>
           </div>
           <div class="flex items-center gap-2 px-3 py-1.5 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
@@ -302,36 +327,37 @@
                       >
                        
 
-                        <!-- Lista de subtareas -->
-                        <div v-if="(charge.subtasks || []).length > 0" class="space-y-2">
+                        <!-- Grid de subtareas en cards -->
+                        <div v-if="(charge.subtasks || []).length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                           <div
                             v-for="task in charge.subtasks || []"
                             :key="task.id"
-                            class="flex flex-col gap-2 bg-white dark:bg-gray-900 rounded px-3 py-2"
+                            class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-3 flex flex-col gap-2"
                           >
-                            <!-- Vista normal -->
                             <template v-if="editingSubtaskId !== task.id">
-                              <div class="flex items-center gap-2 justify-between min-w-0">
-                                <div class="flex-1 min-w-0">
-                                  <p class="text-sm font-medium truncate">
-                                    {{ task.name }}
-                                  </p>
-                                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    Duración: {{ task.duration_hours ?? 0 }} h
-                                  </p>
-                                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    Fecha fin: {{ formatDate(task.end_date) }}
-                                  </p>
-                                </div>
-                                <div class="flex items-center gap-2 shrink-0">
-                                  <USelectMenu
-                                    :model-value="getSubtaskStatusOption(task.status)"
-                                    :items="statusOptionsSubtasks as any"
-                                    value-attribute="value"
-                                    size="xs"
-                                    class="w-32"
-                                    @update:model-value="(item) => onSubtaskStatusChange(task, item)"
-                                  />
+                              <p class="text-sm font-semibold text-gray-900 dark:text-white truncate" :title="task.name">
+                                {{ task.name }}
+                              </p>
+                              <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                <span class="flex items-center gap-1">
+                                  <UIcon name="i-heroicons-clock" class="w-3.5 h-3.5" />
+                                  {{ task.duration_hours ?? 0 }}h
+                                </span>
+                                <span v-if="task.end_date" class="flex items-center gap-1">
+                                  <UIcon name="i-heroicons-calendar" class="w-3.5 h-3.5" />
+                                  {{ formatDate(task.end_date) }}
+                                </span>
+                              </div>
+                              <div class="flex items-center justify-between gap-2 mt-auto pt-2 border-t border-gray-100 dark:border-gray-800">
+                                <USelectMenu
+                                  :model-value="getSubtaskStatusOption(task.status)"
+                                  :items="statusOptionsSubtasks as any"
+                                  value-attribute="value"
+                                  size="xs"
+                                  class="w-32"
+                                  @update:model-value="(item) => onSubtaskStatusChange(task, item)"
+                                />
+                                <div class="flex items-center gap-1">
                                   <UButton
                                     v-if="canManageSubtasksForCharge(charge)"
                                     icon="i-heroicons-pencil-square"
@@ -350,9 +376,8 @@
                                 </div>
                               </div>
                             </template>
-                            <!-- Formulario edición -->
                             <template v-else>
-                              <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-end w-full">
+                              <div class="space-y-2">
                                 <UFormField label="Nombre">
                                   <UInput v-model="editSubtaskName" placeholder="Nombre" size="sm" />
                                 </UFormField>
@@ -387,7 +412,7 @@
                                   />
                                 </UFormField>
                               </div>
-                              <div class="flex gap-2">
+                              <div class="flex gap-2 mt-2">
                                 <UButton label="Guardar" color="primary" size="xs" :loading="savingEditSubtask" @click="() => saveEditSubtask(task)" />
                                 <UButton label="Cancelar" variant="outline" size="xs" @click="cancelEditSubtask" />
                               </div>
@@ -455,7 +480,7 @@
     </div>
 
     <!-- Modal de Notas (jefe: notas de la actividad; no-jefe: mis notas del charge) -->
-    <UModal :open="isNotesModalOpen" @close="closeNotesModal" class="w-full max-w-md">
+    <UModal :open="isNotesModalOpen" @update:open="v => { if (!v) closeNotesModal() }" @close="closeNotesModal" class="w-full max-w-md">
       <template #header>
         <h3 class="text-lg font-semibold">{{ selectedCharge ? 'Mis notas' : 'Notas de la actividad' }}</h3>
       </template>
@@ -498,6 +523,8 @@
     <!-- Modal de Crear Subtareas (batch) -->
     <CreateSubtasksModal
       :open="isCreateSubtasksModalOpen"
+      :activity-name="createSubtasksActivityName"
+      :activity-end-date="createSubtasksActivityEndDate"
       :charge-name="createSubtasksChargeName"
       :saving="savingSubtask"
       @close="closeCreateSubtasksModal"
@@ -534,6 +561,7 @@ const {
   visibleActivities,
   eventsPagination,
   myProgressStats,
+  globalProgressStats,
   responsables,
   contenedores,
   loading,
@@ -576,7 +604,7 @@ const endDatePlaceholder = computed<CalendarDate>(() => {
 
 // Paginación
 const page = ref(1)
-const perPage = ref(10)
+const perPage = ref(25)
 const perPageOptions = [
   { label: '10 por página', value: 10 },
   { label: '25 por página', value: 25 },
@@ -616,6 +644,8 @@ const savingSubtask = ref(false)
 const isCreateSubtasksModalOpen = ref(false)
 const createSubtasksChargeId = ref<number | null>(null)
 const createSubtasksChargeName = ref('')
+const createSubtasksActivityName = ref('')
+const createSubtasksActivityEndDate = ref('')
 
 // Edición de subtarea
 const editingSubtaskId = ref<number | null>(null)
@@ -641,6 +671,18 @@ const myProgress = computed(() => {
       completadas: myProgressStats.value.completadas,
       enProgreso:  myProgressStats.value.en_progreso,
       pendientes:  myProgressStats.value.pendientes,
+    }
+  }
+  return { total: 0, completadas: 0, enProgreso: 0, pendientes: 0 }
+})
+
+const globalProgress = computed(() => {
+  if (globalProgressStats.value) {
+    return {
+      total:       globalProgressStats.value.total,
+      completadas: globalProgressStats.value.completadas,
+      enProgreso:  globalProgressStats.value.en_progreso,
+      pendientes:  globalProgressStats.value.pendientes,
     }
   }
   return { total: 0, completadas: 0, enProgreso: 0, pendientes: 0 }
@@ -815,7 +857,9 @@ const applyFilters = async (force = false, resetPage = true) => {
   if (resetPage) page.value = 1
   const filters: any = {
     page: page.value,
-    per_page: perPage.value
+    per_page: perPage.value,
+    has_charges: 1,
+    order_desc: 1
   }
   if (filterStartDate.value) {
     filters.start_date = `${filterStartDate.value.year}-${String(filterStartDate.value.month).padStart(2, '0')}-${String(filterStartDate.value.day).padStart(2, '0')}`
@@ -995,13 +1039,16 @@ const getSubtaskStatusOption = (status: string | undefined): { label: string; va
 }
 
 const canCreateSubtasksForActivity = (activity: CalendarEvent): boolean => {
-  if (isJefeImportaciones.value) return (activity.charges || []).length > 0
   return !!getMyCharge(activity)
 }
 
-const openCreateSubtasksModal = (charge: CalendarEventCharge) => {
+const openCreateSubtasksModal = (charge: CalendarEventCharge, activity: CalendarEvent) => {
   createSubtasksChargeId.value = charge.id
-  createSubtasksChargeName.value = charge.user?.nombre || `Responsable #${charge.user_id}`
+  createSubtasksChargeName.value = isJefeImportaciones.value
+    ? (charge.user?.nombre || `Responsable #${charge.user_id}`)
+    : ''
+  createSubtasksActivityName.value = activity.name || activity.title || ''
+  createSubtasksActivityEndDate.value = formatDate(activity.end_date || getLastDate(activity))
   isCreateSubtasksModalOpen.value = true
 }
 
@@ -1009,20 +1056,22 @@ const openCreateSubtasksModalFromActivity = (activity: CalendarEvent) => {
   if (isJefeImportaciones.value) {
     const charges = activity.charges || []
     if (charges.length === 1) {
-      openCreateSubtasksModal(charges[0])
+      openCreateSubtasksModal(charges[0], activity)
     } else if (charges.length > 1) {
       expandedActivityId.value = activity.id
     }
     return
   }
   const myCharge = getMyCharge(activity)
-  if (myCharge) openCreateSubtasksModal(myCharge)
+  if (myCharge) openCreateSubtasksModal(myCharge, activity)
 }
 
 const closeCreateSubtasksModal = () => {
   isCreateSubtasksModalOpen.value = false
   createSubtasksChargeId.value = null
   createSubtasksChargeName.value = ''
+  createSubtasksActivityName.value = ''
+  createSubtasksActivityEndDate.value = ''
 }
 
 const handleBatchCreateSubtasks = async (items: { name: string; duration_hours: number; end_date: any }[]) => {

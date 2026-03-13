@@ -10,7 +10,7 @@
               variant="ghost"
               size="sm"
               label="Regresar"
-              @click="navigateTo(getCalendarRoute('/calendar/config'))"
+              @click="router.back()"
             />
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Registro de actividades</h1>
           </div>
@@ -217,8 +217,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { CalendarDate, getLocalTimeZone, today, parseDate } from '@internationalized/date'
 import { useCalendarStore } from '~/composables/useCalendarStore'
+
+const router = useRouter()
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useOverlay } from '#imports'

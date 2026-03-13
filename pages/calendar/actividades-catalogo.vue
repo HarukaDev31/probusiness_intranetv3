@@ -8,7 +8,7 @@
           variant="ghost"
           size="sm"
           label="Regresar"
-          @click="navigateTo(getCalendarRoute('/calendar/config'))"
+          @click="router.back()"
         />
         <div>
           <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Catálogo de Actividades</h1>
@@ -238,8 +238,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
+
+const router = useRouter()
 import type { CalendarActivityCatalogItem } from '~/types/calendar'
 
 const {
