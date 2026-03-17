@@ -696,7 +696,9 @@ const entregasColumns = ref<TableColumn<any>[]>([
       h(UButton, {
         size: 'xs', icon: 'i-heroicons-pencil-square', variant: 'ghost', color: 'primary',
         label: '', title: 'Ir a firmar cargo de entrega',
-        onClick: () => navigateTo(`/cargaconsolidada/completados/entrega/firma-carga/${row.original.id_cotizacion || row.original.id}?id_contenedor=${id}`)
+        onClick: () => {
+          void navigateTo(`/cargaconsolidada/completados/entrega/firma-carga/${row.original.id_cotizacion || row.original.id}?id_contenedor=${id}`)
+        }
       }),
       h(UButton, { size: 'xs', icon: 'i-heroicons-eye', variant: 'ghost', color: 'neutral', 'aria-label': 'Ver detalle', title: 'Ver detalle', onClick: async () => goToClienteDetalle(row.original) }),
       h(UButton, { size: 'xs', icon: 'i-heroicons-trash', variant: 'ghost', color: 'error', 'aria-label': 'Eliminar registro', title: 'Eliminar registro', onClick: () => handleEliminarRegistro(row.original) })
@@ -1003,7 +1005,13 @@ const deliveryColumns = ref<TableColumn<any>[]>([
           size: 'xs',
           icon: 'i-heroicons-paper-airplane',
           variant: 'ghost', color: 'primary',
-          title: 'Cobro', onClick: () => handleCobroMessage(row.original)
+          title: 'Cobro', onClick: () => {
+            showConfirmation(
+              'Confirmar envío',
+              '¿Seguro que deseas enviar el mensaje de cobro a este cliente?',
+              () => handleCobroMessage(row.original)
+            )
+          }
         })
       ])
     }
