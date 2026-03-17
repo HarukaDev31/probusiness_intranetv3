@@ -188,7 +188,7 @@ const columns: TableColumn<any>[] = [
             handleDelete(row.original.id)
           }
         }),
-         h(UButton, {
+        row.original.estado === 'COTIZADO' ? h(UButton, {
           color: 'warning',
           size: 'sm',
           variant: 'ghost',
@@ -197,7 +197,7 @@ const columns: TableColumn<any>[] = [
           onClick: (event: MouseEvent) => {
             handleEdit(row.original.id)
           }
-        }) ,
+        }): null,
         h(UButton, {
           color: 'primary',
           size: 'sm',
