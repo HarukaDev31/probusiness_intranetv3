@@ -201,9 +201,11 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import SimpleUploadFile from '~/components/commons/SimpleUploadFile.vue'
 import { useOverlay } from '#imports'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import { useBackToQuery } from '~/composables/commons/useBackToQuery'
 const { isCoordinacion } = useUserRole()
 const route = useRoute()
 const idCotizacion = Number(route.params.id)
+const { backTo } = useBackToQuery('backTo')
 /** Modo solo lectura (coordinación): solo ver y descargar, sin editar/guardar/eliminar. */
 const soloVista = computed(() => isCoordinacion.value)
 
@@ -493,6 +495,12 @@ function proveedorDocToFileItem(doc: { id: number; orden: number; file_url: stri
 }
 
 function navigateBack() {
+  // Si venimos desde otra vista (ej. calculadora de cotizaciones), usar ruta explícita.
+  if (backTo.value) {
+    navigateTo(backTo.value)
+    return
+  }
+
   const idContenedor = cotizacion.value?.id_contenedor
   if (idContenedor) {
     navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${idContenedor}`)

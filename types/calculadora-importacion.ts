@@ -90,6 +90,7 @@ export interface CotizacionFilters {
   estado: string
   completado: boolean
   campania: string
+  proveedores_vinculados: string
   estado_calculadora: string
   vendedor: string
 }

@@ -97,6 +97,22 @@ export class CalculadoraImportacionService extends BaseService {
         }
     }
 
+    /**
+     * Vincula/crea la cotización en carga consolidada desde una fila de calculadora.
+     * No requiere que el estado del cálculo sea cambiado manualmente a "COTIZADO".
+     */
+    static async vincularCotizacionDesdeCalculadora(id: number): Promise<any> {
+        try {
+            const response = await this.apiCall<any>(`${this.baseUrl}/vincular-cotizacion/${id}`, {
+                method: 'POST'
+            })
+            return response
+        } catch (error) {
+            console.error('Error al vincular la cotización desde calculadora:', error)
+            throw new Error('No se pudo vincular la cotización desde la calculadora')
+        }
+    }
+
     /** Documentos asociados a cotización calculadora */
     static async getDocumentosCotizacion(id: number): Promise<{ success: boolean; data: any[]; cotizacion: any }> {
         try {

@@ -145,6 +145,7 @@ export const useCalculadoraImportacion = () => {
     estado: 'todos', // Inicializar con 'todos' para consistencia
     completado: false,
     campania: '', // Agregar filtro de campaña
+    proveedores_vinculados: '', // '', 'desvinculadas', 'vinculadas'
     estado_calculadora: '', // Agregar filtro de estado de calculadora
     vendedor: ''
   })
@@ -706,6 +707,10 @@ export const useCalculadoraImportacion = () => {
         params.vendedor = filters.value.vendedor
       }
 
+      if (filters.value.proveedores_vinculados && filters.value.proveedores_vinculados !== 'todos' && filters.value.proveedores_vinculados !== '') {
+        params.proveedores_vinculados = filters.value.proveedores_vinculados
+      }
+
       const response = await CalculadoraImportacionService.getCotizaciones(params)
       cotizaciones.value = response.data
       pagination.value = response.pagination
@@ -760,6 +765,7 @@ export const useCalculadoraImportacion = () => {
       if (filters.value.campania && filters.value.campania !== '' && filters.value.campania !== 'todas') params.campania = filters.value.campania
       if (filters.value.estado_calculadora && filters.value.estado_calculadora !== '' && filters.value.estado_calculadora !== 'todos') params.estado_calculadora = filters.value.estado_calculadora
       if (filters.value.vendedor && filters.value.vendedor !== '' && filters.value.vendedor !== 'todos') params.vendedor = filters.value.vendedor
+      if (filters.value.proveedores_vinculados && filters.value.proveedores_vinculados !== '' && filters.value.proveedores_vinculados !== 'todos') params.proveedores_vinculados = filters.value.proveedores_vinculados
 
       const blob = await CalculadoraImportacionService.exportListCotizaciones(params)
       const url = window.URL.createObjectURL(blob)
@@ -802,6 +808,23 @@ export const useCalculadoraImportacion = () => {
     } catch (error) {
       console.error('Error al cambiar el estado de la cotización:', error)
       throw new Error('No se pudo cambiar el estado de la cotización')
+    }
+  }
+
+  /**
+   * Vincula la cotización en carga consolidada desde una fila de calculadora,
+   * creando la cotización si no existe.
+   */
+  const vincularCotizacionCalculadora = async (id: number) => {
+    try {
+      const response = await CalculadoraImportacionService.vincularCotizacionDesdeCalculadora(id)
+      if (response?.success) {
+        await getCotizaciones()
+      }
+      return response
+    } catch (error) {
+      console.error('Error al vincular la cotización:', error)
+      throw new Error('No se pudo vincular la cotización')
     }
   }
 
@@ -964,6 +987,7 @@ export const useCalculadoraImportacion = () => {
     deleteCotizacionCalculadora,
     duplicateCotizacionCalculadora,
     changeEstadoCotizacionCalculadora,
+    vincularCotizacionCalculadora,
     vendedores,
     contenedores,
     tarifaDescuento,

@@ -22,9 +22,9 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
-const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, exportCotizacionesList } = useCalculadoraImportacion()
+const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList } = useCalculadoraImportacion()
 import type { TableColumn } from '@nuxt/ui'
-import { UButton, USelect } from '#components'
+import { UButton, USelect, UBadge } from '#components'
 import MoveCotizacionModal from '~/components/cargaconsolidada/MoveCotizacionModal.vue'
 import { useModal } from '~/composables/commons/useModal';
 import { useSpinner } from '~/composables/commons/useSpinner';
@@ -156,6 +156,60 @@ const columns: TableColumn<any>[] = [
       ]))
     }
   },
+
+  {
+    accessorKey: 'go_to_cotizacion_contenedor',
+    header: 'Ir a cotización',
+    cell: ({ row }: { row: any }) => {
+      const idCotizacion = row.original?.id_cotizacion
+      const idContenedor = row.original?.id_carga_consolidada_contenedor
+
+      if (!idCotizacion || !idContenedor) {
+        return h(UBadge, { label: '—', color: 'neutral', variant: 'soft', size: 'sm' })
+      }
+
+      return h(UButton, {
+        color: 'primary',
+        size: 'sm',
+        variant: 'ghost',
+        icon: 'i-heroicons-arrow-top-right-on-square',
+        label: '',
+        title: 'Ver cotización en contenedor',
+        onClick: () => {
+          navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${idContenedor}?idCotizacion=${idCotizacion}`)
+        }
+      })
+    }
+  },
+  {
+    accessorKey: 'proveedores_vinculados',
+    header: 'Proveedores vinculados',
+    cell: ({ row }: { row: any }) => {
+      const proveedores = (row.original?.proveedores ?? []) as any[]
+      const tieneProveedorSinVinculo = proveedores.some((p: any) => {
+        const codeSupplierOk = p?.code_supplier != null && String(p.code_supplier).trim().length > 0
+        const idProveedorOk = p?.id_proveedor != null && String(p.id_proveedor).toString().length > 0
+        return !codeSupplierOk || !idProveedorOk
+      })
+
+      if (!tieneProveedorSinVinculo) {
+        return h(UBadge, { label: 'Sí', color: 'success', variant: 'soft', size: 'sm' })
+      }
+
+      const canVincular = !!row.original?.url_cotizacion && !!row.original?.id_carga_consolidada_contenedor
+
+      return h(UButton, {
+        color: 'primary',
+        size: 'sm',
+        variant: 'ghost',
+        icon: 'i-heroicons-link',
+        label: '',
+        title: 'Vincular proveedores (cotización)',
+        disabled: !canVincular,
+        onClick: () => handleVincularCotizacion(row.original.id)
+      })
+    }
+  },
   {
     accessorKey: 'estado',
     header: 'Estado',
@@ -176,15 +230,24 @@ const columns: TableColumn<any>[] = [
     accessorKey: 'acciones',
     header: 'Acciones',
     cell: ({ row }: { row: any }) => {
-      //options delete, edit.duplicate,send
-      return h('div', [
+      const idCotizacion = row.original?.id_cotizacion
+      const proveedores = (row.original?.proveedores ?? []) as any[]
+      const tieneProveedorSinVinculo = proveedores.some((p: any) => {
+        const codeSupplierOk = p?.code_supplier != null && String(p.code_supplier).trim().length > 0
+        const idProveedorOk = p?.id_proveedor != null && String(p.id_proveedor).toString().length > 0
+        return !codeSupplierOk || !idProveedorOk
+      })
+      const canVincular = !!row.original?.url_cotizacion && !!row.original?.id_carga_consolidada_contenedor
+
+      // options delete, edit.duplicate,send
+      const nodes: any[] = [
         h(UButton, {
           color: 'error',
           size: 'sm',
           variant: 'ghost',
           icon: 'i-heroicons-trash',
           label: '',
-          onClick: (event: MouseEvent) => {
+          onClick: (_event: MouseEvent) => {
             handleDelete(row.original.id)
           }
         }),
@@ -194,21 +257,25 @@ const columns: TableColumn<any>[] = [
           variant: 'ghost',
           icon: 'i-heroicons-pencil',
           label: '',
-          onClick: (event: MouseEvent) => {
+          onClick: (_event: MouseEvent) => {
             handleEdit(row.original.id)
           }
-        }): null,
+        }) : null,
         h(UButton, {
           color: 'primary',
           size: 'sm',
           variant: 'ghost',
           icon: 'i-heroicons-document-duplicate',
           label: '',
-          onClick: (event: MouseEvent) => {
+          onClick: (_event: MouseEvent) => {
             handleDuplicate(row.original.id)
           }
-        }),
-        h(UButton, {
+        })
+      ]
+
+      // Documentos solo si la cotización existe y NO hay proveedores sin vincular (code_supplier/id_proveedor)
+      if (idCotizacion && !tieneProveedorSinVinculo) {
+        nodes.push(h(UButton, {
           color: 'neutral',
           size: 'sm',
           variant: 'ghost',
@@ -216,10 +283,12 @@ const columns: TableColumn<any>[] = [
           label: '',
           title: 'Documentos asociados',
           onClick: () => {
-            handleDocumentos(row.original.id)
+            handleDocumentos(idCotizacion)
           }
-        }),
-      ])
+        }))
+      } 
+
+      return h('div', nodes)
     }
   }
 ]
@@ -279,9 +348,43 @@ const handleDelete = (id: string) => {
 const handleEdit = (id: string) => {
   navigateTo(`/cotizaciones/${id}`)
 }
-const handleDocumentos = (id: string) => {
-  navigateTo(`/cotizaciones/documentos/${id}/`)
+const handleDocumentos = (idCotizacion: string | number) => {
+  const id = Number(idCotizacion)
+  if (!id) return
+  // Consume la vista nueva de documentación por cotización (abiertos)
+  navigateTo({
+    path: `/cargaconsolidada/abiertos/cotizaciones/documentacion/${id}`,
+    query: { backTo: '/cotizaciones' }
+  })
 }
+
+const handleVincularCotizacion = (idCalculadora: string | number) => {
+  const id = Number(idCalculadora)
+  if (!id) return
+
+  showConfirmation(
+    'Vincular cotización',
+    '¿Estás seguro de que deseas vincular/crear la cotización en carga consolidada? Se habilitarán los documentos asociados.',
+    async () => {
+      await withSpinner(async () => {
+        try {
+          const result = await vincularCotizacionCalculadora(id)
+          if (result?.success) {
+            showSuccess('Cotización vinculada', 'La cotización ya quedó asociada. Los documentos deberían habilitarse.')
+          } else {
+            showError('Error al vincular', result?.message || 'No se pudo vincular la cotización.')
+          }
+        } catch (error: any) {
+          showError('Error al vincular', error?.message || 'No se pudo vincular la cotización.')
+        }
+      }, 'Vinculando cotización...')
+    },
+    () => {
+      // cancel
+    }
+  )
+}
+
 const handleDuplicate = (id: string) => {
   showConfirmation('Duplicar Cotización', '¿Estás seguro de que deseas duplicar esta cotización?',
     async () => {
@@ -382,6 +485,17 @@ const filterConfig = computed<FilterConfig[]>(() => [
         label: item.label ?? item.nombre ?? `Usuario ${item.value}`,
         value: String(item.value ?? item.id)
       }))
+    ]
+  },
+  {
+    key: 'proveedores_vinculados',
+    label: 'Vinculación proveedores',
+    type: 'select',
+    placeholder: 'Seleccionar vinculación',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      { label: 'Desvinculadas', value: 'desvinculadas' },
+      { label: 'Vinculadas', value: 'vinculadas' }
     ]
   }
 ])
