@@ -1,6 +1,6 @@
 ---
 name: probusiness-intranetv3
-description: Context for the probusiness_intranetv3 Nuxt frontend project whose backend lives in a sibling Laravel/PHP 7 repo. Use when tasks may require backend changes, PHP version awareness, or following existing backend conventions.
+description: Context for the probusiness_intranetv3 Nuxt frontend project whose backend lives in a sibling Laravel/PHP 7 repo. Use when tasks may require backend changes, PHP version awareness, or following existing backend conventions. For UI pages, keep copy short and end-user oriented—no API paths, env vars, or long technical paragraphs unless the user explicitly asks.
 ---
 
 # Probusiness Intranet v3 – Proyecto + Backend
@@ -44,6 +44,13 @@ Cuando hagas cambios en `../intranet_back`:
 4. **Rutas y controladores**
    - Reutiliza los prefijos y middlewares definidos en los archivos de rutas modulares (no inventes nuevos patrones salvo necesidad explícita).
    - Cuando añadas endpoints, sigue la misma convención de nombres (`index`, `store`, `update`, `show`, etc.) y de URLs que se ve en los módulos `carga-consolidada` y `calculadora-importacion`.
+
+## Textos en la UI del intranet (copy)
+
+- Redactar para **quien usa el panel** (operativo/comercial), no para desarrolladores: qué puede hacer y qué efecto tiene en negocio o en la web pública.
+- **Evitar** sobretexto: título + **un subtítulo breve** suele bastar.
+- **No** meter en la vista rutas de API (`GET /api/...`), nombres de archivos del otro repo (`integraciones.php`), variables de entorno ni tutoriales de despliegue—salvo petición explícita del usuario. Eso va en README, comentarios en código o documentación técnica.
+- Pantallas que alimentan la web pública: explicar en lenguaje natural *qué ven los visitantes* o *qué se actualiza al guardar*, no el contrato HTTP.
 
 ## Coordinación frontend–backend
 

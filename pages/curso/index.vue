@@ -20,6 +20,7 @@
             <template #actions>
                 <!-- Estado de WhatsApp compacto -->
                
+                <UButton icon="i-heroicons-globe-alt" label="Planes landing web" color="neutral" variant="outline" @click="navigateTo('/curso/planes-web')" class="py-3" />
                 <UButton icon="i-heroicons-eye" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
             </template>
             <template #body-top>
@@ -39,6 +40,7 @@
             :show-body-top="true">
             <template #actions>
                 <!-- Estado de WhatsApp compacto -->
+                <UButton icon="i-heroicons-globe-alt" label="Planes landing web" color="neutral" variant="outline" @click="navigateTo('/curso/planes-web')" class="py-3" />
                 <WhatsappNumbersStatus 
                     :instances="[{ instanceName: 'COURSE' }]"
                     :auto-refresh="true"
