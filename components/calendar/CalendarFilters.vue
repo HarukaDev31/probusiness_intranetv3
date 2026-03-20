@@ -74,15 +74,19 @@
           :disabled="disabled"
         />
         <template #content>
-          <div class="p-4 flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
-            <div class="flex flex-row gap-5 items-start">
-              <div class="flex flex-col">
+          <div class="p-4 flex flex-col gap-4 max-h-[85vh] overflow-y-auto max-w-[95vw]">
+            <div class="flex flex-wrap gap-5 items-start">
+              <div class="flex flex-col min-w-[260px]">
                 <label class="text-sm text-gray-500 dark:text-gray-400 mb-1.5">Desde</label>
                 <UCalendar v-model="startDate" />
               </div>
-              <div class="flex flex-col">
+              <div class="flex flex-col min-w-[260px]">
                 <label class="text-sm text-gray-500 dark:text-gray-400 mb-1.5">Hasta</label>
-                <UCalendar v-model="endDate" :placeholder="endDatePlaceholder" />
+                <UCalendar
+                  :key="`end-calendar-${endDatePlaceholder.year}-${endDatePlaceholder.month}`"
+                  v-model="endDate"
+                  :placeholder="endDatePlaceholder as any"
+                />
               </div>
             </div>
             <div class="flex gap-2 pt-1 border-t border-gray-200 dark:border-gray-700 pt-4">

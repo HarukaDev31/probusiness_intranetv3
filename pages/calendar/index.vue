@@ -115,10 +115,12 @@
             </div>
             <!-- Contenido del calendario -->
             <div v-show="!loading" class="pb-4">
+      <template v-for="(monthView, monthIndex) in visibleMonthCalendars" :key="monthView.key">
+      <section :class="monthIndex > 0 ? 'mt-8' : ''">
       <!-- Título del mes + acciones -->
       <div class="flex items-center justify-between gap-3 py-3 md:py-4">
         <h2 class="flex-1 text-xl md:text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-wide text-center">
-          {{ currentPeriodTitle }}
+          {{ monthView.title }}
         </h2>
       </div>
       <!-- Días de la semana (fondo oscuro, texto blanco) -->
@@ -135,7 +137,7 @@
 
       <!-- Semanas del mes con eventos multi-día -->
       <div 
-        v-for="(week, weekIndex) in calendarWeeks" 
+        v-for="(week, weekIndex) in monthView.weeks" 
         :key="weekIndex"
         class="relative"
       >
@@ -273,6 +275,8 @@
           </div>
         </div>
       </div>
+      </section>
+      </template>
             </div>
     </div>
 
@@ -530,6 +534,7 @@ const currentDate = ref<CalendarDate>(today(getLocalTimeZone()))
 const isDeleteModalOpen = ref(false)
 const selectedEvent = ref<CalendarEvent | null>(null)
 const pendingLoadEvents = ref(false)
+const isApplyingFilters = ref(false)
 
 // Modal "Más eventos" (sin redirigir a otra vista)
 const showMoreEventsModal = ref(false)
@@ -603,6 +608,8 @@ const loadActivitiesData = async (force = false) => {
 
 // Handlers para filtros
 const handleFilterChange = async (newFilters: any) => {
+  isApplyingFilters.value = true
+  try {
   // Actualizar responsable(s): múltiple (jefe) o único
   if ('responsable_ids' in newFilters) {
     setFilter('responsable_ids', newFilters.responsable_ids ?? undefined)
@@ -651,6 +658,9 @@ const handleFilterChange = async (newFilters: any) => {
   await getEvents(payload as CalendarFiltersType, true)
   if (calendarPermissions.value.canViewTeamProgress) {
     await loadProgress()
+  }
+  } finally {
+    isApplyingFilters.value = false
   }
 }
 
@@ -1198,7 +1208,7 @@ const getEventStatusLabel = (status: CalendarEventStatus | undefined) => {
     default: return 'Pendiente'
   }
 }
-const getEventStatus = (event: CalendarEvent): CalendarEventStatus | undefined => {
+  const getEventStatus = (event: CalendarEvent): CalendarEventStatus | undefined => {
   if (event.status) return event.status as CalendarEventStatus
   const charges = event.charges || []
   if (charges.length === 0) return 'PENDIENTE'
@@ -1404,6 +1414,43 @@ const getCalendarWeeksForMonth = (year: number, month: number) => {
 }
 
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+const isTwoConsecutiveMonthsRange = computed(() => {
+  const start = filters.value?.start_date
+  const end = filters.value?.end_date
+  if (!start || !end) return false
+
+  const [sy, sm] = start.split('-').map(Number)
+  const [ey, em] = end.split('-').map(Number)
+  if (!sy || !sm || !ey || !em) return false
+
+  const startIndex = sy * 12 + (sm - 1)
+  const endIndex = ey * 12 + (em - 1)
+  return endIndex - startIndex === 1
+})
+
+const visibleMonthCalendars = computed(() => {
+  const baseYear = currentDate.value.year
+  const baseMonth = currentDate.value.month
+  const calendars: { key: string, title: string, weeks: { days: any[], eventRows: EventSpan[][] }[] }[] = [
+    {
+      key: `${baseYear}-${baseMonth}`,
+      title: `${monthNames[baseMonth - 1]} ${baseYear}`,
+      weeks: getCalendarWeeksForMonth(baseYear, baseMonth)
+    }
+  ]
+
+  if (isTwoConsecutiveMonthsRange.value) {
+    const next = parseDate(`${baseYear}-${String(baseMonth).padStart(2, '0')}-01`).add({ months: 1 })
+    calendars.push({
+      key: `${next.year}-${next.month}`,
+      title: `${monthNames[next.month - 1]} ${next.year}`,
+      weeks: getCalendarWeeksForMonth(next.year, next.month)
+    })
+  }
+
+  return calendars
+})
 
 // Calcular días de la semana para la vista semanal (referencia; vistas semana/día eliminadas)
 const weekDaysData = computed(() => {
@@ -1955,7 +2002,7 @@ const onTransitionComplete = () => {
 watch([currentDate, viewMode], () => {
   // Si no hay una transición pendiente, cargar inmediatamente (para cambios que no activan animación),
   // pero solo después de la primera carga inicial para evitar doble skeleton.
-  if (!pendingLoadEvents.value && hasLoadedInitially.value) {
+  if (!isApplyingFilters.value && !pendingLoadEvents.value && hasLoadedInitially.value) {
     loadEvents()
   }
 })

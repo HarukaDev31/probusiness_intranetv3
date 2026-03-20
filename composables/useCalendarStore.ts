@@ -1006,6 +1006,13 @@ export const useCalendarStore = () => {
   // UTILIDADES PARA EVENTOS MULTI-DÍA
   // ============================================
 
+  const normalizeStatus = (status: unknown): CalendarEventStatus => {
+    const raw = String(status ?? '').trim().toUpperCase()
+    if (raw === 'COMPLETADO' || raw === 'COMPLETADA' || raw === 'DONE') return 'COMPLETADO'
+    if (raw === 'PROGRESO' || raw === 'EN_PROGRESO' || raw === 'IN_PROGRESS') return 'PROGRESO'
+    return 'PENDIENTE'
+  }
+
   const getEventColors = (event: CalendarEvent, options?: { usePriority?: boolean }): string[] => {
     const charges = event.charges || []
 
@@ -1030,7 +1037,7 @@ export const useCalendarStore = () => {
         const uid = c.user_id ?? c.user?.id
         const nombre = c.user?.nombre
         const apiColor = c.user?.color && String(c.user.color).trim()
-        const isCompleted = c.status === 'COMPLETADO'
+        const isCompleted = normalizeStatus(c.status) === 'COMPLETADO'
         if (uid != null) {
           const profileColor = apiColor || getResponsableColor(uid, nombre)
           userColorsFromCharges.push(isCompleted ? '#9ca3af' : (profileColor || '#3b82f6'))
@@ -1038,9 +1045,16 @@ export const useCalendarStore = () => {
       }
     }
 
+    const allChargesCompleted = Array.isArray(event.charges) &&
+      event.charges.length > 0 &&
+      event.charges.every(c => normalizeStatus((c as any).status) === 'COMPLETADO')
+    const eventCompleted = normalizeStatus(event.status) === 'COMPLETADO'
+    const isCompletedEvent = allChargesCompleted || eventCompleted
+
     // Si hay charges con colores por usuario (y orden USUARIO), devolver uno por charge (gris o perfil).
     const order = effectiveColorOrder.value
     for (const key of order) {
+      if (key === 'COMPLETADO' && isCompletedEvent) return ['#9ca3af']
       if (key === 'PRIORIDAD' && priorityColor) return [priorityColor]
       if (key === 'ACTIVIDAD' && activityColor) return [activityColor]
       if (key === 'CONSOLIDADO' && consolidadoColor) return [consolidadoColor]
@@ -1050,7 +1064,7 @@ export const useCalendarStore = () => {
     }
 
     // Sin responsables: gris si evento completado (status del evento), sino color por prioridad
-    if (charges.length === 0 && event.status === 'COMPLETADO') {
+    if (charges.length === 0 && isCompletedEvent) {
       return ['#9ca3af']
     }
     return [priorityColor]
