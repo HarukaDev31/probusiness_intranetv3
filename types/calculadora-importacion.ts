@@ -52,6 +52,14 @@ export interface Tarifa {
   tarifa: number
   label: string
   value: string
+  id_tipo_cliente?: number
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+/** Body para PUT api/calculadora-importacion/tarifas/{id} */
+export interface CalculadoraTarifaUpdateBody {
+  value: number
 }
 export interface ProveedorRequest {
   cbm: number

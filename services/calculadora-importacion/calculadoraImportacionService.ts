@@ -26,6 +26,31 @@ export class CalculadoraImportacionService extends BaseService {
             throw new Error('No se pudieron obtener las tarifas')
         }
     }
+
+    /** Actualiza una sola tarifa por id (solo el monto). */
+    static async updateTarifa(
+        id: number,
+        value: number
+    ): Promise<{
+        success: boolean
+        message?: string
+        data?: { id: number; tarifa: number; created_at?: string | null; updated_at?: string | null }
+    }> {
+        try {
+            const response = await this.apiCall<{
+                success: boolean
+                message?: string
+                data?: { id: number; tarifa: number; created_at?: string | null; updated_at?: string | null }
+            }>(`${this.baseUrl}/tarifas/${id}`, {
+                method: 'PUT',
+                body: { value }
+            })
+            return response
+        } catch (error) {
+            console.error('Error al actualizar tarifa:', error)
+            throw error
+        }
+    }
     static async saveCotizacion(saveCotizacionRequest: saveCotizacionRequest): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}`, {

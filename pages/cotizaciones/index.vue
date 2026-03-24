@@ -12,6 +12,16 @@
       @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @filter-change="handleFilterChange"
       @export="handleExport">
 
+      <template #actions>
+        <UButton
+          label="Gestionar tarifas de calculadora"
+          icon="i-heroicons-calculator"
+          color="neutral"
+          variant="outline"
+          class="h-8 md:h-11 font-normal whitespace-normal text-left max-w-[200px] lg:max-w-none"
+          @click="navigateTo('/cotizaciones/tarifas-calculadora')"
+        />
+      </template>
 
       <template #error-state>
         <ErrorState :message="error || 'Error desconocido'" />
