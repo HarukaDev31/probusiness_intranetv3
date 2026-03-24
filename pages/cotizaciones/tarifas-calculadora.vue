@@ -6,7 +6,7 @@
           Tarifas de calculadora de importación
         </h1>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xl">
-          Solo puedes cambiar el monto (USD) y guardar cada fila por separado. Los rangos de CBM y el tipo están fijados.
+          Puedes cambiar el monto (USD), el tipo PLAIN o STANDARD y guardar cada fila por separado. Los rangos de CBM no se editan aquí.
         </p>
       </div>
       <div class="flex flex-wrap gap-2 shrink-0">
@@ -48,8 +48,14 @@
                 <td class="py-2 px-3 align-middle text-gray-700 dark:text-gray-200 tabular-nums">
                   {{ row.limit_sup }}
                 </td>
-                <td class="py-2 px-3 align-middle text-gray-600 dark:text-gray-400">
-                  {{ row.type }}
+                <td class="py-2 px-3 align-middle">
+                  <USelect
+                    v-model="row.type"
+                    :items="typeOptions"
+                    value-key="value"
+                    label-key="label"
+                    class="w-full min-w-[130px]"
+                  />
                 </td>
                 <td class="py-2 px-3 align-middle">
                   <UInput v-model="row.tarifa" type="number" step="0.01" min="0" class="w-28" />
@@ -104,6 +110,11 @@ const loading = ref(true)
 /** ids de filas con petición de guardado en curso */
 const savingIds = ref<Set<number>>(new Set())
 const rows = ref<EditableRow[]>([])
+
+const typeOptions = [
+  { label: 'STANDARD', value: 'STANDARD' as const },
+  { label: 'PLAIN', value: 'PLAIN' as const }
+]
 
 const formatTs = (iso: string | null) => {
   if (!iso) return '—'
@@ -163,9 +174,13 @@ const saveRow = async (row: EditableRow) => {
 
   savingIds.value = new Set(savingIds.value).add(row.id)
   try {
-    const result = await CalculadoraImportacionService.updateTarifa(row.id, value)
+    const result = await CalculadoraImportacionService.updateTarifa(row.id, {
+      value,
+      type: row.type
+    })
     if (result?.success && result.data) {
       row.tarifa = String(result.data.tarifa)
+      row.type = result.data.type === 'PLAIN' ? 'PLAIN' : 'STANDARD'
       if (result.data.created_at != null) row.created_at = String(result.data.created_at)
       if (result.data.updated_at != null) row.updated_at = String(result.data.updated_at)
       showSuccess('Guardado', 'Tarifa actualizada.')

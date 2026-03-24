@@ -27,23 +27,35 @@ export class CalculadoraImportacionService extends BaseService {
         }
     }
 
-    /** Actualiza una sola tarifa por id (solo el monto). */
+    /** Actualiza una sola tarifa por id (monto y tipo PLAIN|STANDARD). */
     static async updateTarifa(
         id: number,
-        value: number
+        body: { value: number; type: 'PLAIN' | 'STANDARD' }
     ): Promise<{
         success: boolean
         message?: string
-        data?: { id: number; tarifa: number; created_at?: string | null; updated_at?: string | null }
+        data?: {
+            id: number
+            tarifa: number
+            type: string
+            created_at?: string | null
+            updated_at?: string | null
+        }
     }> {
         try {
             const response = await this.apiCall<{
                 success: boolean
                 message?: string
-                data?: { id: number; tarifa: number; created_at?: string | null; updated_at?: string | null }
+                data?: {
+                    id: number
+                    tarifa: number
+                    type: string
+                    created_at?: string | null
+                    updated_at?: string | null
+                }
             }>(`${this.baseUrl}/tarifas/${id}`, {
                 method: 'PUT',
-                body: { value }
+                body
             })
             return response
         } catch (error) {

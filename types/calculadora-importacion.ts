@@ -60,6 +60,7 @@ export interface Tarifa {
 /** Body para PUT api/calculadora-importacion/tarifas/{id} */
 export interface CalculadoraTarifaUpdateBody {
   value: number
+  type: 'STANDARD' | 'PLAIN'
 }
 export interface ProveedorRequest {
   cbm: number
