@@ -186,7 +186,8 @@ const sidebarCategories = computed(() => {
   const backend = menu.value ?? []
 
   // Mapear padres -> módulos (cada padre tiene children: Hijos -> SubHijos)
-  const modules = (backend as any[]).map((p: any) => {
+  // Si show_father == 0: no mostrar el padre como item, pero sí mostrar sus Hijos como items de primer nivel.
+  const modules = (backend as any[]).flatMap((p: any) => {
     const parentId = String(p.ID_Menu ?? p.id ?? '')
     const parentName = p.No_Menu ?? p.Nombre ?? p.name ?? 'Sin nombre'
     const parentIcon = convertIconToHeroicons(p.Txt_Css_Icons)
@@ -238,8 +239,18 @@ const sidebarCategories = computed(() => {
       }
     })
 
+    // Si el backend indica "no mostrar padre", devolvemos solo los hijos como módulos de primer nivel.
+    if (Number(p.show_father) === 0) {
+      return children.map(c => ({
+        ...c,
+        // Para el sidebar, estos quedan como módulos top-level
+        category: 'Menú',
+        categoryId: 'main',
+      }))
+    }
+
     // Padre como módulo (si no tiene ruta, route = '' => será toggle)
-    return {
+    return [{
       id: parentId,
       name: parentName,
       icon: parentIcon,
@@ -252,7 +263,7 @@ const sidebarCategories = computed(() => {
       notificationCount: 0,
       permissions: ['view'],
       children
-    }
+    }]
   })
 
   // Para Jefe Importación: poner "Mi Progreso (Importaciones)" en 4.ª posición (índice 3)

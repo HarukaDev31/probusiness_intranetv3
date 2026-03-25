@@ -67,16 +67,16 @@
             </tr>
           </thead>
           <tbody>
-            <template v-for="(grupo, key) in menusPorPadre" :key="key">
+            <template v-for="grupo in menusPorPadre" :key="grupo.key">
               <!-- Cabecera de grupo -->
               <tr class="bg-gray-50 dark:bg-gray-700">
                 <td colspan="7" class="py-2 px-4 font-bold text-gray-700 dark:text-gray-200">
-                  {{ key }}
+                  {{ grupo.nombre }}
                 </td>
               </tr>
               <!-- Filas de menú -->
               <tr
-                v-for="(menu, index) in grupo"
+                v-for="(menu, index) in grupo.items"
                 :key="menu.ID_Menu"
                 class="border-b hover:bg-gray-50 dark:hover:bg-gray-800"
               >
@@ -156,7 +156,7 @@ import { OptionsService }    from '~/services/panelAcceso/optionsService'
 import type { MenuConPermiso } from '~/services/panelAcceso/menuAccesoService'
 import AuthService from '~/services/authService'
 
-const authUser  = AuthService.getInstance().currentUser as any
+const authUser = await AuthService.getInstance().getCurrentUser() as any
 const isRoot    = computed(() => authUser?.name === 'root' || authUser?.raw?.No_Usuario === 'root')
 
 const defaultEmpresaId = computed(() => authUser?.raw?.ID_Empresa ?? 1)
@@ -190,15 +190,29 @@ const saving      = ref(false)
 const saveMessage = ref('')
 const saveSuccess = ref(false)
 
-// Agrupar menús por nombre de padre
+// Agrupar menús por ID del padre (evita colisiones por nombre)
 const menusPorPadre = computed(() => {
-  const grupos: Record<string, MenuConPermiso[]> = {}
+  type Grupo = { idPadre: number; nombrePadre: string; items: MenuConPermiso[] }
+  const map = new Map<number, Grupo>()
+
   for (const m of menus.value) {
-    const key = m.No_Menu_Padre || 'General'
-    if (!grupos[key]) grupos[key] = []
-    grupos[key].push(m)
+    const idPadre = Number(m.ID_Padre ?? 0) || 0
+    const nombrePadre = (m.No_Menu_Padre && String(m.No_Menu_Padre).trim()) ? String(m.No_Menu_Padre).trim() : 'General'
+    const g = map.get(idPadre) ?? { idPadre, nombrePadre, items: [] }
+    g.items.push(m)
+    // Si por algún motivo el nombre viene vacío en algunos ítems, conservar el más “bueno”
+    if (g.nombrePadre === 'General' && nombrePadre !== 'General') g.nombrePadre = nombrePadre
+    map.set(idPadre, g)
   }
-  return grupos
+
+  // Ordenar grupos por nombre y dentro por No_Menu / ID_Menu
+  return Array.from(map.values())
+    .sort((a, b) => a.nombrePadre.localeCompare(b.nombrePadre))
+    .map(g => ({
+      key: `padre-${g.idPadre}`,
+      nombre: g.nombrePadre,
+      items: [...g.items].sort((a, b) => String(a.No_Menu).localeCompare(String(b.No_Menu)) || (a.ID_Menu - b.ID_Menu))
+    }))
 })
 
 async function initOptions() {

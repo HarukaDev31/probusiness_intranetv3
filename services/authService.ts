@@ -205,14 +205,7 @@ class AuthService {
 
         this.currentUser = user
         this.token = token
-        //if menu.show_father=0 then remove menu.Hijos
-        menu.forEach(
-          (item) => {
-            if (item.show_father == 0) {
-              item.Hijos = []
-            }
-          }
-        )
+        // No borrar Hijos aquí. El render del sidebar decide si aplanar/mostrar padre.
         this.menu = menu
         this.saveToStorage()
 
