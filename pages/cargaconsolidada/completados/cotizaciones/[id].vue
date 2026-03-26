@@ -262,10 +262,6 @@ const loadTabs = () => {
                     value: 'pagos'
                 },
                 {
-                    label:'Por Embarcar',
-                    value: 'embarque'
-                },
-                {
                     label: 'Prospectos',
                     value: 'prospectos'
                 }
