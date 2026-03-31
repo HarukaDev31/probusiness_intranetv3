@@ -207,7 +207,11 @@
           </div>
 
           <div class="space-y-6">
-            <div v-for="(proveedor, index) in proveedores" :key="proveedor.id" class="border-t pt-6">
+            <div v-for="(proveedor, index) in proveedores" :key="proveedor.id"
+              class="border-t pt-6 rounded-md transition-shadow" :class="{
+                'ring-2 ring-primary-400 dark:ring-primary-500': dragOverProveedorId === proveedor.id
+              }" @dragover.prevent="handleDragOverProveedor(proveedor.id)"
+              @dragleave="handleDragLeaveProveedor(proveedor.id)" @drop.prevent="handleDropProducto(proveedor.id)">
               <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold flex items-center gap-2">
                   <span>Proveedor #{{ index + 1 }}</span>
@@ -256,8 +260,9 @@
               <div class="space-y-4">
                 <h4 class="text-md font-medium ">Productos del Proveedor</h4>
 
-                <div v-for="(producto, prodIndex) in proveedor.productos" :key="producto.id"
-                  class="grid grid-cols-1 gap-4 p-4 rounded-lg items-center" :class="{
+                <div v-for="(producto, prodIndex) in proveedor.productos" :key="producto.id" draggable="true"
+                  @dragstart="handleDragStartProducto(proveedor.id, producto.id)" @dragend="handleDragEndProducto"
+                  class="grid grid-cols-1 gap-4 p-4 rounded-lg items-center cursor-move" :class="{
                     'md:grid-cols-11': !producto.showValoracion,
                     'md:grid-cols-12': producto.showValoracion
                   }">
@@ -1327,6 +1332,120 @@ const handleStepClick = (step: number) => {
 
   // Navegar al step
   goToStep(step)
+}
+
+const draggedProducto = ref<{ fromProveedorId: string, productoId: string } | null>(null)
+const dragOverProveedorId = ref<string | null>(null)
+
+const renumerarProductosProveedor = (proveedor: Proveedor) => {
+  proveedor.productos.forEach((prod, index) => {
+    prod.id = `${proveedor.id}-${index + 1}`
+  })
+}
+
+const getMoveValidationReason = (fromProveedorId: string, toProveedorId: string, productoId: string): string | null => {
+  if (fromProveedorId === toProveedorId) {
+    return 'El ítem ya pertenece a ese proveedor.'
+  }
+
+  const proveedorOrigen = proveedores.value.find(p => p.id === fromProveedorId)
+  const proveedorDestino = proveedores.value.find(p => p.id === toProveedorId)
+
+  if (!proveedorOrigen || !proveedorDestino) {
+    return 'No se encontró el proveedor de origen o destino.'
+  }
+
+  if (proveedorOrigen.productos.length <= 1) {
+    return 'No se puede mover el único ítem del proveedor origen.'
+  }
+
+  const producto = proveedorOrigen.productos.find(p => p.id === productoId)
+  if (!producto) {
+    return 'No se encontró el ítem a mover.'
+  }
+
+  // Reutiliza las reglas existentes del paso 2 sobre una simulación del estado final.
+  const proveedoresSimulados = proveedores.value.map(proveedor => ({
+    ...proveedor,
+    productos: [...proveedor.productos]
+  }))
+  const origenSimulado = proveedoresSimulados.find(p => p.id === fromProveedorId)
+  const destinoSimulado = proveedoresSimulados.find(p => p.id === toProveedorId)
+  if (!origenSimulado || !destinoSimulado) return 'No se pudo validar el movimiento.'
+
+  const indexProducto = origenSimulado.productos.findIndex(p => p.id === productoId)
+  if (indexProducto < 0) return 'No se encontró el ítem a mover.'
+
+  const [productoMovido] = origenSimulado.productos.splice(indexProducto, 1)
+  if (!productoMovido) return 'No se encontró el ítem a mover.'
+  destinoSimulado.productos.push(productoMovido)
+
+  const cumpleValidacionPaso2 = proveedoresSimulados.length > 0 && proveedoresSimulados.every(proveedor =>
+    proveedor.cbm > 0 &&
+    proveedor.productos.length > 0 &&
+    proveedor.productos.every(producto =>
+      producto.nombre.trim() !== '' &&
+      producto.precio > 0 &&
+      producto.cantidad > 0
+    )
+  )
+
+  if (!cumpleValidacionPaso2) {
+    return 'El movimiento no cumple las validaciones actuales de la carga (paso 2).'
+  }
+
+  return null
+}
+
+const moveProductoEntreProveedores = (fromProveedorId: string, toProveedorId: string, productoId: string) => {
+  const proveedorOrigen = proveedores.value.find(p => p.id === fromProveedorId)
+  const proveedorDestino = proveedores.value.find(p => p.id === toProveedorId)
+  if (!proveedorOrigen || !proveedorDestino) return
+
+  const indexProducto = proveedorOrigen.productos.findIndex(p => p.id === productoId)
+  if (indexProducto < 0) return
+
+  const [productoMovido] = proveedorOrigen.productos.splice(indexProducto, 1)
+  if (!productoMovido) return
+
+  proveedorDestino.productos.push(productoMovido)
+  renumerarProductosProveedor(proveedorOrigen)
+  renumerarProductosProveedor(proveedorDestino)
+}
+
+const handleDragStartProducto = (fromProveedorId: string, productoId: string) => {
+  draggedProducto.value = { fromProveedorId, productoId }
+}
+
+const handleDragEndProducto = () => {
+  dragOverProveedorId.value = null
+  draggedProducto.value = null
+}
+
+const handleDragOverProveedor = (proveedorId: string) => {
+  dragOverProveedorId.value = proveedorId
+}
+
+const handleDragLeaveProveedor = (proveedorId: string) => {
+  if (dragOverProveedorId.value === proveedorId) {
+    dragOverProveedorId.value = null
+  }
+}
+
+const handleDropProducto = (toProveedorId: string) => {
+  const payload = draggedProducto.value
+  dragOverProveedorId.value = null
+  if (!payload) return
+
+  const motivo = getMoveValidationReason(payload.fromProveedorId, toProveedorId, payload.productoId)
+  if (motivo) {
+    showError('No se puede mover el ítem', motivo)
+    draggedProducto.value = null
+    return
+  }
+
+  moveProductoEntreProveedores(payload.fromProveedorId, toProveedorId, payload.productoId)
+  draggedProducto.value = null
 }
 
 // Computed para cálculos de proveedores
