@@ -655,7 +655,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
             variant: 'ghost',
             size: 'sm',
             onClick: () => {
-              navigateTo(`/cargaconsolidada/contabilidad/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
+              navigateTo(`/cargaconsolidada/completados/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
             }
           })
         }),
