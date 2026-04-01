@@ -40,6 +40,25 @@ const canAccessRoute = (currentPath: string, allowedRoutes: string[]): boolean =
   })
 }
 
+/**
+ * Si el menú incluye `ruta/ruta1` (cualquier subruta bajo `ruta`), permite entrar a `ruta/:id`
+ * cuando `:id` es numérico, aunque ese detalle no esté en el menú.
+ */
+const canAccessNumericDetailUnderAllowedParent = (
+  currentPath: string,
+  allowedRoutes: string[],
+): boolean => {
+  const segments = currentPath.split('/').filter(Boolean)
+  if (segments.length !== 2) return false
+  const [parent, leaf] = segments
+  if (!parent || !/^\d+$/.test(leaf)) return false
+
+  const parentPath = `/${parent}`
+  return allowedRoutes.some(
+    (r) => r === parentPath || r.startsWith(`${parentPath}/`),
+  )
+}
+
 export default defineNuxtRouteMiddleware((to) => {
   if (process.server) return
   if (to.path === '/login') return
@@ -67,6 +86,7 @@ export default defineNuxtRouteMiddleware((to) => {
   const currentPath = normalizePath(to.path)
 
   if (canAccessRoute(currentPath, allowedRoutes)) return
+  if (canAccessNumericDetailUnderAllowedParent(currentPath, allowedRoutes)) return
 
   const fallbackRoute = allowedRoutes.find((route) => route && route !== '#')
   if (fallbackRoute && fallbackRoute !== currentPath) {
