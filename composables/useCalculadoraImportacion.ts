@@ -198,21 +198,21 @@ export const useCalculadoraImportacion = () => {
   })
 
   const calculatedExtraItems = computed(() => {
-   
+
     const cbmTotal = totalCbm.value
     const itemsTotal = totalItems.value
     const tarifa = findTarifaByCbm(cbmTotal)
-    
+
     if (!tarifa) return 0
-    
+
     const itemMax = tarifa.item_base + tarifa.item_extra
     // Calcular cuántos ítems exceden el item_base
     const itemsExtra = Math.max(0, itemsTotal - tarifa.item_base)
-    
+
     // Limitar a los ítems extra permitidos (hasta item_max)
     // itemsExtraACobrar = cantidad de ítems extra que se cobrarán
     const itemsExtraACobrar = Math.min(itemsExtra, itemMax - tarifa.item_base)
-    
+
     // Multiplicar por la tarifa por ítem extra
     return round10(itemsExtraACobrar * (tarifa.tarifa || 0))
   })
@@ -226,22 +226,22 @@ export const useCalculadoraImportacion = () => {
     if (!cbm || isNaN(cbm) || cbm <= 0) {
       return TARIFAS_EXTRA_ITEM_PER_CBM[0] // Devolver primera tarifa por defecto
     }
-    
+
     const cbmValue = parseFloat(cbm.toFixed(2))
-    
+
     // 1. Buscar tarifa exacta donde el CBM cae en el rango
-    let tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
+    let tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t =>
       cbmValue >= t.limit_inf && cbmValue <= t.limit_sup
     )
-    
+
     // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
     if (!tarifa) {
       const cbmRedondeado = Math.round(cbmValue * 10) / 10
-      tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
+      tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t =>
         cbmRedondeado >= t.limit_inf && cbmRedondeado <= t.limit_sup
       )
     }
-    
+
     // 3. Si aún no encuentra, buscar la tarifa más cercana
     if (!tarifa) {
       // Buscar el rango más cercano comparando distancias
@@ -252,7 +252,7 @@ export const useCalculadoraImportacion = () => {
       distancias.sort((a, b) => a.distancia - b.distancia)
       tarifa = distancias[0]?.tarifa
     }
-    
+
     // 4. Si aún no hay tarifa, usar la última (mayor rango)
     return tarifa || TARIFAS_EXTRA_ITEM_PER_CBM[TARIFAS_EXTRA_ITEM_PER_CBM.length - 1]
   }
@@ -266,22 +266,22 @@ export const useCalculadoraImportacion = () => {
       }
       return null
     }
-    
+
     const cbmValue = parseFloat(cbm.toFixed(2))
-    
+
     if (tarifas.value.length === 0) {
       return null
     }
-    
+
     const tarifasDelTipo = tarifas.value.filter(t => t.label === tipoCliente)
-    
+
     // 1. Buscar tarifa exacta donde el CBM cae en el rango
     let tarifa = tarifasDelTipo.find(t => {
       const limitInferior = parseFloat(t.limit_inf.replace(',', '.'))
       const limitSuperior = parseFloat(t.limit_sup.replace(',', '.'))
       return cbmValue >= limitInferior && cbmValue <= limitSuperior
     })
-    
+
     // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
     if (!tarifa) {
       const cbmRedondeado = Math.round(cbmValue * 10) / 10
@@ -291,7 +291,7 @@ export const useCalculadoraImportacion = () => {
         return cbmRedondeado >= limitInferior && cbmRedondeado <= limitSuperior
       })
     }
-    
+
     // 3. Si aún no encuentra, buscar la tarifa más cercana del mismo tipo
     if (!tarifa && tarifasDelTipo.length > 0) {
       tarifa = tarifasDelTipo.reduce((closest, current) => {
@@ -299,26 +299,26 @@ export const useCalculadoraImportacion = () => {
         const limitSupCurrent = parseFloat(current.limit_sup.replace(',', '.'))
         const limitInfClosest = parseFloat(closest.limit_inf.replace(',', '.'))
         const limitSupClosest = parseFloat(closest.limit_sup.replace(',', '.'))
-        
+
         const distCurrent = Math.min(Math.abs(cbmValue - limitInfCurrent), Math.abs(cbmValue - limitSupCurrent))
         const distClosest = Math.min(Math.abs(cbmValue - limitInfClosest), Math.abs(cbmValue - limitSupClosest))
-        
+
         return distCurrent < distClosest ? current : closest
       })
     }
-    
+
     // 4. Fallback: si no hay tarifas del tipo, usar NUEVO
     if (!tarifa) {
       tarifa = tarifas.value.find(t => t.label === 'NUEVO')
     }
-    
+
     return tarifa || null
   }
 
   const selectedTarifa = computed(() => {
     const tipoCliente = clienteInfo.value.tipoCliente
     const totalCbmValue = totalCbm.value
-    
+
     // Usar la función helper findTarifaByCbmAndTipo para buscar tarifa general
     return findTarifaByCbmAndTipo(totalCbmValue, tipoCliente)
   })
@@ -362,7 +362,7 @@ export const useCalculadoraImportacion = () => {
     const proveedoresLength = proveedores.value.length
     const clienteQtyProveedores = clienteInfo.value.qtyProveedores
     const diff = clienteQtyProveedores - proveedoresLength
-    
+
     if (currentStep.value === 1) {
       if (diff > 0) {
         for (let i = 0; i < diff; i++) {
@@ -482,7 +482,7 @@ export const useCalculadoraImportacion = () => {
     if (proveedores.value.length >= MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA) {
       return false
     }
-    
+
     // Validar límite de ítems: un nuevo proveedor siempre agrega al menos 1 ítem
     // Verificar si agregar 1 ítem más excedería el límite
     if (!canAddMoreItems()) {
@@ -534,7 +534,7 @@ export const useCalculadoraImportacion = () => {
       clienteInfo.value.qtyProveedores = proveedores.value.length
       // Renumerar IDs
       proveedores.value.forEach((p, i) => {
-        p.id = (i + 1).toString()
+        p.id = p?.id || (i + 1).toString()
         p.productos.forEach((prod, j) => {
           prod.id = `${p.id}-${j + 1}`
         })
@@ -570,7 +570,7 @@ export const useCalculadoraImportacion = () => {
     const proveedor = proveedores.value.find(p => p.id === proveedorId)
     if (proveedor) {
       // asegurar que el panel esté abierto al agregar un producto
-      ;(proveedor as any).collapsed = false
+      ; (proveedor as any).collapsed = false
       const newId = `${proveedorId}-${proveedor.productos.length + 1}`
       const cbmTotal = totalCbm.value
       const tarifaExtra = getExtraItem(cbmTotal)
@@ -715,7 +715,7 @@ export const useCalculadoraImportacion = () => {
       cotizaciones.value = response.data
       pagination.value = response.pagination
       headers.value = response.headers
-      
+
       // Actualizar las opciones de filtro si vienen en la respuesta
       if (response.filters) {
         filterOptions.value.contenedores = response.filters.contenedores || []
@@ -878,7 +878,7 @@ export const useCalculadoraImportacion = () => {
       clienteInfo.value.qtyProveedores = Number(payload.qty_proveedores || payload.qtyProveedores || 0)
 
       proveedores.value = (payload.proveedores || []).map((p: any, idx: number) => ({
-        id:  p.id || (idx + 1).toString(),
+        id: p.id || (idx + 1).toString(),
         cbm: Number(p.cbm) || 0,
         peso: Number(p.peso) || 0,
         code_supplier: p.code_supplier,
@@ -907,7 +907,7 @@ export const useCalculadoraImportacion = () => {
       // Intentar diferentes nombres posibles del campo (incluyendo "tc")
       const tipoCambioValue = payload.tipo_cambio ?? payload.tipoCambio ?? payload.tipo_de_cambio ?? payload.tipoDeCambio ?? payload.tc ?? payload.TC ?? null
       tipoCambio.value = tipoCambioValue !== null && tipoCambioValue !== undefined && tipoCambioValue !== ''
-        ? Number(tipoCambioValue) 
+        ? Number(tipoCambioValue)
         : 3.7
       esImo.value = Boolean(payload.es_imo ?? false)
       usaYuan.value = Boolean(payload.usa_yuan ?? false)
