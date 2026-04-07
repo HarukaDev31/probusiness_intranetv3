@@ -9,6 +9,7 @@ export interface UsuarioAdmin {
   organizacion: string
   cargo: string
   usuario: string
+  password_sin_encriptar?: string | null
   nombres_apellidos: string | null
   email: string
   celular: string | null
@@ -22,6 +23,7 @@ export interface CreateUsuarioRequest {
   usuario: string
   nombres_apellidos?: string
   password: string
+  password_sin_encriptar?: string
   celular?: string
   estado: number
 }
@@ -33,6 +35,7 @@ export interface UpdateUsuarioRequest {
   usuario: string
   nombres_apellidos?: string
   password?: string
+  password_sin_encriptar?: string
   celular?: string
   estado: number
 }
@@ -40,6 +43,14 @@ export interface UpdateUsuarioRequest {
 export interface UsuarioListResponse {
   success: boolean
   data: UsuarioAdmin[]
+  pagination?: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number
+    to: number
+  }
   message?: string
 }
 
@@ -60,12 +71,16 @@ export class UsuarioAdminService extends BaseService {
     empresa_id?: number
     org_id?: number
     search?: string
+    page?: number
+    per_page?: number
   } = {}): Promise<UsuarioListResponse> {
     try {
       const qs = new URLSearchParams()
       if (params.empresa_id) qs.append('empresa_id', String(params.empresa_id))
       if (params.org_id)     qs.append('org_id', String(params.org_id))
       if (params.search)     qs.append('search', params.search)
+      if (params.page)       qs.append('page', String(params.page))
+      if (params.per_page)   qs.append('per_page', String(params.per_page))
 
       const url = `/api/panel-acceso/usuarios${qs.toString() ? `?${qs}` : ''}`
       return await this.apiCall<UsuarioListResponse>(url)

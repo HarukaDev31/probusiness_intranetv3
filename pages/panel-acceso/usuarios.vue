@@ -5,6 +5,10 @@
     :data="usuarios"
     :columns="columns"
     :loading="loading"
+    :current-page="pagination.current_page"
+    :total-pages="pagination.last_page"
+    :total-records="pagination.total"
+    :items-per-page="pagination.per_page"
     :show-primary-search="true"
     primary-search-placeholder="Buscar usuario..."
     :show-new-button="true"
@@ -13,6 +17,8 @@
     empty-state-message="No hay usuarios registrados."
     :hide-back-button="true"
     @update:primary-search="onSearch"
+    @page-change="onPageChange"
+    @items-per-page-change="onItemsPerPageChange"
   />
 
   <!-- Modal Crear/Editar -->
@@ -62,17 +68,33 @@
 
           <div class="grid grid-cols-2 gap-4">
             <UFormField
-              :label="editingUsuario ? 'Nueva Contraseña (dejar vacío = no cambiar)' : 'Contraseña'"
+              :label="editingUsuario ? 'Nueva contraseña (opcional)' : 'Contraseña'"
               :required="!editingUsuario"
             >
               <UInput
+                :key="showPasswordInModal ? 'pwd-text' : 'pwd-hidden'"
                 v-model="form.password"
-                type="password"
+                :type="showPasswordInModal ? 'text' : 'password'"
                 placeholder="Contraseña"
+                autocomplete="new-password"
+                :ui="{ trailing: 'pe-1' }"
                 class="w-full"
-              />
+              >
+                <template #trailing>
+                  <UButton
+                    :icon="showPasswordInModal ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                    variant="link"
+                    color="neutral"
+                    size="sm"
+                    type="button"
+                    @click.prevent.stop="showPasswordInModal = !showPasswordInModal"
+                  />
+                </template>
+              </UInput>
             </UFormField>
+          </div>
 
+          <div class="grid grid-cols-2 gap-4">
             <UFormField label="Celular">
               <UInput
                 v-model="form.celular"
@@ -164,6 +186,27 @@ const columns: TableColumn<UsuarioAdmin>[] = [
     header: 'Usuario (Email)',
   },
   {
+    accessorKey: 'password_sin_encriptar',
+    header: 'Contraseña actual',
+    cell: ({ row }) => {
+      const id = row.original.id
+      const isVisible = !!visiblePasswords.value[id]
+      const value = row.original.password_sin_encriptar || ''
+      return h('div', { class: 'flex items-center gap-2' }, [
+        h('span', { class: 'font-mono text-xs' }, value ? (isVisible ? value : '••••••••') : '—'),
+        value
+          ? h(UButton as any, {
+              size: 'xs',
+              variant: 'ghost',
+              color: 'neutral',
+              icon: isVisible ? 'i-heroicons-eye-slash' : 'i-heroicons-eye',
+              onClick: () => togglePasswordVisibility(id),
+            })
+          : null,
+      ])
+    },
+  },
+  {
     accessorKey: 'nombres_apellidos',
     header: 'Nombres y Apellidos',
     cell: ({ row }) => row.original.nombres_apellidos || '—',
@@ -202,6 +245,15 @@ const columns: TableColumn<UsuarioAdmin>[] = [
 // ─── Tabla ─────────────────────────────────────────────────────────────────────
 const usuarios = ref<UsuarioAdmin[]>([])
 const loading  = ref(false)
+const search = ref('')
+const pagination = ref({
+  current_page: 1,
+  last_page: 1,
+  per_page: 10,
+  total: 0,
+  from: 0,
+  to: 0,
+})
 
 // ─── Selects del modal ────────────────────────────────────────────────────────
 const gruposOptions = ref<{ label: string; value: number }[]>([])
@@ -222,6 +274,9 @@ const formError      = ref('')
 const showDeleteModal = ref(false)
 const deletingUsuario = ref<UsuarioAdmin | null>(null)
 const deleting        = ref(false)
+const showPasswordInModal = ref(false)
+const visiblePasswords = ref<Record<number, boolean>>({})
+const originalPassword = ref('')
 
 const form = reactive({
   usuario:           '',
@@ -230,22 +285,71 @@ const form = reactive({
   celular:           '',
 })
 
+function togglePasswordVisibility(id: number) {
+  visiblePasswords.value[id] = !visiblePasswords.value[id]
+}
+
 // ─── Data loading ─────────────────────────────────────────────────────────────
-async function loadUsuarios(search?: string) {
+async function loadUsuarios(params?: { search?: string; page?: number; per_page?: number }) {
   loading.value = true
   const res = await UsuarioAdminService.getUsuarios({
     empresa_id: empresaId.value,
     org_id:     orgId.value,
-    search:     search || undefined,
+    search:     params?.search || undefined,
+    page:       params?.page || pagination.value.current_page,
+    per_page:   params?.per_page || pagination.value.per_page,
   })
   usuarios.value = res.data ?? []
+  if (res.pagination) {
+    pagination.value = {
+      current_page: res.pagination.current_page,
+      last_page: res.pagination.last_page,
+      per_page: res.pagination.per_page,
+      total: res.pagination.total,
+      from: res.pagination.from,
+      to: res.pagination.to,
+    }
+  } else {
+    const total = res.data?.length ?? 0
+    pagination.value = {
+      current_page: 1,
+      last_page: 1,
+      per_page: Math.max(total, 10),
+      total,
+      from: total > 0 ? 1 : 0,
+      to: total,
+    }
+  }
   loading.value = false
 }
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 function onSearch(value: string) {
   if (searchTimeout) clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => loadUsuarios(value), 300)
+  searchTimeout = setTimeout(() => {
+    search.value = value
+    void loadUsuarios({
+      search: value,
+      page: 1,
+      per_page: pagination.value.per_page,
+    })
+  }, 300)
+}
+
+function onPageChange(page: number) {
+  void loadUsuarios({
+    search: search.value,
+    page,
+    per_page: pagination.value.per_page,
+  })
+}
+
+function onItemsPerPageChange(perPage: number) {
+  void loadUsuarios({
+    search: search.value,
+    page: 1,
+    per_page: perPage,
+  })
 }
 
 async function loadGrupos() {
@@ -262,7 +366,8 @@ async function openModal(usuario?: UsuarioAdmin) {
     editingUsuario.value   = usuario
     form.usuario           = usuario.usuario
     form.nombres_apellidos = usuario.nombres_apellidos ?? ''
-    form.password          = ''
+    form.password          = usuario.password_sin_encriptar ?? ''
+    originalPassword.value = usuario.password_sin_encriptar ?? ''
     form.celular           = usuario.celular ?? ''
     selectedGrupo.value    = gruposOptions.value.find(g => g.value === usuario.id_grupo) ?? null
     selectedEstado.value   = estadoOptions.find(e => e.value === usuario.estado) ?? estadoOptions[0]
@@ -271,10 +376,12 @@ async function openModal(usuario?: UsuarioAdmin) {
     form.usuario           = ''
     form.nombres_apellidos = ''
     form.password          = ''
+    originalPassword.value = ''
     form.celular           = ''
     selectedGrupo.value    = null
     selectedEstado.value   = estadoOptions[0]
   }
+  showPasswordInModal.value = false
   showModal.value = true
 }
 
@@ -314,7 +421,18 @@ async function submitForm() {
     celular:           form.celular || undefined,
     estado:            estadoId,
   }
-  if (form.password) payload.password = form.password
+  const trimmedPassword = form.password.trim()
+  if (!editingUsuario.value) {
+    if (trimmedPassword) {
+      payload.password = trimmedPassword
+      payload.password_sin_encriptar = trimmedPassword
+    }
+  } else if (trimmedPassword && trimmedPassword !== originalPassword.value) {
+    // En edición, cuando cambia la contraseña, enviamos ambos campos
+    // para asegurar sincronía entre texto plano y encriptado.
+    payload.password = trimmedPassword
+    payload.password_sin_encriptar = trimmedPassword
+  }
 
   const res = editingUsuario.value
     ? await UsuarioAdminService.updateUsuario(editingUsuario.value.id, payload)
