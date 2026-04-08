@@ -679,13 +679,20 @@ export const useCalculadoraImportacion = () => {
       return null
     }
   }
-  const getCotizaciones = async () => {
+  /**
+   * Lista cotizaciones calculadora.
+   * @param options.id_calculadora Si se envía, el backend puede filtrar por PK de la fila (p. ej. al volver desde documentación con ?idCalculadora=).
+   */
+  const getCotizaciones = async (options?: { id_calculadora?: number }) => {
     try {
       const params: any = {
         page: pagination.value.current_page,
         per_page: itemsPerPage.value
       }
-      if (search.value.trim()) {
+      const idCalc = options?.id_calculadora
+      if (idCalc != null && idCalc > 0) {
+        params.id_calculadora = idCalc
+      } else if (search.value.trim()) {
         params.search = search.value.trim()
       }
       if (filters.value.fecha_inicio) {

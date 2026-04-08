@@ -1228,7 +1228,10 @@ const saveCotizacion = async () => {
       const response = await handleEndFormulario(cotizacionId)
       if (response?.success) {
         showSuccess('Cotización actualizada correctamente', 'success')
-        navigateTo('/cotizaciones')
+        navigateTo({
+          path: '/cotizaciones',
+          query: cotizacionId ? { idCalculadora: String(cotizacionId) } : undefined
+        })
       } else {
         const msg = (response as any)?.message || 'Error al actualizar la cotización'
         showError('Error al actualizar la cotización', msg)

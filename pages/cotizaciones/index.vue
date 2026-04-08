@@ -31,6 +31,7 @@
 </template>
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList } = useCalculadoraImportacion()
 import type { TableColumn } from '@nuxt/ui'
@@ -42,6 +43,7 @@ import type { FilterConfig } from '~/types/data-table'
 import { useIsDesktop } from '~/composables/useResponsive'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 const { isDesktop } = useIsDesktop()
+const route = useRoute()
 const { showSuccess, showConfirmation, showError } = useModal()
 const overlay = useOverlay()
 const moveCotizacionModal = overlay.create(MoveCotizacionModal)
@@ -293,7 +295,7 @@ const columns: TableColumn<any>[] = [
           label: '',
           title: 'Documentos asociados',
           onClick: () => {
-            handleDocumentos(idCotizacion)
+            handleDocumentos(idCotizacion, row.original.id)
           }
         }))
       } 
@@ -358,13 +360,17 @@ const handleDelete = (id: string) => {
 const handleEdit = (id: string) => {
   navigateTo(`/cotizaciones/${id}`)
 }
-const handleDocumentos = (idCotizacion: string | number) => {
+const handleDocumentos = (idCotizacion: string | number, idCalculadoraFila: string | number) => {
   const id = Number(idCotizacion)
+  const idCalc = Number(idCalculadoraFila)
   if (!id) return
-  // Consume la vista nueva de documentación por cotización (abiertos)
+  // Consume la vista nueva de documentación por cotización (abiertos); idCalculadora para volver al listado filtrado
   navigateTo({
     path: `/cargaconsolidada/abiertos/cotizaciones/documentacion/${id}`,
-    query: { backTo: '/cotizaciones' }
+    query: {
+      backTo: '/cotizaciones',
+      ...(idCalc > 0 ? { idCalculadora: String(idCalc) } : {})
+    }
   })
 }
 
@@ -438,8 +444,31 @@ const handleExport = async () => {
   }
 }
 
-onMounted(() => {
-  getCotizaciones()
+function parseIdCalculadoraQuery(q: unknown): number | null {
+  const s = typeof q === 'string' ? q : Array.isArray(q) ? q[0] : ''
+  if (!s || !/^\d+$/.test(String(s))) return null
+  const n = Number(s)
+  return n > 0 ? n : null
+}
+
+watch(
+  () => route.query.idCalculadora,
+  async (q) => {
+    if (route.path !== '/cotizaciones') return
+    const id = parseIdCalculadoraQuery(q)
+    if (id == null) return
+    search.value = String(id)
+    pagination.value.current_page = 1
+    await getCotizaciones({ id_calculadora: id })
+    await navigateTo({ path: '/cotizaciones' }, { replace: true })
+  },
+  { immediate: true }
+)
+
+onMounted(async () => {
+  if (!parseIdCalculadoraQuery(route.query.idCalculadora)) {
+    await getCotizaciones()
+  }
 })
 
 // Configuración de filtros para DataTable

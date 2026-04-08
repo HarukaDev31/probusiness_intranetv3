@@ -497,7 +497,13 @@ function proveedorDocToFileItem(doc: { id: number; orden: number; file_url: stri
 function navigateBack() {
   // Si venimos desde otra vista (ej. calculadora de cotizaciones), usar ruta explícita.
   if (backTo.value) {
-    navigateTo(backTo.value)
+    const idCalc = route.query.idCalculadora
+    const idStr = typeof idCalc === 'string' ? idCalc : Array.isArray(idCalc) ? idCalc[0] : ''
+    if (idStr && /^\d+$/.test(idStr)) {
+      navigateTo({ path: backTo.value, query: { idCalculadora: idStr } })
+    } else {
+      navigateTo(backTo.value)
+    }
     return
   }
 
