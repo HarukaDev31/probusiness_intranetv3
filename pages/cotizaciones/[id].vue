@@ -350,7 +350,7 @@
           <h2 class="text-2xl font-bold mb-6">Resumen</h2>
 
           <!-- Información del Cliente -->
-          <div class="flex gap-8 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700 flex-wrap items-center">
+          <div class="flex gap-8 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700 flex-wrap">
             <div class="flex items-center gap-2">
               <span class="font-semibold text-gray-700 dark:text-gray-300">Cliente:</span>
               <div class="w-72">
@@ -362,20 +362,6 @@
               <span class="font-semibold text-gray-700 dark:text-gray-300">WhatsApp:</span>
               <div class="w-48">
                 <UInput :value="clienteInfo.whatsapp" class="w-full" disabled size="md" variant="outline" />
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="font-semibold text-gray-700 dark:text-gray-300">Tipo de cliente:</span>
-              <div class="w-56 min-w-[14rem]">
-                <USelect
-                  v-model="clienteInfo.tipoCliente"
-                  :items="tarifasSelect"
-                  item-value="value"
-                  item-title="label"
-                  placeholder="Selecciona un tipo de cliente"
-                  class="w-full"
-                  size="md"
-                />
               </div>
             </div>
             <!--tarifa actual-->
