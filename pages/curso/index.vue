@@ -21,7 +21,7 @@
                 <!-- Estado de WhatsApp compacto -->
                
                 <UButton icon="i-heroicons-globe-alt" label="Planes landing web" color="neutral" variant="outline" @click="navigateTo('/curso/planes-web')" class="py-3" />
-                <UButton icon="i-heroicons-eye" label="Ver Campañas" @click="navigateTo('/campanas')" class="py-3" />
+                <UButton icon="i-heroicons-eye" label="Ver Campañas" @click="navigateTo('curso/campanas')" class="py-3" />
             </template>
             <template #body-top>
                 <UTabs v-model="activeTab" :items="tabs" variant="pill" class="mb-1 w-80 h-15" />

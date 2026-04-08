@@ -900,11 +900,11 @@ const deliveryColumns = ref<TableColumn<any>[]>([
       return !row.original.id_contenedor_pago ? h(PagoGrid as any, {
         pagoDetails: pagosDetails,
         currency: 'PEN',
-        numberOfPagos: currentRole.value === ROLES.COORDINACION ? 3 : pagosDetails.length,
+        numberOfPagos: (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD) ? 3 : pagosDetails.length,
         clienteNombre: row.original.nombre,
         onSave: (data: any) => handleRegistrarPago(row.original, data),
         onDelete: (pagoId: number) => handleDeletePago(row.original, pagoId),
-        showDelete: currentRole.value === ROLES.COORDINACION
+        showDelete: currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD
       }) : null
     }
   },

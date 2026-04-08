@@ -23,7 +23,7 @@
             :show-new-button="false"
             :hide-back-button="false"
             empty-state-message="No se encontraron estudiantes que coincidan con los criterios de búsqueda."
-            previous-page-url="/campanas" 
+            previous-page-url="/curso/campanas" 
             @update:primarySearch="handleStudentsSearch" 
             @page-change="handleStudentsPageChange"
             @items-per-page-change="handleStudentsItemsPerPageChange" 
