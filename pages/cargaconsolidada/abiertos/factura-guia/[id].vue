@@ -508,10 +508,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
         h('div', { class: 'font-medium text-gray-900 dark:text-white break-words line-clamp-2 min-w-0' }, nombre),
         ...(telefono ? [h('div', { class: 'text-sm text-gray-500 dark:text-gray-400' }, telefono)] : [])
       ]
-      if (registrado && tipo_comprobante === 'FACTURA') {
-        if (razon_social) nodes.push(h('div', { class: 'font-medium text-gray-900 dark:text-white break-words line-clamp-2 min-w-0' }, razon_social))
-        if (ruc) nodes.push(h('div', { class: 'text-sm text-gray-500 dark:text-gray-400' }, ruc))
-      }
+     
       return cellWrap('max-w-[200px] min-w-0 whitespace-normal flex flex-col gap-0.5')(nodes)
     }
   },
@@ -574,59 +571,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
       })))
     }
   },
-  {
-    accessorKey: 'comprobante_pdf',
-    header: 'Comprobante (PDF)',
-    cell: ({ row }: { row: any }) => {
-      const comprobantes = row.original.comprobantes as Array<{ comprobante_file_url?: string | null; file_url?: string | null; file_name?: string | null }> | undefined
-      if (!comprobantes?.length) return cellWrap('text-center')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
-      return cellWrap('text-center')(h('div', { class: 'flex flex-col gap-1 justify-center items-center' }, comprobantes.map((c, i) => {
-        const url = c.file_url ?? c.comprobante_file_url
-        const fileName = c.file_name || 'Comprobante.pdf'
-        if (!url) return h('span', { key: i, class: 'text-gray-400 text-sm' }, '—')
-        return h(UButton, {
-          key: i,
-          icon: 'vscode-icons:file-type-pdf2',
-          size: 'xl',
-          color: 'error',
-          variant: 'ghost',
-          'aria-label': 'Ver comprobante',
-          onClick: () => openPreview(url, fileName)
-        })
-      })))
-    }
-  },
-  {
-    accessorKey: 'guia_r_',
-    header: 'Guía R.',
-    cell: ({ row }: { row: any }) => {
-      const guias = row.original.guias_remision as Array<{ id: number; file_name: string; file_url: string | null }> | undefined
-      const legacyUrl = row.original.guia_remision_url as string | null | undefined
-      const activeGuias = guias?.filter((g: any) => g.file_url) ?? []
-      if (!activeGuias.length && !legacyUrl) return cellWrap('')(h('span', { class: 'text-gray-400 text-sm' }, '—'))
-      if (activeGuias.length) {
-        return cellWrap('')(h('div', { class: 'flex flex-col gap-1' }, activeGuias.map((g: any, i: number) =>
-          h(UButton, {
-            key: i,
-            icon: 'vscode-icons:file-type-pdf2',
-            size: 'xl',
-            color: 'primary',
-            variant: 'ghost',
-            'aria-label': 'Ver guía',
-            onClick: () => openPreview(g.file_url, g.file_name || 'Guía.pdf')
-          })
-        )))
-      }
-      return cellWrap('')(h(UButton, {
-        icon: 'i-heroicons-eye',
-        size: 'xs',
-        color: 'primary',
-        variant: 'soft',
-        'aria-label': 'Ver guía',
-        onClick: () => openPreview(legacyUrl!, 'Guía.pdf')
-      }))
-    }
-  },
+  
   {
     accessorKey: 'estado',
     header: 'Estado',
@@ -651,7 +596,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
             variant: 'ghost',
             size: 'sm',
             onClick: () => {
-              navigateTo(`/cargaconsolidada/contabilidad/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
+              navigateTo(`/cargaconsolidada/abiertos/factura-guia/clientes/${row.original.id_cotizacion}?carga=${carga.value || ''}`)
             }
           })
         }),
@@ -662,7 +607,7 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
             variant: 'ghost',
             size: 'sm',
             onClick: () => {
-              navigateTo(`/cargaconsolidada/contabilidad/factura-guia/formulario-comprobante/${row.original.id_cotizacion}`)
+              navigateTo(`/cargaconsolidada/abiertos/factura-guia/formulario-comprobante/${row.original.id_cotizacion}`)
             }
           })
         }),

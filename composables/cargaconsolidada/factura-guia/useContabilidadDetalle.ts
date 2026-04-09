@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { ContabilidadService } from '~/services/cargaconsolidada/factura-guia/contabilidadService'
+import { GeneralService } from '~/services/cargaconsolidada/factura-guia/generalService'
 
 export const useContabilidadDetalle = () => {
     const loading = ref(false)
@@ -60,6 +61,19 @@ export const useContabilidadDetalle = () => {
         return ContabilidadService.saveNota(idCotizacion, nota.value)
     }
 
+    // Guías de remisión (módulo general) — wrappers para no llamar Services desde pages
+    const uploadGuiasRemisionBatch = async (idCotizacion: number, files: File[]) => {
+        return GeneralService.uploadGuiasRemisionBatch(idCotizacion, files)
+    }
+
+    const deleteGuiaRemision = async (idCotizacion: number) => {
+        return GeneralService.deleteGuiaRemision(idCotizacion)
+    }
+
+    const deleteGuiaRemisionItem = async (guiaId: number) => {
+        return GeneralService.deleteGuiaRemisionItem(guiaId)
+    }
+
     return {
         loading,
         cliente,
@@ -76,5 +90,8 @@ export const useContabilidadDetalle = () => {
         deleteComprobante,
         deleteConstancia,
         saveNota,
+        uploadGuiasRemisionBatch,
+        deleteGuiaRemision,
+        deleteGuiaRemisionItem,
     }
 }
