@@ -19,6 +19,8 @@ export interface ProductoItem {
   antidumping: number
   adValorem: number
   adValoremP: number
+  /** Porcentaje ISC (base: max(CIF, CIF ajustado) + ad valorem en monto) */
+  iscP: number
   igv: number
   ipm: number
   percepcion: number
@@ -75,7 +77,7 @@ export interface ProductoItemRequest {
   cantidad: number
   antidumpingCU: number
   adValoremP: number
- 
+  iscP?: number
 }
 export interface saveCotizacionRequest {
   id?: number

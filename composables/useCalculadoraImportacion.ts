@@ -405,7 +405,8 @@ export const useCalculadoraImportacion = () => {
           valoracion: producto.valoracion,
           cantidad: producto.cantidad,
           antidumpingCU: producto.antidumpingCU,
-          adValoremP: producto.adValoremP
+          adValoremP: producto.adValoremP,
+          iscP: producto.iscP ?? 0
         }))
       })),
       tarifaTotalExtraProveedor: tarifaTotalExtraProveedor,
@@ -506,6 +507,7 @@ export const useCalculadoraImportacion = () => {
           antidumping: 0,
           adValorem: 0,
           adValoremP: 0,
+          iscP: 0,
           igv: 0,
           ipm: 0,
           percepcion: 0,
@@ -586,6 +588,7 @@ export const useCalculadoraImportacion = () => {
         antidumping: 0,
         adValorem: 0,
         adValoremP: 0,
+        iscP: 0,
         igv: 0,
         ipm: 0,
         percepcion: 0,
@@ -898,6 +901,7 @@ export const useCalculadoraImportacion = () => {
           cantidad: Number(prod.cantidad) || 0,
           antidumpingCU: Number(prod.antidumping_cu || prod.antidumpingCU) || 0,
           adValoremP: Number(prod.ad_valorem_p || prod.adValoremP) || 0,
+          iscP: Number(prod.isc_p ?? prod.iscP) || 0,
           showValoracion: !!(prod.valoracion && Number(prod.valoracion) > 0),
           extraItem: 0
         })),

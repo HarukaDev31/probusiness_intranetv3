@@ -443,6 +443,10 @@
                   <span><strong>CBM:</strong> {{ totalCbm.toFixed(2) }}</span>
                   <span><strong>CIF:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).cif))
                     }}</span>
+                    
+                  <span><strong>Costos FOB:</strong> {{
+                    formatCurrency(round2(getTotals(proveedores, selectedTarifa).costosFob))
+                    }}</span>
                   <span><strong>Flete:</strong> {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).flete))
                     }}</span>
                 </div>
@@ -590,7 +594,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor FOB</td>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor EXW</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
                           <td v-for="producto in proveedor.productos" :key="producto.id"
                             class="text-center producto-column">
@@ -603,7 +607,7 @@
                         </td>
                       </tr>
                       <tr v-if="existsValoracion">
-                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Ajustado FOB</td>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">Valor EXW Valoracion</td>
 
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                           <td v-for="producto in proveedor.productos" :key="producto.id"
@@ -627,6 +631,20 @@
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
                           100%
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-primary text-white font-semibold px-4 py-2 sticky-left">Costos FOB</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class="text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class="text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getPorDistribucion(proveedores, selectedTarifa, producto).costosFob)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(round2(getTotals(proveedores, selectedTarifa).costosFob)) }}
                         </td>
                       </tr>
                       <tr>
@@ -728,6 +746,8 @@
                   class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
                   <span><strong>Ad Valorem:</strong> {{ formatCurrency(round2(getTributos(proveedores,
                     selectedTarifa).totalAdValorem)) }}</span>
+                  <span><strong>ISC:</strong> {{ formatCurrency(round2(getTributos(proveedores,
+                    selectedTarifa).totalISC || 0)) }}</span>
                   <span><strong>Antidumping:</strong> {{ formatCurrency(round2(getTributos(proveedores,
                     selectedTarifa).totalAntidumping)) }}</span>
                   <span><strong>IGV:</strong> {{ formatCurrency(round2(getTributos(proveedores,
@@ -815,6 +835,37 @@
                         </td>
                       </tr>
                       <tr>
+                        <td class="bg-white dark:bg-gray-900 sticky-left"></td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput class="w-full text-white" v-model.number="producto.iscP" type="number" min="0"
+                              placeholder="0" size="md" color="primary"
+                              :ui="{ base: 'bg-primary text-white text-center placeholder-white/70' }">
+                              <template #leading>
+                                <span class="text-white">%</span>
+                              </template>
+                            </UInput>
+                          </td>
+                        </template>
+                        <td class="bg-white dark:bg-gray-900 text-center sticky-right">
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">ISC</td>
+                        <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
+                          <td v-for="producto in proveedor.productos" :key="producto.id"
+                            class=" text-center producto-column">
+                            <UInput
+                              :value="formatCurrency(getTributosPorProducto(proveedores, selectedTarifa, producto).isc)"
+                              class="w-full" disabled size="md" variant="outline" :ui="{ base: 'text-center' }" />
+                          </td>
+                        </template>
+                        <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
+                          {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalISC || 0)) }}
+                        </td>
+                      </tr>
+                      <tr>
                         <td class="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 sticky-left">IGV 16%</td>
                         <template v-for="proveedor in proveedores" :key="proveedor.id" class=" text-center">
                           <td v-for="producto in proveedor.productos" :key="producto.id"
@@ -825,7 +876,7 @@
                           </td>
                         </template>
                         <td class="bg-blue-100 dark:bg-blue-400 text-center px-4 py-2 sticky-right">
-                          {{ formatCurrency(round2(totalIGV)) }}
+                          {{ formatCurrency(round2(getTributos(proveedores, selectedTarifa).totalIGV || 0)) }}
                         </td>
                       </tr>
                       <tr>
@@ -1341,6 +1392,11 @@ const restoreDraftIfAny = () => {
     }
     if (Array.isArray(parsed.proveedores)) {
       proveedores.value = parsed.proveedores as any[]
+      proveedores.value.forEach((p: any) => {
+        (p.productos || []).forEach((prod: any) => {
+          if (prod.iscP == null || prod.iscP === '') prod.iscP = 0
+        })
+      })
     }
 
     tarifaDescuento.value = Number(parsed.tarifaDescuento ?? tarifaDescuento.value ?? 0)
@@ -1969,7 +2025,10 @@ const roundn = (value: number, n: number) => Math.round(value * Math.pow(10, n))
 const round10 = (value: number) => Math.round(value * Math.pow(10, 10)) / Math.pow(10, 10);
 
 const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
-  const FLETE_PORCENTAJE = 0.6;
+  /** Parte del 60% histórico del costo de servicio asignada a costos FOB (antes todo era “flete”). */
+  const COSTOS_FOB_PORCENTAJE = 0.2399;
+  /** Resto del 60%: flete propiamente dicho. 0.2399 + 0.3601 = 0.6 */
+  const FLETE_PORCENTAJE = 0.3601;
   const COSTO_DESTINO_PORCENTAJE = 0.4;
 
   const cbm = proveedores.reduce((sum, proveedor) => sum + proveedor.cbm, 0);
@@ -1977,6 +2036,7 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
   // Validación defensiva
   if (!tarifa || typeof tarifa !== 'object') {
     return {
+      costosFob: 0,
       flete: 0,
       cbm,
       cfr: 0,
@@ -2001,20 +2061,23 @@ const calcularDistribucionBase = (proveedores: Proveedor[], tarifa: Tarifa) => {
     costoServicio = round10(tarifa.tarifa);
   }
 
-  // Aplicar 60% para flete y 40% para costoDestino base (sin extras ni descuentos)
-  const fleteTotal = round10(costoServicio * FLETE_PORCENTAJE);
+  // 60% del servicio = Costos FOB + Flete; 40% = costo destino base (sin extras ni descuentos)
+  const costosFob = round10(costoServicio * COSTOS_FOB_PORCENTAJE);
+  const flete = round10(costoServicio * FLETE_PORCENTAJE);
   const costoDestinoBase = round10(costoServicio * COSTO_DESTINO_PORCENTAJE);
 
   // Los extras y descuentos se aplicarán después al costoDestino, no aquí
   // Esto se hace en getTotals y getPorDistribucion
 
-  const cfr = round10(totalValorFOB.value + fleteTotal);
-  const cfrAjustado = round10(totalValorFOBAjustado.value + fleteTotal);
+  const transporteInternacional = round10(costosFob + flete);
+  const cfr = round10(totalValorFOB.value + transporteInternacional);
+  const cfrAjustado = round10(totalValorFOBAjustado.value + transporteInternacional);
   const seguro = round10(totalSeguro.value);
   const cif = round10(cfr + seguro);
   const cifAjustado = round10(cfrAjustado + seguro);
   return {
-    flete: fleteTotal,
+    costosFob,
+    flete,
     cbm: round10(cbm),
     cfr,
     cif,
@@ -2033,25 +2096,39 @@ const getTributosPorProducto = (proveedores: Proveedor[], tarifa: Tarifa, produc
   const PERCEPCION = 0.035;
 
   // Calculamos la distribución base una sola vez
-  const { cif, flete, seguro } = calcularDistribucionBase(proveedores, tarifa);
+  const { cif, costosFob, flete, seguro } = calcularDistribucionBase(proveedores, tarifa);
   const valorFob = round10(producto.precio * producto.cantidad);
   const valorFobAjustado = round10(producto.valoracion * producto.cantidad);
   const distribucion = roundn(totalValorFOB.value > 0 ? valorFob / roundn(totalValorFOB.value, 2) : 0, 10);
+  const costosFobDistribuido = round10(costosFob * distribucion);
   const fleteDistribuido = round10(flete * distribucion);
   const cifDistribuido = round10(cif * distribucion);
   const seguroDistribuido = round10(seguro * distribucion);
-  const cifAjustadoDistribuido = round10(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
+  const cifAjustadoDistribuido = round10(
+    producto.showValoracion
+      ? round10(valorFobAjustado + costosFobDistribuido + fleteDistribuido + seguroDistribuido)
+      : cifDistribuido
+  );
   const maxCif = round10(Math.max(cifDistribuido, cifAjustadoDistribuido));
-  const antidumping = round10(producto.antidumpingCU * producto.cantidad);
+  const antidumpingCU = Number(producto.antidumpingCU) || 0;
+  const cantidad = Number(producto.cantidad) || 0;
+  // Tributos aplicables: monto de línea = CU × cantidad; costo total por ítem: solo CU (no escala con cantidad)
+  const antidumping = round10(antidumpingCU * cantidad);
+  const antidumpingCosto = round10(antidumpingCU);
   const adValorem = round10(maxCif * producto.adValoremP / 100);
-  const igv = round10((maxCif * IGV) + (adValorem * IGV));
-  const ipm = round10((maxCif * IPM) + (adValorem * IPM));
-  const percepcion = round10((maxCif * PERCEPCION) + (adValorem * PERCEPCION) + (igv * PERCEPCION) + (ipm * PERCEPCION));
-  const total = round10(adValorem + igv + ipm + percepcion);
+  const baseIsc = round10(maxCif + adValorem);
+  const iscP = Number(producto.iscP) || 0;
+  const isc = round10(baseIsc * iscP / 100);
+  const igv = round10((maxCif * IGV) + (adValorem * IGV) + (isc * IGV));
+  const ipm = round10((maxCif * IPM) + (adValorem * IPM) + (isc * IPM));
+  const percepcion = round10((maxCif * PERCEPCION) + (adValorem * PERCEPCION) + (isc * PERCEPCION) + (igv * PERCEPCION) + (ipm * PERCEPCION));
+  const total = round10(adValorem + isc + igv + ipm + percepcion);
 
   return {
     antidumping,
+    antidumpingCosto,
     adValorem,
+    isc,
     igv,
     ipm,
     percepcion,
@@ -2061,18 +2138,16 @@ const getTributosPorProducto = (proveedores: Proveedor[], tarifa: Tarifa, produc
 
 // Función para obtener totales de tributos
 const getTributos = (proveedores: Proveedor[], tarifa: Tarifa) => {
-  const sumAntidumping = round10(proveedores.reduce((sum, proveedor) =>
-    sum + proveedor.productos.reduce((sumProd, prod) =>
-      sumProd + prod.antidumpingCU * prod.cantidad, 0), 0));
-
   // Calculamos tributos por producto
   const tributosPorProducto = proveedores.flatMap(proveedor =>
     proveedor.productos.map(producto => getTributosPorProducto(proveedores, tarifa, producto))
   );
+  const sumAntidumping = round10(tributosPorProducto.reduce((sum, item) => sum + item.antidumping, 0));
 
   return {
     totalAntidumping: sumAntidumping,
     totalAdValorem: round10(tributosPorProducto.reduce((sum, item) => sum + item.adValorem, 0)),
+    totalISC: round10(tributosPorProducto.reduce((sum, item) => sum + item.isc, 0)),
     totalIGV: round10(tributosPorProducto.reduce((sum, item) => sum + item.igv, 0)),
     totalIPM: round10(tributosPorProducto.reduce((sum, item) => sum + item.ipm, 0)),
     totalPercepcion: round10(tributosPorProducto.reduce((sum, item) => sum + item.percepcion, 0)),
@@ -2088,10 +2163,7 @@ const existsValoracion = computed(() => {
 // Función principal refactorizada
 const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: ProductoItem) => {
   // Obtenemos los valores base sin dependencias circulares
-  const { flete, cfr, cif, costoDestino, cfrAjustado } = calcularDistribucionBase(proveedores, tarifa);
-
-  // Calculamos tributos para este producto específico
-  const { antidumping, total } = getTributosPorProducto(proveedores, tarifa, producto);
+  const { costosFob, flete, cfr, cif, costoDestino, cfrAjustado } = calcularDistribucionBase(proveedores, tarifa);
 
   const valorFob = round10(producto.precio * producto.cantidad);
   const valorFobAjustado = round10(producto.valoracion * producto.cantidad);
@@ -2110,21 +2182,29 @@ const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: 
   const cifDistribuido = round10(cif * distribucion);
   const costoDestinoDistribuido = round10(costoDestinoConAjustes * distribucion);
   const seguroDistribuido = round10(totalSeguro.value * distribucion);
+  const costosFobDistribuido = round10(costosFob * distribucion);
   const fleteDistribuido = round10(flete * distribucion);
-  const cfrAjustadoDistribuido = round10(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido : cfrDistribuido);
-  const cifAjustadoDistribuido = round10(valorFobAjustado > 0 ? valorFobAjustado + fleteDistribuido + seguroDistribuido : cifDistribuido);
-  const maxCif = round10(Math.max(cifDistribuido, cifAjustadoDistribuido));
-  // Costo total = costoDestino + adValorem + impuestos (IGV+IPM+Percepción) + max(cif, cifAjustado)
-  const adValorem = round10(maxCif * producto.adValoremP / 100);
-  const igv = round10((maxCif * 0.16) + (adValorem * 0.16));
-  const ipm = round10((maxCif * 0.02) + (adValorem * 0.02));
-  const percepcion = round10((maxCif * 0.035) + (adValorem * 0.035) + (igv * 0.035) + (ipm * 0.035));
-  const totalImpuestos = round10(igv + ipm + percepcion);
-  const costoTotal = round10(costoDestinoDistribuido + adValorem + totalImpuestos + maxCif);
+  const cfrAjustadoDistribuido = round10(
+    producto.showValoracion
+      ? round10(valorFobAjustado + costosFobDistribuido + fleteDistribuido)
+      : cfrDistribuido
+  );
+  const cifAjustadoDistribuido = round10(
+    producto.showValoracion
+      ? round10(valorFobAjustado + costosFobDistribuido + fleteDistribuido + seguroDistribuido)
+      : cifDistribuido
+  );
+  const maxValorCfr = round10(Math.max(cfrDistribuido, cfrAjustadoDistribuido));
+  const tributosItem = getTributosPorProducto(proveedores, tarifa, producto);
+  // Costo importación: max(CFR normal, CFR ajustado) por ítem + destino + impuestos + antidumping
+  const costoTotal = round10(
+    costoDestinoDistribuido + tributosItem.total + tributosItem.antidumpingCosto + maxValorCfr
+  );
   const costoUSD = round10(producto.cantidad === 0 ? 0 : costoTotal / producto.cantidad);
   const costoPEN = round10(costoUSD * tipoCambio.value);
 
   return {
+    costosFob: costosFobDistribuido,
     flete: fleteDistribuido,
     seguro: seguroDistribuido,
     cif: cifDistribuido,
@@ -2141,8 +2221,7 @@ const getPorDistribucion = (proveedores: Proveedor[], tarifa: Tarifa, producto: 
 
 // Función getTotals actualizada
 const getTotals = (proveedores: Proveedor[], tarifa: Tarifa) => {
-  const { totalAdValorem, totalIGV, totalIPM, totalPercepcion } = getTributos(proveedores, tarifa);
-  const { flete, cbm, cfr, cif, costoDestino, cfrAjustado, cifAjustado } = calcularDistribucionBase(proveedores, tarifa);
+  const { costosFob, flete, cbm, cfr, cif, costoDestino, cfrAjustado, cifAjustado } = calcularDistribucionBase(proveedores, tarifa);
 
   // Aplicar descuento y extras al COSTO DESTINO total
   const descuento = Number(tarifaDescuento.value || 0);
@@ -2151,10 +2230,9 @@ const getTotals = (proveedores: Proveedor[], tarifa: Tarifa) => {
   console.log(extraProveedor, extraItem,'extraProveedor, extraItem',calculatedExtraProveedores.value, calculatedExtraItems.value, tarifaExtraProveedorManual.value, tarifaExtraItemManual.value)
   const costoDestinoConAjustes = round10(costoDestino - descuento + extraProveedor + extraItem);
 
-  // Costo total = costoDestino + totalAdValorem + totalImpuestos + max(cif, cifAjustado)
-  const totalImpuestos = round10(totalIGV + totalIPM + totalPercepcion);
-  const maxCif = round10(Math.max(cif, cifAjustado));
-  const costoTotal = round10(costoDestinoConAjustes + totalAdValorem + totalImpuestos + maxCif);
+  const costoTotal = round10(proveedores.reduce((sum, proveedor) =>
+    sum + proveedor.productos.reduce((sumProd, producto) =>
+      sumProd + getPorDistribucion(proveedores, tarifa, producto).costoTotal, 0), 0));
 
   // Sumar todos los costos unitarios USD y PEN de cada producto
   const costoUSD = round10(proveedores.reduce((sum, proveedor) =>
@@ -2165,6 +2243,7 @@ const getTotals = (proveedores: Proveedor[], tarifa: Tarifa) => {
       sumProd + getPorDistribucion(proveedores, tarifa, producto).costoPEN, 0), 0));
 
   return {
+    costosFob,
     flete,
     cbm,
     cfr,
