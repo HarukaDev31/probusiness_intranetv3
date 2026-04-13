@@ -595,6 +595,26 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         }
     },
     {
+        accessorKey: 'descuento',
+        header: 'Descuento',
+        cell: ({ row }: { row: any }) => {
+            if (!row.original.from_calculator) return 'N/A'
+            const v = row.original.tarifa_descuento
+            if (v === undefined || v === null || v === '') return formatCurrency(0, 'USD')
+            return formatCurrency(parseFloat(v), 'USD')
+        }
+    },
+    {
+        accessorKey: 'cargos_extra',
+        header: 'Cargos extra',
+        cell: ({ row }: { row: any }) => {
+            if (!row.original.from_calculator) return 'N/A'
+            const v = row.original.cargos_extra
+            if (v === undefined || v === null || v === '') return formatCurrency(0, 'USD')
+            return formatCurrency(parseFloat(v), 'USD')
+        }
+    },
+    {
         accessorKey: 'cotizacion',
         header: 'Cotizacion',
         cell: ({ row }: { row: any }) => {
