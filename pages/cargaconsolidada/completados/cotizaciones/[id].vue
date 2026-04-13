@@ -1192,7 +1192,7 @@ const getPagosColumns = () => {
                     pagoDetails: pagos,
                     clienteNombre: row.original.nombre,
                     currency: 'USD',
-                    showDelete: !isContabilidad,
+                    showDelete: true,
                     onSave: (data) => {
                         const formData = new FormData()
                         for (const key in data) {
