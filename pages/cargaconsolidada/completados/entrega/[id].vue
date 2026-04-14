@@ -122,11 +122,19 @@
       @close="closeAccionesModal"
       @success="handleAccionesModalSuccess"
     />
+    <DeliveryCobroServiciosModal
+      v-model="showCobroServiciosModal"
+      :servicios="cobroModalServiciosList"
+      :cliente-nombre="cobroModalRow?.nombre || ''"
+      :sending="cobroModalSending"
+      @close="closeCobroServiciosModal"
+      @confirm="onCobroServiciosConfirm"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h, watch } from 'vue'
+import { ref, onMounted, h, watch, computed } from 'vue'
 import type { TableColumn, TableRow } from '@nuxt/ui'
 import SectionHeader from '../../../../components/commons/SectionHeader.vue'
 import { useEntrega } from '~/composables/cargaconsolidada/entrega/useEntrega'
@@ -134,6 +142,8 @@ import { useUserRole } from '../../../../composables/auth/useUserRole'
 import { UBadge, UButton, UInput, UTabs, USelect } from '#components'
 import PagoGrid from '../../../../components/PagoGrid.vue'
 import DeliveryAccionesModal from '../../../../components/cargaconsolidada/entrega/DeliveryAccionesModal.vue'
+import DeliveryCobroServiciosModal from '../../../../components/cargaconsolidada/entrega/DeliveryCobroServiciosModal.vue'
+import DeliveryServiciosCell from '../../../../components/cargaconsolidada/entrega/DeliveryServiciosCell.vue'
 import { useModal } from '../../../../composables/commons/useModal'
 import { useSpinner } from '../../../../composables/commons/useSpinner'
 import { ROLES } from '../../../../constants/roles'
@@ -192,7 +202,6 @@ const {
   handleDeliveryPageChange,
   handleDeliveryItemsPerPageChange,
   clearDeliveryFilters,
-  updateImporteDelivery,
   updateServicioDelivery,
   registrarPagoDelivery,
   deletePagoDelivery,
@@ -243,15 +252,80 @@ const linkProvincia = computed(() => `https://clientes.probusiness.pe/formulario
 // completados para mostrar mensaje de copiado
 const copiedLima = ref(false)
 const copiedProvincia = ref(false)
-const handleCobroMessage = async (row: any) => {
+function serviciosConIdFromRow(row: any): { id: number; tipo_servicio: string; importe: number }[] {
+  const raw = row?.delivery_servicios
+  const list = Array.isArray(raw)
+    ? raw
+    : (typeof raw === 'string' && raw.trim().startsWith('[')
+      ? (() => {
+          try { return JSON.parse(raw) } catch { return [] }
+        })()
+      : [])
+  if (!Array.isArray(list) || list.length === 0) return []
+  return list
+    .map((x: any) => ({
+      id: Number(x?.id ?? x?.id_delivery_servicio ?? x?.id_linea ?? 0),
+      tipo_servicio: String(x?.tipo_servicio || 'DELIVERY'),
+      importe: Number(x?.importe) || 0
+    }))
+    .filter((x: any) => x.id > 0)
+}
+
+const canEditDeliveryServiciosMultiples = computed(
+  () => currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES
+)
+
+const showCobroServiciosModal = ref(false)
+const cobroModalRow = ref<any>(null)
+const cobroModalSending = ref(false)
+const cobroModalServiciosList = computed(() => serviciosConIdFromRow(cobroModalRow.value || {}))
+
+function closeCobroServiciosModal() {
+  showCobroServiciosModal.value = false
+  cobroModalRow.value = null
+}
+
+const handleCobroMessageDirect = async (row: any) => {
   await withSpinner(async () => {
     const response = await sendCobroDeliveryDelivery(row.id_cotizacion || row.id, 'Cobro de delivery')
     if (response?.success) {
       showSuccess('Cobro enviado', 'Cobro enviado correctamente')
     } else {
-      showError('Error', response?.error || 'No se pudo enviar el cobro')
+      showError('Error', (response as any)?.message || response?.error || 'No se pudo enviar el cobro')
     }
   }, 'Enviando cobro...')
+}
+
+function openCobroServiciosFlow(row: any) {
+  const lines = serviciosConIdFromRow(row)
+  if (lines.length === 0) {
+    handleCobroMessageDirect(row)
+    return
+  }
+  cobroModalRow.value = row
+  showCobroServiciosModal.value = true
+}
+
+async function onCobroServiciosConfirm(servicioIds: number[]) {
+  const row = cobroModalRow.value
+  if (!row || !servicioIds.length) return
+  cobroModalSending.value = true
+  try {
+    await withSpinner(async () => {
+      const response = await sendCobroDeliveryDelivery(row.id_cotizacion || row.id, {
+        message: '',
+        servicio_ids: servicioIds
+      })
+      if (response?.success) {
+        showSuccess('Cobro enviado', 'Cobro enviado correctamente')
+        closeCobroServiciosModal()
+      } else {
+        showError('Error', (response as any)?.message || response?.error || 'No se pudo enviar el cobro')
+      }
+    }, 'Enviando cobro...')
+  } finally {
+    cobroModalSending.value = false
+  }
 }
 const handleExportClientesExcel = async () => {
   const result = await exportClientesExcel(id)
@@ -949,23 +1023,44 @@ const deliveryColumns = ref<TableColumn<any>[]>([
   },
   {
     accessorKey: 'servicio', header: 'Servicio', cell: ({ row }) => {
-      const servicioValue = row.original.tipo_servicio||'Sin servicio';
+      const idCot = row.original.id_cotizacion || row.original.id
+      const lines = serviciosConIdFromRow(row.original)
+      if (canEditDeliveryServiciosMultiples.value) {
+        return h(DeliveryServiciosCell, {
+          idCotizacion: idCot,
+          servicios: row.original.delivery_servicios,
+          editable: true,
+          fallbackTipo: row.original.tipo_servicio,
+          fallbackImporte: Number(row.original.importe ?? 0),
+          onRefresh: () => getDelivery(id)
+        })
+      }
+      if (lines.length >= 1) {
+        return h(DeliveryServiciosCell, {
+          idCotizacion: idCot,
+          servicios: row.original.delivery_servicios,
+          editable: false,
+          fallbackTipo: row.original.tipo_servicio,
+          fallbackImporte: Number(row.original.importe ?? 0),
+          onRefresh: () => getDelivery(id)
+        })
+      }
+      const servicioValue = row.original.tipo_servicio || 'Sin servicio'
       return h(USelect as any, {
         modelValue: servicioValue,
         items: [
-          {label: 'Sin servicio', value: 'Sin servicio' ,disabled: true},
+          { label: 'Sin servicio', value: 'Sin servicio', disabled: true },
           { label: 'Delivery', value: 'DELIVERY' },
           { label: 'Montacarga', value: 'MONTACARGA' }
         ],
-        size: 'xs', class: 'w-32', 'onUpdate:modelValue': (v: string) => { row.original.tipo_servicio = v; handleUpdateServicio(row.original) } })
+        size: 'xs', class: 'w-32', 'onUpdate:modelValue': (v: string) => { row.original.tipo_servicio = v; handleUpdateServicio(row.original) }
+      })
     }
   },
   {
-    accessorKey: 'importe', header: 'Importe', cell: ({ row }) => h(UInput as any, {
-      modelValue: row.original.importe, size: 'xs', class: 'w-20 text-right', 'onUpdate:modelValue': (v: any) => {
-        row.original.importe = v
-      }
-    })
+    accessorKey: 'total_importe_servicios',
+    header: 'Total servicios',
+    cell: ({ row }) => formatCurrency(Number(row.original.total_importe_servicios ?? row.original.importe ?? 0), 'PEN')
   },
   { accessorKey: 'pagado', header: 'Pagado', cell: ({ row }) => formatCurrency(row.original.pagado, 'PEN') },
   {
@@ -989,55 +1084,20 @@ const deliveryColumns = ref<TableColumn<any>[]>([
     }
   },
  
-  //div with button with icon save
   {
     accessorKey: 'actions', header: 'Acciones', cell: ({ row }) => {
       
       return h('div', { class: 'flex gap-2' }, [
         h(UButton, {
           size: 'xs',
-          icon: 'material-symbols:save-sharp',
-          variant: 'ghost', color: 'primary',
-          title: 'Guardar', onClick: () => handleUpdate(row.original)
-        }),
-        //arrow with only cobro message
-        h(UButton, {
-          size: 'xs',
           icon: 'i-heroicons-paper-airplane',
           variant: 'ghost', color: 'primary',
-          title: 'Cobro', onClick: () => {
-            showConfirmation(
-              'Confirmar envío',
-              '¿Seguro que deseas enviar el mensaje de cobro a este cliente?',
-              () => handleCobroMessage(row.original)
-            )
-          }
+          title: 'Cobro', onClick: () => openCobroServiciosFlow(row.original)
         })
       ])
     }
   }
 ])
-const handleUpdate = (row: any) => {
-  try {
-    
-    const data = {
-      id_cotizacion: row.id_cotizacion,
-      importe: row.importe
-    }
-    withSpinner(async () => {
-      const response = await updateImporteDelivery(data)
-      if (response?.success) {
-        showSuccess('Importe guardado', 'Importe guardado correctamente')
-        getDelivery(id)
-      } else {
-        showError('Error', response?.error || 'No se pudo guardar el importe')
-      }
-    }, 'Guardando importe...')
-  } catch (error) {
-    showError('Error', error as string)
-  }
-
-}
 const handleUpdateServicio = (row: any) => {
   try {
     const data = {
@@ -1048,6 +1108,7 @@ const handleUpdateServicio = (row: any) => {
       const response = await updateServicioDelivery(data)
       if (response?.success) {
         showSuccess('Servicio actualizado', 'Servicio actualizado correctamente')
+        getDelivery(id)
       } else {
         showError('Error', response?.error || 'No se pudo actualizar el servicio')
       }

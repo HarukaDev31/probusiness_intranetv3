@@ -392,17 +392,54 @@ export class  EntregaService extends BaseService {
       throw error
     }
   }
-  static async sendCobroDeliveryDelivery(idCotizacion: number, message: string): Promise<{ success: boolean; data?: any; error?: string }> {
+  static async sendCobroDeliveryDelivery(
+    idCotizacion: number,
+    payload?: string | { message?: string; servicio_ids?: number[] }
+  ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
+      const body =
+        typeof payload === 'string'
+          ? { message: payload, servicio_ids: undefined }
+          : {
+              message: payload?.message ?? '',
+              servicio_ids: payload?.servicio_ids
+            }
       const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/cobro-delivery/${idCotizacion}`, {
         method: 'POST',
-        body: { message }
+        body
       })
       return response
     } catch (error) {
       console.error('Error al enviar cobro de delivery:', error)
       throw error
     }
+  }
+
+  static async addDeliveryServicioLine(data: {
+    id_cotizacion: number
+    tipo_servicio: string
+    importe: number
+  }): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+    return await this.apiCall(`${this.baseUrl}/delivery/servicio-line`, {
+      method: 'POST',
+      body: data
+    })
+  }
+
+  static async updateDeliveryServicioLine(
+    idLinea: number,
+    data: { tipo_servicio?: string; importe?: number }
+  ): Promise<{ success: boolean; error?: string; message?: string }> {
+    return await this.apiCall(`${this.baseUrl}/delivery/servicio-line/${idLinea}`, {
+      method: 'PUT',
+      body: data
+    })
+  }
+
+  static async deleteDeliveryServicioLine(idLinea: number): Promise<{ success: boolean; error?: string; message?: string }> {
+    return await this.apiCall(`${this.baseUrl}/delivery/servicio-line/${idLinea}`, {
+      method: 'DELETE'
+    })
   }
 
   // --- DETALLE CLIENTE (guardar formulario) ---

@@ -2096,14 +2096,14 @@ const getTributosPorProducto = (proveedores: Proveedor[], tarifa: Tarifa, produc
   const PERCEPCION = 0.035;
 
   // Calculamos la distribución base una sola vez
-  const { cif, costosFob, flete, seguro } = calcularDistribucionBase(proveedores, tarifa);
+  const { cif, costosFob, flete } = calcularDistribucionBase(proveedores, tarifa);
   const valorFob = round10(producto.precio * producto.cantidad);
   const valorFobAjustado = round10(producto.valoracion * producto.cantidad);
   const distribucion = roundn(totalValorFOB.value > 0 ? valorFob / roundn(totalValorFOB.value, 2) : 0, 10);
   const costosFobDistribuido = round10(costosFob * distribucion);
   const fleteDistribuido = round10(flete * distribucion);
   const cifDistribuido = round10(cif * distribucion);
-  const seguroDistribuido = round10(seguro * distribucion);
+  const seguroDistribuido = round10(totalSeguro.value * distribucion);
   const cifAjustadoDistribuido = round10(
     producto.showValoracion
       ? round10(valorFobAjustado + costosFobDistribuido + fleteDistribuido + seguroDistribuido)

@@ -192,7 +192,6 @@ const {
   handleDeliveryPageChange,
   handleDeliveryItemsPerPageChange,
   clearDeliveryFilters,
-  updateImporteDelivery,
   updateServicioDelivery,
   registrarPagoDelivery,
   deletePagoDelivery,
@@ -987,18 +986,10 @@ const deliveryColumns = ref<TableColumn<any>[]>([
     }
   },
  
-  //div with button with icon save
   {
     accessorKey: 'actions', header: 'Acciones', cell: ({ row }) => {
       
       return h('div', { class: 'flex gap-2' }, [
-        h(UButton, {
-          size: 'xs',
-          icon: 'material-symbols:save-sharp',
-          variant: 'ghost', color: 'primary',
-          title: 'Guardar', onClick: () => handleUpdate(row.original)
-        }),
-        //arrow with only cobro message
         h(UButton, {
           size: 'xs',
           icon: 'i-heroicons-paper-airplane',
@@ -1009,27 +1000,6 @@ const deliveryColumns = ref<TableColumn<any>[]>([
     }
   }
 ])
-const handleUpdate = (row: any) => {
-  try {
-    
-    const data = {
-      id_cotizacion: row.id_cotizacion,
-      importe: row.importe
-    }
-    withSpinner(async () => {
-      const response = await updateImporteDelivery(data)
-      if (response?.success) {
-        showSuccess('Importe guardado', 'Importe guardado correctamente')
-        getDelivery(id)
-      } else {
-        showError('Error', response?.error || 'No se pudo guardar el importe')
-      }
-    }, 'Guardando importe...')
-  } catch (error) {
-    showError('Error', error as string)
-  }
-
-}
 const handleUpdateServicio = (row: any) => {
   try {
     const data = {

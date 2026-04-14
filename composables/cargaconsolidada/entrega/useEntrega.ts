@@ -33,6 +33,9 @@ export const useEntrega = () => {
     id_contenedor?: number
     id_contenedor_pago?: number | null
     entrega: string | null
+    delivery_servicios?: { id: number; tipo_servicio: string; importe: number }[]
+    total_importe_servicios?: number
+    total_importe_delivery?: number
   }
   const delivery = ref<DeliveryRow[]>([])
   const cargasDisponiblesDelivery = ref<any[]>([])
@@ -367,30 +370,43 @@ export const useEntrega = () => {
         filters: cleanedFilters
       }
       const response = await EntregaService.getDelivery(id, params) as any
-      delivery.value = (response.data as Entrega[]).map((item: any) => ({
-        id_cotizacion: item.id,
-        nombre: item.nombre,
-        telefono: item.telefono,
-        tipo_entrega: item.tipo_entrega ?? null,
-        ciudad: item.ciudad ?? null,
-        documento: item.documento ?? null,
-        razon_social: item.razon_social ?? null,
-        estado: item.estado ?? '',
-        importe: item.importe ?? 0,
-        pagado: item.pagado ?? 0,
-        pagos_details: item.pagos_details ?? [],
-        id_contenedor: item.id_contenedor,
-        id_contenedor_pago: item.id_contenedor_pago ?? null,
-        entrega: item.entrega ?? null,
-        total_importe_delivery: item.total_importe_delivery ?? item.importe ?? 0,
-        tipo_servicio: item.tipo_servicio ?? 'Sin servicio',
-        // Campos de fecha y hora de recojo
-        delivery_date: item.delivery_date ?? null,
-        delivery_start_time: item.delivery_start_time ?? null,
-        delivery_end_time: item.delivery_end_time ?? null,
-        delivery_date_id: item.delivery_date_id ?? null,
-        delivery_range_id: item.delivery_range_id ?? null
-      }))
+      delivery.value = (response.data as Entrega[]).map((item: any) => {
+        let svc = item.delivery_servicios
+        if (typeof svc === 'string') {
+          try {
+            svc = JSON.parse(svc)
+          } catch {
+            svc = []
+          }
+        }
+        if (!Array.isArray(svc)) svc = []
+        return {
+          id_cotizacion: item.id,
+          nombre: item.nombre,
+          telefono: item.telefono,
+          tipo_entrega: item.tipo_entrega ?? null,
+          ciudad: item.ciudad ?? null,
+          documento: item.documento ?? null,
+          razon_social: item.razon_social ?? null,
+          estado: item.estado ?? '',
+          importe: item.importe ?? 0,
+          pagado: item.pagado ?? 0,
+          pagos_details: item.pagos_details ?? [],
+          id_contenedor: item.id_contenedor,
+          id_contenedor_pago: item.id_contenedor_pago ?? null,
+          entrega: item.entrega ?? null,
+          total_importe_delivery: item.total_importe_delivery ?? item.importe ?? 0,
+          total_importe_servicios: item.total_importe_servicios ?? item.importe ?? 0,
+          tipo_servicio: item.tipo_servicio ?? 'Sin servicio',
+          delivery_servicios: svc,
+          // Campos de fecha y hora de recojo
+          delivery_date: item.delivery_date ?? null,
+          delivery_start_time: item.delivery_start_time ?? null,
+          delivery_end_time: item.delivery_end_time ?? null,
+          delivery_date_id: item.delivery_date_id ?? null,
+          delivery_range_id: item.delivery_range_id ?? null
+        }
+      })
       pagination.value = response.pagination
       // Extraer headers si vienen en la respuesta
       if (response.headers && Array.isArray(response.headers)) {
@@ -696,13 +712,40 @@ export const useEntrega = () => {
       return { success: false, error: err as string }
     }
   }
-  const sendCobroDeliveryDelivery = async (idCotizacion: number, message: string) => {
+  const sendCobroDeliveryDelivery = async (
+    idCotizacion: number,
+    payload?: string | { message?: string; servicio_ids?: number[] }
+  ) => {
     try {
-      const response = await EntregaService.sendCobroDeliveryDelivery(idCotizacion, message)
+      const response = await EntregaService.sendCobroDeliveryDelivery(idCotizacion, payload)
       return response
     } catch (err) {
       error.value = err as string
       return { success: false, error: err as string }
+    }
+  }
+
+  const addDeliveryServicioLine = async (data: { id_cotizacion: number; tipo_servicio: string; importe: number }) => {
+    try {
+      return await EntregaService.addDeliveryServicioLine(data)
+    } catch (err: any) {
+      return { success: false, error: err?.message || String(err) }
+    }
+  }
+
+  const updateDeliveryServicioLine = async (idLinea: number, data: { tipo_servicio?: string; importe?: number }) => {
+    try {
+      return await EntregaService.updateDeliveryServicioLine(idLinea, data)
+    } catch (err: any) {
+      return { success: false, error: err?.message || String(err) }
+    }
+  }
+
+  const deleteDeliveryServicioLine = async (idLinea: number) => {
+    try {
+      return await EntregaService.deleteDeliveryServicioLine(idLinea)
+    } catch (err: any) {
+      return { success: false, error: err?.message || String(err) }
     }
   }
   const registrarPagoDelivery = async (row: DeliveryRow, data: any) => {
@@ -953,6 +996,9 @@ export const useEntrega = () => {
     sendRecordatorioFormularioDelivery,
     sendCobroCotizacionFinalDelivery,
     sendCobroDeliveryDelivery,
+    addDeliveryServicioLine,
+    updateDeliveryServicioLine,
+    deleteDeliveryServicioLine,
     uploadConformidad,
     updateConformidad,
     deleteConformidad,
