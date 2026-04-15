@@ -71,8 +71,10 @@ export const    useCotizacionProveedor = () => {
         id_proveedor: 0,
         code_supplier: '',
         qty_box_china: 0,
+        qty_pallet_china: 0,
         supplier_phone: '',
         cbm_total_china: 0,
+        peso_china: 0,
         arrive_date_china: '',
         cliente_nombre: '',
     })

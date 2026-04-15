@@ -72,6 +72,15 @@ export const usePagos = () => {
         }
         getPagos(Number(id))
     }
+    const handlePageChangePagos = (page: number) => {
+        paginationPagos.value.current_page = page
+        getPagos(Number(id))
+    }
+    const handleItemsPerPageChangePagos = (itemsPerPage: number) => {
+        itemsPerPagePagos.value = itemsPerPage
+        paginationPagos.value.current_page = 1
+        getPagos(Number(id))
+    }
     const registrarPago = async (formData: FormData) => {
         try{
             const response = await PagosService.registrarPago(formData)
@@ -94,6 +103,8 @@ export const usePagos = () => {
         getPagos,
         totalRecordsPagos,
         handleSearchPagos,
+        handlePageChangePagos,
+        handleItemsPerPageChangePagos,
         handleFilterChangePagos,
         registrarPago
     }

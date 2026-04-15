@@ -19,17 +19,15 @@
           <div class="flex md:items-center items-start gap-3 ">
             <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
             <div class="flex gap-2 items-center">
-              <UButton size="lg" color="primary" variant="outline" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')">
-                <span class="hidden md:inline">Formulario Lima</span>
-                <span class="inline md:hidden">Lima</span>
+              <UButton
+                icon="i-heroicons-paper-airplane"
+                color="primary"
+                variant="solid"
+                size="sm"
+                @click="openEnviarFormularioModal"
+              >
+                Enviar formulario
               </UButton>
-              <UButton size="lg" color="warning" variant="outline" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')">
-                <span class="hidden md:inline">Formulario Provincia</span>
-                <span class="inline md:hidden">Provincia</span>
-              </UButton>
-              <transition name="fade">
-                <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm hidden md:inline">¡Copiado!</span>
-              </transition>
             </div>
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
@@ -68,17 +66,15 @@
           <div class="flex md:items-center items-start gap-3 flex-col md:flex-row">
             <SectionHeader :title="`Entregas #${carga}`" :headers="headersEntregas" :loading="loadingHeaders" />
             <div class="flex gap-2 items-center">
-              <UButton size="lg" color="primary" variant="outline" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')">
-                <span class="hidden md:inline">Formulario Lima</span>
-                <span class="inline md:hidden">Lima</span>
+              <UButton
+                icon="i-heroicons-paper-airplane"
+                color="primary"
+                variant="solid"
+                size="sm"
+                @click="openEnviarFormularioModal"
+              >
+                Enviar formulario
               </UButton>
-              <UButton size="lg" color="warning" variant="outline" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')">
-                <span class="hidden md:inline">Formulario Provincia</span>
-                <span class="inline md:hidden">Provincia</span>
-              </UButton>
-              <transition name="fade">
-                <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm">¡Copiado!</span>
-              </transition>
             </div>
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
@@ -93,17 +89,15 @@
           <div class="flex md:items-center items-start gap-3 flex-col md:flex-row">
             <SectionHeader :title="`Delivery #${carga}`" :headers="headersDelivery" :loading="loadingHeaders" />
             <div class="flex gap-2 items-center">
-              <UButton size="lg" color="primary" variant="outline" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkLima, 'Lima')">
-                <span class="hidden md:inline">Formulario Lima</span>
-                <span class="inline md:hidden">Lima</span>
+              <UButton
+                icon="i-heroicons-paper-airplane"
+                color="primary"
+                variant="solid"
+                size="sm"
+                @click="openEnviarFormularioModal"
+              >
+                Enviar formulario
               </UButton>
-              <UButton size="lg" color="warning" variant="outline" icon="i-heroicons-clipboard-document" @click="copyToClipboard(linkProvincia, 'Provincia')">
-                <span class="hidden md:inline">Formulario Provincia</span>
-                <span class="inline md:hidden">Provincia</span>
-              </UButton>
-              <transition name="fade">
-                <span v-if="copiedLima || copiedProvincia" class="text-green-600 font-medium text-sm">¡Copiado!</span>
-              </transition>
             </div>
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
@@ -130,6 +124,13 @@
       @close="closeCobroServiciosModal"
       @confirm="onCobroServiciosConfirm"
     />
+    <EnviarFormularioEntregaModal
+      v-model="showEnviarFormularioModal"
+      :clientes="clientesFormulario"
+      :sending="sendingFormulario"
+      @close="closeEnviarFormularioModal"
+      @confirm="handleEnviarFormularioSeleccionados"
+    />
   </div>
 </template>
 
@@ -144,6 +145,7 @@ import PagoGrid from '../../../../components/PagoGrid.vue'
 import DeliveryAccionesModal from '../../../../components/cargaconsolidada/entrega/DeliveryAccionesModal.vue'
 import DeliveryCobroServiciosModal from '../../../../components/cargaconsolidada/entrega/DeliveryCobroServiciosModal.vue'
 import DeliveryServiciosCell from '../../../../components/cargaconsolidada/entrega/DeliveryServiciosCell.vue'
+import EnviarFormularioEntregaModal from '../../../../components/cargaconsolidada/entrega/EnviarFormularioEntregaModal.vue'
 import { useModal } from '../../../../composables/commons/useModal'
 import { useSpinner } from '../../../../composables/commons/useSpinner'
 import { ROLES } from '../../../../constants/roles'
@@ -200,6 +202,7 @@ const {
   registrarPagoDelivery,
   deletePagoDelivery,
   sendMessageForCotizacion,
+  sendMessageForCotizaciones,
   deleteEntregaRegistro,
   sendCobroDeliveryDelivery
 } = useEntrega()
@@ -223,18 +226,29 @@ const handleTabChange = (value: string) => {
 }
 const tableMeta = {
   class: {
-    tr: (row: TableRow<{ value: number }>) => {
+    tr: (row: TableRow<any>) => {
       return row.original.isVerified ? "bg-green-500" : "bg-white dark:bg-gray-800";
     },
   },
 };
-// Links externos por contenedor (usa el id del contenedor)
-const linkLima = computed(() => `https://clientes.probusiness.pe/formulario-entrega/lima/${id}`)
-const linkProvincia = computed(() => `https://clientes.probusiness.pe/formulario-entrega/provincia/${id}`)
-
-// abiertos para mostrar mensaje de copiado
-const copiedLima = ref(false)
-const copiedProvincia = ref(false)
+const showEnviarFormularioModal = ref(false)
+const sendingFormulario = ref(false)
+const clientesFormulario = computed<{ id: number; nombre: string; telefono: string; type_form: 0 | 1 }[]>(() => {
+  return (clientes.value || [])
+    .map((cliente: any) => {
+      const parsedType = Number(cliente?.type_form)
+      const normalizedType = parsedType === 1 ? 1 : parsedType === 0 ? 0 : null
+      return {
+        id: Number(cliente?.id_cotizacion ?? cliente?.id ?? 0),
+        nombre: String(cliente?.nombre || 'Cliente'),
+        telefono: String(cliente?.telefono || ''),
+        type_form: normalizedType
+      }
+    })
+    .filter((cliente): cliente is { id: number; nombre: string; telefono: string; type_form: 0 | 1 } => {
+      return cliente.id > 0 && (cliente.type_form === 0 || cliente.type_form === 1)
+    })
+})
 /** Líneas de servicio con id (tabla hija); si no hay, el cobro va por flujo legacy. */
 function serviciosConIdFromRow(row: any): { id: number; tipo_servicio: string; importe: number }[] {
   const raw = row?.delivery_servicios
@@ -320,36 +334,41 @@ const handleExportClientesExcel = async () => {
   }
 }
 
-const copyToClipboard = async (url: string, type: string) => {
+const openEnviarFormularioModal = async () => {
   try {
-    await navigator.clipboard.writeText(url)
-    
-    // Mostrar mensaje de copiado
-    if (type === 'Lima') {
-      copiedLima.value = true
-      setTimeout(() => copiedLima.value = false, 2000)
-    } else {
-      copiedProvincia.value = true
-      setTimeout(() => copiedProvincia.value = false, 2000)
-    }
-  } catch (err) {
-    console.error('Error al copiar URL:', err)
-    // Fallback para navegadores que no soportan clipboard API
-    const textArea = document.createElement('textarea')
-    textArea.value = url
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-    
-    // Mostrar mensaje de copiado
-    if (type === 'Lima') {
-      copiedLima.value = true
-      setTimeout(() => copiedLima.value = false, 2000)
-    } else {
-      copiedProvincia.value = true
-      setTimeout(() => copiedProvincia.value = false, 2000)
-    }
+    await withSpinner(async () => {
+      await getClientes(id)
+    }, 'Cargando clientes...')
+  } catch (error) {
+    showError('Error', 'No se pudo cargar la lista de clientes para el envío')
+    return
+  }
+  showEnviarFormularioModal.value = true
+}
+
+const closeEnviarFormularioModal = () => {
+  showEnviarFormularioModal.value = false
+}
+
+const handleEnviarFormularioSeleccionados = async (ids: number[]) => {
+  if (!ids.length) return
+
+  sendingFormulario.value = true
+  try {
+    await withSpinner(async () => {
+      const response = await sendMessageForCotizaciones(ids)
+      if (response?.success) {
+        const totalEncolados = Number((response as any)?.queued ?? ids.length)
+        showSuccess('Envío en cola', `Se encolaron ${totalEncolados} formulario(s) para envío por WhatsApp.`)
+        closeEnviarFormularioModal()
+      } else {
+        showError('Error', (response as any)?.message || response?.error || 'No se pudo encolar el envío')
+      }
+    }, 'Encolando formularios...')
+  } catch (error: any) {
+    showError('Error', error?.message || 'No se pudo encolar el envío')
+  } finally {
+    sendingFormulario.value = false
   }
 }
 const clientesColumns = ref<TableColumn<any>[]>([

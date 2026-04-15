@@ -1554,65 +1554,103 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'qty_box_supplier',
-        header: 'Qty Box Supplier',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.qty_box_china,
-                    class: 'w-full w-10',
-                    disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.qty_box_china = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'cbm_total_supplier',
-        header: 'CBM Total Supplier',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.cbm_total_china,
-                    class: 'w-full w-12',
-                    disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.cbm_total_china = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-
-    {
-        accessorKey: 'arrive_date',
-        header: 'Arrive Date',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.arrive_date_china,
-                    class: 'w-full w-25',
-                    disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.arrive_date_china = value
-                    }
-                })
-            }))
-            return div
-        }
+        id: 'china_supplier_group_default',
+        header: () => h('div', { class: 'flex items-center justify-center gap-2 px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-200' }, [
+            h(UIcon as any, {
+                name: 'flagpack:cn',
+                class: 'w-5 h-4'
+            }),
+            h('span', 'Supplier')
+        ]),
+        columns: [
+            {
+                accessorKey: 'qty_box_supplier',
+                header: 'QTY Box',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.qty_box_china,
+                            class: 'w-full w-10',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'qty_pallet_supplier',
+                header: 'QTY Pallet',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.qty_pallet_china ?? 0,
+                            class: 'w-full w-10',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'qty_total_supplier',
+                header: 'QTY Total',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        const qtyBox = Number(proveedor.qty_box_china ?? 0)
+                        const qtyPallet = Number(proveedor.qty_pallet_china ?? 0)
+                        const qtyTotal = qtyBox + qtyPallet
+                        return h(UInput as any, {
+                            modelValue: qtyTotal,
+                            class: 'w-full w-10',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'cbm_total_supplier',
+                header: 'CBM Total',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.cbm_total_china,
+                            class: 'w-full w-12',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'peso_china_supplier',
+                header: 'Peso Total',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.peso_china ?? 0,
+                            class: 'w-full w-15',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'arrive_date',
+                header: 'Arrive Date',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.arrive_date_china,
+                            class: 'w-full w-25',
+                            disabled: true
+                        })
+                    }))
+                }
+            }
+        ]
     },
     {
         accessorKey: 'actions',
@@ -1975,105 +2013,103 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'qty_box_supplier',
-        header: () => {
-            return h('div', {
-                class: 'flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded'
-            }, [
-                h('img', {
-                    src: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg',
-                    alt: 'China',
-                    class: 'w-4 h-4'
-                }),
-                h('span', {
-                    class: 'font-medium'
-                }, 'Qty Box')
-            ])
-        },
-        //apply vertical separator to all column 
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.qty_box_china,
-                    class: 'w-full w-10',
-                    disabled: true,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.qty_box_china = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'cbm_total_supplier',
-        header: () => {
-            return h('div', {
-                class: 'flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded'
-            }, [
-                h('img', {
-                    src: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg',
-                    alt: 'China',
-                    class: 'w-4 h-4'
-                }),
-                h('span', {
-                    class: 'font-medium'
-                }, 'CBM')
-            ])
-        },
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.cbm_total_china,
-                    class: 'w-full w-12',
-                    disabled: true,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.cbm_total_china = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-
-    {
-        accessorKey: 'arrive_date',
-        header: () => {
-            return h('div', {
-                class: 'flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded w-full'
-            }, [
-                h('img', {
-                    src: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg',
-                    alt: 'China',
-                    class: 'w-4 h-4'
-                }),
-                h('span', {
-                    class: 'font-medium'
-                }, 'Arrive Date')
-            ])
-        },
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.arrive_date_china,
-                    class: 'w-full w-25',
-                    disabled: true,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.arrive_date_china = value
-                    }
-                })
-            }))
-            return div
-        }
+        id: 'china_supplier_group_coord',
+        header: () => h('div', { class: 'flex items-center justify-center gap-2 px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-200' }, [
+            h(UIcon as any, {
+                name: 'flagpack:cn',
+                class: 'w-5 h-4'
+            }),
+            h('span', 'Supplier')
+        ]),
+        columns: [
+            {
+                accessorKey: 'qty_box_supplier',
+                header: 'QTY Box',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.qty_box_china,
+                            class: 'w-full w-10',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'qty_pallet_supplier',
+                header: 'QTY Pallet',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.qty_pallet_china ?? 0,
+                            class: 'w-full w-10',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'qty_total_supplier',
+                header: 'QTY Total',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        const qtyBox = Number(proveedor.qty_box_china ?? 0)
+                        const qtyPallet = Number(proveedor.qty_pallet_china ?? 0)
+                        const qtyTotal = qtyBox + qtyPallet
+                        return h(UInput as any, {
+                            modelValue: qtyTotal,
+                            class: 'w-full w-10',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'cbm_total_supplier',
+                header: 'CBM Total',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.cbm_total_china,
+                            class: 'w-full w-12',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'peso_china_supplier',
+                header: 'Peso Total',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.peso_china ?? 0,
+                            class: 'w-full w-15',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'arrive_date',
+                header: 'Arrive Date',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.arrive_date_china,
+                            class: 'w-full w-25',
+                            disabled: true
+                        })
+                    }))
+                }
+            }
+        ]
     },
     {
         accessorKey: 'actions',
@@ -2352,66 +2388,128 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
         }
     },
     {
-        accessorKey: 'qty_box_supplier',
-        header: 'Qty Box Supplier',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.qty_box_china,
-                    class: 'w-full w-10',
-                    disabled: false,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.qty_box_china = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-    {
-        accessorKey: 'cbm_total_supplier',
-        header: 'CBM Total Supplier',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.cbm_total_china,
-                    class: 'w-full',
-                    disabled: false,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.cbm_total_china = value
-                    }
-                })
-            }))
-            return div
-        }
-    },
-
-    {
-        accessorKey: 'arrive_date',
-        header: 'Arrive Date',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores
-            const div = h('div', {
-                class: 'flex flex-col gap-2'
-            }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.arrive_date_china,
-                    class: 'w-full',
-                    type: 'date',
-                    disabled: false,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.arrive_date_china = value
-                    }
-                })
-            }))
-            return div
-        }
+        id: 'china_supplier_group',
+        header: () => h('div', { class: 'flex items-center justify-center gap-2 px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-200' }, [
+            h(UIcon as any, {
+                name: 'flagpack:cn',
+                class: 'w-5 h-4'
+            }),
+            h('span', 'Supplier')
+        ]),
+        columns: [
+            {
+                accessorKey: 'qty_box_supplier',
+                header: 'QTY Box',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    const div = h('div', {
+                        class: 'flex flex-col gap-2'
+                    }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.qty_box_china,
+                            class: 'w-full w-10',
+                            disabled: false,
+                            'onUpdate:modelValue': (value: any) => {
+                                proveedor.qty_box_china = value
+                            }
+                        })
+                    }))
+                    return div
+                }
+            },
+            {
+                accessorKey: 'qty_pallet_supplier',
+                header: 'QTY Pallet',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.qty_pallet_china ?? 0,
+                            class: 'w-full w-10',
+                            disabled: false,
+                            'onUpdate:modelValue': (value: any) => {
+                                proveedor.qty_pallet_china = value
+                            }
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'qty_total_supplier',
+                header: 'QTY Total',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        const qtyBox = Number(proveedor.qty_box_china ?? 0)
+                        const qtyPallet = Number(proveedor.qty_pallet_china ?? 0)
+                        const qtyTotal = qtyBox + qtyPallet
+                        return h(UInput as any, {
+                            modelValue: qtyTotal,
+                            class: 'w-full w-10',
+                            disabled: true
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'cbm_total_supplier',
+                header: 'CBM Total',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    const div = h('div', {
+                        class: 'flex flex-col gap-2'
+                    }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.cbm_total_china,
+                            class: 'w-full',
+                            disabled: false,
+                            'onUpdate:modelValue': (value: any) => {
+                                proveedor.cbm_total_china = value
+                            }
+                        })
+                    }))
+                    return div
+                }
+            },
+            {
+                accessorKey: 'peso_china_supplier',
+                header: 'Peso Total',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.peso_china ?? 0,
+                            class: 'w-full',
+                            disabled: false,
+                            'onUpdate:modelValue': (value: any) => {
+                                proveedor.peso_china = value
+                            }
+                        })
+                    }))
+                }
+            },
+            {
+                accessorKey: 'arrive_date',
+                header: 'Arrive Date',
+                cell: ({ row }: { row: any }) => {
+                    const proveedores = row.original.proveedores
+                    const div = h('div', {
+                        class: 'flex flex-col gap-2'
+                    }, proveedores.map((proveedor: any) => {
+                        return h(UInput as any, {
+                            modelValue: proveedor.arrive_date_china,
+                            class: 'w-full',
+                            type: 'date',
+                            disabled: false,
+                            'onUpdate:modelValue': (value: any) => {
+                                proveedor.arrive_date_china = value
+                            }
+                        })
+                    }))
+                    return div
+                }
+            }
+        ]
     },
     {
         accessorKey: 'actions',

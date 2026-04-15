@@ -15,13 +15,13 @@ export const useGeneral = () => {
         to: 0
     })
     const route = useRoute()
-    const id = route.params.id as number
+    const id = Number(route.params.id)
     const searchGeneral = ref('')
     const itemsPerPageGeneral = ref(100)
     const totalPagesGeneral = computed(() => Math.ceil(paginationGeneral.value.total / itemsPerPageGeneral.value))
     const totalRecordsGeneral = computed(() => paginationGeneral.value.total)
     const currentPageGeneral = computed(() => paginationGeneral.value.current_page)
-    const filtersGeneral = ref<any>()
+    const filtersGeneral = ref<any>({})
     const filterConfigGeneral = ref<any>([
 
         {
@@ -84,7 +84,7 @@ export const useGeneral = () => {
         try {
             const response = await GeneralService.uploadPlantillaFinal(data)
             //this zip download and return success
-            const blob = new Blob([response], { type: 'application/zip' })
+            const blob = new Blob([response as unknown as BlobPart], { type: 'application/zip' })
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
@@ -129,6 +129,15 @@ export const useGeneral = () => {
     }
     const handleItemsPerPageChangeGeneral = async (itemsPerPage: number) => {
         itemsPerPageGeneral.value = itemsPerPage
+        await getGeneral(id)
+    }
+    const handleFilterChangeGeneral = async (filterType: string, value: string) => {
+        if (value === 'todos' || value === '') {
+            const { [filterType]: _, ...rest } = filtersGeneral.value
+            filtersGeneral.value = rest
+        } else {
+            filtersGeneral.value = { ...filtersGeneral.value, [filterType]: value }
+        }
         await getGeneral(id)
     }
     const handleDownloadCotizacionFinalPDF = async (idCotizacion: number) => {
@@ -212,6 +221,7 @@ export const useGeneral = () => {
         downloadPlantillaGeneral,
         handlePageChangeGeneral,
         handleItemsPerPageChangeGeneral,
+        handleFilterChangeGeneral,
         getHeaders,
         headers,
         headersPagos,

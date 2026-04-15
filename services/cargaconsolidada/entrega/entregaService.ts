@@ -368,6 +368,18 @@ export class  EntregaService extends BaseService {
       throw error
     }
   }
+  static async sendMessageForCotizaciones(cotizacion_ids: number[]): Promise<{ success: boolean; data?: any; error?: string; message?: string; queued?: number }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string; message?: string; queued?: number }>(`${this.baseUrl}/delivery/send-message-bulk`, {
+        method: 'POST',
+        body: { cotizacion_ids }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al encolar envío masivo de formularios:', error)
+      throw error
+    }
+  }
   static async sendRecordatorioFormularioDelivery(idCotizacion: number, message: string): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
       const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/recordatorio-formulario/${idCotizacion}`, {

@@ -771,6 +771,14 @@ export const useEntrega = () => {
       error.value = error as string
     }
   }
+  const sendMessageForCotizaciones = async (cotizacion_ids: number[]) => {
+    try {
+      const response = await EntregaService.sendMessageForCotizaciones(cotizacion_ids)
+      return response
+    } catch (error) {
+      error.value = error as string
+    }
+  }
 
   // --- CONFORMIDAD (fotos) ---
   const uploadConformidad = async (payload: {
@@ -993,6 +1001,7 @@ export const useEntrega = () => {
     registrarPagoDelivery,
     deletePagoDelivery,
     sendMessageForCotizacion,
+    sendMessageForCotizaciones,
     sendRecordatorioFormularioDelivery,
     sendCobroCotizacionFinalDelivery,
     sendCobroDeliveryDelivery,

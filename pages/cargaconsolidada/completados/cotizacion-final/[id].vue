@@ -53,6 +53,27 @@
 
       </template>
     </DataTable>
+    <DataTable v-if="activeTab === 'cargos-extra'" :data="cargosExtra" :columns="getCargosExtraColumns()"
+      :loading="loadingCargosExtra || loadingHeaders" title="" :icon="''" :current-page="currentPageCargosExtra"
+      :total-pages="totalPagesCargosExtra" :total-records="totalRecordsCargosExtra"
+      :items-per-page="itemsPerPageCargosExtra" :search-query-value="searchCargosExtra" :show-primary-search="true"
+      :show-secondary-search="false" :show-filters="false" :show-export="false" :show-pagination="false"
+      empty-state-message="No se encontraron registros de cargos extra."
+      @update:primary-search="handleSearchCargosExtra"
+      @page-change="handlePageChangeCargosExtra"
+      @items-per-page-change="handleItemsPerPageChangeCargosExtra"
+      :show-body-top="true">
+      <template #body-top>
+        <div class="flex flex-col gap-2 w-full">
+          <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headersPagos.length ? headersPagos : headers"
+            :loading="loadingCargosExtra || loadingHeaders" />
+          <div class="flex items-center gap-3 flex-wrap">
+            <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
+            <span v-if="fPuerto" class="text-sm text-gray-600 dark:text-gray-400">F. Límite pago: {{ fPuerto }}</span>
+          </div>
+        </div>
+      </template>
+    </DataTable>
 
     <!-- CreatePagoModal -->
   </div>
@@ -62,6 +83,7 @@
 import { ref, computed } from 'vue'
 import { useGeneral } from '~/composables/cargaconsolidada/cotizacion-final/useGeneral'
 import { usePagos } from '~/composables/cargaconsolidada/cotizacion-final/usePagos'
+import { useCargosExtra } from '~/composables/cargaconsolidada/cotizacion-final/useCargosExtra'
 import { USelect, UBadge, UButton } from '#components'
 import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import { useModal } from '~/composables/commons/useModal'
@@ -74,11 +96,13 @@ import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { ROLES } from '~/constants/roles'
 import { UTooltip } from '#components'
+import CargosExtraServiciosCell from '~/components/cargaconsolidada/cotizacion-final/CargosExtraServiciosCell.vue'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const { currentRole } = useUserRole()
 const { general, loadingGeneral, updateEstadoCotizacionFinal, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, headersPagos, carga, fPuerto, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
+const { cargosExtra, loadingCargosExtra, getCargosExtra, currentPageCargosExtra, totalPagesCargosExtra, totalRecordsCargosExtra, itemsPerPageCargosExtra, searchCargosExtra, handleSearchCargosExtra, handlePageChangeCargosExtra, handleItemsPerPageChangeCargosExtra } = useCargosExtra()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
 const { registrarPagoFinal, deletePago } = usePagosClientes()
 const route = useRoute()
@@ -92,11 +116,20 @@ const selectedCliente = ref('')
 const activeTab = ref('') as Ref<string>
 
 // Tab configuration: para CONTABILIDAD primero Pagos luego General
-const tabs = computed(() =>
-  currentRole.value === ROLES.CONTABILIDAD
-    ? [{ value: 'pagos', label: 'Pagos' }, { value: 'general', label: 'General' }]
-    : [{ value: 'general', label: 'General' }, { value: 'pagos', label: 'Pagos' }]
+const canViewCargosExtra = computed(() =>
+  currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD
 )
+const tabs = computed(() => {
+  if (currentRole.value === ROLES.CONTABILIDAD) {
+    return canViewCargosExtra.value
+      ? [{ value: 'pagos', label: 'Pagos' }, { value: 'cargos-extra', label: 'Cargos extra' }, { value: 'general', label: 'General' }]
+      : [{ value: 'pagos', label: 'Pagos' }, { value: 'general', label: 'General' }]
+  }
+  if (canViewCargosExtra.value) {
+    return [{ value: 'general', label: 'General' }, { value: 'pagos', label: 'Pagos' }, { value: 'cargos-extra', label: 'Cargos extra' }]
+  }
+  return [{ value: 'general', label: 'General' }, { value: 'pagos', label: 'Pagos' }]
+})
 const handleUploadFactura = () => {
   simpleUploadFileModal.open({
     title: 'Subir Factura',
@@ -772,6 +805,58 @@ const getPagosColumns = (): TableColumn<any>[] => {
   })
   return base
 }
+const getCargosExtraColumns = (): TableColumn<any>[] => {
+  const editable = currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD
+  const toNumber = (value: any, digits = 2) => Number(Number(value ?? 0).toFixed(digits))
+  return [
+    { accessorKey: 'nro', header: 'N', cell: ({ row }: { row: any }) => row.index + 1 },
+    {
+      accessorKey: 'contacto',
+      header: 'Contacto',
+      cell: ({ row }: { row: any }) => {
+        const nombre = row.original?.nombre || ''
+        const documento = row.original?.documento || ''
+        const telefono = row.original?.telefono || ''
+        const correo = row.original?.correo || ''
+        return h('div', {}, [
+          h('div', { class: 'font-medium' }, nombre || '—'),
+          h('div', { class: 'text-sm text-gray-500' }, documento || ''),
+          h('div', { class: 'text-sm text-gray-500' }, telefono || '—'),
+          h('div', { class: 'text-sm text-gray-500' }, correo || '')
+        ])
+      }
+    },
+    {
+      accessorKey: 'entrega',
+      header: 'Entrega',
+      cell: ({ row }: { row: any }) => h(UBadge, {
+        label: row.original.entrega || '—',
+        color: row.original.entrega === 'LIMA' ? 'success' : row.original.entrega === 'PROVINCIA' ? 'primary' : 'neutral',
+        variant: 'soft'
+      })
+    },
+    { accessorKey: 'qty_box_china', header: 'QTY Box', cell: ({ row }: { row: any }) => toNumber(row.original.qty_box_china, 2) },
+    { accessorKey: 'qty_pallet_china', header: 'QTY Pallet', cell: ({ row }: { row: any }) => toNumber(row.original.qty_pallet_china, 2) },
+    { accessorKey: 'qty_total', header: 'QTY Total', cell: ({ row }: { row: any }) => toNumber(row.original.qty_total, 2) },
+    { accessorKey: 'cbm_total_china', header: 'CBM Total', cell: ({ row }: { row: any }) => toNumber(row.original.cbm_total_china, 4) },
+    { accessorKey: 'peso_total', header: 'Peso total', cell: ({ row }: { row: any }) => toNumber(row.original.peso_total, 2) },
+    {
+      accessorKey: 'servicio',
+      header: 'Servicio',
+      cell: ({ row }: { row: any }) => h(CargosExtraServiciosCell, {
+        idCotizacion: row.original.id_cotizacion,
+        servicios: row.original.delivery_servicios || [],
+        editable,
+        onRefresh: () => getCargosExtra(Number(id))
+      })
+    },
+    {
+      accessorKey: 'total_importe_servicios',
+      header: 'Importe',
+      cell: ({ row }: { row: any }) => formatCurrency(Number(row.original.total_importe_servicios ?? 0), 'USD')
+    },
+  ]
+}
 const overlay = useOverlay()
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)
 const deleteCotizacionFinal = async (idCotizacion: number) => {
@@ -822,6 +907,10 @@ watch(activeTab, async (newVal, oldVal) => {
     navigateTo(`/cargaconsolidada/completados/cotizacion-final/${id}?tab=pagos`)
     await getPagos(Number(id))
   }
+  if (newVal === 'cargos-extra') {
+    navigateTo(`/cargaconsolidada/completados/cotizacion-final/${id}?tab=cargos-extra`)
+    await getCargosExtra(Number(id))
+  }
   await getHeaders(Number(id))
 
 })
@@ -829,7 +918,8 @@ watch(activeTab, async (newVal, oldVal) => {
 
 onMounted(async () => {
   const tabQuery = route.query.tab
-  if (tabQuery) {
+  const validTabs = tabs.value.map(t => t.value)
+  if (tabQuery && validTabs.includes(tabQuery as string)) {
     activeTab.value = tabQuery as string
   } else if (currentRole.value === ROLES.CONTABILIDAD) {
     activeTab.value = 'pagos'
@@ -842,6 +932,9 @@ onMounted(async () => {
   if (activeTab.value === 'pagos') {
 
     await getPagos(Number(id))
+  }
+  if (activeTab.value === 'cargos-extra') {
+    await getCargosExtra(Number(id))
   }
   await getHeaders(Number(id))
 })
@@ -857,6 +950,9 @@ watch(() => activeTab.value, async (newVal) => {
       } else if (newVal === 'pagos') {
         try { searchPagos.value = '' } catch (e) { /* ignore */ }
         if (typeof getPagos === 'function') await getPagos(Number(id))
+      } else if (newVal === 'cargos-extra') {
+        try { searchCargosExtra.value = '' } catch (e) { /* ignore */ }
+        if (typeof getCargosExtra === 'function') await getCargosExtra(Number(id))
       }
       if (typeof getHeaders === 'function') await getHeaders(Number(id))
     } catch (error) {
