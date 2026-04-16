@@ -1258,7 +1258,6 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 /* Add small vertical spacing between tbody rows to make rows breathe */
 .utable-narrow :deep(table),
 .min-w-full :deep(table) {
-  border-collapse: separate !important;
   /* vertical spacing: 0.5rem (8px) - adjust to taste */
   border-spacing: 0 0.5rem !important;
 }
