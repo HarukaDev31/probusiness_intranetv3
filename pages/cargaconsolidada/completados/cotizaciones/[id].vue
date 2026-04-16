@@ -1,7 +1,7 @@
 <template>
     <div class="">
-        <DataTable v-if="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
-            :show-pagination="true" :loading="loadingCotizaciones" :current-page="currentPageCotizaciones"
+        <DataTable v-if="mountedTabs.prospectos" v-show="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
+            :show-pagination="true" :loading="tabSwitching || loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
@@ -32,8 +32,8 @@
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
-            <DataTable v-if="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
-            :columns="getEmbarqueColumns()" :loading="loading || loadingHeaders" :current-page="currentPage" :total-pages="totalPages"
+            <DataTable v-if="mountedTabs.embarque" v-show="tab === 'embarque'" title="" icon="" :data="cotizacionProveedor" :show-pagination="false"
+            :columns="getEmbarqueColumns()" :loading="tabSwitching || loading || loadingHeaders" :current-page="currentPage" :total-pages="totalPages"
             :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()" :show-export="false"
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
@@ -87,8 +87,8 @@
                     label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
             </template>
         </DataTable>
-        <DataTable v-if="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
-            :show-pagination="false" :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos"
+        <DataTable v-if="mountedTabs.pagos" v-show="tab === 'pagos'" title="" icon="" :data="cotizacionPagos" :columns="getPagosColumns()"
+            :show-pagination="false" :loading="tabSwitching || loadingPagos || loadingHeaders" :current-page="currentPagePagos"
             :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
             :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="currentRole === ROLES.CONTABILIDAD"
             :filter-config="getFilterConfigPagos()" :show-export="false"
@@ -118,7 +118,7 @@
     </div>
 </template>
 <script setup lang="ts">
-import { h } from 'vue'
+import { h, nextTick } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
 import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
@@ -126,7 +126,7 @@ import { formatDate, formatCurrency, formatDateTimeToDmy } from '~/utils/formatt
 import { formatDateForInput } from '~/utils/data-table'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
-import { USelect, UInput, UButton, UIcon, UBadge, UTooltip } from '#components'
+import { USelect, UInput as UInputBase, UButton, UIcon, UBadge, UTooltip } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
 import CreateProspectoModal from '~/components/cargaconsolidada/CreateProspectoModal.vue'
@@ -143,6 +143,24 @@ import SelectTipoCargaModal from '~/components/cargaconsolidada/SelectTipoCargaM
 import PagoGrid from '~/components/PagoGrid.vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones.vue'
+
+const UInput = ((props: any) => {
+    const isDisabled = Boolean(props?.disabled)
+
+    if (!isDisabled) {
+        return h(UInputBase as any, props)
+    }
+
+    const rawValue = props?.modelValue ?? props?.value
+    const displayValue = rawValue === null || rawValue === undefined || rawValue === '' ? '—' : String(rawValue)
+
+    return h('span', {
+        class: [
+            'inline-flex min-h-8 w-full items-center rounded-md px-2 py-1 text-sm text-gray-700 dark:text-gray-200 whitespace-normal break-words',
+            props?.class
+        ]
+    }, displayValue)
+}) as any
 
 function getPermisoEstadoClass(estado: string): string {
     const k = estado as keyof typeof STATUS_BG_CLASSES
@@ -248,6 +266,13 @@ const id = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
 const { showConfirmation, showSuccess, showError } = useModal()
 
 const tab = ref('')
+const tabSwitching = ref(false)
+const tabSwitchToken = ref(0)
+const mountedTabs = ref({
+    prospectos: false,
+    embarque: false,
+    pagos: false
+})
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
 const { currentRole, currentId } = useUserRole()
 const tabs = ref([])
@@ -1279,7 +1304,6 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
-                            console.log(value, row.original)
                             proveedor.estados_proveedor = value
                             handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                         }
@@ -1351,8 +1375,6 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     class: 'w-full w-30',
                     disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD,
                     'onUpdate:modelValue': (value: any) => {
-                        console.log(value, row.original)
-
                         proveedor.estados = value
                         handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                     }
@@ -1376,7 +1398,6 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     .toUpperCase()
                     .replace(/_/g, ' ')
                     .trim() || '-'
-                console.log(formattedValue)
                 if (formattedValue === 'ROTULADO') {
                     formattedValue = 'GENERAL';
                 }
@@ -1397,14 +1418,22 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.products,
-                    class: 'w-full w-40',
-                    disabled: currentRole.value !== ROLES.COTIZADOR,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.products = value
-                    }
-                })
+                const canEditProducts = currentRole.value === ROLES.COTIZADOR
+                const value = proveedor.products ?? ''
+                if (canEditProducts) {
+                    return h(UInput as any, {
+                        modelValue: value,
+                        class: 'w-full w-40',
+                        'onUpdate:modelValue': (newValue: any) => {
+                            proveedor.products = newValue
+                        }
+                    })
+                }
+                return h('div', { class: 'w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
+                    h('span', {
+                        class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
+                    }, String(value || '—'))
+                ])
             }))
             return div
         }
@@ -1616,7 +1645,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
                         return h(UInput as any, {
                             modelValue: proveedor.cbm_total_china,
-                            class: 'w-full w-12',
+                            class: 'w-full w-20',
                             disabled: true
                         })
                     }))
@@ -1624,13 +1653,13 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             },
             {
                 accessorKey: 'peso_china_supplier',
-                header: 'Peso Total',
+                header: 'Total Weight',
                 cell: ({ row }: { row: any }) => {
                     const proveedores = row.original.proveedores
                     return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
                         return h(UInput as any, {
                             modelValue: proveedor.peso_china ?? 0,
-                            class: 'w-full w-15',
+                            class: 'w-full w-20',
                             disabled: true
                         })
                     }))
@@ -1644,7 +1673,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
                         return h(UInput as any, {
                             modelValue: proveedor.arrive_date_china,
-                            class: 'w-full w-25',
+                            class: 'w-full w-40',
                             disabled: true
                         })
                     }))
@@ -1813,7 +1842,6 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     class: 'w-full w-30',
                     disabled: currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.CONTABILIDAD,
                     'onUpdate:modelValue': (value: any) => {
-                        console.log(value, row.original)
                         proveedor.estados = value
                         handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                     }
@@ -1856,14 +1884,22 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.products,
-                    class: 'w-full w-40',
-                    disabled: currentRole.value !== ROLES.COTIZADOR,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.products = value
-                    }
-                })
+                const canEditProducts = currentRole.value === ROLES.COTIZADOR
+                const value = proveedor.products ?? ''
+                if (canEditProducts) {
+                    return h(UInput as any, {
+                        modelValue: value,
+                        class: 'w-full w-40',
+                        'onUpdate:modelValue': (newValue: any) => {
+                            proveedor.products = newValue
+                        }
+                    })
+                }
+                return h('div', { class: 'w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
+                    h('span', {
+                        class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
+                    }, String(value || '—'))
+                ])
             }))
             return div
         }
@@ -2075,7 +2111,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
                         return h(UInput as any, {
                             modelValue: proveedor.cbm_total_china,
-                            class: 'w-full w-12',
+                            class: 'w-full w-20',
                             disabled: true
                         })
                     }))
@@ -2083,13 +2119,13 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
             },
             {
                 accessorKey: 'peso_china_supplier',
-                header: 'Peso Total',
+                header: 'Total Weight',
                 cell: ({ row }: { row: any }) => {
                     const proveedores = row.original.proveedores
                     return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
                         return h(UInput as any, {
                             modelValue: proveedor.peso_china ?? 0,
-                            class: 'w-full w-15',
+                            class: 'w-full w-20',
                             disabled: true
                         })
                     }))
@@ -2103,7 +2139,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
                         return h(UInput as any, {
                             modelValue: proveedor.arrive_date_china,
-                            class: 'w-full w-25',
+                            class: 'w-full w-40',
                             disabled: true
                         })
                     }))
@@ -2167,9 +2203,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                                 show: true,
                                 clienteId: row.original.id,
                                 clienteName: row.original.nombre,
-                                onSelected: (data: any) => {
-                                    console.log(data)
-                                },
+                                onSelected: (_data: any) => {},
                                 validateMaxDate:false
                             })
                         }
@@ -2209,7 +2243,6 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         disabled: currentRole.value !== ROLES.CONTENEDOR_ALMACEN,
                         modelValue: proveedor.estados_proveedor,
                         'onUpdate:modelValue': (value: any) => {
-                            console.log(value, row.original)
                             proveedor.estados_proveedor = value
                             handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
                         }
@@ -2247,15 +2280,23 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             const div = h('div', {
                 class: 'flex flex-col gap-2'
             }, proveedores.map((proveedor: any) => {
-                return h(UInput as any, {
-                    modelValue: proveedor.products,
-                    class: 'w-full w-40',
-                    variant: 'none',
-                    disabled: currentRole.value !== ROLES.COTIZADOR,
-                    'onUpdate:modelValue': (value: any) => {
-                        proveedor.products = value
-                    }
-                })
+                const canEditProducts = currentRole.value === ROLES.COTIZADOR
+                const value = proveedor.products ?? ''
+                if (canEditProducts) {
+                    return h(UInput as any, {
+                        modelValue: value,
+                        class: 'w-full w-40',
+                        variant: 'none',
+                        'onUpdate:modelValue': (newValue: any) => {
+                            proveedor.products = newValue
+                        }
+                    })
+                }
+                return h('div', { class: 'w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
+                    h('span', {
+                        class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
+                    }, String(value || '—'))
+                ])
             }))
             return div
         }
@@ -2461,7 +2502,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     }, proveedores.map((proveedor: any) => {
                         return h(UInput as any, {
                             modelValue: proveedor.cbm_total_china,
-                            class: 'w-full',
+                            class: 'w-full min-w-24',
                             disabled: false,
                             'onUpdate:modelValue': (value: any) => {
                                 proveedor.cbm_total_china = value
@@ -2473,13 +2514,13 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             },
             {
                 accessorKey: 'peso_china_supplier',
-                header: 'Peso Total',
+                header: 'Total Weight',
                 cell: ({ row }: { row: any }) => {
                     const proveedores = row.original.proveedores
                     return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) => {
                         return h(UInput as any, {
                             modelValue: proveedor.peso_china ?? 0,
-                            class: 'w-full',
+                            class: 'w-full min-w-24',
                             disabled: false,
                             'onUpdate:modelValue': (value: any) => {
                                 proveedor.peso_china = value
@@ -2498,7 +2539,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     }, proveedores.map((proveedor: any) => {
                         return h(UInput as any, {
                             modelValue: proveedor.arrive_date_china,
-                            class: 'w-full',
+                            class: 'w-full min-w-32',
                             type: 'date',
                             disabled: false,
                             'onUpdate:modelValue': (value: any) => {
@@ -2621,7 +2662,6 @@ const handleRefresh = async (idCotizacion: number) => {
 }
 const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string) => {
     try {
-        console.log(estado)
         await withSpinner(async () => {
             try {
 
@@ -2814,9 +2854,11 @@ const handleSearchProspectos = (value: string) => {
     searchCotizaciones.value = value
     paginationCotizaciones.value.current_page = 1
     // Eliminar idCotizacion de la query string cuando se usa el buscador
-    const query = { ...route.query }
-    delete query.idCotizacion
-    navigateTo({ path: route.path, query }, { replace: true })
+    if (route.query.idCotizacion) {
+        const query = { ...route.query }
+        delete query.idCotizacion
+        navigateTo({ path: route.path, query }, { replace: true })
+    }
     getCotizaciones(Number(id))
 }
 
@@ -2838,10 +2880,20 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
     }
     paginationCotizaciones.value.current_page = 1
     // Eliminar idCotizacion de la query string cuando se usa un filtro
-    const query = { ...route.query }
-    delete query.idCotizacion
-    navigateTo({ path: route.path, query }, { replace: true })
+    if (route.query.idCotizacion) {
+        const query = { ...route.query }
+        delete query.idCotizacion
+        navigateTo({ path: route.path, query }, { replace: true })
+    }
     await getCotizaciones(Number(id))
+}
+
+const syncTabRoute = (targetTab: 'prospectos' | 'embarque' | 'pagos') => {
+    const currentTab = typeof route.query.tab === 'string' ? route.query.tab : ''
+    if (currentTab === targetTab) return
+
+    const query = { ...route.query, tab: targetTab }
+    navigateTo({ path: route.path, query }, { replace: true })
 }
 
 
@@ -2849,27 +2901,43 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
 // Watch inmediato para la carga inicial
 watch(() => tab.value, async (newVal) => {
     if (newVal && newVal !== '') {
+        if (newVal === 'prospectos' || newVal === 'embarque' || newVal === 'pagos') {
+            mountedTabs.value[newVal] = true
+        }
+        const switchToken = ++tabSwitchToken.value
+        tabSwitching.value = true
+        await nextTick()
         try {
             resetFilters()
-            // Preservar idCotizacion de la query string si existe
-            const idCotizacionQuery = route.query.idCotizacion ? `&idCotizacion=${route.query.idCotizacion}` : ''
             if (newVal === 'prospectos') {
-                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=prospectos${idCotizacionQuery}`)
+                syncTabRoute('prospectos')
                 // reset search to avoid sending stale query param to backend
                 try { searchCotizaciones.value = '' } catch (e) { /* ignore */ }
-                await getCotizaciones(Number(id))
+                await Promise.all([
+                    getCotizaciones(Number(id)),
+                    getHeaders(Number(id))
+                ])
             } else if (newVal === 'embarque') {
-                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=embarque${idCotizacionQuery}`)
+                syncTabRoute('embarque')
                 try { search.value = '' } catch (e) { /* ignore */ }
-                await getCotizacionProveedor(Number(id))
+                await Promise.all([
+                    getCotizacionProveedor(Number(id)),
+                    getHeaders(Number(id))
+                ])
             } else if (newVal === 'pagos') {
-                navigateTo(`/cargaconsolidada/completados/cotizaciones/${id}?tab=pagos${idCotizacionQuery}`)
+                syncTabRoute('pagos')
                 try { searchPagos.value = '' } catch (e) { /* ignore */ }
-                await getCotizacionPagos(Number(id))
+                await Promise.all([
+                    getCotizacionPagos(Number(id)),
+                    getHeaders(Number(id))
+                ])
             }
-            await getHeaders(Number(id))
         } catch (error) {
             console.error('Error en carga inicial:', error)
+        } finally {
+            if (switchToken === tabSwitchToken.value) {
+                tabSwitching.value = false
+            }
         }
     }
 }, { immediate: true })
@@ -2939,6 +3007,9 @@ onMounted(() => {
         tab.value = 'pagos'
     } else {
         tab.value = (tabs.value && tabs.value.length > 0) ? tabs.value[0].value : ''
+    }
+    if (tab.value === 'prospectos' || tab.value === 'embarque' || tab.value === 'pagos') {
+        mountedTabs.value[tab.value] = true
     }
 })
 </script>

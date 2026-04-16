@@ -85,12 +85,21 @@ export const    useCotizacionProveedor = () => {
     const hasData = computed(() => cotizacionProveedor.value.length > 0)
 
     const route = useRoute()
+    let currentAbortController: AbortController | null = null
+    const latestRequestId = ref(0)
 
     /**
      * Obtiene las cotizaciones de proveedores
      */
     const getCotizacionProveedor = async (id: number) => {
         if (!id) return
+
+        if (currentAbortController) {
+            currentAbortController.abort()
+        }
+        currentAbortController = new AbortController()
+        const signal = currentAbortController.signal
+        const requestId = ++latestRequestId.value
 
         loading.value = true
         error.value = null
@@ -121,16 +130,22 @@ export const    useCotizacionProveedor = () => {
                 filters.value,
                 search.value,
                 itemsPerPage.value,
-                currentPage.value
+                currentPage.value,
+                signal
             )
 
-            cotizacionProveedor.value = response.data
-            pagination.value = response.pagination
+            if (requestId === latestRequestId.value) {
+                cotizacionProveedor.value = response.data
+                pagination.value = response.pagination
+            }
         } catch (err: any) {
+            if (err?.name === 'AbortError') return
             error.value = err.message || 'Error al obtener las cotizaciones de proveedores'
             console.error('Error en getCotizacionProveedor:', err)
         } finally {
-            loading.value = false
+            if (requestId === latestRequestId.value) {
+                loading.value = false
+            }
         }
     }
 
@@ -392,6 +407,12 @@ export const    useCotizacionProveedor = () => {
         onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
         onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
     }
+    onBeforeUnmount(() => {
+        if (currentAbortController) {
+            currentAbortController.abort()
+            currentAbortController = null
+        }
+    })
     const exportData = async () => {
         loading.value = true
         try {

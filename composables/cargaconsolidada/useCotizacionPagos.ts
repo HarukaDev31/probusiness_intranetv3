@@ -26,7 +26,16 @@ export const useCotizacionPagos = () => {
     }
     const filtersPagos = ref<Record<string, string>>({})
     const headersPagos = ref<Header[]>([])
+    let currentAbortController: AbortController | null = null
+    const latestRequestId = ref(0)
     const getCotizacionPagos = async (id: number) => {
+        if (currentAbortController) {
+            currentAbortController.abort()
+        }
+        currentAbortController = new AbortController()
+        const signal = currentAbortController.signal
+        const requestId = ++latestRequestId.value
+
         loadingPagos.value = true
         error.value = null
         try {
@@ -40,14 +49,19 @@ export const useCotizacionPagos = () => {
             if (Object.keys(filters).length) params.filters = filters
             const idCotizacionQuery = route.query.idCotizacion
             if (idCotizacionQuery != null && idCotizacionQuery !== '') params.id_cotizacion = idCotizacionQuery
-            const response = await CotizacionPagosService.getCotizacionesPagos(id, params)
-            cotizacionPagos.value = response.data ?? []
-            paginationPagos.value = response.pagination
+            const response = await CotizacionPagosService.getCotizacionesPagos(id, params, signal)
+            if (requestId === latestRequestId.value) {
+                cotizacionPagos.value = response.data ?? []
+                paginationPagos.value = response.pagination
+            }
         } catch (err: any) {
+            if (err?.name === 'AbortError') return
             error.value = err.message || 'Error al obtener las cotizaciones de pagos'
             console.error('Error en getCotizacionPagos:', err)
         } finally {
-            loadingPagos.value = false
+            if (requestId === latestRequestId.value) {
+                loadingPagos.value = false
+            }
         }
     }
     const handleSearch = async (searchTerm: string) => {
@@ -67,6 +81,13 @@ export const useCotizacionPagos = () => {
         itemsPerPagePagos.value = itemsPerPage
         await getCotizacionPagos(Number(idPagos))
     }
+
+    onBeforeUnmount(() => {
+        if (currentAbortController) {
+            currentAbortController.abort()
+            currentAbortController = null
+        }
+    })
     
     return {
         cotizacionPagos,

@@ -233,7 +233,7 @@
         @mouseleave="onTableMouseLeave"
         @scroll="onTableScroll"
       >
-        <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky :columns="columns" :loading="loading"
+        <UTable ref="utableRef" :data="filteredData" sticky :columns="columns" :loading="loading"
           :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
           :ui="Object.keys(tableMeta).length>0?{
             // Importante: quitar overflow del root interno de UTable.
@@ -346,13 +346,7 @@ const currentPageModel = computed({
   set: (value) => onPageChange(value)
 })
 
-// Key to force re-render of the table when pagination changes to avoid stale image elements
-const tableKey = ref(0)
-
-// Re-render table when page or items per page change so images are not briefly reused
 watch(() => props.currentPage, (newPage: number | undefined) => {
-  tableKey.value += 1
-
   // Scroll hacia arriba cuando cambia la página
   scrollToTop()
 
@@ -374,8 +368,6 @@ watch(() => props.currentPage, (newPage: number | undefined) => {
 })
 
 watch(() => props.itemsPerPage, (newLimit: number | undefined) => {
-  tableKey.value += 1
-  
   // Scroll hacia arriba cuando cambia items per page
   scrollToTop()
   
@@ -532,6 +524,8 @@ watch(() => props.searchQueryValue, (v) => {
 // We only clear the search when the route hasn't changed (i.e. likely a tab switch).
 // If the route changed (navigated to detail), we keep the search so it can be restored when returning.
 const _visibilityInterval = ref<number | null>(null)
+const visibilityObserver = ref<MutationObserver | null>(null)
+const visibilityChangeHandler = ref<(() => void) | null>(null)
 const isRootHidden = () => {
   const el = componentRootRef.value
   if (!el) return false
@@ -560,27 +554,29 @@ onMounted(() => {
     }
   }
 
-  let mutationObserver: MutationObserver | null = null
   try {
     if (typeof MutationObserver !== 'undefined' && componentRootRef.value) {
-      // Observe attribute changes on the element and its ancestors so we catch style/class/display changes
-      mutationObserver = new MutationObserver(() => {
+      // Observe only a few ancestors to avoid over-observing the full DOM tree.
+      visibilityObserver.value = new MutationObserver(() => {
         checkAndClear()
       })
 
       let node: HTMLElement | null = componentRootRef.value
-      // observe up the tree until <body>
-      while (node) {
+      let depth = 0
+      // Observe root + a few ancestors where v-show/class toggles usually happen.
+      while (node && depth < 4) {
         try {
-          mutationObserver.observe(node, { attributes: true, attributeFilter: ['style', 'class'] })
+          visibilityObserver.value.observe(node, { attributes: true, attributeFilter: ['style', 'class'] })
         } catch (e) {
           // ignore nodes that can't be observed
         }
         node = node.parentElement
+        depth += 1
       }
 
       // Also listen to visibilitychange in case the document/tab is hidden
-      document.addEventListener('visibilitychange', checkAndClear)
+      visibilityChangeHandler.value = checkAndClear
+      document.addEventListener('visibilitychange', visibilityChangeHandler.value)
     } else {
       // fallback to polling when MutationObserver is not available
       _visibilityInterval.value = window.setInterval(checkAndClear, 250)
@@ -594,24 +590,18 @@ onMounted(() => {
 
   // run an initial check right away
   checkAndClear()
-
-  // store the observer on the interval ref so we can clean it on unmount (we'll close explicitly below)
-  ;(onUnmounted as any)(() => {
-    // noop placeholder to keep single onUnmounted block below; actual cleanup happens in the main onUnmounted
-  })
-  ;(mutationObserver as any)._is_temp = true
 })
 
 onUnmounted(() => {
   // cleanup visibility observer / polling
   try {
-    // try to disconnect any MutationObserver we attached by walking ancestors and disconnecting observers
-    // (we attached observers in onMounted). Safe-guard with try/catch.
-    if (typeof MutationObserver !== 'undefined' && componentRootRef.value) {
-      // There's no direct reference to the MutationObserver here (was local), but observers attached
-      // to nodes will be GC'd when disconnected; best-effort: remove visibilitychange listener and
-      // clear polling interval if set.
-      document.removeEventListener('visibilitychange', () => {})
+    if (visibilityObserver.value) {
+      visibilityObserver.value.disconnect()
+      visibilityObserver.value = null
+    }
+    if (visibilityChangeHandler.value) {
+      document.removeEventListener('visibilitychange', visibilityChangeHandler.value)
+      visibilityChangeHandler.value = null
     }
   } catch (e) {
     // ignore
@@ -715,7 +705,6 @@ const onTableMouseMove = (e: MouseEvent) => {
   
   const scrollableEl = findScrollableElement()
   if (!scrollableEl) {
-    console.log('[AutoScroll] No se encontró elemento scrollable')
     return
   }
   
@@ -1255,11 +1244,18 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   min-width: 80% !important;
 }
 
-/* Add small vertical spacing between tbody rows to make rows breathe */
+/* Keep sticky header clean; emulate row gaps without border-spacing */
 .utable-narrow :deep(table),
 .min-w-full :deep(table) {
-  /* vertical spacing: 0.5rem (8px) - adjust to taste */
-  border-spacing: 0 0.5rem !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+}
+
+/* Create vertical space between body rows (without affecting thead sticky) */
+.utable-narrow :deep(tbody tr + tr td),
+.min-w-full :deep(tbody tr + tr td) {
+  border-top: 0.5rem solid transparent !important;
+  background-clip: padding-box;
 }
 
 
