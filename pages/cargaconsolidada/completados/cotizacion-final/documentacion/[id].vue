@@ -2,13 +2,15 @@
   <ClienteDocumentacionView
     :cliente-id="clienteId"
     :return-url="returnUrl"
-    :show-documentacion-peru="true"
+    title="Documentación de cliente"
+    subtitle="Consulta de Documentación China e Inspección"
+    :show-documentacion-peru="false"
     :show-documentacion-china="true"
     :show-inspeccion="true"
-    :show-top-save-button="true"
-    :show-clipboard-buttons="true"
-    :read-only="false"
-    :force-show-china-inspection="false"
+    :show-top-save-button="false"
+    :show-clipboard-buttons="false"
+    :read-only="true"
+    :force-show-china-inspection="true"
   />
 </template>
 
@@ -18,9 +20,10 @@ import ClienteDocumentacionView from '~/components/cargaconsolidada/documentacio
 
 const route = useRoute()
 const clienteId = Number(route.params.id)
+
 const returnUrl = computed(() => {
   const value = route.query.returnUrl
   if (typeof value === 'string' && value.trim().length > 0) return value
-  return '/cargaconsolidada/completados/clientes'
+  return '/cargaconsolidada/completados/cotizacion-final'
 })
 </script>

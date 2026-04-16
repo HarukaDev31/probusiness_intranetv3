@@ -424,7 +424,7 @@ const clientesColumns = ref<TableColumn<any>[]>([
         : (tf === 1 || tf === '1')
           ? 'Lima'
           : '-'
-      const color = label === 'Lima' ? 'primary' : label === 'Provincia' ? 'warning' : 'neutral'
+      const color = label === 'Lima' ? 'success' : label === 'Provincia' ? 'warning' : 'neutral'
       return h(UBadge, { label, color, variant: 'soft' })
     }
   },

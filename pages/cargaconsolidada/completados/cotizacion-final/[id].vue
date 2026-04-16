@@ -126,7 +126,7 @@ const tabs = computed(() => {
       : [{ value: 'pagos', label: 'Pagos' }, { value: 'general', label: 'General' }]
   }
   if (canViewCargosExtra.value) {
-    return [{ value: 'general', label: 'General' }, { value: 'pagos', label: 'Pagos' }, { value: 'cargos-extra', label: 'Cargos extra' }]
+    return [{ value: 'general', label: 'General' }, { value: 'cargos-extra', label: 'Cargos extra' }, { value: 'pagos', label: 'Pagos' }]
   }
   return [{ value: 'general', label: 'General' }, { value: 'pagos', label: 'Pagos' }]
 })
@@ -842,7 +842,7 @@ const getCargosExtraColumns = (): TableColumn<any>[] => {
     { accessorKey: 'peso_total', header: 'Peso total', cell: ({ row }: { row: any }) => toNumber(row.original.peso_total, 2) },
     {
       accessorKey: 'servicio',
-      header: 'Servicio',
+      header: 'Servicio / Importe',
       cell: ({ row }: { row: any }) => h(CargosExtraServiciosCell, {
         idCotizacion: row.original.id_cotizacion,
         servicios: row.original.delivery_servicios || [],
@@ -852,8 +852,26 @@ const getCargosExtraColumns = (): TableColumn<any>[] => {
     },
     {
       accessorKey: 'total_importe_servicios',
-      header: 'Importe',
+      header: 'Total Servicios',
       cell: ({ row }: { row: any }) => formatCurrency(Number(row.original.total_importe_servicios ?? 0), 'USD')
+    },
+    {
+      accessorKey: 'acciones',
+      header: 'Acciones',
+      cell: ({ row }: { row: any }) => h(UTooltip, { text: 'Ver documentación', placement: 'top' }, {
+        default: () => h(UButton, {
+          icon: 'i-heroicons-eye',
+          color: 'neutral',
+          variant: 'ghost',
+          size: 'xs',
+          'aria-label': 'Ver documentación',
+          onClick: () => {
+            const target = `/cargaconsolidada/completados/cotizacion-final/documentacion/${row.original.id_cotizacion}`
+            const returnUrl = encodeURIComponent(`/cargaconsolidada/completados/cotizacion-final/${id}?tab=cargos-extra`)
+            navigateTo(`${target}?returnUrl=${returnUrl}`)
+          }
+        })
+      })
     },
   ]
 }

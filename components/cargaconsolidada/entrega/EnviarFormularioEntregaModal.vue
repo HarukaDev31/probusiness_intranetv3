@@ -13,10 +13,8 @@
         </p>
 
         <div class="flex flex-wrap items-center gap-2">
-          <UButton size="xs" color="neutral" variant="outline" @click="applyQuickSelection('all')">
-            Seleccionar todos
-          </UButton>
-          <UButton size="xs" color="primary" variant="outline" @click="applyQuickSelection('lima')">
+          
+          <UButton size="xs" color="success" variant="outline" @click="applyQuickSelection('lima')">
             Solo Lima
           </UButton>
           <UButton size="xs" color="warning" variant="outline" @click="applyQuickSelection('provincia')">
@@ -28,7 +26,7 @@
           <UCheckbox
             :model-value="allSelected"
             :indeterminate="someSelected && !allSelected"
-            label="Seleccionar visibles"
+            :label="allSelected ? 'Deseleccionar todo' : 'Seleccionar todo'"
             @update:model-value="toggleAll"
           />
         </div>
@@ -51,7 +49,7 @@
             </div>
             <UBadge
               :label="cliente.type_form === 1 ? 'Lima' : 'Provincia'"
-              :color="cliente.type_form === 1 ? 'primary' : 'warning'"
+              :color="cliente.type_form === 1 ? 'success' : 'warning'"
               variant="soft"
               size="xs"
             />
