@@ -93,6 +93,13 @@ type ClienteFormulario = {
   type_form: 0 | 1
 }
 
+/** Solo 0/1 explícitos; null/undefined/Number(null) no cuentan (evita mostrar "Provincia" por error). */
+function normalizeTypeFormEntrega(raw: unknown): 0 | 1 | null {
+  if (raw === 1 || raw === '1') return 1
+  if (raw === 0 || raw === '0') return 0
+  return null
+}
+
 const props = defineProps<{
   modelValue?: boolean
   clientes: ClienteFormulario[]
@@ -110,8 +117,21 @@ const isOpen = computed({
   set: (value: boolean) => emit('update:modelValue', value)
 })
 
-const clientesConTipo = computed(() => {
-  return (props.clientes || []).filter((c) => c.type_form === 0 || c.type_form === 1)
+const clientesConTipo = computed((): ClienteFormulario[] => {
+  const list = props.clientes || []
+  const out: ClienteFormulario[] = []
+  for (const c of list) {
+    const tf = normalizeTypeFormEntrega(c?.type_form)
+    const id = Number(c?.id)
+    if (!id || tf === null) continue
+    out.push({
+      id,
+      nombre: String(c?.nombre ?? ''),
+      telefono: c?.telefono,
+      type_form: tf
+    })
+  }
+  return out
 })
 
 const selectedIds = ref<number[]>([])

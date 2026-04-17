@@ -243,8 +243,10 @@ const sendingFormulario = ref(false)
 const clientesFormulario = computed<{ id: number; nombre: string; telefono: string; type_form: 0 | 1 }[]>(() => {
   return (clientes.value || [])
     .map((cliente: any) => {
-      const parsedType = Number(cliente?.type_form)
-      const normalizedType = parsedType === 1 ? 1 : parsedType === 0 ? 0 : null
+      // No usar Number(null): en JS es 0 y confunde "sin tipo" con Provincia.
+      const rawTf = cliente?.type_form
+      const normalizedType =
+        rawTf === 1 || rawTf === '1' ? 1 : rawTf === 0 || rawTf === '0' ? 0 : null
       return {
         id: Number(cliente?.id_cotizacion ?? cliente?.id ?? 0),
         nombre: String(cliente?.nombre || 'Cliente'),
