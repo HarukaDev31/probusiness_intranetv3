@@ -11,6 +11,15 @@
     @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportClientes"
     @filter-change="handleFilterChange" @clear-filters="handleClearFilters">
     <template #actions>
+      <UButton
+        v-if="currentRole === ROLES.ADMINISTRACION"
+        icon="i-heroicons-document-arrow-up"
+        label="Importar Facturacion"
+        @click="goToFacturacionImport"
+        color="neutral"
+        variant="outline"
+        class="hidden md:flex"
+      />
       <UButton v-if="ID_JEFEVENTAS == currentId" icon="i-heroicons-arrow-down-tray" label="Exportar Excel"
         @click="handleExportExcel" :loading="exporting" color="success" variant="outline" class="hidden md:flex" />
     </template>
@@ -228,6 +237,10 @@ const handleSecondarySearch = (value: string) => {
 
 const goToArchivos = () => {
   navigateTo('/basedatos/clientes/archivos')
+}
+
+const goToFacturacionImport = () => {
+  navigateTo('/basedatos/clientes/facturacion-import')
 }
 
 const handleEditCliente = (id: number) => {

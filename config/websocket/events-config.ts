@@ -23,6 +23,7 @@ export const WS_EVENTS = {
   DOCUMENT_NEW: 'NewDocument',
   DOCUMENT_REQUEST: 'DocumentRequest',
   IMPORTACION_EXCEL_COMPLETED: 'ImportacionExcelCompleted',
+  USUARIO_DATOS_FACTURACION_IMPORT_FINISHED: 'UsuarioDatosFacturacionImportFinished',
   TEST_EVENT: 'TestEvent',
   
   // Eventos de Almacén (usados en events/contenedor-almacen.ts)
