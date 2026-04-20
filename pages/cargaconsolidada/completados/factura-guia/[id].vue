@@ -18,7 +18,7 @@
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headersFormatted" :loading="loadingGeneral || loadingHeaders" />
-<div v-if="currentRole === ROLES.CONTABILIDAD" class="flex justify-end">
+<div v-if="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION)" class="flex justify-end">
             <UButton
               icon="i-heroicons-paper-airplane"
               color="primary"

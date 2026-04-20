@@ -170,7 +170,7 @@ const confirmRollback = async (idImport: number) => {
 }
 
 const onRealtimeImportFinished = async (event: Event) => {
-  if (currentRole.value !== ROLES.CONTABILIDAD) {
+  if ((currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION)) {
     return
   }
 

@@ -36,8 +36,8 @@
     <DataTable v-if="activeTab === 'pagos'" :data="pagos" :columns="getPagosColumns()"
       :loading="loadingPagos || loadingHeaders" title="" :icon="''" :current-page="currentPagePagos"
       :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
-      :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="currentRole === ROLES.CONTABILIDAD"
-      :filter-config="currentRole === ROLES.CONTABILIDAD ? filterConfigPagos : []" :show-export="false"
+      :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION)"
+      :filter-config="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION) ? filterConfigPagos : []" :show-export="false"
       empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
       :show-pagination="false" @filter-change="handleFilterChangePagos" :show-body-top="true">
@@ -117,10 +117,10 @@ const activeTab = ref('') as Ref<string>
 
 // Tab configuration: para CONTABILIDAD primero Pagos luego General
 const canViewCargosExtra = computed(() =>
-  currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD
+  currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
 )
 const tabs = computed(() => {
-  if (currentRole.value === ROLES.CONTABILIDAD) {
+  if ((currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
     return canViewCargosExtra.value
       ? [{ value: 'pagos', label: 'Pagos' }, { value: 'cargos-extra', label: 'Cargos extra' }, { value: 'general', label: 'General' }]
       : [{ value: 'pagos', label: 'Pagos' }, { value: 'general', label: 'General' }]
@@ -387,7 +387,7 @@ const generalColumns = ref<TableColumn<any>[]>([
               handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)
             }
           }),
-          currentRole.value !== ROLES.CONTABILIDAD ? h(UButton, {
+          (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) ? h(UButton, {
             icon: 'i-heroicons-trash',
             color: 'error',
             variant: 'ghost',
@@ -613,7 +613,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
   }
 ])
 const getPagosColumns = (): TableColumn<any>[] => {
-  const isContabilidad = currentRole.value === ROLES.CONTABILIDAD
+  const isContabilidad = (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
   const base: TableColumn<any>[] = [
     {
       accessorKey: 'nro',
@@ -806,7 +806,7 @@ const getPagosColumns = (): TableColumn<any>[] => {
   return base
 }
 const getCargosExtraColumns = (): TableColumn<any>[] => {
-  const editable = currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.CONTABILIDAD
+  const editable = currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
   const toNumber = (value: any, digits = 2) => Number(Number(value ?? 0).toFixed(digits))
   return [
     { accessorKey: 'nro', header: 'N', cell: ({ row }: { row: any }) => row.index + 1 },
@@ -939,7 +939,7 @@ onMounted(async () => {
   const validTabs = tabs.value.map(t => t.value)
   if (tabQuery && validTabs.includes(tabQuery as string)) {
     activeTab.value = tabQuery as string
-  } else if (currentRole.value === ROLES.CONTABILIDAD) {
+  } else if ((currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
     activeTab.value = 'pagos'
   } else {
     activeTab.value = tabs.value[0].value

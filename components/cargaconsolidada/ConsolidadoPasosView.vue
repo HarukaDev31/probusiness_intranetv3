@@ -91,12 +91,12 @@ const formatNombre = (s: string) => {
 }
 
 const pasosMap = computed(() => ({
-  'COTIZACION': currentRole.value === ROLES.CONTABILIDAD
+  'COTIZACION': (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
     ? `${props.basePath}/cotizaciones/${id}?tab=pagos`
     : `${props.basePath}/cotizaciones/${id}?tab=prospectos`,
   'CLIENTES': `${props.basePath}/clientes/${id}`,
   'DOCUMENTACION': `${props.basePath}/documentacion/${id}`,
-  'COTIZACION FINAL': currentRole.value === ROLES.CONTABILIDAD
+  'COTIZACION FINAL': (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
     ? `${props.basePath}/cotizacion-final/${id}?tab=pagos`
     : `${props.basePath}/cotizacion-final/${id}?tab=general`,
   'FACTURA Y GUIA': `${props.basePath}/factura-guia/${id}`,
