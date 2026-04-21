@@ -2,7 +2,6 @@
   <div class="p-6">
     <!-- Header Section -->
 
-
   <DataTable title="" 
        
   :show-pagination="false" :data="general" :columns="generalColumnsByRole" :loading="loadingGeneral || loadingHeaders"
@@ -104,7 +103,8 @@ const selectedCliente = ref('')
 
 const generalColumnsByRole = computed<TableColumn<any>[]>(() => {
   switch (currentRole.value) {
-    case ROLES.CONTABILIDAD||ROLES.ADMINISTRACION:
+    case ROLES.CONTABILIDAD:
+    case ROLES.ADMINISTRACION:
       return generalColumnsContabilidad.value || []
     default:
       return generalColumns.value || []

@@ -102,7 +102,8 @@ const tabs = [
 
 const generalColumnsByRole = computed<TableColumn<any>[]>(() => {
   switch (currentRole.value) {
-    case ROLES.CONTABILIDAD || ROLES.ADMINISTRACION:
+    case ROLES.CONTABILIDAD:
+    case ROLES.ADMINISTRACION:
       return generalColumnsContabilidad.value || []
     default:
       return generalColumns.value || []
