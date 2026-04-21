@@ -1430,7 +1430,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                         }
                     })
                 }
-                return h('div', { class: 'w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
+                return h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
                     h('span', {
                         class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
                     }, String(value || '—'))
@@ -1896,7 +1896,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                         }
                     })
                 }
-                return h('div', { class: 'w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
+                return h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
                     h('span', {
                         class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
                     }, String(value || '—'))
@@ -2293,7 +2293,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                         }
                     })
                 }
-                return h('div', { class: 'w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
+                return h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
                     h('span', {
                         class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
                     }, String(value || '—'))
@@ -3016,3 +3016,48 @@ onMounted(() => {
     }
 })
 </script>
+<style scoped>
+:deep(.products-scroll) {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+
+:deep(.products-scroll:hover) {
+    scrollbar-color: #94a3b8 transparent;
+}
+
+:deep(.products-scroll::-webkit-scrollbar) {
+    height: 4px;
+}
+
+:deep(.products-scroll::-webkit-scrollbar-button) {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+:deep(.products-scroll::-webkit-scrollbar-button:single-button),
+:deep(.products-scroll::-webkit-scrollbar-button:horizontal:decrement),
+:deep(.products-scroll::-webkit-scrollbar-button:horizontal:increment) {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+:deep(.products-scroll::-webkit-scrollbar-track) {
+    background: transparent;
+}
+
+:deep(.products-scroll::-webkit-scrollbar-thumb) {
+    background-color: transparent;
+    border-radius: 9999px;
+}
+
+:deep(.products-scroll:hover::-webkit-scrollbar-thumb) {
+    background-color: #94a3b8;
+}
+
+:deep(.dark .products-scroll:hover::-webkit-scrollbar-thumb) {
+    background-color: #64748b;
+}
+</style>
