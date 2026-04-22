@@ -93,6 +93,11 @@ type ClienteFormulario = {
   type_form: 0 | 1
 }
 
+type FormularioEntregaSeleccion = {
+  id_cotizacion: number
+  type_form: 0 | 1
+}
+
 /** Solo 0/1 explícitos; null/undefined/Number(null) no cuentan (evita mostrar "Provincia" por error). */
 function normalizeTypeFormEntrega(raw: unknown): 0 | 1 | null {
   if (raw === 1 || raw === '1') return 1
@@ -109,7 +114,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'close'): void
-  (e: 'confirm', ids: number[]): void
+  (e: 'confirm', clientes: FormularioEntregaSeleccion[]): void
 }>()
 
 const isOpen = computed({
@@ -186,6 +191,14 @@ const onModalOpenChange = (open: boolean) => {
 }
 
 const confirmSelection = () => {
-  emit('confirm', [...selectedIds.value])
+  const selectedSet = new Set(selectedIds.value)
+  const payload: FormularioEntregaSeleccion[] = clientesConTipo.value
+    .filter((cliente) => selectedSet.has(cliente.id))
+    .map((cliente) => ({
+      id_cotizacion: cliente.id,
+      type_form: cliente.type_form
+    }))
+
+  emit('confirm', payload)
 }
 </script>

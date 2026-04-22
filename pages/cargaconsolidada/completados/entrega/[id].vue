@@ -368,15 +368,15 @@ const closeEnviarFormularioModal = () => {
   showEnviarFormularioModal.value = false
 }
 
-const handleEnviarFormularioSeleccionados = async (ids: number[]) => {
-  if (!ids.length) return
+const handleEnviarFormularioSeleccionados = async (seleccion: Array<{ id_cotizacion: number; type_form: 0 | 1 }>) => {
+  if (!seleccion.length) return
 
   sendingFormulario.value = true
   try {
     await withSpinner(async () => {
-      const response = await sendMessageForCotizaciones(ids)
+      const response = await sendMessageForCotizaciones(seleccion)
       if (response?.success) {
-        const totalEncolados = Number((response as any)?.queued ?? ids.length)
+        const totalEncolados = Number((response as any)?.queued ?? seleccion.length)
         showSuccess('Envío en cola', `Se encolaron ${totalEncolados} formulario(s) para envío por WhatsApp.`)
         closeEnviarFormularioModal()
       } else {

@@ -368,11 +368,24 @@ export class  EntregaService extends BaseService {
       throw error
     }
   }
-  static async sendMessageForCotizaciones(cotizacion_ids: number[]): Promise<{ success: boolean; data?: any; error?: string; message?: string; queued?: number }> {
+  static async sendMessageForCotizaciones(
+    cotizaciones: Array<{ id_cotizacion: number; type_form: 0 | 1 }>
+  ): Promise<{ success: boolean; data?: any; error?: string; message?: string; queued?: number }> {
     try {
+      const sanitizedCotizaciones = (cotizaciones || [])
+        .map((item) => ({
+          id_cotizacion: Number(item?.id_cotizacion ?? 0),
+          type_form: Number(item?.type_form) === 1 ? 1 : 0
+        }))
+        .filter((item) => item.id_cotizacion > 0)
+
       const response = await this.apiCall<{ success: boolean; data?: any; error?: string; message?: string; queued?: number }>(`${this.baseUrl}/delivery/send-message-bulk`, {
         method: 'POST',
-        body: { cotizacion_ids }
+        body: {
+          cotizaciones: sanitizedCotizaciones,
+          // Compatibilidad temporal si el backend antiguo sigue validando este campo.
+          cotizacion_ids: sanitizedCotizaciones.map((item) => item.id_cotizacion)
+        }
       })
       return response
     } catch (error) {
