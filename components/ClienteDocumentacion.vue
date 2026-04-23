@@ -1,8 +1,67 @@
 <template>
   <div class="content px-4 py-3">
     <!-- Loading state -->
-    <div v-if="loading" class="flex justify-center items-center h-64">
-      <LoadingSpinner />
+    <div v-if="loading" class="space-y-6 animate-pulse">
+      <div class="row mb-2">
+        <div class="col-12 col-md-2 col-xl-1">
+          <USkeleton class="h-10 w-28 rounded-lg" />
+        </div>
+        <div class="col-xl-9 col-md-8"></div>
+        <div class="col-12 col-md-2">
+          <USkeleton class="h-10 w-full rounded-lg" />
+        </div>
+      </div>
+
+      <div class="name_cliente col-12 p-6 border-b-2 border-gray-200">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-3">
+            <USkeleton class="h-6 w-56 rounded" />
+            <USkeleton class="h-4 w-40 rounded" />
+          </div>
+        </div>
+      </div>
+
+      <div class="container documentos-clientes-content mx-auto px-4 py-8 w-full flex justify-content-center">
+        <div class="flex gap-8 w-full">
+          <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md" style="width:60%">
+            <div class="space-y-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <USkeleton class="h-6 w-36 rounded" />
+                  <USkeleton class="h-5 w-5 rounded" />
+                </div>
+                <USkeleton class="h-8 w-32 rounded" />
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <USkeleton class="h-4 w-32 rounded" />
+                  <USkeleton class="h-10 w-full rounded" />
+                </div>
+                <div class="space-y-2">
+                  <USkeleton class="h-4 w-32 rounded" />
+                  <USkeleton class="h-10 w-full rounded" />
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <div v-for="i in 3" :key="`documento-skeleton-${i}`" class="space-y-2">
+                  <USkeleton class="h-4 w-36 rounded" />
+                  <USkeleton class="h-24 w-full rounded-lg" />
+                </div>
+              </div>
+            </div>
+          </UCard>
+
+          <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex-1">
+            <div class="space-y-4">
+              <USkeleton class="h-6 w-32 rounded" />
+              <USkeleton class="h-11 w-full rounded-lg" />
+              <USkeleton class="h-11 w-full rounded-lg" />
+            </div>
+          </UCard>
+        </div>
+      </div>
     </div>
 
     <!-- Error state -->
@@ -40,13 +99,7 @@
         </div>
       </div>
 
-      <!-- Tabs de servicios dinámicos -->
-      <div v-if="documentacion.providers.length > 0" class="documentos-clientes-tabs pt-6">
-        <div v-for="provider in documentacion.providers" :key="provider.id" class="tab-cliente-documentacion tab"
-          :class="{ active: servicioActivo === provider.id }" @click="cambiarServicio(provider.id)">
-          {{ provider.code_supplier }}
-        </div>
-      </div>
+    
 
       <!-- Contenido principal -->
       <div class="container documentos-clientes-content mx-auto px-4 py-8 w-full flex justify-content-center">
