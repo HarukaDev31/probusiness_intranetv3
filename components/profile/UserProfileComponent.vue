@@ -30,7 +30,14 @@
                             </div>
                         </div>
 
-                        <h2 class="profile-name text-center">{{ userProfile.fullName || '-' }}</h2>
+                        <div v-if="isEditingProfile" class="w-full max-w-sm mx-auto mt-2">
+                            <UInput
+                                v-model="profileForm.fullName"
+                                class="edit-input w-full text-center"
+                                placeholder="Nombre completo"
+                            />
+                        </div>
+                        <h2 v-else class="profile-name text-center">{{ userProfile.fullName || '-' }}</h2>
                         <div class="profile-dni text-center">
                             <span v-if="!isEditingProfile">DNI: {{ userProfile.dni || '-' }}</span>
                             <div v-else class="flex flex-row justify-center items-center gap-2">
@@ -533,6 +540,7 @@ const toggleEditGoals = () => {
 const saveProfile = async () => {
     try {
         const apiData: any = {
+            fullName: profileForm.value.fullName || '',
             email: profileForm.value.email || '',
             phone: profileForm.value.phone || '',
             dni: profileForm.value.dni || '',
@@ -571,6 +579,7 @@ const saveProfile = async () => {
         // Actualizar el perfil local con los nuevos datos
         userProfile.value = { 
             ...userProfile.value, 
+            fullName: apiData.fullName,
             email: apiData.email,
             phone: apiData.phone,
             dni: apiData.dni,
