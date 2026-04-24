@@ -13,6 +13,7 @@ export interface Cotizacion {
     monto: string
     monto_final: string | null
     volumen: string
+    volumen_neto?: string | null
     volumen_final: string | null
 }
 

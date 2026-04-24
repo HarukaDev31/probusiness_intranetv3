@@ -45,7 +45,7 @@ import type { ContabilidadAction } from '~/components/cargaconsolidada/factura-g
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import type { TableColumn } from '@nuxt/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, filtersGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, handleClearFiltersGeneral, uploadFacturaComercial, uploadGuiaRemision, headers, carga, loadingHeaders, getHeaders, deleteFacturaComercial, deleteGuiaRemision } = useGeneral()
+const { general, loadingGeneral, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, filtersGeneral, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral, handleClearFiltersGeneral, uploadFacturaComercial, uploadGuiaRemision, headers, carga, loadingHeaders, getHeaders, deleteFacturaComercial, deleteGuiaRemision, updateRegistrado } = useGeneral()
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useWhatsapp } from '~/composables/cargaconsolidada/factura-guia/useWhatsapp'
@@ -90,6 +90,31 @@ function openPreview (url: string, fileName: string) {
 // Modal state for creating pagos
 const { currentRole, currentId } = useUserRole()
 const selectedCliente = ref('')
+const REGISTRADO_OPTIONS = [
+  { label: 'Sí', value: true },
+  { label: 'No', value: false }
+]
+
+const handleUpdateRegistrado = async (row: any, value: boolean) => {
+  const previousValue = !!row.original.registrado
+  if (previousValue === value) return
+
+  row.original.registrado = value
+
+  try {
+    const response = await updateRegistrado(row.original.id_cotizacion, value)
+    if (response?.success) {
+      showSuccess('Registro actualizado', `Se marcó como ${value ? 'Sí' : 'No'}.`)
+      await getGeneral(id)
+      return
+    }
+    row.original.registrado = previousValue
+    showError('No se pudo actualizar', response?.message || 'Inténtalo nuevamente.')
+  } catch (error) {
+    row.original.registrado = previousValue
+    showError('No se pudo actualizar', 'Ocurrió un error al guardar el estado.')
+  }
+}
 
 // Tab state
 const activeTab = ref('general') as Ref<string>
@@ -519,12 +544,32 @@ const generalColumnsContabilidad = ref<TableColumn<any>[]>([
   {
     accessorKey: 'registrado',
     header: 'Registrado',
-    cell: ({ row }: { row: any }) => cellWrap('flex justify-center')(h(UBadge, {
-      label: row.original.registrado ? 'Sí' : 'No',
-      color: row.original.registrado ? 'success' : 'error',
-      variant: 'solid',
-      size: 'lg'
-    }))
+    cell: ({ row }: { row: any }) => {
+      if (currentRole.value === ROLES.CONTABILIDAD) {
+        const isRegistrado = !!row.original.registrado
+        return cellWrap('flex justify-center')(h('select', {
+          value: isRegistrado ? '1' : '0',
+          class: `w-20 rounded-md border px-2 py-1 text-xs font-semibold focus:outline-none ${
+            isRegistrado
+              ? 'border-green-300 bg-green-50 text-green-700'
+              : 'border-red-300 bg-red-50 text-red-700'
+          }`,
+          onChange: async (event: Event) => {
+            const target = event.target as HTMLSelectElement
+            await handleUpdateRegistrado(row, target.value === '1')
+          }
+        }, [
+          h('option', { value: '1', class: 'text-green-700' }, 'Sí'),
+          h('option', { value: '0', class: 'text-red-700' }, 'No')
+        ]))
+      }
+      return cellWrap('flex justify-center')(h(UBadge, {
+        label: row.original.registrado ? 'Sí' : 'No',
+        color: row.original.registrado ? 'success' : 'error',
+        variant: 'solid',
+        size: 'lg'
+      }))
+    }
   },
   {
     accessorKey: 'tipo_entrega',

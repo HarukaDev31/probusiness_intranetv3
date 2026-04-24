@@ -96,4 +96,17 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+
+    static async updateRegistrado(idCotizacion: number, registrado: boolean): Promise<{ success: boolean; message: string; data?: any }> {
+        try {
+            return await this.apiCall(`api/carga-consolidada/contenedor/factura-guia/contabilidad/registrado/${idCotizacion}`, {
+                method: 'PUT',
+                body: JSON.stringify({ registrado }),
+                headers: { 'Content-Type': 'application/json' }
+            })
+        } catch (error) {
+            console.error('Error al actualizar registrado:', error)
+            throw error
+        }
+    }
 }

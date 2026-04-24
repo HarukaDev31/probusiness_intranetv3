@@ -150,6 +150,14 @@ export const useGeneral  = () => {
             error.value = err as string
         }
     }
+    const updateRegistrado = async (idCotizacion: number, registrado: boolean) => {
+        try {
+            return await GeneralService.updateRegistrado(idCotizacion, registrado)
+        } catch (err) {
+            error.value = err as string
+            throw err
+        }
+    }
     const containerId = () => Number(route.params.id)
     const handleSearchGeneral = async (search: string) => {
         searchGeneral.value = search
@@ -197,6 +205,7 @@ export const useGeneral  = () => {
         deleteFacturaComercial,
         deleteGuiaRemision,
         getFacturasComerciales,
+        updateRegistrado,
         handleSearchGeneral,
         handlePageChangeGeneral,
         handleItemsPerPageChangeGeneral,
