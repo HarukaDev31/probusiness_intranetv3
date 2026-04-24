@@ -129,21 +129,35 @@
           <div class="flex-1 min-w-0">
             <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
               <div class="min-w-0">
-                <div class="text-sm text-gray-500 dark:text-gray-400">Registrado por</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ comprobanteForm?.prefill_from_usuario_datos_facturacion ? 'Origen de datos' : 'Registrado por' }}
+                </div>
                 <div class="font-semibold text-gray-900 dark:text-white truncate">{{ registeredByNombre || '—' }}</div>
                 <div class="text-xs text-gray-400 dark:text-gray-500">
-                  <span v-if="comprobanteForm?.created_at">Enviado el {{ formatDate(comprobanteForm.created_at) }}</span>
+                  <span v-if="comprobanteForm?.prefill_from_usuario_datos_facturacion && comprobanteForm?.created_at">
+                    Último registro en historial el {{ formatDate(comprobanteForm.created_at) }}
+                  </span>
+                  <span v-else-if="comprobanteForm?.created_at">Enviado el {{ formatDate(comprobanteForm.created_at) }}</span>
                   <span v-else>—</span>
                 </div>
               </div>
-              <UButton color="neutral" variant="outline" size="sm" :disabled="!comprobanteForm" @click="goToFormularioComprobante">
+              <UButton color="neutral" variant="outline" size="sm" :disabled="!comprobanteForm?.id" @click="goToFormularioComprobante">
                 Ver formulario
               </UButton>
             </div>
 
             <div class="mt-4 grid grid-cols-1 md:grid-cols-12 gap-4">
               <div class="md:col-span-9">
-                <div class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Datos de facturación</div>
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                  <div class="text-sm font-semibold text-gray-900 dark:text-white">Datos de facturación</div>
+                  <UBadge
+                    v-if="comprobanteForm?.prefill_from_usuario_datos_facturacion"
+                    color="warning"
+                    variant="subtle"
+                    size="xs"
+                    label="Desde historial (sin formulario)"
+                  />
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Tipo de comprobante</div>
@@ -563,6 +577,9 @@ const formatDate = (dateStr: string | null) => {
 
 const registeredBy = computed(() => comprobanteForm.value?.registered_by || null)
 const registeredByNombre = computed(() => {
+  if (comprobanteForm.value?.prefill_from_usuario_datos_facturacion) {
+    return 'Tabla usuario_datos_facturación (vinculado por documento o correo)'
+  }
   const rb = registeredBy.value
   if (!rb) return null
   const full = [rb.name, rb.lastname].filter(Boolean).join(' ').trim()
@@ -571,9 +588,12 @@ const registeredByNombre = computed(() => {
 const registeredByPhotoUrl = computed(() => registeredBy.value?.photo_url || null)
 
 const goToFormularioComprobante = () => {
-  if (!id) return
+  if (!id || !comprobanteForm.value?.id) return
+  const base = route.path.includes('/abiertos/')
+    ? '/cargaconsolidada/abiertos/factura-guia/formulario-comprobante'
+    : '/cargaconsolidada/completados/factura-guia/formulario-comprobante'
   navigateTo({
-    path: `/cargaconsolidada/completados/factura-guia/formulario-comprobante/${id}`,
+    path: `${base}/${id}`,
     query: { carga: String(route.query.carga || '') }
   })
 }
