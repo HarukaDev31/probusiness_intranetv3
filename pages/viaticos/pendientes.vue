@@ -58,7 +58,7 @@ import CreateViaticoModal from '~/components/viaticos/CreateViaticoModal.vue'
 import type { FileItem } from '~/types/commons/file'
 import type { ViaticoPago, CreateViaticoRequest } from '~/types/viatico'
 
-const { viaticos, loading, error, pagination, loadPendientes, createViatico, getStatusColor, getStatusLabel } = useViaticos()
+const { viaticos, loading, error, pagination, filterOptions, loadPendientes, createViatico, getStatusColor, getStatusLabel } = useViaticos()
 const { hasRole } = useUserRole()
 const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
@@ -69,6 +69,14 @@ const createViaticoModal = overlay.create(CreateViaticoModal)
 
 const search = ref('')
 const filters = ref<Record<string, any>>({})
+const areaOptions = [
+  { label: 'Todos', value: 'todos' },
+  { label: 'Marketing', value: 'Marketing' },
+  { label: 'Ventas', value: 'Ventas' },
+  { label: 'Importaciones', value: 'Importaciones' },
+  { label: 'Administración', value: 'Administración' },
+  { label: 'Otros', value: 'Otros' }
+]
 
 // Verificar que sea administración
 const isAdmin = computed(() => hasRole(ROLES.ADMINISTRACION))
@@ -286,12 +294,16 @@ const filterConfig = computed<FilterConfig[]>(() => [
     label: 'Área Solicitante',
     type: 'select',
     placeholder: 'Seleccionar área solicitante',
+    options: areaOptions
+  },
+  {
+    key: 'solicitante',
+    label: 'Solicitante',
+    type: 'select',
+    placeholder: 'Seleccionar solicitante',
     options: [
-      { label: 'Ventas', value: 'Ventas' },
-      { label: 'Marketing', value: 'Marketing' },
-      { label: 'Administración', value: 'Administración' },
-      { label: 'Finanzas', value: 'Finanzas' },
-      { label: 'Otros', value: 'Otros' }
+      { label: 'Todos', value: 'todos' },
+      ...(filterOptions.value.solicitantes || [])
     ]
   }
 ])

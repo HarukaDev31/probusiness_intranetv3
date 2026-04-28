@@ -13,6 +13,9 @@ export const useViaticos = () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const headers = ref<{ label: string; value: string; icon?: string }[]>([])
+  const filterOptions = ref<{ solicitantes: { label: string; value: string }[] }>({
+    solicitantes: []
+  })
   const pagination = ref({
     current_page: 1,
     last_page: 1,
@@ -25,6 +28,7 @@ export const useViaticos = () => {
     fecha_fin: '',
     requesting_area: '',
     area_solicitante: '',
+    solicitante: '',
     search: ''
   })
 
@@ -42,6 +46,7 @@ export const useViaticos = () => {
         viaticos.value = response.data
         pagination.value = response.pagination
         headers.value = (response as any).headers ?? []
+        filterOptions.value = (response as any).filter_options ?? { solicitantes: [] }
       } else {
         throw new Error('Error al cargar viáticos')
       }
@@ -67,6 +72,7 @@ export const useViaticos = () => {
         viaticos.value = response.data
         pagination.value = response.pagination
         headers.value = (response as any).headers ?? []
+        filterOptions.value = (response as any).filter_options ?? { solicitantes: [] }
       } else {
         throw new Error('Error al cargar viáticos')
       }
@@ -92,6 +98,7 @@ export const useViaticos = () => {
         viaticos.value = response.data
         pagination.value = response.pagination
         headers.value = (response as any).headers ?? []
+        filterOptions.value = (response as any).filter_options ?? { solicitantes: [] }
       } else {
         throw new Error('Error al cargar viáticos')
       }
@@ -266,6 +273,7 @@ export const useViaticos = () => {
     error,
     pagination,
     headers,
+    filterOptions,
     filters,
     updateFilters,
     // Methods

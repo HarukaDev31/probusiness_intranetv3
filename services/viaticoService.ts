@@ -24,8 +24,9 @@ export class ViaticoService extends BaseService {
       if (filters?.fecha_inicio) queryParams.append('fecha_inicio', filters.fecha_inicio)
       if (filters?.fecha_fin) queryParams.append('fecha_fin', filters.fecha_fin)
       // Mapear posibles claves de filtro de área desde la UI
-      if (filters?.requesting_area) queryParams.append('requesting_area', filters.requesting_area)
-      if (filters?.area_solicitante) queryParams.append('requesting_area', filters.area_solicitante)
+      if (filters?.requesting_area && filters.requesting_area !== 'todos') queryParams.append('requesting_area', filters.requesting_area)
+      if (filters?.area_solicitante && filters.area_solicitante !== 'todos') queryParams.append('requesting_area', filters.area_solicitante)
+      if (filters?.solicitante && filters.solicitante !== 'todos') queryParams.append('solicitante', filters.solicitante)
       if (filters?.search) queryParams.append('search', filters.search)
       if (filters?.page) queryParams.append('page', filters.page.toString())
       if (filters?.per_page) queryParams.append('per_page', filters.per_page.toString())
@@ -51,8 +52,9 @@ export class ViaticoService extends BaseService {
       if (filters?.fecha_inicio) queryParams.append('fecha_inicio', filters.fecha_inicio)
       if (filters?.fecha_fin) queryParams.append('fecha_fin', filters.fecha_fin)
       // Mapear posibles claves de filtro de área desde la UI
-      if (filters?.requesting_area) queryParams.append('requesting_area', filters.requesting_area)
-      if (filters?.area_solicitante) queryParams.append('requesting_area', filters.area_solicitante)
+      if (filters?.requesting_area && filters.requesting_area !== 'todos') queryParams.append('requesting_area', filters.requesting_area)
+      if (filters?.area_solicitante && filters.area_solicitante !== 'todos') queryParams.append('requesting_area', filters.area_solicitante)
+      if (filters?.solicitante && filters.solicitante !== 'todos') queryParams.append('solicitante', filters.solicitante)
       if (filters?.search) queryParams.append('search', filters.search)
       if (filters?.page) queryParams.append('page', filters.page.toString())
       if (filters?.per_page) queryParams.append('per_page', filters.per_page.toString())
@@ -78,8 +80,9 @@ export class ViaticoService extends BaseService {
       if (filters?.fecha_inicio) queryParams.append('fecha_inicio', filters.fecha_inicio)
       if (filters?.fecha_fin) queryParams.append('fecha_fin', filters.fecha_fin)
       // Mapear posibles claves de filtro de área desde la UI
-      if (filters?.requesting_area) queryParams.append('requesting_area', filters.requesting_area)
-      if (filters?.area_solicitante) queryParams.append('requesting_area', filters.area_solicitante)
+      if (filters?.requesting_area && filters.requesting_area !== 'todos') queryParams.append('requesting_area', filters.requesting_area)
+      if (filters?.area_solicitante && filters.area_solicitante !== 'todos') queryParams.append('requesting_area', filters.area_solicitante)
+      if (filters?.solicitante && filters.solicitante !== 'todos') queryParams.append('solicitante', filters.solicitante)
       if (filters?.search) queryParams.append('search', filters.search)
       if (filters?.page) queryParams.append('page', filters.page.toString())
       if (filters?.per_page) queryParams.append('per_page', filters.per_page.toString())
@@ -239,8 +242,9 @@ export class ViaticoService extends BaseService {
       queryParams.append('status', status || '')
       if (filters?.fecha_inicio) queryParams.append('fecha_inicio', filters.fecha_inicio)
       if (filters?.fecha_fin) queryParams.append('fecha_fin', filters.fecha_fin)
-      if (filters?.requesting_area) queryParams.append('requesting_area', filters.requesting_area)
-      if (filters?.area_solicitante) queryParams.append('area_solicitante', filters.area_solicitante)
+      if (filters?.requesting_area && filters.requesting_area !== 'todos') queryParams.append('requesting_area', filters.requesting_area)
+      if (filters?.area_solicitante && filters.area_solicitante !== 'todos') queryParams.append('area_solicitante', filters.area_solicitante)
+      if (filters?.solicitante && filters.solicitante !== 'todos') queryParams.append('solicitante', filters.solicitante)
       if (filters?.search) queryParams.append('search', filters.search)
       const response = await this.apiCall<Blob>(`${this.baseUrl}/export?${queryParams.toString()}`, {
         method: 'GET'

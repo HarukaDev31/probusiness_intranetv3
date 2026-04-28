@@ -54,13 +54,21 @@ import ModalPreview from '~/components/commons/ModalPreview.vue'
 import type { FileItem } from '~/types/commons/file'
 import type { ViaticoPago } from '~/types/viatico'
 
-const { viaticos, loading, error, pagination,headers, filters, loadCompletados, exportViaticos, getStatusColor, getStatusLabel } = useViaticos()
+const { viaticos, loading, error, pagination, headers, filterOptions, filters, loadCompletados, exportViaticos, getStatusColor, getStatusLabel } = useViaticos()
 const { hasRole } = useUserRole()
 const overlay = useOverlay()
 const evidenciasModal = overlay.create(EvidenciasModal)
 const modalPreview = overlay.create(ModalPreview)
 
 const search = ref('')
+const areaOptions = [
+  { label: 'Todos', value: 'todos' },
+  { label: 'Marketing', value: 'Marketing' },
+  { label: 'Ventas', value: 'Ventas' },
+  { label: 'Importaciones', value: 'Importaciones' },
+  { label: 'Administración', value: 'Administración' },
+  { label: 'Otros', value: 'Otros' }
+]
 
 // Verificar que sea administración
 const isAdmin = computed(() => hasRole(ROLES.ADMINISTRACION))
@@ -233,7 +241,17 @@ const filterConfig = computed<FilterConfig[]>(() => [
     label: 'Área Solicitante',
     type: 'select',
     placeholder: 'Seleccionar área solicitante',
-    options: []
+    options: areaOptions
+  },
+  {
+    key: 'solicitante',
+    label: 'Solicitante',
+    type: 'select',
+    placeholder: 'Seleccionar solicitante',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      ...(filterOptions.value.solicitantes || [])
+    ]
   },
 ])
 
