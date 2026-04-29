@@ -8,11 +8,11 @@
                     :refresh-interval="30000"
                     :compact="true"
                 />
-        <DataTable title="" icon="" :data="cursosData" :columns="columns" :loading="loading" :current-page="currentPage"
+        <DataTable title="" icon="" :data="cursosData" :columns="getAlumnosColumns()" :loading="loading" :current-page="currentPage"
             v-if="activeTab === 'alumnos'" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="searchQuery" :show-primary-search="true"
             :primary-search-label="'Buscar por'" :primary-search-placeholder="'Buscar...'" :show-filters="true"
-            :filter-config="filterConfig" :filters-value="filters" :show-export="true"
+            :filter-config="filterConfig" :filters-value="filters" :show-export="!isJefeMarketing"
             empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
             @update:primarySearch="handleSearch" @page-change="handlePageChange"
             @items-per-page-change="handleItemsPerPageChange" @export="handleExport" @filter-change="handleFilterChange"
@@ -57,7 +57,7 @@
 
 </template>
 <script setup lang="ts">
-import { ref, h, resolveComponent, onMounted, watch } from 'vue'
+import { ref, h, resolveComponent, onMounted, watch, computed } from 'vue'
 import { useCursos } from '~/composables/useCursos'
 import { useRouter } from 'vue-router'
 const router = useRouter()
@@ -118,12 +118,21 @@ const {
     registrarPago,
 } = usePagos()
 const activeTab = ref('')
+const { currentRole } = useUserRole()
+const isJefeMarketing = computed(() => currentRole.value === ROLES.JEFE_MARKETING)
 
 const tabs = [
     { label: 'Alumnos', value: 'alumnos' },
-    { label: 'Pagos', value: 'pagos' }
+    ...(currentRole.value === ROLES.JEFE_MARKETING ? [] : [{ label: 'Pagos', value: 'pagos' }])
 ]
+const READ_ONLY_COLUMN_KEYS = new Set(['acciones', 'action', 'actions'])
 import { UButton, USelect, UInput } from '#components'
+const toReadOnlyColumns = (tableColumns: TableColumn<CursoItem>[]) => {
+    return tableColumns.filter((column: any) => {
+        const key = String(column?.accessorKey ?? column?.id ?? '').toLowerCase()
+        return !READ_ONLY_COLUMN_KEYS.has(key)
+    })
+}
 const estadoClasses: Record<string, string> = {
     pendiente: 'bg-gray-100 text-gray-800',
     adelanto: 'bg-yellow-100 text-yellow-800',
@@ -175,7 +184,9 @@ const columns = ref<TableColumn<CursoItem>[]>([
             const icon = items.find(item => item.value === value)?.icon
             return h(USelect as any, {
                 modelValue: value,
+                disabled: isJefeMarketing.value,
                 'onUpdate:modelValue': (value: any) => {
+                    if (isJefeMarketing.value) return
                     row.original.tipo_curso = value
                     handleChangeTipoCurso(value, row.original.ID_Pedido_Curso)
                 },
@@ -200,7 +211,9 @@ const columns = ref<TableColumn<CursoItem>[]>([
             return h(USelect as any, {
                 class: 'w-full',
                 modelValue: row.original.ID_Campana,
+                disabled: isJefeMarketing.value,
                 'onUpdate:modelValue': (value: any) => {
+                    if (isJefeMarketing.value) return
                     row.original.ID_Campana = value
                     handleChangeEstadoPedido(value, row.original.ID_Pedido_Curso)
                 },
@@ -228,7 +241,9 @@ const columns = ref<TableColumn<CursoItem>[]>([
             }
             return h(USelect as any, {
                 modelValue,
+                disabled: isJefeMarketing.value,
                 'onUpdate:modelValue': (value: any) => {
+                    if (isJefeMarketing.value) return
                     row.original.Nu_Estado_Usuario_Externo = value
                     handleChangeEstadoUsuarioExterno(row.original.ID_Usuario, row.original.ID_Pedido_Curso)
                 },
@@ -252,7 +267,9 @@ const columns = ref<TableColumn<CursoItem>[]>([
                 variant: 'outline',
                 size: 'sm',
                 class: 'w-full',
+                disabled: isJefeMarketing.value,
                 'onUpdate:modelValue': (value: any) => {
+                    if (isJefeMarketing.value) return
                     row.original.Ss_Total = value
                 }
             })
@@ -338,6 +355,22 @@ const columns = ref<TableColumn<CursoItem>[]>([
         }
     }
 ])
+const getAlumnosColumns = (): TableColumn<CursoItem>[] => {
+    if (isJefeMarketing.value) {
+        return columns.value.map((column: any) => {
+            if (String(column?.accessorKey ?? '').toLowerCase() !== 'acciones') return column
+            return {
+                ...column,
+                cell: ({ row }: { row: any }) => h(UButton, {
+                    icon: 'i-heroicons-eye',
+                    variant: 'solid',
+                    onClick: () => viewCurso(row.original)
+                })
+            }
+        })
+    }
+    return columns.value
+}
 const columnsPagos = ref<TableColumn<CursoItem>[]>([
     //N.	Fecha	Nombre	DNI/RUC	WhatsApp	Precio	Pagado	Adelanto
     {
@@ -437,6 +470,7 @@ const columnsPagos = ref<TableColumn<CursoItem>[]>([
     }
 ])
 const handleChangeEstadoPedido = async (value: number, idPedido: number) => {
+    if (isJefeMarketing.value) return
     const data = {
         id_pedido: idPedido,
         estado_pedido: value
@@ -455,6 +489,7 @@ const handleChangeEstadoPedido = async (value: number, idPedido: number) => {
     }
 }
 const handleChangeEstadoUsuarioExterno = async (idUsuario: number, idPedido: number) => {
+    if (isJefeMarketing.value) return
     const data = {
         id_usuario: idUsuario,
         id_pedido: idPedido
@@ -482,6 +517,7 @@ const handleChangeEstadoUsuarioExterno = async (idUsuario: number, idPedido: num
     }
 }
 const handleDeleteCurso = async (idPedido: number) => {
+    if (isJefeMarketing.value) return
     const data = {
         id_pedido: idPedido
     }
@@ -506,6 +542,7 @@ const handleDeleteCurso = async (idPedido: number) => {
     }
 }
 const handleChangeImporte = async (idPedido: number, importe: string) => {
+    if (isJefeMarketing.value) return
     const data = {
         id_pedido: idPedido,
         importe: Number(importe)
@@ -525,6 +562,7 @@ const handleChangeImporte = async (idPedido: number, importe: string) => {
     }
 }
 const handleChangeTipoCurso = async (value: number, idPedido: number) => {
+    if (isJefeMarketing.value) return
     const data = {
         id_pedido: idPedido,
         id_tipo_curso: value
@@ -543,6 +581,7 @@ const handleChangeTipoCurso = async (value: number, idPedido: number) => {
     }
 }
 const handleExport = async () => {
+    if (isJefeMarketing.value) return
     await withSpinner(async () => { 
         const response = await exportData()
         if (response.success) {
@@ -559,6 +598,10 @@ const fillFilters = async () => {
 
 }
 watch(activeTab, async (newTab, oldTab) => {
+    if (isJefeMarketing.value && newTab !== 'alumnos') {
+        activeTab.value = 'alumnos'
+        return
+    }
     if (newTab === 'alumnos') {
         navigateTo(`/curso?tab=alumnos`)
 
@@ -573,7 +616,9 @@ watch(activeTab, async (newTab, oldTab) => {
 })
 onMounted(async () => {
     const query = useRoute().query
-    if (query.tab) {
+    if (isJefeMarketing.value) {
+        activeTab.value = 'alumnos'
+    } else if (query.tab) {
         activeTab.value = query.tab as string
     } else {
         activeTab.value = tabs[0].value || 'alumnos'
@@ -583,6 +628,7 @@ onMounted(async () => {
 })
 
 const handleSendRecordatorioPago = async (curso: CursoItem) => {
+    if (isJefeMarketing.value) return
     const nombreCliente = curso.No_Entidad || 'Cliente'
     showConfirmation(
         'Enviar recordatorio de pago',

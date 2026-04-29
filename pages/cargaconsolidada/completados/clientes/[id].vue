@@ -87,7 +87,7 @@
                     </div>
                 </template>
             </DataTable>
-            <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
+            <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="getColumnsPagos()"
                 :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos" :total-pages="totalPagesPagos"
                 :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
@@ -729,6 +729,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
                 //color status based on estado_cliente
                 class: [STATUS_BG_CLASSES[row.original.estado_cliente as keyof typeof STATUS_BG_CLASSES], 'w-full'],
                 modelValue: row.original.estado_cliente,
+                disabled: currentRole.value === ROLES.JEFE_MARKETING,
                 items: [
                     { label: 'Reservado', value: 'RESERVADO' },
                     { label: 'No Reservado', value: 'NO RESERVADO' },
@@ -840,6 +841,7 @@ const columnsDocumentacion: TableColumn<any>[] = [
                 class: STATUS_BG_CLASSES[row.original.status_cliente_doc as keyof typeof STATUS_BG_CLASSES],
                 variant: 'soft',
                 modelValue: row.original.status_cliente_doc,
+                disabled: currentRole.value === ROLES.JEFE_MARKETING,
                 items: [
                     { label: 'COMPLETADO', value: 'Completado' },
                     { label: 'PENDIENTE', value: 'Pendiente' },
@@ -883,7 +885,16 @@ const columnsDocumentacion: TableColumn<any>[] = [
         }
     }
 ]
+const READ_ONLY_COLUMN_KEYS = new Set(['acciones', 'action', 'actions'])
+const toReadOnlyColumns = (columns: TableColumn<any>[]) => {
+    return columns.filter((column: any) => {
+        const key = String(column?.accessorKey ?? column?.id ?? '').toLowerCase()
+        return !READ_ONLY_COLUMN_KEYS.has(key)
+    })
+}
+
 const getColumnsGeneral = () => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columnsCoordinacion)
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
         case ROLES.JEFE_IMPORTACIONES:
@@ -891,6 +902,7 @@ const getColumnsGeneral = () => {
         case ROLES.COORDINACION:
         case ROLES.ADMINISTRACION:
         case ROLES.CONTABILIDAD:
+        case ROLES.JEFE_MARKETING:
             return columnsCoordinacion
         default:
             return columns
@@ -898,14 +910,20 @@ const getColumnsGeneral = () => {
 }
 
 const getColumnsEmbarcados = (): TableColumn<any>[] => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columnsEmbarcadosCoordinacion.value)
     switch (currentRole.value) {
         case ROLES.COORDINACION:
         case ROLES.ADMINISTRACION:
         case ROLES.CONTABILIDAD:
+        case ROLES.JEFE_MARKETING:
             return columnsEmbarcadosCoordinacion.value
         default:
             return columnsEmbarcados.value
     }
+}
+const getColumnsPagos = (): TableColumn<any>[] => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columnsPagos.value)
+    return columnsPagos.value
 }
 const getColorStatusDocumentacion = (status: string) => {
     //Completado,Pendiente,Incompleto
@@ -1569,6 +1587,7 @@ const handleSendRecordatorioFirma = async (idCotizacion: number) => {
 }
 
 const handleUpdateEstadoCliente = async (data: any) => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return
     try {
         await withSpinner(async () => {
             const response = await updateEstadoCliente(data)
@@ -1672,7 +1691,16 @@ onMounted(() => {
                 value: 'variacion'
             }
         ]
-    } else {
+    }
+    else if (currentRole.value === ROLES.JEFE_MARKETING) {
+        tabs.value = [
+            {
+                label: 'Documentacion',
+                value: 'general'
+            }
+        ]
+    }
+    else {
         tabs.value = [
             {
                 label: 'Documentacion',

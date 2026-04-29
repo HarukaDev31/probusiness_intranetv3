@@ -8,6 +8,7 @@ export const ROLES = {
     COTIZADOR: 'Cotizador',
     DOCUMENTACION: 'Documentacion',
     ADMINISTRACION: 'Administración',
+    JEFE_MARKETING: 'Jefe Marketing',
     SUB_ADMINISTRACION: 'SUB_ADMINISTRACION',
     JEFE_IMPORTACIONES: 'Jefe Importacion',
     CONTABILIDAD: 'Contabilidad'

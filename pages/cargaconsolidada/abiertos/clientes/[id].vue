@@ -6,8 +6,8 @@
                 :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
                 :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
                 :show-filters="false" :filters-value="filtersGeneral"
-                :show-export="(currentId == ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false" :show-body-top="true"
-                :show-pagination="false" @export="exportData"
+                :show-export="(currentId == ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false"
+                :show-body-top="true" :show-pagination="false" @export="exportData"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
@@ -101,7 +101,7 @@
                     </div>
                 </template>
             </DataTable>
-            <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="columnsPagos"
+            <DataTable v-if="tab === 'pagos'" title="" icon="" :data="clientesPagos" :columns="getColumnsPagos()"
                 :loading="loadingPagos || loadingHeaders" :current-page="currentPagePagos"
                 :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
@@ -532,22 +532,22 @@ const columns: TableColumn<any>[] = [
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
                     //nueva condicion: si cotizacion_contrato_firmado_url existe entonces que aparezca contrato con texto primary, si no existe cotizacion_contrato_firmado_url pero si cotizacion_contrato_url entonces que aparezca contrato con texto secondary:
                     (cotizacion_contrato_firmado_url
-                        ? h('a', { 
+                        ? h('a', {
                             href: cotizacion_contrato_firmado_url,
                             target: '_blank',
-                            class: 'text-success-400 font-medium hover:underline' 
+                            class: 'text-success-400 font-medium hover:underline'
                         }, `Contrato: ${cod_contract}`)
                         : (cotizacion_contrato_autosigned_url
-                            ? h('a', { 
+                            ? h('a', {
                                 href: cotizacion_contrato_autosigned_url,
                                 target: '_blank',
-                                class: 'text-warning-400 font-medium hover:underline' 
+                                class: 'text-warning-400 font-medium hover:underline'
                             }, `Contrato: ${cod_contract}`)
                             : (cotizacion_contrato_url
-                                ? h('a', { 
+                                ? h('a', {
                                     href: cotizacion_contrato_url,
                                     target: '_blank',
-                                    class: 'text-secondary-700 dark:text-secondary-400 font-medium hover:underline' 
+                                    class: 'text-secondary-700 dark:text-secondary-400 font-medium hover:underline'
                                 }, `Contrato: ${cod_contract}`)
                                 : `Contrato: ${cod_contract}`
                             )
@@ -662,22 +662,22 @@ const columnsCoordinacion: TableColumn<any>[] = [
                 cod_contract ? h('div', { class: 'text-sm text-gray-500' }, [
                     //nueva condicion: si cotizacion_contrato_firmado_url existe entonces que aparezca contrato con texto primary, si no existe cotizacion_contrato_firmado_url pero si cotizacion_contrato_url entonces que aparezca contrato con texto secondary:
                     (cotizacion_contrato_firmado_url
-                        ? h('a', { 
+                        ? h('a', {
                             href: cotizacion_contrato_firmado_url,
                             target: '_blank',
-                            class: 'text-success-400 font-medium hover:underline' 
+                            class: 'text-success-400 font-medium hover:underline'
                         }, `Contrato: ${cod_contract}`)
                         : (cotizacion_contrato_autosigned_url
-                            ? h('a', { 
+                            ? h('a', {
                                 href: cotizacion_contrato_autosigned_url,
                                 target: '_blank',
-                                class: 'text-warning-400 font-medium hover:underline' 
+                                class: 'text-warning-400 font-medium hover:underline'
                             }, `Contrato: ${cod_contract}`)
                             : (cotizacion_contrato_url
-                                ? h('a', { 
+                                ? h('a', {
                                     href: cotizacion_contrato_url,
                                     target: '_blank',
-                                    class: 'text-secondary-700 dark:text-secondary-400 font-medium hover:underline' 
+                                    class: 'text-secondary-700 dark:text-secondary-400 font-medium hover:underline'
                                 }, `Contrato: ${cod_contract}`)
                                 : `Contrato: ${cod_contract}`
                             )
@@ -746,6 +746,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
                 //color status based on estado_cliente
                 class: [STATUS_BG_CLASSES[row.original.estado_cliente as keyof typeof STATUS_BG_CLASSES], 'w-full'],
                 modelValue: row.original.estado_cliente,
+                disabled: currentRole.value === ROLES.JEFE_MARKETING,
                 items: [
                     { label: 'Reservado', value: 'RESERVADO' },
                     { label: 'No Reservado', value: 'NO RESERVADO' },
@@ -857,6 +858,7 @@ const columnsDocumentacion: TableColumn<any>[] = [
                 class: STATUS_BG_CLASSES[row.original.status_cliente_doc as keyof typeof STATUS_BG_CLASSES],
                 variant: 'soft',
                 modelValue: row.original.status_cliente_doc,
+                disabled: currentRole.value === ROLES.JEFE_MARKETING,
                 items: [
                     { label: 'COMPLETADO', value: 'Completado' },
                     { label: 'PENDIENTE', value: 'Pendiente' },
@@ -882,7 +884,7 @@ const columnsDocumentacion: TableColumn<any>[] = [
             const permisoBlock = (currentRole.value === ROLES.DOCUMENTACION || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('documentacion')))
                 ? renderEstadoPermisoPorTipo(row.original.estado_permiso_por_tipo ?? [], row.original.id_tramite)
                 : null
-            return h('div', { class: 'flex flex-col' }, [ selectNode, permisoBlock ].filter(Boolean))
+            return h('div', { class: 'flex flex-col' }, [selectNode, permisoBlock].filter(Boolean))
         }
     },
     {
@@ -900,7 +902,16 @@ const columnsDocumentacion: TableColumn<any>[] = [
         }
     }
 ]
+const READ_ONLY_COLUMN_KEYS = new Set(['acciones', 'action', 'actions'])
+const toReadOnlyColumns = (columns: TableColumn<any>[]) => {
+    return columns.filter((column: any) => {
+        const key = String(column?.accessorKey ?? column?.id ?? '').toLowerCase()
+        return !READ_ONLY_COLUMN_KEYS.has(key)
+    })
+}
+
 const getColumnsGeneral = () => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columnsCoordinacion)
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
             return columnsDocumentacion
@@ -909,6 +920,7 @@ const getColumnsGeneral = () => {
         case ROLES.COORDINACION:
         case ROLES.ADMINISTRACION:
         case ROLES.CONTABILIDAD:
+        case ROLES.JEFE_MARKETING:
             return columnsCoordinacion
         default:
             return columns
@@ -916,6 +928,7 @@ const getColumnsGeneral = () => {
 }
 
 const getColumnsEmbarcados = (): TableColumn<any>[] => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columnsEmbarcadosCoordinacion.value)
     switch (currentRole.value) {
         case ROLES.COORDINACION:
         case ROLES.ADMINISTRACION:
@@ -924,6 +937,11 @@ const getColumnsEmbarcados = (): TableColumn<any>[] => {
         default:
             return columnsEmbarcados.value
     }
+}
+
+const getColumnsPagos = (): TableColumn<any>[] => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columnsPagos.value)
+    return columnsPagos.value
 }
 const getColorStatusDocumentacion = (status: string) => {
     //Completado,Pendiente,Incompleto
@@ -1593,6 +1611,7 @@ const handleSendRecordatorioFirma = async (idCotizacion: number) => {
 }
 
 const handleUpdateEstadoCliente = async (data: any) => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return
     try {
         await withSpinner(async () => {
             const response = await updateEstadoCliente(data)
@@ -1657,7 +1676,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
     }
 }
 onMounted(() => {
-    if (currentRole.value === ROLES.DOCUMENTACION ) {
+    if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
             {
                 label: 'Documentacion',
@@ -1696,7 +1715,15 @@ onMounted(() => {
                 value: 'variacion'
             }
         ]
-    } else {
+    } else if (currentRole.value === ROLES.JEFE_MARKETING) {
+        tabs.value = [
+            {
+                label: 'Documentacion',
+                value: 'general'
+            }
+        ]
+    }
+    else {
         tabs.value = [
             {
                 label: 'Documentacion',

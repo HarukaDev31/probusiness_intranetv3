@@ -7,7 +7,7 @@
         <div class="flex items-center mb-4">
           <span class="i-heroicons-user mr-2" />
           <h2 class="font-semibold text-lg">Información del alumno</h2>
-          <UButton icon="i-heroicons-pencil-square" variant="ghost" class="ml-auto" @click="editMode = !editMode" />
+          <UButton v-if="currentRole !== ROLES.JEFE_MARKETING" icon="i-heroicons-pencil-square" variant="ghost" class="ml-auto" @click="editMode = !editMode" />
           <div v-if="editMode" class="flex justify-end">
             <UButton color="primary" @click="guardarCambios">Guardar</UButton>
           </div>
@@ -245,7 +245,10 @@ import { CalendarDate, DateFormatter, getLocalTimeZone, parseDate } from '@inter
 import { useLocation } from '~/composables/commons/useLocation'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
 
+const { currentRole } = useUserRole()
 const route = useRoute()
 const router = useRouter()
 const { showSuccess, showError, showConfirmation } = useModal()

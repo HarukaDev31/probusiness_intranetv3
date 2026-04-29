@@ -5,7 +5,7 @@
             :total-pages="totalPages" :total-records="totalRecords" :items-per-page="itemsPerPage"
             :search-query-value="searchQuery" :show-primary-search="false" :primary-search-label="'Buscar por'"
             :primary-search-placeholder="'Buscar campaña...'" :show-filters="false" :filter-config="filterConfig"
-            :filters-value="filters" :show-export="false" :show-new-button="true" new-button-label="Crear Campaña"
+            :filters-value="filters" :show-export="false" :show-new-button="currentRole === ROLES.JEFE_MARKETING ? false : true" new-button-label="Crear Campaña"
             :on-new-button-click="openCreateModal"
             :hide-back-button="false"
             empty-state-message="No se encontraron campañas que coincidan con los criterios de búsqueda."
@@ -26,6 +26,9 @@ import CreateCampaignModal from '~/components/campanas/CreateCampaignModal.vue'
 import { useOverlay } from '#imports'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
+const { currentRole } = useUserRole()
 const {
     campaigns,
     loading,

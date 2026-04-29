@@ -10,7 +10,7 @@
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             @export="exportData" :hide-back-button="false"
-            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
             :show-body-top="true">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -39,7 +39,7 @@
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
-            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
+            :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING) ? `/cargaconsolidada/abiertos/pasos/${id}` : `/cargaconsolidada/abiertos`"
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -1092,7 +1092,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
 // Columnas tab Pagos: N° Contacto T. Cliente Acciones Inspección Estado Concepto Importe Pagado Diferencia Adelantos
 const getPagosColumns = () => {
     const isContabilidad = (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
-    return [
+    const columns = [
         {
             accessorKey: 'index',
             header: 'N°',
@@ -1280,6 +1280,8 @@ const getPagosColumns = () => {
             }
         }
     ]
+    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columns as TableColumn<any>[])
+    return columns
 }
 const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
     //Asesor	Status	N.	Buyer	Whatsapp	Estado	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
@@ -2677,6 +2679,7 @@ const handleRefresh = async (idCotizacion: number) => {
     }
 }
 const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string) => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return
     try {
         await withSpinner(async () => {
             try {
@@ -2791,7 +2794,15 @@ const handleSendRecordatorioFirma = async (idCotizacion: number) => {
         showError('Error al enviar recordatorio', error)
     }
 }
+const READ_ONLY_COLUMN_KEYS = new Set(['acciones', 'action', 'actions'])
+const toReadOnlyColumns = (columns: TableColumn<any>[]) => {
+    return columns.filter((column: any) => {
+        const key = String(column?.accessorKey ?? column?.id ?? '').toLowerCase()
+        return !READ_ONLY_COLUMN_KEYS.has(key)
+    })
+}
 const getProespectosColumns = () => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(prospectosCoordinacionColumns.value)
     switch (currentRole.value) {
         case ROLES.COORDINACION:
         case ROLES.ADMINISTRACION:
@@ -2802,6 +2813,7 @@ const getProespectosColumns = () => {
     }
 }
 const getEmbarqueColumns = () => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(embarqueCoordinacionColumns.value)
     switch (currentRole.value) {
         case ROLES.CONTENEDOR_ALMACEN:
             return embarqueCotizadorColumnsAlmacen.value
