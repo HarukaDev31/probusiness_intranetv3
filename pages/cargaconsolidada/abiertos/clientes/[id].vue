@@ -911,7 +911,7 @@ const toReadOnlyColumns = (columns: TableColumn<any>[]) => {
 }
 
 const getColumnsGeneral = () => {
-    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columnsCoordinacion)
+    if (currentRole.value === ROLES.JEFE_MARKETING) return columnsDocumentacion
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
             return columnsDocumentacion
