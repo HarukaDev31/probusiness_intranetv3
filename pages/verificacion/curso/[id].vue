@@ -123,10 +123,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { usePagos } from '../composables/usePagos'
+import { usePagos } from '~/composables/usePagos'
 import { useModal } from '~/composables/commons/useModal'
 import { PagosService } from '~/services/pagosService'
-import { formatCurrency } from '../utils/cursos'
+import { formatCurrency } from '~/utils/cursos'
 
 // Route params
 const route = useRoute()

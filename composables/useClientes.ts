@@ -1,7 +1,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ClienteService, type Cliente, type ClientesQueryParams, type PaginationInfo } from '../services/clienteService'
 import type { Header } from '../types/data-table'
-import { useSpinner } from '../composables/commons/useSpinner'
+import { useSpinner } from '~/composables/commons/useSpinner'
 const { withSpinner } = useSpinner()
 
 // Función para cargar estado desde sessionStorage
