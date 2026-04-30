@@ -2801,8 +2801,30 @@ const toReadOnlyColumns = (columns: TableColumn<any>[]) => {
         return !READ_ONLY_COLUMN_KEYS.has(key)
     })
 }
+const toMarketingProspectosColumns = (columns: TableColumn<any>[]) => {
+    return columns.map((column: any) => {
+        const key = String(column?.accessorKey ?? column?.id ?? '').toLowerCase()
+        if (!READ_ONLY_COLUMN_KEYS.has(key)) return column
+        return {
+            ...column,
+            header: 'Acciones',
+            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-row gap-2' }, [
+                h(UButton, {
+                    icon: 'i-heroicons-eye',
+                    variant: 'ghost',
+                    size: 'xs',
+                    color: 'primary',
+                    title: 'Documentación',
+                    onClick: () => {
+                        navigateTo(`/cargaconsolidada/abiertos/cotizaciones/documentacion/${row.original.id}`)
+                    }
+                })
+            ])
+        }
+    })
+}
 const getProespectosColumns = () => {
-    if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(prospectosCoordinacionColumns.value)
+    if (currentRole.value === ROLES.JEFE_MARKETING) return toMarketingProspectosColumns(prospectosCoordinacionColumns.value)
     switch (currentRole.value) {
         case ROLES.COORDINACION:
         case ROLES.ADMINISTRACION:
