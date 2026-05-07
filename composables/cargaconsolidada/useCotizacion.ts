@@ -112,14 +112,26 @@ export const useCotizacion = () => {
             loading.value = false
         }
     }
-    const deleteCotizacion = async (id: number) => {
+    const deleteCotizacion = async (id: number, deletedReasonId?: number | null) => {
         try {
-            const response = await CotizacionService.deleteCotizacion(id)
+            const response = await CotizacionService.deleteCotizacion(id, deletedReasonId)
             
             return response
         } catch (error) {
             console.error('Error en deleteCotizacion:', error)
         }
+    }
+    const getDeleteReasons = async () => {
+        return await CotizacionService.getDeleteReasons()
+    }
+    const createDeleteReason = async (name: string) => {
+        return await CotizacionService.createDeleteReason(name)
+    }
+    const updateDeleteReason = async (id: number, name: string) => {
+        return await CotizacionService.updateDeleteReason(id, name)
+    }
+    const deleteDeleteReason = async (id: number) => {
+        return await CotizacionService.deleteDeleteReason(id)
     }
     const deleteCotizacionFile = async (id: number) => {
         try {
@@ -277,6 +289,10 @@ export const useCotizacion = () => {
         getCotizaciones,
         refreshCotizacionFile,
         deleteCotizacion,
+        getDeleteReasons,
+        createDeleteReason,
+        updateDeleteReason,
+        deleteDeleteReason,
         deleteCotizacionFile,
         sendRecordatorioFirmaContrato,
         createProspecto,

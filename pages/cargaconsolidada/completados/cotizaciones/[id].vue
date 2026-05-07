@@ -5,7 +5,7 @@
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
-            :show-export="(currentId == ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false"
+            :show-export="(currentId == ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(Number(currentId))) ? true : false"
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
@@ -115,6 +115,10 @@
                     @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
+        <DeleteCotizacionReasonModal
+            v-model="showDeleteReasonModal"
+            :handlers="deleteReasonModalHandlers"
+        />
     </div>
 </template>
 <script setup lang="ts">
@@ -143,6 +147,8 @@ import SelectTipoCargaModal from '~/components/cargaconsolidada/SelectTipoCargaM
 import PagoGrid from '~/components/PagoGrid.vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones.vue'
+import DeleteCotizacionReasonModal from '~/components/cargaconsolidada/cotizaciones/DeleteCotizacionReasonModal.vue'
+import type { DeleteCotizacionReasonModalHandlers } from '~/components/cargaconsolidada/cotizaciones/DeleteCotizacionReasonModal.types'
 
 const UInput = ((props: any) => {
     const isDisabled = Boolean(props?.disabled)
@@ -214,6 +220,10 @@ const { getCotizacionProveedor,
 const { cotizaciones,
     refreshCotizacionFile,
     deleteCotizacion,
+    getDeleteReasons,
+    createDeleteReason,
+    updateDeleteReason,
+    deleteDeleteReason,
     deleteCotizacionFile,
     sendRecordatorioFirmaContrato,
     updateEstadoCotizacionCotizador,
@@ -266,6 +276,48 @@ const id = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
 const { showConfirmation, showSuccess, showError } = useModal()
 
 const tab = ref('')
+const showDeleteReasonModal = ref(false)
+const deleteTargetCotizacionId = ref<number | null>(null)
+const openDeleteReasonModal = (idCotizacion: number) => {
+    deleteTargetCotizacionId.value = idCotizacion
+    showDeleteReasonModal.value = true
+}
+const deleteReasonModalHandlers: DeleteCotizacionReasonModalHandlers = {
+    fetchReasons: async () => {
+        const response = await getDeleteReasons()
+        return response?.data || []
+    },
+    createReason: async (name: string) => {
+        await withSpinner(async () => {
+            await createDeleteReason(name)
+        }, 'Creando motivo...')
+    },
+    updateReason: async (idReason: number, name: string) => {
+        await withSpinner(async () => {
+            await updateDeleteReason(idReason, name)
+        }, 'Actualizando motivo...')
+    },
+    deleteReason: async (idReason: number) => {
+        await withSpinner(async () => {
+            await deleteDeleteReason(idReason)
+        }, 'Eliminando motivo...')
+    },
+    confirmDeleteCotizacion: async (reasonId: number) => {
+        if (!deleteTargetCotizacionId.value) {
+            throw new Error('Cotización no encontrada')
+        }
+        await withSpinner(async () => {
+            const response = await deleteCotizacion(deleteTargetCotizacionId.value as number, reasonId)
+            if (response?.success) {
+                showSuccess('Cotización eliminada correctamente', 'La cotización se ha eliminado correctamente.')
+                showDeleteReasonModal.value = false
+                await getCotizaciones(Number(id))
+                return
+            }
+            throw new Error('No se pudo eliminar la cotización')
+        }, 'Eliminando cotización...')
+    }
+}
 const tabSwitching = ref(false)
 const tabSwitchToken = ref(0)
 const mountedTabs = ref({
@@ -812,6 +864,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     activeColor: 'error',
                     size: 'xs',
+                    title: 'Eliminar cotización',
                     onClick: () => {
                         handleDelete(row.original.id)
                     }
@@ -1037,6 +1090,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 variant: 'ghost',
                 activeColor: 'error',
                 size: 'xs',
+                title: 'Eliminar cotización',
                 onClick: () => {
                     handleDelete(row.original.id)
                 }
@@ -2747,20 +2801,7 @@ const handleDeleteFile = async (idCotizacion: number) => {
 }
 
 const handleDelete = async (idCotizacion: number) => {
-    try {
-        showConfirmation('¿Estás seguro de querer eliminar esta cotización?', 'Esta acción no se puede deshacer.', async () => {
-            await withSpinner(async () => {
-                const response = await deleteCotizacion(idCotizacion)
-
-                if (response?.success) {
-                    showSuccess('Cotización eliminada correctamente', 'La cotización se ha eliminado correctamente.')
-                    await getCotizaciones(Number(id))
-                }
-            }, 'Eliminando cotización...')
-        })
-    } catch (error) {
-        showError('Error al eliminar cotización', error)
-    }
+    await openDeleteReasonModal(idCotizacion)
 }
 
 const handleSendRecordatorioFirma = async (idCotizacion: number) => {
