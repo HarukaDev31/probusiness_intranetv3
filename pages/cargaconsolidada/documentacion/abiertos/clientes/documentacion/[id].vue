@@ -224,7 +224,7 @@
             <!-- Contenido por proveedor -->
             <div v-if="proveedorActivo" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Sección de Documentación -->
-                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md " :class="{ 'col-span-2': currentRole === ROLES.COORDINACION }">
+                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md " :class="{ 'col-span-2': (currentRole === ROLES.COORDINACION || currentRole === ROLES.JEFE_IMPORTACIONES) }">
                     <template #header>
                         <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
@@ -242,7 +242,7 @@
                             <div class="flex gap-2">
 
                                 <UButton label="Nuevo Documento" color="warning" variant="solid" icon="i-heroicons-plus"
-                                    size="sm" v-if="currentRole === ROLES.COORDINACION"
+                                    size="sm" v-if="(currentRole === ROLES.COORDINACION || currentRole === ROLES.JEFE_IMPORTACIONES)"
                                     @click="handleNuevoDocumento" />
                             </div>
                         </div>
@@ -276,7 +276,7 @@
                             </label>
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false" :disabled="!isCoordinacion"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'"
-                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.factura_comercial ? [{
+                                :show-remove-button="(currentRole === ROLES.COORDINACION || currentRole === ROLES.JEFE_IMPORTACIONES)" :initial-files="proveedorActivo.factura_comercial ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Factura Comercial',
                                     file_url: proveedorActivo.factura_comercial,
@@ -295,7 +295,7 @@
                             </label>
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'" :immediate="false" :disabled="!isCoordinacion"
-                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.packing_list ? [{
+                                :show-remove-button="(currentRole === ROLES.COORDINACION || currentRole === ROLES.JEFE_IMPORTACIONES)" :initial-files="proveedorActivo.packing_list ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Packing List',
                                     file_url: proveedorActivo.packing_list,
@@ -312,7 +312,7 @@
                                 Excel Confirmación
                             </label>
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false" :disabled="!isCoordinacion"
-                                :show-remove-button="currentRole === ROLES.COORDINACION"
+                                :show-remove-button="(currentRole === ROLES.COORDINACION || currentRole === ROLES.JEFE_IMPORTACIONES)"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="proveedorActivo.excel_confirmacion ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Excel Confirmación',
@@ -327,7 +327,7 @@
                         <div v-for="file in files.filter(f => f.id_proveedor === proveedorActivo.id)" :key="file.id">
                             <span>{{ file.folder_name||file.file_name }}</span>
                             <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false"
-                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="[{
+                                :show-remove-button="(currentRole === ROLES.COORDINACION || currentRole === ROLES.JEFE_IMPORTACIONES)" :initial-files="[{
                                     id: file.id,
                                     file_name: file.folder_name||file.file_name,
                                     file_url: file.file_url,
@@ -421,7 +421,7 @@
 
                 <!-- Sección de Cotizaciones -->
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg h-40 shadow-md"
-                    v-if="currentRole === ROLES.COORDINACION">
+                    v-if="(currentRole === ROLES.COORDINACION || currentRole === ROLES.JEFE_IMPORTACIONES)">
 
                     <div class="space-y-4">
 

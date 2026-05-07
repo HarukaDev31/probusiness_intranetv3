@@ -235,6 +235,7 @@ const loadTabs = () => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
         case ROLES.JEFE_IMPORTACIONES:
+        case ROLES.JEFE_IMPORTACIONES:
             tabs.value = [
                 {
                     label: 'Prospectos',
@@ -2526,6 +2527,7 @@ const getProespectosColumns = () => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
         case ROLES.JEFE_IMPORTACIONES:
+        case ROLES.JEFE_IMPORTACIONES:
             return prospectosCoordinacionColumns.value
         default:
             return prospectosColumns.value
@@ -2536,6 +2538,7 @@ const getEmbarqueColumns = () => {
         case ROLES.CONTENEDOR_ALMACEN:
             return embarqueCotizadorColumnsAlmacen.value
         case ROLES.COORDINACION:
+        case ROLES.JEFE_IMPORTACIONES:
         case ROLES.JEFE_IMPORTACIONES:
             return embarqueCoordinacionColumns.value
         default:

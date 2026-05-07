@@ -891,6 +891,7 @@ const getColumnsGeneral = () => {
             return columnsDocumentacion
         case ROLES.COORDINACION:
         case ROLES.JEFE_IMPORTACIONES:
+        case ROLES.JEFE_IMPORTACIONES:
             return columnsCoordinacion
         default:
             return columns
@@ -900,6 +901,7 @@ const getColumnsGeneral = () => {
 const getColumnsEmbarcados = (): TableColumn<any>[] => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
+        case ROLES.JEFE_IMPORTACIONES:
         case ROLES.JEFE_IMPORTACIONES:
             return columnsEmbarcadosCoordinacion.value
         default:
@@ -1632,7 +1634,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
     }
 }
 onMounted(() => {
-    if (currentRole.value === ROLES.DOCUMENTACION ) {
+    if (currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) {
         tabs.value = [
             {
                 label: 'Documentacion',
