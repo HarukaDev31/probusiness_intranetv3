@@ -3,5 +3,5 @@
 </template>
 
 <script setup lang="ts">
-import FacturaGuiaFormularioComprobanteView from '~/components/cargaconsolidada/FacturaGuiaFormularioComprobanteView.vue'
+import FacturaGuiaFormularioComprobanteView from '~/components/cargaconsolidada/factura-guia/FacturaGuiaFormularioComprobanteView/index.vue'
 </script>

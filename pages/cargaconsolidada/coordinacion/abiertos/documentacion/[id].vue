@@ -6,6 +6,6 @@
 </template>
 
 <script setup lang="ts">
-import ConsolidadoDocumentacionView from '~/components/cargaconsolidada/ConsolidadoDocumentacionView.vue'
+import ConsolidadoDocumentacionView from '~/components/cargaconsolidada/consolidado/ConsolidadoDocumentacionView/index.vue'
 import { ROLES } from '~/constants/roles'
 </script>

@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import ClientesView from '~/components/cargaconsolidada/ClientesView.vue'
+import ClientesView from '~/components/cargaconsolidada/clientes/ClientesView/index.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
 
 const { currentRole } = useUserRole()

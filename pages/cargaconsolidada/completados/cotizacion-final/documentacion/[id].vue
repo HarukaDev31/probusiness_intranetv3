@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import ClienteDocumentacionView from '~/components/cargaconsolidada/documentacion/ClienteDocumentacionView.vue'
+import ClienteDocumentacionView from '~/components/cargaconsolidada/documentacion/ClienteDocumentacionView/index.vue'
 
 const route = useRoute()
 const clienteId = Number(route.params.id)

@@ -6,6 +6,6 @@
 </template>
 
 <script setup lang="ts">
-import DocumentacionCotizacionesView from '~/components/cargaconsolidada/DocumentacionCotizacionesView.vue'
+import DocumentacionCotizacionesView from '~/components/cargaconsolidada/cotizaciones/DocumentacionCotizacionesView/index.vue'
 import { ROLES } from '~/constants/roles'
 </script>

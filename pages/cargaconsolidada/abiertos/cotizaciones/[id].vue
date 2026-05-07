@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import CotizacionesView from '~/components/cargaconsolidada/CotizacionesView.vue'
+import CotizacionesView from '~/components/cargaconsolidada/cotizaciones/CotizacionesView/index.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
 
 const { currentRole } = useUserRole()

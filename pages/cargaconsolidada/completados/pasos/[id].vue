@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import ConsolidadoPasosView from '~/components/cargaconsolidada/ConsolidadoPasosView.vue'
+import ConsolidadoPasosView from '~/components/cargaconsolidada/consolidado/ConsolidadoPasosView/index.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
 
 const { currentRole } = useUserRole()

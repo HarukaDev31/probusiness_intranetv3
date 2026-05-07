@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import EntregaView from '~/components/cargaconsolidada/EntregaView.vue'
+import EntregaView from '~/components/cargaconsolidada/entrega/EntregaView/index.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
 
 const { currentRole } = useUserRole()

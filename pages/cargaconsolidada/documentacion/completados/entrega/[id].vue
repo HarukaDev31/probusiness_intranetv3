@@ -7,6 +7,6 @@
 </template>
 
 <script setup lang="ts">
-import EntregaView from '~/components/cargaconsolidada/EntregaView.vue'
+import EntregaView from '~/components/cargaconsolidada/entrega/EntregaView/index.vue'
 import { ROLES } from '~/constants/roles'
 </script>
