@@ -1,26 +1,14 @@
 <template>
-  <ClienteDocumentacionView
-    :cliente-id="clienteId"
-    :return-url="returnUrl"
-    :show-documentacion-peru="true"
-    :show-documentacion-china="true"
-    :show-inspeccion="true"
-    :show-top-save-button="true"
-    :show-clipboard-buttons="true"
-    :read-only="false"
-    :force-show-china-inspection="false"
+  <ClientesDocumentacionView
+    :role="currentRole || undefined"
+    base-path="/cargaconsolidada/completados"
+    back-base-path="/cargaconsolidada/completados"
   />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import ClienteDocumentacionView from '~/components/cargaconsolidada/documentacion/ClienteDocumentacionView.vue'
+import ClientesDocumentacionView from '~/components/cargaconsolidada/ClientesDocumentacionView.vue'
+import { useUserRole } from '~/composables/auth/useUserRole'
 
-const route = useRoute()
-const clienteId = Number(route.params.id)
-const returnUrl = computed(() => {
-  const value = route.query.returnUrl
-  if (typeof value === 'string' && value.trim().length > 0) return value
-  return '/cargaconsolidada/completados/clientes'
-})
+const { currentRole } = useUserRole()
 </script>
