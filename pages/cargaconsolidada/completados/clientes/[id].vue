@@ -166,7 +166,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
-const tab = ref<string>(isCoordinacion.value || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
+const tab = ref<string>(isCoordinacion.value || currentRole.value === ROLES.JEFE_IMPORTACIONES || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
@@ -897,8 +897,9 @@ const getColumnsGeneral = () => {
     if (currentRole.value === ROLES.JEFE_MARKETING) return columnsDocumentacion
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
-        case ROLES.JEFE_IMPORTACIONES:
             return columnsDocumentacion
+        case ROLES.JEFE_IMPORTACIONES:
+            return columnsCoordinacion
         case ROLES.COORDINACION:
         case ROLES.ADMINISTRACION:
         case ROLES.CONTABILIDAD:
@@ -913,6 +914,7 @@ const getColumnsEmbarcados = (): TableColumn<any>[] => {
     if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columnsEmbarcadosCoordinacion.value)
     switch (currentRole.value) {
         case ROLES.COORDINACION:
+        case ROLES.JEFE_IMPORTACIONES:
         case ROLES.ADMINISTRACION:
         case ROLES.CONTABILIDAD:
         case ROLES.JEFE_MARKETING:
@@ -1652,7 +1654,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
     }
 }
 onMounted(() => {
-    if (currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) {
+    if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
             {
                 label: 'Documentacion',
@@ -1660,7 +1662,7 @@ onMounted(() => {
             }
         ]
     }
-    else if (currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
+    else if (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
         tabs.value = [
             {
                 label: 'Seguimiento',

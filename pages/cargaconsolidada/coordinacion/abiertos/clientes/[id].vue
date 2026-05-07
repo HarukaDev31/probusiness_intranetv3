@@ -182,7 +182,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole, currentId, isCoordinacion } = useUserRole()
 const route = useRoute()
 const id = route.params.id
-const tab = ref<string>(isCoordinacion.value || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
+const tab = ref<string>(isCoordinacion.value || currentRole.value === ROLES.JEFE_IMPORTACIONES || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
@@ -1659,7 +1659,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
     }
 }
 onMounted(() => {
-    if (currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) {
+    if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [
             {
                 label: 'Documentacion',
