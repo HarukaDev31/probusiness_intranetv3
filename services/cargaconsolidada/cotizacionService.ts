@@ -3,6 +3,28 @@ import { BaseService } from "../base/BaseService"
 import type { CotizacionFilters , Cotizacion, CotizacionResponse } from "~/types/cargaconsolidada/cotizaciones"
 export class CotizacionService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor'
+    static async getDeleteReasons(): Promise<{ success: boolean; data: Array<{ id: number; name: string }> }> {
+        return await this.apiCall<{ success: boolean; data: Array<{ id: number; name: string }> }>(`${this.baseUrl}/cotizaciones/delete-reasons`, {
+            method: 'GET'
+        })
+    }
+    static async createDeleteReason(name: string): Promise<{ success: boolean; data: { id: number; name: string } }> {
+        return await this.apiCall<{ success: boolean; data: { id: number; name: string } }>(`${this.baseUrl}/cotizaciones/delete-reasons`, {
+            method: 'POST',
+            body: { name }
+        })
+    }
+    static async updateDeleteReason(id: number, name: string): Promise<{ success: boolean; data: { id: number; name: string } }> {
+        return await this.apiCall<{ success: boolean; data: { id: number; name: string } }>(`${this.baseUrl}/cotizaciones/delete-reasons/${id}`, {
+            method: 'PUT',
+            body: { name }
+        })
+    }
+    static async deleteDeleteReason(id: number): Promise<{ success: boolean }> {
+        return await this.apiCall<{ success: boolean }>(`${this.baseUrl}/cotizaciones/delete-reasons/${id}`, {
+            method: 'DELETE'
+        })
+    }
             // Obtener cargas disponibles para dropdown
         static async getCargasDisponiblesDropdown(): Promise<any> {
             try {
@@ -52,10 +74,11 @@ export class CotizacionService extends BaseService {
             throw error
         }
     }
-    static async deleteCotizacion(id: number): Promise<{ success: boolean }> {
+    static async deleteCotizacion(id: number, deletedReasonId?: number | null): Promise<{ success: boolean }> {
         try {
             const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/cotizaciones/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                body: { deleted_reason_id: deletedReasonId ?? null }
             })
             return response
         } catch (error) {

@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import CargaConsolidadaCompletadosView from '~/components/cargaconsolidada/CargaConsolidadaCompletadosView.vue'
+import CargaConsolidadaCompletadosView from '~/components/cargaconsolidada/consolidado/CargaConsolidadaCompletadosView/index.vue'
 import { ROLES } from '~/constants/roles'
 
 definePageMeta({

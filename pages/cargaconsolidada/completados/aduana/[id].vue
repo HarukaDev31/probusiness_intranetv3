@@ -3,5 +3,5 @@
 </template>
 
 <script setup lang="ts">
-import ConsolidadoAduanaView from '~/components/cargaconsolidada/ConsolidadoAduanaView.vue'
+import ConsolidadoAduanaView from '~/components/cargaconsolidada/consolidado/ConsolidadoAduanaView/index.vue'
 </script>

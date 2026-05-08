@@ -106,8 +106,8 @@ import { ref, onMounted, watch } from 'vue'
 import {EntityService} from '~/services/entityService'
 import { type CreateEntityRequest } from '~/services/entityService'
 import { type CreatePermisoRequest } from '~/services/permisoService'
-import { useModal } from '../composables/commons/useModal'
-import { useSpinner } from '../composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 import { PermisoService } from '~/services/permisoService'
 const permisoService = new PermisoService()
 const entityService = new EntityService()

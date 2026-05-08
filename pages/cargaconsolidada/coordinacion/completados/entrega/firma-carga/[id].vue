@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import CargoEntregaFirmaCargaView from '~/components/cargaconsolidada/entrega/CargoEntregaFirmaCargaView.vue'
+import CargoEntregaFirmaCargaView from '~/components/cargaconsolidada/entrega/CargoEntregaFirmaCargaView/index.vue'
 
 const route = useRoute()
 const idCotizacion = Number(route.params.id)

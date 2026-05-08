@@ -3,7 +3,7 @@ import type { PaginationInfo } from '~/types/data-table'
 import { PagosService } from '~/services/cargaconsolidada/clientes/pagosService'
 import type { Pagos } from '~/types/cargaconsolidada/clientes/pagos'
 import { useRoute } from '#app'
-import { useSpinner } from '../composables/commons/useSpinner'
+import { useSpinner } from '~/composables/commons/useSpinner'
 const { withSpinner } = useSpinner()
 export const usePagos = () => {
     const route = useRoute()

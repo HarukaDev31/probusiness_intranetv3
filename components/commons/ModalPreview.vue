@@ -225,9 +225,9 @@
 </template>
 
 <script setup lang="ts">
-import type { FileItem } from '../types/commons/file'
-import { useSpinner } from '../composables/commons/useSpinner'
-import { useModal } from '../composables/commons/useModal'
+import type { FileItem } from '~/types/commons/file'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
 const { withSpinner } = useSpinner()
 const { showError } = useModal()
 interface Props {

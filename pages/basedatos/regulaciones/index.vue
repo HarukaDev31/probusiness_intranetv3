@@ -737,7 +737,7 @@ import DocumentPreview from '~/components/DocumentPreview.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import {ProductRubroService} from '../services/productRubroService'
+import { ProductRubroService } from '~/services/productRubroService'
 import {EntityService} from '~/services/entityService'
 import FileIcon from '~/components/commons/FileIcon.vue'
 // User role composable
