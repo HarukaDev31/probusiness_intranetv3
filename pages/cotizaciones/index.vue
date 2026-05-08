@@ -263,7 +263,7 @@ const columns: TableColumn<any>[] = [
             handleDelete(row.original.id)
           }
         }),
-        row.original.estado === 'COTIZADO' ? h(UButton, {
+        row.original.estado !== 'CONFIRMADO' ? h(UButton, {
           color: 'warning',
           size: 'sm',
           variant: 'ghost',
