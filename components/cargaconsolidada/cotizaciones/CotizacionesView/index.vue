@@ -3066,10 +3066,14 @@ const updateProveedorData = async (row: any) => {
     }
     if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
         data.qty_box_china = row.qty_box_china ?? []
+        data.qty_pallet_china = row.qty_pallet_china ?? 0
         data.cbm_total_china = row.cbm_total_china ?? []
+        data.peso_china = row.peso_china ?? 0
         data.arrive_date = row.arrive_date_china ?? []
         formData.append('qty_box_china', data.qty_box_china)
+        formData.append('qty_pallet_china', data.qty_pallet_china)
         formData.append('cbm_total_china', data.cbm_total_china)
+        formData.append('peso_china', data.peso_china)
         formData.append('arrive_date_china', data.arrive_date)
     }
     formData.append('id', data.id)
