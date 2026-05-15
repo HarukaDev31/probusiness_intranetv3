@@ -11,7 +11,9 @@ export const ROLES = {
     JEFE_MARKETING: 'Jefe Marketing',
     SUB_ADMINISTRACION: 'SUB_ADMINISTRACION',
     JEFE_IMPORTACIONES: 'Jefe Importacion',
-    CONTABILIDAD: 'Contabilidad'
+    CONTABILIDAD: 'Contabilidad',
+    SOPORTE: 'Soporte',
+    PM: 'PM',
 } as const
 export const ID_JEFEVENTAS = 28791
 export const COTIZADORES_WITH_PRIVILEGES = [28911]

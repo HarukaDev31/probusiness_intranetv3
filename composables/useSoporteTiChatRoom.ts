@@ -45,7 +45,7 @@ function shouldNotify(chatUuid: string, salaActivaUuid: string | null): boolean 
 
 export function useSoporteTiChatRoom() {
   const config = useRuntimeConfig()
-  const usarApi = computed(() => config.public.soporteTiUseApi === true)
+  const usarApi = computed(() => config.public.soporteTiUseApi !== false)
   const salaActivaUuid = useState<string | null>('soporte-ti-sala-activa', () => null)
 
   const { subscribeToChannel, unsubscribeFromChannel } = useEcho()

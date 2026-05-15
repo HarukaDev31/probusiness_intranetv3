@@ -160,7 +160,7 @@ export function getSoporteTiSeedSolicitudes(): SoporteTiSolicitud[] {
       solicitante: 'Rosa Lima',
       pm: 'Jorge M.',
       analista: 'Ana T.',
-      criticidad: 'Crítica',
+      criticidad: 'Máxima',
       ...camposEstado('Observado'),
       faseIndex: 3,
       progreso: 80,

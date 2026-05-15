@@ -1,6 +1,7 @@
 import type {
   SoporteTiSolicitud,
   SoporteTiSolicitudApi,
+  SoporteTiListStatsApi,
   SoporteTiMensaje,
   SoporteTiMensajeApi,
   SoporteTiChatsPorUuid,
@@ -10,9 +11,39 @@ import type {
   SoporteTiEstadoApi,
   SoporteTiEstadoHistorialApi,
   SoporteTiEstado,
-  SoporteTiEstadoHistorial
+  SoporteTiEstadoHistorial,
+  SoporteTiEvidenciaApi,
+  SoporteTiEvidenciaItem
 } from '~/types/soporteTi'
 import { estadoPorId, resolverEstado } from '~/constants/soporteTiEstados'
+
+/**
+ * Normaliza la respuesta del índice: `data` como arreglo o bundle `{ solicitudes, resumen }`,
+ * y métricas en `resumen` / `totales` / `stats` (raíz o dentro de `data`).
+ */
+export function parseSoporteTiListPayload(res: {
+  data?: unknown
+  stats?: SoporteTiListStatsApi
+  resumen?: SoporteTiListStatsApi
+  totales?: SoporteTiListStatsApi
+}): { rows: SoporteTiSolicitudApi[]; stats: SoporteTiListStatsApi | undefined } {
+  const topStats = res.resumen ?? res.totales ?? res.stats
+  const d = res.data
+
+  if (Array.isArray(d)) {
+    return { rows: d, stats: topStats }
+  }
+
+  if (d && typeof d === 'object') {
+    const o = d as Record<string, unknown>
+    const list = o.solicitudes ?? o.items ?? o.data
+    const nested = (o.resumen ?? o.stats ?? o.totales) as SoporteTiListStatsApi | undefined
+    const rows = Array.isArray(list) ? (list as SoporteTiSolicitudApi[]) : []
+    return { rows, stats: nested ?? topStats }
+  }
+
+  return { rows: [], stats: topStats }
+}
 
 export function mapEstadoApiToUi(e: SoporteTiEstadoApi): SoporteTiEstado {
   return {
@@ -42,6 +73,16 @@ export function mapHistorialEstadoApiToUi(h: SoporteTiEstadoHistorialApi): Sopor
 function resolverEstadoDesdeApi(row: SoporteTiSolicitudApi) {
   if (row.estado) {
     return mapEstadoApiToUi(row.estado)
+  }
+  if (row.estado_codigo) {
+    const r = resolverEstado(row.estado_codigo)
+    return {
+      id: r.id,
+      codigo: r.codigo,
+      nombre: r.nombre,
+      tipoSolicitud: r.tipoSolicitud,
+      ordenKanban: r.ordenKanban
+    }
   }
   if (row.estado_id) {
     const local = estadoPorId(row.estado_id)
@@ -94,8 +135,24 @@ function mapImagenesApi(imgs?: SoporteTiImagenMensajeApi[]) {
   }))
 }
 
+function mapEvidenciaApiToUi(e: SoporteTiEvidenciaApi): SoporteTiEvidenciaItem {
+  return {
+    id: e.id,
+    tipo: e.tipo,
+    texto: e.texto ?? null,
+    url: e.url ?? null,
+    nombre: e.nombre ?? null,
+    tamano: e.tamano ?? null,
+    mime: e.mime ?? null,
+    orden: e.orden
+  }
+}
+
 export function mapSolicitudApiToUi(row: SoporteTiSolicitudApi): SoporteTiSolicitud {
   const est = resolverEstadoDesdeApi(row)
+  const sortedEv = row.evidencias?.length
+    ? [...row.evidencias].sort((a, b) => a.orden - b.orden)
+    : undefined
   return {
     backendId: row.id,
     chatUuid: row.chat_uuid,
@@ -105,6 +162,10 @@ export function mapSolicitudApiToUi(row: SoporteTiSolicitudApi): SoporteTiSolici
     titulo: row.titulo,
     area: row.area,
     solicitante: row.solicitante,
+    solicitanteUserId:
+      row.solicitante_user_id !== undefined && row.solicitante_user_id !== null
+        ? Number(row.solicitante_user_id)
+        : null,
     pm: row.pm,
     analista: row.analista,
     criticidad: row.criticidad,
@@ -128,7 +189,8 @@ export function mapSolicitudApiToUi(row: SoporteTiSolicitudApi): SoporteTiSolici
           aprobada: row.maqueta.aprobada,
           dataUrl: row.maqueta.url_preview ?? null
         }
-      : null
+      : null,
+    evidencias: sortedEv?.map(mapEvidenciaApiToUi)
   }
 }
 
@@ -144,6 +206,7 @@ export function mapSolicitudUiToApiPatch(
   if (s.faseIndex !== undefined) out.fase_index = s.faseIndex
   if (s.progreso !== undefined) out.progreso = s.progreso
   if (s.ultimaActualizacion !== undefined) out.ultima_actualizacion = s.ultimaActualizacion
+  if (s.criticidad !== undefined) out.criticidad = s.criticidad
   if (s.maqueta !== undefined) {
     out.maqueta = s.maqueta
       ? {
@@ -186,14 +249,27 @@ export function mapChatsApiToUi(
   return out
 }
 
-export function buildCreateApiBody(payload: SoporteTiCreatePayload, demoSolicitante: string) {
+export function buildCreateApiBody(payload: SoporteTiCreatePayload) {
   return {
     tipo_solicitud: payload.tipo,
     subtipo_b: payload.tipo === 'B' ? payload.subtipoB : null,
     titulo: payload.titulo || 'Nueva solicitud',
     area: payload.area,
     seccion_ruta: payload.seccionRuta || null,
-    descripcion: payload.descripcion || null,
-    solicitante: demoSolicitante
+    descripcion: payload.descripcion || null
   }
+}
+
+export function buildCreateSolicitudFormData(payload: SoporteTiCreatePayload): FormData {
+  const fd = new FormData()
+  fd.append('tipo_solicitud', payload.tipo)
+  if (payload.subtipoB) fd.append('subtipo_b', payload.subtipoB)
+  fd.append('titulo', payload.titulo || 'Nueva solicitud')
+  fd.append('area', payload.area)
+  if (payload.seccionRuta) fd.append('seccion_ruta', payload.seccionRuta)
+  if (payload.descripcion) fd.append('descripcion', payload.descripcion)
+  payload.imagenes?.forEach((file, i) => {
+    fd.append(`imagenes[${i}]`, file)
+  })
+  return fd
 }

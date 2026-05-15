@@ -30,10 +30,10 @@ export class SoporteTiService extends BaseService {
     return this.apiCall<SoporteTiSingleResponse>(`${BASE}/${id}`)
   }
 
-  static async store(body: Record<string, unknown>): Promise<SoporteTiMutationResponse> {
+  static async store(body: Record<string, unknown> | FormData): Promise<SoporteTiMutationResponse> {
     return this.apiCall<SoporteTiMutationResponse>(BASE, {
       method: 'POST',
-      body
+      body: body as Record<string, unknown>
     })
   }
 

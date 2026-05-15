@@ -33,7 +33,12 @@ export const SOPORTE_TI_ESTADOS_POR_NOMBRE = Object.fromEntries(
   SOPORTE_TI_ESTADOS.map((e) => [e.nombre, e])
 ) as Record<string, SoporteTiEstadoDef>
 
-/** Columnas Kanban derivadas del catálogo (ordenadas). */
+/** Definición de columnas Kanban (DataTable): `key` === `estadoCodigo` en cada fila */
+export const SOPORTE_TI_KANBAN_BOARD = SOPORTE_TI_ESTADOS.filter((e) => e.ordenKanban != null)
+  .sort((a, b) => (a.ordenKanban ?? 0) - (b.ordenKanban ?? 0))
+  .map((e) => ({ key: e.codigo, label: e.nombre }))
+
+/** Columnas Kanban (solo nombres, orden catálogo). */
 export const SOPORTE_TI_KANBAN_COLUMNAS = SOPORTE_TI_ESTADOS.filter((e) => e.ordenKanban != null)
   .sort((a, b) => (a.ordenKanban ?? 0) - (b.ordenKanban ?? 0))
   .map((e) => e.nombre)

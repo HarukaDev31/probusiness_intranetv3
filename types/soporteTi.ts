@@ -38,6 +38,18 @@ export interface SoporteTiImagenMensaje {
   tamano?: string | null
 }
 
+/** Registro en `soporte_ti_solicitud_evidencias` (texto o imagen por fila) */
+export interface SoporteTiEvidenciaItem {
+  id?: number
+  tipo: 'texto' | 'imagen'
+  texto?: string | null
+  url?: string | null
+  nombre?: string | null
+  tamano?: string | null
+  mime?: string | null
+  orden?: number
+}
+
 /** Vista previa del mensaje al que se responde */
 export interface SoporteTiMensajeReplyPreview {
   id: number
@@ -74,8 +86,13 @@ export interface SoporteTiSolicitud {
   titulo: string
   area: string
   solicitante: string
+  /** Usuario creador (cuando el API lo envía); demo opcional */
+  solicitanteUserId?: number | null
   pm: string | null
   analista: string | null
+  /**
+   * Complejidad de la solicitud (Baja, Media, Alta, Máxima). En API el campo se llama `criticidad`.
+   */
   criticidad: string
   /** FK `soporte_ti_estados` — estado actual */
   estadoId: number
@@ -92,6 +109,8 @@ export interface SoporteTiSolicitud {
   seccionRuta?: string
   descripcion?: string
   maqueta: SoporteTiMaqueta | null
+  /** Evidencias persistentes (tabla solicitud_evidencias), no inferidas del chat */
+  evidencias?: SoporteTiEvidenciaItem[]
 }
 
 export interface SoporteTiCreatePayload {
@@ -101,6 +120,8 @@ export interface SoporteTiCreatePayload {
   area: string
   seccionRuta: string
   descripcion: string
+  /** Pantallazos opcionales; se envían como primer mensaje con adjuntos tras crear el ticket */
+  imagenes?: File[]
 }
 
 export interface SoporteTiEnviarMensajePayload {
@@ -136,11 +157,14 @@ export interface SoporteTiSolicitudApi {
   titulo: string
   area: string
   solicitante: string
+  solicitante_user_id?: number | null
   pm: string | null
   analista: string | null
   criticidad: string
   estado_id: number
   estado?: SoporteTiEstadoApi | null
+  /** Denormalizado opcional (Laravel `mapSolicitud`) */
+  estado_codigo?: string | null
   /** Compatibilidad si el API aún envía string */
   estado_legacy?: string | null
   fase_index: number
@@ -159,6 +183,18 @@ export interface SoporteTiSolicitudApi {
     aprobada: boolean
     url_preview?: string | null
   } | null
+  evidencias?: SoporteTiEvidenciaApi[]
+}
+
+export interface SoporteTiEvidenciaApi {
+  id: number
+  tipo: 'texto' | 'imagen'
+  texto?: string | null
+  url?: string | null
+  nombre?: string | null
+  tamano?: string | null
+  mime?: string | null
+  orden: number
 }
 
 export type SoporteTiMaquetaApi = NonNullable<SoporteTiSolicitudApi['maqueta']>
@@ -227,9 +263,37 @@ export interface SoporteTiMensajesQuery {
   before_id?: number | null
 }
 
+/** Agregados del listado; opcional si el backend los envía en la misma respuesta */
+export interface SoporteTiListStatsApi {
+  total: number
+  pendientes: number
+  en_progreso?: number
+  operativas: number
+}
+
+/**
+ * `data` como objeto: listado bajo una clave + métricas bajo `resumen` / `stats` / `totales`
+ * (mismo estilo que otros índices del proyecto: payload + resumen hermano o anidado).
+ */
+export interface SoporteTiListDataBundleApi {
+  solicitudes?: SoporteTiSolicitudApi[]
+  items?: SoporteTiSolicitudApi[]
+  data?: SoporteTiSolicitudApi[]
+  resumen?: SoporteTiListStatsApi
+  stats?: SoporteTiListStatsApi
+  totales?: SoporteTiListStatsApi
+}
+
+export type SoporteTiListResponseData = SoporteTiSolicitudApi[] | SoporteTiListDataBundleApi
+
 export interface SoporteTiListResponse {
   success: boolean
-  data: SoporteTiSolicitudApi[]
+  data: SoporteTiListResponseData
+  /** @deprecated Preferir `resumen` o `totales` alineado al resto de APIs */
+  stats?: SoporteTiListStatsApi
+  /** Métricas para las cards del header (clave recomendada) */
+  resumen?: SoporteTiListStatsApi
+  totales?: SoporteTiListStatsApi
   message?: string
 }
 

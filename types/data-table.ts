@@ -32,6 +32,12 @@ export interface Header {
   value: string
   icon?: string
 }
+export interface DataTableKanbanColumn {
+  /** Valor del campo en la fila (p. ej. `estadoCodigo`) */
+  key: string
+  label: string
+}
+
 export interface DataTableProps {
   // Basic props
   title?: string|null
@@ -98,6 +104,17 @@ export interface DataTableProps {
 
   // Table Meta
   tableMeta?: Record<string, any>
+
+  /** Vista Kanban opcional (desactivada por defecto en el resto de módulos) */
+  showKanban?: boolean
+  /** Columnas del tablero; cada `key` debe coincidir con el valor de `kanbanGroupField` en la fila */
+  kanbanColumns?: DataTableKanbanColumn[]
+  /** Campo de la fila por el que agrupar (p. ej. `estadoCodigo`) */
+  kanbanGroupField?: string
+  /** Campo a mostrar en la tarjeta si no hay slot `kanban-card` */
+  kanbanTitleField?: string
+  /** Campo único estable para `:key` en listas */
+  kanbanRowKeyField?: string
 }
 
 export interface DataTableEmits {
@@ -112,6 +129,8 @@ export interface DataTableEmits {
   'page-change': [page: number]
   'items-per-page-change': [limit: number]
   'retry': []
+  /** Fila seleccionada (tabla vía prop `onRowClick` o tarjeta Kanban) */
+  'row-click': [row: Record<string, unknown>]
 } 
 export interface HeaderResponse {
   data: Header[] | Record<string, Header>

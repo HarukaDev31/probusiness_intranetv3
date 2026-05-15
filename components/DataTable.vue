@@ -13,7 +13,8 @@
           </template>
         </PageHeader>
 
-        <!-- Headers: show below title and above search/actions -->
+        <!-- Headers (showHeaders): desactivados temporalmente -->
+        <!--
         <div v-if="showHeaders" class="bg-transparent border-b border-gray-200 dark:border-gray-700 w-full lg:mt-0 block lg:hidden">
           <div class="overflow-visible">
             <div class="flex flex-wrap items-center md:gap-3 justify-center">
@@ -27,6 +28,7 @@
             </div>
           </div>
         </div>
+        -->
 
         <!-- Search and Actions -->
         <div class="flex lg:flex-row items-center lg:items-center gap-1 md:gap-3 w-full lg:w-auto">
@@ -43,7 +45,7 @@
           </div>
 
           <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
-            class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
+            class="h-8 md:h-11 font-normal bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
             @click="handleExport" />
             <div class="flex items-center md:gap-2 relative md:w-full lg:w-auto">
               <div ref="filtersButtonRef" class="w-auto lg:w-auto">
@@ -53,7 +55,7 @@
                   :title="translations.filters"
                   icon="i-heroicons-funnel"
 
-                  class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
+                  class="h-8 md:h-11 font-normal bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
                   :class="isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto'"
                   @click="showFiltersPanel = !showFiltersPanel" />
               </div>
@@ -61,7 +63,7 @@
               <!-- Desktop: keep inline absolute panel to preserve original behavior on large screens -->
               <div v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && !isMobile"
                 ref="filtersPanelRef"
-                class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
+                class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
                 @click.stop>
                 <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
                   <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -116,10 +118,10 @@
               <!-- Mobile: teleport the filters panel to body to avoid clipping; only active when isMobile === true -->
               <teleport to="body" v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && isMobile">
                 <!-- Overlay: usando utilidades Tailwind para color y backdrop; mantenemos la clase antigua para compatibilidad -->
-                <div class="filters-overlay fixed inset-0 bg-black/40 backdrop-blur-sm z-[990]" @click="showFiltersPanel = false"></div>
+                <div class="filters-overlay fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[990]" @click="showFiltersPanel = false"></div>
 
                 <!-- Panel móvil: utilidades Tailwind para fondo, dark-mode, tamaño y scroll; mantenemos la clase antigua para reglas legacy -->
-                <div ref="filtersPanelRef" class="filters-panel-mobile fixed left-4 right-4 top-[12vh] max-h-[calc(100vh-16vh)] mx-auto z-[1000] bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-lg overflow-y-auto p-3" @click.stop>
+                <div ref="filtersPanelRef" class="filters-panel-mobile fixed left-4 right-4 top-[12vh] max-h-[calc(100vh-16vh)] mx-auto z-[1000] bg-gray-100 text-gray-800 dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-lg overflow-y-auto p-3" @click.stop>
                   <!-- Nota: este panel usa utilidades Tailwind (bg / dark:bg / z-index / spacing) para asegurar comportamiento claro/oscuro -->
                   <div class="sticky top-0 bg-transparent pb-2 mb-2 z-10 flex items-center justify-between">
                     <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ translations.filters }}</div>
@@ -191,7 +193,7 @@
     </div>
     </template>
 
-      <!-- Desktop headers (only on lg and up) - keep original placement for PC layout -->
+      <!-- Desktop headers: desactivados temporalmente
       <div v-if="showHeaders" class="hidden lg:block bg-transparent border-b border-gray-200 dark:border-gray-700">
         <div class="px-4 lg:px-6 py-3">
           <div class="flex flex-wrap items-center gap-3">
@@ -205,6 +207,7 @@
           </div>
         </div>
       </div>
+      -->
 
       <!-- Body Top Slot (compact on mobile) -->
       <div class="flex flex-col sm:flex-row justify-center md:justify-between px-0 py-0 md:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
@@ -212,8 +215,129 @@
       </div>
     </div>
 
+    <!-- Toolbar: Tabla / Kanban (solo módulos que activen `showKanban`) -->
+    <div
+      v-if="showKanban"
+      class="flex justify-end border-b border-gray-200 bg-[#f0f4f9] px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <div class="inline-flex rounded-lg bg-slate-200/90 p-0.5 dark:bg-slate-800">
+        <button
+          type="button"
+          class="rounded-md px-3 py-1.5 text-xs font-medium transition"
+          :class="
+            listViewMode === 'table'
+              ? 'bg-gray-100 text-gray-800 shadow-sm dark:bg-gray-600 dark:text-gray-100'
+              : 'text-gray-500 dark:text-gray-400'
+          "
+          @click="listViewMode = 'table'"
+        >
+          Tabla
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-3 py-1.5 text-xs font-medium transition"
+          :class="
+            listViewMode === 'kanban'
+              ? 'bg-gray-100 text-gray-800 shadow-sm dark:bg-gray-600 dark:text-gray-100'
+              : 'text-gray-500 dark:text-gray-400'
+          "
+          @click="listViewMode = 'kanban'"
+        >
+          Kanban
+        </button>
+      </div>
+    </div>
+
+    <!-- Kanban: buckets precalculados en un solo recorrido O(n) -->
+    <div
+      v-if="showKanban && listViewMode === 'kanban'"
+      ref="tableWrapperRef"
+      class="table-scroll-container relative border-t border-gray-100 dark:border-gray-800"
+      style="height: calc(100vh - 250px); max-height: calc(100vh - 250px); min-height: 280px;"
+    >
+      <div
+        v-if="isTableLoading"
+        class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/75 dark:bg-gray-900/75"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <UIcon name="i-heroicons-arrow-path" class="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
+        <span class="ml-2 text-sm text-gray-700 dark:text-gray-200">{{ translations.loading }}</span>
+      </div>
+      <div class="flex h-full min-h-[260px] gap-3 overflow-x-auto p-4">
+        <div
+          v-for="col in kanbanBuckets.cols"
+          :key="col.key"
+          class="flex w-52 shrink-0 flex-col rounded-xl border border-gray-200 bg-gray-50/90 dark:border-gray-700 dark:bg-gray-900/50"
+        >
+          <div
+            class="flex items-center justify-between border-b border-gray-200 px-2 py-2 dark:border-gray-700"
+          >
+            <span
+              class="text-[11px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300"
+            >
+              {{ col.label }}
+            </span>
+            <span class="text-[10px] font-medium text-gray-400">
+              {{ kanbanBuckets.buckets[col.key]?.length ?? 0 }}
+            </span>
+          </div>
+          <div class="flex max-h-[calc(100vh-320px)] flex-1 flex-col gap-2 overflow-y-auto p-2">
+            <button
+              v-for="(row, ridx) in kanbanBuckets.buckets[col.key]"
+              :key="kanbanRowKey(row as Record<string, unknown>, ridx)"
+              type="button"
+              class="w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-100 p-2.5 text-left transition hover:border-blue-400 hover:shadow-sm dark:border-gray-600 dark:bg-gray-800"
+              @click="onKanbanCardClick(row as Record<string, unknown>)"
+            >
+              <slot name="kanban-card" :row="row" :column="col">
+                <p class="text-[11px] font-medium leading-snug text-gray-800 dark:text-gray-100">
+                  {{ (row as Record<string, unknown>)?.[kanbanTitleField] ?? '—' }}
+                </p>
+              </slot>
+            </button>
+          </div>
+        </div>
+        <div
+          v-if="kanbanBuckets.otros.length"
+          class="flex w-52 shrink-0 flex-col rounded-xl border border-amber-200 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/40"
+        >
+          <div class="flex items-center justify-between border-b border-amber-200 px-2 py-2 dark:border-amber-900">
+            <span class="text-[11px] font-semibold text-amber-900 dark:text-amber-200">Otros</span>
+            <span class="text-[10px] font-medium text-amber-700 dark:text-amber-300">
+              {{ kanbanBuckets.otros.length }}
+            </span>
+          </div>
+          <div class="flex max-h-[calc(100vh-320px)] flex-1 flex-col gap-2 overflow-y-auto p-2">
+            <button
+              v-for="(row, ridx) in kanbanBuckets.otros"
+              :key="kanbanRowKey(row as Record<string, unknown>, ridx)"
+              type="button"
+              class="w-full cursor-pointer rounded-lg border border-amber-200 bg-gray-100 p-2.5 text-left transition hover:border-amber-400 dark:border-amber-900 dark:bg-gray-800"
+              @click="onKanbanCardClick(row as Record<string, unknown>)"
+            >
+              <slot
+                name="kanban-card"
+                :row="row"
+                :column="{ key: '__otros__', label: 'Otros' }"
+              >
+                <p class="text-[11px] font-medium text-gray-800 dark:text-gray-100">
+                  {{ (row as Record<string, unknown>)?.[kanbanTitleField] ?? '—' }}
+                </p>
+              </slot>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Table Section (sin overflow-hidden en el wrapper para que position:sticky del thead funcione) -->
-    <div class="relative" ref="tableWrapperRef" style="width: 100%;">
+    <div
+      v-else
+      class="relative"
+      ref="tableWrapperRef"
+      style="width: 100%;"
+    >
       <!-- Sombra izquierda -->
       <div 
         v-if="showLeftIndicator"
@@ -233,21 +357,21 @@
         @mouseleave="onTableMouseLeave"
         @scroll="onTableScroll"
       >
-        <UTable ref="utableRef" :data="filteredData" sticky :columns="columns" :loading="loading"
+        <UTable ref="utableRef" :data="filteredData" sticky :columns="columns" :loading="isTableLoading"
           :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
           :ui="Object.keys(tableMeta).length>0?{
             // Importante: quitar overflow del root interno de UTable.
             // Si el root tiene overflow-* pero el scroll real ocurre en .table-scroll-container, sticky no se activa.
             root: 'relative overflow-visible',
             th: 'sticky top-0 z-30 font-normal text-xs lg:text-sm px-2 py-1 md:px-4 md:py-3.5 bg-[#f0f4f9] dark:bg-gray-900',
-            thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)]',
+            thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 border-b border-slate-300/50 dark:border-slate-600/50',
           }:{
             root: 'relative overflow-visible',
             base: 'min-w-full',
             tbody: 'border-separate border-spacing-y-6',
-            td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
+            td: 'bg-gray-100 dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
             th: 'sticky top-0 z-30 font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5 bg-[#f0f4f9] dark:bg-gray-900',
-            thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.06)]',
+            thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 border-b border-slate-300/50 dark:border-slate-600/50',
             tr: 'border-[#f0f4f9] dark:border-gray-900',
           }"
           >
@@ -276,7 +400,7 @@
         <template #empty>
           <div class="text-center py-8">
             <UIcon name="i-heroicons-inbox" class="mx-auto h-12 w-12 text-gray-400" />
-            <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ translations.emptyTitle }}</h3>
+            <h3 class="mt-2 text-sm font-semibold text-gray-800 dark:text-gray-100">{{ translations.emptyTitle }}</h3>
             <p class="mt-1 text-sm text-gray-500">
               {{ translations.emptyMessage || emptyStateMessage }}
             </p>
@@ -291,8 +415,10 @@
     </div>
 
     <!-- Sticky Bottom Section - Pagination -->
-    <div v-if="showBottomSection"
-      class="md:sticky bottom-0 z-39 bg-[#f0f4f9] dark:bg-gray-900">
+    <div
+      v-if="showBottomSection && (!showKanban || listViewMode === 'table')"
+      class="md:sticky bottom-0 z-39 bg-[#f0f4f9] dark:bg-gray-900"
+    >
       <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
           {{ translations.showing }} {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} {{translations.a}} {{ Math.min((currentPage || 1) *
@@ -335,10 +461,20 @@ import { useIsDesktop } from '~/composables/useResponsive'
 const { isDesktop } = useIsDesktop()
 
 // Props
-const props = withDefaults(defineProps<DataTableProps>(), DATA_TABLE_DEFAULTS)
+const props = withDefaults(defineProps<DataTableProps>(), {
+  ...DATA_TABLE_DEFAULTS,
+  showKanban: false,
+  kanbanGroupField: 'estadoCodigo',
+  kanbanColumns: () => [],
+  kanbanTitleField: 'titulo',
+  kanbanRowKeyField: 'codigo'
+})
+
+/** Evita ambigüedad con otros `loading` en plantilla; fuerza booleano para UTable */
+const isTableLoading = computed(() => Boolean(props.loading))
 
 // Emits
-const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change'] )
+const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change', 'row-click'] )
 
 // Computed writable para v-model:page
 const currentPageModel = computed({
@@ -399,6 +535,50 @@ const {
   onItemsPerPageChange,
   filtersValue
 } = useDataTable(props, emit)
+
+/** Tabla vs Kanban (solo si `showKanban`) */
+const listViewMode = ref<'table' | 'kanban'>('table')
+
+/** El bloque DOM de la tabla (y `tableContainerRef`) solo existe cuando esto es true */
+const tableViewActive = computed(() => !props.showKanban || listViewMode.value === 'table')
+
+/**
+ * Kanban: una pasada O(n) sobre `filteredData`.
+ * Lista fija `kanbanColumns` evita recomputar únicos por render y mantiene orden estable.
+ */
+const kanbanBuckets = computed(() => {
+  const cols = props.kanbanColumns ?? []
+  const field = props.kanbanGroupField ?? 'estadoCodigo'
+  const rows = filteredData.value ?? []
+  const buckets: Record<string, unknown[]> = {}
+  const otros: unknown[] = []
+  for (const c of cols) {
+    buckets[c.key] = []
+  }
+  for (const row of rows) {
+    const raw = row?.[field]
+    const k = raw != null ? String(raw) : ''
+    if (Object.prototype.hasOwnProperty.call(buckets, k)) {
+      buckets[k].push(row)
+    } else {
+      otros.push(row)
+    }
+  }
+  return { buckets, otros, cols }
+})
+
+function kanbanRowKey(row: Record<string, unknown>, idx: number) {
+  const f = props.kanbanRowKeyField ?? 'codigo'
+  const v = row?.[f]
+  if (v != null && String(v) !== '') {
+    return String(v)
+  }
+  return `kanban-${idx}`
+}
+
+function onKanbanCardClick(row: Record<string, unknown>) {
+  emit('row-click', row)
+}
 
 // Helpers para filtros de fecha con UCalendar (string <-> CalendarDate)
 function filterValueToCalendarDate (value: string | undefined): CalendarDate | null {
@@ -811,6 +991,11 @@ const updateNarrowness = () => {
       const container = tableContainerRef.value
       if (!container) {
         isTableNarrow.value = false
+        try {
+          setContentNarrow(false)
+        } catch {
+          /* noop */
+        }
         return
       }
       
@@ -840,7 +1025,7 @@ const uiForTable = computed(() => ({
   root: 'relative overflow-visible',
   base: isTableNarrow.value ? 'min-w-[80%]' : 'min-w-full',
   tbody: 'border-separate border-spacing-y-6',
-  td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
+  td: 'bg-gray-100 dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
   th: 'font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5',
   // Nuxt UI aplica automáticamente: thead: 'sticky top-0 inset-x-0 bg-default/75 z-[1] backdrop-blur'
   // Make the thead have a thicker bottom border colored like the header background
@@ -848,49 +1033,72 @@ const uiForTable = computed(() => ({
   tr: 'border-[#f0f4f9] dark:border-gray-900',
 }))
 
+// Al pasar a Kanban el nodo `.table-scroll-container` se destruye; el ResizeObserver debe enlazarse de nuevo
+// o `isTableNarrow` / `utable-narrow` no se recalculan y la tabla pierde el centrado.
+let tableResizeObserver: ResizeObserver | null = null
+
+function bindTableResizeObserver() {
+  if (typeof ResizeObserver === 'undefined') {
+    return
+  }
+  tableResizeObserver?.disconnect()
+  tableResizeObserver = null
+  const el = tableContainerRef.value
+  if (!el) {
+    return
+  }
+  tableResizeObserver = new ResizeObserver(() => {
+    updateNarrowness()
+    nextTick(() => updateScrollIndicators())
+    isMobileForScroll.value = window.innerWidth <= 768
+  })
+  tableResizeObserver.observe(el)
+}
+
+function syncTableViewLayout() {
+  nextTick(() => {
+    if (tableViewActive.value) {
+      bindTableResizeObserver()
+      updateNarrowness()
+      if (tableContainerRef.value) {
+        tableContainerRef.value.scrollLeft = 0
+        tableContainerRef.value.scrollTop = 0
+      }
+      nextTick(() => updateScrollIndicators())
+    } else {
+      tableResizeObserver?.disconnect()
+      tableResizeObserver = null
+      isTableNarrow.value = false
+      try {
+        setContentNarrow(false)
+      } catch {
+        /* noop */
+      }
+    }
+  })
+}
+
+watch(tableViewActive, syncTableViewLayout, { flush: 'post' })
+
 
 onMounted(() => {
-  // Inicializar detección de mobile para auto-scroll
   isMobileForScroll.value = window.innerWidth <= 768
-  
-  // Observar cambios de tamaño para actualizar narrowness
-  if (tableContainerRef.value) {
-    const resizeObserver = new ResizeObserver(() => {
-      updateNarrowness()
-      nextTick(() => updateScrollIndicators())
-      // Actualizar detección de mobile
-      isMobileForScroll.value = window.innerWidth <= 768
-    })
-    resizeObserver.observe(tableContainerRef.value)
-
-    // compute initial narrowness and scroll indicators after render
-    nextTick(() => {
-      updateScrollIndicators()
-      updateNarrowness()
-      if (tableContainerRef.value) tableContainerRef.value.scrollLeft = 0
-    })
-
-    // Re-run after CSS transitions settle (sidebar animation ~300ms)
-    setTimeout(() => {
-      updateNarrowness()
-      updateScrollIndicators()
-      if (tableContainerRef.value) tableContainerRef.value.scrollLeft = 0
-    }, 350)
-
-    // keep narrowness updated on window resize too
-    window.addEventListener('resize', updateNarrowness, { passive: true })
-
-    onUnmounted(() => {
-      resizeObserver.disconnect()
-      window.removeEventListener('resize', updateNarrowness)
-    })
-  }
+  window.addEventListener('resize', updateNarrowness, { passive: true })
+  syncTableViewLayout()
+  setTimeout(() => {
+    syncTableViewLayout()
+  }, 350)
 })
 
 onUnmounted(() => {
-  // reset global page narrow state when component unmounts
-  try { setContentNarrow(false) } catch (e) {}
-  // Limpiar auto-scroll
+  tableResizeObserver?.disconnect()
+  tableResizeObserver = null
+  window.removeEventListener('resize', updateNarrowness)
+  try {
+    setContentNarrow(false)
+  } catch (e) {
+    /* noop */
+  }
   stopAutoScroll()
 })
 
@@ -1005,7 +1213,7 @@ onUnmounted(() => {
   height: 6px;
 }
 .headers-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.12);
+  background: rgb(148 163 184 / 0.45);
   border-radius: 9999px;
 }
 /* hide native scrollbar for non-webkit while keeping scroll functionality */
@@ -1191,7 +1399,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   .dark .filters-panel-mobile {
     background: #0f1724; /* deep dark to match app dark background */
     color: #e6eef8;
-    border: 1px solid rgba(255,255,255,0.04);
+    border: 1px solid rgb(148 163 184 / 0.12);
     box-shadow: 0 10px 30px rgba(2,6,23,0.6);
   }
 
@@ -1209,7 +1417,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   .dark .filters-panel-mobile .combobox-content {
     background: #0b1220 !important;
     color: #e6eef8 !important;
-    border-color: rgba(255,255,255,0.06) !important;
+    border-color: rgb(148 163 184 / 0.18) !important;
   }
 
   .filters-panel .mt-2 { margin-top: 0.35rem !important; }
@@ -1279,7 +1487,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 .filters-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgb(15 23 42 / 0.45);
   z-index: auto; /* lowered so selects/portals with higher z-index can appear above */
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
@@ -1294,7 +1502,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   max-height: calc(100vh - 16vh);
   margin: 0 auto;
   z-index: auto; /* lowered from 1050 to avoid overlapping select portals */
-  background: #ffffff;
+  background: #f3f4f6;
   border-radius: 0.75rem;
   box-shadow: 0 12px 40px rgba(2,6,23,0.12);
   overflow-y: auto;
@@ -1407,7 +1615,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   top: 0 !important;
   z-index: 30;
   background: #f0f4f9;
-  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 0 0 rgb(148 163 184 / 0.25);
 }
 
 .table-scroll-container table thead th {
@@ -1419,7 +1627,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 
 .dark .table-scroll-container table thead {
   background: #111827;
-  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 0 0 rgb(148 163 184 / 0.2);
 }
 
 .dark .table-scroll-container table thead th {

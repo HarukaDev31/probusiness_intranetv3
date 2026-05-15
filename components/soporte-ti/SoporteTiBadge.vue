@@ -24,6 +24,7 @@ const MAPA: Record<string, string> = {
   B1: 'bg-red-50 text-red-700 border-red-200',
   B2: 'bg-amber-50 text-amber-700 border-amber-200',
   Alta: 'bg-red-50 text-red-700 border-red-200',
+  Máxima: 'bg-rose-50 text-rose-800 border-rose-200',
   Media: 'bg-amber-50 text-amber-700 border-amber-200',
   Baja: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   Crítica: 'bg-pink-50 text-pink-700 border-pink-200',

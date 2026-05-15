@@ -1,61 +1,65 @@
 <template>
-  <div class="flex-1 overflow-y-auto p-5">
-    <button
-      type="button"
-      class="mb-3 flex items-center gap-1 text-[12px] text-blue-600 hover:text-blue-800"
-      @click="emit('back')"
-    >
-      <UIcon name="i-heroicons-chevron-left" class="size-3.5" />
-      Volver al listado
-    </button>
-
+  <div class="w-full max-w-full">
     <div class="flex flex-col gap-5 lg:flex-row">
-      <div class="min-w-0 flex-1">
-        <div class="mb-4 rounded-xl border border-slate-200 bg-white p-5">
-          <h1 class="mb-2 text-[17px] font-semibold text-slate-800">{{ ticket.titulo }}</h1>
+      <div class="min-w-0 flex-1 space-y-5">
+        <UCard>
           <div class="mb-4 flex flex-wrap items-center gap-1.5">
-            <SoporteTiBadge :etiqueta="ticket.estado" />
-            <SoporteTiBadge :etiqueta="ticket.tipo === 'A' ? 'A' : (ticket.subtipoB || 'B')" />
-            <SoporteTiBadge :etiqueta="ticket.criticidad" />
-            <span class="ml-2 flex items-center gap-1 text-[11px] text-slate-400">
+            <UBadge :color="badgeColorEstado(ticket.estadoCodigo)" variant="subtle">
+              {{ ticket.estado }}
+            </UBadge>
+            <UBadge :color="badgeColorTipo" variant="subtle">
+              {{ ticket.tipo === 'A' ? 'A' : ticket.subtipoB || 'B' }}
+            </UBadge>
+            <UBadge :color="badgeColorComplejidad(ticket.criticidad)" variant="subtle">
+              {{ etiquetaComplejidadBadge }}
+            </UBadge>
+            <span class="ml-2 flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
               <UIcon name="i-heroicons-calendar-days" class="size-3" />
               {{ ticket.fechaRegistro }}
             </span>
-            <span class="flex items-center gap-1 text-[11px] text-slate-400">
+            <span class="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
               <UIcon name="i-heroicons-clock" class="size-3" />
               Últ: {{ ticket.ultimaActualizacion }}
             </span>
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <dl class="grid grid-cols-2 gap-3">
             <div>
-              <p class="mb-0.5 text-[10px] text-slate-400">Código</p>
-              <p class="font-mono text-[12px] font-medium text-slate-700">{{ ticket.codigo }}</p>
+              <dt class="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Código</dt>
+              <dd class="font-mono text-xs font-medium text-gray-900 dark:text-gray-100">{{ ticket.codigo }}</dd>
             </div>
             <div>
-              <p class="mb-0.5 text-[10px] text-slate-400">Área</p>
-              <p class="text-[12px] font-medium text-slate-700">{{ ticket.area }}</p>
+              <dt class="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Área</dt>
+              <dd class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ ticket.area }}</dd>
             </div>
             <div>
-              <p class="mb-0.5 text-[10px] text-slate-400">Solicitante</p>
-              <p class="text-[12px] font-medium text-slate-700">{{ ticket.solicitante }}</p>
+              <dt class="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Solicitante</dt>
+              <dd class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ ticket.solicitante }}</dd>
             </div>
             <div v-if="ticket.pm">
-              <p class="mb-0.5 text-[10px] text-slate-400">PM</p>
-              <p class="text-[12px] font-medium text-slate-700">{{ ticket.pm }}</p>
+              <dt class="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">PM</dt>
+              <dd class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ ticket.pm }}</dd>
             </div>
             <div>
-              <p class="mb-0.5 text-[10px] text-slate-400">Analista</p>
-              <p class="text-[12px] font-medium text-slate-700">{{ ticket.analista || 'Por asignar' }}</p>
+              <dt class="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Analista</dt>
+              <dd class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ ticket.analista || 'Por asignar' }}</dd>
+            </div>
+            <div>
+              <dt class="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Complejidad</dt>
+              <dd class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ ticket.criticidad }}</dd>
+            </div>
+            <div>
+              <dt class="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Estado</dt>
+              <dd class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ ticket.estado }}</dd>
             </div>
             <div v-if="ticket.fechaFinEstimado">
-              <p class="mb-0.5 text-[10px] text-slate-400">Fin estimado</p>
-              <p class="text-[12px] font-medium text-slate-700">{{ ticket.fechaFinEstimado }}</p>
+              <dt class="mb-0.5 text-[10px] text-gray-500 dark:text-gray-400">Fin estimado</dt>
+              <dd class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ ticket.fechaFinEstimado }}</dd>
             </div>
-          </div>
-        </div>
+          </dl>
+        </UCard>
 
-        <div v-if="ticket.tipo === 'A'" class="mb-4 rounded-xl border border-slate-200 bg-white p-5">
-          <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        <UCard v-if="ticket.tipo === 'A'">
+          <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
             Fases del proyecto
           </p>
           <div class="mb-4 flex">
@@ -68,14 +72,16 @@
               {{ prefijoFase(i) }}{{ f }}
             </div>
           </div>
-          <div class="rounded-lg border border-blue-200 bg-blue-50 p-3">
-            <p class="mb-0.5 text-[10px] font-semibold text-blue-700">Fase actual</p>
-            <p class="text-[13px] font-semibold text-slate-800">{{ faseActualNombre }}</p>
-            <p v-if="ticket.fechaFinEstimado" class="mt-0.5 text-[11px] text-slate-500">
+          <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
+            <p class="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Fase actual
+            </p>
+            <p class="text-[13px] font-semibold text-gray-900 dark:text-gray-100">{{ faseActualNombre }}</p>
+            <p v-if="ticket.fechaFinEstimado" class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
               Fin estimado: {{ ticket.fechaFinEstimado }}
             </p>
           </div>
-        </div>
+        </UCard>
 
         <SoporteTiMaquetaPreview
           v-if="ticket.tipo === 'A' && ticket.maqueta"
@@ -85,15 +91,75 @@
           @reject="rechazarMaqueta"
         />
 
-        <div class="mb-4 rounded-xl border border-slate-200 bg-white p-5">
-          <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">SLA</p>
-          <SoporteTiSlaBar :sla="ticket.slaHoras" :transcurridas="ticket.horasTranscurridas" />
-          <div class="mt-2 flex gap-3 text-[10px] text-slate-400">
-            <span class="text-green-600">● &lt; 75%</span>
-            <span class="text-amber-600">● 75–100%</span>
-            <span class="text-red-600">● &gt; 100%</span>
+        <UCard v-if="rolActivo === 'Analista'">
+          <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            Gestión del analista
+          </p>
+          <div class="space-y-4">
+            <div
+              class="grid w-full min-w-0 max-w-md grid-cols-2 gap-3"
+              @click.stop
+              @pointerdown.stop
+            >
+              <div class="min-w-0 space-y-1">
+                <span
+                  class="block text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                >
+                  Complejidad
+                </span>
+                <USelect
+                  :model-value="valorComplejidadAnalistaSelect"
+                  :items="itemsComplejidadAnalistaLista"
+                  value-key="value"
+                  label-key="label"
+                  size="sm"
+                  class="w-full min-w-0"
+                  placeholder="Definir"
+                  @update:model-value="void onCambioComplejidadAnalista($event)"
+                />
+              </div>
+              <div class="min-w-0 space-y-1">
+                <span
+                  class="block text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                >
+                  Estado
+                </span>
+                <p
+                  v-if="!estadoAnalistaHabilitado"
+                  class="text-[10px] leading-tight text-amber-600 dark:text-amber-400"
+                >
+                  Define complejidad primero.
+                </p>
+                <USelect
+                  :model-value="ticket.estadoCodigo"
+                  :items="itemsEstadoAnalistaLista"
+                  :disabled="!estadoAnalistaHabilitado"
+                  value-key="value"
+                  label-key="label"
+                  size="sm"
+                  class="w-full min-w-0"
+                  :title="!estadoAnalistaHabilitado ? 'Define primero la complejidad' : undefined"
+                  placeholder="Estado"
+                  @update:model-value="void onCambioEstadoAnalista($event)"
+                />
+              </div>
+            </div>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400">
+              Primero asigna la <strong>complejidad</strong> (Baja, Media, Alta o Máxima); con eso se habilita el
+              <strong>estado</strong>. Para pasar a <strong>En progreso</strong> aplican las reglas del flujo; en tipo A con maqueta, esta debe estar aprobada.
+            </p>
           </div>
-        </div>
+        </UCard>
+
+        <UCard v-if="mostrarBloqueSla">
+          <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">SLA</p>
+          <SoporteTiSlaBar :sla="ticket.slaHoras" :transcurridas="ticket.horasTranscurridas" />
+          <div class="mt-2 flex flex-wrap gap-3 text-[10px] text-gray-500 dark:text-gray-400">
+            <span class="text-green-600 dark:text-green-400">&lt; 75%</span>
+            <span class="text-amber-600 dark:text-amber-400">75–100%</span>
+            <span class="text-red-600 dark:text-red-400">&gt; 100%</span>
+          </div>
+        </UCard>
       </div>
 
       <div class="w-full shrink-0 space-y-3 lg:w-[280px]">
@@ -102,21 +168,22 @@
           @upload="onMaquetaUpload"
         />
 
-        <div v-if="acciones.length" class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Acciones</p>
+        <UCard v-if="acciones.length">
+          <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Acciones</p>
           <div class="flex flex-col gap-2">
-            <button
+            <UButton
               v-for="a in acciones"
               :key="a.key"
-              type="button"
-              class="w-full rounded-lg border py-2 text-[12px] font-medium transition"
-              :class="a.clase"
-              @click="ejecutarAccion(a.key)"
+              block
+              size="sm"
+              :color="a.color"
+              :variant="a.variant"
+              @click="void ejecutarAccion(a.key)"
             >
               {{ a.label }}
-            </button>
+            </UButton>
           </div>
-        </div>
+        </UCard>
 
         <SoporteTiChatPanel
           :codigo-ticket="ticket.codigo"
@@ -136,22 +203,28 @@
 <script setup lang="ts">
 import { computed, onUnmounted, watch } from 'vue'
 import { SOPORTE_TI_FASES_A } from '~/constants/soporteTi'
-import { estadoPorCodigo } from '~/constants/soporteTiEstados'
+import { estadoPorCodigo, SOPORTE_TI_ESTADOS } from '~/constants/soporteTiEstados'
 import type { SoporteTiRol } from '~/constants/soporteTi'
 import type { SoporteTiMaqueta, SoporteTiSolicitud } from '~/types/soporteTi'
 import { useSoporteTi } from '~/composables/useSoporteTi'
 import { useSoporteTiChatRoom } from '~/composables/useSoporteTiChatRoom'
-import SoporteTiBadge from '~/components/soporte-ti/SoporteTiBadge.vue'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import {
+  SOPORTE_TI_COMPLEJIDADES,
+  esComplejidadDefinida,
+  esComplejidadCatalogo,
+  puedePasarAEnProgreso
+} from '~/utils/soporteTiCriticidad'
+import { aplicarCambioEstadoEnSolicitud } from '~/utils/soporteTiEstadoTransition'
 import SoporteTiSlaBar from '~/components/soporte-ti/SoporteTiSlaBar.vue'
 import SoporteTiMaquetaPreview from '~/components/soporte-ti/SoporteTiMaquetaPreview.vue'
 import SoporteTiUploadPanel from '~/components/soporte-ti/SoporteTiUploadPanel.vue'
 import SoporteTiChatPanel from '~/components/soporte-ti/SoporteTiChatPanel.vue'
 
-const props = defineProps<{ ticket: SoporteTiSolicitud }>()
+type BadgeColor = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'
 
-const emit = defineEmits<{
-  back: []
-}>()
+const props = defineProps<{ ticket: SoporteTiSolicitud }>()
 
 const {
   rolActivo,
@@ -167,6 +240,36 @@ const {
 } = useSoporteTi()
 
 const { setSalaActiva } = useSoporteTiChatRoom()
+const { showError, showSuccess } = useModal()
+const { withSpinner } = useSpinner()
+
+const itemsComplejidadAnalistaLista = SOPORTE_TI_COMPLEJIDADES.map((c) => ({
+  label: c,
+  value: c
+}))
+
+const itemsEstadoAnalistaLista = computed(() =>
+  SOPORTE_TI_ESTADOS.filter(
+    (e) =>
+      e.codigo !== 'operativo' &&
+      (e.tipoSolicitud === null || e.tipoSolicitud === props.ticket.tipo)
+  ).map((e) => ({ label: e.nombre, value: e.codigo }))
+)
+
+const estadoAnalistaHabilitado = computed(() => esComplejidadCatalogo(props.ticket.criticidad))
+
+const valorComplejidadAnalistaSelect = computed(() => {
+  const c = props.ticket.criticidad
+  return esComplejidadCatalogo(c) ? c : undefined
+})
+
+const mostrarBloqueSla = computed(() => {
+  if (rolActivo.value === 'Solicitante') return false
+  if (!esComplejidadDefinida(props.ticket.criticidad)) return false
+  return esComplejidadCatalogo(props.ticket.criticidad)
+})
+
+const etiquetaComplejidadBadge = computed(() => props.ticket.criticidad)
 
 watch(
   () => props.ticket.chatUuid,
@@ -184,7 +287,6 @@ onUnmounted(() => {
 
 const fasesA = SOPORTE_TI_FASES_A
 
-/** Clave de acción → código en `soporte_ti_estados` */
 const MAPA_ACCION_ESTADO_CODIGO: Record<string, string> = {
   en_maqueta: 'en_maqueta',
   en_progreso: 'en_progreso',
@@ -192,6 +294,52 @@ const MAPA_ACCION_ESTADO_CODIGO: Record<string, string> = {
   desplegado: 'desplegado',
   operativo: 'operativo',
   observado: 'observado'
+}
+
+type AccionKey =
+  | 'en_maqueta'
+  | 'en_progreso'
+  | 'hecho'
+  | 'desplegado'
+  | 'operativo'
+  | 'observado'
+
+type AccionDef = {
+  key: AccionKey
+  label: string
+  color: BadgeColor
+  variant: 'solid' | 'outline' | 'soft' | 'subtle' | 'ghost' | 'link'
+}
+
+function badgeColorEstado(codigo: string): BadgeColor {
+  const c = (codigo || '').toLowerCase()
+  const map: Record<string, BadgeColor> = {
+    pendiente: 'neutral',
+    en_maqueta: 'primary',
+    en_progreso: 'primary',
+    hecho: 'success',
+    desplegado: 'warning',
+    operativo: 'success',
+    observado: 'error'
+  }
+  return map[c] ?? 'neutral'
+}
+
+const badgeColorTipo = computed((): BadgeColor => {
+  if (props.ticket.tipo === 'A') return 'primary'
+  const sub = (props.ticket.subtipoB || '').toUpperCase()
+  if (sub === 'B1') return 'error'
+  if (sub === 'B2') return 'warning'
+  return 'neutral'
+})
+
+function badgeColorComplejidad(etiqueta: string): BadgeColor {
+  const e = (etiqueta || '').toLowerCase()
+  if (e.includes('máx') || e.includes('max')) return 'error'
+  if (e.includes('alta') || e.includes('crít') || e.includes('crit')) return 'error'
+  if (e.includes('media')) return 'warning'
+  if (e.includes('baja')) return 'success'
+  return 'neutral'
 }
 
 const mostrarSubidaMaqueta = computed(
@@ -206,9 +354,13 @@ const faseActualNombre = computed(() => fasesA[props.ticket.faseIndex || 0])
 
 function claseFase(i: number) {
   const fi = props.ticket.faseIndex || 0
-  if (i < fi) return 'border-green-500 font-medium text-green-600'
-  if (i === fi) return 'border-blue-500 font-semibold text-blue-700'
-  return 'border-slate-200 text-slate-400'
+  if (i < fi) {
+    return 'border-green-500 font-medium text-green-600 dark:text-green-400'
+  }
+  if (i === fi) {
+    return 'border-primary font-semibold text-primary'
+  }
+  return 'border-gray-200 font-normal text-gray-400 dark:border-gray-600 dark:text-gray-500'
 }
 
 function prefijoFase(i: number) {
@@ -218,88 +370,93 @@ function prefijoFase(i: number) {
   return ''
 }
 
-type AccionKey =
-  | 'en_maqueta'
-  | 'en_progreso'
-  | 'hecho'
-  | 'desplegado'
-  | 'operativo'
-  | 'observado'
-
-const acciones = computed(() => {
-  const t = props.ticket
+const acciones = computed((): AccionDef[] => {
   const rol = rolActivo.value as SoporteTiRol
-  const a: { key: AccionKey; label: string; clase: string }[] = []
+  const t = props.ticket
+  if (rol === 'PM' && t.tipo === 'B') {
+    return []
+  }
+  const a: AccionDef[] = []
   if (rol === 'Solicitante' && t.estadoCodigo === 'desplegado') {
     a.push({
       key: 'operativo',
       label: 'Confirmar Operativo',
-      clase: 'border-green-300 text-green-700 hover:bg-green-50'
+      color: 'success',
+      variant: 'solid'
     })
     a.push({
       key: 'observado',
       label: 'Devolver con observaciones',
-      clase: 'border-red-200 text-red-600 hover:bg-red-50'
+      color: 'error',
+      variant: 'outline'
     })
   }
   if (rol === 'PM' && t.tipo === 'A' && t.estadoCodigo === 'pendiente') {
     a.push({
       key: 'en_maqueta',
       label: 'Pasar a En maqueta',
-      clase: 'border-slate-300 text-slate-700 hover:bg-slate-50'
+      color: 'neutral',
+      variant: 'outline'
     })
   }
   if (rol === 'Analista') {
     if (t.tipo === 'B') {
-      if (t.estadoCodigo === 'pendiente') {
+      if (t.estadoCodigo === 'pendiente' && puedePasarAEnProgreso(t)) {
         a.push({
           key: 'en_progreso',
           label: 'Tomar — En progreso',
-          clase: 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
+          color: 'primary',
+          variant: 'solid'
         })
       }
       if (t.estadoCodigo === 'en_progreso') {
         a.push({
           key: 'hecho',
           label: 'Marcar Hecho',
-          clase: 'border-green-300 text-green-700 hover:bg-green-50'
+          color: 'success',
+          variant: 'outline'
         })
       }
       if (t.estadoCodigo === 'hecho') {
         a.push({
           key: 'desplegado',
           label: 'Marcar Desplegado',
-          clase: 'border-amber-300 text-amber-700 hover:bg-amber-50'
+          color: 'warning',
+          variant: 'outline'
         })
       }
-      if (t.estadoCodigo === 'observado') {
+      if (t.estadoCodigo === 'observado' && puedePasarAEnProgreso(t)) {
         a.push({
           key: 'en_progreso',
           label: 'Retomar En progreso',
-          clase: 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
+          color: 'primary',
+          variant: 'solid'
         })
       }
     }
     if (t.tipo === 'A') {
-      if (t.estadoCodigo === 'en_maqueta' && t.maqueta?.aprobada) {
+      if (t.estadoCodigo === 'en_maqueta' && t.maqueta?.aprobada && puedePasarAEnProgreso(t)) {
         a.push({
           key: 'en_progreso',
           label: 'Pasar a En progreso',
-          clase: 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
+          color: 'primary',
+          variant: 'solid'
         })
       }
       if (t.estadoCodigo === 'en_progreso') {
         a.push({
           key: 'desplegado',
           label: 'Marcar Desplegado',
-          clase: 'border-amber-300 text-amber-700 hover:bg-amber-50'
+          color: 'warning',
+          variant: 'outline'
         })
       }
-      if (t.estadoCodigo === 'observado') {
+      if (t.estadoCodigo === 'observado' && puedePasarAEnProgreso(t)) {
         a.push({
           key: 'en_progreso',
           label: 'Retomar En progreso',
-          clase: 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
+          color: 'primary',
+          variant: 'solid'
         })
       }
     }
@@ -307,9 +464,67 @@ const acciones = computed(() => {
   return a
 })
 
-function ejecutarAccion(key: AccionKey) {
+async function onCambioComplejidadAnalista(val: unknown) {
+  const raw = typeof val === 'string' ? val : String(val ?? '')
+  if (!esComplejidadCatalogo(raw)) return
+  const t = props.ticket
+  if (t.criticidad === raw) return
+  try {
+    await withSpinner(async () => {
+      const res = await actualizarSolicitud({
+        ...t,
+        criticidad: raw,
+        ultimaActualizacion: etiquetaAhora()
+      })
+      if (res.ok === false) throw new Error(res.error)
+    }, 'Actualizando complejidad…')
+    agregarMensajeSistema(t.chatUuid, t.codigo, `Complejidad actualizada a «${raw}».`)
+    showSuccess('Complejidad actualizada', `El ticket ${t.codigo} quedó en «${raw}».`)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'No se pudo actualizar la complejidad.'
+    showError('Error al actualizar complejidad', msg)
+  }
+}
+
+async function onCambioEstadoAnalista(val: unknown) {
+  if (!estadoAnalistaHabilitado.value) return
+  const nuevoCodigo = typeof val === 'string' ? val : String(val ?? '')
+  const t = props.ticket
+  if (!nuevoCodigo || nuevoCodigo === t.estadoCodigo) return
+  if (nuevoCodigo === 'en_progreso' && !puedePasarAEnProgreso(t)) {
+    showError(
+      'No se puede pasar a En progreso',
+      'Revisa la complejidad y el flujo (en tipo A con maqueta, debe estar aprobada).'
+    )
+    return
+  }
+  const actualizada = aplicarCambioEstadoEnSolicitud(t, nuevoCodigo)
+  try {
+    await withSpinner(async () => {
+      const res = await actualizarSolicitud({
+        ...actualizada,
+        ultimaActualizacion: etiquetaAhora()
+      })
+      if (res.ok === false) throw new Error(res.error)
+    }, 'Actualizando estado…')
+    agregarMensajeSistema(t.chatUuid, t.codigo, `Estado actualizado a "${actualizada.estado}" (analista).`)
+    showSuccess('Estado actualizado', `El ticket ${t.codigo} pasó a «${actualizada.estado}».`)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'No se pudo actualizar el estado.'
+    showError('Error al actualizar estado', msg)
+  }
+}
+
+async function ejecutarAccion(key: AccionKey) {
   const t = props.ticket
   const codigoNuevo = MAPA_ACCION_ESTADO_CODIGO[key] ?? t.estadoCodigo
+  if (codigoNuevo === 'en_progreso' && !puedePasarAEnProgreso(t)) {
+    showError(
+      'No se puede pasar a En progreso',
+      'Asigna la complejidad (Baja, Media, Alta o Máxima). En tipo A con maqueta, debe estar aprobada.'
+    )
+    return
+  }
   const def = estadoPorCodigo(codigoNuevo)
   if (!def) return
   let faseIndex = t.faseIndex || 0
@@ -318,20 +533,29 @@ function ejecutarAccion(key: AccionKey) {
     else if (key === 'en_progreso' && faseIndex < 2) faseIndex = 2
   }
   const progreso = key === 'operativo' ? 100 : t.progreso
-  void actualizarSolicitud({
-    ...t,
-    estadoId: def.id,
-    estadoCodigo: def.codigo,
-    estado: def.nombre,
-    faseIndex,
-    progreso,
-    ultimaActualizacion: etiquetaAhora()
-  })
-  agregarMensajeSistema(
-    t.chatUuid,
-    t.codigo,
-    `Estado actualizado a "${def.nombre}" por ${rolActivo.value}.`
-  )
+  try {
+    await withSpinner(async () => {
+      const res = await actualizarSolicitud({
+        ...t,
+        estadoId: def.id,
+        estadoCodigo: def.codigo,
+        estado: def.nombre,
+        faseIndex,
+        progreso,
+        ultimaActualizacion: etiquetaAhora()
+      })
+      if (res.ok === false) throw new Error(res.error)
+    }, 'Actualizando estado…')
+    agregarMensajeSistema(
+      t.chatUuid,
+      t.codigo,
+      `Estado actualizado a "${def.nombre}" por ${rolActivo.value}.`
+    )
+    showSuccess('Estado actualizado', `El ticket ${t.codigo} pasó a «${def.nombre}».`)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'No se pudo actualizar el estado.'
+    showError('Error al actualizar estado', msg)
+  }
 }
 
 function onMaquetaUpload(mq: SoporteTiMaqueta & { dataUrl?: string | null }) {

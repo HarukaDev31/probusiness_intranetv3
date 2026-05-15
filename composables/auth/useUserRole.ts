@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, readonly, type Ref } from 'vue'
 import { ROLES } from '../../constants/roles'
 
 interface UserGroup {

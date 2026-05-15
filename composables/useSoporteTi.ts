@@ -3,12 +3,15 @@ import type { SoporteTiRol } from '~/constants/soporteTi'
 import {
   SOPORTE_TI_DEMO_SOLICITANTE,
   SOPORTE_TI_ROL_META,
-  SOPORTE_TI_ROLES
+  soporteTiInicialesDesdeNombre
 } from '~/constants/soporteTi'
+import { ROLES } from '~/constants/roles'
 import { SoporteTiService } from '~/services/soporteTiService'
 import type {
   SoporteTiCreatePayload,
   SoporteTiEnviarMensajePayload,
+  SoporteTiEvidenciaItem,
+  SoporteTiListFilters,
   SoporteTiMensaje,
   SoporteTiSolicitud,
   SoporteTiMaqueta,
@@ -17,20 +20,29 @@ import type {
 } from '~/types/soporteTi'
 import {
   buildCreateApiBody,
+  buildCreateSolicitudFormData,
   mapMensajeApiToUi,
   mapSolicitudApiToUi,
-  mapSolicitudUiToApiPatch
+  mapSolicitudUiToApiPatch,
+  parseSoporteTiListPayload
 } from '~/utils/soporteTiMappers'
 import { getSoporteTiSeedSolicitudes } from '~/utils/soporteTiSeed'
 import { useSoporteTiChat } from '~/composables/useSoporteTiChat'
 import { generarChatUuid } from '~/utils/soporteTiUuid'
 import { useSoporteTiChatRoom } from '~/composables/useSoporteTiChatRoom'
-import { estadoPorCodigo, estadoPorId, resolverEstado } from '~/constants/soporteTiEstados'
+import { estadoPorId, resolverEstado } from '~/constants/soporteTiEstados'
+import { useUserRole } from '~/composables/auth/useUserRole'
 
 function etiquetaAhora(): string {
   const d = new Date()
   const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
   return `${d.getDate()} ${meses[d.getMonth()]} ${d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}`
+}
+
+function siguienteOrdenEvidencia(ticket: SoporteTiSolicitud): number {
+  const ev = ticket.evidencias
+  if (!ev?.length) return 0
+  return Math.max(...ev.map((e) => e.orden ?? 0)) + 1
 }
 
 function buildReplyPreview(mensajes: SoporteTiMensaje[], replyToId: number) {
@@ -45,47 +57,54 @@ function buildReplyPreview(mensajes: SoporteTiMensaje[], replyToId: number) {
   }
 }
 
+function statsDesdeSolicitudes(list: SoporteTiSolicitud[]) {
+  return {
+    total: list.length,
+    pendientes: list.filter((t) => t.estadoCodigo === 'pendiente').length,
+    enProgreso: list.filter((t) =>
+      ['en_progreso', 'en_maqueta', 'hecho'].includes(t.estadoCodigo)
+    ).length,
+    operativas: list.filter((t) => t.estadoCodigo === 'operativo').length
+  }
+}
+
+
 export function useSoporteTi() {
   const config = useRuntimeConfig()
-  const usarApi = computed(() => config.public.soporteTiUseApi === true)
+  const usarApi = computed(() => config.public.soporteTiUseApi !== false)
+  const { hasRole, userName, currentId } = useUserRole()
   const { publicarDemo } = useSoporteTiChatRoom()
   const {
     mensajesDe,
     metaDe,
     agregarMensaje,
     actualizarMensajeEnSala,
-    resetChats,
     cargarChatInicial,
     cargarMensajesAnteriores,
     initDemoStore
   } = useSoporteTiChat()
 
-  const rolActivo = useState<SoporteTiRol>('soporte-ti-rol', () => 'PM')
+  const rolActivo = computed<SoporteTiRol>(() => {
+    if (hasRole(ROLES.PM)) return 'PM'
+    if (hasRole(ROLES.SOPORTE)) return 'Analista'
+    return 'Solicitante'
+  })
+
+  /** Remitente burbuja (nombre real + color según rol intranet) */
+  function remitenteChatUi() {
+    const r = rolActivo.value
+    const nombre = userName.value || 'Usuario'
+    return {
+      nombre,
+      iniciales: soporteTiInicialesDesdeNombre(nombre),
+      color: SOPORTE_TI_ROL_META[r].color
+    }
+  }
+
   const solicitudes = useState<SoporteTiSolicitud[]>('soporte-ti-solicitudes', () => [])
-  const seleccion = useState<SoporteTiSolicitud | null>('soporte-ti-seleccion', () => null)
-  const loading = useState('soporte-ti-loading', () => false)
   const error = useState<string | null>('soporte-ti-error', () => null)
 
-  const solicitudesVisibles = computed(() => {
-    if (rolActivo.value === 'Solicitante') {
-      return solicitudes.value.filter(
-        (s) => s.solicitante === SOPORTE_TI_DEMO_SOLICITANTE
-      )
-    }
-    return solicitudes.value
-  })
-
-  const stats = computed(() => {
-    const list = solicitudesVisibles.value
-    return {
-      total: list.length,
-      pendientes: list.filter((t) => t.estadoCodigo === 'pendiente').length,
-      enProgreso: list.filter((t) =>
-        ['en_progreso', 'en_maqueta', 'hecho'].includes(t.estadoCodigo)
-      ).length,
-      operativas: list.filter((t) => t.estadoCodigo === 'operativo').length
-    }
-  })
+  const stats = computed(() => statsDesdeSolicitudes(solicitudes.value))
 
   function solicitudPorChatUuid(chatUuid: string) {
     return solicitudes.value.find((s) => s.chatUuid === chatUuid) ?? null
@@ -93,6 +112,86 @@ export function useSoporteTi() {
 
   function solicitudPorCodigo(codigo: string) {
     return solicitudes.value.find((s) => s.codigo === codigo) ?? null
+  }
+
+  /** Resuelve fila por segmento de URL: id numérico, UUID de chat o código ticket */
+  function solicitudPorParamRuta(param: string): SoporteTiSolicitud | null {
+    if (!param) return null
+    const raw = decodeURIComponent(param.trim())
+    if (/^\d+$/.test(raw)) {
+      const n = Number(raw)
+      return solicitudes.value.find((s) => s.backendId === n) ?? null
+    }
+    if (
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw)
+    ) {
+      return solicitudes.value.find((s) => s.chatUuid === raw) ?? null
+    }
+    return solicitudes.value.find((s) => s.codigo === raw) ?? null
+  }
+
+  function upsertSolicitud(ui: SoporteTiSolicitud) {
+    const idx = solicitudes.value.findIndex(
+      (s) =>
+        (ui.backendId != null && s.backendId === ui.backendId) || s.chatUuid === ui.chatUuid
+    )
+    if (idx >= 0) {
+      solicitudes.value = solicitudes.value.map((s, i) => (i === idx ? ui : s))
+    } else {
+      solicitudes.value = [...solicitudes.value, ui]
+    }
+  }
+
+  /**
+   * Resuelve ticket para la URL cuando no está en memoria (p. ej. enlace directo): GET show o búsqueda en list.
+   */
+  async function resolverTicketParaRuta(param: string): Promise<SoporteTiSolicitud | null> {
+    if (!param) return null
+    const raw = decodeURIComponent(param.trim())
+    const local = solicitudPorParamRuta(raw)
+    if (local) return local
+    if (!usarApi.value) return null
+
+    if (/^\d+$/.test(raw)) {
+      try {
+        const res = await SoporteTiService.show(Number(raw))
+        if (!res?.success || !res.data) return null
+        const ui = mapSolicitudApiToUi(res.data)
+        upsertSolicitud(ui)
+        return ui
+      } catch {
+        return null
+      }
+    }
+
+    try {
+      const res = await SoporteTiService.list({ q: raw, tipo: 'todos' })
+      if (!res?.success || !res || typeof res !== 'object') return null
+      const { rows } = parseSoporteTiListPayload(res)
+      const mapped = rows.map((row) => mapSolicitudApiToUi(row))
+      const lower = raw.toLowerCase()
+      const byCode = mapped.find((r) => r.codigo.toLowerCase() === lower)
+      if (byCode) {
+        upsertSolicitud(byCode)
+        return byCode
+      }
+      if (
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw)
+      ) {
+        const byUuid = mapped.find((r) => r.chatUuid.toLowerCase() === lower)
+        if (byUuid) {
+          upsertSolicitud(byUuid)
+          return byUuid
+        }
+      }
+      if (mapped.length === 1) {
+        upsertSolicitud(mapped[0]!)
+        return mapped[0]!
+      }
+    } catch {
+      return null
+    }
+    return null
   }
 
   function agregarMensajeSistema(chatUuid: string, codigo: string, texto: string) {
@@ -157,44 +256,44 @@ export function useSoporteTi() {
     )
   }
 
-  async function cargar() {
-    loading.value = true
+  async function cargar(filters?: SoporteTiListFilters) {
     error.value = null
     try {
-      resetChats()
       if (usarApi.value) {
-        const res = await SoporteTiService.list()
+        const res = await SoporteTiService.list(filters)
+        if (!res || typeof res !== 'object') throw new Error('Respuesta inválida del servidor')
         if (!res.success) throw new Error(res.message || 'Error al cargar')
-        solicitudes.value = res.data.map(mapSolicitudApiToUi)
+        const { rows } = parseSoporteTiListPayload(res)
+        solicitudes.value = rows.map((row) => mapSolicitudApiToUi(row))
       } else {
         solicitudes.value = getSoporteTiSeedSolicitudes()
         initDemoStore()
       }
     } catch (e: any) {
       error.value = e?.message || 'Error al cargar'
-      solicitudes.value = getSoporteTiSeedSolicitudes()
-      resetChats()
-      initDemoStore()
-    } finally {
-      loading.value = false
+      if (usarApi.value) {
+        solicitudes.value = []
+      } else {
+        solicitudes.value = getSoporteTiSeedSolicitudes()
+        initDemoStore()
+      }
     }
   }
 
   async function actualizarSolicitud(
     actualizada: SoporteTiSolicitud,
     opts?: { emitirWs?: boolean }
-  ) {
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    const idx = solicitudes.value.findIndex((s) => s.chatUuid === actualizada.chatUuid)
+    const antes = idx !== -1 ? solicitudes.value[idx] : null
+
     solicitudes.value = solicitudes.value.map((s) =>
       s.chatUuid === actualizada.chatUuid ? actualizada : s
     )
-    if (seleccion.value?.chatUuid === actualizada.chatUuid) {
-      seleccion.value = actualizada
-    }
 
     const emitir = opts?.emitirWs !== false
     if (!usarApi.value && emitir) {
-      const anterior = solicitudPorChatUuid(actualizada.chatUuid)
-      if (anterior && anterior.estadoId !== actualizada.estadoId) {
+      if (antes && antes.estadoId !== actualizada.estadoId) {
         publicarDemo(actualizada.chatUuid, 'estado', {
           chat_uuid: actualizada.chatUuid,
           codigo: actualizada.codigo,
@@ -208,14 +307,23 @@ export function useSoporteTi() {
       }
     }
 
-    if (!usarApi.value || actualizada.backendId == null) return
+    if (!usarApi.value || actualizada.backendId == null) {
+      return { ok: true }
+    }
     try {
       await SoporteTiService.update(
         actualizada.backendId,
         mapSolicitudUiToApiPatch(actualizada)
       )
-    } catch {
-      /* estado local ya aplicado */
+      return { ok: true }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al guardar'
+      if (antes != null) {
+        solicitudes.value = solicitudes.value.map((s) =>
+          s.chatUuid === actualizada.chatUuid ? antes : s
+        )
+      }
+      return { ok: false, error: msg || 'Error al guardar en el servidor' }
     }
   }
 
@@ -225,9 +333,9 @@ export function useSoporteTi() {
     const chatUuid = generarChatUuid()
 
     if (usarApi.value) {
-      const res = await SoporteTiService.store(
-        buildCreateApiBody(payload, SOPORTE_TI_DEMO_SOLICITANTE)
-      )
+      const res = payload.imagenes?.length
+        ? await SoporteTiService.store(buildCreateSolicitudFormData(payload))
+        : await SoporteTiService.store(buildCreateApiBody(payload) as Record<string, unknown>)
       if (!res.success || !res.data) throw new Error(res.message || 'No se pudo crear')
       const nueva = mapSolicitudApiToUi(res.data)
       solicitudes.value = [...solicitudes.value, nueva]
@@ -242,6 +350,7 @@ export function useSoporteTi() {
     const pref = payload.tipo === 'A' ? 'PRJ' : 'REQ'
     const codigo = `${pref}-${String(Math.floor(Math.random() * 900 + 100))}`
     const estIni = resolverEstado('pendiente')
+    const demoSolicitante = (userName.value || '').trim() || SOPORTE_TI_DEMO_SOLICITANTE
     const nueva: SoporteTiSolicitud = {
       backendId: null,
       chatUuid,
@@ -250,7 +359,8 @@ export function useSoporteTi() {
       subtipoB: payload.tipo === 'B' ? payload.subtipoB : null,
       titulo: payload.titulo || 'Nueva solicitud',
       area: payload.area,
-      solicitante: SOPORTE_TI_DEMO_SOLICITANTE,
+      solicitante: demoSolicitante,
+      solicitanteUserId: currentId.value ? Number(currentId.value) : null,
       pm: payload.tipo === 'A' ? 'Por asignar' : null,
       analista: 'Por asignar',
       criticidad: 'Por definir',
@@ -268,8 +378,38 @@ export function useSoporteTi() {
       descripcion: payload.descripcion || undefined,
       maqueta: null
     }
+
+    const evidenciasDemo: SoporteTiEvidenciaItem[] = []
+    let ord = 0
+    if (payload.imagenes?.length) {
+      evidenciasDemo.push({
+        tipo: 'texto',
+        texto: `${nueva.titulo} — Evidencia`,
+        orden: ord++
+      })
+      for (const f of payload.imagenes) {
+        evidenciasDemo.push({
+          tipo: 'imagen',
+          url: URL.createObjectURL(f),
+          nombre: f.name,
+          tamano:
+            f.size > 1048576
+              ? `${(f.size / 1048576).toFixed(1)} MB`
+              : `${Math.round(f.size / 1024)} KB`,
+          orden: ord++
+        })
+      }
+      nueva.evidencias = evidenciasDemo
+    }
+
     solicitudes.value = [...solicitudes.value, nueva]
     agregarMensajeSistema(chatUuid, codigo, `Ticket ${codigo} creado. SLA: ${sla}h.`)
+    if (payload.imagenes?.length) {
+      await enviarChat(nueva.chatUuid, { texto: `${nueva.titulo} — Evidencia` })
+      for (const file of payload.imagenes) {
+        await enviarChat(nueva.chatUuid, { texto: '', imagenes: [file] })
+      }
+    }
     return nueva
   }
 
@@ -277,7 +417,7 @@ export function useSoporteTi() {
     const ticket = solicitudPorChatUuid(chatUuid)
     if (!ticket) return
 
-    const meta = SOPORTE_TI_ROL_META[rolActivo.value]
+    const meta = remitenteChatUi()
     const prev = mensajesDe(chatUuid)
     const replyTo =
       payload.replyToId != null ? buildReplyPreview(prev, payload.replyToId) : null
@@ -315,6 +455,27 @@ export function useSoporteTi() {
     }
 
     agregarMensaje(chatUuid, msgLocal)
+
+    const evNuevas: SoporteTiEvidenciaItem[] = []
+    let ordEv = siguienteOrdenEvidencia(ticket)
+    if (payload.texto.trim() !== '') {
+      evNuevas.push({ tipo: 'texto', texto: payload.texto, orden: ordEv++ })
+    }
+    imagenesLocales.forEach((img, i) => {
+      const file = payload.imagenes?.[i]
+      if (!file) return
+      evNuevas.push({
+        tipo: 'imagen',
+        url: img.url,
+        nombre: img.nombre,
+        tamano: img.tamano,
+        orden: ordEv++
+      })
+    })
+    if (evNuevas.length) {
+      ticket.evidencias = [...(ticket.evidencias ?? []), ...evNuevas]
+    }
+
     publicarDemo(chatUuid, 'mensaje_creado', {
       chat_uuid: chatUuid,
       codigo: ticket.codigo,
@@ -329,11 +490,11 @@ export function useSoporteTi() {
         reply_to_id: msgLocal.replyToId ?? null,
         reply_to: replyTo
           ? {
-              id: replyTo.id,
-              remitente: replyTo.remitente,
-              texto: replyTo.texto,
-              tiene_imagen: replyTo.tieneImagen
-            }
+            id: replyTo.id,
+            remitente: replyTo.remitente,
+            texto: replyTo.texto,
+            tiene_imagen: replyTo.tieneImagen
+          }
           : null,
         imagenes: imagenesLocales.map((i) => ({
           url: i.url,
@@ -342,11 +503,6 @@ export function useSoporteTi() {
         }))
       }
     })
-  }
-
-  function setRol(r: SoporteTiRol) {
-    rolActivo.value = r
-    seleccion.value = null
   }
 
   function handlersSala(chatUuid: string) {
@@ -358,16 +514,9 @@ export function useSoporteTi() {
   }
 
   return {
-    SOPORTE_TI_ROLES,
     rolActivo,
-    setRol,
-    solicitudesVisibles,
+    solicitudes,
     stats,
-    seleccion,
-    setSeleccion: (s: SoporteTiSolicitud | null) => {
-      seleccion.value = s
-    },
-    loading,
     error,
     usarApi,
     cargar,
@@ -381,6 +530,8 @@ export function useSoporteTi() {
     cargarMensajesAnteriores,
     solicitudPorChatUuid,
     solicitudPorCodigo,
+    solicitudPorParamRuta,
+    resolverTicketParaRuta,
     handlersSala,
     etiquetaAhora,
     registrarMaquetaLocal(
@@ -396,12 +547,12 @@ export function useSoporteTi() {
         maqueta: mq,
         ultimaActualizacion: etiquetaAhora()
       })
-      const meta = SOPORTE_TI_ROL_META.PM
+      const quien = remitenteChatUi()
       const msg: SoporteTiMensaje = {
         id: Date.now(),
-        remitente: meta.nombre,
-        iniciales: meta.iniciales,
-        color: meta.color,
+        remitente: quien.nombre,
+        iniciales: quien.iniciales,
+        color: quien.color,
         texto: mensajePm,
         esSistema: false,
         marcaTiempo: etiquetaAhora(),

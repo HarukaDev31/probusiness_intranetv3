@@ -151,8 +151,8 @@ export default defineNuxtConfig({
       pusherWsHost: process.env.NUXT_WEBSOCKETS_URL,
       whatsappApiUrl: process.env.NUXT_WHATSAPPV3_URL,
       whatsappApiKey: process.env.NUXT_WHATSAPPV3_API_KEY,
-      /** Cuando es true, `useSoporteTi` consume `/api/soporte-ti/solicitudes` en Laravel */
-      soporteTiUseApi: process.env.NUXT_PUBLIC_SOPORTE_TI_USE_API === 'true',
+      /** Por defecto consume la API Laravel; `NUXT_PUBLIC_SOPORTE_TI_USE_API=false` activa modo demo local */
+      soporteTiUseApi: process.env.NUXT_PUBLIC_SOPORTE_TI_USE_API !== 'false',
     }
   },
 

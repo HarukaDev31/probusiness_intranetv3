@@ -20,7 +20,7 @@ const META_VACIA: SoporteTiChatPaginacion = {
 
 export function useSoporteTiChat() {
   const config = useRuntimeConfig()
-  const usarApi = computed(() => config.public.soporteTiUseApi === true)
+  const usarApi = computed(() => config.public.soporteTiUseApi !== false)
 
   const chats = useState<SoporteTiChatsPorUuid>('soporte-ti-chats', () => ({}))
   const chatMeta = useState<Record<string, SoporteTiChatPaginacion>>('soporte-ti-chat-meta', () => ({}))

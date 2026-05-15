@@ -109,7 +109,6 @@ const props = withDefaults(defineProps<Props>(), {
     customMessage: undefined,
     disabled: false,
     initialFiles: () => [],
-    modelFiles: () => [],
     loading: false,
     immediate: true,
     showSaveButton: false,
@@ -143,7 +142,7 @@ const metaText = (file: File | FileItem): string | null => {
 
 /** Lista a mostrar como archivos seleccionados: la que controla el padre (modelFiles) o la interna (selectedFiles). */
 const displayedSelectedFiles = computed(() =>
-    (props.modelFiles?.length ? props.modelFiles : selectedFiles.value)
+    (props.modelFiles !== undefined ? props.modelFiles : selectedFiles.value)
 )
 
 /** Una sola lista unificada: primero seleccionados (pendientes), luego iniciales (ya subidos). */
@@ -178,7 +177,7 @@ const showDropZone = computed(() =>
     (props.multiple ||
         ((!props.initialFiles || props.initialFiles.length === 0) &&
             selectedFiles.value.length === 0 &&
-            (!props.modelFiles || props.modelFiles.length === 0)))
+            (props.modelFiles === undefined || props.modelFiles.length === 0)))
 )
 
 const handleSelectFiles = () => {
@@ -244,7 +243,7 @@ const addFiles = (files: File[]) => {
     })
    
     if (validFiles.length > 0) {
-        if (props.modelFiles?.length) {
+        if (props.modelFiles !== undefined) {
             emit('files-selected', validFiles)
             validFiles.forEach(file => emit('file-added', file))
             return
@@ -261,7 +260,7 @@ const addFiles = (files: File[]) => {
 }
 
 const removeSelectedFile = (index: number) => {
-    if (props.modelFiles?.length) {
+    if (props.modelFiles !== undefined) {
         emit('file-removed', index)
         return
     }

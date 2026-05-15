@@ -117,6 +117,26 @@ export const formatDateTimeToDmy = (date: string | Date | number): string => {
 }
 
 /**
+ * Fecha/hora corta para tablas (p. ej. Soporte TI): dd/mm/aa hh:mm:ss
+ */
+export const formatSoporteTiRegistro = (val: string | null | undefined): string => {
+  if (val == null || val === '') return '—'
+  const s = String(val).trim()
+  const d =
+    /\d{4}-\d{2}-\d{2}T\d/.test(s) || /Z$/i.test(s) || /[+-]\d{2}:\d{2}$/.test(s)
+      ? new Date(s)
+      : parseDateNoTZ(s)
+  if (Number.isNaN(d.getTime())) return val
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yy = String(d.getFullYear()).slice(-2)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mi = String(d.getMinutes()).padStart(2, '0')
+  const ss = String(d.getSeconds()).padStart(2, '0')
+  return `${dd}/${mm}/${yy} ${hh}:${mi}:${ss}`
+}
+
+/**
  * Formatea un porcentaje
  * @param value - Valor a formatear (0-1 o 0-100)
  * @param isDecimal - Si el valor está en decimal (0-1) o porcentaje (0-100)

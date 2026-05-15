@@ -33,8 +33,17 @@ export const SOPORTE_TI_ROL_META: Record<
   Analista: { iniciales: 'AT', nombre: 'Ana T.', color: '#047857' }
 }
 
-/** Solicitante demo para filtrar “mis solicitudes”. */
+/** Demo: nombre de solicitante en datos semilla (compat. al filtrar sin API). */
 export const SOPORTE_TI_DEMO_SOLICITANTE = 'María Torres'
+
+/** Iniciales para burbujas de chat a partir del nombre visible */
+export function soporteTiInicialesDesdeNombre(nombre: string): string {
+  const palabras = nombre.trim().split(/\s+/).filter(Boolean)
+  if (palabras.length >= 2) {
+    return (palabras[0][0] + palabras[1][0]).toUpperCase()
+  }
+  return nombre.trim().slice(0, 2).toUpperCase() || 'U'
+}
 
 /** Canal privado Laravel Echo: `private-soporte-ti.chat.{chatUuid}` */
 export const soporteTiChatChannelName = (chatUuid: string) => `soporte-ti.chat.${chatUuid}`

@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center gap-3">
-    <span class="w-14 shrink-0 text-[11px] text-slate-500">{{ transcurridas }}h / {{ sla }}h</span>
-    <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+    <span class="w-14 shrink-0 text-[11px] text-gray-500 dark:text-gray-400">{{ transcurridas }}h / {{ sla }}h</span>
+    <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
       <div
         class="h-full rounded-full"
         :class="colorBarra"
@@ -33,8 +33,8 @@ const colorBarra = computed(() => {
 
 const colorTexto = computed(() => {
   const p = porciento.value
-  if (p < 75) return 'text-green-600'
-  if (p <= 100) return 'text-amber-600'
-  return 'text-red-600'
+  if (p < 75) return 'text-green-600 dark:text-green-400'
+  if (p <= 100) return 'text-amber-600 dark:text-amber-400'
+  return 'text-red-600 dark:text-red-400'
 })
 </script>
