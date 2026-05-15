@@ -147,6 +147,11 @@ const pageTitle = computed(() => {
     return 'Verificación'
   }
 
+  // Soporte TI
+  if (route.path.includes('/soporte-ti')) {
+    return 'Soporte TI'
+  }
+
   //Viaticos
   if (route.path.includes('/viaticos')) {
     if (route.path.includes('/pendientes')) return 'Viáticos Pendientes'

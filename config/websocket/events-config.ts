@@ -45,7 +45,11 @@ export const WS_EVENTS = {
   // Eventos de Calendario (documentación, coordinación, jefe importaciones)
   CALENDAR_ACTIVITY_CREATED: 'CalendarActivityCreated',
   CALENDAR_ACTIVITY_UPDATED: 'CalendarActivityUpdated',
-  CALENDAR_ACTIVITY_DELETED: 'CalendarActivityDeleted'
+  CALENDAR_ACTIVITY_DELETED: 'CalendarActivityDeleted',
+  // Soporte TI — canal privado por sala: soporte-ti.chat.{chat_uuid}
+  SOPORTE_TI_MENSAJE_CREADO: 'SoporteTiMensajeCreado',
+  SOPORTE_TI_MENSAJE_ACTUALIZADO: 'SoporteTiMensajeActualizado',
+  SOPORTE_TI_ESTADO_ACTUALIZADO: 'SoporteTiEstadoActualizado'
 } as const
 
 // ============================================
