@@ -56,11 +56,13 @@
                 :key="row.usuario_id"
                 class="flex items-center gap-3 py-3"
               >
-                <div
-                  class="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted"
-                >
-                  {{ row.iniciales }}
-                </div>
+                <SoporteTiChatAvatar
+                  :src="row.avatar_url"
+                  :iniciales="row.iniciales"
+                  color="#64748b"
+                  :alt="row.nombre"
+                  size="md"
+                />
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-sm font-medium text-highlighted">~ {{ row.nombre }}</p>
                   <p class="text-xs text-muted">{{ row.leido_en_fmt }}</p>
@@ -90,6 +92,7 @@ import { SoporteTiService } from '~/services/soporteTiService'
 import type { SoporteTiMensajeInfoLectura } from '~/types/soporteTi'
 import { mapMensajeApiToUi } from '~/utils/soporteTiMappers'
 import SoporteTiChatEstadoEnvio from '~/components/soporte-ti/SoporteTiChatEstadoEnvio.vue'
+import SoporteTiChatAvatar from '~/components/soporte-ti/SoporteTiChatAvatar.vue'
 
 const props = defineProps<{
   chatUuid: string

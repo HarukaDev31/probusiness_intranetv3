@@ -259,12 +259,12 @@
               class="group flex gap-2.5"
               :class="m.esPropio ? 'flex-row-reverse' : 'flex-row'"
             >
-              <div
-                class="flex size-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-inverted ring-2 ring-default"
-                :style="{ background: m.color }"
-              >
-                {{ m.iniciales }}
-              </div>
+              <SoporteTiChatAvatar
+                :src="m.avatarUrl"
+                :iniciales="m.iniciales"
+                :color="m.color"
+                :alt="m.remitente"
+              />
 
               <div class="min-w-0" :class="anchoBurbuja">
                 <div
@@ -572,6 +572,7 @@ import SoporteTiChatMensajeInfoModal from '~/components/soporte-ti/SoporteTiChat
 import SoporteTiChatPanelSkeleton from '~/components/soporte-ti/SoporteTiChatPanelSkeleton.vue'
 import SoporteTiFasesProyectoBar from '~/components/soporte-ti/SoporteTiFasesProyectoBar.vue'
 import SoporteTiChatMetaBadges from '~/components/soporte-ti/SoporteTiChatMetaBadges.vue'
+import SoporteTiChatAvatar from '~/components/soporte-ti/SoporteTiChatAvatar.vue'
 import { SOPORTE_TI_CHAT_ACCEPT_DOCUMENTOS } from '~/constants/soporteTiChat'
 import { archivosDesdePortapapeles, esImagenAdjunto } from '~/utils/soporteTiChatAdjunto'
 

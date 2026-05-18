@@ -70,6 +70,8 @@ export interface SoporteTiMensaje {
   remitente: string
   iniciales: string
   color: string
+  /** Foto de perfil del remitente (API `avatar_url`). */
+  avatarUrl?: string | null
   texto: string
   esSistema: boolean
   marcaTiempo: string
@@ -311,6 +313,7 @@ export interface SoporteTiMensajeApi {
   remitente: string
   iniciales: string
   color: string
+  avatar_url?: string | null
   texto: string
   es_sistema: boolean
   marca_tiempo: string
@@ -411,6 +414,7 @@ export interface SoporteTiLecturaUsuarioApi {
   usuario_id: number
   nombre: string
   iniciales: string
+  avatar_url?: string | null
   telefono?: string | null
   email?: string | null
   leido_en?: string | null

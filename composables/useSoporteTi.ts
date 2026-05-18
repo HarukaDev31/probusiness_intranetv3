@@ -54,7 +54,7 @@ function statsDesdeSolicitudes(list: SoporteTiSolicitud[]) {
 }
 
 export function useSoporteTi() {
-  const { hasRole, userName } = useUserRole()
+  const { hasRole, userName, userPhotoUrl } = useUserRole()
   const {
     mensajesDe,
     metaDe,
@@ -80,7 +80,8 @@ export function useSoporteTi() {
     return {
       nombre,
       iniciales: soporteTiInicialesDesdeNombre(nombre),
-      color: SOPORTE_TI_ROL_META[r].color
+      color: SOPORTE_TI_ROL_META[r].color,
+      avatarUrl: userPhotoUrl.value ?? null
     }
   }
 

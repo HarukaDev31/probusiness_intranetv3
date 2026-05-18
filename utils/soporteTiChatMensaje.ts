@@ -53,7 +53,7 @@ function etiquetaAhora(): string {
 /** Mensaje local antes de confirmación del servidor / job. */
 export function mensajeOptimistaDesdeEnvio(
   clientId: string,
-  remitente: { nombre: string; iniciales: string; color: string },
+  remitente: { nombre: string; iniciales: string; color: string; avatarUrl?: string | null },
   payload: SoporteTiEnviarMensajePayload,
   previews?: { url: string; nombre: string }[]
 ): SoporteTiMensaje {
@@ -64,6 +64,7 @@ export function mensajeOptimistaDesdeEnvio(
     remitente: remitente.nombre,
     iniciales: remitente.iniciales,
     color: remitente.color,
+    avatarUrl: remitente.avatarUrl ?? null,
     texto: payload.texto?.trim() ?? '',
     esSistema: false,
     marcaTiempo: etiquetaAhora(),

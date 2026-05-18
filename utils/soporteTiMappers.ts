@@ -274,6 +274,7 @@ export function mapMensajeApiToUi(m: SoporteTiMensajeApi): SoporteTiMensaje {
     remitente: m.remitente,
     iniciales: m.iniciales,
     color: m.color,
+    avatarUrl: m.avatar_url ?? null,
     texto: m.texto,
     esSistema: m.es_sistema,
     marcaTiempo: m.created_at_iso
