@@ -32,15 +32,14 @@ import {
   crearClientIdMensaje,
   mensajeOptimistaDesdeEnvio
 } from '~/utils/soporteTiChatMensaje'
+import { formatSoporteTiMarcaTiempo } from '~/utils/formatters'
 
 function clientIdFallback(m: SoporteTiMensaje): string {
   return m.clientId ?? `legacy-${m.id}`
 }
 
 function etiquetaAhora(): string {
-  const d = new Date()
-  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-  return `${d.getDate()} ${meses[d.getMonth()]} ${d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}`
+  return formatSoporteTiMarcaTiempo(new Date())
 }
 
 function statsDesdeSolicitudes(list: SoporteTiSolicitud[]) {

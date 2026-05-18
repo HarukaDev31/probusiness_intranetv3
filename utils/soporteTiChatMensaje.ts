@@ -3,6 +3,7 @@ import type {
   SoporteTiMensaje,
   SoporteTiMensajeApi
 } from '~/types/soporteTi'
+import { formatSoporteTiMarcaTiempo } from '~/utils/formatters'
 
 export type SoporteTiEstadoEnvio = 'pendiente' | 'enviando' | 'entregado' | 'error'
 
@@ -46,9 +47,7 @@ export function crearIdOptimista(): number {
 }
 
 function etiquetaAhora(): string {
-  const d = new Date()
-  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-  return `${d.getDate()} ${meses[d.getMonth()]} ${d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}`
+  return formatSoporteTiMarcaTiempo(new Date())
 }
 
 /** Mensaje local antes de confirmación del servidor / job. */

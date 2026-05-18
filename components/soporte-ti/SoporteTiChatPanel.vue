@@ -6,7 +6,7 @@
   >
     <template #header>
       <div
-        v-if="modoSolicitante"
+        v-if="mostrarCabeceraSla"
         class="grid gap-2 border-b border-default px-3 py-3 sm:grid-cols-3 sm:gap-3 sm:px-4"
       >
         <UCard variant="subtle" :ui="{ body: 'p-2.5 sm:p-2.5' }">
@@ -53,7 +53,7 @@
         </UCard>
       </div>
       <div
-        v-else
+        v-if="!modoSolicitante"
         class="border-b border-default px-4 py-3"
         :class="mostrarFasesCabecera ? 'space-y-3' : ''"
       >
@@ -595,6 +595,14 @@ const alturaClase = computed(() =>
     ? 'h-full min-h-0 flex-1'
     : 'h-[min(32rem,calc(100dvh-11rem))] min-h-[260px]'
 )
+
+/** Misma cabecera SLA (código, tiempo restante, término) que ve el solicitante. */
+const mostrarCabeceraSla = computed(() => {
+  if (props.modoSolicitante) return true
+  if (props.contadorActivo) return true
+  const t = (props.terminoMaximo ?? '').trim()
+  return Boolean(t && t !== '—' && t !== 'Por definir')
+})
 
 const anchoBurbuja = computed(() =>
   props.modoSolicitante ? 'max-w-[min(36rem,88%)]' : 'max-w-[min(20rem,85%)]'

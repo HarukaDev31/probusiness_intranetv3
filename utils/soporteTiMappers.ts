@@ -1,3 +1,4 @@
+import { formatSoporteTiMarcaTiempo } from '~/utils/formatters'
 import type {
   SoporteTiSolicitud,
   SoporteTiSolicitudApi,
@@ -272,7 +273,9 @@ export function mapMensajeApiToUi(m: SoporteTiMensajeApi): SoporteTiMensaje {
     color: m.color,
     texto: m.texto,
     esSistema: m.es_sistema,
-    marcaTiempo: m.marca_tiempo,
+    marcaTiempo: m.created_at_iso
+      ? formatSoporteTiMarcaTiempo(m.created_at_iso)
+      : m.marca_tiempo,
     esPropio,
     archivoNombre: m.archivo_nombre ?? null,
     replyToId: m.reply_to_id ?? null,

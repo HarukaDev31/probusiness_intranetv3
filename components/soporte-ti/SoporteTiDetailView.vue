@@ -22,6 +22,10 @@
           panel-class="min-h-0 flex-1"
           :chat-uuid="ticket.chatUuid"
           :codigo-ticket="ticket.codigo"
+          :contador-activo="ticket.gestion.contadorActivo"
+          :contador-fin="ticket.gestion.contadorFin"
+          :contador-vencido="ticket.gestion.contadorVencido"
+          :termino-maximo="ticket.gestion.terminoEstimado"
           :mostrar-fases-cabecera="ticket.tipo === 'A'"
           :fase-index="ticket.faseIndex ?? 0"
         />

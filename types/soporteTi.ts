@@ -310,6 +310,7 @@ export interface SoporteTiMensajeApi {
   texto: string
   es_sistema: boolean
   marca_tiempo: string
+  created_at_iso?: string
   es_propio?: boolean
   archivo_nombre?: string | null
   reply_to_id?: number | null

@@ -2,6 +2,88 @@
  * Utilidades para formateo de datos reutilizables en toda la aplicación
  */
 
+/** Zona horaria de negocio (servidor en AWS; usuarios en Perú). */
+export const TIMEZONE_PERU = 'America/Lima'
+
+const MESES_CORTOS_ES = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic'
+] as const
+
+/**
+ * Parsea una fecha ignorando zona horaria (evita desplazamiento de día)
+ */
+const parseDateNoTZ = (input: string | Date | number): Date => {
+  if (input instanceof Date) return input
+  if (typeof input === 'number') return new Date(input)
+
+  const s = String(input).trim()
+  const base = s.includes('T') ? s.split('T')[0] : s
+
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(base)
+  if (iso) {
+    const [, y, m, d] = iso
+    return new Date(Number(y), Number(m) - 1, Number(d))
+  }
+
+  const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(base)
+  if (dmy) {
+    const [, d, m, y] = dmy
+    return new Date(Number(y), Number(m) - 1, Number(d))
+  }
+
+  return new Date(s)
+}
+
+function parseInstante(val: string | Date | number): Date | null {
+  if (val instanceof Date) return val
+  if (typeof val === 'number') return new Date(val)
+  const s = String(val).trim()
+  if (!s) return null
+  const d = /\d{4}-\d{2}-\d{2}T\d/.test(s) || /Z$/i.test(s) || /[+-]\d{2}:\d{2}$/.test(s)
+    ? new Date(s)
+    : parseDateNoTZ(s)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/**
+ * Marca de tiempo de chat Soporte TI: «18 may 13:31» en hora Perú.
+ */
+export function formatSoporteTiMarcaTiempo(val: string | Date | null | undefined): string {
+  const d = val == null ? null : parseInstante(val)
+  if (!d) return typeof val === 'string' ? val : ''
+
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIMEZONE_PERU,
+    day: 'numeric',
+    month: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).formatToParts(d)
+
+  const map: Record<string, string> = {}
+  for (const p of parts) {
+    if (p.type !== 'literal') map[p.type] = p.value
+  }
+
+  const mesIdx = Math.max(0, Math.min(11, Number(map.month) - 1))
+  const hora = (map.hour ?? '00').padStart(2, '0')
+  const min = (map.minute ?? '00').padStart(2, '0')
+
+  return `${map.day} ${MESES_CORTOS_ES[mesIdx]} ${hora}:${min}`
+}
+
 /**
  * Formatea un número como moneda
  * @param amount - Cantidad a formatear
@@ -75,34 +157,6 @@ export const formatDate = (
  */
 
 /**
- * Parsea una fecha ignorando zona horaria (evita desplazamiento de día)
- */
-const parseDateNoTZ = (input: string | Date | number): Date => {
-  if (input instanceof Date) return input
-  if (typeof input === 'number') return new Date(input)
-
-  const s = String(input).trim()
-  // Si viene con tiempo, usar solo la parte de fecha
-  const base = s.includes('T') ? s.split('T')[0] : s
-
-  // Formato ISO YYYY-MM-DD
-  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(base)
-  if (iso) {
-    const [, y, m, d] = iso
-    return new Date(Number(y), Number(m) - 1, Number(d))
-  }
-
-  // Formato DD/MM/YYYY
-  const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(base)
-  if (dmy) {
-    const [, d, m, y] = dmy
-    return new Date(Number(y), Number(m) - 1, Number(d))
-  }
-
-  // Fallback (puede aplicar TZ del sistema)
-  return new Date(s)
-}
-/**
  * Formatea una fecha y hora en formato DD/MM/YYYY (sin desfase de zona)
  */
 export const formatDateTimeToDmy = (date: string | Date | number): string => {
@@ -121,19 +175,26 @@ export const formatDateTimeToDmy = (date: string | Date | number): string => {
  */
 export const formatSoporteTiRegistro = (val: string | null | undefined): string => {
   if (val == null || val === '') return '—'
-  const s = String(val).trim()
-  const d =
-    /\d{4}-\d{2}-\d{2}T\d/.test(s) || /Z$/i.test(s) || /[+-]\d{2}:\d{2}$/.test(s)
-      ? new Date(s)
-      : parseDateNoTZ(s)
-  if (Number.isNaN(d.getTime())) return val
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const yy = String(d.getFullYear()).slice(-2)
-  const hh = String(d.getHours()).padStart(2, '0')
-  const mi = String(d.getMinutes()).padStart(2, '0')
-  const ss = String(d.getSeconds()).padStart(2, '0')
-  return `${dd}/${mm}/${yy} ${hh}:${mi}:${ss}`
+  const d = parseInstante(String(val).trim())
+  if (!d) return val
+
+  const parts = new Intl.DateTimeFormat('es-PE', {
+    timeZone: TIMEZONE_PERU,
+    year: '2-digit',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).formatToParts(d)
+
+  const map: Record<string, string> = {}
+  for (const p of parts) {
+    if (p.type !== 'literal') map[p.type] = p.value
+  }
+
+  return `${map.day}/${map.month}/${map.year} ${map.hour}:${map.minute}:${map.second}`
 }
 
 /**
