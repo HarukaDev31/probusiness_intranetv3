@@ -180,7 +180,10 @@ export function mapGestion(g: SoporteTiGestionApi): SoporteTiGestion {
     verSla: g.ver_sla,
     puedeEnProgreso: g.puede_en_progreso,
     contadorActivo: g.contador_activo,
+    contadorPausado: g.contador_pausado === true,
     contadorFin: g.contador_fin,
+    contadorRestanteSegundos:
+      g.contador_restante_segundos != null ? Number(g.contador_restante_segundos) : null,
     contadorVencido: g.contador_vencido
   }
 }

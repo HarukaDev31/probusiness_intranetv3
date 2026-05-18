@@ -1,13 +1,21 @@
 <template>
   <div class="flex min-h-0 w-full max-w-full flex-1 flex-col">
     <div v-if="esVistaSolicitante" class="flex min-h-0 flex-1 flex-col">
+      <UCard v-if="mostrarBarraSla" class="mb-3 shrink-0">
+        <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          Avance SLA
+        </p>
+        <SoporteTiSlaBar :sla="ticket.slaHoras" :transcurridas="ticket.horasTranscurridas" />
+      </UCard>
       <SoporteTiDetailChatSection
         modo-solicitante
         panel-class="min-h-0 flex-1"
         :chat-uuid="ticket.chatUuid"
         :codigo-ticket="ticket.codigo"
         :contador-activo="ticket.gestion.contadorActivo"
+        :contador-pausado="ticket.gestion.contadorPausado"
         :contador-fin="ticket.gestion.contadorFin"
+        :contador-restante-segundos="ticket.gestion.contadorRestanteSegundos"
         :contador-vencido="ticket.gestion.contadorVencido"
         :termino-maximo="ticket.gestion.terminoEstimado"
       />
@@ -23,7 +31,9 @@
           :chat-uuid="ticket.chatUuid"
           :codigo-ticket="ticket.codigo"
           :contador-activo="ticket.gestion.contadorActivo"
+          :contador-pausado="ticket.gestion.contadorPausado"
           :contador-fin="ticket.gestion.contadorFin"
+          :contador-restante-segundos="ticket.gestion.contadorRestanteSegundos"
           :contador-vencido="ticket.gestion.contadorVencido"
           :termino-maximo="ticket.gestion.terminoEstimado"
           :mostrar-fases-cabecera="ticket.tipo === 'A'"
@@ -122,7 +132,7 @@
           </div>
         </UCard>
 
-        <UCard v-if="ticket.gestion.verSla">
+        <UCard v-if="mostrarBarraSla">
           <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">SLA</p>
           <SoporteTiSlaBar :sla="ticket.slaHoras" :transcurridas="ticket.horasTranscurridas" />
           <div class="mt-2 flex flex-wrap gap-3 text-[10px] text-gray-500 dark:text-gray-400">
@@ -210,6 +220,12 @@ const mostrarTiempoEstimado = computed(() => {
   if (!g.slaEtiqueta) return false
   return g.esCreador || (g.esStaff && props.ticket.tipo === 'A' && g.verSla)
 })
+
+const mostrarBarraSla = computed(
+  () =>
+    props.ticket.slaHoras > 0 &&
+    (props.ticket.gestion.verSla || props.ticket.gestion.contadorActivo)
+)
 
 const tituloGestionStaff = computed(() => {
   if (rolActivo.value === 'PM') return 'Gestión del PM'

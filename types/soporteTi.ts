@@ -158,7 +158,9 @@ export interface SoporteTiGestion {
   verSla: boolean
   puedeEnProgreso: boolean
   contadorActivo: boolean
+  contadorPausado: boolean
   contadorFin: string | null
+  contadorRestanteSegundos: number | null
   contadorVencido: boolean
 }
 
@@ -183,7 +185,9 @@ export interface SoporteTiGestionApi {
   ver_sla: boolean
   puede_en_progreso: boolean
   contador_activo: boolean
+  contador_pausado?: boolean
   contador_fin: string | null
+  contador_restante_segundos?: number | null
   contador_vencido: boolean
 }
 

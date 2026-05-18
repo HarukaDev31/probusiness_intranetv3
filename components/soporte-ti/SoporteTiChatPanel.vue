@@ -36,7 +36,10 @@
                 </template>
                 <span v-else class="text-sm font-normal text-muted">—</span>
               </p>
-              <p v-if="contadorActivo && contadorVencidoUi" class="text-[10px] font-medium text-error">
+              <p v-if="contadorActivo && contadorPausado" class="text-[10px] font-medium text-muted">
+                Pausado
+              </p>
+              <p v-else-if="contadorActivo && contadorVencidoUi" class="text-[10px] font-medium text-error">
                 Plazo vencido
               </p>
             </div>
@@ -559,7 +562,9 @@ const props = withDefaults(
     faseIndex?: number
     fullHeight?: boolean
     contadorActivo?: boolean
+    contadorPausado?: boolean
     contadorFin?: string | null
+    contadorRestanteSegundos?: number | null
     contadorVencido?: boolean
     terminoMaximo?: string | null
   }>(),
@@ -572,7 +577,9 @@ const props = withDefaults(
     faseIndex: 0,
     fullHeight: false,
     contadorActivo: false,
+    contadorPausado: false,
     contadorFin: null,
+    contadorRestanteSegundos: null,
     contadorVencido: false,
     terminoMaximo: null
   }
@@ -610,7 +617,9 @@ const anchoBurbuja = computed(() =>
 
 const { etiqueta: etiquetaContador, vencido: contadorVencidoLive } = useSoporteTiContador(
   toRef(props, 'contadorActivo'),
-  toRef(props, 'contadorFin')
+  toRef(props, 'contadorFin'),
+  toRef(props, 'contadorPausado'),
+  toRef(props, 'contadorRestanteSegundos')
 )
 
 const contadorVencidoUi = computed(

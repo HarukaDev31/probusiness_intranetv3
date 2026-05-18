@@ -11,7 +11,9 @@
     :loading-chat="chatMeta.loading"
     :loading-older="chatMeta.loadingOlder"
     :contador-activo="contadorActivo"
+    :contador-pausado="contadorPausado"
     :contador-fin="contadorFin"
+    :contador-restante-segundos="contadorRestanteSegundos"
     :contador-vencido="contadorVencido"
     :termino-maximo="terminoMaximo"
     :mostrar-fases-cabecera="mostrarFasesCabecera"
@@ -35,7 +37,9 @@ const props = withDefaults(
     fullHeight?: boolean
     panelClass?: string
     contadorActivo?: boolean
+    contadorPausado?: boolean
     contadorFin?: string | null
+    contadorRestanteSegundos?: number | null
     contadorVencido?: boolean
     terminoMaximo?: string | null
     mostrarFasesCabecera?: boolean
@@ -46,7 +50,9 @@ const props = withDefaults(
     fullHeight: true,
     panelClass: '',
     contadorActivo: false,
+    contadorPausado: false,
     contadorFin: null,
+    contadorRestanteSegundos: null,
     contadorVencido: false,
     terminoMaximo: null,
     mostrarFasesCabecera: false,
