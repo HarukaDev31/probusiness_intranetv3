@@ -13,9 +13,13 @@ import type {
   SoporteTiEstado,
   SoporteTiEstadoHistorial,
   SoporteTiEvidenciaApi,
-  SoporteTiEvidenciaItem
-} from '~/types/soporteTi'
+  SoporteTiEvidenciaItem,
+  SoporteTiGestion,
+  SoporteTiGestionApi
+  } from '~/types/soporteTi'
 import { estadoPorId, resolverEstado } from '~/constants/soporteTiEstados'
+import type { SoporteTiComplejidad } from '~/utils/soporteTiComplejidad'
+import { resolveEsPropioMensaje } from '~/utils/soporteTiChatMensaje'
 
 /**
  * Normaliza la respuesta del índice: `data` como arreglo o bundle `{ solicitudes, resumen }`,
@@ -122,7 +126,8 @@ function mapReplyApi(r?: SoporteTiMensajeReplyPreviewApi | null) {
     id: r.id,
     remitente: r.remitente,
     texto: r.texto,
-    tieneImagen: r.tiene_imagen ?? false
+    tieneImagen: r.tiene_imagen ?? false,
+    imagenUrl: r.imagen_url ?? null
   }
 }
 
@@ -148,6 +153,37 @@ function mapEvidenciaApiToUi(e: SoporteTiEvidenciaApi): SoporteTiEvidenciaItem {
   }
 }
 
+export function mapGestion(g: SoporteTiGestionApi): SoporteTiGestion {
+  return {
+    esCreador: g.es_creador,
+    esStaff: g.es_staff,
+    puedeComplejidad: g.puede_complejidad,
+    puedeComplejidadPm: g.puede_complejidad_pm ?? false,
+    puedeComplejidadAnalista: g.puede_complejidad_analista ?? false,
+    puedeEstado: g.puede_estado,
+    estados: g.estados.map((e) => ({
+      id: e.id,
+      codigo: e.codigo,
+      nombre: e.nombre
+    })),
+    estadoValor: g.estado_valor,
+    complejidadValor: g.complejidad_valor as SoporteTiComplejidad | null,
+    complejidadPmValor: (g.complejidad_pm_valor ?? null) as SoporteTiComplejidad | null,
+    complejidadAnalistaValor: (g.complejidad_analista_valor ?? null) as SoporteTiComplejidad | null,
+    tiempoEstimadoRango: g.tiempo_estimado_rango ?? false,
+    estadoEditable: g.estado_editable,
+    puedeConfirmar: g.puede_confirmar,
+    estadoPlaceholder: g.estado_placeholder,
+    terminoEstimado: g.termino_estimado,
+    slaEtiqueta: g.sla_etiqueta,
+    verSla: g.ver_sla,
+    puedeEnProgreso: g.puede_en_progreso,
+    contadorActivo: g.contador_activo,
+    contadorFin: g.contador_fin,
+    contadorVencido: g.contador_vencido
+  }
+}
+
 export function mapSolicitudApiToUi(row: SoporteTiSolicitudApi): SoporteTiSolicitud {
   const est = resolverEstadoDesdeApi(row)
   const sortedEv = row.evidencias?.length
@@ -160,6 +196,7 @@ export function mapSolicitudApiToUi(row: SoporteTiSolicitudApi): SoporteTiSolici
     tipo: row.tipo_solicitud,
     subtipoB: row.subtipo_b,
     titulo: row.titulo,
+    prioridad: row.prioridad != null ? Number(row.prioridad) : 2,
     area: row.area,
     solicitante: row.solicitante,
     solicitanteUserId:
@@ -169,6 +206,8 @@ export function mapSolicitudApiToUi(row: SoporteTiSolicitudApi): SoporteTiSolici
     pm: row.pm,
     analista: row.analista,
     criticidad: row.criticidad,
+    complejidadPm: row.complejidad_pm,
+    complejidadAnalista: row.complejidad_analista,
     estadoId: est.id,
     estadoCodigo: est.codigo,
     estado: est.nombre,
@@ -177,6 +216,7 @@ export function mapSolicitudApiToUi(row: SoporteTiSolicitudApi): SoporteTiSolici
     slaHoras: row.sla_horas,
     horasTranscurridas: row.horas_transcurridas,
     fechaRegistro: row.fecha_registro,
+    fechaRegistroIso: row.fecha_registro_iso,
     ultimaActualizacion: row.ultima_actualizacion,
     fechaFinEstimado: row.fecha_fin_estimado,
     seccionRuta: row.seccion_ruta ?? undefined,
@@ -190,7 +230,8 @@ export function mapSolicitudApiToUi(row: SoporteTiSolicitudApi): SoporteTiSolici
           dataUrl: row.maqueta.url_preview ?? null
         }
       : null,
-    evidencias: sortedEv?.map(mapEvidenciaApiToUi)
+    evidencias: sortedEv?.map(mapEvidenciaApiToUi),
+    gestion: mapGestion(row.gestion)
   }
 }
 
@@ -222,6 +263,8 @@ export function mapSolicitudUiToApiPatch(
 }
 
 export function mapMensajeApiToUi(m: SoporteTiMensajeApi): SoporteTiMensaje {
+  const adjuntoPendiente = m.adjunto_pendiente === true
+  const esPropio = resolveEsPropioMensaje(m)
   return {
     id: m.id,
     remitente: m.remitente,
@@ -230,11 +273,19 @@ export function mapMensajeApiToUi(m: SoporteTiMensajeApi): SoporteTiMensaje {
     texto: m.texto,
     esSistema: m.es_sistema,
     marcaTiempo: m.marca_tiempo,
-    esPropio: m.es_propio,
+    esPropio,
     archivoNombre: m.archivo_nombre ?? null,
     replyToId: m.reply_to_id ?? null,
     replyTo: mapReplyApi(m.reply_to),
-    imagenes: mapImagenesApi(m.imagenes)
+    imagenes: mapImagenesApi(m.imagenes),
+    adjuntoPendiente,
+    estadoEnvio: esPropio
+      ? adjuntoPendiente
+        ? 'enviando'
+        : m.leido
+          ? 'leido'
+          : 'entregado'
+      : undefined
   }
 }
 

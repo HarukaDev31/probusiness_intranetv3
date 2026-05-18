@@ -1,8 +1,12 @@
 import { useEcho, getEchoInstance } from '../composables/websocket/useEcho'
 import { getAllEventHandlers, getWebsocketRoles } from '../config/websocket/channels'
 import { CALENDAR_EVENTS, getUserCalendarChannelName } from '../config/websocket/events/calendar'
+import { buildEchoClientConfig } from '../utils/websocket-config'
 
-export default defineNuxtPlugin(async () => {
+export default defineNuxtPlugin({
+  name: 'websocket',
+  dependsOn: ['auth'],
+  async setup() {
   // Solo ejecutar en el cliente
   if (process.server) return
 
@@ -35,27 +39,7 @@ export default defineNuxtPlugin(async () => {
 
     isInitializing = true
 
-    // Obtener configuración de Nuxt
-    const config = useRuntimeConfig()
-    
-    
-    // Configuración de Echo para Pusher
-    const echoConfig = {
-      broadcaster: 'pusher',
-      key: config.public.pusherAppKey,
-      cluster: config.public.pusherAppCluster || 'mt1',
-      wsHost: config.public.pusherWsHost,
-      // Si usamos wsHost personalizado, no especificar wsPort ni forceTLS
-      enabledTransports: ['ws', 'wss'],
-      authEndpoint: config.public.pusherWsHost ? `https://${config.public.pusherWsHost}/api/broadcasting/auth` : undefined,
-      auth: {
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-          'Authorization': `Bearer ${authToken}`,
-          'Accept': 'application/json'
-        }
-      }
-    }
+    const echoConfig = buildEchoClientConfig(authToken)
     
     
 
@@ -111,6 +95,14 @@ export default defineNuxtPlugin(async () => {
         }
 
         isInitialized = true
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('echo-ready'))
+          const { sincronizarSalasGlobales } = await import(
+            '~/composables/useSoporteTiChatGlobal'
+          )
+          await sincronizarSalasGlobales()
+        }
         
       } catch (error) {
         console.error('❌ Error inicializando WebSocket:', error)
@@ -136,6 +128,7 @@ export default defineNuxtPlugin(async () => {
           isInitialized = false
           isInitializing = false
           if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('soporte-ti-chat-reset'))
             delete (window as any).Echo
           }
         } else {
@@ -145,5 +138,6 @@ export default defineNuxtPlugin(async () => {
         }
       }
     })
+  }
   }
 })

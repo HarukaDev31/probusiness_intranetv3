@@ -45,6 +45,8 @@
     <!-- Modal Container -->
     <ModalContainer />
 
+    <SoporteTiChatNotificacionModal />
+
     <!-- Global Spinner -->
     <GlobalSpinner />
   </div>
@@ -64,6 +66,9 @@ const CalendarUpdatePopup = defineAsyncComponent(() => import('../components/cal
 const GlobalNotifications = defineAsyncComponent(() => import('../components/GlobalNotifications.vue'))
 const ModalContainer = defineAsyncComponent(() => import('../components/ModalContainer.vue'))
 const GlobalSpinner = defineAsyncComponent(() => import('../components/GlobalSpinner.vue'))
+const SoporteTiChatNotificacionModal = defineAsyncComponent(
+  () => import('../components/soporte-ti/SoporteTiChatNotificacionModal.vue')
+)
 import type { AuthMenu } from '../services/authService'
 import type { SidebarCategory } from '../types/module'
 

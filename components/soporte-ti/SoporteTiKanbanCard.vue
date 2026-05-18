@@ -36,7 +36,6 @@ import { computed } from 'vue'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
 import SoporteTiBadge from '~/components/soporte-ti/SoporteTiBadge.vue'
 import SoporteTiProgressStepper from '~/components/soporte-ti/SoporteTiProgressStepper.vue'
-import { formatDate } from '~/utils/formatters'
 
 const props = withDefaults(
   defineProps<{
@@ -58,6 +57,6 @@ function formatoFecha(val: string | null | undefined): string {
 }
 
 const fechaRegistroFmt = computed(() => formatoFecha(props.row.fechaRegistro))
-const fechaFinFmt = computed(() => formatoFecha(props.row.fechaFinEstimado))
+const fechaFinFmt = computed(() => props.row.gestion.terminoEstimado)
 const estadoEtiqueta = computed(() => props.row.estado || props.row.estadoCodigo)
 </script>

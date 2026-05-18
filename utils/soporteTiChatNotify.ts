@@ -25,7 +25,6 @@ export function notifySoporteTiChatEvent(
       detail: { chatUuid, codigo, title, message }
     })
   )
-  notifySoporteTiModal('info', title, message)
 }
 
 export function tituloNotificacionMensaje(payload: SoporteTiWsMensajePayload): string {

@@ -1,26 +1,28 @@
-import { computed, onUnmounted } from 'vue'
 import { soporteTiChatChannelName, SOPORTE_TI_WS_EVENTS } from '~/constants/soporteTi'
-import { useEcho } from '~/composables/websocket/useEcho'
-import type { SoporteTiWsEstadoPayload, SoporteTiWsMensajePayload } from '~/types/soporteTi'
+import { useEcho, getEchoInstance } from '~/composables/websocket/useEcho'
+import type {
+  SoporteTiWsEstadoPayload,
+  SoporteTiWsMensajePayload,
+  SoporteTiWsMensajesLeidosPayload
+} from '~/types/soporteTi'
 import {
   notifySoporteTiChatEvent,
   tituloNotificacionEstado,
   tituloNotificacionMensaje
 } from '~/utils/soporteTiChatNotify'
+import { resolveEsPropioMensaje } from '~/utils/soporteTiChatMensaje'
+import { debeIgnorarNotifEstadoWs } from '~/utils/soporteTiWsEstadoSkip'
 
 export type SoporteTiChatRoomHandlers = {
   onMensajeCreado?: (p: SoporteTiWsMensajePayload) => void
   onMensajeActualizado?: (p: SoporteTiWsMensajePayload) => void
+  onMensajesLeidos?: (p: SoporteTiWsMensajesLeidosPayload) => void
   onEstadoActualizado?: (p: SoporteTiWsEstadoPayload) => void
 }
 
-type DemoListener = {
-  bc: BroadcastChannel
-  handlers: SoporteTiChatRoomHandlers
-}
-
-const demoRooms = new Map<string, DemoListener>()
 const echoRooms = new Set<string>()
+const pendingRooms = new Map<string, SoporteTiChatRoomHandlers>()
+let flushTimer: ReturnType<typeof setInterval> | null = null
 
 function parsePayload<T>(data: unknown): T | null {
   if (!data) return null
@@ -35,42 +37,38 @@ function parsePayload<T>(data: unknown): T | null {
 }
 
 function shouldNotify(chatUuid: string, salaActivaUuid: string | null): boolean {
-  if (salaActivaUuid === chatUuid) return false
-  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-    const path = window.location?.pathname ?? ''
-    if (path.includes('/soporte-ti') && salaActivaUuid === chatUuid) return false
+  return salaActivaUuid !== chatUuid
+}
+
+function esMensajePropio(payload: SoporteTiWsMensajePayload): boolean {
+  if (!payload.mensaje) return false
+  return resolveEsPropioMensaje(payload.mensaje)
+}
+
+function stopFlushLoop() {
+  if (flushTimer != null) {
+    clearInterval(flushTimer)
+    flushTimer = null
   }
-  return true
 }
 
 export function useSoporteTiChatRoom() {
-  const config = useRuntimeConfig()
-  const usarApi = computed(() => config.public.soporteTiUseApi !== false)
   const salaActivaUuid = useState<string | null>('soporte-ti-sala-activa', () => null)
-
   const { subscribeToChannel, unsubscribeFromChannel } = useEcho()
 
   function setSalaActiva(chatUuid: string | null) {
     salaActivaUuid.value = chatUuid
   }
 
-  /** Publica en demo (misma pestaña / otras pestañas) simulando el broadcast de Laravel. */
-  function publicarDemo(
-    chatUuid: string,
-    tipo: 'mensaje_creado' | 'mensaje_actualizado' | 'estado',
-    payload: SoporteTiWsMensajePayload | SoporteTiWsEstadoPayload
-  ) {
-    if (typeof BroadcastChannel === 'undefined') return
-    const bc = new BroadcastChannel(`soporte-ti-demo-${chatUuid}`)
-    bc.postMessage({ tipo, payload })
-    bc.close()
-  }
+  function suscribirSalaEcho(chatUuid: string, handlers: SoporteTiChatRoomHandlers) {
+    if (!chatUuid || echoRooms.has(chatUuid)) return true
 
-  function suscribirSala(chatUuid: string, handlers: SoporteTiChatRoomHandlers) {
-    if (!chatUuid) return
+    if (!getEchoInstance()) {
+      pendingRooms.set(chatUuid, handlers)
+      return false
+    }
 
-    if (usarApi.value) {
-      if (echoRooms.has(chatUuid)) return
+    try {
       const channelName = soporteTiChatChannelName(chatUuid)
       subscribeToChannel({
         name: channelName,
@@ -82,7 +80,12 @@ export function useSoporteTiChatRoom() {
               const p = parsePayload<SoporteTiWsMensajePayload>(raw)
               if (!p?.chat_uuid) return
               handlers.onMensajeCreado?.(p)
-              if (shouldNotify(p.chat_uuid, salaActivaUuid.value)) {
+              const esSistema = Boolean(p.mensaje?.es_sistema)
+              if (
+                !esSistema &&
+                !esMensajePropio(p) &&
+                shouldNotify(p.chat_uuid, salaActivaUuid.value)
+              ) {
                 notifySoporteTiChatEvent(
                   p.chat_uuid,
                   p.codigo,
@@ -98,7 +101,10 @@ export function useSoporteTiChatRoom() {
               const p = parsePayload<SoporteTiWsMensajePayload>(raw)
               if (!p?.chat_uuid) return
               handlers.onMensajeActualizado?.(p)
-              if (shouldNotify(p.chat_uuid, salaActivaUuid.value)) {
+              if (
+                !esMensajePropio(p) &&
+                shouldNotify(p.chat_uuid, salaActivaUuid.value)
+              ) {
                 notifySoporteTiChatEvent(
                   p.chat_uuid,
                   p.codigo,
@@ -109,12 +115,23 @@ export function useSoporteTiChatRoom() {
             }
           },
           {
+            event: SOPORTE_TI_WS_EVENTS.MENSAJES_LEIDOS,
+            callback: (raw: unknown) => {
+              const p = parsePayload<SoporteTiWsMensajesLeidosPayload>(raw)
+              if (!p?.chat_uuid) return
+              handlers.onMensajesLeidos?.(p)
+            }
+          },
+          {
             event: SOPORTE_TI_WS_EVENTS.ESTADO_ACTUALIZADO,
             callback: (raw: unknown) => {
               const p = parsePayload<SoporteTiWsEstadoPayload>(raw)
               if (!p?.chat_uuid) return
               handlers.onEstadoActualizado?.(p)
-              if (shouldNotify(p.chat_uuid, salaActivaUuid.value)) {
+              if (
+                shouldNotify(p.chat_uuid, salaActivaUuid.value) &&
+                !debeIgnorarNotifEstadoWs(p.chat_uuid)
+              ) {
                 notifySoporteTiChatEvent(
                   p.chat_uuid,
                   p.codigo,
@@ -127,75 +144,64 @@ export function useSoporteTiChatRoom() {
         ]
       })
       echoRooms.add(chatUuid)
-      return
+      pendingRooms.delete(chatUuid)
+      return true
+    } catch (e) {
+      console.warn('[SoporteTI] No se pudo suscribir al canal de chat:', chatUuid, e)
+      pendingRooms.set(chatUuid, handlers)
+      return false
     }
+  }
 
-    if (demoRooms.has(chatUuid)) return
-    if (typeof BroadcastChannel === 'undefined') return
-
-    const bc = new BroadcastChannel(`soporte-ti-demo-${chatUuid}`)
-    bc.onmessage = (ev) => {
-      const { tipo, payload } = ev.data || {}
-      if (tipo === 'mensaje_creado') {
-        const p = payload as SoporteTiWsMensajePayload
-        handlers.onMensajeCreado?.(p)
-        if (shouldNotify(chatUuid, salaActivaUuid.value)) {
-          notifySoporteTiChatEvent(
-            chatUuid,
-            p.codigo,
-            tituloNotificacionMensaje(p),
-            p.mensaje?.texto || 'Nuevo mensaje'
-          )
-        }
-      } else if (tipo === 'mensaje_actualizado') {
-        handlers.onMensajeActualizado?.(payload as SoporteTiWsMensajePayload)
-      } else if (tipo === 'estado') {
-        const p = payload as SoporteTiWsEstadoPayload
-        handlers.onEstadoActualizado?.(p)
-        if (shouldNotify(chatUuid, salaActivaUuid.value)) {
-          notifySoporteTiChatEvent(
-            chatUuid,
-            p.codigo,
-            tituloNotificacionEstado(p),
-            `Nuevo estado: ${p.estado}`
-          )
-        }
-      }
+  function flushPendingRooms() {
+    if (!getEchoInstance() || pendingRooms.size === 0) return
+    for (const [uuid, handlers] of [...pendingRooms.entries()]) {
+      suscribirSalaEcho(uuid, handlers)
     }
-    demoRooms.set(chatUuid, { bc, handlers })
+    if (pendingRooms.size === 0) {
+      stopFlushLoop()
+    }
+  }
+
+  function ensureFlushLoop() {
+    if (flushTimer != null || typeof window === 'undefined') return
+    flushTimer = setInterval(() => {
+      flushPendingRooms()
+    }, 500)
+  }
+
+  function suscribirSala(chatUuid: string, handlers: SoporteTiChatRoomHandlers) {
+    if (!chatUuid) return
+    const ok = suscribirSalaEcho(chatUuid, handlers)
+    if (!ok) {
+      ensureFlushLoop()
+    }
   }
 
   function desuscribirSala(chatUuid: string) {
     if (!chatUuid) return
-    if (usarApi.value) {
-      if (!echoRooms.has(chatUuid)) return
+    pendingRooms.delete(chatUuid)
+    if (!echoRooms.has(chatUuid)) return
+    try {
       unsubscribeFromChannel(soporteTiChatChannelName(chatUuid))
-      echoRooms.delete(chatUuid)
-      return
+    } catch (e) {
+      console.warn('[SoporteTI] Error al desuscribir canal:', chatUuid, e)
     }
-    const room = demoRooms.get(chatUuid)
-    if (room) {
-      room.bc.close()
-      demoRooms.delete(chatUuid)
-    }
+    echoRooms.delete(chatUuid)
   }
 
   function desuscribirTodas() {
+    pendingRooms.clear()
+    stopFlushLoop()
     ;[...echoRooms].forEach(desuscribirSala)
-    ;[...demoRooms.keys()].forEach(desuscribirSala)
   }
 
-  onUnmounted(() => {
-    desuscribirTodas()
-  })
-
   return {
-    usarApi,
     salaActivaUuid,
     setSalaActiva,
     suscribirSala,
     desuscribirSala,
     desuscribirTodas,
-    publicarDemo
+    flushPendingRooms
   }
 }

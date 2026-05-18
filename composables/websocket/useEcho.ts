@@ -1,11 +1,29 @@
 import Echo from 'laravel-echo'
 import type { Channel, PresenceChannel } from 'pusher-js'
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import type { EchoConfig, WebSocketRole, WebSocketChannel } from '../../types/websocket/echo'
 
 let echoInstance: Echo | null = null
 let isInitializing = false
 let isInitialized = false
+
+type PusherConstructor = typeof import('pusher-js').default
+
+/** Resuelve el constructor Pusher con distintas formas de export (CJS/ESM en Vite). */
+async function loadPusherConstructor(): Promise<PusherConstructor> {
+  const mod = await import('pusher-js')
+  const candidate =
+    (mod as { default?: { default?: unknown } }).default?.default ??
+    mod.default ??
+    (mod as { Pusher?: unknown }).Pusher ??
+    mod
+
+  if (typeof candidate !== 'function') {
+    throw new Error('pusher-js no exportó un constructor válido')
+  }
+
+  return candidate as PusherConstructor
+}
 
 export const useEcho = () => {
   const isConnected = ref(false)
@@ -30,12 +48,9 @@ export const useEcho = () => {
     try {
       if (typeof window !== 'undefined') {
         try {
-          const PusherJs = await import('pusher-js')
-          ;(window as any).Pusher = PusherJs.default
-
-          // Deshabilitar logs de Pusher en producción
-          ;(window as any).Pusher.logToConsole = false
-          
+          const Pusher = await loadPusherConstructor()
+          ;(window as any).Pusher = Pusher
+          Pusher.logToConsole = import.meta.dev
         } catch (error) {
           console.error('❌ Error importando Pusher:', error)
           throw error
@@ -44,16 +59,22 @@ export const useEcho = () => {
       
 
       const finalConfig = {
-        broadcaster: 'pusher',
-        key: config.public.pusherAppKey,
-        cluster: config.public.pusherAppCluster,
         ...echoConfig,
-        enabledTransports: ['ws', 'wss']
-        // No sobrescribir forceTLS, usar el valor del echoConfig
+        broadcaster: 'pusher',
+        key: String(echoConfig.key || config.public.pusherAppKey || '').trim(),
+        cluster: String(echoConfig.cluster || config.public.pusherAppCluster || 'mt1').trim(),
+        enabledTransports: echoConfig.enabledTransports ?? ['ws', 'wss']
       }
-      
-      
-      
+
+      if (process.dev) {
+        console.info('[Echo] Inicializando', {
+          wsHost: finalConfig.wsHost,
+          wsPort: finalConfig.wsPort,
+          authEndpoint: finalConfig.authEndpoint,
+          forceTLS: finalConfig.forceTLS
+        })
+      }
+
       echoInstance = new Echo(finalConfig)
 
       // Agregar listeners globales de Pusher
@@ -313,10 +334,6 @@ export const useEcho = () => {
     }
     return null
   }
-
-  onUnmounted(() => {
-    disconnect()
-  })
 
   return {
     isConnected,

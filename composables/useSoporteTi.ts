@@ -1,19 +1,15 @@
 import { computed } from 'vue'
 import type { SoporteTiRol } from '~/constants/soporteTi'
-import {
-  SOPORTE_TI_DEMO_SOLICITANTE,
-  SOPORTE_TI_ROL_META,
-  soporteTiInicialesDesdeNombre
-} from '~/constants/soporteTi'
+import { SOPORTE_TI_ROL_META, soporteTiInicialesDesdeNombre } from '~/constants/soporteTi'
 import { ROLES } from '~/constants/roles'
 import { SoporteTiService } from '~/services/soporteTiService'
 import type {
   SoporteTiCreatePayload,
   SoporteTiEnviarMensajePayload,
-  SoporteTiEvidenciaItem,
   SoporteTiListFilters,
   SoporteTiMensaje,
   SoporteTiSolicitud,
+  SoporteTiSolicitudApi,
   SoporteTiMaqueta,
   SoporteTiWsEstadoPayload,
   SoporteTiWsMensajePayload
@@ -26,35 +22,25 @@ import {
   mapSolicitudUiToApiPatch,
   parseSoporteTiListPayload
 } from '~/utils/soporteTiMappers'
-import { getSoporteTiSeedSolicitudes } from '~/utils/soporteTiSeed'
 import { useSoporteTiChat } from '~/composables/useSoporteTiChat'
-import { generarChatUuid } from '~/utils/soporteTiUuid'
 import { useSoporteTiChatRoom } from '~/composables/useSoporteTiChatRoom'
+import { encolarLeidosDesdeMensajes } from '~/composables/useSoporteTiChatLeidos'
 import { estadoPorId, resolverEstado } from '~/constants/soporteTiEstados'
+import { aplicarCambioEstadoEnSolicitud } from '~/utils/soporteTiEstadoTransition'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import {
+  crearClientIdMensaje,
+  mensajeOptimistaDesdeEnvio
+} from '~/utils/soporteTiChatMensaje'
+
+function clientIdFallback(m: SoporteTiMensaje): string {
+  return m.clientId ?? `legacy-${m.id}`
+}
 
 function etiquetaAhora(): string {
   const d = new Date()
   const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
   return `${d.getDate()} ${meses[d.getMonth()]} ${d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}`
-}
-
-function siguienteOrdenEvidencia(ticket: SoporteTiSolicitud): number {
-  const ev = ticket.evidencias
-  if (!ev?.length) return 0
-  return Math.max(...ev.map((e) => e.orden ?? 0)) + 1
-}
-
-function buildReplyPreview(mensajes: SoporteTiMensaje[], replyToId: number) {
-  const origen = mensajes.find((m) => m.id === replyToId)
-  if (!origen) return null
-  const texto = origen.texto.length > 80 ? `${origen.texto.slice(0, 80)}…` : origen.texto
-  return {
-    id: origen.id,
-    remitente: origen.remitente,
-    texto,
-    tieneImagen: !!(origen.imagenes?.length)
-  }
 }
 
 function statsDesdeSolicitudes(list: SoporteTiSolicitud[]) {
@@ -68,20 +54,19 @@ function statsDesdeSolicitudes(list: SoporteTiSolicitud[]) {
   }
 }
 
-
 export function useSoporteTi() {
-  const config = useRuntimeConfig()
-  const usarApi = computed(() => config.public.soporteTiUseApi !== false)
-  const { hasRole, userName, currentId } = useUserRole()
-  const { publicarDemo } = useSoporteTiChatRoom()
+  const { hasRole, userName } = useUserRole()
   const {
     mensajesDe,
     metaDe,
     agregarMensaje,
     actualizarMensajeEnSala,
+    reemplazarMensajeOptimista,
+    quitarMensajeOptimista,
     cargarChatInicial,
     cargarMensajesAnteriores,
-    initDemoStore
+    aplicarMensajesLeidosWs,
+    resetSala
   } = useSoporteTiChat()
 
   const rolActivo = computed<SoporteTiRol>(() => {
@@ -90,7 +75,6 @@ export function useSoporteTi() {
     return 'Solicitante'
   })
 
-  /** Remitente burbuja (nombre real + color según rol intranet) */
   function remitenteChatUi() {
     const r = rolActivo.value
     const nombre = userName.value || 'Usuario'
@@ -114,7 +98,6 @@ export function useSoporteTi() {
     return solicitudes.value.find((s) => s.codigo === codigo) ?? null
   }
 
-  /** Resuelve fila por segmento de URL: id numérico, UUID de chat o código ticket */
   function solicitudPorParamRuta(param: string): SoporteTiSolicitud | null {
     if (!param) return null
     const raw = decodeURIComponent(param.trim())
@@ -142,15 +125,11 @@ export function useSoporteTi() {
     }
   }
 
-  /**
-   * Resuelve ticket para la URL cuando no está en memoria (p. ej. enlace directo): GET show o búsqueda en list.
-   */
   async function resolverTicketParaRuta(param: string): Promise<SoporteTiSolicitud | null> {
     if (!param) return null
     const raw = decodeURIComponent(param.trim())
     const local = solicitudPorParamRuta(raw)
     if (local) return local
-    if (!usarApi.value) return null
 
     if (/^\d+$/.test(raw)) {
       try {
@@ -194,7 +173,7 @@ export function useSoporteTi() {
     return null
   }
 
-  function agregarMensajeSistema(chatUuid: string, codigo: string, texto: string) {
+  function agregarMensajeSistema(chatUuid: string, _codigo: string, texto: string) {
     const msg: SoporteTiMensaje = {
       id: Date.now(),
       remitente: 'Sistema',
@@ -205,84 +184,150 @@ export function useSoporteTi() {
       marcaTiempo: etiquetaAhora()
     }
     agregarMensaje(chatUuid, msg)
-    if (!usarApi.value) {
-      publicarDemo(chatUuid, 'mensaje_creado', {
-        chat_uuid: chatUuid,
-        codigo,
-        mensaje: {
-          id: msg.id,
-          remitente: msg.remitente,
-          iniciales: msg.iniciales,
-          color: msg.color,
-          texto: msg.texto,
-          es_sistema: true,
-          marca_tiempo: msg.marcaTiempo
-        }
+  }
+
+  function esSalaChatVisible(chatUuid: string): boolean {
+    const { salaActivaUuid } = useSoporteTiChatRoom()
+    return salaActivaUuid.value === chatUuid
+  }
+
+  function aplicarMensajeRemoto(
+    chatUuidEsperado: string,
+    payload: SoporteTiWsMensajePayload,
+    esActualizacion = false
+  ) {
+    if (!payload.chat_uuid || payload.chat_uuid !== chatUuidEsperado) return
+    if (!esSalaChatVisible(chatUuidEsperado)) return
+
+    const ui = mapMensajeApiToUi(payload.mensaje)
+    if (ui.esPropio) {
+      ui.estadoEnvio = ui.adjuntoPendiente
+        ? 'enviando'
+        : payload.mensaje.leido
+          ? 'leido'
+          : 'entregado'
+    }
+
+    const lista = mensajesDe(chatUuidEsperado)
+
+    let idxOptimista = -1
+    for (let i = lista.length - 1; i >= 0; i--) {
+      const m = lista[i]!
+      if (
+        m.esPropio &&
+        ui.esPropio &&
+        (m.estadoEnvio === 'pendiente' || m.estadoEnvio === 'enviando') &&
+        (m.clientId || m.id < 0)
+      ) {
+        idxOptimista = i
+        break
+      }
+    }
+    if (idxOptimista >= 0) {
+      const prev = lista[idxOptimista]!
+      reemplazarMensajeOptimista(chatUuidEsperado, prev.clientId ?? clientIdFallback(prev), {
+        ...ui,
+        clientId: undefined,
+        imagenes: ui.imagenes?.length ? ui.imagenes : prev.imagenes,
+        texto: ui.texto || prev.texto,
+        estadoEnvio: ui.esPropio
+          ? ui.adjuntoPendiente
+            ? 'enviando'
+            : payload.mensaje.leido
+              ? 'leido'
+              : 'entregado'
+          : undefined
       })
+      return
+    }
+
+    const existe = lista.some((m) => m.id === ui.id && m.id > 0)
+    if (esActualizacion || existe) {
+      actualizarMensajeEnSala(chatUuidEsperado, ui)
+    } else {
+      agregarMensaje(chatUuidEsperado, ui)
+    }
+
+    if (!ui.esPropio && !ui.esSistema) {
+      encolarLeidosDesdeMensajes(chatUuidEsperado, [ui])
     }
   }
 
-  function aplicarMensajeRemoto(payload: SoporteTiWsMensajePayload, esActualizacion = false) {
-    const ui = mapMensajeApiToUi(payload.mensaje)
-    const lista = mensajesDe(payload.chat_uuid)
-    const existe = lista.some((m) => m.id === ui.id)
-    if (esActualizacion || existe) {
-      actualizarMensajeEnSala(payload.chat_uuid, ui)
-    } else {
-      agregarMensaje(payload.chat_uuid, ui)
+  function aplicarMensajesLeidosRemoto(
+    chatUuid: string,
+    payload: import('~/types/soporteTi').SoporteTiWsMensajesLeidosPayload
+  ) {
+    if (!payload.mensaje_ids?.length || !esSalaChatVisible(chatUuid)) return
+    aplicarMensajesLeidosWs(chatUuid, payload.mensaje_ids)
+  }
+
+  async function refrescarSolicitudPorChatUuid(chatUuid: string) {
+    const s = solicitudPorChatUuid(chatUuid)
+    if (!s?.backendId) return
+    try {
+      const res = await SoporteTiService.show(s.backendId)
+      if (res.success && res.data) {
+        fusionarSolicitudApiEnLista(res.data, chatUuid)
+      }
+    } catch {
+      // listado sigue usable; el detalle se puede recargar al entrar
     }
   }
 
   function aplicarEstadoRemoto(payload: SoporteTiWsEstadoPayload) {
-    const s = solicitudPorChatUuid(payload.chat_uuid)
-    if (!s) return
-    const est = payload.estado_id
-      ? estadoPorId(payload.estado_id) ?? resolverEstado(payload.estado_codigo || payload.estado)
-      : resolverEstado(payload.estado_codigo || payload.estado)
-    const actualizada: SoporteTiSolicitud = {
-      ...s,
-      estadoId: est.id,
-      estadoCodigo: est.codigo,
-      estado: est.nombre,
-      faseIndex: payload.fase_index ?? s.faseIndex,
-      progreso: payload.progreso ?? s.progreso,
-      ultimaActualizacion: payload.ultima_actualizacion ?? etiquetaAhora()
-    }
-    void actualizarSolicitud(actualizada, { emitirWs: false })
-    agregarMensajeSistema(
-      payload.chat_uuid,
-      payload.codigo,
-      `Estado actualizado a "${est.nombre}".`
-    )
+    void refrescarSolicitudPorChatUuid(payload.chat_uuid)
   }
 
+  let cargarEnCurso: Promise<void> | null = null
+  let ultimosFiltrosListado: SoporteTiListFilters | undefined
+
   async function cargar(filters?: SoporteTiListFilters) {
-    error.value = null
-    try {
-      if (usarApi.value) {
+    ultimosFiltrosListado = filters
+    if (cargarEnCurso) return cargarEnCurso
+
+    cargarEnCurso = (async () => {
+      error.value = null
+      try {
         const res = await SoporteTiService.list(filters)
         if (!res || typeof res !== 'object') throw new Error('Respuesta inválida del servidor')
         if (!res.success) throw new Error(res.message || 'Error al cargar')
         const { rows } = parseSoporteTiListPayload(res)
-        solicitudes.value = rows.map((row) => mapSolicitudApiToUi(row))
-      } else {
-        solicitudes.value = getSoporteTiSeedSolicitudes()
-        initDemoStore()
-      }
-    } catch (e: any) {
-      error.value = e?.message || 'Error al cargar'
-      if (usarApi.value) {
+        solicitudes.value = rows
+          .map((row) => {
+            try {
+              return mapSolicitudApiToUi(row)
+            } catch (e) {
+              console.warn('[SoporteTI] Fila de listado omitida por datos inválidos:', row, e)
+              return null
+            }
+          })
+          .filter((s): s is SoporteTiSolicitud => s != null)
+      } catch (e: unknown) {
+        error.value = e instanceof Error ? e.message : 'Error al cargar'
         solicitudes.value = []
-      } else {
-        solicitudes.value = getSoporteTiSeedSolicitudes()
-        initDemoStore()
       }
+    })().finally(() => {
+      cargarEnCurso = null
+    })
+
+    return cargarEnCurso
+  }
+
+  /** Asegura el listado en memoria (una sola petición concurrente). */
+  async function asegurarListadoCargado() {
+    if (solicitudes.value.length > 0) {
+      return extraerChatUuidsDesdeSolicitudes(solicitudes.value)
     }
+    await cargar(ultimosFiltrosListado)
+    return extraerChatUuidsDesdeSolicitudes(solicitudes.value)
+  }
+
+  function extraerChatUuidsDesdeSolicitudes(list: SoporteTiSolicitud[]) {
+    return list.map((s) => s.chatUuid).filter((uuid): uuid is string => Boolean(uuid))
   }
 
   async function actualizarSolicitud(
-    actualizada: SoporteTiSolicitud,
-    opts?: { emitirWs?: boolean }
+    actualizada: SoporteTiSolicitud
   ): Promise<{ ok: true } | { ok: false; error: string }> {
     const idx = solicitudes.value.findIndex((s) => s.chatUuid === actualizada.chatUuid)
     const antes = idx !== -1 ? solicitudes.value[idx] : null
@@ -291,30 +336,26 @@ export function useSoporteTi() {
       s.chatUuid === actualizada.chatUuid ? actualizada : s
     )
 
-    const emitir = opts?.emitirWs !== false
-    if (!usarApi.value && emitir) {
-      if (antes && antes.estadoId !== actualizada.estadoId) {
-        publicarDemo(actualizada.chatUuid, 'estado', {
-          chat_uuid: actualizada.chatUuid,
-          codigo: actualizada.codigo,
-          estado_id: actualizada.estadoId,
-          estado_codigo: actualizada.estadoCodigo,
-          estado: actualizada.estado,
-          fase_index: actualizada.faseIndex,
-          progreso: actualizada.progreso,
-          ultima_actualizacion: actualizada.ultimaActualizacion
-        })
+    if (actualizada.backendId == null) {
+      if (antes != null) {
+        solicitudes.value = solicitudes.value.map((s) =>
+          s.chatUuid === actualizada.chatUuid ? antes : s
+        )
       }
+      return { ok: false, error: 'La solicitud no tiene identificador en el servidor' }
     }
 
-    if (!usarApi.value || actualizada.backendId == null) {
-      return { ok: true }
-    }
     try {
-      await SoporteTiService.update(
+      const res = await SoporteTiService.update(
         actualizada.backendId,
         mapSolicitudUiToApiPatch(actualizada)
       )
+      if (!res.success) {
+        throw new Error(res.message || 'Error al guardar')
+      }
+      if (res.data) {
+        fusionarSolicitudApiEnLista(res.data, actualizada.chatUuid)
+      }
       return { ok: true }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Error al guardar'
@@ -327,189 +368,256 @@ export function useSoporteTi() {
     }
   }
 
+  function fusionarSolicitudApiEnLista(data: SoporteTiSolicitudApi, chatUuid: string) {
+    const ui = mapSolicitudApiToUi(data)
+    solicitudes.value = solicitudes.value.map((s) =>
+      s.chatUuid === chatUuid ? { ...s, ...ui, chatUuid: s.chatUuid } : s
+    )
+  }
+
+  async function actualizarPrioridadSolicitud(
+    t: SoporteTiSolicitud,
+    prioridad: number
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (t.backendId == null) {
+      return { ok: false, error: 'La solicitud no tiene identificador en el servidor' }
+    }
+    const idx = solicitudes.value.findIndex((s) => s.chatUuid === t.chatUuid)
+    const antes = idx !== -1 ? solicitudes.value[idx] : null
+    solicitudes.value = solicitudes.value.map((s) =>
+      s.chatUuid === t.chatUuid ? { ...s, prioridad, ultimaActualizacion: etiquetaAhora() } : s
+    )
+    try {
+      const res = await SoporteTiService.updatePrioridad(t.backendId, prioridad)
+      if (!res.success) throw new Error(res.message || 'No se pudo actualizar la prioridad')
+      if (res.data) fusionarSolicitudApiEnLista(res.data, t.chatUuid)
+      return { ok: true }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al guardar'
+      if (antes != null) {
+        solicitudes.value = solicitudes.value.map((s) =>
+          s.chatUuid === t.chatUuid ? antes : s
+        )
+      }
+      return { ok: false, error: msg || 'Error al guardar en el servidor' }
+    }
+  }
+
+  async function actualizarComplejidadSolicitud(
+    t: SoporteTiSolicitud,
+    criticidad: string,
+    rol?: 'pm' | 'analista' | 'legacy'
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (t.backendId == null) {
+      return { ok: false, error: 'La solicitud no tiene identificador en el servidor' }
+    }
+
+    const idx = solicitudes.value.findIndex((s) => s.chatUuid === t.chatUuid)
+    const antes = idx !== -1 ? solicitudes.value[idx] : null
+    const patchGestion = { ...t.gestion }
+    if (t.tipo === 'A' && rol === 'pm') {
+      patchGestion.complejidadPmValor = criticidad as SoporteTiSolicitud['gestion']['complejidadPmValor']
+    } else if (t.tipo === 'A' && rol === 'analista') {
+      patchGestion.complejidadAnalistaValor =
+        criticidad as SoporteTiSolicitud['gestion']['complejidadAnalistaValor']
+    } else if (t.tipo !== 'A') {
+      patchGestion.complejidadValor = criticidad as SoporteTiSolicitud['gestion']['complejidadValor']
+    }
+    const actualizada: SoporteTiSolicitud = {
+      ...t,
+      criticidad,
+      complejidadPm: t.tipo === 'A' && rol === 'pm' ? criticidad : t.complejidadPm,
+      complejidadAnalista:
+        t.tipo === 'A' && rol === 'analista' ? criticidad : t.complejidadAnalista,
+      gestion: patchGestion,
+      ultimaActualizacion: etiquetaAhora()
+    }
+
+    solicitudes.value = solicitudes.value.map((s) =>
+      s.chatUuid === t.chatUuid ? actualizada : s
+    )
+
+    try {
+      const res = await SoporteTiService.updateComplejidad(t.backendId, criticidad)
+      if (!res.success) {
+        throw new Error(res.message || 'No se pudo actualizar la complejidad')
+      }
+      if (res.data) {
+        fusionarSolicitudApiEnLista(res.data, t.chatUuid)
+      }
+      return { ok: true }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al guardar'
+      if (antes != null) {
+        solicitudes.value = solicitudes.value.map((s) =>
+          s.chatUuid === t.chatUuid ? antes : s
+        )
+      }
+      return { ok: false, error: msg || 'Error al guardar en el servidor' }
+    }
+  }
+
+  async function actualizarEstadoSolicitud(
+    t: SoporteTiSolicitud,
+    estadoCodigo: string
+  ): Promise<{ ok: true; solicitud: SoporteTiSolicitud } | { ok: false; error: string }> {
+    if (t.backendId == null) {
+      return { ok: false, error: 'La solicitud no tiene identificador en el servidor' }
+    }
+
+    const idx = solicitudes.value.findIndex((s) => s.chatUuid === t.chatUuid)
+    const antes = idx !== -1 ? solicitudes.value[idx] : null
+    const actualizada = {
+      ...aplicarCambioEstadoEnSolicitud(t, estadoCodigo),
+      ultimaActualizacion: etiquetaAhora()
+    }
+
+    solicitudes.value = solicitudes.value.map((s) =>
+      s.chatUuid === t.chatUuid ? actualizada : s
+    )
+
+    try {
+      const res = await SoporteTiService.updateEstado(t.backendId, { estadoCodigo })
+      if (!res.success) {
+        throw new Error(res.message || 'No se pudo actualizar el estado')
+      }
+      if (res.data) {
+        fusionarSolicitudApiEnLista(res.data, t.chatUuid)
+        const merged = solicitudes.value.find((s) => s.chatUuid === t.chatUuid)
+        return { ok: true, solicitud: merged ?? actualizada }
+      }
+      return { ok: true, solicitud: actualizada }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al guardar'
+      if (antes != null) {
+        solicitudes.value = solicitudes.value.map((s) =>
+          s.chatUuid === t.chatUuid ? antes : s
+        )
+      }
+      return { ok: false, error: msg || 'Error al guardar en el servidor' }
+    }
+  }
+
   async function crearSolicitud(payload: SoporteTiCreatePayload) {
     const sla = payload.tipo === 'A' ? 72 : 8
-    const hoyCorto = etiquetaAhora().split(' ').slice(0, 2).join(' ')
-    const chatUuid = generarChatUuid()
-
-    if (usarApi.value) {
-      const res = payload.imagenes?.length
-        ? await SoporteTiService.store(buildCreateSolicitudFormData(payload))
-        : await SoporteTiService.store(buildCreateApiBody(payload) as Record<string, unknown>)
-      if (!res.success || !res.data) throw new Error(res.message || 'No se pudo crear')
-      const nueva = mapSolicitudApiToUi(res.data)
-      solicitudes.value = [...solicitudes.value, nueva]
-      agregarMensajeSistema(
-        nueva.chatUuid,
-        nueva.codigo,
-        `Ticket ${nueva.codigo} creado. SLA: ${sla}h.`
-      )
-      return nueva
-    }
-
-    const pref = payload.tipo === 'A' ? 'PRJ' : 'REQ'
-    const codigo = `${pref}-${String(Math.floor(Math.random() * 900 + 100))}`
-    const estIni = resolverEstado('pendiente')
-    const demoSolicitante = (userName.value || '').trim() || SOPORTE_TI_DEMO_SOLICITANTE
-    const nueva: SoporteTiSolicitud = {
-      backendId: null,
-      chatUuid,
-      codigo,
-      tipo: payload.tipo,
-      subtipoB: payload.tipo === 'B' ? payload.subtipoB : null,
-      titulo: payload.titulo || 'Nueva solicitud',
-      area: payload.area,
-      solicitante: demoSolicitante,
-      solicitanteUserId: currentId.value ? Number(currentId.value) : null,
-      pm: payload.tipo === 'A' ? 'Por asignar' : null,
-      analista: 'Por asignar',
-      criticidad: 'Por definir',
-      estadoId: estIni.id,
-      estadoCodigo: estIni.codigo,
-      estado: estIni.nombre,
-      faseIndex: 0,
-      progreso: 0,
-      slaHoras: sla,
-      horasTranscurridas: 0,
-      fechaRegistro: hoyCorto,
-      ultimaActualizacion: hoyCorto,
-      fechaFinEstimado: payload.tipo === 'A' ? 'Por definir' : null,
-      seccionRuta: payload.seccionRuta || undefined,
-      descripcion: payload.descripcion || undefined,
-      maqueta: null
-    }
-
-    const evidenciasDemo: SoporteTiEvidenciaItem[] = []
-    let ord = 0
-    if (payload.imagenes?.length) {
-      evidenciasDemo.push({
-        tipo: 'texto',
-        texto: `${nueva.titulo} — Evidencia`,
-        orden: ord++
-      })
-      for (const f of payload.imagenes) {
-        evidenciasDemo.push({
-          tipo: 'imagen',
-          url: URL.createObjectURL(f),
-          nombre: f.name,
-          tamano:
-            f.size > 1048576
-              ? `${(f.size / 1048576).toFixed(1)} MB`
-              : `${Math.round(f.size / 1024)} KB`,
-          orden: ord++
-        })
-      }
-      nueva.evidencias = evidenciasDemo
-    }
-
+    const res = payload.imagenes?.length
+      ? await SoporteTiService.store(buildCreateSolicitudFormData(payload))
+      : await SoporteTiService.store(buildCreateApiBody(payload) as Record<string, unknown>)
+    if (!res.success || !res.data) throw new Error(res.message || 'No se pudo crear')
+    const nueva = mapSolicitudApiToUi(res.data)
     solicitudes.value = [...solicitudes.value, nueva]
-    agregarMensajeSistema(chatUuid, codigo, `Ticket ${codigo} creado. SLA: ${sla}h.`)
-    if (payload.imagenes?.length) {
-      await enviarChat(nueva.chatUuid, { texto: `${nueva.titulo} — Evidencia` })
-      for (const file of payload.imagenes) {
-        await enviarChat(nueva.chatUuid, { texto: '', imagenes: [file] })
-      }
+    if (nueva.chatUuid && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('soporte-ti-suscribir-sala', { detail: { chatUuid: nueva.chatUuid } })
+      )
     }
+    const msgCreado =
+      payload.tipo === 'A'
+        ? `Ticket ${nueva.codigo} creado.`
+        : `Ticket ${nueva.codigo} creado. SLA: ${sla}h.`
+    agregarMensajeSistema(nueva.chatUuid, nueva.codigo, msgCreado)
     return nueva
+  }
+
+  async function subirMaqueta(
+    t: SoporteTiSolicitud,
+    archivo: File,
+    mensaje?: string
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (t.backendId == null) {
+      return { ok: false, error: 'La solicitud no tiene identificador en el servidor' }
+    }
+
+    const fd = new FormData()
+    fd.append('archivo', archivo)
+    const texto = mensaje?.trim()
+    if (texto) fd.append('mensaje', texto)
+
+    try {
+      const res = await SoporteTiService.postMaqueta(t.backendId, fd)
+      if (!res.success || !res.data) {
+        throw new Error(res.message || 'No se pudo subir la maqueta')
+      }
+      fusionarSolicitudApiEnLista(res.data, t.chatUuid)
+      await cargarChatInicial(t.chatUuid)
+      return { ok: true }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'No se pudo subir la maqueta'
+      return { ok: false, error: msg }
+    }
   }
 
   async function enviarChat(chatUuid: string, payload: SoporteTiEnviarMensajePayload) {
     const ticket = solicitudPorChatUuid(chatUuid)
-    if (!ticket) return
+    if (!ticket?.backendId) {
+      throw new Error('No se puede enviar el mensaje: solicitud no disponible en el servidor')
+    }
 
-    const meta = remitenteChatUi()
-    const prev = mensajesDe(chatUuid)
-    const replyTo =
-      payload.replyToId != null ? buildReplyPreview(prev, payload.replyToId) : null
-
-    const imagenesLocales =
-      payload.imagenes?.map((file) => ({
-        url: URL.createObjectURL(file),
-        nombre: file.name,
-        tamano:
-          file.size > 1048576
-            ? `${(file.size / 1048576).toFixed(1)} MB`
-            : `${Math.round(file.size / 1024)} KB`
+    const clientId = crearClientIdMensaje()
+    const previews =
+      payload.imagenes?.map((f) => ({
+        url: URL.createObjectURL(f),
+        nombre: f.name
       })) ?? []
 
-    const msgLocal: SoporteTiMensaje = {
-      id: Date.now(),
-      remitente: meta.nombre,
-      iniciales: meta.iniciales,
-      color: meta.color,
-      texto: payload.texto,
-      esSistema: false,
-      marcaTiempo: etiquetaAhora(),
-      esPropio: true,
-      replyToId: payload.replyToId ?? null,
-      replyTo,
-      imagenes: imagenesLocales.length ? imagenesLocales : undefined
-    }
+    const optimista = mensajeOptimistaDesdeEnvio(
+      clientId,
+      remitenteChatUi(),
+      payload,
+      previews
+    )
+    agregarMensaje(chatUuid, optimista)
 
-    if (usarApi.value && ticket.backendId != null) {
+    try {
       const res = await SoporteTiService.postMensaje(ticket.backendId, payload)
-      if (res.success && res.data) {
-        agregarMensaje(chatUuid, mapMensajeApiToUi(res.data))
-        return
+      if (!res.success || !res.data) {
+        throw new Error(res.message || 'No se pudo enviar el mensaje')
       }
-    }
 
-    agregarMensaje(chatUuid, msgLocal)
+      const confirmado = mapMensajeApiToUi(res.data)
+      confirmado.estadoEnvio = confirmado.adjuntoPendiente
+        ? 'enviando'
+        : res.data.leido
+          ? 'leido'
+          : 'entregado'
 
-    const evNuevas: SoporteTiEvidenciaItem[] = []
-    let ordEv = siguienteOrdenEvidencia(ticket)
-    if (payload.texto.trim() !== '') {
-      evNuevas.push({ tipo: 'texto', texto: payload.texto, orden: ordEv++ })
-    }
-    imagenesLocales.forEach((img, i) => {
-      const file = payload.imagenes?.[i]
-      if (!file) return
-      evNuevas.push({
-        tipo: 'imagen',
-        url: img.url,
-        nombre: img.nombre,
-        tamano: img.tamano,
-        orden: ordEv++
+      const fusionado: SoporteTiMensaje = {
+        ...confirmado,
+        clientId: undefined,
+        imagenes: confirmado.imagenes?.length ? confirmado.imagenes : optimista.imagenes,
+        texto: confirmado.texto || optimista.texto,
+        archivoNombre: confirmado.archivoNombre ?? optimista.archivoNombre
+      }
+
+      const yaEnSala = mensajesDe(chatUuid).some((m) => m.id === fusionado.id && m.id > 0)
+      if (yaEnSala) {
+        actualizarMensajeEnSala(chatUuid, fusionado)
+      } else {
+        reemplazarMensajeOptimista(chatUuid, clientId, fusionado)
+      }
+
+      previews.forEach((p) => URL.revokeObjectURL(p.url))
+    } catch (e) {
+      previews.forEach((p) => URL.revokeObjectURL(p.url))
+      actualizarMensajeEnSala(chatUuid, {
+        ...optimista,
+        estadoEnvio: 'error'
       })
-    })
-    if (evNuevas.length) {
-      ticket.evidencias = [...(ticket.evidencias ?? []), ...evNuevas]
+      throw e
     }
-
-    publicarDemo(chatUuid, 'mensaje_creado', {
-      chat_uuid: chatUuid,
-      codigo: ticket.codigo,
-      mensaje: {
-        id: msgLocal.id,
-        remitente: msgLocal.remitente,
-        iniciales: msgLocal.iniciales,
-        color: msgLocal.color,
-        texto: msgLocal.texto,
-        es_sistema: false,
-        marca_tiempo: msgLocal.marcaTiempo,
-        reply_to_id: msgLocal.replyToId ?? null,
-        reply_to: replyTo
-          ? {
-            id: replyTo.id,
-            remitente: replyTo.remitente,
-            texto: replyTo.texto,
-            tiene_imagen: replyTo.tieneImagen
-          }
-          : null,
-        imagenes: imagenesLocales.map((i) => ({
-          url: i.url,
-          nombre: i.nombre,
-          tamano: i.tamano
-        }))
-      }
-    })
   }
 
   function handlersSala(chatUuid: string) {
     return {
-      onMensajeCreado: (p: SoporteTiWsMensajePayload) => aplicarMensajeRemoto(p, false),
-      onMensajeActualizado: (p: SoporteTiWsMensajePayload) => aplicarMensajeRemoto(p, true),
-      onEstadoActualizado: (p: SoporteTiWsEstadoPayload) => aplicarEstadoRemoto(p)
+      onMensajeCreado: (p: SoporteTiWsMensajePayload) =>
+        aplicarMensajeRemoto(chatUuid, p, false),
+      onMensajeActualizado: (p: SoporteTiWsMensajePayload) =>
+        aplicarMensajeRemoto(chatUuid, p, true),
+      onMensajesLeidos: (p) => aplicarMensajesLeidosRemoto(chatUuid, p),
+      onEstadoActualizado: (p: SoporteTiWsEstadoPayload) => {
+        if (p.chat_uuid !== chatUuid) return
+        aplicarEstadoRemoto(p)
+      }
     }
   }
 
@@ -518,16 +626,21 @@ export function useSoporteTi() {
     solicitudes,
     stats,
     error,
-    usarApi,
     cargar,
+    asegurarListadoCargado,
     actualizarSolicitud,
+    actualizarPrioridadSolicitud,
+    actualizarComplejidadSolicitud,
+    actualizarEstadoSolicitud,
     crearSolicitud,
+    subirMaqueta,
     enviarChat,
     agregarMensajeSistema,
     mensajesDe,
     metaDe,
     cargarChatInicial,
     cargarMensajesAnteriores,
+    resetSala,
     solicitudPorChatUuid,
     solicitudPorCodigo,
     solicitudPorParamRuta,

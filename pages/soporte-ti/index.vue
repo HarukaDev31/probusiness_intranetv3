@@ -15,12 +15,33 @@
       empty-state-message="No hay solicitudes que coincidan con los filtros." @update:primary-search="onPrimarySearch"
       @filter-change="onFilterChange" @row-click="onRowClick">
       <template #actions>
+        <UButton
+          v-if="rolActivo !== 'Solicitante'"
+          size="sm"
+          variant="outline"
+          icon="i-heroicons-clock"
+          @click="navigateTo('/soporte-ti/configuracion/horas-tipo-b')"
+        >
+          Horas tipo B
+        </UButton>
+        <UButton
+          v-if="rolActivo !== 'Solicitante'"
+          size="sm"
+          variant="outline"
+          icon="i-heroicons-cog-6-tooth"
+          @click="navigateTo('/soporte-ti/configuracion/horas-tipo-a')"
+        >
+          Horas tipo A
+        </UButton>
         <UButton v-if="rolActivo === 'Solicitante'" size="sm" icon="i-heroicons-plus" @click="modalCrear = true">
           Nueva solicitud
         </UButton>
       </template>
       <template #kanban-card="{ row }">
-        <SoporteTiKanbanCard :row="row as any" :variant="rolActivo === 'Solicitante' ? 'solicitante' : 'staff'" />
+        <SoporteTiKanbanCard
+          :row="row as any"
+          :variant="(row as SoporteTiSolicitud).gestion.esCreador ? 'solicitante' : 'staff'"
+        />
       </template>
     </DataTable>
 
@@ -46,33 +67,34 @@ import SoporteTiStatsCards from '~/components/soporte-ti/SoporteTiStatsCards.vue
 import SoporteTiKanbanCard from '~/components/soporte-ti/SoporteTiKanbanCard.vue'
 import SoporteTiModalCreate from '~/components/soporte-ti/SoporteTiModalCreate.vue'
 import SoporteTiEvidenciaModal from '~/components/soporte-ti/SoporteTiEvidenciaModal.vue'
-import { SOPORTE_TI_ESTADOS, SOPORTE_TI_KANBAN_BOARD } from '~/constants/soporteTiEstados'
-import {
-  SOPORTE_TI_COMPLEJIDADES,
-  esComplejidadCatalogo,
-  puedePasarAEnProgreso
-} from '~/utils/soporteTiCriticidad'
-import { aplicarCambioEstadoEnSolicitud } from '~/utils/soporteTiEstadoTransition'
+import { SOPORTE_TI_KANBAN_BOARD } from '~/constants/soporteTiEstados'
+import { SOPORTE_TI_COMPLEJIDADES, complejidadOk } from '~/utils/soporteTiComplejidad'
+import { estadosItems } from '~/utils/soporteTiGestion'
+import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
 import { useModal } from '~/composables/commons/useModal'
+import { formatSoporteTiRegistro } from '~/utils/formatters'
+import {
+  SOPORTE_TI_PRIORIDADES,
+  prioridadOk,
+  etiquetaPrioridad
+} from '~/constants/soporteTiPrioridad'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { formatDate, formatSoporteTiRegistro } from '~/utils/formatters'
 
 definePageMeta({
   middleware: 'auth'
 })
 
+const { fetchCurrentUser } = useUserRole()
+const { cambiarComplejidad, cambiarEstado } = useSoporteTiAcciones()
+const { actualizarPrioridadSolicitud } = useSoporteTi()
+
 const {
   rolActivo,
   solicitudes,
-  usarApi,
   stats,
   error,
   cargar,
   crearSolicitud,
-  handlersSala,
-  actualizarSolicitud,
-  agregarMensajeSistema,
-  etiquetaAhora
 } = useSoporteTi()
 
 const loading = ref(false)
@@ -86,27 +108,10 @@ async function cargarLista(filters?: SoporteTiListFilters) {
   }
 }
 
-const { fetchCurrentUser } = useUserRole()
-
 const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
 
-const { suscribirSala, desuscribirTodas, setSalaActiva } = useSoporteTiChatRoom()
-const salasSuscritas = ref<Set<string>>(new Set())
-
-watch(
-  solicitudes,
-  (list) => {
-    const activos = new Set(list.map((s) => s.chatUuid))
-    for (const uuid of activos) {
-      if (!salasSuscritas.value.has(uuid)) {
-        suscribirSala(uuid, handlersSala(uuid))
-        salasSuscritas.value.add(uuid)
-      }
-    }
-  },
-  { immediate: true, deep: true }
-)
+const { setSalaActiva } = useSoporteTiChatRoom()
 
 const modalCrear = ref(false)
 const creandoSolicitud = ref(false)
@@ -136,25 +141,9 @@ const filterConfig: FilterConfig[] = [
 function onFilterChange(key: string, value: string) {
   if (key === 'tipo' && (value === 'todos' || value === 'A' || value === 'B')) {
     filtroTipo.value = value
-    if (usarApi.value) void cargarLista(filtrosLista())
+    void cargarLista(filtrosLista())
   }
 }
-
-/** Con API: el listado ya viene filtrado desde el backend (`q`, `tipo_solicitud`). Demo: filtro local. */
-const filtradasLocal = computed(() =>
-  solicitudes.value.filter((t) => {
-    const qq = q.value.trim().toLowerCase()
-    const matchQ =
-      !qq ||
-      t.titulo.toLowerCase().includes(qq) ||
-      t.codigo.toLowerCase().includes(qq)
-    const matchT =
-      filtroTipo.value === 'todos' ||
-      (filtroTipo.value === 'A' && t.tipo === 'A') ||
-      (filtroTipo.value === 'B' && t.tipo === 'B')
-    return matchQ && matchT
-  })
-)
 
 /** Filas con campos derivados para columnas simples (`accessorKey` + `header`). */
 type SoporteTiTablaFila = SoporteTiSolicitud & {
@@ -164,23 +153,12 @@ type SoporteTiTablaFila = SoporteTiSolicitud & {
   estadoLabel: string
 }
 
-const filasTablaBase = computed(() => (usarApi.value ? solicitudes.value : filtradasLocal.value))
-
-function formatoFechaLista(val: string | null | undefined): string {
-  if (val == null || val === '') return '—'
-  const d = new Date(val)
-  if (!Number.isNaN(d.getTime())) {
-    return formatDate(val, { day: 'numeric', month: 'short', year: 'numeric' })
-  }
-  return val
-}
-
 const filasTabla = computed<SoporteTiTablaFila[]>(() =>
-  filasTablaBase.value.map((s) => ({
+  solicitudes.value.map((s) => ({
     ...s,
     tipoSolicitud: s.tipo === 'A' ? 'A' : s.subtipoB || 'B',
-    fechaRegistroCompleta: formatSoporteTiRegistro(s.fechaRegistro),
-    fechaFinEstimadoFmt: formatoFechaLista(s.fechaFinEstimado),
+    fechaRegistroCompleta: formatSoporteTiRegistro(s.fechaRegistroIso ?? s.fechaRegistro),
+    fechaFinEstimadoFmt: s.gestion.terminoEstimado,
     estadoLabel: s.estado || s.estadoCodigo
   }))
 )
@@ -194,15 +172,12 @@ function filtrosLista(): SoporteTiListFilters {
 
 function onPrimarySearch(value: string) {
   q.value = value
-  if (usarApi.value) void cargarLista(filtrosLista())
+  void cargarLista(filtrosLista())
 }
 
 function rutaDetalle(row: SoporteTiSolicitud) {
-  const seg =
-    row.backendId != null
-      ? String(row.backendId)
-      : encodeURIComponent(row.codigo)
-  return `/soporte-ti/${seg}`
+  if (row.backendId == null) return '/soporte-ti'
+  return `/soporte-ti/${row.backendId}`
 }
 
 function onRowClick(row: Record<string, unknown>) {
@@ -217,61 +192,71 @@ const itemsComplejidadAnalista = SOPORTE_TI_COMPLEJIDADES.map((c) => ({
   value: c
 }))
 
-function itemsEstadoAnalistaPara(t: SoporteTiSolicitud) {
-  return SOPORTE_TI_ESTADOS.filter(
-    (e) =>
-      e.codigo !== 'operativo' &&
-      (e.tipoSolicitud === null || e.tipoSolicitud === t.tipo)
-  ).map((e) => ({ label: e.nombre, value: e.codigo }))
-}
+const itemsPrioridad = SOPORTE_TI_PRIORIDADES.map((p) => ({
+  label: p.label,
+  value: p.value
+}))
 
-async function onCambioComplejidadAnalistaTabla(t: SoporteTiSolicitud, val: unknown) {
-  const raw = typeof val === 'string' ? val : String(val ?? '')
-  if (!esComplejidadCatalogo(raw)) return
-  if (t.criticidad === raw) return
+async function onCambioPrioridadTabla(t: SoporteTiSolicitud, val: unknown) {
+  const n = typeof val === 'number' ? val : Number(val)
+  if (!prioridadOk(n) || t.prioridad === n) return
   try {
     await withSpinner(async () => {
-      const res = await actualizarSolicitud({
-        ...t,
-        criticidad: raw,
-        ultimaActualizacion: etiquetaAhora()
-      })
+      const res = await actualizarPrioridadSolicitud(t, n)
       if (res.ok === false) throw new Error(res.error)
-    }, 'Actualizando complejidad…')
-    agregarMensajeSistema(t.chatUuid, t.codigo, `Complejidad actualizada a «${raw}».`)
-    showSuccess('Complejidad actualizada', `El ticket ${t.codigo} quedó en «${raw}».`)
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'No se pudo actualizar la complejidad.'
-    showError('Error al actualizar complejidad', msg)
-  }
-}
-
-async function onCambioEstadoAnalistaTabla(t: SoporteTiSolicitud, val: unknown) {
-  if (!esComplejidadCatalogo(t.criticidad)) return
-  const nuevoCodigo = typeof val === 'string' ? val : String(val ?? '')
-  if (!nuevoCodigo || nuevoCodigo === t.estadoCodigo) return
-  if (nuevoCodigo === 'en_progreso' && !puedePasarAEnProgreso(t)) {
-    showError(
-      'No se puede pasar a En progreso',
-      'Revisa la complejidad y el flujo (en tipo A con maqueta, debe estar aprobada).'
+    }, 'Actualizando prioridad…')
+    showSuccess(
+      'Prioridad actualizada',
+      `El ticket ${t.codigo} quedó en «${etiquetaPrioridad(n)}».`
     )
-    return
-  }
-  const actualizada = aplicarCambioEstadoEnSolicitud(t, nuevoCodigo)
-  try {
-    await withSpinner(async () => {
-      const res = await actualizarSolicitud({
-        ...actualizada,
-        ultimaActualizacion: etiquetaAhora()
-      })
-      if (res.ok === false) throw new Error(res.error)
-    }, 'Actualizando estado…')
-    agregarMensajeSistema(t.chatUuid, t.codigo, `Estado actualizado a "${actualizada.estado}" (analista).`)
-    showSuccess('Estado actualizado', `El ticket ${t.codigo} pasó a «${actualizada.estado}».`)
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'No se pudo actualizar el estado.'
-    showError('Error al actualizar estado', msg)
+    const msg = e instanceof Error ? e.message : 'No se pudo actualizar la prioridad.'
+    showError('Error al actualizar prioridad', msg)
   }
+}
+
+async function onCambioComplejidadTabla(
+  t: SoporteTiSolicitud,
+  val: unknown,
+  rol: 'pm' | 'analista' | 'legacy' = 'legacy'
+) {
+  const raw = typeof val === 'string' ? val : String(val ?? '')
+  if (!complejidadOk(raw)) return
+  await cambiarComplejidad(t, raw, { rol })
+}
+
+async function onCambioEstadoTabla(t: SoporteTiSolicitud, val: unknown) {
+  const codigo = typeof val === 'string' ? val : String(val ?? '')
+  await cambiarEstado(t, codigo, { rolEtiqueta: t.gestion.esStaff ? 'analista' : undefined })
+}
+
+function celdaEstadoTicket(t: SoporteTiSolicitud) {
+  const g = t.gestion
+  if (!g.puedeEstado) {
+    return h('span', { class: 'text-xs text-slate-700 dark:text-slate-300' }, t.estado)
+  }
+  return h(
+    'div',
+    {
+      key: `${t.chatUuid}-estado`,
+      class: 'min-w-0',
+      onClick: stopRowNav,
+      onPointerdown: stopRowNav
+    },
+    [
+      h(USelect as any, {
+        modelValue: g.estadoValor ?? undefined,
+        items: estadosItems(g.estados),
+        disabled: !g.estadoEditable,
+        valueKey: 'value',
+        labelKey: 'label',
+        size: 'sm',
+        class: 'w-full min-w-0',
+        placeholder: g.estadoPlaceholder,
+        'onUpdate:modelValue': (v: unknown) => void onCambioEstadoTabla(t, v)
+      })
+    ]
+  )
 }
 
 function stopRowNav(e: Event) {
@@ -333,6 +318,19 @@ function columnaTitulo(header: string): TableColumn<SoporteTiTablaFila> {
 }
 
 const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
+  const colEstado: TableColumn<SoporteTiTablaFila> = {
+    id: 'estado',
+    accessorKey: 'estadoCodigo',
+    header: 'Estado',
+    meta: {
+      class: {
+        th: tdSelectAnalista,
+        td: tdSelectAnalista
+      }
+    },
+    cell: ({ row }) => celdaEstadoTicket(row.original)
+  }
+
   const colAcciones: TableColumn<SoporteTiTablaFila> = {
     id: 'acciones',
     accessorKey: 'codigo',
@@ -351,7 +349,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
       columnaTitulo('Nombre'),
       { accessorKey: 'fechaRegistroCompleta', header: 'Fecha de registro' },
       { accessorKey: 'fechaFinEstimadoFmt', header: 'Término estimado' },
-      { accessorKey: 'estadoLabel', header: 'Estado' },
+      colEstado,
       colAcciones
     ]
   }
@@ -385,47 +383,101 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
       )
   }
 
-  const colComplejidadAnalista: TableColumn<SoporteTiTablaFila> = {
-    id: 'complejidad-analista',
-    accessorKey: 'criticidad',
-    header: 'Complejidad',
-    meta: {
-      class: {
-        th: tdSelectAnalista,
-        td: tdSelectAnalista
-      }
-    },
+  function celdaComplejidad(
+    t: SoporteTiSolicitud,
+    opts: {
+      key: string
+      puede: boolean
+      valor: string | null | undefined
+      texto: string
+      rol: 'pm' | 'analista' | 'legacy'
+    }
+  ) {
+    if (!opts.puede) {
+      return h('span', { class: 'text-xs text-slate-600 dark:text-slate-300' }, opts.texto)
+    }
+    return h(
+      'div',
+      {
+        key: `${t.chatUuid}-${opts.key}`,
+        class: 'min-w-0',
+        onClick: stopRowNav,
+        onPointerdown: stopRowNav
+      },
+      [
+        h(USelect as any, {
+          modelValue: opts.valor ?? undefined,
+          items: itemsComplejidadAnalista,
+          valueKey: 'value',
+          labelKey: 'label',
+          size: 'sm',
+          class: 'w-full min-w-0',
+          placeholder: 'Definir',
+          'onUpdate:modelValue': (v: unknown) => void onCambioComplejidadTabla(t, v, opts.rol)
+        })
+      ]
+    )
+  }
+
+  const colPrioridad: TableColumn<SoporteTiTablaFila> = {
+    id: 'prioridad',
+    accessorKey: 'prioridad',
+    header: 'Prioridad',
+    meta: { class: { th: tdSelectAnalista, td: tdSelectAnalista } },
     cell: ({ row }) => {
       const t = row.original
+      if (rolActivo.value !== 'PM') {
+        return h(
+          'span',
+          { class: 'text-xs font-medium text-slate-700 dark:text-slate-300' },
+          etiquetaPrioridad(t.prioridad ?? 2)
+        )
+      }
       return h(
         'div',
         {
-          // Clave estable: si cambia con el valor, se desmonta el USelect con el listbox abierto y puede dejar el foco/pointer bloqueados
-          key: `${t.chatUuid}-analista-complejidad`,
+          key: `${t.chatUuid}-prioridad`,
           class: 'min-w-0',
           onClick: stopRowNav,
           onPointerdown: stopRowNav
         },
         [
           h(USelect as any, {
-            modelValue: esComplejidadCatalogo(t.criticidad) ? t.criticidad : undefined,
-            items: itemsComplejidadAnalista,
+            modelValue: t.prioridad ?? 2,
+            items: itemsPrioridad,
             valueKey: 'value',
             labelKey: 'label',
             size: 'sm',
             class: 'w-full min-w-0',
-            placeholder: 'Definir',
-            'onUpdate:modelValue': (v: unknown) => void onCambioComplejidadAnalistaTabla(t, v)
+            'onUpdate:modelValue': (v: unknown) => void onCambioPrioridadTabla(t, v)
           })
         ]
       )
     }
   }
 
-  const colEstadoAnalista: TableColumn<SoporteTiTablaFila> = {
-    id: 'estado-analista',
-    accessorKey: 'estadoCodigo',
-    header: 'Estado',
+  const colComplejidadPm: TableColumn<SoporteTiTablaFila> = {
+    id: 'complejidad-pm',
+    accessorKey: 'complejidadPm',
+    header: 'Compl. PM',
+    meta: { class: { th: tdSelectAnalista, td: tdSelectAnalista } },
+    cell: ({ row }) => {
+      const t = row.original
+      if (t.tipo !== 'A') return h('span', { class: 'text-xs text-muted' }, '—')
+      return celdaComplejidad(t, {
+        key: 'pm-complejidad',
+        puede: t.gestion.puedeComplejidadPm,
+        valor: t.gestion.complejidadPmValor,
+        texto: t.complejidadPm ?? t.criticidad,
+        rol: 'pm'
+      })
+    }
+  }
+
+  const colComplejidadAnalista: TableColumn<SoporteTiTablaFila> = {
+    id: 'complejidad-analista',
+    accessorKey: 'criticidad',
+    header: 'Compl. analista',
     meta: {
       class: {
         th: tdSelectAnalista,
@@ -434,30 +486,22 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     },
     cell: ({ row }) => {
       const t = row.original
-      const puedeEstado = esComplejidadCatalogo(t.criticidad)
-      return h(
-        'div',
-        {
-          key: `${t.chatUuid}-analista-estado`,
-          class: 'min-w-0',
-          onClick: stopRowNav,
-          onPointerdown: stopRowNav
-        },
-        [
-          h(USelect as any, {
-            modelValue: t.estadoCodigo,
-            items: itemsEstadoAnalistaPara(t),
-            disabled: !puedeEstado,
-            valueKey: 'value',
-            labelKey: 'label',
-            size: 'sm',
-            class: 'w-full min-w-0',
-            title: !puedeEstado ? 'Define primero la complejidad' : undefined,
-            placeholder: 'Estado',
-            'onUpdate:modelValue': (v: unknown) => void onCambioEstadoAnalistaTabla(t, v)
-          })
-        ]
-      )
+      if (t.tipo === 'A') {
+        return celdaComplejidad(t, {
+          key: 'analista-complejidad',
+          puede: t.gestion.puedeComplejidadAnalista,
+          valor: t.gestion.complejidadAnalistaValor,
+          texto: t.complejidadAnalista ?? 'Por definir',
+          rol: 'analista'
+        })
+      }
+      return celdaComplejidad(t, {
+        key: 'analista-complejidad',
+        puede: t.gestion.puedeComplejidad,
+        valor: t.gestion.complejidadValor,
+        texto: t.criticidad,
+        rol: 'legacy'
+      })
     }
   }
 
@@ -467,9 +511,12 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     columnaTitulo('Título'),
     colArea,
     { accessorKey: 'fechaRegistroCompleta', header: 'Fecha de registro' },
-    ...(rolActivo.value === 'Analista'
-      ? [colComplejidadAnalista, colEstadoAnalista]
-      : [{ accessorKey: 'estadoLabel', header: 'Estado' }]),
+    ...(rolActivo.value === 'PM' || rolActivo.value === 'Analista'
+      ? [colPrioridad]
+      : []),
+    ...(rolActivo.value === 'PM' ? [colComplejidadPm] : []),
+    ...(rolActivo.value === 'Analista' ? [colComplejidadAnalista] : []),
+    colEstado,
     colEvidencia,
     colAcciones
   ]
@@ -478,7 +525,10 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
 async function onCreada(payload: SoporteTiCreatePayload) {
   creandoSolicitud.value = true
   try {
-    const nueva = await crearSolicitud(payload)
+    const nueva = await withSpinner(
+      () => crearSolicitud(payload),
+      'Creando solicitud…'
+    )
     showSuccess('Solicitud creada', `Se creó el ticket ${nueva.codigo}.`)
     modalCrear.value = false
     void navigateTo(rutaDetalle(nueva))
@@ -493,11 +543,10 @@ async function onCreada(payload: SoporteTiCreatePayload) {
 
 onMounted(() => {
   fetchCurrentUser()
-  void cargarLista(usarApi.value ? filtrosLista() : undefined)
+  void cargarLista(filtrosLista())
 })
 
 onUnmounted(() => {
-  desuscribirTodas()
   setSalaActiva(null)
 })
 </script>

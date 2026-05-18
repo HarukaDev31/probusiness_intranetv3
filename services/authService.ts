@@ -2,6 +2,7 @@ import type { User, LoginCredentials as _LoginCredentials, LoginResponse as _Log
 import { getWebsocketRoles, getAllEventHandlers } from '../config/websocket/channels'
 import { CALENDAR_EVENTS, getUserCalendarChannelName } from '../config/websocket/events/calendar'
 import { useEcho } from '../composables/websocket/useEcho'
+import { buildEchoClientConfig } from '../utils/websocket-config'
 
 interface ApiPlugin {
   call: <T>(endpoint: string, options?: any) => Promise<T>
@@ -67,21 +68,13 @@ class AuthService {
 
   async initializeEcho() {
     if (!this.isEchoInitialized && this.token) {
-      const config = {
-        wsHost: this.nuxtApp.$config.public.pusherWsHost,
-        forceTLS: false,
-        enabledTransports: ['ws', 'wss'],
-        authEndpoint: `https://${this.nuxtApp.$config.public.pusherWsHost}/api/broadcasting/auth`,
-        auth: {
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-            Accept: 'application/json'
-          }
-        }
-      }
+      const echoConfig = buildEchoClientConfig(this.token)
 
-      await this.echo.initializeEcho(config)
+      await this.echo.initializeEcho(echoConfig)
       this.isEchoInitialized = true
+      if (process.client && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('echo-ready'))
+      }
       // 1) Canal del usuario (calendario): private-App.Models.Usuario.{id} — debe existir una llamada a auth por usuario
       this.setupUserChannel()
       // 2) Canales por rol (Coordinación, Documentación, etc.)
@@ -241,6 +234,10 @@ class AuthService {
       if (this.isEchoInitialized) {
         this.echo.disconnect()
         this.isEchoInitialized = false
+      }
+
+      if (process.client && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('soporte-ti-chat-reset'))
       }
 
       this.currentUser = null

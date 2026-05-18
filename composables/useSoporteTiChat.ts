@@ -1,13 +1,8 @@
-import { computed } from 'vue'
 import { SoporteTiService } from '~/services/soporteTiService'
 import type { SoporteTiChatPaginacion, SoporteTiChatsPorUuid, SoporteTiMensaje } from '~/types/soporteTi'
 import { mapMensajeApiToUi } from '~/utils/soporteTiMappers'
-import {
-  mergeMensajesAsc,
-  sliceMensajesAntesDe,
-  sliceUltimosMensajes
-} from '~/utils/soporteTiChatPaginate'
-import { getSoporteTiSeedChats } from '~/utils/soporteTiSeed'
+import { encolarLeidosDesdeMensajes } from '~/composables/useSoporteTiChatLeidos'
+import { mergeMensajesAsc } from '~/utils/soporteTiChatPaginate'
 import { SOPORTE_TI_CHAT_PAGE_SIZE } from '~/constants/soporteTi'
 
 const META_VACIA: SoporteTiChatPaginacion = {
@@ -19,18 +14,8 @@ const META_VACIA: SoporteTiChatPaginacion = {
 }
 
 export function useSoporteTiChat() {
-  const config = useRuntimeConfig()
-  const usarApi = computed(() => config.public.soporteTiUseApi !== false)
-
   const chats = useState<SoporteTiChatsPorUuid>('soporte-ti-chats', () => ({}))
   const chatMeta = useState<Record<string, SoporteTiChatPaginacion>>('soporte-ti-chat-meta', () => ({}))
-  const demoChatsCompletos = useState<SoporteTiChatsPorUuid>('soporte-ti-demo-chats-full', () => ({}))
-
-  function asegurarDemoCompleto() {
-    if (Object.keys(demoChatsCompletos.value).length === 0) {
-      demoChatsCompletos.value = getSoporteTiSeedChats()
-    }
-  }
 
   function metaDe(chatUuid: string): SoporteTiChatPaginacion {
     return chatMeta.value[chatUuid] ?? { ...META_VACIA }
@@ -58,13 +43,57 @@ export function useSoporteTiChat() {
   function agregarMensaje(chatUuid: string, msg: SoporteTiMensaje) {
     const prev = mensajesDe(chatUuid)
     if (prev.some((m) => m.id === msg.id)) return
+    if (msg.clientId && prev.some((m) => m.clientId === msg.clientId)) return
     setMensajesSala(chatUuid, [...prev, msg])
   }
 
   function actualizarMensajeEnSala(chatUuid: string, msg: SoporteTiMensaje) {
     setMensajesSala(
       chatUuid,
-      mensajesDe(chatUuid).map((m) => (m.id === msg.id ? msg : m))
+      mensajesDe(chatUuid).map((m) => {
+        if (m.id === msg.id) return msg
+        if (msg.clientId && m.clientId === msg.clientId) return msg
+        return m
+      })
+    )
+  }
+
+  function reemplazarMensajeOptimista(
+    chatUuid: string,
+    clientId: string,
+    msg: SoporteTiMensaje
+  ) {
+    const lista = mensajesDe(chatUuid)
+    let idx = lista.findIndex((m) => m.clientId === clientId)
+    if (idx < 0 && msg.id > 0) {
+      idx = lista.findIndex((m) => m.id === msg.id)
+    }
+    if (idx < 0) {
+      idx = lista.findIndex(
+        (m) =>
+          m.esPropio &&
+          msg.esPropio &&
+          m.id < 0 &&
+          (m.estadoEnvio === 'pendiente' || m.estadoEnvio === 'enviando')
+      )
+    }
+    if (idx < 0) {
+      if (msg.id > 0 && lista.some((m) => m.id === msg.id)) {
+        actualizarMensajeEnSala(chatUuid, { ...msg, clientId: undefined })
+      } else {
+        agregarMensaje(chatUuid, { ...msg, clientId: undefined })
+      }
+      return
+    }
+    const next = [...lista]
+    next[idx] = { ...msg, clientId: undefined }
+    setMensajesSala(chatUuid, next)
+  }
+
+  function quitarMensajeOptimista(chatUuid: string, clientId: string) {
+    setMensajesSala(
+      chatUuid,
+      mensajesDe(chatUuid).filter((m) => m.clientId !== clientId)
     )
   }
 
@@ -85,30 +114,16 @@ export function useSoporteTiChat() {
     patchMeta(chatUuid, { loading: true })
     const existentes = mensajesDe(chatUuid)
     try {
-      if (usarApi.value) {
-        const res = await SoporteTiService.getMensajes(chatUuid, {
-          limit: SOPORTE_TI_CHAT_PAGE_SIZE
-        })
-        if (!res.success) throw new Error(res.message || 'Error al cargar mensajes')
-        const lista = mergeMensajesAsc(res.data.map(mapMensajeApiToUi), existentes)
-        setMensajesSala(chatUuid, lista)
-        patchMeta(chatUuid, {
-          hasMoreOlder: res.pagination.has_more,
-          oldestId: res.pagination.oldest_id,
-          initialized: true,
-          loading: false,
-          loadingOlder: false
-        })
-        return
-      }
-
-      asegurarDemoCompleto()
-      const todos = demoChatsCompletos.value[chatUuid] ?? []
-      const { mensajes, hasMoreOlder, oldestId } = sliceUltimosMensajes(todos)
-      setMensajesSala(chatUuid, mergeMensajesAsc(mensajes, existentes))
+      const res = await SoporteTiService.getMensajes(chatUuid, {
+        limit: SOPORTE_TI_CHAT_PAGE_SIZE
+      })
+      if (!res.success) throw new Error(res.message || 'Error al cargar mensajes')
+      const lista = mergeMensajesAsc(res.data.map(mapMensajeApiToUi), existentes)
+      setMensajesSala(chatUuid, lista)
+      encolarLeidosDesdeMensajes(chatUuid, lista)
       patchMeta(chatUuid, {
-        hasMoreOlder,
-        oldestId,
+        hasMoreOlder: res.pagination.has_more,
+        oldestId: res.pagination.oldest_id,
         initialized: true,
         loading: false,
         loadingOlder: false
@@ -126,33 +141,16 @@ export function useSoporteTiChat() {
 
     patchMeta(chatUuid, { loadingOlder: true })
     try {
-      if (usarApi.value) {
-        const res = await SoporteTiService.getMensajes(chatUuid, {
-          limit: SOPORTE_TI_CHAT_PAGE_SIZE,
-          before_id: meta.oldestId
-        })
-        if (!res.success) throw new Error(res.message || 'Error')
-        const nuevos = res.data.map(mapMensajeApiToUi)
-        prependMensajesSala(chatUuid, nuevos)
-        patchMeta(chatUuid, {
-          hasMoreOlder: res.pagination.has_more,
-          oldestId: res.pagination.oldest_id ?? meta.oldestId,
-          loadingOlder: false
-        })
-        return
-      }
-
-      asegurarDemoCompleto()
-      const todos = demoChatsCompletos.value[chatUuid] ?? []
-      const { mensajes, hasMoreOlder, oldestId } = sliceMensajesAntesDe(
-        todos,
-        meta.oldestId,
-        SOPORTE_TI_CHAT_PAGE_SIZE
-      )
-      if (mensajes.length) prependMensajesSala(chatUuid, mensajes)
+      const res = await SoporteTiService.getMensajes(chatUuid, {
+        limit: SOPORTE_TI_CHAT_PAGE_SIZE,
+        before_id: meta.oldestId
+      })
+      if (!res.success) throw new Error(res.message || 'Error')
+      const nuevos = res.data.map(mapMensajeApiToUi)
+      prependMensajesSala(chatUuid, nuevos)
       patchMeta(chatUuid, {
-        hasMoreOlder,
-        oldestId: oldestId ?? meta.oldestId,
+        hasMoreOlder: res.pagination.has_more,
+        oldestId: res.pagination.oldest_id ?? meta.oldestId,
         loadingOlder: false
       })
     } catch {
@@ -160,15 +158,21 @@ export function useSoporteTiChat() {
     }
   }
 
-  function initDemoStore() {
-    if (!usarApi.value && Object.keys(demoChatsCompletos.value).length === 0) {
-      demoChatsCompletos.value = getSoporteTiSeedChats()
-    }
-  }
-
   function resetChats() {
     chats.value = {}
     chatMeta.value = {}
+  }
+
+  /** Actualiza mensajes propios a "leído" tras evento WS. */
+  function aplicarMensajesLeidosWs(chatUuid: string, mensajeIds: number[]) {
+    if (!mensajeIds.length) return
+    const ids = new Set(mensajeIds)
+    setMensajesSala(
+      chatUuid,
+      mensajesDe(chatUuid).map((m) =>
+        m.esPropio && ids.has(m.id) ? { ...m, estadoEnvio: 'leido' as const } : m
+      )
+    )
   }
 
   return {
@@ -179,10 +183,12 @@ export function useSoporteTiChat() {
     prependMensajesSala,
     agregarMensaje,
     actualizarMensajeEnSala,
+    reemplazarMensajeOptimista,
+    quitarMensajeOptimista,
     resetSala,
     resetChats,
     cargarChatInicial,
     cargarMensajesAnteriores,
-    initDemoStore
+    aplicarMensajesLeidosWs
   }
 }

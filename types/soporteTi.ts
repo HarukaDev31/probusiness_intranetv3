@@ -1,3 +1,5 @@
+import type { SoporteTiComplejidad } from '~/utils/soporteTiComplejidad'
+
 export type SoporteTiTipo = 'A' | 'B'
 export type SoporteTiSubtipoB = 'B1' | 'B2'
 
@@ -56,10 +58,15 @@ export interface SoporteTiMensajeReplyPreview {
   remitente: string
   texto: string
   tieneImagen?: boolean
+  imagenUrl?: string | null
 }
+
+export type SoporteTiEstadoEnvio = 'pendiente' | 'enviando' | 'entregado' | 'leido' | 'error'
 
 export interface SoporteTiMensaje {
   id: number
+  /** Id local hasta confirmar por API/WS */
+  clientId?: string
   remitente: string
   iniciales: string
   color: string
@@ -71,6 +78,10 @@ export interface SoporteTiMensaje {
   replyToId?: number | null
   replyTo?: SoporteTiMensajeReplyPreview | null
   imagenes?: SoporteTiImagenMensaje[]
+  /** Reloj / vistos en mensajes propios */
+  estadoEnvio?: SoporteTiEstadoEnvio
+  /** Job de adjuntos aún en cola */
+  adjuntoPendiente?: boolean
 }
 
 /** Mensajes indexados por UUID de sala de chat */
@@ -84,9 +95,11 @@ export interface SoporteTiSolicitud {
   tipo: SoporteTiTipo
   subtipoB: SoporteTiSubtipoB | null
   titulo: string
+  /** 1 Alta, 2 Media, 3 Baja */
+  prioridad: number
   area: string
   solicitante: string
-  /** Usuario creador (cuando el API lo envía); demo opcional */
+  /** Usuario creador (cuando el API lo envía) */
   solicitanteUserId?: number | null
   pm: string | null
   analista: string | null
@@ -94,6 +107,8 @@ export interface SoporteTiSolicitud {
    * Complejidad de la solicitud (Baja, Media, Alta, Máxima). En API el campo se llama `criticidad`.
    */
   criticidad: string
+  complejidadPm?: string
+  complejidadAnalista?: string
   /** FK `soporte_ti_estados` — estado actual */
   estadoId: number
   estadoCodigo: string
@@ -104,6 +119,7 @@ export interface SoporteTiSolicitud {
   slaHoras: number
   horasTranscurridas: number
   fechaRegistro: string
+  fechaRegistroIso?: string
   ultimaActualizacion: string
   fechaFinEstimado: string | null
   seccionRuta?: string
@@ -111,6 +127,64 @@ export interface SoporteTiSolicitud {
   maqueta: SoporteTiMaqueta | null
   /** Evidencias persistentes (tabla solicitud_evidencias), no inferidas del chat */
   evidencias?: SoporteTiEvidenciaItem[]
+  /** Permisos y UI: siempre viene del API en cada solicitud */
+  gestion: SoporteTiGestion
+}
+
+export interface SoporteTiGestionEstado {
+  id: number
+  codigo: string
+  nombre: string
+}
+
+export interface SoporteTiGestion {
+  esCreador: boolean
+  esStaff: boolean
+  puedeComplejidad: boolean
+  puedeComplejidadPm: boolean
+  puedeComplejidadAnalista: boolean
+  puedeEstado: boolean
+  estados: SoporteTiGestionEstado[]
+  estadoValor: string | null
+  complejidadValor: SoporteTiComplejidad | null
+  complejidadPmValor: SoporteTiComplejidad | null
+  complejidadAnalistaValor: SoporteTiComplejidad | null
+  tiempoEstimadoRango: boolean
+  estadoEditable: boolean
+  puedeConfirmar: boolean
+  estadoPlaceholder: string
+  terminoEstimado: string
+  slaEtiqueta: string | null
+  verSla: boolean
+  puedeEnProgreso: boolean
+  contadorActivo: boolean
+  contadorFin: string | null
+  contadorVencido: boolean
+}
+
+export interface SoporteTiGestionApi {
+  es_creador: boolean
+  es_staff: boolean
+  puede_complejidad: boolean
+  puede_complejidad_pm?: boolean
+  puede_complejidad_analista?: boolean
+  puede_estado: boolean
+  estados: { id: number; codigo: string; nombre: string }[]
+  estado_valor: string | null
+  complejidad_valor: string | null
+  complejidad_pm_valor?: string | null
+  complejidad_analista_valor?: string | null
+  tiempo_estimado_rango?: boolean
+  estado_editable: boolean
+  puede_confirmar: boolean
+  estado_placeholder: string
+  termino_estimado: string
+  sla_etiqueta: string | null
+  ver_sla: boolean
+  puede_en_progreso: boolean
+  contador_activo: boolean
+  contador_fin: string | null
+  contador_vencido: boolean
 }
 
 export interface SoporteTiCreatePayload {
@@ -146,6 +220,7 @@ export interface SoporteTiMensajeReplyPreviewApi {
   remitente: string
   texto: string
   tiene_imagen?: boolean
+  imagen_url?: string | null
 }
 
 export interface SoporteTiSolicitudApi {
@@ -155,12 +230,15 @@ export interface SoporteTiSolicitudApi {
   tipo_solicitud: SoporteTiTipo
   subtipo_b: SoporteTiSubtipoB | null
   titulo: string
+  prioridad?: number
   area: string
   solicitante: string
   solicitante_user_id?: number | null
   pm: string | null
   analista: string | null
   criticidad: string
+  complejidad_pm?: string
+  complejidad_analista?: string
   estado_id: number
   estado?: SoporteTiEstadoApi | null
   /** Denormalizado opcional (Laravel `mapSolicitud`) */
@@ -172,6 +250,7 @@ export interface SoporteTiSolicitudApi {
   sla_horas: number
   horas_transcurridas: number
   fecha_registro: string
+  fecha_registro_iso?: string
   ultima_actualizacion: string
   fecha_fin_estimado: string | null
   seccion_ruta?: string | null
@@ -184,6 +263,7 @@ export interface SoporteTiSolicitudApi {
     url_preview?: string | null
   } | null
   evidencias?: SoporteTiEvidenciaApi[]
+  gestion: SoporteTiGestionApi
 }
 
 export interface SoporteTiEvidenciaApi {
@@ -222,6 +302,8 @@ export interface SoporteTiEstadoHistorialApi {
 
 export interface SoporteTiMensajeApi {
   id: number
+  /** Autor del mensaje; el cliente calcula es_propio con el usuario logueado. */
+  usuario_id?: number | null
   remitente: string
   iniciales: string
   color: string
@@ -233,6 +315,10 @@ export interface SoporteTiMensajeApi {
   reply_to_id?: number | null
   reply_to?: SoporteTiMensajeReplyPreviewApi | null
   imagenes?: SoporteTiImagenMensajeApi[]
+  adjunto_pendiente?: boolean
+  leido?: boolean
+  lecturas_count?: number
+  destinatarios_count?: number
 }
 
 export interface SoporteTiChatPaginacionApi {
@@ -316,6 +402,65 @@ export interface SoporteTiWsMensajePayload {
   mensaje: SoporteTiMensajeApi
 }
 
+export interface SoporteTiLecturaUsuarioApi {
+  usuario_id: number
+  nombre: string
+  iniciales: string
+  telefono?: string | null
+  email?: string | null
+  leido_en?: string | null
+  leido_en_fmt?: string | null
+}
+
+export interface SoporteTiMensajeInfoLecturaApi {
+  mensaje: SoporteTiMensajeApi
+  entregado_en_fmt: string
+  leido_por: SoporteTiLecturaUsuarioApi[]
+  leido_por_todos: boolean
+  destinatarios_count: number
+  lecturas_count: number
+}
+
+export interface SoporteTiMensajeInfoLectura {
+  mensaje: SoporteTiMensaje
+  entregado_en_fmt: string
+  leido_por: SoporteTiLecturaUsuarioApi[]
+  leido_por_todos: boolean
+  destinatarios_count: number
+  lecturas_count: number
+}
+
+export interface SoporteTiSlaHorasApi {
+  id: number
+  tipo_solicitud: 'A' | 'B'
+  criticidad: string
+  horas: number
+  ambito?: string | null
+  updated_at?: string | null
+}
+
+export interface SoporteTiFaseHorasACeldaApi {
+  id: number
+  fase_codigo: string
+  fase_nombre: string
+  criticidad: string
+  horas: number
+  updated_at?: string | null
+}
+
+export interface SoporteTiFaseHorasAMatrizApi {
+  fases: { codigo: string; nombre: string }[]
+  complejidades: string[]
+  celdas: SoporteTiFaseHorasACeldaApi[]
+}
+
+export interface SoporteTiWsMensajesLeidosPayload {
+  chat_uuid: string
+  codigo: string
+  lector_usuario_id: number
+  mensaje_ids: number[]
+}
+
 export interface SoporteTiWsEstadoPayload {
   chat_uuid: string
   codigo: string
@@ -331,5 +476,11 @@ export interface SoporteTiWsEstadoPayload {
 
 export interface SoporteTiCambiarEstadoPayload {
   estadoId: number
+  comentario?: string | null
+}
+
+export interface SoporteTiActualizarEstadoPayload {
+  estadoId?: number
+  estadoCodigo?: string
   comentario?: string | null
 }

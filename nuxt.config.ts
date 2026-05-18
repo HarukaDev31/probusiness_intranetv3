@@ -67,8 +67,8 @@ export default defineNuxtConfig({
       chunkSizeWarningLimit: 1000,
     },
     optimizeDeps: {
-      include: ['vue', 'vue-router', '@nuxt/icon', 'defu', 'vuedraggable'],
-      exclude: ['chart.js', 'xlsx', 'pusher-js'], // Cargar bajo demanda
+      include: ['vue', 'vue-router', '@nuxt/icon', 'defu', 'vuedraggable', 'pusher-js', 'laravel-echo'],
+      exclude: ['chart.js', 'xlsx'], // Cargar bajo demanda
     }
   },
   
@@ -146,13 +146,11 @@ export default defineNuxtConfig({
       apiBaseUrl: process.env.NUXT_API_BASE_URL || 'http://localhost:8000',
       appName: process.env.NUXT_PUBLIC_APP_NAME || 'Probusiness Intranet',
       appVersion: process.env.NUXT_PUBLIC_APP_VERSION || '2.0.0',
-      pusherAppKey: process.env.NUXT_PUSHER_APP_KEY,
-      pusherAppCluster: process.env.NUXT_PUSHER_APP_CLUSTER,
+      pusherAppKey: process.env.NUXT_PUSHER_APP_KEY?.trim(),
+      pusherAppCluster: process.env.NUXT_PUSHER_APP_CLUSTER?.trim(),
       pusherWsHost: process.env.NUXT_WEBSOCKETS_URL,
       whatsappApiUrl: process.env.NUXT_WHATSAPPV3_URL,
       whatsappApiKey: process.env.NUXT_WHATSAPPV3_API_KEY,
-      /** Por defecto consume la API Laravel; `NUXT_PUBLIC_SOPORTE_TI_USE_API=false` activa modo demo local */
-      soporteTiUseApi: process.env.NUXT_PUBLIC_SOPORTE_TI_USE_API !== 'false',
     }
   },
 

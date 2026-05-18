@@ -8,10 +8,13 @@ import type {
   SoporteTiMensajeApi,
   SoporteTiEnviarMensajePayload,
   SoporteTiCambiarEstadoPayload,
+  SoporteTiActualizarEstadoPayload,
   SoporteTiEstadoApi,
   SoporteTiEstadoHistorialApi,
   SoporteTiMensajesPaginatedResponse,
-  SoporteTiMensajesQuery
+  SoporteTiMensajesQuery,
+  SoporteTiSlaHorasApi,
+  SoporteTiFaseHorasAMatrizApi
 } from '~/types/soporteTi'
 import { SOPORTE_TI_CHAT_PAGE_SIZE } from '~/constants/soporteTi'
 
@@ -44,6 +47,40 @@ export class SoporteTiService extends BaseService {
     })
   }
 
+  static async updatePrioridad(
+    id: number,
+    prioridad: number
+  ): Promise<SoporteTiMutationResponse> {
+    return this.apiCall<SoporteTiMutationResponse>(`${BASE}/${id}/prioridad`, {
+      method: 'PATCH',
+      body: { prioridad }
+    })
+  }
+
+  static async updateComplejidad(
+    id: number,
+    criticidad: string
+  ): Promise<SoporteTiMutationResponse> {
+    return this.apiCall<SoporteTiMutationResponse>(`${BASE}/${id}/complejidad`, {
+      method: 'PATCH',
+      body: { criticidad }
+    })
+  }
+
+  static async updateEstado(
+    id: number,
+    payload: SoporteTiActualizarEstadoPayload
+  ): Promise<SoporteTiMutationResponse> {
+    const body: Record<string, unknown> = {}
+    if (payload.estadoCodigo != null) body.estado_codigo = payload.estadoCodigo
+    if (payload.estadoId != null) body.estado_id = payload.estadoId
+    if (payload.comentario != null) body.comentario = payload.comentario
+    return this.apiCall<SoporteTiMutationResponse>(`${BASE}/${id}/estado`, {
+      method: 'PATCH',
+      body
+    })
+  }
+
   static async postMensaje(
     id: number,
     payload: SoporteTiEnviarMensajePayload
@@ -65,6 +102,27 @@ export class SoporteTiService extends BaseService {
     })
   }
 
+  static async marcarLeidos(
+    chatUuid: string,
+    mensajeIds: number[]
+  ): Promise<{ success: boolean; queued?: number; mensaje_ids?: number[]; message?: string }> {
+    return this.apiCall(`/api/soporte-ti/chats/${chatUuid}/mensajes/leidos`, {
+      method: 'POST',
+      body: { mensaje_ids: mensajeIds }
+    })
+  }
+
+  static async infoMensaje(
+    chatUuid: string,
+    mensajeId: number
+  ): Promise<{
+    success: boolean
+    data?: import('~/types/soporteTi').SoporteTiMensajeInfoLecturaApi
+    message?: string
+  }> {
+    return this.apiCall(`/api/soporte-ti/chats/${chatUuid}/mensajes/${mensajeId}/info`)
+  }
+
   static async getMensajes(
     chatUuid: string,
     query: SoporteTiMensajesQuery = {}
@@ -79,6 +137,59 @@ export class SoporteTiService extends BaseService {
     return this.apiCall<SoporteTiMutationResponse>(`${BASE}/${id}/maqueta`, {
       method: 'POST',
       body: formData
+    })
+  }
+
+  static async getSlaHoras(
+    tipo: 'B' | 'A' = 'B',
+    ambito?: 'pm_fases' | 'analista_config'
+  ): Promise<{
+    success: boolean
+    data?: SoporteTiSlaHorasApi[]
+    message?: string
+  }> {
+    const q = new URLSearchParams()
+    q.set('tipo', tipo)
+    if (tipo === 'A' && ambito) q.set('ambito', ambito)
+    return this.apiCall(`/api/soporte-ti/sla-horas?${q.toString()}`)
+  }
+
+  static async updateSlaHoras(
+    tipo: 'B' | 'A',
+    horas: Array<{ id: number; horas: number }>,
+    ambito?: 'pm_fases' | 'analista_config'
+  ): Promise<{
+    success: boolean
+    data?: SoporteTiSlaHorasApi[]
+    message?: string
+  }> {
+    const q = new URLSearchParams()
+    q.set('tipo', tipo)
+    if (tipo === 'A' && ambito) q.set('ambito', ambito)
+    return this.apiCall(`/api/soporte-ti/sla-horas?${q.toString()}`, {
+      method: 'PUT',
+      body: { tipo, horas, ambito: tipo === 'A' ? ambito : undefined }
+    })
+  }
+
+  static async getFaseHorasA(): Promise<{
+    success: boolean
+    data?: SoporteTiFaseHorasAMatrizApi
+    message?: string
+  }> {
+    return this.apiCall('/api/soporte-ti/fase-horas-a')
+  }
+
+  static async updateFaseHorasA(
+    horas: Array<{ id: number; horas: number }>
+  ): Promise<{
+    success: boolean
+    data?: SoporteTiFaseHorasAMatrizApi
+    message?: string
+  }> {
+    return this.apiCall('/api/soporte-ti/fase-horas-a', {
+      method: 'PUT',
+      body: { horas }
     })
   }
 

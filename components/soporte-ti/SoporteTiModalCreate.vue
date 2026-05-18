@@ -2,7 +2,7 @@
   <UModal :open="abierto" @update:open="onUpdateOpen">
     <template #header>
       <div class="flex w-full items-center justify-between">
-        <h2 class="text-[15px] font-semibold text-slate-800">Nueva solicitud</h2>
+        <h2 class="text-base font-semibold text-highlighted">Nueva solicitud</h2>
         <UButton
           color="neutral"
           variant="ghost"
@@ -18,113 +18,125 @@
         class="max-h-[70vh] space-y-4 overflow-y-auto px-1 transition-opacity"
         :class="loading ? 'pointer-events-none opacity-60' : ''"
       >
-        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tipo de solicitud</p>
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-muted">Tipo de solicitud</p>
         <div class="grid grid-cols-2 gap-2">
           <button
             type="button"
-            class="rounded-xl border-2 p-3 text-left transition"
-            :class="[
-              tipo === 'A' ? 'border-violet-400 bg-violet-50' : 'border-slate-200 hover:border-violet-300',
-              loading ? 'cursor-not-allowed' : 'cursor-pointer'
-            ]"
+            class="rounded-xl border-2 p-3 text-left transition-colors"
+            :class="claseTipoCard('A')"
             :disabled="loading"
             @click="tipo = 'A'"
           >
-            <div class="text-[13px] font-semibold text-slate-800">Tipo A</div>
-            <div class="mt-0.5 text-[10px] text-slate-500">Proyecto del mes</div>
+            <div class="text-sm font-semibold text-highlighted">Tipo A</div>
+            <div class="mt-0.5 text-[10px] text-muted">Proyecto del mes</div>
           </button>
           <button
             type="button"
-            class="rounded-xl border-2 p-3 text-left transition"
-            :class="[
-              tipo === 'B' ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-blue-300',
-              loading ? 'cursor-not-allowed' : 'cursor-pointer'
-            ]"
+            class="rounded-xl border-2 p-3 text-left transition-colors"
+            :class="claseTipoCard('B')"
             :disabled="loading"
             @click="tipo = 'B'"
           >
-            <div class="text-[13px] font-semibold text-slate-800">Tipo B</div>
-            <div class="mt-0.5 text-[10px] text-slate-500">Requerimiento TI</div>
+            <div class="text-sm font-semibold text-highlighted">Tipo B</div>
+            <div class="mt-0.5 text-[10px] text-muted">Requerimiento TI</div>
           </button>
         </div>
-        <div v-if="tipo === 'B'">
-          <label class="mb-1 block text-[11px] font-medium text-slate-600">Subtipo</label>
-          <select
+
+        <UFormField v-if="tipo === 'B'" label="Subtipo">
+          <USelect
             v-model="subtipoB"
+            :items="itemsSubtipo"
+            value-key="value"
+            label-key="label"
+            size="sm"
+            class="w-full"
             :disabled="loading"
-            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] focus:border-blue-400 focus:outline-none disabled:opacity-60"
-          >
-            <option value="B1">B1 — Incidencia (fallo / error)</option>
-            <option value="B2">B2 — Configuración (ajuste / acceso)</option>
-          </select>
-        </div>
-        <div class="my-4 h-px bg-slate-200" />
-        <div>
-          <label class="mb-1 block text-[11px] font-medium text-slate-600">Área solicitante</label>
-          <select
+          />
+        </UFormField>
+
+        <USeparator />
+
+        <UFormField label="Área solicitante" hint="Preseleccionada según tu perfil">
+          <USelect
             v-model="area"
+            :items="itemsArea"
+            value-key="value"
+            label-key="label"
+            size="sm"
+            class="w-full"
             :disabled="loading"
-            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] focus:border-blue-400 focus:outline-none disabled:opacity-60"
-          >
-            <option v-for="a in SOPORTE_TI_AREAS" :key="a" :value="a">{{ a }}</option>
-          </select>
-          <p class="mt-1 text-[10px] text-slate-400">Preseleccionada según tu perfil</p>
-        </div>
-        <div>
-          <label class="mb-1 block text-[11px] font-medium text-slate-600">Sección o Ruta</label>
-          <input
+          />
+        </UFormField>
+
+        <UFormField
+          label="URL"
+          required
+          hint="Pega la URL de la página donde ocurre el caso"
+          :error="errors.seccionRuta"
+        >
+          <UInput
             v-model="seccionRuta"
-            type="text"
+            size="sm"
+            class="w-full"
             :disabled="loading"
-            placeholder="Página – N° Consolidado – Módulo – Pestaña"
-            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] focus:border-blue-400 focus:outline-none disabled:opacity-60"
-          >
-          <p class="mt-1 text-[10px] text-slate-400">
-            Indica dónde ocurre: Página, N° Consolidado, Módulo, Pestaña
-          </p>
-        </div>
-        <div>
-          <label class="mb-1 block text-[11px] font-medium text-slate-600">Título</label>
-          <input
+            placeholder="https://..."
+            @update:model-value="limpiarError('seccionRuta')"
+          />
+        </UFormField>
+
+        <UFormField label="Título" required :error="errors.titulo">
+          <UInput
             v-model="titulo"
-            type="text"
+            size="sm"
+            class="w-full"
             :disabled="loading"
             placeholder="Describe brevemente..."
-            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] focus:border-blue-400 focus:outline-none disabled:opacity-60"
-          >
-        </div>
-        <div>
-          <label class="mb-1 block text-[11px] font-medium text-slate-600">{{
-            tipo === 'A' ? 'Objetivo / alcance' : 'Descripción del problema'
-          }}</label>
-          <textarea
+            @update:model-value="limpiarError('titulo')"
+          />
+        </UFormField>
+
+        <UFormField
+          :label="tipo === 'A' ? 'Objetivo / alcance' : 'Descripción del problema'"
+          required
+          :error="errors.descripcion"
+        >
+          <UTextarea
             v-model="descripcion"
+            :rows="3"
+            class="w-full"
             :disabled="loading"
             :placeholder="tipo === 'A' ? '¿Qué busca lograr?' : '¿Qué falla o necesitas?'"
-            class="min-h-[60px] w-full resize-y rounded-lg border border-slate-300 px-3 py-2 text-[12px] focus:border-blue-400 focus:outline-none disabled:opacity-60"
+            @update:model-value="limpiarError('descripcion')"
           />
-        </div>
-        <div class="my-4 h-px bg-slate-200" />
-        <div>
-          <label class="mb-2 block text-[11px] font-medium text-slate-600">Pantallazos (opcional)</label>
-          <FileUploader
-            :model-files="pantallazos"
-            multiple
-            :max-file-size="SOPORTE_TI_MAX_IMAGEN_MB * 1024 * 1024"
-            :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp']"
-            custom-message="Arrastra capturas o usa «Subir archivo»"
-            @files-selected="onPantallazosAgregados"
-            @file-removed="onPantallazoEliminado"
-          />
-          <p class="mt-1.5 text-[10px] text-slate-400">
-            Hasta {{ SOPORTE_TI_MAX_IMAGENES_CHAT }} imágenes (máx. {{ SOPORTE_TI_MAX_IMAGEN_MB }} MB c/u)
-          </p>
-        </div>
+        </UFormField>
+
+        <USeparator />
+
+        <UFormField
+          label="Evidencias (pantallazos)"
+          required
+          :hint="`Al menos 1 imagen. Máx. ${SOPORTE_TI_MAX_IMAGENES_CHAT} (${SOPORTE_TI_MAX_IMAGEN_MB} MB c/u)`"
+          :error="errors.pantallazos"
+        >
+          <div :class="errors.pantallazos ? 'rounded-lg ring-2 ring-error' : ''">
+            <FileUploader
+              :model-files="pantallazos"
+              multiple
+              :max-file-size="SOPORTE_TI_MAX_IMAGEN_MB * 1024 * 1024"
+              :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp']"
+              custom-message="Arrastra capturas o usa «Subir archivo»"
+              @files-selected="onPantallazosAgregados"
+              @file-removed="onPantallazoEliminado"
+            />
+          </div>
+        </UFormField>
       </div>
     </template>
     <template #footer>
       <div class="flex justify-end gap-2">
-        <UButton color="neutral" variant="outline" :disabled="loading" @click="cerrar">Cancelar</UButton>
+        <UButton color="neutral" variant="outline" :disabled="loading" @click="cerrar">
+          Cancelar
+        </UButton>
         <UButton :loading="loading" :disabled="loading" @click="guardar">Crear solicitud</UButton>
       </div>
     </template>
@@ -132,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import {
   SOPORTE_TI_AREAS,
   SOPORTE_TI_AREA_DEFAULT,
@@ -141,6 +153,8 @@ import {
 } from '~/constants/soporteTi'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import type { SoporteTiCreatePayload, SoporteTiSubtipoB, SoporteTiTipo } from '~/types/soporteTi'
+
+type CampoError = 'seccionRuta' | 'titulo' | 'descripcion' | 'pantallazos'
 
 const abierto = defineModel<boolean>('open', { default: false })
 
@@ -157,11 +171,34 @@ const emit = defineEmits<{
 
 const tipo = ref<SoporteTiTipo>('B')
 const subtipoB = ref<SoporteTiSubtipoB>('B1')
-const area = ref(SOPORTE_TI_AREA_DEFAULT)
+const area = ref<(typeof SOPORTE_TI_AREAS)[number]>(
+  SOPORTE_TI_AREA_DEFAULT as (typeof SOPORTE_TI_AREAS)[number]
+)
 const seccionRuta = ref('')
 const titulo = ref('')
 const descripcion = ref('')
 const pantallazos = ref<File[]>([])
+
+const errors = reactive<Partial<Record<CampoError, string>>>({})
+
+const itemsSubtipo = [
+  { label: 'B1 — Incidencia (fallo / error)', value: 'B1' as const },
+  { label: 'B2 — Configuración (ajuste / acceso)', value: 'B2' as const }
+]
+
+const itemsArea = computed(() =>
+  SOPORTE_TI_AREAS.map((a) => ({ label: a, value: a }))
+)
+
+const loading = computed(() => props.loading)
+
+function claseTipoCard(valor: SoporteTiTipo) {
+  const base = loading.value ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+  if (tipo.value === valor) {
+    return `${base} border-primary ring-1 ring-primary`
+  }
+  return `${base} border-default hover:border-primary/40`
+}
 
 watch(abierto, (v) => {
   if (v) {
@@ -172,8 +209,55 @@ watch(abierto, (v) => {
     titulo.value = ''
     descripcion.value = ''
     pantallazos.value = []
+    limpiarErrores()
   }
 })
+
+function limpiarErrores() {
+  for (const k of Object.keys(errors) as CampoError[]) {
+    delete errors[k]
+  }
+}
+
+function limpiarError(campo: CampoError) {
+  delete errors[campo]
+}
+
+function validar(): boolean {
+  limpiarErrores()
+  let ok = true
+
+  if (!seccionRuta.value.trim()) {
+    errors.seccionRuta = 'Indica la URL donde ocurre el caso.'
+    ok = false
+  }
+
+  if (!titulo.value.trim()) {
+    errors.titulo = 'El título es obligatorio.'
+    ok = false
+  } else if (titulo.value.trim().length < 3) {
+    errors.titulo = 'El título debe tener al menos 3 caracteres.'
+    ok = false
+  }
+
+  if (!descripcion.value.trim()) {
+    errors.descripcion =
+      tipo.value === 'A'
+        ? 'Describe el objetivo o alcance del proyecto.'
+        : 'Describe el problema o lo que necesitas.'
+    ok = false
+  } else if (descripcion.value.trim().length < 10) {
+    errors.descripcion = 'La descripción debe tener al menos 10 caracteres.'
+    ok = false
+  }
+
+  if (pantallazos.value.length === 0) {
+    errors.pantallazos = 'Debes adjuntar al menos una evidencia (pantallazo).'
+    ok = false
+  }
+
+  return ok
+}
 
 function onUpdateOpen(value: boolean) {
   if (!value && props.loading) {
@@ -192,6 +276,9 @@ function cerrar() {
 function onPantallazosAgregados(nuevos: File[]) {
   const merged = [...pantallazos.value, ...nuevos].slice(0, SOPORTE_TI_MAX_IMAGENES_CHAT)
   pantallazos.value = merged
+  if (merged.length > 0) {
+    limpiarError('pantallazos')
+  }
 }
 
 function onPantallazoEliminado(idx: number) {
@@ -202,17 +289,20 @@ function guardar() {
   if (props.loading) {
     return
   }
+  if (!validar()) {
+    return
+  }
+
   const payload: SoporteTiCreatePayload = {
     tipo: tipo.value,
     subtipoB: tipo.value === 'B' ? subtipoB.value : null,
-    titulo: titulo.value,
+    titulo: titulo.value.trim(),
     area: area.value,
-    seccionRuta: seccionRuta.value,
-    descripcion: descripcion.value
+    seccionRuta: seccionRuta.value.trim(),
+    descripcion: descripcion.value.trim(),
+    imagenes: [...pantallazos.value]
   }
-  if (pantallazos.value.length) {
-    payload.imagenes = [...pantallazos.value]
-  }
+
   emit('saved', payload)
 }
 </script>

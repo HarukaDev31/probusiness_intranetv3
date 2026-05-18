@@ -23,6 +23,7 @@
     "laravel-echo": "^2.2.0",
     "nuxt": "^3.17.7",
     "pdfjs-dist": "^5.4.296",
+    "pusher-js": "^8.5.0",
     "vue": "^3.5.17",
     "vue-chartjs": "^5.3.2",
     "vue-router": "^4.5.1",

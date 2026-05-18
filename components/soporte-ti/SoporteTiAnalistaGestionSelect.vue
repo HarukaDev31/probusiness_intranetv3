@@ -1,112 +1,107 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
-import { SOPORTE_TI_ESTADOS } from '~/constants/soporteTiEstados'
-import {
-  SOPORTE_TI_COMPLEJIDADES,
-  esComplejidadCatalogo,
-  puedePasarAEnProgreso
-} from '~/utils/soporteTiCriticidad'
-import { aplicarCambioEstadoEnSolicitud } from '~/utils/soporteTiEstadoTransition'
-import { useSoporteTi } from '~/composables/useSoporteTi'
-import { useModal } from '~/composables/commons/useModal'
+import { SOPORTE_TI_COMPLEJIDADES, complejidadOk } from '~/utils/soporteTiComplejidad'
+import { estadosItems } from '~/utils/soporteTiGestion'
+import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
 
 const props = defineProps<{ ticket: SoporteTiSolicitud }>()
 
-const { actualizarSolicitud, agregarMensajeSistema, etiquetaAhora } = useSoporteTi()
-const { showError } = useModal()
+const { cambiarComplejidad, cambiarEstado } = useSoporteTiAcciones()
 
-const itemsEstado = computed(() =>
-  SOPORTE_TI_ESTADOS.filter(
-    (e) =>
-      e.codigo !== 'operativo' &&
-      (e.tipoSolicitud === null || e.tipoSolicitud === props.ticket.tipo)
-  ).map((e) => ({ label: e.nombre, value: e.codigo }))
+const g = computed(() => props.ticket.gestion)
+const itemsEstado = computed(() => estadosItems(g.value.estados))
+const esTipoA = computed(() => props.ticket.tipo === 'A')
+const itemsComplejidad = computed(() =>
+  SOPORTE_TI_COMPLEJIDADES.map((c) => ({ label: c, value: c }))
 )
 
-const itemsComplejidad = SOPORTE_TI_COMPLEJIDADES.map((c) => ({
-  label: c,
-  value: c
-}))
+const mostrarComplejidadPm = computed(() => esTipoA.value && g.value.puedeComplejidadPm)
+const mostrarComplejidadAnalista = computed(
+  () => (esTipoA.value && g.value.puedeComplejidadAnalista) || (!esTipoA.value && g.value.puedeComplejidad)
+)
 
-/** Estado solo editable con complejidad Baja/Media/Alta/Máxima ya asignada. */
-const estadoHabilitado = computed(() => esComplejidadCatalogo(props.ticket.criticidad))
+const valorComplejidadPm = computed(() => g.value.complejidadPmValor ?? undefined)
+const valorComplejidadAnalista = computed(() =>
+  esTipoA.value ? (g.value.complejidadAnalistaValor ?? undefined) : (g.value.complejidadValor ?? undefined)
+)
 
-const valorComplejidadSelect = computed(() => {
-  const c = props.ticket.criticidad
-  return esComplejidadCatalogo(c) ? c : undefined
+const gridCols = computed(() => {
+  const n =
+    (mostrarComplejidadPm.value ? 1 : 0) +
+    (mostrarComplejidadAnalista.value ? 1 : 0) +
+    1
+  if (n <= 1) return 'grid-cols-1'
+  if (n === 2) return 'grid-cols-2'
+  return 'grid-cols-3'
 })
 
 function onCambioEstado(val: unknown) {
-  if (!estadoHabilitado.value) return
-  const nuevoCodigo = typeof val === 'string' ? val : String(val ?? '')
-  const t = props.ticket
-  if (!nuevoCodigo || nuevoCodigo === t.estadoCodigo) return
-  if (nuevoCodigo === 'en_progreso' && !puedePasarAEnProgreso(t)) {
-    showError(
-      'No se puede pasar a En progreso',
-      'Revisa la complejidad y el flujo (en tipo A con maqueta, debe estar aprobada).'
-    )
-    return
-  }
-  const actualizada = aplicarCambioEstadoEnSolicitud(t, nuevoCodigo)
-  void actualizarSolicitud({
-    ...actualizada,
-    ultimaActualizacion: etiquetaAhora()
-  })
-  agregarMensajeSistema(t.chatUuid, t.codigo, `Estado actualizado a "${actualizada.estado}" (analista).`)
+  const codigo = typeof val === 'string' ? val : String(val ?? '')
+  void cambiarEstado(props.ticket, codigo, { rolEtiqueta: 'analista' })
 }
 
-function onCambioComplejidad(val: unknown) {
+function onCambioComplejidad(val: unknown, rol: 'pm' | 'analista' | 'legacy') {
   const raw = typeof val === 'string' ? val : String(val ?? '')
-  if (!esComplejidadCatalogo(raw)) return
-  const t = props.ticket
-  if (t.criticidad === raw) return
-  void actualizarSolicitud({
-    ...t,
-    criticidad: raw,
-    ultimaActualizacion: etiquetaAhora()
-  })
-  agregarMensajeSistema(t.chatUuid, t.codigo, `Complejidad actualizada a «${raw}».`)
+  if (!complejidadOk(raw)) return
+  void cambiarComplejidad(props.ticket, raw, { rol })
 }
 </script>
 
 <template>
   <div
-    class="grid w-full min-w-0 grid-cols-2 gap-3"
+    v-if="g.esStaff"
+    class="grid w-full min-w-0 gap-3"
+    :class="gridCols"
     @click.stop
     @pointerdown.stop
   >
-    <div class="min-w-0 space-y-1">
+    <div v-if="mostrarComplejidadPm" class="min-w-0 space-y-1">
       <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        Complejidad
+        Complejidad PM
       </span>
       <USelect
-        :model-value="valorComplejidadSelect"
+        :model-value="valorComplejidadPm"
         :items="itemsComplejidad"
         value-key="value"
         label-key="label"
         size="sm"
         class="w-full min-w-0"
         placeholder="Definir"
-        @update:model-value="onCambioComplejidad"
+        @update:model-value="(v) => onCambioComplejidad(v, 'pm')"
       />
     </div>
-    <div class="min-w-0 space-y-1">
+
+    <div v-if="mostrarComplejidadAnalista" class="min-w-0 space-y-1">
       <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        Estado
+        {{ esTipoA ? 'Complejidad analista' : 'Complejidad' }}
       </span>
-      
       <USelect
-        :model-value="ticket.estadoCodigo"
-        :items="itemsEstado"
-        :disabled="!estadoHabilitado"
+        :model-value="valorComplejidadAnalista"
+        :items="itemsComplejidad"
         value-key="value"
         label-key="label"
         size="sm"
         class="w-full min-w-0"
-        :title="!estadoHabilitado ? 'Define primero la complejidad' : undefined"
-        placeholder="Estado"
+        placeholder="Definir"
+        @update:model-value="(v) => onCambioComplejidad(v, esTipoA ? 'analista' : 'legacy')"
+      />
+    </div>
+
+    <div class="min-w-0 space-y-1">
+      <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        Estado
+      </span>
+      <USelect
+        :model-value="g.estadoValor ?? undefined"
+        :items="itemsEstado"
+        :disabled="!g.estadoEditable"
+        value-key="value"
+        label-key="label"
+        size="sm"
+        class="w-full min-w-0"
+        :title="!g.estadoEditable ? 'Define primero la complejidad' : undefined"
+        :placeholder="g.estadoPlaceholder"
         @update:model-value="onCambioEstado"
       />
     </div>
