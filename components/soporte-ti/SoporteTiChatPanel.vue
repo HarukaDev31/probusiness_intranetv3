@@ -15,6 +15,18 @@
             <div class="min-w-0">
               <p class="text-[10px] font-medium uppercase tracking-wide text-muted">Código</p>
               <p class="truncate font-mono text-sm font-semibold text-highlighted">{{ codigoTicket }}</p>
+              <SoporteTiChatMetaBadges
+                v-if="estadoCodigo"
+                class="mt-1.5"
+                :estado-codigo="estadoCodigo"
+                :estado-nombre="estadoNombre"
+                :prioridad="prioridad"
+                :complejidad-pm="complejidadPm"
+                :complejidad-analista="complejidadAnalista"
+                :tipo="tipoSolicitud"
+                :mostrar-prioridad="mostrarMetaStaff"
+                :mostrar-complejidad="mostrarMetaStaff"
+              />
             </div>
           </div>
         </UCard>
@@ -67,6 +79,18 @@
           <div class="min-w-0 flex-1">
             <p class="text-sm font-semibold text-highlighted">Conversación</p>
             <p class="truncate font-mono text-[11px] text-muted">{{ codigoTicket }}</p>
+            <SoporteTiChatMetaBadges
+              v-if="estadoCodigo"
+              class="mt-2"
+              :estado-codigo="estadoCodigo"
+              :estado-nombre="estadoNombre"
+              :prioridad="prioridad"
+              :complejidad-pm="complejidadPm"
+              :complejidad-analista="complejidadAnalista"
+              :tipo="tipoSolicitud"
+              mostrar-prioridad
+              mostrar-complejidad
+            />
           </div>
           <UBadge v-if="mensajes.length" color="neutral" variant="soft" size="sm">
             {{ mensajes.length }}
@@ -420,7 +444,11 @@
           />
         </div>
 
-        <div class="flex items-end gap-2 p-3" :class="modoVistaAdjunto ? 'px-4 pb-4 pt-1' : ''">
+        <div
+          class="flex items-end gap-2 p-3"
+          :class="modoVistaAdjunto ? 'px-4 pb-4 pt-1' : ''"
+          @paste.capture="onPaste"
+        >
           <input
             ref="fileInputImagenRef"
             type="file"
@@ -543,8 +571,9 @@ import SoporteTiChatAdjuntoMensaje from '~/components/soporte-ti/SoporteTiChatAd
 import SoporteTiChatMensajeInfoModal from '~/components/soporte-ti/SoporteTiChatMensajeInfoModal.vue'
 import SoporteTiChatPanelSkeleton from '~/components/soporte-ti/SoporteTiChatPanelSkeleton.vue'
 import SoporteTiFasesProyectoBar from '~/components/soporte-ti/SoporteTiFasesProyectoBar.vue'
+import SoporteTiChatMetaBadges from '~/components/soporte-ti/SoporteTiChatMetaBadges.vue'
 import { SOPORTE_TI_CHAT_ACCEPT_DOCUMENTOS } from '~/constants/soporteTiChat'
-import { esImagenAdjunto } from '~/utils/soporteTiChatAdjunto'
+import { archivosDesdePortapapeles, esImagenAdjunto } from '~/utils/soporteTiChatAdjunto'
 
 const overlay = useOverlay()
 const modalPreview = overlay.create(ModalPreview)
@@ -567,6 +596,13 @@ const props = withDefaults(
     contadorRestanteSegundos?: number | null
     contadorVencido?: boolean
     terminoMaximo?: string | null
+    estadoCodigo?: string
+    estadoNombre?: string
+    prioridad?: number | null
+    complejidadPm?: string | null
+    complejidadAnalista?: string | null
+    tipoSolicitud?: 'A' | 'B'
+    mostrarMetaStaff?: boolean
   }>(),
   {
     hasMoreOlder: false,
@@ -581,7 +617,14 @@ const props = withDefaults(
     contadorFin: null,
     contadorRestanteSegundos: null,
     contadorVencido: false,
-    terminoMaximo: null
+    terminoMaximo: null,
+    estadoCodigo: '',
+    estadoNombre: '',
+    prioridad: null,
+    complejidadPm: null,
+    complejidadAnalista: null,
+    tipoSolicitud: 'B',
+    mostrarMetaStaff: false
   }
 )
 
@@ -760,12 +803,10 @@ function limpiarImagenesPendientes() {
   indiceAdjunto.value = 0
 }
 
-function onPickDocumento(e: Event) {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) return
-  if (file.size > SOPORTE_TI_MAX_IMAGEN_MB * 1048576) return
+const maxBytesAdjunto = SOPORTE_TI_MAX_IMAGEN_MB * 1048576
+
+function adjuntarDocumentoPendiente(file: File) {
+  if (file.size > maxBytesAdjunto) return
   if (esImagenAdjunto(file)) {
     limpiarImagenesPendientes()
     documentoPendiente.value = null
@@ -777,26 +818,56 @@ function onPickDocumento(e: Event) {
   documentoPendiente.value = { file }
 }
 
-function onPickImagenes(e: Event) {
-  const input = e.target as HTMLInputElement
-  if (!input.files?.length) return
+function agregarImagenesPendientes(files: File[]) {
+  if (!files.length) return
   documentoPendiente.value = null
   const restantes = SOPORTE_TI_MAX_IMAGENES_CHAT - imagenesPendientes.value.length
   const nuevas: { file: File; preview: string }[] = []
-  Array.from(input.files)
-    .slice(0, restantes)
-    .forEach((file) => {
-      if (!file.type.startsWith('image/')) return
-      if (file.size > SOPORTE_TI_MAX_IMAGEN_MB * 1048576) return
-      nuevas.push({
-        file,
-        preview: URL.createObjectURL(file)
-      })
+  files.slice(0, restantes).forEach((file) => {
+    if (!esImagenAdjunto(file)) return
+    if (file.size > maxBytesAdjunto) return
+    nuevas.push({
+      file,
+      preview: URL.createObjectURL(file)
     })
+  })
   if (nuevas.length) {
     imagenesPendientes.value = [...imagenesPendientes.value, ...nuevas]
     indiceAdjunto.value = imagenesPendientes.value.length - 1
   }
+}
+
+function adjuntarArchivosDesdeLista(files: File[]) {
+  if (!files.length) return
+  const imagenes = files.filter((f) => esImagenAdjunto(f))
+  const otros = files.filter((f) => !esImagenAdjunto(f))
+  if (imagenes.length) {
+    agregarImagenesPendientes(imagenes)
+  }
+  if (otros.length && !imagenes.length) {
+    adjuntarDocumentoPendiente(otros[0])
+  }
+}
+
+function onPaste(e: ClipboardEvent) {
+  const archivos = archivosDesdePortapapeles(e)
+  if (!archivos.length) return
+  e.preventDefault()
+  adjuntarArchivosDesdeLista(archivos)
+}
+
+function onPickDocumento(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  adjuntarDocumentoPendiente(file)
+}
+
+function onPickImagenes(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.files?.length) return
+  agregarImagenesPendientes(Array.from(input.files))
   input.value = ''
 }
 

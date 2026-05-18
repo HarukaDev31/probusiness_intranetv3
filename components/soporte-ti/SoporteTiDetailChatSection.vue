@@ -18,6 +18,13 @@
     :termino-maximo="terminoMaximo"
     :mostrar-fases-cabecera="mostrarFasesCabecera"
     :fase-index="faseIndex"
+    :estado-codigo="estadoCodigo"
+    :estado-nombre="estadoNombre"
+    :prioridad="prioridad"
+    :complejidad-pm="complejidadPm"
+    :complejidad-analista="complejidadAnalista"
+    :tipo-solicitud="tipoSolicitud"
+    :mostrar-meta-staff="mostrarMetaStaff"
     @send="(payload) => void enviarChat(chatUuid, payload)"
     @load-older="void cargarMensajesAnteriores(chatUuid)"
   />
@@ -44,6 +51,13 @@ const props = withDefaults(
     terminoMaximo?: string | null
     mostrarFasesCabecera?: boolean
     faseIndex?: number
+    estadoCodigo?: string
+    estadoNombre?: string
+    prioridad?: number | null
+    complejidadPm?: string | null
+    complejidadAnalista?: string | null
+    tipoSolicitud?: 'A' | 'B'
+    mostrarMetaStaff?: boolean
   }>(),
   {
     modoSolicitante: false,
@@ -56,7 +70,14 @@ const props = withDefaults(
     contadorVencido: false,
     terminoMaximo: null,
     mostrarFasesCabecera: false,
-    faseIndex: 0
+    faseIndex: 0,
+    estadoCodigo: '',
+    estadoNombre: '',
+    prioridad: null,
+    complejidadPm: null,
+    complejidadAnalista: null,
+    tipoSolicitud: 'B',
+    mostrarMetaStaff: false
   }
 )
 

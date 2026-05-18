@@ -23,6 +23,28 @@ export function esImagenAdjunto(file: File): boolean {
   return file.type.startsWith('image/')
 }
 
+/** Archivos del portapapeles (capturas, copiar imagen, etc.). */
+export function archivosDesdePortapapeles(e: ClipboardEvent): File[] {
+  const dt = e.clipboardData
+  if (!dt) return []
+
+  const list: File[] = []
+  for (const item of Array.from(dt.items)) {
+    if (item.kind !== 'file') continue
+    const raw = item.getAsFile()
+    if (!raw) continue
+    if (raw.name) {
+      list.push(raw)
+      continue
+    }
+    const sub = item.type.split('/')[1] || 'png'
+    list.push(new File([raw], `pegado-${Date.now()}.${sub}`, { type: raw.type || item.type }))
+  }
+  if (list.length) return list
+
+  return Array.from(dt.files)
+}
+
 /** Convierte tamaño API ("4 kB", "1024") a bytes aproximados para la UI. */
 export function tamanoAdjuntoDesdeApi(tamano: string | null | undefined): number {
   if (!tamano) return 0

@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
 import { SOPORTE_TI_COMPLEJIDADES, complejidadOk } from '~/utils/soporteTiComplejidad'
-import { estadosItems } from '~/utils/soporteTiGestion'
+import { estadosItemsCompletos } from '~/utils/soporteTiGestion'
+import { clasesSelectComplejidad, clasesSelectEstado } from '~/constants/soporteTiColores'
 import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
 
 const props = defineProps<{ ticket: SoporteTiSolicitud }>()
@@ -10,7 +11,18 @@ const props = defineProps<{ ticket: SoporteTiSolicitud }>()
 const { cambiarComplejidad, cambiarEstado } = useSoporteTiAcciones()
 
 const g = computed(() => props.ticket.gestion)
-const itemsEstado = computed(() => estadosItems(g.value.estados))
+const itemsEstado = computed(() =>
+  estadosItemsCompletos(props.ticket.tipo, g.value.estados, {
+    editable: g.value.estadoEditable
+  })
+)
+const claseSelectEstado = computed(() =>
+  clasesSelectEstado(g.value.estadoValor ?? props.ticket.estadoCodigo)
+)
+const claseSelectComplejidadPm = computed(() => clasesSelectComplejidad(valorComplejidadPm.value))
+const claseSelectComplejidadAnalista = computed(() =>
+  clasesSelectComplejidad(valorComplejidadAnalista.value)
+)
 const esTipoA = computed(() => props.ticket.tipo === 'A')
 const itemsComplejidad = computed(() =>
   SOPORTE_TI_COMPLEJIDADES.map((c) => ({ label: c, value: c }))
@@ -66,7 +78,7 @@ function onCambioComplejidad(val: unknown, rol: 'pm' | 'analista' | 'legacy') {
         value-key="value"
         label-key="label"
         size="sm"
-        class="w-full min-w-0"
+        :class="['w-full min-w-0', claseSelectComplejidadPm]"
         placeholder="Definir"
         @update:model-value="(v) => onCambioComplejidad(v, 'pm')"
       />
@@ -82,7 +94,7 @@ function onCambioComplejidad(val: unknown, rol: 'pm' | 'analista' | 'legacy') {
         value-key="value"
         label-key="label"
         size="sm"
-        class="w-full min-w-0"
+        :class="['w-full min-w-0', claseSelectComplejidadAnalista]"
         placeholder="Definir"
         @update:model-value="(v) => onCambioComplejidad(v, esTipoA ? 'analista' : 'legacy')"
       />
@@ -99,7 +111,7 @@ function onCambioComplejidad(val: unknown, rol: 'pm' | 'analista' | 'legacy') {
         value-key="value"
         label-key="label"
         size="sm"
-        class="w-full min-w-0"
+        :class="['w-full min-w-0', claseSelectEstado]"
         :title="!g.estadoEditable ? 'Define primero la complejidad' : undefined"
         :placeholder="g.estadoPlaceholder"
         @update:model-value="onCambioEstado"

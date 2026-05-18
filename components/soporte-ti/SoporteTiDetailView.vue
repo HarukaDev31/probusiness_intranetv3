@@ -12,6 +12,8 @@
         panel-class="min-h-0 flex-1"
         :chat-uuid="ticket.chatUuid"
         :codigo-ticket="ticket.codigo"
+        :estado-codigo="ticket.estadoCodigo"
+        :estado-nombre="ticket.estado"
         :contador-activo="ticket.gestion.contadorActivo"
         :contador-pausado="ticket.gestion.contadorPausado"
         :contador-fin="ticket.gestion.contadorFin"
@@ -30,6 +32,13 @@
           panel-class="min-h-0 flex-1"
           :chat-uuid="ticket.chatUuid"
           :codigo-ticket="ticket.codigo"
+          :estado-codigo="ticket.estadoCodigo"
+          :estado-nombre="ticket.estado"
+          :prioridad="ticket.prioridad"
+          :complejidad-pm="ticket.complejidadPm"
+          :complejidad-analista="ticket.tipo === 'A' ? ticket.complejidadAnalista : ticket.criticidad"
+          :tipo-solicitud="ticket.tipo"
+          mostrar-meta-staff
           :contador-activo="ticket.gestion.contadorActivo"
           :contador-pausado="ticket.gestion.contadorPausado"
           :contador-fin="ticket.gestion.contadorFin"
@@ -44,7 +53,7 @@
       <div class="min-w-0 space-y-5 overflow-y-auto lg:col-span-1 lg:max-h-[calc(100dvh-8rem)]">
         <UCard>
           <div class="mb-4 flex flex-wrap items-center gap-1.5">
-            <UBadge :color="badgeColorEstado(ticket.estadoCodigo)" variant="subtle">
+            <UBadge :color="uBadgeColorEstado(ticket.estadoCodigo)" variant="subtle">
               {{ ticket.estado }}
             </UBadge>
             <UBadge :color="badgeColorTipo" variant="subtle">
@@ -52,7 +61,7 @@
             </UBadge>
             <UBadge
               v-if="mostrarComplejidad"
-              :color="badgeColorComplejidad(ticket.criticidad)"
+              :color="uBadgeColorComplejidad(ticket.criticidad)"
               variant="subtle"
             >
               {{ ticket.criticidad }}
@@ -117,7 +126,11 @@
             </span>
             <USelect
               :model-value="ticket.gestion.estadoValor ?? undefined"
-              :items="estadosItems(ticket.gestion.estados)"
+              :items="
+                estadosItemsCompletos(ticket.tipo, ticket.gestion.estados, {
+                  editable: true
+                })
+              "
               value-key="value"
               label-key="label"
               size="sm"
@@ -178,7 +191,11 @@ import { useSoporteTi } from '~/composables/useSoporteTi'
 import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { estadosItems } from '~/utils/soporteTiGestion'
+import { estadosItemsCompletos } from '~/utils/soporteTiGestion'
+import {
+  uBadgeColorComplejidad,
+  uBadgeColorEstado
+} from '~/constants/soporteTiColores'
 import SoporteTiAnalistaGestionSelect from '~/components/soporte-ti/SoporteTiAnalistaGestionSelect.vue'
 import SoporteTiSlaBar from '~/components/soporte-ti/SoporteTiSlaBar.vue'
 import SoporteTiMaquetaPreview from '~/components/soporte-ti/SoporteTiMaquetaPreview.vue'
@@ -257,20 +274,6 @@ type AccionDef = {
   variant: 'solid' | 'outline' | 'soft' | 'subtle' | 'ghost' | 'link'
 }
 
-function badgeColorEstado(codigo: string): BadgeColor {
-  const c = (codigo || '').toLowerCase()
-  const map: Record<string, BadgeColor> = {
-    pendiente: 'neutral',
-    en_maqueta: 'primary',
-    en_progreso: 'primary',
-    hecho: 'success',
-    desplegado: 'warning',
-    operativo: 'success',
-    observado: 'error'
-  }
-  return map[c] ?? 'neutral'
-}
-
 const badgeColorTipo = computed((): BadgeColor => {
   if (props.ticket.tipo === 'A') return 'primary'
   const sub = (props.ticket.subtipoB || '').toUpperCase()
@@ -278,15 +281,6 @@ const badgeColorTipo = computed((): BadgeColor => {
   if (sub === 'B2') return 'warning'
   return 'neutral'
 })
-
-function badgeColorComplejidad(etiqueta: string): BadgeColor {
-  const e = (etiqueta || '').toLowerCase()
-  if (e.includes('máx') || e.includes('max')) return 'error'
-  if (e.includes('alta') || e.includes('crít') || e.includes('crit')) return 'error'
-  if (e.includes('media')) return 'warning'
-  if (e.includes('baja')) return 'success'
-  return 'neutral'
-}
 
 const acciones = computed((): AccionDef[] => {
   const rol = rolActivo.value as SoporteTiRol

@@ -69,7 +69,12 @@ import SoporteTiModalCreate from '~/components/soporte-ti/SoporteTiModalCreate.v
 import SoporteTiEvidenciaModal from '~/components/soporte-ti/SoporteTiEvidenciaModal.vue'
 import { SOPORTE_TI_KANBAN_BOARD } from '~/constants/soporteTiEstados'
 import { SOPORTE_TI_COMPLEJIDADES, complejidadOk } from '~/utils/soporteTiComplejidad'
-import { estadosItems } from '~/utils/soporteTiGestion'
+import { estadosItemsCompletos } from '~/utils/soporteTiGestion'
+import {
+  clasesSelectComplejidad,
+  clasesSelectEstado,
+  clasesSelectPrioridad
+} from '~/constants/soporteTiColores'
 import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
 import { useModal } from '~/composables/commons/useModal'
 import { formatSoporteTiRegistro } from '~/utils/formatters'
@@ -232,8 +237,15 @@ async function onCambioEstadoTabla(t: SoporteTiSolicitud, val: unknown) {
 
 function celdaEstadoTicket(t: SoporteTiSolicitud) {
   const g = t.gestion
+  const codigo = g.estadoValor ?? t.estadoCodigo
   if (!g.puedeEstado) {
-    return h('span', { class: 'text-xs text-slate-700 dark:text-slate-300' }, t.estado)
+    return h(
+      'span',
+      {
+        class: `inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${clasesSelectEstado(codigo)}`
+      },
+      t.estado
+    )
   }
   return h(
     'div',
@@ -245,13 +257,13 @@ function celdaEstadoTicket(t: SoporteTiSolicitud) {
     },
     [
       h(USelect as any, {
-        modelValue: g.estadoValor ?? undefined,
-        items: estadosItems(g.estados),
+        modelValue: codigo || undefined,
+        items: estadosItemsCompletos(t.tipo, g.estados, { editable: g.estadoEditable }),
         disabled: !g.estadoEditable,
         valueKey: 'value',
         labelKey: 'label',
         size: 'sm',
-        class: 'w-full min-w-0',
+        class: ['w-full min-w-0', clasesSelectEstado(codigo)],
         placeholder: g.estadoPlaceholder,
         'onUpdate:modelValue': (v: unknown) => void onCambioEstadoTabla(t, v)
       })
@@ -393,8 +405,15 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
       rol: 'pm' | 'analista' | 'legacy'
     }
   ) {
+    const valorMostrar = opts.valor ?? opts.texto
     if (!opts.puede) {
-      return h('span', { class: 'text-xs text-slate-600 dark:text-slate-300' }, opts.texto)
+      return h(
+        'span',
+        {
+          class: `inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${clasesSelectComplejidad(valorMostrar)}`
+        },
+        opts.texto
+      )
     }
     return h(
       'div',
@@ -411,7 +430,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
           valueKey: 'value',
           labelKey: 'label',
           size: 'sm',
-          class: 'w-full min-w-0',
+          class: ['w-full min-w-0', clasesSelectComplejidad(opts.valor ?? opts.texto)],
           placeholder: 'Definir',
           'onUpdate:modelValue': (v: unknown) => void onCambioComplejidadTabla(t, v, opts.rol)
         })
@@ -426,11 +445,14 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     meta: { class: { th: tdSelectAnalista, td: tdSelectAnalista } },
     cell: ({ row }) => {
       const t = row.original
+      const p = t.prioridad ?? 2
       if (rolActivo.value !== 'PM') {
         return h(
           'span',
-          { class: 'text-xs font-medium text-slate-700 dark:text-slate-300' },
-          etiquetaPrioridad(t.prioridad ?? 2)
+          {
+            class: `inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${clasesSelectPrioridad(p)}`
+          },
+          etiquetaPrioridad(p)
         )
       }
       return h(
@@ -443,12 +465,12 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
         },
         [
           h(USelect as any, {
-            modelValue: t.prioridad ?? 2,
+            modelValue: p,
             items: itemsPrioridad,
             valueKey: 'value',
             labelKey: 'label',
             size: 'sm',
-            class: 'w-full min-w-0',
+            class: ['w-full min-w-0', clasesSelectPrioridad(p)],
             'onUpdate:modelValue': (v: unknown) => void onCambioPrioridadTabla(t, v)
           })
         ]

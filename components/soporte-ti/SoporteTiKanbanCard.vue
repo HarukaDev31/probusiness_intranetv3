@@ -19,7 +19,7 @@
           {{ fechaFinFmt }}
         </p>
       </div>
-      <SoporteTiBadge :etiqueta="estadoEtiqueta" />
+      <SoporteTiBadge :estado-codigo="row.estadoCodigo" :etiqueta="estadoEtiqueta" />
     </template>
     <template v-else>
       <SoporteTiProgressStepper :solicitud="row" tam="sm" />
