@@ -90,7 +90,8 @@ export function useSoporteTiChatRoom() {
                   p.chat_uuid,
                   p.codigo,
                   tituloNotificacionMensaje(p),
-                  p.mensaje?.texto || 'Nuevo mensaje en el chat'
+                  p.mensaje?.texto || 'Nuevo mensaje en el chat',
+                  'mensaje'
                 )
               }
             }
@@ -109,7 +110,8 @@ export function useSoporteTiChatRoom() {
                   p.chat_uuid,
                   p.codigo,
                   'Mensaje actualizado',
-                  p.mensaje?.texto || 'Se actualizó un mensaje'
+                  p.mensaje?.texto || 'Se actualizó un mensaje',
+                  'mensaje'
                 )
               }
             }
@@ -136,7 +138,8 @@ export function useSoporteTiChatRoom() {
                   p.chat_uuid,
                   p.codigo,
                   tituloNotificacionEstado(p),
-                  `Nuevo estado: ${p.estado}`
+                  `Nuevo estado: ${p.estado}`,
+                  'estado'
                 )
               }
             }

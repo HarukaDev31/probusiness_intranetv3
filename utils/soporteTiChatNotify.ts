@@ -1,4 +1,5 @@
 import type { SoporteTiWsEstadoPayload, SoporteTiWsMensajePayload } from '~/types/soporteTi'
+import { mostrarNotificacionNavegadorSoporteTi } from '~/utils/soporteTiBrowserNotification'
 
 export function notifySoporteTiModal(
   type: 'info' | 'success' | 'warning',
@@ -17,14 +18,29 @@ export function notifySoporteTiChatEvent(
   chatUuid: string,
   codigo: string,
   title: string,
-  message: string
+  message: string,
+  kind: 'mensaje' | 'estado' = 'mensaje'
 ) {
   if (typeof window === 'undefined') return
+
+  const detail = { chatUuid, codigo, title, message, kind }
   window.dispatchEvent(
     new CustomEvent('soporte-ti-chat-event', {
-      detail: { chatUuid, codigo, title, message }
+      detail
     })
   )
+
+  if (kind !== 'mensaje') return
+
+  const urlDetalle = `/soporte-ti/${encodeURIComponent(chatUuid)}`
+  void mostrarNotificacionNavegadorSoporteTi({
+    chatUuid,
+    codigo,
+    title,
+    message,
+    kind,
+    urlDetalle
+  })
 }
 
 export function tituloNotificacionMensaje(payload: SoporteTiWsMensajePayload): string {

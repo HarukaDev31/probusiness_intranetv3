@@ -2,12 +2,20 @@ import { ref } from 'vue'
 import { navigateTo } from '#imports'
 import { useSoporteTi } from '~/composables/useSoporteTi'
 import { rutaDetalleSoporteTiPorChatUuid } from '~/utils/soporteTiRutas'
+import {
+  mostrarNotificacionPruebaSoporteTi,
+  permisoNotificacionNavegador,
+  solicitarPermisoNotificacionNavegador,
+  soporteTiNotificacionNavegadorSoportada,
+  type SoporteTiNotificacionNavegadorKind
+} from '~/utils/soporteTiBrowserNotification'
 
 export interface SoporteTiChatNotificacionPayload {
   chatUuid: string
   codigo: string
   title: string
   message: string
+  kind?: SoporteTiNotificacionNavegadorKind
 }
 
 const abierto = ref(false)
@@ -53,6 +61,10 @@ export function useSoporteTiChatNotificacion() {
     mostrar,
     cerrar,
     irAlChat,
-    abrirEnNuevaPestaña
+    abrirEnNuevaPestaña,
+    permisoNavegador: permisoNotificacionNavegador,
+    soportaNavegador: soporteTiNotificacionNavegadorSoportada,
+    solicitarPermisoNavegador: solicitarPermisoNotificacionNavegador,
+    mostrarPruebaNavegador: mostrarNotificacionPruebaSoporteTi
   }
 }

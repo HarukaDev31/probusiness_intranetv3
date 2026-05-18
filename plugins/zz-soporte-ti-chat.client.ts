@@ -2,6 +2,10 @@ import {
   attachSoporteTiChatGlobalListeners,
   watchSoporteTiSolicitudesParaSalas
 } from '~/composables/useSoporteTiChatGlobal'
+import {
+  registrarServiceWorkerNotificaciones,
+  registrarSolicitudPermisoNotificacionEnPrimerClic
+} from '~/utils/soporteTiBrowserNotification'
 import { useSoporteTiChatNotificacion } from '~/composables/useSoporteTiChatNotificacion'
 import type { SoporteTiChatNotificacionPayload } from '~/composables/useSoporteTiChatNotificacion'
 
@@ -14,6 +18,10 @@ export default defineNuxtPlugin((nuxtApp) => {
     nuxtApp.runWithContext(() => {
       attachSoporteTiChatGlobalListeners()
       watchSoporteTiSolicitudesParaSalas()
+      registrarSolicitudPermisoNotificacionEnPrimerClic()
+      if (localStorage.getItem('auth_token') && Notification.permission === 'granted') {
+        void registrarServiceWorkerNotificaciones()
+      }
 
       if (!notificacionListenerAttached) {
         notificacionListenerAttached = true

@@ -46,6 +46,7 @@
     <ModalContainer />
 
     <SoporteTiChatNotificacionModal />
+    <SoporteTiNotificacionesPermisoBar />
 
     <!-- Global Spinner -->
     <GlobalSpinner />
@@ -68,6 +69,9 @@ const ModalContainer = defineAsyncComponent(() => import('../components/ModalCon
 const GlobalSpinner = defineAsyncComponent(() => import('../components/GlobalSpinner.vue'))
 const SoporteTiChatNotificacionModal = defineAsyncComponent(
   () => import('../components/soporte-ti/SoporteTiChatNotificacionModal.vue')
+)
+const SoporteTiNotificacionesPermisoBar = defineAsyncComponent(
+  () => import('../components/soporte-ti/SoporteTiNotificacionesPermisoBar.vue')
 )
 import type { AuthMenu } from '../services/authService'
 import type { SidebarCategory } from '../types/module'
