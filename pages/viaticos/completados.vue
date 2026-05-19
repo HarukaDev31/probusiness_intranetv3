@@ -28,6 +28,8 @@
       @page-change="handlePageChange" 
       @items-per-page-change="handleItemsPerPageChange" 
       @filter-change="handleFilterChange"
+      @update:filters="handleUpdateFilters"
+      @clear-filters="handleClearFilters"
       @export="exportViaticos('CONFIRMED')"
       :headers="headers"
       :show-headers="true"
@@ -54,7 +56,22 @@ import ModalPreview from '~/components/commons/ModalPreview.vue'
 import type { FileItem } from '~/types/commons/file'
 import type { ViaticoPago } from '~/types/viatico'
 
-const { viaticos, loading, error, pagination, headers, filterOptions, filters, loadCompletados, exportViaticos, getStatusColor, getStatusLabel } = useViaticos()
+const {
+  viaticos,
+  loading,
+  error,
+  pagination,
+  headers,
+  filterOptions,
+  filters,
+  loadCompletados,
+  exportViaticos,
+  getStatusColor,
+  getStatusLabel,
+  handleFilterChange,
+  handleUpdateFilters,
+  handleClearFilters
+} = useViaticos()
 const { hasRole } = useUserRole()
 const overlay = useOverlay()
 const evidenciasModal = overlay.create(EvidenciasModal)
@@ -213,10 +230,6 @@ const handleItemsPerPageChange = (itemsPerPage: number) => {
     search: search.value,
     ...filters.value
   })
-}
-
-const handleFilterChange = (newFilters: Record<string, any>) => {
-  filters.value = newFilters
 }
 
 // Configuración de filtros

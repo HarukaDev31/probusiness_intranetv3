@@ -33,6 +33,7 @@
       @items-per-page-change="handleItemsPerPageChange" 
       @filter-change="handleFilterChange"
       @update:filters="handleUpdateFilters"
+      @clear-filters="handleClearFilters"
     >
       <template #error-state>
         <ErrorState :message="error || 'Error desconocido'" />
@@ -58,7 +59,21 @@ import CreateViaticoModal from '~/components/viaticos/CreateViaticoModal.vue'
 import type { FileItem } from '~/types/commons/file'
 import type { ViaticoPago, CreateViaticoRequest } from '~/types/viatico'
 
-const { viaticos, loading, error, pagination, filterOptions, loadPendientes, createViatico, getStatusColor, getStatusLabel } = useViaticos()
+const {
+  viaticos,
+  loading,
+  error,
+  pagination,
+  filterOptions,
+  filters,
+  loadPendientes,
+  createViatico,
+  getStatusColor,
+  getStatusLabel,
+  handleFilterChange,
+  handleUpdateFilters,
+  handleClearFilters
+} = useViaticos()
 const { hasRole } = useUserRole()
 const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
@@ -68,7 +83,6 @@ const modalPreview = overlay.create(ModalPreview)
 const createViaticoModal = overlay.create(CreateViaticoModal)
 
 const search = ref('')
-const filters = ref<Record<string, any>>({})
 const areaOptions = [
   { label: 'Todos', value: 'todos' },
   { label: 'Marketing', value: 'Marketing' },
@@ -250,27 +264,6 @@ const handleItemsPerPageChange = (itemsPerPage: number) => {
     search: search.value,
     ...filters.value
   })
-}
-
-// DataTable may emit either:
-// - ('filter-change', key, value) for single filter changes, OR
-// - ('update:filters', filtersObject) when clearing/updating all filters.
-const handleFilterChange = (arg1: any, arg2?: any) => {
-  // case: filter-change with key + value
-  if (typeof arg1 === 'string' && arg2 !== undefined) {
-    filters.value = { ...(filters.value || {}), [arg1]: arg2 }
-    return
-  }
-
-  // case: parent emitted a full filters object accidentally
-  if (arg1 && typeof arg1 === 'object') {
-    filters.value = arg1
-    return
-  }
-}
-
-const handleUpdateFilters = (newFilters: Record<string, any>) => {
-  filters.value = newFilters || {}
 }
 
 // Configuración de filtros
