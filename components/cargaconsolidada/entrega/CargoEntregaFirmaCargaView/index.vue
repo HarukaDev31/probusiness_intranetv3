@@ -31,7 +31,12 @@
         @touchmove.prevent="onTouchMove"
         @touchend="onTouchEnd"
       >
-        <div v-if="!isPdfLoaded" class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-gray-100 dark:bg-gray-800">
+        <div v-if="loadError" class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-gray-100 dark:bg-gray-800 p-4 text-center">
+          <UIcon name="i-heroicons-exclamation-triangle" class="w-10 h-10 text-amber-500" />
+          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 max-w-md">{{ loadError }}</p>
+          <UButton size="xs" color="primary" variant="soft" @click="loadPDF">Reintentar</UButton>
+        </div>
+        <div v-else-if="!isPdfLoaded" class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-gray-100 dark:bg-gray-800">
           <UIcon name="i-heroicons-document-text" class="w-10 h-10 sm:w-16 sm:h-16 text-gray-400 animate-pulse" />
           <p class="text-xs sm:text-base text-gray-500">Cargando documento...</p>
         </div>
@@ -77,6 +82,7 @@ let pdfjsLib: any = null
 const pdfDoc = ref<any>(null)
 const totalPages = ref(0)
 const isPdfLoaded = ref(false)
+const loadError = ref<string | null>(null)
 const currentScale = ref(1.0)
 const minScale = ref(0.5)
 const maxScale = ref(3.0)
@@ -86,6 +92,7 @@ const pdfViewer = ref<HTMLElement | null>(null)
 
 const {
   getCargoEntregaPdf,
+  fetchPdfArrayBuffer,
   signCargoEntrega,
   downloadCargoEntrega,
   pdfUrl,
@@ -99,9 +106,12 @@ const setCanvasRef = (el: any, pageNum: number) => {
 
 const initPdfJs = async () => {
   if (pdfjsLib) return
-  const pdfjs = await import('pdfjs-dist')
+  const [pdfjs, workerModule] = await Promise.all([
+    import('pdfjs-dist'),
+    import('pdfjs-dist/build/pdf.worker.min.mjs?url')
+  ])
   pdfjsLib = markRaw(pdfjs)
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs'
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default
 }
 
 let baseScale = 1.0
@@ -279,9 +289,23 @@ const onTouchEnd = () => {
   touchMode = 'none'
 }
 
+const waitForCanvasRefs = async (pageCount: number) => {
+  for (let attempt = 0; attempt < 30; attempt++) {
+    await nextTick()
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    const ready = Array.from({ length: pageCount }, (_, i) => pdfCanvases.value[i + 1]).every(Boolean)
+    if (ready) return
+  }
+  throw new Error('No se pudieron renderizar las páginas del documento')
+}
+
 const loadPDF = async () => {
+  loadError.value = null
+  isPdfLoaded.value = false
+  pdfCanvases.value = {}
+  totalPages.value = 0
+
   try {
-    isPdfLoaded.value = false
     if (!props.idContenedor || !props.idCotizacion) {
       throw new Error('Faltan parámetros: id_contenedor e id_cotizacion')
     }
@@ -289,10 +313,9 @@ const loadPDF = async () => {
     if (!hasPdf.value || !pdfUrl.value) {
       throw new Error('No se encontró el PDF de cargo de entrega')
     }
+
     await initPdfJs()
-    const res = await fetch(pdfUrl.value, { credentials: 'include' })
-    if (!res.ok) throw new Error('No se pudo cargar el PDF')
-    const arrayBuffer = await res.arrayBuffer()
+    const arrayBuffer = await fetchPdfArrayBuffer(pdfUrl.value)
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
     const pdf = await loadingTask.promise
     pdfDoc.value = markRaw(pdf)
@@ -301,8 +324,7 @@ const loadPDF = async () => {
     const firstPage = await pdf.getPage(1)
     const defaultViewport = firstPage.getViewport({ scale: 1.0 })
 
-    await nextTick()
-    await new Promise(resolve => requestAnimationFrame(resolve))
+    await waitForCanvasRefs(pdf.numPages)
 
     const container = scrollContainer.value
     const containerWidth = container ? container.clientWidth : window.innerWidth
@@ -310,11 +332,12 @@ const loadPDF = async () => {
     baseScale = Math.max(0.5, (containerWidth - padding) / defaultViewport.width)
     currentScale.value = 1.0
 
-    await nextTick()
     await renderAllPages()
     isPdfLoaded.value = true
   } catch (err: any) {
     console.error('Error cargando PDF:', err)
+    loadError.value = err?.message || 'No se pudo mostrar el documento'
+    isPdfLoaded.value = false
   }
 }
 

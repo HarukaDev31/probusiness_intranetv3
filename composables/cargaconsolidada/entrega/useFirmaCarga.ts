@@ -3,6 +3,23 @@ import { EntregaService } from '~/services/cargaconsolidada/entrega/entregaServi
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 
+/** Ruta relativa del storage Laravel → URL absoluta (mismo criterio que factura-guía). */
+export function resolveStorageFileUrl(url: string): string {
+  const cleaned = (url || '').replace(/\\\//g, '/').trim()
+  if (!cleaned) return ''
+  if (/^https?:\/\//i.test(cleaned)) return cleaned
+
+  const config = useRuntimeConfig()
+  const apiBase = String(config.public.apiBaseUrl || '').replace(/\/$/, '')
+  const origin = apiBase.replace(/\/api\/?$/i, '')
+  const path = cleaned.replace(/^\/+/, '')
+
+  if (path.startsWith('storage/')) {
+    return `${origin}/${path}`
+  }
+  return `${origin}/storage/${path}`
+}
+
 export interface FirmaCargaData {
   pdf_url: string
   pdf_url_firmado?: string
@@ -19,12 +36,44 @@ export function useFirmaCarga() {
   const error = ref<string | null>(null)
   const isSigning = ref(false)
 
-  const hasPdf = computed(() => !!cargaData.value?.pdf_url)
+  const hasPdf = computed(() => {
+    const d = cargaData.value
+    return !!(d?.pdf_url || d?.pdf_url_firmado)
+  })
   const hasSignedPdf = computed(() => !!cargaData.value?.pdf_url_firmado)
   const pdfUrl = computed(() => {
     if (!cargaData.value) return ''
-    return cargaData.value.pdf_url_firmado || cargaData.value.pdf_url || ''
+    const raw = cargaData.value.pdf_url_firmado || cargaData.value.pdf_url || ''
+    return resolveStorageFileUrl(raw)
   })
+
+  const fetchPdfArrayBuffer = async (url: string): Promise<ArrayBuffer> => {
+    const absoluteUrl = resolveStorageFileUrl(url)
+    if (!absoluteUrl) {
+      throw new Error('URL del PDF no disponible')
+    }
+
+    const token = import.meta.client ? localStorage.getItem('auth_token') : null
+    const res = await fetch(absoluteUrl, {
+      credentials: 'include',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    })
+
+    if (!res.ok) {
+      throw new Error(`No se pudo descargar el PDF (${res.status})`)
+    }
+
+    const buffer = await res.arrayBuffer()
+    const header = new Uint8Array(buffer.slice(0, 5))
+    const signature = String.fromCharCode(...header)
+    if (!signature.startsWith('%PDF')) {
+      throw new Error('El archivo recibido no es un PDF válido')
+    }
+
+    return buffer
+  }
 
   const getCargoEntregaPdf = async (
     idContenedor: number,
@@ -98,14 +147,21 @@ export function useFirmaCarga() {
   }
 
   const downloadCargoEntrega = async (): Promise<void> => {
-    const url = pdfUrl.value
-    if (!url) {
+    const raw = cargaData.value?.pdf_url_firmado || cargaData.value?.pdf_url
+    if (!raw) {
       showError('Error', 'No hay documento disponible para descargar.')
       return
     }
     try {
       await withSpinner(async () => {
-        const res = await fetch(url, { credentials: 'include' })
+        const res = await fetch(pdfUrl.value, {
+          credentials: 'include',
+          headers: {
+            ...(import.meta.client && localStorage.getItem('auth_token')
+              ? { Authorization: `Bearer ${localStorage.getItem('auth_token')}` }
+              : {})
+          }
+        })
         const blob = await res.blob()
         const link = document.createElement('a')
         link.href = URL.createObjectURL(blob)
@@ -132,6 +188,7 @@ export function useFirmaCarga() {
     hasSignedPdf,
     pdfUrl,
     getCargoEntregaPdf,
+    fetchPdfArrayBuffer,
     signCargoEntrega,
     downloadCargoEntrega,
     clearData
