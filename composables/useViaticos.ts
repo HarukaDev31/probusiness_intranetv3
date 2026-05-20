@@ -23,7 +23,7 @@ export const useViaticos = () => {
     total: 0
   })
 
-  const filters = ref<ViaticoFilters>({
+  const createDefaultFilters = (): ViaticoFilters => ({
     fecha_inicio: '',
     fecha_fin: '',
     requesting_area: '',
@@ -31,6 +31,8 @@ export const useViaticos = () => {
     solicitante: '',
     search: ''
   })
+
+  const filters = ref<ViaticoFilters>(createDefaultFilters())
 
   /**
    * Cargar viáticos
@@ -265,6 +267,25 @@ export const useViaticos = () => {
     filters.value = newFilters
   }
 
+  /** DataTable emite (clave, valor) por filtro; @update:filters al limpiar todo. */
+  const handleFilterChange = (arg1: string | Record<string, unknown>, arg2?: string) => {
+    if (typeof arg1 === 'string' && arg2 !== undefined) {
+      filters.value = { ...filters.value, [arg1]: arg2 }
+      return
+    }
+    if (arg1 && typeof arg1 === 'object') {
+      filters.value = { ...createDefaultFilters(), ...arg1 } as ViaticoFilters
+    }
+  }
+
+  const handleUpdateFilters = (newFilters: Record<string, unknown>) => {
+    filters.value = { ...createDefaultFilters(), ...(newFilters || {}) } as ViaticoFilters
+  }
+
+  const handleClearFilters = () => {
+    filters.value = createDefaultFilters()
+  }
+
   return {
     // State
     viaticos,
@@ -276,6 +297,9 @@ export const useViaticos = () => {
     filterOptions,
     filters,
     updateFilters,
+    handleFilterChange,
+    handleUpdateFilters,
+    handleClearFilters,
     // Methods
     loadViaticos,
     loadPendientes,
