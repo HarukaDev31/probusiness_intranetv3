@@ -1,12 +1,3 @@
-/** Re-exportaciones desde formatters y consolidado para evitar duplicados en el bundle */
-export { formatCurrency, formatDate } from './formatters'
-export {
-  getEstadoColor,
-  getStatusColor,
-  getTotalPagosConfirmados,
-  formatPhoneNumber,
-} from './consolidado'
-
 /** Texto en soles para planes landing / API pública (ej. 200 → "S/. 200"). */
 export function formatPrecioPlanSoles(pen: number): string {
   const n = Math.floor(Number(pen))
@@ -22,12 +13,12 @@ export function parseEnteroPenDesdeTexto(s: string | null | undefined): number |
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
-/** Versión para montos directos (cursos), distinta de consolidado que usa ConsolidadoItem */
-export const isPagoCompleto = (montoAPagar: number, totalPagado: number): boolean => {
+/** Pago completo en cursos (montos directos; distinto de consolidado que usa ConsolidadoItem). */
+export const isCursoPagoCompleto = (montoAPagar: number, totalPagado: number): boolean => {
   return totalPagado >= montoAPagar
 }
 
-export const getPorcentajePago = (montoAPagar: number, totalPagado: number): number => {
+export const getCursoPorcentajePago = (montoAPagar: number, totalPagado: number): number => {
   if (montoAPagar === 0) return 0
   return Math.round((totalPagado / montoAPagar) * 100)
 }

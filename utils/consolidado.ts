@@ -1,25 +1,6 @@
 import type { ConsolidadoItem, PagoDetalle } from '../types/pagos/consolidado-pagos'
 
 /**
- * Formatea un monto como moneda
- */
-export const formatCurrency = (amount: number, type: string='USD'): string => {
-  if (type === 'PEN') {
-  return new Intl.NumberFormat('es-PE', {
-    style: 'currency',
-    currency: 'PEN',
-    minimumFractionDigits: 2
-  }).format(amount)
-  } else {
-    return new Intl.NumberFormat('es-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
-    }).format(amount)
-  }
-}
-
-/**
  * Obtiene el color del badge según el estado de pago
  */
 export const getEstadoColor = (estado: string): string => {

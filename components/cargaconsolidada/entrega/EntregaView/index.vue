@@ -647,7 +647,15 @@ const clientesColumns = ref<TableColumn<any>[]>([
     id: 'actions',
     header: 'Accion',
     cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
-      //replace with hamburger
+      h(UButton, {
+        size: 'xs',
+        icon: 'i-heroicons-pencil-square',
+        variant: 'ghost',
+        color: 'primary',
+        'aria-label': 'Firmar cargo de entrega',
+        title: 'Firmar cargo de entrega',
+        onClick: () => goToFirmaCarga(row.original)
+      }),
       h(UButton, {
         size: 'xs',
         icon: 'iconamoon:menu-burger-horizontal',
@@ -758,22 +766,38 @@ const entregasColumns = ref<TableColumn<any>[]>([
   {
     id: 'accion', header: 'Accion', cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
       h(UButton, { size: 'xs', icon: 'i-heroicons-eye', variant: 'ghost', color: 'neutral', 'aria-label': 'Ver detalle', title: 'Ver detalle', onClick: async () => goToClienteDetalle(row.original) }),
+      h(UButton, { size: 'xs', icon: 'i-heroicons-pencil-square', variant: 'ghost', color: 'primary', 'aria-label': 'Firmar cargo de entrega', title: 'Firmar cargo de entrega', onClick: () => goToFirmaCarga(row.original) }),
       h(UButton, { size: 'xs', icon: 'i-heroicons-trash', variant: 'ghost', color: 'error', 'aria-label': 'Eliminar registro', title: 'Eliminar registro', onClick: () => handleEliminarRegistro(row.original) })
     ])
   }
 ])
 
-const goToClienteDetalle = (data: any) => {
-  // Puede venir el objeto completo (row.original) o sólo el id
+const resolveCotizacionId = (data: any): number | null => {
   const cid = typeof data === 'number'
     ? data
     : data?.id_cotizacion || data?.id
+  return cid ? Number(cid) : null
+}
+
+const goToClienteDetalle = (data: any) => {
+  const cid = resolveCotizacionId(data)
   if (!cid) {
     console.warn('ID cotización no disponible para navegación detalle')
     return
   }
-  // Solo navegamos con el id de la cotización; el detalle obtendrá el id_contenedor desde la propia data.
   navigateTo(`${basePath.value}/entrega/clientes/${cid}`)
+}
+
+const goToFirmaCarga = (data: any) => {
+  const cid = resolveCotizacionId(data)
+  if (!cid) {
+    console.warn('ID cotización no disponible para firma de cargo')
+    return
+  }
+  navigateTo({
+    path: `${basePath.value}/entrega/firma-carga/${cid}`,
+    query: { id_contenedor: String(id) }
+  })
 }
 const handleEnviarMensaje = (id_cotizacion: number) => {
   showConfirmation(

@@ -169,7 +169,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useRoute } from 'vue-router'
 import { useConsolidado } from '~/composables/usePagosConsolidado'
-import { formatCurrency } from '~/utils/consolidado'
+import { formatCurrency } from '~/utils/formatters'
 
 // Route params
 const route = useRoute()

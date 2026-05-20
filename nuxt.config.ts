@@ -1,7 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  // DevTools off por defecto (~1–2s menos al arrancar). Activar: NUXT_DEVTOOLS=true npm run dev
+  devtools: { enabled: process.env.NUXT_DEVTOOLS === 'true' },
   modules: ['@nuxt/ui'],
   typescript: {
     strict: false,
@@ -28,6 +29,12 @@ export default defineNuxtConfig({
   
   // Code splitting y minificación en producción (npm run build)
   vite: {
+    // Menos reinicios del watcher en dev (útil si el repo está en OneDrive)
+    server: {
+      watch: {
+        ignored: ['**/node_modules/**', '**/.git/**', '**/.nuxt/**', '**/.output/**', '**/dist/**'],
+      },
+    },
     build: {
       // Minificación JS (solo aplica en producción)
       minify: 'terser',
