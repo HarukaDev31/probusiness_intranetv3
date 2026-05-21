@@ -38,103 +38,101 @@
         <section class="p-4">
           <h3 class="font-semibold text-sm pb-4">Información de entrega</h3>
           <div class="space-y-3 text-xs">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
-              <div class="items-center gap-2">
-                <label class="pr-4 text-[11px] font-medium text-gray-500">Entrega:</label>
-                <UBadge :label="tipoClienteLabel" :color="isLima ? 'primary' : 'warning'" variant="soft" />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+              <div class="entrega-field">
+                <label class="entrega-field__label">Entrega:</label>
+                <UBadge :label="tipoClienteLabel" :color="isLima ? 'primary' : 'warning'" variant="soft" class="entrega-field__control justify-self-start" />
               </div>
-              <div class="flex items-center justify-between gap-4">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">{{ isLima ? 'DNI - ID' : 'DNI - RUC' }}</label>
-                <UInput class="w-full md:w-1/4" v-model="form.documento" size="sm" :disabled="!editable" />
+              <div class="entrega-field">
+                <label class="entrega-field__label">{{ isLima ? 'DNI - ID' : 'DNI - RUC' }}</label>
+                <UInput class="entrega-field__control" v-model="form.documento" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex items-center justify-between gap-4">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Bultos</label>
-                <UInput class="w-full md:w-1/4" v-model="form.qty_box_china" size="sm" disabled />
+              <div class="entrega-field">
+                <label class="entrega-field__label">Bultos</label>
+                <UInput class="entrega-field__control" v-model="form.qty_box_china" size="sm" disabled />
               </div>
-              <div class="flex items-center justify-between gap-4">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Peso</label>
-                <UInput class="w-full md:w-1/4" v-model="form.peso" size="sm" disabled />
+              <div class="entrega-field">
+                <label class="entrega-field__label">Peso</label>
+                <UInput class="entrega-field__control" v-model="form.peso" size="sm" disabled />
               </div>
-              
-              <div v-if="!isLima" class="flex items-center justify-between gap-4">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Tipo</label>
-                <USelect class="w-full md:w-1/4" :items="tipoReceptorOptions" v-model="form.r_type" size="sm" :disabled="!editable" placeholder="Seleccione" />
+              <div v-if="!isLima" class="entrega-field">
+                <label class="entrega-field__label">Tipo</label>
+                <USelect class="entrega-field__control" :items="tipoReceptorOptions" v-model="form.r_type" size="sm" :disabled="!editable" placeholder="Seleccione" />
               </div>
-              
-              <div v-if="isLima" class="flex items-center justify-between gap-4">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Licencia</label>
-                <UInput class="w-full md:w-1/4" v-model="form.licencia" size="sm" :disabled="!editable" />
+              <div v-if="isLima" class="entrega-field">
+                <label class="entrega-field__label">Licencia</label>
+                <UInput class="entrega-field__control" v-model="form.licencia" size="sm" :disabled="!editable" />
               </div>
-              <div v-if="isLima" class="flex items-center justify-between gap-4">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Placa de vehículo</label>
-                <UInput class="w-full md:w-1/4" v-model="form.placa" size="sm" :disabled="!editable" />
+              <div v-if="isLima" class="entrega-field">
+                <label class="entrega-field__label">Placa de vehículo</label>
+                <UInput class="entrega-field__control" v-model="form.placa" size="sm" :disabled="!editable" />
               </div>
             </div>
-            <div class="flex items-center w-full justify-between">
-              <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Productos</label>
-              <UInput class="w-full md:w-1/2" v-model="form.productos" size="sm" :disabled="!editable" />
+            <div class="entrega-field entrega-field--wide">
+              <label class="entrega-field__label">Productos</label>
+              <UInput class="entrega-field__control" v-model="form.productos" size="sm" :disabled="!editable" />
             </div>
 
             <!-- Campos específicos por tipo -->
-            <div v-if="isLima" class="flex flex-col gap-2">
-              <div class="flex flex-col md:flex-row items-start md:items-center w-full justify-between gap-2">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre completo del chofer</label>
-                <UInput class="w-full md:w-1/2" v-model="form.nombre_chofer" size="sm" :disabled="!editable" />
+            <div v-if="isLima" class="space-y-3">
+              <div class="entrega-field entrega-field--wide">
+                <label class="entrega-field__label">Nombre completo del chofer</label>
+                <UInput class="entrega-field__control" v-model="form.nombre_chofer" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex flex-col md:flex-row items-start md:items-center w-full justify-between gap-2">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito del destino final</label>
-                <UInput class="w-full md:w-1/2" v-model="form.distrito" size="sm" :disabled="!editable" />
+              <div class="entrega-field entrega-field--wide">
+                <label class="entrega-field__label">Distrito del destino final</label>
+                <UInput class="entrega-field__control" v-model="form.distrito" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex flex-col md:flex-row items-start md:items-center w-full justify-between gap-2">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección final de destino</label>
-                <UInput class="w-full md:w-1/2" v-model="form.direccion_final" size="sm" :disabled="!editable" />
+              <div class="entrega-field entrega-field--wide">
+                <label class="entrega-field__label">Dirección final de destino</label>
+                <UInput class="entrega-field__control" v-model="form.direccion_final" size="sm" :disabled="!editable" />
               </div>
             </div>
 
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-              <div class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
-                <UInput class="w-full md:w-1/4" v-model="form.r_name" size="sm" :disabled="!editable" />
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 w-full">
+              <div class="entrega-field">
+                <label class="entrega-field__label">Nombre</label>
+                <UInput class="entrega-field__control" v-model="form.r_name" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Celular</label>
-                <UInput class="w-full md:w-1/4" v-model="form.r_phone" size="sm" :disabled="!editable" />
+              <div class="entrega-field">
+                <label class="entrega-field__label">Celular</label>
+                <UInput class="entrega-field__control" v-model="form.r_phone" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Departamento</label>
-                <USelect class="w-full md:w-1/4" :items="departamentos" v-model="form.departamento_id" :disabled="!editable" placeholder="Seleccione" @update:model-value="onDepartamentoChange" />
+              <div class="entrega-field">
+                <label class="entrega-field__label">Departamento</label>
+                <USelect class="entrega-field__control" :items="departamentos" v-model="form.departamento_id" :disabled="!editable" placeholder="Seleccione" @update:model-value="onDepartamentoChange" />
               </div>
-              <div class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Provincia</label>
-                <USelect class="w-full md:w-1/4" :items="provincias" v-model="form.provincia_id" :disabled="!editable || !form.departamento_id" placeholder="Seleccione" @update:model-value="onProvinciaChange" />
+              <div class="entrega-field">
+                <label class="entrega-field__label">Provincia</label>
+                <USelect class="entrega-field__control" :items="provincias" v-model="form.provincia_id" :disabled="!editable || !form.departamento_id" placeholder="Seleccione" @update:model-value="onProvinciaChange" />
               </div>
-              <div class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Distrito</label>
-                <USelect class="w-full md:w-1/4" :items="distritos" v-model="form.distrito_id" :disabled="!editable || !form.provincia_id" placeholder="Seleccione" />
+              <div class="entrega-field">
+                <label class="entrega-field__label">Distrito</label>
+                <USelect class="entrega-field__control" :items="distritos" v-model="form.distrito_id" :disabled="!editable || !form.provincia_id" placeholder="Seleccione" />
               </div>
-              <div class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Agencia</label>
-                <USelect class="w-full md:w-1/4" :items="agencias" v-model="form.id_agency" :disabled="!editable" placeholder="Seleccione" @update:model-value="onAgenciaChange" />
+              <div class="entrega-field">
+                <label class="entrega-field__label">Agencia</label>
+                <USelect class="entrega-field__control" :items="agencias" v-model="form.id_agency" :disabled="!editable" placeholder="Seleccione" @update:model-value="onAgenciaChange" />
               </div>
-              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">RUC de la agencia</label>
-                <UInput class="w-full md:w-1/4" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
+              <div v-if="isOtraOpcionAgencia" class="entrega-field">
+                <label class="entrega-field__label">RUC de la agencia</label>
+                <UInput class="entrega-field__control" v-model="form.agency_ruc" size="sm" :disabled="!editable" />
               </div>
-              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre de la agencia</label>
-                <UInput class="w-full md:w-1/4" v-model="form.agency_name" size="sm" :disabled="!editable" />
+              <div v-if="isOtraOpcionAgencia" class="entrega-field">
+                <label class="entrega-field__label">Nombre de la agencia</label>
+                <UInput class="entrega-field__control" v-model="form.agency_name" size="sm" :disabled="!editable" />
               </div>
-              <div v-if="isOtraOpcionAgencia" class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección inicial de entrega</label>
-                <UInput class="w-full md:w-1/4" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
+              <div v-if="isOtraOpcionAgencia" class="entrega-field md:col-span-2">
+                <label class="entrega-field__label">Dirección inicial de entrega</label>
+                <UInput class="entrega-field__control" v-model="form.agency_address_initial_delivery" size="sm" :disabled="!editable" />
               </div>
-              <div class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección final de entrega</label>
-                <UInput class="w-full md:w-1/4" v-model="form.agency_address_final_delivery" size="sm" :disabled="!editable" />
+              <div class="entrega-field md:col-span-2">
+                <label class="entrega-field__label">Dirección final de entrega</label>
+                <UInput class="entrega-field__control" v-model="form.agency_address_final_delivery" size="sm" :disabled="!editable" />
               </div>
-              <div v-if="form.home_adress_delivery" class="flex items-center justify-between gap-4 w-full">
-                <label class="w-full md:w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Dirección a domicilio</label>
-                <UInput class="w-full md:w-1/4" v-model="form.home_adress_delivery" size="sm" :disabled="!editable" />
+              <div v-if="form.home_adress_delivery" class="entrega-field md:col-span-2">
+                <label class="entrega-field__label">Dirección a domicilio</label>
+                <UInput class="entrega-field__control" v-model="form.home_adress_delivery" size="sm" :disabled="!editable" />
               </div>
             </div>
           </div>
@@ -143,18 +141,18 @@
         <!-- Información de comprobante -->
         <section class="p-4">
           <h3 class="font-semibold mb-3 text-sm pb-4">Información de comprobante</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-xs">
-            <div class="flex items-center justify-between gap-4">
-              <label class="w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">DNI / RUC</label>
-              <UInput class="w-1/2" v-model="form.comp_documento" size="sm" :disabled="!editable" />
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-xs">
+            <div class="entrega-field">
+              <label class="entrega-field__label">DNI / RUC</label>
+              <UInput class="entrega-field__control" v-model="form.comp_documento" size="sm" :disabled="!editable" />
             </div>
-            <div class="flex items-center justify-between gap-4">
-              <label class="w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Nombre</label>
-              <UInput class="w-1/2" v-model="form.comp_nombre" size="sm" :disabled="!editable" />
+            <div class="entrega-field">
+              <label class="entrega-field__label">Nombre</label>
+              <UInput class="entrega-field__control" v-model="form.comp_nombre" size="sm" :disabled="!editable" />
             </div>
-            <div class="flex items-center justify-between gap-4">
-              <label class="w-1/4 pr-4 text-[11px] font-medium text-gray-500 mb-1">Correo electrónico</label>
-              <UInput class="w-1/2" v-model="form.comp_email" size="sm" :disabled="!editable" />
+            <div class="entrega-field">
+              <label class="entrega-field__label">Correo electrónico</label>
+              <UInput class="entrega-field__control" v-model="form.comp_email" size="sm" :disabled="!editable" />
             </div>
           </div>
         </section>
@@ -729,3 +727,40 @@ onMounted(async () => {
 })
 </script>
 
+<style scoped>
+.entrega-field {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .entrega-field {
+    grid-template-columns: minmax(7rem, 30%) minmax(0, 1fr);
+  }
+}
+
+.entrega-field--wide {
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .entrega-field--wide {
+    grid-template-columns: minmax(9rem, 22%) minmax(0, 1fr);
+  }
+}
+
+.entrega-field__label {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgb(107 114 128);
+  flex-shrink: 0;
+}
+
+.entrega-field__control {
+  width: 100%;
+  min-width: 0;
+}
+</style>
