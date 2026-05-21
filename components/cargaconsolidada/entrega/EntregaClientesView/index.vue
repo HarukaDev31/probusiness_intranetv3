@@ -351,8 +351,7 @@ const readyToRender = ref<boolean>(false)
 type EvidenceItem = { url: string; key?: 'photo_1_url' | 'photo_2_url' }
 const evidencia = ref<EvidenceItem[]>([])
 const conformidadId = computed<number | null>(() => (entregaDetalle.value as any)?.conformidad_id ?? null)
-const editable = ref<boolean>(true) // En abiertos iniciamos en modo edición
-
+const editable = ref<boolean>(false) 
 const snapshot = () => JSON.stringify(form.value)
 const dirty = computed(() => snapshot() !== initialSnapshot.value)
 
