@@ -214,6 +214,17 @@ const handleUploadPlantillaFinal = () => {
     }
   })
 }
+const calcLogisticaGeneralTotal = (row: {
+  logistica_final?: number | string | null
+  servicios_extra_final?: number | string | null
+  recargos_descuentos_final?: number | string | null
+}) => {
+  const base = Number(row.logistica_final) || 0
+  const extras = Number(row.servicios_extra_final) || 0
+  const recargos = Number(row.recargos_descuentos_final) || 0
+  return base + extras + recargos
+}
+
 const getGeneralColumns = () => {
   switch (currentRole.value) {
     case ROLES.ADMINISTRACION:
@@ -292,7 +303,7 @@ const generalColumns = ref<TableColumn<any>[]>([
     accessorKey: 'logistica_final',
     header: 'Logística',
     cell: ({ row }: { row: any }) => {
-      return formatCurrency(row.original.logistica_final)
+      return formatCurrency(calcLogisticaGeneralTotal(row.original))
     }
   },
 
@@ -479,7 +490,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
     accessorKey: 'logistica_final',
     header: 'Logística',
     cell: ({ row }: { row: any }) => {
-      return formatCurrency(row.original.logistica_final)
+      return formatCurrency(calcLogisticaGeneralTotal(row.original))
     }
   },
 
