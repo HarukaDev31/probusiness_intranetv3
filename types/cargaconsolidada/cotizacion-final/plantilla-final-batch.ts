@@ -1,5 +1,21 @@
 export type PlantillaFinalBatchEstado = 'PENDING' | 'COMPLETED' | 'FAILED'
 
+export interface PlantillaFinalBatchClienteExitoso {
+  nombre: string
+  id_cotizacion?: number
+  archivo?: string | null
+}
+
+export interface PlantillaFinalBatchClienteFallido {
+  nombre: string
+  motivo: string
+}
+
+export interface PlantillaFinalBatchDetalleJson {
+  exitosos: PlantillaFinalBatchClienteExitoso[]
+  fallidos: PlantillaFinalBatchClienteFallido[]
+}
+
 export interface PlantillaFinalBatch {
   id: number
   id_contenedor: number
@@ -7,6 +23,7 @@ export interface PlantillaFinalBatch {
   clientes_completados: number
   clientes_error: number
   detalle: string
+  detalle_json?: PlantillaFinalBatchDetalleJson
   estado: PlantillaFinalBatchEstado
   fecha_inicio: string | null
   fecha_fin: string | null

@@ -21,14 +21,25 @@
       :show-export="false"
       empty-state-message="Aún no hay plantillas finales generadas para este consolidado."
     />
+
+    <PlantillasFinalesDetalleModal
+      v-model:open="detalleModalOpen"
+      :detalle="detalleSeleccionado"
+      :resumen="detalleResumen"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, onUnmounted, resolveComponent } from 'vue'
+import { computed, h, onMounted, onUnmounted, ref, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { PlantillasFinalesViewProps } from './types'
-import type { PlantillaFinalBatch, PlantillaFinalBatchEstado } from '~/types/cargaconsolidada/cotizacion-final/plantilla-final-batch'
+import type {
+  PlantillaFinalBatch,
+  PlantillaFinalBatchDetalleJson,
+  PlantillaFinalBatchEstado
+} from '~/types/cargaconsolidada/cotizacion-final/plantilla-final-batch'
+import PlantillasFinalesDetalleModal from '~/components/cargaconsolidada/cotizacion-final/PlantillasFinalesDetalleModal/index.vue'
 import { ESTADO_COLORS, ESTADO_LABELS } from './constants'
 import { usePlantillasFinales } from '~/composables/cargaconsolidada/cotizacion-final/usePlantillasFinales'
 import { useGeneral } from '~/composables/cargaconsolidada/cotizacion-final/useGeneral'
@@ -46,6 +57,39 @@ const UBadge = resolveComponent('UBadge')
 
 const { loading, batches, loadBatches, downloadPlantilla, downloadZip } = usePlantillasFinales()
 const { carga, getHeaders } = useGeneral()
+
+const detalleModalOpen = ref(false)
+const detalleSeleccionado = ref<PlantillaFinalBatchDetalleJson>({ exitosos: [], fallidos: [] })
+const detalleResumen = ref('')
+
+const emptyDetalle = (): PlantillaFinalBatchDetalleJson => ({
+  exitosos: [],
+  fallidos: []
+})
+
+const normalizeDetalle = (row: PlantillaFinalBatch): PlantillaFinalBatchDetalleJson => {
+  const raw = row.detalle_json
+  if (raw && (Array.isArray(raw.exitosos) || Array.isArray(raw.fallidos))) {
+    return {
+      exitosos: Array.isArray(raw.exitosos) ? raw.exitosos : [],
+      fallidos: Array.isArray(raw.fallidos) ? raw.fallidos : []
+    }
+  }
+  return emptyDetalle()
+}
+
+const canVerDetalle = (row: PlantillaFinalBatch) => {
+  if (row.estado === 'PENDING') return false
+  const d = normalizeDetalle(row)
+  if (d.exitosos.length || d.fallidos.length) return true
+  return (row.clientes_completados + row.clientes_error) > 0
+}
+
+const openDetalleModal = (row: PlantillaFinalBatch) => {
+  detalleSeleccionado.value = normalizeDetalle(row)
+  detalleResumen.value = row.detalle || `${row.clientes_completados} exitosos / ${row.clientes_error} con error`
+  detalleModalOpen.value = true
+}
 
 const formatDate = (raw: string | null) => {
   if (!raw) return '—'
@@ -113,7 +157,24 @@ const columns: TableColumn<PlantillaFinalBatch>[] = [
     header: 'Detalle',
     cell: ({ row }) => {
       const r = row.original
-      return h('span', { class: 'text-xs' }, r.detalle || `${r.clientes_completados} exitosos / ${r.clientes_error} con error`)
+      const resumen = r.detalle || `${r.clientes_completados} exitosos / ${r.clientes_error} con error`
+      const children = [
+        h('span', { class: 'text-xs' }, resumen)
+      ]
+      if (canVerDetalle(r)) {
+        children.push(
+          h(UButton as any, {
+            size: 'xs',
+            color: 'neutral',
+            variant: 'ghost',
+            icon: 'i-heroicons-eye',
+            class: 'ml-1 shrink-0',
+            title: 'Ver detalle por cliente',
+            onClick: () => openDetalleModal(r)
+          })
+        )
+      }
+      return h('div', { class: 'flex items-center gap-1 flex-wrap' }, children)
     }
   },
   {
