@@ -235,6 +235,12 @@ export const useEntrega = () => {
           licencia: lima?.driver_license ?? root.driver_license ?? '',
           placa: lima?.driver_plate ?? root.driver_plate ?? '',
           direccion_final: lima?.final_destination_place ?? root.final_destination_place ?? '',
+          distrito_lima_id: (() => {
+            const raw = lima?.final_destination_district ?? root.final_destination_district
+            if (raw === undefined || raw === null || raw === '') return undefined
+            const n = Number(raw)
+            return Number.isFinite(n) && n > 0 ? n : undefined
+          })(),
           distrito: lima?.final_destination_district ?? root.final_destination_district ?? province?.distrito ?? root.distrito ?? '',
           // Provincia
           agency_address_final_delivery: province?.agency_address_final_delivery ?? root.agency_address_final_delivery ?? '',

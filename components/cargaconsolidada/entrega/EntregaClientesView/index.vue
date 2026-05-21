@@ -81,7 +81,14 @@
               </div>
               <div class="entrega-field entrega-field--wide">
                 <label class="entrega-field__label">Distrito del destino final</label>
-                <UInput class="entrega-field__control" v-model="form.distrito" size="sm" :disabled="!editable" />
+                <USelect
+                  class="entrega-field__control"
+                  :items="distritosLima"
+                  v-model="form.distrito_lima_id"
+                  size="sm"
+                  :disabled="!editable"
+                  placeholder="Seleccione distrito"
+                />
               </div>
               <div class="entrega-field entrega-field--wide">
                 <label class="entrega-field__label">Dirección final de destino</label>
@@ -298,7 +305,7 @@ const form = ref<any>({
   placa: '',
   nombre_chofer: '',
   direccion_final: '',
-  distrito: '',
+  distrito_lima_id: undefined as number | undefined,
 
   // Provincia
   agency_address_final_delivery: '',
@@ -382,7 +389,7 @@ const handleSave = async () => {
     addIf('driver_doc', form.value.documento)
     addIf('driver_license', form.value.licencia)
     addIf('final_destination_place', form.value.direccion_final)
-    addIf('final_destination_district', form.value.distrito)
+    addIf('final_destination_district', form.value.distrito_lima_id)
   } else {
     // Provincia
     addIf('import_name', form.value.nombre)
@@ -473,6 +480,35 @@ const canSave = computed(() => dirty.value || !!(picked1.value || picked2.value)
 const departamentos = ref<Array<{ label: string; value: number }>>([])
 const provincias = ref<Array<{ label: string; value: number; id_departamento?: number }>>([])
 const distritos = ref<Array<{ label: string; value: number; id_provincia?: number }>>([])
+const distritosLima = ref<Array<{ label: string; value: number }>>([])
+
+const parseDistritoId = (raw: unknown): number | undefined => {
+  if (raw === undefined || raw === null || raw === '') return undefined
+  const n = Number(raw)
+  return Number.isFinite(n) && n > 0 ? n : undefined
+}
+
+const loadDistritosLima = async () => {
+  try {
+    const resDept = await LocationService.getDepartamentos()
+    const depts = toArray(resDept, 'departamentos')
+    const limaDept = depts.find((d: any) => String(d.nombre ?? d.name ?? '').trim().toUpperCase() === 'LIMA')
+    if (!limaDept) return
+    const resProv = await LocationService.getProvincias(Number(limaDept.id ?? limaDept.value))
+    const provs = toArray(resProv, 'provincias')
+    const limaProv = provs.find((p: any) => String(p.nombre ?? p.name ?? '').trim().toUpperCase() === 'LIMA')
+    if (!limaProv) return
+    const resDist = await LocationService.getDistritos(Number(limaProv.id ?? limaProv.value))
+    const list = toArray(resDist, 'distritos')
+    distritosLima.value = list.map((d: any) => ({
+      label: d.nombre ?? d.name ?? d.label ?? String(d.id ?? d.value),
+      value: Number(d.id ?? d.value)
+    }))
+  } catch (e) {
+    console.error('Error al cargar distritos de Lima', e)
+    distritosLima.value = []
+  }
+}
 // Agencias
 const agencias = ref<Array<{ label: string; value: number; ruc?: string; name?: string }>>([])
 const loadAgencias = async (search?: string) => {
@@ -664,7 +700,7 @@ onMounted(async () => {
 
     // Lima
     form.value.nombre_chofer = d.nombre_chofer || ''
-    form.value.distrito = d.distrito || ''
+    form.value.distrito_lima_id = parseDistritoId(d.distrito_lima_id ?? d.distrito)
     form.value.licencia = d.licencia || ''
     form.value.placa = d.placa || ''
     form.value.direccion_final = d.direccion_final || ''
@@ -709,6 +745,9 @@ onMounted(async () => {
     const res = await LocationService.getDepartamentos()
     const list = toArray(res, 'departamentos')
     departamentos.value = list.map((d: any) => ({ label: d.nombre ?? d.name ?? String(d.id), value: Number(d.id) }))
+    if (isLima.value) {
+      await loadDistritosLima()
+    }
     // Cargar agencias y preseleccionar si viene id_agency del backend
     await loadAgencias()
     if (form.value.departamento_id) {
