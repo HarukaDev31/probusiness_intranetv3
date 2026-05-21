@@ -241,10 +241,9 @@ const tableMeta = {
 };
 const showEnviarFormularioModal = ref(false)
 const sendingFormulario = ref(false)
-const clientesFormulario = computed<{ id: number; nombre: string; telefono: string; type_form: 0 | 1 }[]>(() => {
+const clientesFormulario = computed<{ id: number; nombre: string; telefono: string; type_form: 0 | 1 | null }[]>(() => {
   return (clientes.value || [])
     .map((cliente: any) => {
-      // No usar Number(null): en JS es 0 y confunde "sin tipo" con Provincia.
       const rawTf = cliente?.type_form
       const normalizedType =
         rawTf === 1 || rawTf === '1' ? 1 : rawTf === 0 || rawTf === '0' ? 0 : null
@@ -255,9 +254,7 @@ const clientesFormulario = computed<{ id: number; nombre: string; telefono: stri
         type_form: normalizedType
       }
     })
-    .filter((cliente): cliente is { id: number; nombre: string; telefono: string; type_form: 0 | 1 } => {
-      return cliente.id > 0 && (cliente.type_form === 0 || cliente.type_form === 1)
-    })
+    .filter((cliente) => cliente.id > 0)
 })
 /** Líneas de servicio con id (tabla hija); si no hay, el cobro va por flujo legacy. */
 function serviciosConIdFromRow(row: any): { id: number; tipo_servicio: string; importe: number }[] {
@@ -360,7 +357,7 @@ const closeEnviarFormularioModal = () => {
   showEnviarFormularioModal.value = false
 }
 
-const handleEnviarFormularioSeleccionados = async (seleccion: Array<{ id_cotizacion: number; type_form: 0 | 1 }>) => {
+const handleEnviarFormularioSeleccionados = async (seleccion: Array<{ id_cotizacion: number; type_form?: 0 | 1 | null }>) => {
   if (!seleccion.length) return
 
   sendingFormulario.value = true

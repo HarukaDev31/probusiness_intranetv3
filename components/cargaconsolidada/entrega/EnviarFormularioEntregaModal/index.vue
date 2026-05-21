@@ -9,11 +9,13 @@
     <template #body>
       <div class="space-y-4">
         <p class="text-sm text-gray-500">
-          Selecciona los clientes con tipo de entrega válido para enviarles el formulario por WhatsApp.
+          Selecciona los clientes a quienes enviar el formulario por WhatsApp. También aparecen quienes aún no tienen formulario asociado.
         </p>
 
         <div class="flex flex-wrap items-center gap-2">
-          
+          <UButton size="xs" color="primary" variant="outline" @click="selectAll">
+            Seleccionar todos
+          </UButton>
           <UButton size="xs" color="success" variant="outline" @click="applyQuickSelection('lima')">
             Solo Lima
           </UButton>
@@ -33,7 +35,7 @@
 
         <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
           <div
-            v-for="cliente in clientesConTipo"
+            v-for="cliente in clientesLista"
             :key="cliente.id"
             class="flex items-center justify-between rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
@@ -48,15 +50,15 @@
               </div>
             </div>
             <UBadge
-              :label="cliente.type_form === 1 ? 'Lima' : 'Provincia'"
-              :color="cliente.type_form === 1 ? 'success' : 'warning'"
+              :label="tipoEntregaLabel(cliente.type_form)"
+              :color="tipoEntregaColor(cliente.type_form)"
               variant="soft"
               size="xs"
             />
           </div>
 
-          <div v-if="clientesConTipo.length === 0" class="py-4 text-center text-sm text-gray-400">
-            No hay clientes con T. Entrega (Lima/Provincia) para enviar.
+          <div v-if="clientesLista.length === 0" class="py-4 text-center text-sm text-gray-400">
+            No hay clientes en este consolidado.
           </div>
         </div>
       </div>
@@ -83,23 +85,14 @@
 </template>
 
 <script setup lang="ts">
-import type { EnviarFormularioEntregaModalProps } from './types'
+import type {
+  ClienteFormularioEntrega,
+  EnviarFormularioEntregaModalProps,
+  FormularioEntregaSeleccion
+} from './types'
 import { computed, ref, watch } from 'vue'
 import { UBadge, UButton, UCheckbox } from '#components'
 
-type ClienteFormulario = {
-  id: number
-  nombre: string
-  telefono?: string
-  type_form: 0 | 1
-}
-
-type FormularioEntregaSeleccion = {
-  id_cotizacion: number
-  type_form: 0 | 1
-}
-
-/** Solo 0/1 explícitos; null/undefined/Number(null) no cuentan (evita mostrar "Provincia" por error). */
 function normalizeTypeFormEntrega(raw: unknown): 0 | 1 | null {
   if (raw === 1 || raw === '1') return 1
   if (raw === 0 || raw === '0') return 0
@@ -119,18 +112,17 @@ const isOpen = computed({
   set: (value: boolean) => emit('update:modelValue', value)
 })
 
-const clientesConTipo = computed((): ClienteFormulario[] => {
+const clientesLista = computed((): ClienteFormularioEntrega[] => {
   const list = props.clientes || []
-  const out: ClienteFormulario[] = []
+  const out: ClienteFormularioEntrega[] = []
   for (const c of list) {
-    const tf = normalizeTypeFormEntrega(c?.type_form)
     const id = Number(c?.id)
-    if (!id || tf === null) continue
+    if (!id) continue
     out.push({
       id,
       nombre: String(c?.nombre ?? ''),
       telefono: c?.telefono,
-      type_form: tf
+      type_form: normalizeTypeFormEntrega(c?.type_form)
     })
   }
   return out
@@ -139,13 +131,13 @@ const clientesConTipo = computed((): ClienteFormulario[] => {
 const selectedIds = ref<number[]>([])
 
 const allSelected = computed(() => {
-  return clientesConTipo.value.length > 0 && selectedIds.value.length === clientesConTipo.value.length
+  return clientesLista.value.length > 0 && selectedIds.value.length === clientesLista.value.length
 })
 
 const someSelected = computed(() => selectedIds.value.length > 0)
 
 watch(
-  () => [props.modelValue, clientesConTipo.value] as const,
+  () => [props.modelValue, clientesLista.value] as const,
   ([open, list]) => {
     if (open) {
       selectedIds.value = list.map((c) => c.id)
@@ -154,8 +146,12 @@ watch(
   { immediate: true }
 )
 
+const selectAll = () => {
+  selectedIds.value = clientesLista.value.map((c) => c.id)
+}
+
 const toggleAll = (value: boolean) => {
-  selectedIds.value = value ? clientesConTipo.value.map((c) => c.id) : []
+  selectedIds.value = value ? clientesLista.value.map((c) => c.id) : []
 }
 
 const toggleCliente = (id: number) => {
@@ -166,16 +162,23 @@ const toggleCliente = (id: number) => {
   }
 }
 
-const applyQuickSelection = (scope: 'all' | 'lima' | 'provincia') => {
-  if (scope === 'all') {
-    selectedIds.value = clientesConTipo.value.map((c) => c.id)
-    return
-  }
-
+const applyQuickSelection = (scope: 'lima' | 'provincia') => {
   const desiredType = scope === 'lima' ? 1 : 0
-  selectedIds.value = clientesConTipo.value
+  selectedIds.value = clientesLista.value
     .filter((c) => c.type_form === desiredType)
     .map((c) => c.id)
+}
+
+const tipoEntregaLabel = (typeForm: 0 | 1 | null) => {
+  if (typeForm === 1) return 'Lima'
+  if (typeForm === 0) return 'Provincia'
+  return 'Sin formulario'
+}
+
+const tipoEntregaColor = (typeForm: 0 | 1 | null): 'success' | 'warning' | 'neutral' => {
+  if (typeForm === 1) return 'success'
+  if (typeForm === 0) return 'warning'
+  return 'neutral'
 }
 
 const close = () => {
@@ -189,11 +192,11 @@ const onModalOpenChange = (open: boolean) => {
 
 const confirmSelection = () => {
   const selectedSet = new Set(selectedIds.value)
-  const payload: FormularioEntregaSeleccion[] = clientesConTipo.value
+  const payload: FormularioEntregaSeleccion[] = clientesLista.value
     .filter((cliente) => selectedSet.has(cliente.id))
     .map((cliente) => ({
       id_cotizacion: cliente.id,
-      type_form: cliente.type_form
+      type_form: cliente.type_form === 0 || cliente.type_form === 1 ? cliente.type_form : null
     }))
 
   emit('confirm', payload)

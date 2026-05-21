@@ -777,7 +777,7 @@ export const useEntrega = () => {
       error.value = error as string
     }
   }
-  const sendMessageForCotizaciones = async (cotizaciones: Array<{ id_cotizacion: number; type_form: 0 | 1 }>) => {
+  const sendMessageForCotizaciones = async (cotizaciones: Array<{ id_cotizacion: number; type_form?: 0 | 1 | null }>) => {
     try {
       const response = await EntregaService.sendMessageForCotizaciones(cotizaciones)
       return response
