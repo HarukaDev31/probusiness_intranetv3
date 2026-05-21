@@ -80,22 +80,17 @@ export const useGeneral = () => {
             error.value = err as string
         }
     }
-    const uploadPlantillaFinal = async (data: any) => {
+    const uploadPlantillaFinal = async (data: FormData) => {
         try {
             const response = await GeneralService.uploadPlantillaFinal(data)
-            //this zip download and return success
-            const blob = new Blob([response as unknown as BlobPart], { type: 'application/zip' })
-            const url = window.URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `plantilla_final_${data.idContenedor}.zip`
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-            window.URL.revokeObjectURL(url)
-            return { success: true, data: response }
+            return {
+                success: true,
+                message: response?.message || 'Generación encolada. Se notificará cuando finalice.',
+                data: response?.data
+            }
         } catch (err) {
             error.value = err as string
+            return { success: false, error: error.value }
         }
     }
     const uploadCotizacionFinalFile = async (data: any, idCotizacion?: number) => {

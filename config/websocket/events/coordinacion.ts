@@ -47,7 +47,27 @@ export const registerCoordinacionEvents = () => {
     }
     const { showSuccess } = useModal()
     showSuccess('Cotización Inspectada', data.message || 'Se ha inspeccionado la cotización.')
-  })  
+  })
+
+  registerEventHandler(WS_EVENTS.PLANTILLA_FINAL_BATCH_FINISHED, (data) => {
+    const { showSuccess, showError } = useModal()
+    const estado = String(data?.estado || '').toUpperCase()
+    const title = estado === 'COMPLETED'
+      ? 'Plantillas finales listas'
+      : 'Plantillas finales con error'
+    const message = data?.message || 'La generación masiva de plantillas finales ha finalizado.'
+
+    if (estado === 'COMPLETED') {
+      showSuccess(title, message)
+    } else {
+      showError(title, message)
+    }
+
+    if (process.client) {
+      window.dispatchEvent(new CustomEvent('plantilla-final-batch-finished', { detail: data }))
+    }
+  })
+
   // ============================================
   // SUSCRIBIR EVENTOS AL ROL COORDINACIÓN
   // ============================================
@@ -61,7 +81,8 @@ export const registerCoordinacionEvents = () => {
       WS_EVENTS.COTIZACION_CHINA_CONTACTED,
       WS_EVENTS.COTIZACION_CHANGE_CONTAINER,
       WS_EVENTS.COTIZACION_CHINA_RECEIVED,
-      WS_EVENTS.COTIZACION_CHINA_INSPECTIONED
+      WS_EVENTS.COTIZACION_CHINA_INSPECTIONED,
+      WS_EVENTS.PLANTILLA_FINAL_BATCH_FINISHED
     ],
     'private'
   )
