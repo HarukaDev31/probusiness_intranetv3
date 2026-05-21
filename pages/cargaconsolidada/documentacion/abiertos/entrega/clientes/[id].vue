@@ -7,6 +7,10 @@
 </template>
 
 <script setup lang="ts">
-import EntregaClientesView from '~/components/cargaconsolidada/entrega/EntregaClientesView/index.vue'
+import { defineAsyncComponent } from 'vue'
 import { ROLES } from '~/constants/roles'
+
+const EntregaClientesView = defineAsyncComponent(
+  () => import('~/components/cargaconsolidada/entrega/EntregaClientesView/index.vue')
+)
 </script>

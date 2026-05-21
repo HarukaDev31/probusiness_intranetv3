@@ -18,30 +18,19 @@ $env:NUXT_DEVTOOLS = 'true'
 npm run dev
 ```
 
-## Checklist: OneDrive (impacto alto en Windows)
+## Lazy load en rutas de entrega
 
-El repo está bajo `OneDrive\Desktop`. Eso ralentiza mucho Vite y puede provocar:
+Las páginas bajo `pages/cargaconsolidada/**/entrega/` cargan `EntregaView`, `EntregaClientesView`, `CargoEntregaFirmaCargaView` y `HorariosAdmin` con `defineAsyncComponent` (chunks separados al navegar).
 
-`.nuxt/dist directory has been removed. Restarting Nuxt...`
+## Vite warmup (`nuxt.config.ts`)
 
-### Opción A — Mover el proyecto (recomendado)
+Al arrancar `pnpm dev`, Vite precalienta layout, `DataTable` y la ruta de entrega en completados. Reduce la latencia de la **primera** visita a esas pantallas en desarrollo.
 
-1. Copiar/clonar a una ruta local, por ejemplo: `C:\dev\probusiness_intranetv3`
-2. `pnpm install` (o `npm install`)
-3. Abrir esa carpeta en Cursor y ejecutar `npm run dev`
+## Checklist: OneDrive (solo si está activo)
 
-### Opción B — Excluir carpetas de la sincronización
+Si el repo está sincronizado con OneDrive, Vite puede reiniciar en bucle (`.nuxt/dist directory has been removed`). Si OneDrive **no** está activo, ignora esta sección.
 
-En OneDrive → Configuración → Sincronizar y hacer copia de seguridad → **Administrar copia de seguridad**:
-
-- Excluir `node_modules` del proyecto
-- Excluir `.nuxt` y `.output` si aparecen
-
-O usar “Liberar espacio” en esas carpetas para que no se sincronicen en tiempo real.
-
-### Opción C — Marcar solo código
-
-Mantener en OneDrive solo lo que subes a git; `node_modules` y `.nuxt` deben generarse solo en disco local.
+- Mover el proyecto fuera de carpetas sincronizadas, o excluir `node_modules` y `.nuxt` de la copia de seguridad.
 
 ## Otras mejoras opcionales
 

@@ -34,6 +34,16 @@ export default defineNuxtConfig({
       watch: {
         ignored: ['**/node_modules/**', '**/.git/**', '**/.nuxt/**', '**/.output/**', '**/dist/**'],
       },
+      // Precalienta layout y vistas frecuentes (menos latencia en la 1ª navegación en dev)
+      warmup: {
+        clientFiles: [
+          './app.vue',
+          './layouts/default.vue',
+          './components/DataTable.vue',
+          './components/cargaconsolidada/entrega/EntregaView/index.vue',
+          './pages/cargaconsolidada/completados/entrega/[id].vue',
+        ],
+      },
     },
     build: {
       // Minificación JS (solo aplica en producción)
