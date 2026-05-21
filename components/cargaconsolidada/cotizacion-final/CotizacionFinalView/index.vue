@@ -189,7 +189,7 @@ const handleUploadCotizacionFinal = (idCotizacion: any) => {
   })
 }
 const goPlantillasFinales = () => {
-  void navigateTo(`${backBasePath}/plantillas-finales/${id}`)
+  void navigateTo(`${backBasePath.value}/plantillas-finales/${id}`)
 }
 
 const handleUploadPlantillaFinal = () => {
