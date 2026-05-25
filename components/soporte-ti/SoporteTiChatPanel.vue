@@ -201,12 +201,7 @@
         </div>
       </div>
 
-      <div
-        v-else
-        ref="scrollRef"
-        class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto scroll-smooth px-3 py-4 sm:px-4"
-        @scroll="onScroll"
-      >
+      <ChatMessagesScroll v-else ref="messagesScrollRef" @scroll="onScroll">
         <SoporteTiChatPanelSkeleton v-if="loadingChat" class="flex-1" />
 
         <template v-else>
@@ -374,7 +369,7 @@
             </div>
           </template>
         </template>
-      </div>
+      </ChatMessagesScroll>
 
       <Transition
         enter-active-class="transition duration-200 ease-out"
@@ -573,6 +568,7 @@ import SoporteTiChatPanelSkeleton from '~/components/soporte-ti/SoporteTiChatPan
 import SoporteTiFasesProyectoBar from '~/components/soporte-ti/SoporteTiFasesProyectoBar.vue'
 import SoporteTiChatMetaBadges from '~/components/soporte-ti/SoporteTiChatMetaBadges.vue'
 import SoporteTiChatAvatar from '~/components/soporte-ti/SoporteTiChatAvatar.vue'
+import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import { SOPORTE_TI_CHAT_ACCEPT_DOCUMENTOS } from '~/constants/soporteTiChat'
 import { archivosDesdePortapapeles, esImagenAdjunto } from '~/utils/soporteTiChatAdjunto'
 
@@ -677,7 +673,11 @@ const etiquetaContadorMostrar = computed(() => {
 })
 
 const texto = ref('')
-const scrollRef = ref<HTMLElement | null>(null)
+const messagesScrollRef = ref<InstanceType<typeof ChatMessagesScroll> | null>(null)
+
+function getScrollEl(): HTMLElement | null {
+  return messagesScrollRef.value?.scrollRef ?? null
+}
 const fileInputImagenRef = ref<HTMLInputElement | null>(null)
 const fileInputDocumentoRef = ref<HTMLInputElement | null>(null)
 const editorAdjuntoRef = ref<InstanceType<typeof SoporteTiChatImagenEditor> | null>(null)
@@ -728,13 +728,13 @@ const primerIdAnterior = ref<number | null>(null)
 const mostrarBajar = computed(() => !cercaDelFinal.value)
 
 function onScroll() {
-  const el = scrollRef.value
+  const el = getScrollEl()
   if (!el) return
   cercaDelFinal.value = el.scrollHeight - el.scrollTop - el.clientHeight < 80
 }
 
 function bajarAlFinal() {
-  const el = scrollRef.value
+  const el = getScrollEl()
   if (!el) return
   el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   cercaDelFinal.value = true
@@ -744,7 +744,7 @@ watch(
   () => props.mensajes,
   async (lista, prev) => {
     await nextTick()
-    const el = scrollRef.value
+    const el = getScrollEl()
     if (!el) return
 
     const prepended =
@@ -772,7 +772,8 @@ watch(
 
 function solicitarAnteriores() {
   if (!props.hasMoreOlder || props.loadingOlder) return
-  if (scrollRef.value) scrollHeightAntes.value = scrollRef.value.scrollHeight
+  const elAntes = getScrollEl()
+  if (elAntes) scrollHeightAntes.value = elAntes.scrollHeight
   emit('load-older')
 }
 
