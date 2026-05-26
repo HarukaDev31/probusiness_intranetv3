@@ -152,6 +152,12 @@ import { useSpinner } from '../../../../composables/commons/useSpinner'
 import { ROLES } from '../../../../constants/roles'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 import type { TableRow } from '@nuxt/ui'
+import {
+  resolveTypeFormEntrega,
+  tipoEntregaLabel,
+  tipoEntregaBadgeColor,
+  isEntregaLima
+} from '~/utils/cargaConsolidadaEntrega'
 
 const route = useRoute()
 const id = Number(route.params.id)
@@ -244,9 +250,7 @@ const sendingFormulario = ref(false)
 const clientesFormulario = computed<{ id: number; nombre: string; telefono: string; type_form: 0 | 1 | null }[]>(() => {
   return (clientes.value || [])
     .map((cliente: any) => {
-      const rawTf = cliente?.type_form
-      const normalizedType =
-        rawTf === 1 || rawTf === '1' ? 1 : rawTf === 0 || rawTf === '0' ? 0 : null
+      const normalizedType = resolveTypeFormEntrega(cliente)
       return {
         id: Number(cliente?.id_cotizacion ?? cliente?.id ?? 0),
         nombre: String(cliente?.nombre || 'Cliente'),
@@ -409,13 +413,8 @@ const clientesColumns = ref<TableColumn<any>[]>([
     accessorKey: 'type_form',
     header: 'T. Entrega',
     cell: ({ row }) => {
-      const tf = row.original.type_form
-      const label = (tf === 0 || tf === '0')
-        ? 'Provincia'
-        : (tf === 1 || tf === '1')
-          ? 'Lima'
-          : '-'
-      const color = label === 'Lima' ? 'success' : label === 'Provincia' ? 'warning' : 'neutral'
+      const label = tipoEntregaLabel(resolveTypeFormEntrega(row.original))
+      const color = label === 'Provincia' ? 'warning' : tipoEntregaBadgeColor(label)
       return h(UBadge, { label, color, variant: 'soft' })
     }
   },
@@ -694,24 +693,26 @@ const entregasColumns = ref<TableColumn<any>[]>([
   { accessorKey: 'bultos', header: 'Bultos', cell: ({ row }) => row.original.qty_box_china ?? '—' },
   {
     accessorKey: 'tipo_entrega', header: 'Envio', cell: ({ row }) => {
-      const tf = row.original.type_form
-      const label = (tf === 0 || tf === '0')
-        ? 'Provincia'
-        : (tf === 1 || tf === '1')
-          ? 'Lima'
-          : '-'
-      const color = label === 'Lima' ? 'success' : label === 'Provincia' ? 'primary' : 'neutral'
+      const label = tipoEntregaLabel(resolveTypeFormEntrega(row.original))
+      const color = tipoEntregaBadgeColor(label)
       return h(UBadge, { label, color, variant: 'soft' })
     }
   },
 
-  { accessorKey: 'ciudad', header: 'Ciudad', cell: ({ row }) => row.original.department_name || 'Lima' },
+  {
+    accessorKey: 'ciudad',
+    header: 'Ciudad',
+    cell: ({ row }) => {
+      const dept = row.original.department_name
+      if (dept) return dept
+      return isEntregaLima(resolveTypeFormEntrega(row.original)) ? 'Lima' : '—'
+    }
+  },
   { accessorKey: 'documento', header: 'Ruc o Dni', cell: ({ row }) => row.original.agency_ruc || row.original.pick_doc || '—' },
   { accessorKey: 'razon_social', header: 'Razon social o Nombre', cell: ({ row }) => row.original.agency_name || row.original.pick_name || '—' },
   {
     accessorKey: 'fecha_programada', header: 'Fecha', cell: ({ row }) => {
-      const tf = row.original?.type_form
-      const isLima = (tf === 1 || tf === '1')
+      const isLima = isEntregaLima(resolveTypeFormEntrega(row.original))
       if (isLima) {
         const fp = formatDateTimeToDmy(row.original.delivery_date)
         if (!fp) return '—'
