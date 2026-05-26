@@ -273,6 +273,13 @@
                 <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Comprobantes de Retribución</h2>
                 <UBadge v-if="retribucionesList.length" color="primary" variant="soft" size="sm">{{ retribucionesList.length }} {{ retribucionesList.length === 1 ? 'comprobante' : 'comprobantes' }}</UBadge>
+                <span
+                  v-if="retribucionesList.length"
+                  class="text-sm"
+                  :class="retribucionesTotalMontoClass"
+                >
+                  Total: {{ formatCurrency(sumaExistentes, 'PEN') }}
+                </span>
               </div>
             </template>
             
@@ -439,7 +446,12 @@ const sumaPending = computed(() => pendingRetribuciones.value.reduce((s, p) => s
 /** Puede guardar si hay al menos una retribución pendiente (aunque la suma no coincida con el total) */
 const canGuardarTodo = computed(() => pendingRetribuciones.value.length > 0)
 /** Suma de retribuciones ya guardadas en el backend */
-const sumaExistentes = computed(() => retribucionesList.value.reduce((s, r) => s + Number((r as any).monto ?? 0), 0))
+const sumaExistentes = computed(() =>
+  retribucionesList.value.reduce((sum, item) => sum + Number(item.monto ?? 0), 0)
+)
+const retribucionesTotalMontoClass = computed(() =>
+  sumaExistentes.value > totalAPagar.value + 0.02 ? 'text-red-500' : 'text-green-600 dark:text-green-400'
+)
 /** La suma total (existentes + pendientes) es >= el total a pagar → al guardar se pasará a Confirmado */
 const sumaCoincideConTotal = computed(() => sumaExistentes.value + sumaPending.value >= totalAPagar.value - 0.02)
 
