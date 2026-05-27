@@ -82,7 +82,7 @@ export const useGeneral = () => {
     }
     const uploadPlantillaFinal = async (data: FormData) => {
         try {
-            const response = await GeneralService.uploadPlantillaFinal(data)
+            const response: any = await GeneralService.uploadPlantillaFinal(data)
             return {
                 success: true,
                 message: response?.message || 'Generación encolada. Se notificará cuando finalice.',

@@ -1292,6 +1292,10 @@ const getPagosColumns = () => {
                 const pagos = row.original.pagos || []
                 const showGrid = row.original.id_contenedor_pago == id || row.original.id_contenedor_pago == null
                 if (!showGrid) return null
+                const canShowPagoGrid = Number(row.original.show_pagos_grid ?? 1) === 1
+                if (!canShowPagoGrid) {
+                    return null
+                }
                 return h(PagoGrid, {
                     numberOfPagos: 4,
                     pagoDetails: pagos,
@@ -3037,6 +3041,7 @@ watch(() => tab.value, async (newVal) => {
         }
     }
 }, { immediate: true })
+
 
 
 const updateProveedorData = async (row: any) => {

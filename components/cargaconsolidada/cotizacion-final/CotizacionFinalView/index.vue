@@ -133,7 +133,7 @@ const tabs = computed(() => {
       : [{ value: 'pagos', label: 'Pagos' }, { value: 'general', label: 'General' }]
   }
   if (canViewCargosExtra.value) {
-    return [{ value: 'general', label: 'General' },  { value: 'cargos-extra', label: 'Cargos extra' },{ value: 'pagos', label: 'Pagos' }, ]
+    return [{ value: 'general', label: 'General' }, { value: 'cargos-extra', label: 'Cargos extra' }, { value: 'pagos', label: 'Pagos' }]
   }
   return [{ value: 'general', label: 'General' }, { value: 'pagos', label: 'Pagos' }]
 })
@@ -752,7 +752,8 @@ const getPagosColumns = (): TableColumn<any>[] => {
       } else if (pagos.length >= MAX_PAYMENTS) {
         MAX_PAYMENTS = pagos.length
       }
-      return !row.original.id_contenedor_pago
+      const canShowPagoGrid = Number(row.original.show_pagos_grid ?? 1) === 1
+      return !row.original.id_contenedor_pago && canShowPagoGrid
         ? h(PagoGrid, {
             numberOfPagos: MAX_PAYMENTS,
             pagoDetails: pagos,
