@@ -65,6 +65,7 @@ export default defineNuxtRouteMiddleware((to) => {
   if (to.path === '/') return
   if (to.path === '/notificaciones') return
   if (to.path === '/perfil') return
+  if (to.path === '/copiloto') return
   const token = localStorage.getItem('auth_token')
   const user = localStorage.getItem('auth_user')
   if (!token || !user) {

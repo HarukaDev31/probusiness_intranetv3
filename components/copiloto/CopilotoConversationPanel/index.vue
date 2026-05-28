@@ -55,8 +55,14 @@
     </div>
 
     <ChatPanelShell v-if="mainTab === 'wa'" :full-height="false" class="min-h-0 flex-1">
-      <ChatMessagesScroll ref="scrollRef" class="flex-1">
-        <template v-for="(msg, mi) in lead.msgs" :key="mi">
+      <div v-if="loading" class="flex flex-1 items-center justify-center p-4 text-sm text-muted">
+        Cargando conversación...
+      </div>
+      <ChatMessagesScroll v-else ref="scrollRef" class="flex-1">
+        <p v-if="!lead.msgs.length" class="py-6 text-center text-xs text-muted">
+          Sin mensajes en esta conversación.
+        </p>
+        <template v-for="(msg, mi) in lead.msgs" :key="`${lead.id}-${mi}-${msg.t}`">
           <div v-if="msg.dir === 'sys'" class="w-full py-1 text-center">
             <UBadge color="neutral" variant="subtle" size="xs">{{ msg.txt }}</UBadge>
           </div>
@@ -156,14 +162,21 @@ import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import ChatComposerSimple from '~/components/chat/ChatComposerSimple.vue'
 import ChatConversationHeader from '~/components/chat/ChatConversationHeader.vue'
 
-const props = defineProps<{
-  lead: CopilotoLead | null
-  mainTab: CopilotoMainTab
-  draftMessage: string
-  readonly?: boolean
-  expandedMessageIndex: number | null
-  suggestion: { label: string; text: string; cfg: ReturnType<typeof getCopilotoTempConfig> } | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    lead: CopilotoLead | null
+    mainTab: CopilotoMainTab
+    draftMessage: string
+    readonly?: boolean
+    loading?: boolean
+    expandedMessageIndex: number | null
+    suggestion: { label: string; text: string; cfg: ReturnType<typeof getCopilotoTempConfig> } | null
+  }>(),
+  {
+    readonly: false,
+    loading: false
+  }
+)
 
 const emit = defineEmits<{
   'update:mainTab': [tab: CopilotoMainTab]
@@ -182,8 +195,9 @@ const scrollRef = ref<InstanceType<typeof ChatMessagesScroll> | null>(null)
 const tempCfg = getCopilotoTempConfig
 
 watch(
-  () => props.lead?.msgs.length,
+  () => [props.lead?.id, props.lead?.msgs.length, props.loading] as const,
   async () => {
+    if (props.loading) return
     await nextTick()
     scrollRef.value?.scrollToBottom()
   },

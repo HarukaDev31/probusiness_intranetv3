@@ -15,7 +15,9 @@
         @select="selectLead"
       />
       <CopilotoConversationPanel
+        :key="selectedLead?.id ?? 'none'"
         :lead="selectedLead"
+        :loading="loadingConversation"
         :main-tab="mainTab"
         :draft-message="draftMessage"
         :expanded-message-index="expandedMessageIndex"
@@ -27,6 +29,7 @@
         @apply-chip="applySuggestionChip"
       />
       <CopilotoLeadFicha
+        :key="`ficha-${selectedLead?.id ?? 'none'}`"
         :lead="selectedLead"
         :ficha-tab="fichaTab"
         @update:ficha-tab="setFichaTab"
@@ -55,6 +58,7 @@ const {
   fichaTab,
   draftMessage,
   expandedMessageIndex,
+  loadingConversation,
   suggestion,
   selectLead,
   setMainTab,

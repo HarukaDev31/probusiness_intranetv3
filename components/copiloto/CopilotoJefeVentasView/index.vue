@@ -43,7 +43,9 @@
         </div>
         <CopilotoConversationPanel
           v-if="jefeView === 'cola'"
+          :key="selectedLead?.id ?? 'none'"
           :lead="selectedLead"
+          :loading="loadingConversation"
           :main-tab="mainTab"
           draft-message=""
           readonly
@@ -63,6 +65,7 @@
         </div>
       </section>
       <CopilotoLeadFicha
+        :key="`ficha-${selectedLead?.id ?? 'none'}`"
         :lead="selectedLead"
         :ficha-tab="fichaTab"
         readonly
@@ -104,6 +107,7 @@ const {
   fichaTab,
   jefeView,
   expandedMessageIndex,
+  loadingConversation,
   suggestion,
   selectLead,
   selectAdvisor,

@@ -65,7 +65,7 @@ withDefaults(
   }
 )
 
-defineEmits<{
+const emit = defineEmits<{
   select: [index: number]
 }>()
 

@@ -18,6 +18,7 @@ export interface CopilotoImportHistoryRow {
 
 export interface CopilotoLead {
   id: string
+  phone?: string
   av: string
   name: string
   sub: string
