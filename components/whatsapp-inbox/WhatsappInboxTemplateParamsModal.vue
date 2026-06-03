@@ -10,6 +10,14 @@
           <p class="whitespace-pre-wrap">{{ template.text }}</p>
         </UCard>
 
+        <UAlert
+          v-if="template.header_format === 'VIDEO'"
+          color="warning"
+          variant="subtle"
+          title="Video para WhatsApp"
+          :description="templateVideoHeaderHint()"
+        />
+
         <template v-for="def in paramDefs" :key="def.name">
           <UFormField>
             <template #label>
@@ -80,6 +88,7 @@ import {
   paramTypeBadgeColor,
   paramTypeLabel,
   resolveParamFileKind,
+  templateVideoHeaderHint,
   textParamsFilled,
   uploadMessageForParam
 } from '~/utils/whatsappInboxTemplateParams'
@@ -129,7 +138,13 @@ function onFilesSelected(def: WaInboxTemplateParamDef, list: File[]) {
   if (!tpl) return
   const file = list[0]
   if (file && !fileMatchesParamKind(file, def, tpl)) {
-    emit('error', uploadMessageForParam(def, tpl))
+    const kind = resolveParamFileKind(def, tpl)
+    emit(
+      'error',
+      kind === 'video'
+        ? 'Solo MP4 compatible con WhatsApp (H.264 + audio AAC).'
+        : uploadMessageForParam(def, tpl)
+    )
     return
   }
   filesByParam.value = { ...filesByParam.value, [def.name]: list.slice(0, 1) }

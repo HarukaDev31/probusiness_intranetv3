@@ -151,7 +151,7 @@ export function acceptedTypesForParam(
     return ['.jpg', '.jpeg', '.png', '.gif', '.webp']
   }
   if (kind === 'video') {
-    return ['.mp4', '.3gp']
+    return ['.mp4']
   }
   return ['.pdf']
 }
@@ -182,7 +182,7 @@ export function uploadMessageForParam(
     return 'Imagen JPG/PNG/GIF/WebP, máximo 5 MB (límite WhatsApp)'
   }
   if (kind === 'video') {
-    return 'Video MP4 o 3GP, máximo 16 MB'
+    return 'MP4 con H.264 y audio AAC, máximo 16 MB (no Opus ni WebM)'
   }
   return 'PDF para el encabezado de la plantilla'
 }
@@ -204,5 +204,16 @@ export function fileMatchesParamKind(
   if (kind === 'image') {
     return file.type.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)
   }
-  return file.type.startsWith('video/') || ['.mp4', '.3gp'].includes(ext)
+  if (kind === 'video') {
+    if (ext !== '.mp4') return false
+    return file.type === 'video/mp4' || file.type === '' || file.type.startsWith('video/')
+  }
+  return false
+}
+
+/** Texto de ayuda cuando la plantilla lleva video en encabezado. */
+export function templateVideoHeaderHint(): string {
+  return 'Si Meta rechaza el video (#131053), conviértelo a MP4 con H.264 y AAC. '
+    + 'Ejemplo: ffmpeg -i entrada.mp4 -c:v libx264 -profile:v main -pix_fmt yuv420p '
+    + '-c:a aac -movflags +faststart salida.mp4'
 }
