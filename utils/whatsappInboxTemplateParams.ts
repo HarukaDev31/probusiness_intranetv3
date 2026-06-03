@@ -79,5 +79,5 @@ export function acceptedTypesForParam(def: WaInboxTemplateParamDef): string[] {
   if (kind === 'video') {
     return ['.mp4', '.3gp']
   }
-  return ['.pdf', '.doc', '.docx', '.xlsx', '.xls', '.jpg', '.jpeg', '.png']
+  return ['.pdf']
 }

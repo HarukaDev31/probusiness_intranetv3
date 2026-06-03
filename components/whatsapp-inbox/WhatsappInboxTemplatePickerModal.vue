@@ -14,7 +14,16 @@
           @click="onPick(tpl)"
         >
           <UCard variant="outline" color="neutral" :ui="{ body: 'p-3 sm:p-3' }">
-            <p class="text-sm font-semibold text-primary">{{ tpl.label || tpl.name }}</p>
+            <p class="flex flex-wrap items-center gap-2 text-sm font-semibold text-primary">
+              <span>{{ tpl.label || tpl.name }}</span>
+              <UBadge
+                v-if="tpl.header_format"
+                color="warning"
+                variant="subtle"
+                size="xs"
+                :label="`Encabezado ${tpl.header_format}`"
+              />
+            </p>
             <p class="mt-1 line-clamp-2 text-xs text-muted">{{ tpl.text }}</p>
             <div v-if="getTemplateParamDefs(tpl).length" class="mt-2 space-y-1.5">
               <p class="text-[10px] font-semibold uppercase tracking-wide text-muted">

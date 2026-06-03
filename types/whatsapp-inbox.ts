@@ -59,6 +59,8 @@ export interface WaInboxTemplate {
   text: string
   params: string[]
   param_defs?: WaInboxTemplateParamDef[]
+  /** DOCUMENT | IMAGE | VIDEO cuando la plantilla Meta lleva media en encabezado */
+  header_format?: string | null
 }
 
 export interface WaInboxTemplateSendPayload {
