@@ -17,10 +17,18 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { formatDatePe } from '~/utils/formatters'
+import {
+  findConversationInList,
+  parseWaInboxConversationSlug,
+  waInboxConversationPath
+} from '~/utils/whatsappInboxRoute'
 
 const CONVERSATIONS_PER_PAGE = 30
+const WA_INBOX_BASE_PATH = '/coordinacion/whatsapp-inbox'
 
 export function useWhatsappInbox() {
+  const route = useRoute()
+  const router = useRouter()
   const { withSpinner } = useSpinner()
   const { showError, showSuccess } = useModal()
   const { currentId } = useUserRole()
@@ -172,7 +180,16 @@ export function useWhatsappInbox() {
     }
   }
 
+  function getRouteConversationSlug(): string | null {
+    const p = route.params.conversation
+    if (!p) return null
+    const raw = Array.isArray(p) ? p[0] : String(p)
+    return raw?.trim() ? raw.trim() : null
+  }
+
   function ensureSelectedConversation() {
+    if (getRouteConversationSlug()) return
+
     const list = conversations.value
     if (!list.length) {
       selectedConversationId.value = null
@@ -184,6 +201,88 @@ export function useWhatsappInbox() {
     if (!still) {
       selectedConversationId.value = list[0].id
     }
+  }
+
+  let resolvingRoute = false
+
+  async function resolveRouteConversation(explicitSlug?: string) {
+    const slug = explicitSlug ?? getRouteConversationSlug()
+    if (!slug) return
+
+    const parsed = parseWaInboxConversationSlug(slug)
+    if (!parsed) {
+      showError('Enlace no válido', 'No se reconoce este chat.')
+      await router.replace(WA_INBOX_BASE_PATH)
+      return
+    }
+
+    if (resolvingRoute) return
+    resolvingRoute = true
+    try {
+      let conv = findConversationInList(allConversations.value, parsed)
+
+      if (!conv && parsed.kind === 'id') {
+        try {
+          const res = await WhatsappInboxService.getMessages(parsed.id, { per_page: 1 })
+          if (res?.conversation) {
+            conv = res.conversation as WaInboxConversation
+            upsertConversation(conv)
+          }
+        } catch {
+          conv = undefined
+        }
+      }
+
+      if (!conv && parsed.kind === 'phone') {
+        try {
+          const res = await WhatsappInboxService.getConversations({
+            filter: filter.value,
+            search: parsed.phoneE164,
+            per_page: 20,
+            page: 1
+          })
+          const rows = Array.isArray(res?.data) ? res.data : []
+          conv = rows.find((c: WaInboxConversation) => c.phone_e164 === parsed.phoneE164)
+          if (conv) upsertConversation(conv)
+        } catch {
+          conv = undefined
+        }
+      }
+
+      if (!conv) {
+        showError('Chat no encontrado', 'Este número o conversación no está en el inbox.')
+        selectedConversationId.value = null
+        messages.value = []
+        await router.replace(WA_INBOX_BASE_PATH)
+        return
+      }
+
+      const canonicalPath = waInboxConversationPath(conv.id)
+      const needsCanonicalUrl =
+        parsed.kind === 'phone' || slug !== String(conv.id)
+
+      if (selectedConversationId.value !== conv.id) {
+        await selectConversation(conv.id, { skipRoute: true })
+      } else {
+        await loadMessages(conv.id)
+        await loadTemplates({ background: true })
+      }
+
+      if (needsCanonicalUrl && route.path !== canonicalPath) {
+        await router.replace(canonicalPath)
+      }
+    } finally {
+      resolvingRoute = false
+    }
+  }
+
+  async function syncConversationFromRoute() {
+    const slug = getRouteConversationSlug()
+    if (slug) {
+      await resolveRouteConversation(slug)
+      return
+    }
+    ensureSelectedConversation()
   }
 
   async function loadSession(options: { background?: boolean } = {}) {
@@ -337,8 +436,14 @@ export function useWhatsappInbox() {
     }
   }
 
-  async function selectConversation(id: number) {
+  async function selectConversation(id: number, options: { skipRoute?: boolean } = {}) {
     selectedConversationId.value = id
+    if (!options.skipRoute) {
+      const target = waInboxConversationPath(id)
+      if (route.path !== target) {
+        await router.push(target)
+      }
+    }
     await Promise.all([
       loadMessages(id),
       loadTemplates({ background: true })
@@ -469,6 +574,7 @@ export function useWhatsappInbox() {
         selectedConversationId.value = conv.id
         messages.value = []
         cache.setMessages(conv.id, [], conv)
+        await router.replace(waInboxConversationPath(conv.id))
         await loadMessages(conv.id)
 
         const title = res.created === false ? 'Contacto existente' : 'Contacto agregado'
@@ -549,7 +655,8 @@ export function useWhatsappInbox() {
           loadTemplates(),
           loadAssignableUsers()
         ])
-        if (selectedConversationId.value) {
+        await syncConversationFromRoute()
+        if (selectedConversationId.value && !getRouteConversationSlug()) {
           await loadMessages(selectedConversationId.value)
         }
       }, 'Cargando inbox…')
@@ -562,6 +669,8 @@ export function useWhatsappInbox() {
       loadTemplates({ background: true }),
       loadAssignableUsers({ background: true })
     ])
+
+    await syncConversationFromRoute()
 
     if (selectedConversationId.value) {
       const id = selectedConversationId.value
@@ -588,6 +697,31 @@ export function useWhatsappInbox() {
       }
     }, 'Actualizando…')
   }
+
+  watch(
+    () => getRouteConversationSlug(),
+    async (slug, prev) => {
+      if (!slug) {
+        if (prev) {
+          selectedConversationId.value = null
+          messages.value = []
+        }
+        return
+      }
+
+      const parsed = parseWaInboxConversationSlug(slug)
+      if (!parsed) {
+        await resolveRouteConversation(slug)
+        return
+      }
+      if (parsed.kind === 'id' && selectedConversationId.value === parsed.id) return
+      if (parsed.kind === 'phone') {
+        const sel = allConversations.value.find((c) => c.id === selectedConversationId.value)
+        if (sel?.phone_e164 === parsed.phoneE164) return
+      }
+      await resolveRouteConversation(slug)
+    }
+  )
 
   watch(filter, () => {
     loadConversations({ page: 1, force: true, background: true })
