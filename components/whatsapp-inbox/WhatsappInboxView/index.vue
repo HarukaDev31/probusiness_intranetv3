@@ -134,6 +134,14 @@
               class="w-40"
               @update:model-value="onAssign"
             />
+            <UButton
+              icon="i-heroicons-document-text"
+              color="primary"
+              variant="soft"
+              size="sm"
+              label="Plantillas"
+              @click="templatePickerOpen = true"
+            />
           </div>
         </template>
 
@@ -175,46 +183,25 @@
         </div>
 
         <template v-if="selectedConversation" #footer>
-          <div class="flex flex-col">
-            <WhatsappInboxTemplatesStrip
-              :templates="templates"
-              :loading="loadingTemplates"
-              :window-open="windowIsOpen"
-              @open-modal="openTemplateModal()"
-              @select="openTemplateModal"
-            />
-            <div class="space-y-2 p-3">
-            <div
+          <div class="space-y-2 p-3">
+            <UAlert
               v-if="!selectedConversation.can_send_text"
-              class="flex flex-wrap items-center justify-between gap-2"
-            >
-              <UAlert
-                class="min-w-0 flex-1"
-                color="error"
-                variant="subtle"
-                title="Ventana cerrada"
-                description="El texto libre no está disponible. Usa una plantilla para reactivar la conversación."
-              />
-              <UButton size="xs" color="primary" label="Elegir plantilla" @click="openTemplateModal()" />
-            </div>
+              color="error"
+              variant="subtle"
+              title="Ventana cerrada"
+              description="El texto libre no está disponible. Usa Plantillas en la barra superior."
+            />
             <div class="flex items-end gap-2">
               <UTextarea
                 v-model="draftMessage"
                 :disabled="!selectedConversation.can_send_text"
                 :placeholder="selectedConversation.can_send_text
                   ? 'Escribe un mensaje…'
-                  : 'Ventana cerrada — elige una plantilla arriba'"
+                  : 'Ventana cerrada — usa Plantillas arriba'"
                 :rows="1"
                 autoresize
                 class="flex-1"
                 @keydown.enter.exact.prevent="sendTextMessage"
-              />
-              <UButton
-                icon="i-heroicons-document-text"
-                color="neutral"
-                variant="outline"
-                aria-label="Plantillas"
-                @click="openTemplateModal()"
               />
               <UButton
                 icon="i-heroicons-paper-airplane"
@@ -224,17 +211,23 @@
                 @click="sendTextMessage"
               />
             </div>
-            </div>
           </div>
         </template>
       </ChatPanelShell>
     </div>
 
-    <WhatsappInboxTemplateModal
-      v-model:open="templateModalOpen"
+    <WhatsappInboxTemplatePickerModal
+      v-model:open="templatePickerOpen"
       :templates="templates"
-      :preselect="templatePreselect"
-      @send="sendTemplateMessage"
+      :loading="loadingTemplates"
+      @select="onTemplatePicked"
+    />
+    <WhatsappInboxTemplateParamsModal
+      v-model:open="templateParamsOpen"
+      :template="templateForParams"
+      :sending="sendingTemplate"
+      @send="onTemplateSend"
+      @error="(msg) => showTemplateError(msg)"
     />
   </UCard>
 </template>
@@ -248,8 +241,9 @@ import type {
 } from '~/types/whatsapp-inbox'
 import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
-import WhatsappInboxTemplateModal from '~/components/whatsapp-inbox/WhatsappInboxTemplateModal.vue'
-import WhatsappInboxTemplatesStrip from '~/components/whatsapp-inbox/WhatsappInboxTemplatesStrip.vue'
+import WhatsappInboxTemplatePickerModal from '~/components/whatsapp-inbox/WhatsappInboxTemplatePickerModal.vue'
+import WhatsappInboxTemplateParamsModal from '~/components/whatsapp-inbox/WhatsappInboxTemplateParamsModal.vue'
+import { useModal } from '~/composables/commons/useModal'
 
 const panelCardUi = {
   body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0',
@@ -278,22 +272,34 @@ const {
   selectConversation,
   sendTextMessage,
   sendTemplateMessage,
+  sendingTemplate,
   assignConversation,
   disconnectWebSocket
 } = useWhatsappInbox()
 
-const templateModalOpen = ref(false)
-const templatePreselect = ref<WaInboxTemplate | null>(null)
+const { showError: showModalError } = useModal()
 
-const windowIsOpen = computed(() => {
-  const c = selectedConversation.value
-  if (!c) return false
-  return c.window_state === 'open' || c.window_state === 'warn'
-})
+const templatePickerOpen = ref(false)
+const templateParamsOpen = ref(false)
+const templateForParams = ref<WaInboxTemplate | null>(null)
 
-function openTemplateModal(tpl?: WaInboxTemplate) {
-  templatePreselect.value = tpl ?? null
-  templateModalOpen.value = true
+function onTemplatePicked(tpl: WaInboxTemplate) {
+  templateForParams.value = tpl
+  templateParamsOpen.value = true
+}
+
+async function onTemplateSend(payload: {
+  template: WaInboxTemplate
+  params: Record<string, string>
+  files: Record<string, File>
+}) {
+  await sendTemplateMessage(payload.template.name, payload.params, payload.files)
+  templateParamsOpen.value = false
+  templateForParams.value = null
+}
+
+function showTemplateError(message: string) {
+  showModalError('Archivo', message)
 }
 
 const filterOptions: { value: WaInboxFilter; label: string }[] = [

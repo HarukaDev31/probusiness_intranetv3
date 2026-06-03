@@ -41,12 +41,29 @@ export interface WaInboxMessage {
   message_type?: string
 }
 
+export type WaInboxTemplateParamType = 'text' | 'file'
+
+export interface WaInboxTemplateParamDef {
+  name: string
+  type: WaInboxTemplateParamType
+  label?: string
+  /** document | image | video — para plantillas Meta con encabezado media */
+  file_kind?: string
+}
+
 export interface WaInboxTemplate {
   name: string
   label: string
   language: string
   text: string
   params: string[]
+  param_defs?: WaInboxTemplateParamDef[]
+}
+
+export interface WaInboxTemplateSendPayload {
+  template_name: string
+  params: Record<string, string>
+  files?: Record<string, File>
 }
 
 export interface WaInboxAssignableUser {

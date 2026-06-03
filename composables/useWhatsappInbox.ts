@@ -338,14 +338,22 @@ export function useWhatsappInbox() {
     }
   }
 
-  async function sendTemplateMessage(templateName: string, params: Record<string, string>) {
+  const sendingTemplate = ref(false)
+
+  async function sendTemplateMessage(
+    templateName: string,
+    params: Record<string, string>,
+    files: Record<string, File> = {}
+  ) {
     const conv = selectedConversation.value
     if (!conv) return
 
+    sendingTemplate.value = true
     try {
       const res = await WhatsappInboxService.sendTemplate(conv.id, {
         template_name: templateName,
-        params
+        params,
+        files
       })
       const msg = res?.data as WaInboxMessage | undefined
       if (msg?.id) {
@@ -357,6 +365,8 @@ export function useWhatsappInbox() {
       }
     } catch (e: any) {
       showError('Error', e?.message || 'No se pudo enviar la plantilla')
+    } finally {
+      sendingTemplate.value = false
     }
   }
 
@@ -504,6 +514,7 @@ export function useWhatsappInbox() {
     loadingConversations,
     loadingMessages,
     loadingTemplates,
+    sendingTemplate,
     refreshing,
     error,
     unreadTotal,

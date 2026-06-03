@@ -36,11 +36,43 @@ export class WhatsappInboxService extends BaseService {
 
   static async sendTemplate(
     conversationId: number,
-    payload: { template_name: string; params: Record<string, string> }
+    payload: {
+      template_name: string
+      params: Record<string, string>
+      files?: Record<string, File>
+    }
   ) {
+    const files = payload.files ?? {}
+    const fileKeys = Object.keys(files)
+    if (fileKeys.length === 0) {
+      return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/templates`, {
+        method: 'POST',
+        body: {
+          template_name: payload.template_name,
+          params: payload.params
+        }
+      })
+    }
+
+    const fd = new FormData()
+    fd.append('template_name', payload.template_name)
+    fd.append('params', JSON.stringify(payload.params))
+    for (const key of fileKeys) {
+      const file = files[key]
+      fd.append(key, file)
+      if (key === 'header_media') {
+        const kind = file.type.startsWith('image/')
+          ? 'image'
+          : file.type.startsWith('video/')
+            ? 'video'
+            : 'document'
+        fd.append('header_file_kind', kind)
+      }
+    }
+
     return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/templates`, {
       method: 'POST',
-      body: payload
+      body: fd
     })
   }
 
