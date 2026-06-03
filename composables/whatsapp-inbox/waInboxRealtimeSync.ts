@@ -9,6 +9,23 @@ import {
   mergeWaInboxMessage,
   waMessageNumericId
 } from '~/composables/whatsapp-inbox/waInboxMessageUtils'
+import { waInboxLog } from '~/composables/whatsapp-inbox/waInboxWsLog'
+
+function conversationPatchFromMessage(msg: WaInboxMessage): Partial<WaInboxConversation> {
+  const body = msg.body?.trim()
+  let preview = body ? body.slice(0, 200) : ''
+  if (!preview && msg.media_url) {
+    if (msg.message_type === 'image') preview = 'Foto'
+    else if (msg.message_type === 'video') preview = 'Video'
+    else preview = msg.media_filename || 'Adjunto'
+  }
+  if (!preview) preview = 'Mensaje'
+  return {
+    last_message_preview: preview,
+    last_message_at: msg.sent_at || new Date().toISOString(),
+    ...(msg.time_label ? { last_message_time_label: msg.time_label } : {})
+  }
+}
 
 /** Chat abierto en la UI (null si el usuario no está en el inbox o no eligió conversación). */
 let viewingConversationId: number | null = null
@@ -139,14 +156,37 @@ export function applyMessageCreatedToStore(payload: WaInboxWsMessageCreatedPaylo
       patch.unread_count = 0
     }
     cache.upsertConversation(patch)
-  } else if (msg?.direction === 'in' && !viewing) {
+    waInboxLog('store.messageCreated', {
+      convId,
+      source: 'payload.conversation',
+      viewing,
+      direction: msg?.direction
+    })
+  } else if (msg) {
     const snap = cache.getConversationsSnapshot()
     const existing = snap.find((c) => c.id === convId)
+    const previewPatch = conversationPatchFromMessage(msg as WaInboxMessage)
     if (existing) {
+      const unread =
+        msg.direction === 'in' && !viewing
+          ? (existing.unread_count || 0) + 1
+          : viewing && msg.direction === 'in'
+            ? 0
+            : existing.unread_count
       cache.patchConversation(convId, {
-        unread_count: (existing.unread_count || 0) + 1
+        ...previewPatch,
+        ...(unread != null ? { unread_count: unread } : {})
       })
+    } else if (previewPatch.last_message_preview) {
+      cache.patchConversation(convId, previewPatch)
     }
+    waInboxLog('store.messageCreated', {
+      convId,
+      source: 'patchFromMessage',
+      viewing,
+      direction: msg?.direction,
+      hasExisting: Boolean(existing)
+    })
   }
 
   if (!waMessageNumericId(msg?.id)) return
@@ -162,4 +202,22 @@ export function applyStatusUpdatedToStore(payload: WaInboxWsMessageStatusPayload
   if (!incomingStatus) return
 
   patchStatusInCache(convId, messageId, payload, incomingStatus)
+  waInboxLog('store.statusUpdated', {
+    convId,
+    messageId,
+    status: incomingStatus,
+    viewing: viewingConversationId === convId
+  })
+}
+
+export function resolveWaInboxDeliveryStatus(payload: WaInboxWsMessageStatusPayload) {
+  return resolveIncomingDeliveryStatus(payload)
+}
+
+export function mergeWaInboxStatusIntoMessage(
+  prev: WaInboxMessage,
+  payload: WaInboxWsMessageStatusPayload,
+  incomingStatus: string
+) {
+  return applyDeliveryStatusPatch(prev, payload, incomingStatus)
 }

@@ -28,9 +28,18 @@ import {
   mergeMessageLists,
   waMessageNumericId
 } from '~/composables/whatsapp-inbox/waInboxMessageUtils'
-import { setWaInboxViewingConversationId } from '~/composables/whatsapp-inbox/waInboxRealtimeSync'
-import { registerWaInboxUiHandlers } from '~/composables/whatsapp-inbox/waInboxUiBridge'
+import {
+  setWaInboxViewingConversationId,
+  getWaInboxViewingConversationId,
+  mergeWaInboxStatusIntoMessage,
+  resolveWaInboxDeliveryStatus
+} from '~/composables/whatsapp-inbox/waInboxRealtimeSync'
+import { registerWaInboxUiHandlers, getWaInboxUiHandlers } from '~/composables/whatsapp-inbox/waInboxUiBridge'
 import { ensureWaInboxEchoChannel } from '~/composables/whatsapp-inbox/ensureWaInboxEchoChannel'
+import { bindWaInboxLiveHandlers, getWaInboxLiveHandlers } from '~/composables/whatsapp-inbox/waInboxLiveBridge'
+import { exposeWaInboxWsDiagnostics, waInboxLog, waInboxWarn } from '~/composables/whatsapp-inbox/waInboxWsLog'
+import { getEchoInstance } from '~/composables/websocket/useEcho'
+import { WA_INBOX_WS_CHANNEL } from '~/constants/whatsappInboxWs'
 
 const CONVERSATIONS_PER_PAGE = 30
 const WA_INBOX_BASE_PATH = '/coordinacion/whatsapp-inbox'
@@ -218,6 +227,13 @@ export function useWhatsappInbox() {
     const convId = Number(payload.conversation_id)
     if (!convId) return
 
+    waInboxLog('ui.messageCreated', {
+      convId,
+      selected: selectedConversationId.value,
+      messagesConv: messagesConversationId.value,
+      direction: payload.message?.direction
+    })
+
     if (payload.conversation) {
       upsertConversation(payload.conversation as WaInboxConversation)
     }
@@ -238,6 +254,12 @@ export function useWhatsappInbox() {
     if (selectedConversationId.value === convId && msg?.direction === 'in') {
       markConversationRead(convId, { forceServer: true })
     }
+
+    waInboxLog('ui.messageCreated.done', {
+      convId,
+      listLen: allConversations.value.length,
+      openMessages: messages.value.length
+    })
   }
 
   function applyRealtimeStatus(payload: WaInboxWsMessageStatusPayload) {
@@ -245,10 +267,32 @@ export function useWhatsappInbox() {
     const messageId = waMessageNumericId(payload.message_id)
     if (!convId || !messageId) return
 
+    const incomingStatus = resolveWaInboxDeliveryStatus(payload)
+    if (!incomingStatus) return
+
+    waInboxLog('ui.statusUpdated', {
+      convId,
+      messageId,
+      status: incomingStatus,
+      selected: selectedConversationId.value
+    })
+
     syncConversationsFromStore()
 
     if (selectedConversationId.value === convId) {
-      syncOpenMessagesFromStore(convId)
+      if (messagesConversationId.value === convId) {
+        const idx = findMessageIndex(messages.value, messageId)
+        if (idx >= 0) {
+          const list = [...messages.value]
+          list[idx] = mergeWaInboxStatusIntoMessage(list[idx], payload, incomingStatus)
+          messages.value = list
+          syncMessagesCacheForConversation(convId)
+        } else {
+          syncOpenMessagesFromStore(convId)
+        }
+      } else {
+        syncOpenMessagesFromStore(convId)
+      }
       const merged = messages.value.find((m) => waMessageNumericId(m.id) === messageId)
       if (merged?.delivery_status === 'failed') {
         showError(
@@ -636,6 +680,7 @@ export function useWhatsappInbox() {
   }
 
   async function selectConversation(id: number, options: { skipRoute?: boolean } = {}) {
+    waInboxLog('selectConversation', { id, from: selectedConversationId.value })
     connectWebSocket()
     syncConversationsFromStore()
     selectedConversationId.value = id
@@ -869,16 +914,26 @@ export function useWhatsappInbox() {
     try {
       ensureWaInboxEchoChannel()
       registerWaInboxUiHandlers(inboxRealtimeHandlers)
+      bindWaInboxLiveHandlers(inboxRealtimeHandlers)
       waInboxWs.connect(inboxRealtimeHandlers)
+      waInboxLog('connect.ok', {
+        path: route.path,
+        selected: selectedConversationId.value,
+        echo: Boolean(getEchoInstance()),
+        uiHandlers: Boolean(getWaInboxUiHandlers()),
+        liveHandlers: Boolean(getWaInboxLiveHandlers())
+      })
     } catch (err) {
-      console.error('[WaInbox] No se pudo enlazar WebSocket:', err)
+      waInboxWarn('connect.error', { err: String(err) })
     }
   }
 
   function disconnectWebSocket() {
+    waInboxLog('disconnect', { path: route.path })
     clearMarkReadDebounce()
     setWaInboxViewingConversationId(null)
     registerWaInboxUiHandlers(null)
+    bindWaInboxLiveHandlers(null)
     waInboxWs.disconnect()
   }
 
@@ -891,7 +946,21 @@ export function useWhatsappInbox() {
   }, { immediate: true })
 
   if (import.meta.client) {
-    watch(() => route.path, (path) => {
+    exposeWaInboxWsDiagnostics(() => ({
+      route: route.path,
+      selectedConversationId: selectedConversationId.value,
+      messagesConversationId: messagesConversationId.value,
+      viewing: getWaInboxViewingConversationId(),
+      echo: Boolean(getEchoInstance()),
+      channel: WA_INBOX_WS_CHANNEL,
+      uiHandlers: Boolean(getWaInboxUiHandlers()),
+      liveHandlers: Boolean(getWaInboxLiveHandlers()),
+      conversations: allConversations.value.length,
+      openMessages: messages.value.length
+    }))
+
+    watch(() => route.path, (path, prev) => {
+      waInboxLog('route.change', { from: prev, to: path, inbox: isInboxRoute(path) })
       if (isInboxRoute(path)) {
         connectWebSocket()
       } else {
@@ -907,6 +976,7 @@ export function useWhatsappInbox() {
     if (!g.__waInboxEchoReadyBound) {
       g.__waInboxEchoReadyBound = true
       window.addEventListener('echo-ready', () => {
+        waInboxLog('echo-ready')
         if (isInboxRoute(route.path)) connectWebSocket()
       })
     }

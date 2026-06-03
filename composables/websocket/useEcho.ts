@@ -2,6 +2,7 @@ import Echo from 'laravel-echo'
 import type { Channel, PresenceChannel } from 'pusher-js'
 import { ref } from 'vue'
 import type { EchoConfig, WebSocketRole, WebSocketChannel } from '../../types/websocket/echo'
+import { isWaInboxWsDebug } from '~/composables/whatsapp-inbox/waInboxWsLog'
 
 let echoInstance: Echo | null = null
 let isInitializing = false
@@ -178,8 +179,8 @@ export const useEcho = () => {
         if (process.dev && eventNamePusher.startsWith('Calendar')) {
           console.log('[WS] Evento calendario recibido:', eventNamePusher, data)
         }
-        if (process.dev && eventNamePusher.startsWith('WaInbox')) {
-          console.log('[WS] WhatsApp Inbox:', eventNamePusher, data)
+        if (eventNamePusher.startsWith('WaInbox') && isWaInboxWsDebug()) {
+          console.info('[WaInbox:WS] pusher.raw', { event: eventNamePusher, channel: channelName, data })
         }
         handlerCallbacksByChannel.get(channelName)?.get(eventKey)?.(data)
       }

@@ -97,6 +97,12 @@ export default defineNuxtPlugin({
         isInitialized = true
 
         if (typeof window !== 'undefined') {
+          try {
+            const { waInboxLog } = await import('~/composables/whatsapp-inbox/waInboxWsLog')
+            waInboxLog('plugin.echo-ready')
+          } catch {
+            /* noop */
+          }
           window.dispatchEvent(new CustomEvent('echo-ready'))
           const { sincronizarSalasGlobales } = await import(
             '~/composables/useSoporteTiChatGlobal'
