@@ -61,7 +61,7 @@ const inflight = {
 
 /** Cola de selección: evita carreras entre clics rápidos (URL / mensajes desincronizados). */
 let selectConversationChain: Promise<void> = Promise.resolve()
-let selectConversationGeneration = 0
+let selectConversationInFlight = false
 
 /** PATCH /read agrupado; no dispara recargas de UI. */
 const markReadDebounce = new Map<number, ReturnType<typeof setTimeout>>()
@@ -184,7 +184,7 @@ export function useWhatsappInbox() {
   function syncOpenMessagesFromStore(convId: number) {
     if (selectedConversationId.value !== convId) return
     const entry = cache.getMessagesEntry(convId)
-    if (!entry) return
+    if (!entry?.messages?.length) return
     messages.value = [...entry.messages]
     messagesConversationId.value = convId
   }
@@ -407,8 +407,14 @@ export function useWhatsappInbox() {
 
   function hydrateMessagesFromCache(conversationId: number) {
     const entry = cache.getMessagesEntry(conversationId)
-    if (entry?.fullHistory !== false && entry.messages.length > 0) {
-      applyMessagesForConversation(conversationId, entry.messages)
+    const cachedMsgs = entry?.messages
+    if (
+      entry
+      && entry.fullHistory !== false
+      && Array.isArray(cachedMsgs)
+      && cachedMsgs.length > 0
+    ) {
+      applyMessagesForConversation(conversationId, cachedMsgs)
       return
     }
     if (selectedConversationId.value === conversationId) {
@@ -689,7 +695,7 @@ export function useWhatsappInbox() {
           && messagesConversationId.value === conversationId
             ? messages.value
             : []
-        const mergedCached = mergeMessageLists(cachedEntry.messages, localList)
+        const mergedCached = mergeMessageLists(cachedEntry.messages ?? [], localList)
         const hadUnread =
           (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
         applyMessagesForConversation(conversationId, mergedCached)
@@ -757,52 +763,30 @@ export function useWhatsappInbox() {
     await task
   }
 
-  async function runSelectConversation(
+  async function applyConversationSelection(
     convId: number,
-    options: { skipRoute?: boolean },
-    generation: number
+    options: { forceMessages?: boolean } = {}
   ) {
     const prevId = selectedConversationId.value
     const switched = prevId !== convId
-
-    waInboxLog('selectConversation.run', {
-      id: convId,
-      from: prevId,
-      generation,
-      skipRoute: options.skipRoute
-    })
-
-    if (!options.skipRoute && !isRouteOnConversation(convId)) {
-      await navigateToConversation(convId)
-    }
-
-    if (generation !== selectConversationGeneration) {
-      waInboxLog('selectConversation.staleAfterNav', { id: convId, generation })
-      return
-    }
 
     syncConversationsFromStore()
     selectedConversationId.value = convId
     setWaInboxViewingConversationId(convId)
     hydrateMessagesFromCache(convId)
 
-    if (generation !== selectConversationGeneration) return
-
     waInboxLog('loadMessages.start', {
       convId,
-      generation,
-      messagesConv: messagesConversationId.value
+      messagesConv: messagesConversationId.value,
+      force: options.forceMessages
     })
 
     await loadMessages(convId, {
-      force: switched || messagesConversationId.value !== convId
+      force: options.forceMessages ?? (switched || messagesConversationId.value !== convId)
     })
-
-    if (generation !== selectConversationGeneration) return
 
     waInboxLog('loadMessages.done', {
       convId,
-      generation,
       count: messages.value.length,
       messagesConv: messagesConversationId.value
     })
@@ -811,19 +795,40 @@ export function useWhatsappInbox() {
     syncOpenMessagesFromStore(convId)
   }
 
+  async function runSelectConversation(
+    convId: number,
+    options: { skipRoute?: boolean }
+  ) {
+    const prevId = selectedConversationId.value
+
+    waInboxLog('selectConversation.run', {
+      id: convId,
+      from: prevId,
+      skipRoute: options.skipRoute
+    })
+
+    selectConversationInFlight = true
+    try {
+      if (!options.skipRoute && !isRouteOnConversation(convId)) {
+        await navigateToConversation(convId)
+      }
+      await applyConversationSelection(convId)
+    } finally {
+      selectConversationInFlight = false
+    }
+  }
+
   async function selectConversation(id: number, options: { skipRoute?: boolean } = {}) {
     const convId = normalizeConversationId(id)
     if (!convId) return
 
-    const generation = ++selectConversationGeneration
     waInboxLog('selectConversation.enqueue', {
       id: convId,
       from: selectedConversationId.value,
-      generation,
       skipRoute: options.skipRoute
     })
 
-    const run = () => runSelectConversation(convId, options, generation)
+    const run = () => runSelectConversation(convId, options)
     selectConversationChain = selectConversationChain.then(run, run)
     await selectConversationChain
   }
@@ -1191,13 +1196,15 @@ export function useWhatsappInbox() {
           return
         }
 
+        if (selectConversationInFlight) return
+
         if (selectedConversationId.value !== convId) {
-          await selectConversation(convId, { skipRoute: true })
+          await applyConversationSelection(convId, { forceMessages: true })
           return
         }
 
         if (messagesConversationId.value !== convId) {
-          await loadMessages(convId)
+          await loadMessages(convId, { force: true })
         }
       },
       { flush: 'post' }
