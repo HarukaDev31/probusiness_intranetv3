@@ -332,8 +332,7 @@ const {
   sendingTemplate,
   assignConversation,
   createManualContact,
-  savingNewContact,
-  disconnectWebSocket
+  savingNewContact
 } = useWhatsappInbox()
 
 const {
@@ -524,10 +523,5 @@ function onConversationsScroll(e: Event) {
 
 onMounted(() => {
   init()
-})
-
-onUnmounted(() => {
-  // Solo quita handlers; el canal inbox queda suscrito con el rol (evita ping-pong subscribe/unsubscribe).
-  disconnectWebSocket()
 })
 </script>

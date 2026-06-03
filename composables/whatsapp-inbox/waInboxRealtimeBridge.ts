@@ -11,16 +11,24 @@ import {
   applyMessageCreatedToStore,
   applyStatusUpdatedToStore
 } from '~/composables/whatsapp-inbox/waInboxRealtimeSync'
+import { getWaInboxUiHandlers } from '~/composables/whatsapp-inbox/waInboxUiBridge'
 
 export type WaInboxRealtimeHandlers = {
   onMessageCreated?: (payload: WaInboxWsMessageCreatedPayload) => void
   onMessageStatusUpdated?: (payload: WaInboxWsMessageStatusPayload) => void
 }
 
+/** @deprecated Usar registerWaInboxUiHandlers; se mantiene por compatibilidad con useWaInboxWebSocket */
 let activeHandlers: WaInboxRealtimeHandlers | null = null
 
 export function setWaInboxRealtimeHandlers(handlers: WaInboxRealtimeHandlers | null) {
   activeHandlers = handlers
+}
+
+function notifyUiHandlers(fn: (h: WaInboxRealtimeHandlers) => void) {
+  const ui = getWaInboxUiHandlers()
+  if (ui) fn(ui)
+  if (activeHandlers && activeHandlers !== ui) fn(activeHandlers)
 }
 
 export function dispatchWaInboxMessageCreated(raw: unknown) {
@@ -31,7 +39,7 @@ export function dispatchWaInboxMessageCreated(raw: unknown) {
     conversation_id: payloadConversationId(p)
   } as WaInboxWsMessageCreatedPayload
   applyMessageCreatedToStore(payload)
-  activeHandlers?.onMessageCreated?.(payload)
+  notifyUiHandlers((h) => h.onMessageCreated?.(payload))
 }
 
 export function dispatchWaInboxMessageStatusUpdated(raw: unknown) {
@@ -47,5 +55,5 @@ export function dispatchWaInboxMessageStatusUpdated(raw: unknown) {
     message_id: messageId
   } as WaInboxWsMessageStatusPayload
   applyStatusUpdatedToStore(payload)
-  activeHandlers?.onMessageStatusUpdated?.(payload)
+  notifyUiHandlers((h) => h.onMessageStatusUpdated?.(payload))
 }

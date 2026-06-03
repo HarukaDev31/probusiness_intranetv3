@@ -7,6 +7,9 @@ let echoInstance: Echo | null = null
 let isInitializing = false
 let isInitialized = false
 
+/** Mapa compartido entre todas las llamadas a useEcho() (evita re-suscribir o perder canales). */
+const sharedActiveChannels = ref<Map<string, Channel | PresenceChannel>>(new Map())
+
 /** Eventos ya enlazados al socket Pusher (solo una vez por canal+evento). */
 const boundHandlersByChannel = new Map<string, Set<string>>()
 /** Último callback por canal+evento (se actualiza en cada subscribe sin re-bind). */
@@ -33,7 +36,7 @@ async function loadPusherConstructor(): Promise<PusherConstructor> {
 export const useEcho = () => {
   const isConnected = ref(false)
   const error = ref<Error | null>(null)
-  const activeChannels = ref<Map<string, Channel | PresenceChannel>>(new Map())
+  const activeChannels = sharedActiveChannels
   const config = useRuntimeConfig()
 
   const initializeEcho = async (echoConfig: EchoConfig) => {
@@ -306,7 +309,7 @@ export const useEcho = () => {
     echoInstance = null
     isInitialized = false
     isInitializing = false
-    activeChannels.value.clear()
+    sharedActiveChannels.value.clear()
     boundHandlersByChannel.clear()
     handlerCallbacksByChannel.clear()
     isConnected.value = false

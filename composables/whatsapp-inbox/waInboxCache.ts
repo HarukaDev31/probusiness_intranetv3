@@ -124,6 +124,11 @@ export function useWaInboxCache() {
     return entry
   }
 
+  /** Mensajes en caché sin TTL (sincronización WS con chat abierto). */
+  function getMessagesEntry(conversationId: number) {
+    return cache.messagesByConvId[conversationId] ?? null
+  }
+
   function setMessages(
     conversationId: number,
     messages: WaInboxMessage[],
@@ -175,6 +180,7 @@ export function useWaInboxCache() {
     upsertConversation,
     appendMessage,
     getMessages,
+    getMessagesEntry,
     setMessages,
     invalidateConversations,
     invalidateMessages,

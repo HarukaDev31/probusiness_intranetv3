@@ -9,6 +9,8 @@ import WhatsappInboxView from '~/components/whatsapp-inbox/WhatsappInboxView/ind
 
 definePageMeta({
   layout: 'default',
-  middleware: ['whatsapp-inbox-coordinacion']
+  middleware: ['whatsapp-inbox-coordinacion'],
+  /** Misma instancia al cambiar de /whatsapp-inbox/6 → /7 (evita onUnmounted que cortaba WS UI). */
+  key: 'whatsapp-inbox'
 })
 </script>
