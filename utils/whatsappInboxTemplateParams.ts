@@ -156,18 +156,35 @@ export function acceptedTypesForParam(
   return ['.pdf']
 }
 
+/** Límites Meta (bytes) para encabezados de plantilla. */
+export const WA_INBOX_HEADER_MAX_BYTES = {
+  image: 5 * 1024 * 1024,
+  video: 16 * 1024 * 1024,
+  document: 100 * 1024 * 1024
+} as const
+
+export function maxFileSizeForParam(
+  def: WaInboxTemplateParamDef,
+  tpl?: WaInboxTemplate | null
+): number {
+  const kind = tpl ? resolveParamFileKind(def, tpl) : 'document'
+  if (kind === 'image') return WA_INBOX_HEADER_MAX_BYTES.image
+  if (kind === 'video') return WA_INBOX_HEADER_MAX_BYTES.video
+  return WA_INBOX_HEADER_MAX_BYTES.document
+}
+
 export function uploadMessageForParam(
   def: WaInboxTemplateParamDef,
   tpl?: WaInboxTemplate | null
 ): string {
   const kind = tpl ? resolveParamFileKind(def, tpl) : 'document'
   if (kind === 'image') {
-    return 'Sube una imagen (JPG, PNG, GIF o WebP) para el encabezado de la plantilla'
+    return 'Imagen JPG/PNG/GIF/WebP, máximo 5 MB (límite WhatsApp)'
   }
   if (kind === 'video') {
-    return 'Sube un video MP4 o 3GP para el encabezado de la plantilla'
+    return 'Video MP4 o 3GP, máximo 16 MB'
   }
-  return 'Sube un PDF para el encabezado de la plantilla'
+  return 'PDF para el encabezado de la plantilla'
 }
 
 export function fileMatchesParamKind(

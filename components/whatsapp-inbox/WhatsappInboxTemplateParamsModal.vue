@@ -27,6 +27,7 @@
               v-if="def.type === 'file' && template"
               :model-files="filesByParam[def.name] ?? []"
               :accepted-types="acceptedTypesForParam(def, template)"
+              :max-file-size="maxFileSizeForParam(def, template)"
               :custom-message="uploadMessageForParam(def, template)"
               :immediate="true"
               :show-save-button="false"
@@ -75,6 +76,7 @@ import {
   fileMatchesParamKind,
   fileParamsFilled,
   getTemplateParamDefs,
+  maxFileSizeForParam,
   paramTypeBadgeColor,
   paramTypeLabel,
   resolveParamFileKind,

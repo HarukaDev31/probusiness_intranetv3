@@ -161,6 +161,12 @@ export function useWhatsappInbox() {
     if (selectedConversationId.value === convId && idx >= 0) {
       const patch = payload.message ?? { delivery_status: payload.delivery_status }
       messages.value[idx] = { ...messages.value[idx], ...patch }
+      if (patch.delivery_status === 'failed') {
+        showError(
+          'No llegó a WhatsApp',
+          patch.failed_reason || 'Meta rechazó la entrega. Revisa tamaño o formato del archivo.'
+        )
+      }
       const cached = cache.getMessages(convId)
       if (cached) {
         cache.setMessages(convId, messages.value, cached.conversationPatch)
@@ -385,6 +391,7 @@ export function useWhatsappInbox() {
       }
       cache.setMessages(conv.id, messages.value)
       patchConversationAfterOutbound(conv, msg.body || '[Template enviado]', msg)
+      showSuccess('Plantilla enviada', 'Registrada en el chat. Si ves ✗ después, el archivo puede ser demasiado grande para WhatsApp.')
     } catch (e: any) {
       showError('Error', e?.message || 'No se pudo enviar la plantilla')
     } finally {
