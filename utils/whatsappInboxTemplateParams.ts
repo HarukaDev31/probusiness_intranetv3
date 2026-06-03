@@ -151,7 +151,7 @@ export function acceptedTypesForParam(
     return ['.jpg', '.jpeg', '.png', '.gif', '.webp']
   }
   if (kind === 'video') {
-    return ['.mp4']
+    return ['.mp4', '.mov', '.webm', '.mkv', '.m4v', '.avi']
   }
   return ['.pdf']
 }
@@ -159,7 +159,8 @@ export function acceptedTypesForParam(
 /** Límites Meta (bytes) para encabezados de plantilla. */
 export const WA_INBOX_HEADER_MAX_BYTES = {
   image: 5 * 1024 * 1024,
-  video: 16 * 1024 * 1024,
+  /** Entrada de video: el servidor convierte; Meta acepta hasta 16 MB ya convertido. */
+  video: 80 * 1024 * 1024,
   document: 100 * 1024 * 1024
 } as const
 
@@ -182,7 +183,7 @@ export function uploadMessageForParam(
     return 'Imagen JPG/PNG/GIF/WebP, máximo 5 MB (límite WhatsApp)'
   }
   if (kind === 'video') {
-    return 'MP4 con H.264 y audio AAC, máximo 16 MB (no Opus ni WebM)'
+    return 'MP4, MOV, WebM… El servidor lo convierte para WhatsApp (máx. 80 MB, puede tardar un poco)'
   }
   return 'PDF para el encabezado de la plantilla'
 }
@@ -205,15 +206,14 @@ export function fileMatchesParamKind(
     return file.type.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)
   }
   if (kind === 'video') {
-    if (ext !== '.mp4') return false
-    return file.type === 'video/mp4' || file.type === '' || file.type.startsWith('video/')
+    const videoExts = ['.mp4', '.mov', '.webm', '.mkv', '.m4v', '.avi']
+    if (!videoExts.includes(ext)) return false
+    return file.type === '' || file.type.startsWith('video/')
   }
   return false
 }
 
 /** Texto de ayuda cuando la plantilla lleva video en encabezado. */
 export function templateVideoHeaderHint(): string {
-  return 'Si Meta rechaza el video (#131053), conviértelo a MP4 con H.264 y AAC. '
-    + 'Ejemplo: ffmpeg -i entrada.mp4 -c:v libx264 -profile:v main -pix_fmt yuv420p '
-    + '-c:a aac -movflags +faststart salida.mp4'
+  return 'Sube el video tal como está (MP4, MOV, WebM, etc.). El servidor lo convierte a formato WhatsApp (H.264 + AAC) antes de enviar. Puede tardar hasta un minuto.'
 }

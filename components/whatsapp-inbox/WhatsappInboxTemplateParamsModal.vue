@@ -69,6 +69,7 @@
         label="Enviar plantilla"
         :disabled="!canSend"
         :loading="sending"
+        :label="sending && template?.header_format === 'VIDEO' ? 'Convirtiendo y enviando…' : 'Enviar plantilla'"
         @click="emitSend"
       />
     </template>
