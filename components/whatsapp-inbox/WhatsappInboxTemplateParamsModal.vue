@@ -56,10 +56,23 @@
           Esta plantilla no requiere parámetros.
         </p>
 
-        <UCard v-if="previewText" variant="outline" color="info" :ui="{ body: 'p-3 text-xs sm:p-3' }">
-          <p class="mb-1 font-semibold text-info">Vista previa</p>
-          <p class="whitespace-pre-wrap text-muted">{{ previewText }}</p>
-        </UCard>
+        <div v-if="showDocumentPreview || previewText" class="space-y-2">
+          <p class="text-xs font-semibold text-muted">Vista previa en WhatsApp</p>
+          <WhatsappInboxDocumentBubble
+            v-if="showDocumentPreview"
+            :url="previewDocumentUrl || '#'"
+            :nombre="previewDocumentName"
+            :caption="previewText"
+          />
+          <UCard
+            v-else-if="previewText"
+            variant="outline"
+            color="info"
+            :ui="{ body: 'p-3 text-xs sm:p-3' }"
+          >
+            <p class="whitespace-pre-wrap text-muted">{{ previewText }}</p>
+          </UCard>
+        </div>
       </div>
     </template>
     <template #footer>
@@ -77,7 +90,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onUnmounted, ref, watch } from 'vue'
 import FileUploader from '~/components/commons/FileUploader.vue'
+import WhatsappInboxDocumentBubble from '~/components/whatsapp-inbox/WhatsappInboxDocumentBubble.vue'
 import type { WaInboxTemplate, WaInboxTemplateParamDef } from '~/types/whatsapp-inbox'
 import {
   acceptedTypesForParam,
@@ -85,6 +100,7 @@ import {
   fileMatchesParamKind,
   fileParamsFilled,
   getTemplateParamDefs,
+  headerFormatToFileKind,
   maxFileSizeForParam,
   paramTypeBadgeColor,
   paramTypeLabel,
@@ -121,6 +137,51 @@ const paramDefs = computed(() =>
 const previewText = computed(() => {
   if (!props.template) return ''
   return buildTemplatePreview(props.template.text, paramDefs.value, textValues.value)
+})
+
+const showDocumentPreview = computed(() => {
+  if (!props.template) return false
+  if (headerFormatToFileKind(props.template.header_format) === 'document') return true
+  return paramDefs.value.some(
+    (d) => d.type === 'file' && resolveParamFileKind(d, props.template!) === 'document'
+  )
+})
+
+const previewDocumentFile = computed(() => {
+  if (!props.template || !showDocumentPreview.value) return null
+  const tpl = props.template
+  for (const def of paramDefs.value) {
+    if (def.type !== 'file' || resolveParamFileKind(def, tpl) !== 'document') continue
+    const f = filesByParam.value[def.name]?.[0]
+    if (f) return f
+  }
+  return null
+})
+
+const previewDocumentName = computed(
+  () => previewDocumentFile.value?.name || 'documento.pdf'
+)
+
+const previewDocumentUrl = ref<string | null>(null)
+
+watch(
+  previewDocumentFile,
+  (file) => {
+    if (previewDocumentUrl.value) {
+      URL.revokeObjectURL(previewDocumentUrl.value)
+      previewDocumentUrl.value = null
+    }
+    if (file) {
+      previewDocumentUrl.value = URL.createObjectURL(file)
+    }
+  },
+  { immediate: true }
+)
+
+onUnmounted(() => {
+  if (previewDocumentUrl.value) {
+    URL.revokeObjectURL(previewDocumentUrl.value)
+  }
 })
 
 const canSend = computed(() => {

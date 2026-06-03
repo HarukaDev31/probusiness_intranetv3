@@ -27,6 +27,16 @@ import {
 const CONVERSATIONS_PER_PAGE = 30
 const WA_INBOX_BASE_PATH = '/coordinacion/whatsapp-inbox'
 
+/** Evita peticiones duplicadas en paralelo (varios watchers / init / select). */
+const inflight = {
+  session: null as Promise<void> | null,
+  templates: null as Promise<void> | null,
+  assignable: null as Promise<void> | null,
+  conversationsKey: '' as string,
+  conversations: null as Promise<void> | null,
+  messages: new Map<number, Promise<void>>()
+}
+
 export function useWhatsappInbox() {
   const route = useRoute()
   const router = useRouter()
@@ -266,7 +276,6 @@ export function useWhatsappInbox() {
         await selectConversation(conv.id, { skipRoute: true })
       } else {
         await loadMessages(conv.id)
-        await loadTemplates({ background: true })
       }
 
       if (needsCanonicalUrl && route.path !== canonicalPath) {
@@ -286,16 +295,37 @@ export function useWhatsappInbox() {
     ensureSelectedConversation()
   }
 
-  async function loadSession(options: { background?: boolean } = {}) {
-    const cached = cache.getSession()
+  function markConversationRead(conversationId: number) {
+    WhatsappInboxService.markRead(conversationId).catch(() => {})
+    const c = allConversations.value.find((x) => x.id === conversationId)
+    if (c) {
+      c.unread_count = 0
+      cache.patchConversation(conversationId, { unread_count: 0 })
+    }
+  }
+
+  async function loadSession(options: { background?: boolean; force?: boolean } = {}) {
+    const cached = !options.force ? cache.getSession() : null
     if (cached) {
       session.value = cached
-      if (!options.background) return
+      if (!options.force) return
     }
 
-    const res = await WhatsappInboxService.getSession()
-    session.value = res?.data ?? null
-    cache.setSession(session.value)
+    if (inflight.session && !options.force) {
+      await inflight.session
+      return
+    }
+
+    const run = async () => {
+      const res = await WhatsappInboxService.getSession()
+      session.value = res?.data ?? null
+      cache.setSession(session.value)
+    }
+
+    inflight.session = run().then(() => undefined).finally(() => {
+      inflight.session = null
+    })
+    await inflight.session
   }
 
   async function loadConversations(
@@ -310,8 +340,14 @@ export function useWhatsappInbox() {
       if (cached) {
         allConversations.value = cached
         ensureSelectedConversation()
-        if (!options.background && !options.force) return
+        if (!options.force) return
       }
+    }
+
+    const convKey = `${filter.value}|${search.value.trim()}|${page}|${append ? 1 : 0}`
+    if (inflight.conversations && inflight.conversationsKey === convKey && !options.force) {
+      await inflight.conversations
+      return
     }
 
     if (append) {
@@ -323,50 +359,61 @@ export function useWhatsappInbox() {
     }
     error.value = null
 
-    try {
-      const res = await WhatsappInboxService.getConversations({
-        filter: filter.value,
-        search: search.value.trim() || undefined,
-        per_page: CONVERSATIONS_PER_PAGE,
-        page
-      })
-      const rows = Array.isArray(res?.data) ? res.data : []
-      if (append) {
-        const seen = new Set(allConversations.value.map((c) => c.id))
-        const merged = [...allConversations.value]
-        for (const row of rows) {
-          if (!seen.has(row.id)) merged.push(row)
+    const fetchConversations = async () => {
+      try {
+        const res = await WhatsappInboxService.getConversations({
+          filter: filter.value,
+          search: search.value.trim() || undefined,
+          per_page: CONVERSATIONS_PER_PAGE,
+          page
+        })
+        const rows = Array.isArray(res?.data) ? res.data : []
+        if (append) {
+          const seen = new Set(allConversations.value.map((c) => c.id))
+          const merged = [...allConversations.value]
+          for (const row of rows) {
+            if (!seen.has(row.id)) merged.push(row)
+          }
+          allConversations.value = sortConversationsList(merged)
+        } else {
+          allConversations.value = rows
         }
-        allConversations.value = sortConversationsList(merged)
-      } else {
-        allConversations.value = rows
-      }
 
-      if (res?.pagination) {
-        conversationsPagination.value = {
-          current_page: Number(res.pagination.current_page) || page,
-          last_page: Number(res.pagination.last_page) || 1,
-          per_page: Number(res.pagination.per_page) || CONVERSATIONS_PER_PAGE,
-          total: Number(res.pagination.total) || rows.length
+        if (res?.pagination) {
+          conversationsPagination.value = {
+            current_page: Number(res.pagination.current_page) || page,
+            last_page: Number(res.pagination.last_page) || 1,
+            per_page: Number(res.pagination.per_page) || CONVERSATIONS_PER_PAGE,
+            total: Number(res.pagination.total) || rows.length
+          }
         }
-      }
 
-      if (page === 1 && !search.value.trim()) {
-        cache.setAllConversations(allConversations.value)
-      }
-      ensureSelectedConversation()
-    } catch (e: any) {
-      if (!append) {
-        if (!useCache || !cache.getAllConversations()) {
-          error.value = e?.message || 'No se pudo cargar conversaciones'
-          allConversations.value = []
+        if (page === 1 && !search.value.trim()) {
+          cache.setAllConversations(allConversations.value)
         }
+        ensureSelectedConversation()
+      } catch (e: any) {
+        if (!append) {
+          if (!useCache || !cache.getAllConversations()) {
+            error.value = e?.message || 'No se pudo cargar conversaciones'
+            allConversations.value = []
+          }
+        }
+      } finally {
+        loadingConversations.value = false
+        loadingMoreConversations.value = false
+        refreshing.value = false
       }
-    } finally {
-      loadingConversations.value = false
-      loadingMoreConversations.value = false
-      refreshing.value = false
     }
+
+    inflight.conversationsKey = convKey
+    inflight.conversations = fetchConversations().finally(() => {
+      if (inflight.conversationsKey === convKey) {
+        inflight.conversations = null
+        inflight.conversationsKey = ''
+      }
+    })
+    await inflight.conversations
   }
 
   async function loadAllConversations(options: { background?: boolean; force?: boolean } = {}) {
@@ -383,58 +430,63 @@ export function useWhatsappInbox() {
     })
   }
 
-  async function loadMessages(conversationId: number, options: { background?: boolean } = {}) {
-    const cached = cache.getMessages(conversationId)
-    if (cached) {
-      messages.value = cached.messages
-      if (cached.conversationPatch) {
-        cache.patchConversation(conversationId, cached.conversationPatch)
-        const idx = allConversations.value.findIndex((c) => c.id === conversationId)
-        if (idx >= 0) {
-          allConversations.value[idx] = { ...allConversations.value[idx], ...cached.conversationPatch }
-        }
-      }
-      if (!options.background) {
-        WhatsappInboxService.markRead(conversationId).catch(() => {})
-        const c = allConversations.value.find((x) => x.id === conversationId)
-        if (c) {
-          c.unread_count = 0
-          cache.patchConversation(conversationId, { unread_count: 0 })
-        }
-      }
-      if (!options.background) return
+  async function loadMessages(
+    conversationId: number,
+    options: { background?: boolean; force?: boolean } = {}
+  ) {
+    const pending = inflight.messages.get(conversationId)
+    if (pending && !options.force) {
+      await pending
+      return
     }
 
-    if (!cached) {
+    const run = async () => {
+      const cached = !options.force ? cache.getMessages(conversationId) : null
+      if (cached) {
+        messages.value = cached.messages
+        if (cached.conversationPatch) {
+          cache.patchConversation(conversationId, cached.conversationPatch)
+          const idx = allConversations.value.findIndex((c) => c.id === conversationId)
+          if (idx >= 0) {
+            allConversations.value[idx] = {
+              ...allConversations.value[idx],
+              ...cached.conversationPatch
+            }
+          }
+        }
+        markConversationRead(conversationId)
+        if (!options.force) return
+      }
+
       loadingMessages.value = true
+      try {
+        const res = await WhatsappInboxService.getMessages(conversationId, { per_page: 200 })
+        messages.value = Array.isArray(res?.data) ? res.data : []
+        const convPatch = res?.conversation as Partial<WaInboxConversation> | undefined
+        cache.setMessages(conversationId, messages.value, convPatch)
+        if (convPatch) {
+          cache.patchConversation(conversationId, convPatch)
+          const idx = allConversations.value.findIndex((c) => c.id === conversationId)
+          if (idx >= 0) {
+            allConversations.value[idx] = { ...allConversations.value[idx], ...convPatch }
+          }
+        }
+        markConversationRead(conversationId)
+      } catch (e: any) {
+        if (!cached) {
+          showError('Error', e?.message || 'No se pudo cargar mensajes')
+          messages.value = []
+        }
+      } finally {
+        loadingMessages.value = false
+      }
     }
 
-    try {
-      const res = await WhatsappInboxService.getMessages(conversationId, { per_page: 200 })
-      messages.value = Array.isArray(res?.data) ? res.data : []
-      const convPatch = res?.conversation as Partial<WaInboxConversation> | undefined
-      cache.setMessages(conversationId, messages.value, convPatch)
-      if (convPatch) {
-        cache.patchConversation(conversationId, convPatch)
-        const idx = allConversations.value.findIndex((c) => c.id === conversationId)
-        if (idx >= 0) {
-          allConversations.value[idx] = { ...allConversations.value[idx], ...convPatch }
-        }
-      }
-      await WhatsappInboxService.markRead(conversationId)
-      const c = allConversations.value.find((x) => x.id === conversationId)
-      if (c) {
-        c.unread_count = 0
-        cache.patchConversation(conversationId, { unread_count: 0 })
-      }
-    } catch (e: any) {
-      if (!cached) {
-        showError('Error', e?.message || 'No se pudo cargar mensajes')
-        messages.value = []
-      }
-    } finally {
-      loadingMessages.value = false
-    }
+    const task = run().finally(() => {
+      inflight.messages.delete(conversationId)
+    })
+    inflight.messages.set(conversationId, task)
+    await task
   }
 
   async function selectConversation(id: number, options: { skipRoute?: boolean } = {}) {
@@ -445,10 +497,7 @@ export function useWhatsappInbox() {
         await router.push(target)
       }
     }
-    await Promise.all([
-      loadMessages(id),
-      loadTemplates({ background: true })
-    ])
+    await loadMessages(id)
   }
 
   function patchConversationAfterOutbound(
@@ -606,36 +655,60 @@ export function useWhatsappInbox() {
     const cached = !options.force ? cache.getTemplates() : null
     if (cached?.length) {
       templates.value = cached
-      if (!options.background && !options.force) return
+      if (!options.force) return
+    }
+
+    if (inflight.templates && !options.force) {
+      await inflight.templates
+      return
     }
 
     if (!options.background) {
       loadingTemplates.value = true
     }
 
-    try {
-      const res = await WhatsappInboxService.getTemplates()
-      templates.value = Array.isArray(res?.data) ? res.data : []
-      cache.setTemplates(templates.value)
-    } catch {
-      if (!cached?.length) {
-        templates.value = []
+    const run = async () => {
+      try {
+        const res = await WhatsappInboxService.getTemplates()
+        templates.value = Array.isArray(res?.data) ? res.data : []
+        cache.setTemplates(templates.value)
+      } catch {
+        if (!cached?.length) {
+          templates.value = []
+        }
+      } finally {
+        loadingTemplates.value = false
       }
-    } finally {
-      loadingTemplates.value = false
     }
+
+    inflight.templates = run().then(() => undefined).finally(() => {
+      inflight.templates = null
+    })
+    await inflight.templates
   }
 
-  async function loadAssignableUsers(options: { background?: boolean } = {}) {
-    const cached = cache.getAssignable()
+  async function loadAssignableUsers(options: { background?: boolean; force?: boolean } = {}) {
+    const cached = !options.force ? cache.getAssignable() : null
     if (cached) {
       assignableUsers.value = cached
-      if (!options.background) return
+      if (!options.force) return
     }
 
-    const res = await WhatsappInboxService.getAssignableUsers()
-    assignableUsers.value = Array.isArray(res?.data) ? res.data : []
-    cache.setAssignable(assignableUsers.value)
+    if (inflight.assignable && !options.force) {
+      await inflight.assignable
+      return
+    }
+
+    const run = async () => {
+      const res = await WhatsappInboxService.getAssignableUsers()
+      assignableUsers.value = Array.isArray(res?.data) ? res.data : []
+      cache.setAssignable(assignableUsers.value)
+    }
+
+    inflight.assignable = run().then(() => undefined).finally(() => {
+      inflight.assignable = null
+    })
+    await inflight.assignable
   }
 
   function connectWebSocket() {
@@ -682,13 +755,9 @@ export function useWhatsappInbox() {
 
     await syncConversationFromRoute()
 
-    if (selectedConversationId.value) {
-      const id = selectedConversationId.value
-      const msgCached = cache.getMessages(id)
-      if (msgCached) {
-        messages.value = msgCached.messages
-      }
-      loadMessages(id, { background: true })
+    // Con slug en URL, selectConversation ya cargó mensajes. Sin slug, solo auto-selección.
+    if (selectedConversationId.value && !getRouteConversationSlug()) {
+      await loadMessages(selectedConversationId.value)
     }
   }
 

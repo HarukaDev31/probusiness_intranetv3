@@ -20,7 +20,13 @@ Los envíos de plantillas Meta de **coordinación** (`fromNumber consolidado` + 
 | **1 — Programático** | `META_WHATSAPP_QUEUE` | `SendCoordinacionWhatsAppJob` | `Programático · Rotulado · carga …` |
 | **2 — Envío inbox** | `META_WHATSAPP_INBOX_QUEUE` | `SendWaInboxOutboundJob` | `Inbox envío · Rotulado · carga …` |
 
-Flujo: el batch 1 registra en `wa_inbox_*` (pending o sync). Al terminar batch 1 (`finally`), se arma el batch 2 solo con mensajes `delivery_status=pending` (Meta Graph).
+Flujo: el batch 1 registra en `wa_inbox_*` (pending o sync). Al terminar batch 1 (`finally`), se encadena el batch 2 (`Bus::chain`) en orden `sort_order`, con pausa configurable (`META_WHATSAPP_INBOX_OUTBOUND_STEP_DELAY`, default 2 s) entre envíos Meta para que el teléfono del cliente reciba los mensajes en orden.
+
+**Media en chat:** plantillas con PDF/imagen en S3 (ej. `templates/CONSIDERATIONS.pdf`) se muestran con URL firmada (`OBJECT_STORAGE_INBOX_DISPLAY_PRESIGNED=true`), no CDN, para evitar Access Denied.
+
+## Carga en el front (inbox)
+
+Al abrir un chat: **1×** `messages`, **1×** `read` (si había no leídos). Plantillas (`templates`), sesión, asignables y lista de conversaciones se piden **una vez por sesión** (caché en memoria ~45s–1h); no se repiten al cambiar de chat. Botón actualizar fuerza refresco.
 
 Envíos **sueltos** (un solo `queueCoordinacionWhatsApp` sin batch programático) o **intranet manual** siguen despachando `SendWaInboxOutboundJob` al instante.
 
@@ -33,7 +39,7 @@ Tablas: `whatsapp_coordinacion_batches` (`laravel_batch_id`, `outbound_laravel_b
 
 ## Payload
 
-- **`chat_preview`**: texto visible en el inbox (antes `bitrix_message`; el backend acepta ambos por compatibilidad).
+- **`chat_preview`** (opcional): el inbox arma el texto desde la **plantilla Meta** (misma fuente que `/templates` en la intranet) sustituyendo `body_parameters`. Solo hace falta pasar copy manual si el texto difiere del template (legacy) o si Graph no tiene la plantilla en caché.
 - Opcional: `contact_name` para el sidebar.
 
 ## Puntos de entrada (revisados)

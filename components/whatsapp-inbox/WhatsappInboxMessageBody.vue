@@ -54,6 +54,14 @@
         <UIcon name="i-heroicons-musical-note" class="size-8 shrink-0 text-primary" />
         <span class="truncate text-sm">Audio</span>
       </button>
+      <WhatsappInboxDocumentBubble
+        v-else-if="showDocumentBubble"
+        :url="mediaUrl"
+        :nombre="mediaNombre"
+        :caption="captionEnBurbuja"
+        :inverted="direction === 'out'"
+        @abrir="abrirMedia()"
+      />
       <SoporteTiChatAdjuntoMensaje
         v-else
         :url="mediaUrl"
@@ -83,6 +91,7 @@ import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 import type { FileItem } from '~/types/commons/file'
 import SoporteTiChatReplyPreview from '~/components/soporte-ti/SoporteTiChatReplyPreview.vue'
 import SoporteTiChatAdjuntoMensaje from '~/components/soporte-ti/SoporteTiChatAdjuntoMensaje.vue'
+import WhatsappInboxDocumentBubble from '~/components/whatsapp-inbox/WhatsappInboxDocumentBubble.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import { esImagenInlineAdjunto, extensionAdjunto } from '~/utils/soporteTiChatAdjunto'
 
@@ -115,7 +124,27 @@ const showAsImage = computed(() => {
   return esImagenInlineAdjunto(mediaNombre.value, props.msg.media_mime || undefined)
 })
 
+const showDocumentBubble = computed(() => {
+  if (!mediaUrl.value || showAsImage.value) return false
+  if (props.msg.message_type === 'video' || props.msg.message_type === 'audio') return false
+  if (
+    props.msg.message_type === 'document' ||
+    props.msg.message_type === 'template' ||
+    props.msg.is_template
+  ) {
+    return true
+  }
+  return !esImagenInlineAdjunto(mediaNombre.value, props.msg.media_mime || undefined)
+})
+
+const captionEnBurbuja = computed(() => {
+  const t = props.msg.body?.trim() || ''
+  if (!t || t === mediaNombre.value) return ''
+  return t
+})
+
 const textoVisible = computed(() => {
+  if (showDocumentBubble.value && captionEnBurbuja.value) return false
   const t = props.msg.body?.trim() || ''
   if (!t) return false
   if (mediaUrl.value && t === mediaNombre.value) return false
