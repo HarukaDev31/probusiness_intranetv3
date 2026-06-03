@@ -14,7 +14,7 @@ import {
 } from '~/composables/whatsapp-inbox/waInboxRealtimeSync'
 import { getWaInboxUiHandlers } from '~/composables/whatsapp-inbox/waInboxUiBridge'
 import { getWaInboxLiveHandlers } from '~/composables/whatsapp-inbox/waInboxLiveBridge'
-import { waInboxLog, waInboxWarn } from '~/composables/whatsapp-inbox/waInboxWsLog'
+import { waInboxLog, waInboxTrace, waInboxWarn } from '~/composables/whatsapp-inbox/waInboxWsLog'
 
 export type WaInboxRealtimeHandlers = {
   onMessageCreated?: (payload: WaInboxWsMessageCreatedPayload) => void
@@ -65,6 +65,7 @@ function notifyUiHandlers(
 }
 
 export function dispatchWaInboxMessageCreated(raw: unknown) {
+  waInboxTrace('dispatch.messageCreated.raw')
   const p = parseWaInboxWsPayload<WaInboxWsMessageCreatedPayload>(raw)
   const convId = payloadConversationId(p)
   if (!convId || !p?.message) {
@@ -89,6 +90,7 @@ export function dispatchWaInboxMessageCreated(raw: unknown) {
 }
 
 export function dispatchWaInboxMessageStatusUpdated(raw: unknown) {
+  waInboxTrace('dispatch.statusUpdated.raw')
   const p = parseWaInboxWsPayload<WaInboxWsMessageStatusPayload>(raw)
   const conversationId = payloadConversationId(p)
   const messageId =

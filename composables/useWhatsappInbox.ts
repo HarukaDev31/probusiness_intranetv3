@@ -916,12 +916,18 @@ export function useWhatsappInbox() {
 
   function connectWebSocket() {
     if (!import.meta.client) return
+
     try {
       ensureWaInboxEchoChannel()
+    } catch (err) {
+      waInboxWarn('connect.ensureFailed', { err: String(err) })
+    }
+
+    try {
       registerWaInboxUiHandlers(inboxRealtimeHandlers)
       bindWaInboxLiveHandlers(inboxRealtimeHandlers)
       waInboxWs.connect(inboxRealtimeHandlers)
-      waInboxLog('connect.ok', {
+      waInboxTrace('connect.ok', {
         path: route.path,
         selected: selectedConversationId.value,
         echo: Boolean(getEchoInstance()),
@@ -929,7 +935,7 @@ export function useWhatsappInbox() {
         liveHandlers: Boolean(getWaInboxLiveHandlers())
       })
     } catch (err) {
-      waInboxWarn('connect.error', { err: String(err) })
+      waInboxWarn('connect.handlersFailed', { err: String(err) })
     }
   }
 

@@ -1,14 +1,13 @@
-import { getAllEventHandlers } from '~/config/websocket/channels'
 import { WA_INBOX_WS_CHANNEL, WA_INBOX_WS_EVENTS } from '~/constants/whatsappInboxWs'
 import { useEcho } from '~/composables/websocket/useEcho'
 import {
   dispatchWaInboxMessageCreated,
   dispatchWaInboxMessageStatusUpdated
 } from '~/composables/whatsapp-inbox/waInboxRealtimeBridge'
-import { waInboxLog, waInboxWarn } from '~/composables/whatsapp-inbox/waInboxWsLog'
+import { waInboxLog, waInboxTrace, waInboxWarn } from '~/composables/whatsapp-inbox/waInboxWsLog'
 
 /**
- * Re-enlaza callbacks del canal inbox (p. ej. tras remount o si el plugin suscribió antes que los handlers).
+ * Re-enlaza callbacks del canal inbox (actualiza handler en bindChannelHandlers sin re-suscribir).
  */
 export function ensureWaInboxEchoChannel() {
   if (!import.meta.client) return
@@ -20,30 +19,36 @@ export function ensureWaInboxEchoChannel() {
     return
   }
 
-  try {
-    const allHandlers = getAllEventHandlers()
-    const onCreated = allHandlers[WA_INBOX_WS_EVENTS.MESSAGE_CREATED] ?? dispatchWaInboxMessageCreated
-    const onStatus =
-      allHandlers[WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED]
-      ?? dispatchWaInboxMessageStatusUpdated
+  if (typeof subscribeToChannel !== 'function') {
+    waInboxWarn('channel.ensure.invalid', { reason: 'subscribeToChannel missing' })
+    return
+  }
 
+  try {
     subscribeToChannel({
       name: WA_INBOX_WS_CHANNEL,
       type: 'private',
       handlers: [
-        { event: WA_INBOX_WS_EVENTS.MESSAGE_CREATED, callback: onCreated },
-        { event: WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED, callback: onStatus }
+        {
+          event: WA_INBOX_WS_EVENTS.MESSAGE_CREATED,
+          callback: dispatchWaInboxMessageCreated
+        },
+        {
+          event: WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED,
+          callback: dispatchWaInboxMessageStatusUpdated
+        }
       ]
     })
 
-    const status = getChannelStatus(WA_INBOX_WS_CHANNEL)
-    waInboxLog('channel.ensure.ok', {
+    const status = typeof getChannelStatus === 'function'
+      ? getChannelStatus(WA_INBOX_WS_CHANNEL)
+      : null
+    waInboxTrace('channel.ensure.ok', {
       channel: WA_INBOX_WS_CHANNEL,
-      subscribed: status?.isSubscribed ?? false,
-      usesRegistryCreated: Boolean(allHandlers[WA_INBOX_WS_EVENTS.MESSAGE_CREATED]),
-      usesRegistryStatus: Boolean(allHandlers[WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED])
+      subscribed: status?.isSubscribed ?? false
     })
   } catch (err) {
     waInboxWarn('channel.ensure.error', { err: String(err) })
+    throw err
   }
 }
