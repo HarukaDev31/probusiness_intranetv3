@@ -93,7 +93,7 @@
             type="button"
             class="flex w-full gap-2 border-b border-default px-3 py-2.5 text-left transition-colors"
             :class="convRowClass(c)"
-            @click="selectConversation(c.id)"
+            @click="onSelectConversation(c.id)"
           >
             <div class="relative shrink-0">
               <UAvatar
@@ -448,6 +448,14 @@ const assignSelectItems = computed(() => [
   { label: 'Sin asignar', value: 0 },
   ...assignableUsers.value.map((u) => ({ label: u.name, value: u.id }))
 ])
+
+async function onSelectConversation(id: number) {
+  try {
+    await selectConversation(id)
+  } catch (err) {
+    console.error('[WaInbox] Error al abrir conversación:', err)
+  }
+}
 
 function convRowClass(c: WaInboxConversation) {
   const classes: string[] = ['hover:bg-elevated/50']

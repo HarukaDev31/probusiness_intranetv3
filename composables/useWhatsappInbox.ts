@@ -319,6 +319,47 @@ export function useWhatsappInbox() {
     return raw?.trim() ? raw.trim() : null
   }
 
+  function normalizeConversationId(id: unknown): number | null {
+    const n = Number(id)
+    return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null
+  }
+
+  function isRouteOnConversation(convId: number): boolean {
+    const slug = getRouteConversationSlug()
+    if (!slug) return false
+    const parsed = parseWaInboxConversationSlug(slug)
+    if (!parsed) return false
+    if (parsed.kind === 'id') return parsed.id === convId
+    const conv = allConversations.value.find((c) => c.id === convId)
+    return Boolean(conv?.phone_e164 === parsed.phoneE164)
+  }
+
+  async function navigateToConversation(convId: number) {
+    const target = waInboxConversationPath(convId)
+    try {
+      await navigateTo(target)
+      await nextTick()
+      waInboxLog('navigate.ok', { convId, target, slug: getRouteConversationSlug() })
+    } catch (err) {
+      waInboxWarn('navigate.failed', { convId, target, err: String(err) })
+    }
+  }
+
+  function conversationIdFromSlug(slug: string): number | null {
+    const parsed = parseWaInboxConversationSlug(slug)
+    if (!parsed) return null
+    if (parsed.kind === 'id') return parsed.id
+    const byPhone = findConversationInList(allConversations.value, parsed)
+    if (byPhone) return byPhone.id
+    const digits = slug.replace(/\D+/g, '')
+    const asId = parseInt(digits, 10)
+    if (asId > 0) {
+      const byId = allConversations.value.find((c) => c.id === asId)
+      if (byId) return byId.id
+    }
+    return null
+  }
+
   function isMessagesHydrated(conversationId: number, candidate: WaInboxMessage[]) {
     if (selectedConversationId.value !== conversationId) return false
     if (messagesConversationId.value !== conversationId) return false
@@ -692,21 +733,29 @@ export function useWhatsappInbox() {
   }
 
   async function selectConversation(id: number, options: { skipRoute?: boolean } = {}) {
-    waInboxLog('selectConversation', { id, from: selectedConversationId.value })
+    const convId = normalizeConversationId(id)
+    if (!convId) return
+
+    const prevId = selectedConversationId.value
+    const switched = prevId !== convId
+
+    waInboxLog('selectConversation', { id: convId, from: prevId, skipRoute: options.skipRoute })
     connectWebSocket()
     syncConversationsFromStore()
-    selectedConversationId.value = id
-    hydrateMessagesFromCache(id)
-    if (!options.skipRoute) {
-      const target = waInboxConversationPath(id)
-      if (route.path !== target) {
-        await router.push(target)
-      }
+    selectedConversationId.value = convId
+    hydrateMessagesFromCache(convId)
+
+    if (!options.skipRoute && !isRouteOnConversation(convId)) {
+      await navigateToConversation(convId)
     }
-    if (selectedConversationId.value !== id) return
-    await loadMessages(id)
+
+    if (selectedConversationId.value !== convId) return
+
+    await loadMessages(convId, {
+      force: switched || messagesConversationId.value !== convId
+    })
     syncConversationsFromStore()
-    syncOpenMessagesFromStore(id)
+    syncOpenMessagesFromStore(convId)
   }
 
   function patchConversationAfterOutbound(
@@ -1053,36 +1102,37 @@ export function useWhatsappInbox() {
     }, 'Actualizando…')
   }
 
-  watch(
-    () => getRouteConversationSlug(),
-    async (slug, prev) => {
-      if (!slug) {
-        if (prev) {
-          selectedConversationId.value = null
-          messages.value = []
-          messagesConversationId.value = null
+  if (import.meta.client) {
+    watch(
+      () => getRouteConversationSlug(),
+      async (slug, prev) => {
+        if (!slug) {
+          if (prev) {
+            selectedConversationId.value = null
+            messages.value = []
+            messagesConversationId.value = null
+          }
+          return
         }
-        return
-      }
 
-      const parsed = parseWaInboxConversationSlug(slug)
-      if (!parsed) {
-        await resolveRouteConversation(slug)
-        return
-      }
-      if (parsed.kind === 'id' && selectedConversationId.value === parsed.id) {
-        if (messagesConversationId.value !== parsed.id) {
-          await loadMessages(parsed.id)
+        const convId = conversationIdFromSlug(slug)
+        if (!convId) {
+          await resolveRouteConversation(slug)
+          return
         }
-        return
-      }
-      if (parsed.kind === 'phone') {
-        const sel = allConversations.value.find((c) => c.id === selectedConversationId.value)
-        if (sel?.phone_e164 === parsed.phoneE164) return
-      }
-      await resolveRouteConversation(slug)
-    }
-  )
+
+        if (selectedConversationId.value !== convId) {
+          await selectConversation(convId, { skipRoute: true })
+          return
+        }
+
+        if (messagesConversationId.value !== convId) {
+          await loadMessages(convId)
+        }
+      },
+      { flush: 'post' }
+    )
+  }
 
   watch(filter, () => {
     loadConversations({ page: 1, force: true, background: true })
