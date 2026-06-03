@@ -124,6 +124,13 @@ export class WhatsappInboxService extends BaseService {
     })
   }
 
+  static async renameContact(conversationId: number, contactName: string) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/contact-name`, {
+      method: 'PATCH',
+      body: { contact_name: contactName.trim() }
+    })
+  }
+
   static async markRead(conversationId: number) {
     return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/read`, {
       method: 'PATCH'

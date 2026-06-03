@@ -943,6 +943,39 @@ export function useWhatsappInbox() {
     }, 'Asignando…')
   }
 
+  const savingRename = ref(false)
+
+  async function renameConversation(contactName: string) {
+    const conv = selectedConversation.value
+    if (!conv) return
+
+    const name = contactName.trim()
+    if (!name) {
+      showError('Nombre requerido', 'Escribe un nombre para el contacto.')
+      return
+    }
+
+    savingRename.value = true
+    try {
+      await withSpinner(async () => {
+        const res = await WhatsappInboxService.renameContact(conv.id, name)
+        if (!res?.success) {
+          throw new Error(res?.message || 'No se pudo actualizar el nombre')
+        }
+        if (res?.data) {
+          upsertConversation(res.data as WaInboxConversation)
+          syncConversationsFromStore()
+        }
+        showSuccess('Nombre actualizado', 'Se verá en la lista y en el chat abierto.')
+      }, 'Guardando…')
+    } catch (e: any) {
+      showError('Error', e?.message || 'No se pudo actualizar el nombre')
+      throw e
+    } finally {
+      savingRename.value = false
+    }
+  }
+
   async function createManualContact(payload: {
     contact_name: string
     phone: string
@@ -1255,6 +1288,8 @@ export function useWhatsappInbox() {
     sendComposerMessage,
     sendTemplateMessage,
     assignConversation,
+    renameConversation,
+    savingRename,
     createManualContact,
     loadTemplates
   }

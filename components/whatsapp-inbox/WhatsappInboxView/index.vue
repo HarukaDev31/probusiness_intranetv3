@@ -156,6 +156,15 @@
               @update:model-value="onAssign"
             />
             <UButton
+              icon="i-heroicons-pencil-square"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              aria-label="Renombrar contacto"
+              title="Renombrar contacto"
+              @click="renameContactOpen = true"
+            />
+            <UButton
               icon="i-heroicons-document-text"
               color="primary"
               variant="soft"
@@ -274,6 +283,13 @@
       :saving="savingNewContact"
       @save="onNewContactSave"
     />
+    <WhatsappInboxRenameContactModal
+      v-model:open="renameContactOpen"
+      :initial-name="selectedConversation?.contact_name"
+      :phone-display="selectedConversation?.phone_display"
+      :saving="savingRename"
+      @save="onRenameContactSave"
+    />
   </UCard>
 </template>
 
@@ -292,6 +308,7 @@ import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
 import WhatsappInboxTemplatePickerModal from '~/components/whatsapp-inbox/WhatsappInboxTemplatePickerModal.vue'
 import WhatsappInboxTemplateParamsModal from '~/components/whatsapp-inbox/WhatsappInboxTemplateParamsModal.vue'
 import WhatsappInboxNewContactModal from '~/components/whatsapp-inbox/WhatsappInboxNewContactModal.vue'
+import WhatsappInboxRenameContactModal from '~/components/whatsapp-inbox/WhatsappInboxRenameContactModal.vue'
 import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
 import WhatsappInboxComposer from '~/components/whatsapp-inbox/WhatsappInboxComposer.vue'
 import WhatsappInboxMessageBody from '~/components/whatsapp-inbox/WhatsappInboxMessageBody.vue'
@@ -331,8 +348,10 @@ const {
   sendTemplateMessage,
   sendingTemplate,
   assignConversation,
+  renameConversation,
   createManualContact,
-  savingNewContact
+  savingNewContact,
+  savingRename
 } = useWhatsappInbox()
 
 const {
@@ -351,6 +370,16 @@ const templatePickerOpen = ref(false)
 const templateParamsOpen = ref(false)
 const templateForParams = ref<WaInboxTemplate | null>(null)
 const newContactOpen = ref(false)
+const renameContactOpen = ref(false)
+
+async function onRenameContactSave(name: string) {
+  try {
+    await renameConversation(name)
+    renameContactOpen.value = false
+  } catch {
+    /* modal de error en composable */
+  }
+}
 
 async function onNewContactSave(payload: {
   contact_name: string
@@ -435,6 +464,7 @@ async function onComposerSend(payload: WaInboxComposerSendPayload) {
 
 watch(selectedConversationId, () => {
   replyTarget.value = null
+  renameContactOpen.value = false
 })
 
 const filterOptions: { value: WaInboxFilter; label: string }[] = [
