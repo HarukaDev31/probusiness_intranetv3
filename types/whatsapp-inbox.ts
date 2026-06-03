@@ -36,6 +36,7 @@ export interface WaInboxMessage {
   sent_at?: string | null
   time_label?: string
   delivery_status?: string | null
+  failed_reason?: string | null
   is_template?: boolean
   template_name?: string | null
   message_type?: string

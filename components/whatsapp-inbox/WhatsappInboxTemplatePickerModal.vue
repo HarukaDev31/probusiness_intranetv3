@@ -16,12 +16,28 @@
           <UCard variant="outline" color="neutral" :ui="{ body: 'p-3 sm:p-3' }">
             <p class="text-sm font-semibold text-primary">{{ tpl.label || tpl.name }}</p>
             <p class="mt-1 line-clamp-2 text-xs text-muted">{{ tpl.text }}</p>
-            <p
-              v-if="getTemplateParamDefs(tpl).length"
-              class="mt-2 text-[10px] text-muted"
-            >
-              {{ getTemplateParamDefs(tpl).length }} parámetro(s)
-            </p>
+            <div v-if="getTemplateParamDefs(tpl).length" class="mt-2 space-y-1.5">
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-muted">
+                Parámetros
+              </p>
+              <ul class="flex flex-wrap gap-1.5">
+                <li
+                  v-for="def in getTemplateParamDefs(tpl)"
+                  :key="def.name"
+                  class="inline-flex max-w-full items-center gap-1 rounded-md border border-default bg-elevated/60 px-1.5 py-0.5"
+                >
+                  <span class="truncate text-[10px] font-medium text-highlighted">
+                    {{ def.label || def.name }}
+                  </span>
+                  <UBadge
+                    :color="paramTypeBadgeColor(def)"
+                    variant="subtle"
+                    size="xs"
+                    :label="paramTypeLabel(def)"
+                  />
+                </li>
+              </ul>
+            </div>
           </UCard>
         </button>
       </div>
@@ -34,7 +50,11 @@
 
 <script setup lang="ts">
 import type { WaInboxTemplate } from '~/types/whatsapp-inbox'
-import { getTemplateParamDefs } from '~/utils/whatsappInboxTemplateParams'
+import {
+  getTemplateParamDefs,
+  paramTypeBadgeColor,
+  paramTypeLabel
+} from '~/utils/whatsappInboxTemplateParams'
 
 const open = defineModel<boolean>('open', { default: false })
 

@@ -136,6 +136,11 @@ export function useWhatsappInbox() {
     const msg = payload.message
     if (!msg?.id) return
 
+    // No mostrar burbuja fantasma si otro cliente encoló y falló (solo actualización por estado).
+    if (msg.delivery_status === 'failed') {
+      return
+    }
+
     if (selectedConversationId.value === convId) {
       if (!messages.value.some((m) => m.id === msg.id)) {
         messages.value = [...messages.value, msg]
@@ -354,15 +359,29 @@ export function useWhatsappInbox() {
         template_name: templateName,
         params,
         files
-      })
-      const msg = res?.data as WaInboxMessage | undefined
-      if (msg?.id) {
-        if (!messages.value.some((m) => m.id === msg.id)) {
-          messages.value = [...messages.value, { ...msg, delivery_status: msg.delivery_status ?? 'pending' }]
-        }
-        cache.setMessages(conv.id, messages.value)
-        patchConversationAfterOutbound(conv, msg.body || '[Template enviado]', msg)
+      }) as { success?: boolean; message?: string; data?: WaInboxMessage }
+
+      if (res?.success === false) {
+        throw new Error(res?.message || 'No se pudo enviar la plantilla')
       }
+
+      const msg = res?.data
+      if (!msg?.id) {
+        throw new Error('Respuesta inválida del servidor')
+      }
+
+      if (msg.delivery_status === 'failed') {
+        throw new Error(msg.failed_reason || 'La plantilla no se pudo enviar')
+      }
+
+      if (!messages.value.some((m) => m.id === msg.id)) {
+        messages.value = [...messages.value, msg]
+      } else {
+        const idx = messages.value.findIndex((m) => m.id === msg.id)
+        if (idx >= 0) messages.value[idx] = msg
+      }
+      cache.setMessages(conv.id, messages.value)
+      patchConversationAfterOutbound(conv, msg.body || '[Template enviado]', msg)
     } catch (e: any) {
       showError('Error', e?.message || 'No se pudo enviar la plantilla')
     } finally {

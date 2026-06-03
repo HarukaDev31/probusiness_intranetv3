@@ -8,6 +8,26 @@ export function isFileTemplateParam(name: string, explicitType?: string) {
   return FILE_PARAM_PATTERN.test(name)
 }
 
+export function paramTypeLabel(def: WaInboxTemplateParamDef): string {
+  if (def.type === 'file') {
+    const kind = (def.file_kind || 'document').toLowerCase()
+    if (kind === 'image') return 'Archivo (imagen)'
+    if (kind === 'video') return 'Archivo (video)'
+    return 'Archivo (documento)'
+  }
+  return 'Texto'
+}
+
+export function paramTypeBadgeColor(def: WaInboxTemplateParamDef): 'neutral' | 'info' | 'warning' {
+  if (def.type === 'file') {
+    const kind = (def.file_kind || 'document').toLowerCase()
+    if (kind === 'image') return 'info'
+    if (kind === 'video') return 'warning'
+    return 'neutral'
+  }
+  return 'neutral'
+}
+
 export function getTemplateParamDefs(tpl: WaInboxTemplate): WaInboxTemplateParamDef[] {
   if (tpl.param_defs?.length) {
     return tpl.param_defs

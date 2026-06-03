@@ -145,8 +145,12 @@
           </div>
         </template>
 
-        <template v-if="selectedConversation">
-          <ChatMessagesScroll class="min-h-0 flex-1 p-4">
+        <div v-if="selectedConversation" class="relative flex min-h-0 flex-1 flex-col">
+          <ChatMessagesScroll
+            ref="messagesScrollRef"
+            class="min-h-0 flex-1 p-4"
+            @scroll="onMessagesScroll"
+          >
             <p v-if="loadingMessages" class="py-8 text-center text-sm text-muted">Cargando mensajes…</p>
             <template v-else>
               <div
@@ -169,14 +173,27 @@
                 >
                   <span class="whitespace-pre-wrap">{{ msg.body }}</span>
                 </UCard>
-                <span class="mt-0.5 flex items-center gap-1 text-[10px] text-muted">
+                <span
+                  class="mt-0.5 flex items-center gap-1 text-[10px] text-muted"
+                  :title="msg.delivery_status === 'failed' ? (msg.failed_reason || 'Error de envío') : undefined"
+                >
                   {{ msg.time_label }}
-                  <span v-if="msg.direction === 'out'">{{ deliveryIcon(msg.delivery_status) }}</span>
+                  <span
+                    v-if="msg.direction === 'out'"
+                    :class="msg.delivery_status === 'failed' ? 'text-error' : ''"
+                  >
+                    {{ deliveryIcon(msg.delivery_status) }}
+                  </span>
                 </span>
               </div>
             </template>
           </ChatMessagesScroll>
-        </template>
+          <WhatsappInboxJumpToBottomButton
+            :visible="showJumpButton && !loadingMessages"
+            :count="newBelowCount"
+            @click="jumpToBottom"
+          />
+        </div>
 
         <div v-else class="flex flex-1 items-center justify-center text-sm text-muted">
           Selecciona una conversación
@@ -243,7 +260,9 @@ import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
 import WhatsappInboxTemplatePickerModal from '~/components/whatsapp-inbox/WhatsappInboxTemplatePickerModal.vue'
 import WhatsappInboxTemplateParamsModal from '~/components/whatsapp-inbox/WhatsappInboxTemplateParamsModal.vue'
+import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
 import { useModal } from '~/composables/commons/useModal'
+import { useWaInboxChatScroll } from '~/composables/whatsapp-inbox/useWaInboxChatScroll'
 
 const panelCardUi = {
   body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0',
@@ -276,6 +295,16 @@ const {
   assignConversation,
   disconnectWebSocket
 } = useWhatsappInbox()
+
+const {
+  scrollRef: messagesScrollRef,
+  newBelowCount,
+  showJumpButton,
+  onMessagesScroll,
+  jumpToBottom,
+  scrollToBottom,
+  resetScrollState
+} = useWaInboxChatScroll(messages)
 
 const { showError: showModalError } = useModal()
 
@@ -349,6 +378,16 @@ function deliveryIcon(status?: string | null) {
 function onAssign(val: number | undefined) {
   assignConversation(val && val > 0 ? val : null)
 }
+
+watch(selectedConversationId, () => {
+  resetScrollState()
+})
+
+watch(loadingMessages, async (loading, wasLoading) => {
+  if (wasLoading && !loading) {
+    await scrollToBottom(false)
+  }
+})
 
 onMounted(() => {
   init()

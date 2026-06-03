@@ -11,7 +11,18 @@
         </UCard>
 
         <template v-for="def in paramDefs" :key="def.name">
-          <UFormField :label="def.label || def.name">
+          <UFormField>
+            <template #label>
+              <span class="inline-flex flex-wrap items-center gap-1.5">
+                <span>{{ def.label || def.name }}</span>
+                <UBadge
+                  :color="paramTypeBadgeColor(def)"
+                  variant="subtle"
+                  size="xs"
+                  :label="paramTypeLabel(def)"
+                />
+              </span>
+            </template>
             <FileUploader
               v-if="def.type === 'file'"
               :model-files="filesByParam[def.name] ?? []"
@@ -63,6 +74,8 @@ import {
   buildTemplatePreview,
   fileParamsFilled,
   getTemplateParamDefs,
+  paramTypeBadgeColor,
+  paramTypeLabel,
   textParamsFilled
 } from '~/utils/whatsappInboxTemplateParams'
 
