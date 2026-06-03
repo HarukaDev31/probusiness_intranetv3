@@ -336,7 +336,7 @@ function deliveryIcon(status?: string | null) {
   if (status === 'delivered') return '✓✓'
   if (status === 'sent') return '✓'
   if (status === 'failed') return '✗'
-  if (status === 'pending') return '…'
+  if (status === 'pending') return '🕐'
   return ''
 }
 

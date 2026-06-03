@@ -46,7 +46,7 @@ function applyClientFilter(
 
 export function useWhatsappInbox() {
   const { withSpinner } = useSpinner()
-  const { showSuccess, showError } = useModal()
+  const { showError } = useModal()
   const { currentId } = useUserRole()
   const cache = useWaInboxCache()
   const waInboxWs = useWaInboxWebSocket()
@@ -150,14 +150,27 @@ export function useWhatsappInbox() {
   }
 
   function applyRealtimeStatus(payload: WaInboxWsMessageStatusPayload) {
-    if (selectedConversationId.value !== payload.conversation_id) return
+    const convId = payload.conversation_id
     const idx = messages.value.findIndex((m) => m.id === payload.message_id)
-    if (idx < 0) return
-    const patch = payload.message ?? { delivery_status: payload.delivery_status }
-    messages.value[idx] = { ...messages.value[idx], ...patch }
-    const cached = cache.getMessages(payload.conversation_id)
-    if (cached) {
-      cache.setMessages(payload.conversation_id, messages.value, cached.conversationPatch)
+    if (selectedConversationId.value === convId && idx >= 0) {
+      const patch = payload.message ?? { delivery_status: payload.delivery_status }
+      messages.value[idx] = { ...messages.value[idx], ...patch }
+      const cached = cache.getMessages(convId)
+      if (cached) {
+        cache.setMessages(convId, messages.value, cached.conversationPatch)
+      }
+    } else if (convId) {
+      const cached = cache.getMessages(convId)
+      if (cached) {
+        const mi = cached.messages.findIndex((m) => m.id === payload.message_id)
+        if (mi >= 0) {
+          cached.messages[mi] = {
+            ...cached.messages[mi],
+            ...(payload.message ?? { delivery_status: payload.delivery_status })
+          }
+          cache.setMessages(convId, cached.messages, cached.conversationPatch)
+        }
+      }
     }
   }
 
@@ -283,6 +296,21 @@ export function useWhatsappInbox() {
     ])
   }
 
+  function patchConversationAfterOutbound(
+    conv: WaInboxConversation,
+    preview: string,
+    msg?: WaInboxMessage
+  ) {
+    const sentAt = msg?.sent_at ?? new Date().toISOString()
+    upsertConversation({
+      ...conv,
+      last_message_preview: preview.slice(0, 200),
+      last_message_at: sentAt,
+      last_message_time_label: msg?.time_label
+        || new Date(sentAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+    })
+  }
+
   async function sendTextMessage() {
     const conv = selectedConversation.value
     const text = draftMessage.value.trim()
@@ -292,40 +320,44 @@ export function useWhatsappInbox() {
       return
     }
 
-    await withSpinner(async () => {
+    draftMessage.value = ''
+
+    try {
       const res = await WhatsappInboxService.sendMessage(conv.id, text)
-      if (res?.data) {
-        messages.value = [...messages.value, res.data]
+      const msg = res?.data as WaInboxMessage | undefined
+      if (msg?.id) {
+        if (!messages.value.some((m) => m.id === msg.id)) {
+          messages.value = [...messages.value, { ...msg, delivery_status: msg.delivery_status ?? 'pending' }]
+        }
         cache.setMessages(conv.id, messages.value)
+        patchConversationAfterOutbound(conv, text, msg)
       }
-      draftMessage.value = ''
-      cache.invalidateConversations()
-      await loadAllConversations({ background: true, force: true })
-    }, 'Enviando…')
-    showSuccess('Enviado', 'El mensaje se encoló para envío por WhatsApp.')
+    } catch (e: any) {
+      draftMessage.value = text
+      showError('Error', e?.message || 'No se pudo enviar el mensaje')
+    }
   }
 
   async function sendTemplateMessage(templateName: string, params: Record<string, string>) {
     const conv = selectedConversation.value
     if (!conv) return
 
-    await withSpinner(async () => {
+    try {
       const res = await WhatsappInboxService.sendTemplate(conv.id, {
         template_name: templateName,
         params
       })
-      if (res?.data) {
-        messages.value = [...messages.value, res.data]
+      const msg = res?.data as WaInboxMessage | undefined
+      if (msg?.id) {
+        if (!messages.value.some((m) => m.id === msg.id)) {
+          messages.value = [...messages.value, { ...msg, delivery_status: msg.delivery_status ?? 'pending' }]
+        }
         cache.setMessages(conv.id, messages.value)
+        patchConversationAfterOutbound(conv, msg.body || '[Template enviado]', msg)
       }
-      cache.invalidateConversations()
-      cache.invalidateMessages(conv.id)
-      await loadAllConversations({ background: true, force: true })
-      if (selectedConversationId.value) {
-        await loadMessages(selectedConversationId.value, { background: true })
-      }
-    }, 'Enviando plantilla…')
-    showSuccess('Plantilla', 'En cola de envío por Meta.')
+    } catch (e: any) {
+      showError('Error', e?.message || 'No se pudo enviar la plantilla')
+    }
   }
 
   async function assignConversation(userId: number | null) {
