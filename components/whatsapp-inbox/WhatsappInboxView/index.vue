@@ -295,7 +295,6 @@ import WhatsappInboxNewContactModal from '~/components/whatsapp-inbox/WhatsappIn
 import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
 import WhatsappInboxComposer from '~/components/whatsapp-inbox/WhatsappInboxComposer.vue'
 import WhatsappInboxMessageBody from '~/components/whatsapp-inbox/WhatsappInboxMessageBody.vue'
-import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { useWaInboxChatScroll } from '~/composables/whatsapp-inbox/useWaInboxChatScroll'
 import { formatDatePe } from '~/utils/formatters'
@@ -346,7 +345,6 @@ const {
 } = useWaInboxChatScroll(messages, selectedConversationId, loadingMessages)
 
 const { showError: showModalError } = useModal()
-const { withSpinner } = useSpinner()
 
 const replyTarget = ref<WaInboxComposerReplyTarget | null>(null)
 
@@ -430,9 +428,7 @@ function iniciarRespuesta(msg: WaInboxMessage) {
 
 async function onComposerSend(payload: WaInboxComposerSendPayload) {
   try {
-    await withSpinner(async () => {
-      await sendComposerMessage(payload)
-    }, 'Enviando…')
+    await sendComposerMessage(payload)
   } catch {
     /* modal en composable */
   }

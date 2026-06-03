@@ -7,8 +7,10 @@ let echoInstance: Echo | null = null
 let isInitializing = false
 let isInitialized = false
 
-/** Evita duplicar callbacks; se limpia al hacer leave del canal. */
+/** Eventos ya enlazados al socket Pusher (solo una vez por canal+evento). */
 const boundHandlersByChannel = new Map<string, Set<string>>()
+/** Último callback por canal+evento (se actualiza en cada subscribe sin re-bind). */
+const handlerCallbacksByChannel = new Map<string, Map<string, (data: unknown) => void>>()
 
 type PusherConstructor = typeof import('pusher-js').default
 
@@ -156,11 +158,15 @@ export const useEcho = () => {
 
   const bindChannelHandlers = (channelName: string, channelInstance: any, handlers: WebSocketChannel['handlers']) => {
     const boundKeys = boundHandlersByChannel.get(channelName) ?? new Set<string>()
+    let channelCallbacks = handlerCallbacksByChannel.get(channelName)
+    if (!channelCallbacks) {
+      channelCallbacks = new Map()
+      handlerCallbacksByChannel.set(channelName, channelCallbacks)
+    }
 
     handlers.forEach(({ event, callback }) => {
       const eventKey = event.startsWith('.') ? event : `.${event}`
-      if (boundKeys.has(eventKey)) return
-      boundKeys.add(eventKey)
+      channelCallbacks!.set(eventKey, callback)
 
       const eventNamePusher = eventKey.slice(1)
       const eventNameEcho = eventKey
@@ -172,8 +178,11 @@ export const useEcho = () => {
         if (process.dev && eventNamePusher.startsWith('WaInbox')) {
           console.log('[WS] WhatsApp Inbox:', eventNamePusher, data)
         }
-        callback(data)
+        handlerCallbacksByChannel.get(channelName)?.get(eventKey)?.(data)
       }
+
+      if (boundKeys.has(eventKey)) return
+      boundKeys.add(eventKey)
 
       try {
         if (!channelInstance || typeof channelInstance !== 'object') {
@@ -273,6 +282,7 @@ export const useEcho = () => {
         echoInstance?.leave(channelName)
         activeChannels.value.delete(channelName)
         boundHandlersByChannel.delete(channelName)
+        handlerCallbacksByChannel.delete(channelName)
       } catch (err) {
         console.error(`❌ Error desuscribiendo del canal ${channelName}:`, err)
       }
@@ -300,6 +310,7 @@ export const useEcho = () => {
     isInitializing = false
     activeChannels.value.clear()
     boundHandlersByChannel.clear()
+    handlerCallbacksByChannel.clear()
     isConnected.value = false
     error.value = null
   }

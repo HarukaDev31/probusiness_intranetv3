@@ -1,3 +1,4 @@
+import { onScopeDispose } from 'vue'
 import { WhatsappInboxService } from '~/services/whatsappInbox/whatsappInboxService'
 import { useWaInboxCache } from '~/composables/whatsapp-inbox/waInboxCache'
 import { useWaInboxWebSocket } from '~/composables/whatsapp-inbox/useWaInboxWebSocket'
@@ -36,6 +37,8 @@ const inflight = {
   conversations: null as Promise<void> | null,
   messages: new Map<number, Promise<void>>()
 }
+
+const pendingDeliverySyncTimers = new Map<number, ReturnType<typeof setTimeout>>()
 
 function waMessageNumericId(id: unknown): number {
   const n = Number(id)
@@ -287,6 +290,14 @@ export function useWhatsappInbox() {
         messages.value = next
         messagesConversationId.value = convId
         syncMessagesCacheForConversation(convId)
+
+        if (patch.delivery_status && patch.delivery_status !== 'pending') {
+          const t = pendingDeliverySyncTimers.get(convId)
+          if (t) {
+            clearTimeout(t)
+            pendingDeliverySyncTimers.delete(convId)
+          }
+        }
 
         if (patch.delivery_status === 'failed') {
           showError(
@@ -707,6 +718,9 @@ export function useWhatsappInbox() {
           delivery_status: msg!.delivery_status ?? 'pending'
         }
         upsertMessageInConversation(conv.id, outbound)
+        if (outbound.delivery_status === 'pending') {
+          schedulePendingDeliverySync(conv.id)
+        }
         const preview = text || msg!.body || `[${msg!.message_type || 'archivo'}]`
         patchConversationAfterOutbound(conv, preview, outbound)
       }
@@ -752,6 +766,9 @@ export function useWhatsappInbox() {
       }
 
       upsertMessageInConversation(conv.id, msg)
+      if (msg.delivery_status === 'pending') {
+        schedulePendingDeliverySync(conv.id)
+      }
       patchConversationAfterOutbound(conv, msg.body || '[Template enviado]', msg)
       showSuccess('Plantilla enviada', 'Registrada en el chat. Si ves ✗ después, el archivo puede ser demasiado grande para WhatsApp.')
     } catch (e: any) {
@@ -883,6 +900,33 @@ export function useWhatsappInbox() {
 
   function disconnectWebSocket() {
     waInboxWs.disconnect()
+  }
+
+  async function refreshPendingDeliveryIfNeeded(conversationId: number) {
+    if (selectedConversationId.value !== conversationId) return
+    const hasPending = messages.value.some(
+      (m) => m.direction === 'out' && m.delivery_status === 'pending'
+    )
+    if (!hasPending) return
+    await loadMessages(conversationId, { background: true, force: true })
+  }
+
+  function schedulePendingDeliverySync(conversationId: number) {
+    const prev = pendingDeliverySyncTimers.get(conversationId)
+    if (prev) clearTimeout(prev)
+    pendingDeliverySyncTimers.set(
+      conversationId,
+      setTimeout(() => {
+        pendingDeliverySyncTimers.delete(conversationId)
+        void refreshPendingDeliveryIfNeeded(conversationId)
+      }, 3000)
+    )
+  }
+
+  if (import.meta.client) {
+    const onEchoReady = () => connectWebSocket()
+    window.addEventListener('echo-ready', onEchoReady)
+    onScopeDispose(() => window.removeEventListener('echo-ready', onEchoReady))
   }
 
   async function init() {
