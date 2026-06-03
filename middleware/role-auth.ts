@@ -47,7 +47,8 @@ export default defineNuxtRouteMiddleware((to) => {
     '/copiloto': () => {
       const { hasRole: checkRole, isCotizador, currentId } = useUserRole()
       return isCotizador.value || Number(currentId.value) === ID_JEFEVENTAS || checkRole(ROLES.ADMIN)
-    }
+    },
+    '/coordinacion/whatsapp-inbox': () => hasRole(ROLES.COORDINACION)
   }
 
   // Verificar solo si la ruta está protegida
