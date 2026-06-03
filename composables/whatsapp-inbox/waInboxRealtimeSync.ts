@@ -11,6 +11,28 @@ import {
 } from '~/composables/whatsapp-inbox/waInboxMessageUtils'
 import { waInboxLog } from '~/composables/whatsapp-inbox/waInboxWsLog'
 
+/**
+ * No leídos entrantes: incrementa en cliente y no deja que el WS pise con un valor menor (ej. siempre 1).
+ */
+function resolveUnreadCountForInbound(
+  convId: number,
+  msg: WaInboxMessage | undefined,
+  serverUnread?: number | null
+): number | undefined {
+  if (msg?.direction !== 'in') return undefined
+
+  if (viewingConversationId === convId) return 0
+
+  const cache = useWaInboxCache()
+  const existing = cache.getConversationsSnapshot().find((c) => c.id === convId)
+  const localNext = (existing?.unread_count || 0) + 1
+  const server = Number(serverUnread)
+  if (Number.isFinite(server) && server > 0) {
+    return Math.max(server, localNext)
+  }
+  return localNext
+}
+
 function conversationPatchFromMessage(msg: WaInboxMessage): Partial<WaInboxConversation> {
   const body = msg.body?.trim()
   let preview = body ? body.slice(0, 200) : ''
@@ -160,40 +182,39 @@ export function applyMessageCreatedToStore(payload: WaInboxWsMessageCreatedPaylo
 
   if (payload.conversation) {
     const patch = { ...payload.conversation } as WaInboxConversation
-    if (viewing && msg?.direction === 'in') {
-      patch.unread_count = 0
-    }
+    const unread = resolveUnreadCountForInbound(convId, msg as WaInboxMessage, patch.unread_count)
+    if (unread != null) patch.unread_count = unread
     cache.upsertConversation(patch)
     waInboxLog('store.messageCreated', {
       convId,
       source: 'payload.conversation',
       viewing,
-      direction: msg?.direction
+      direction: msg?.direction,
+      unread: patch.unread_count
     })
   } else if (msg) {
     const snap = cache.getConversationsSnapshot()
     const existing = snap.find((c) => c.id === convId)
     const previewPatch = conversationPatchFromMessage(msg as WaInboxMessage)
+    const unread = resolveUnreadCountForInbound(convId, msg as WaInboxMessage, undefined)
     if (existing) {
-      const unread =
-        msg.direction === 'in' && !viewing
-          ? (existing.unread_count || 0) + 1
-          : viewing && msg.direction === 'in'
-            ? 0
-            : existing.unread_count
       cache.patchConversation(convId, {
         ...previewPatch,
         ...(unread != null ? { unread_count: unread } : {})
       })
     } else if (previewPatch.last_message_preview) {
-      cache.patchConversation(convId, previewPatch)
+      cache.patchConversation(convId, {
+        ...previewPatch,
+        ...(unread != null ? { unread_count: unread } : {})
+      })
     }
     waInboxLog('store.messageCreated', {
       convId,
       source: 'patchFromMessage',
       viewing,
       direction: msg?.direction,
-      hasExisting: Boolean(existing)
+      hasExisting: Boolean(existing),
+      unread
     })
   }
 

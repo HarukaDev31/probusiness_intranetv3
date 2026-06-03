@@ -245,9 +245,7 @@ export function useWhatsappInbox() {
       direction: payload.message?.direction
     })
 
-    if (payload.conversation) {
-      upsertConversation(payload.conversation as WaInboxConversation)
-    }
+    // La caché ya tiene unread/preview correctos (applyMessageCreatedToStore); no pisar con payload.conversation crudo.
     syncConversationsFromStore()
 
     const msg = payload.message
