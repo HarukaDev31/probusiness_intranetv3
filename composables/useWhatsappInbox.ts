@@ -141,10 +141,7 @@ export function useWhatsappInbox() {
     if (!msg?.id) return
 
     if (selectedConversationId.value === convId) {
-      const idx = messages.value.findIndex((m) => m.id === msg.id)
-      if (idx >= 0) {
-        messages.value[idx] = { ...messages.value[idx], ...msg }
-      } else {
+      if (!messages.value.some((m) => m.id === msg.id)) {
         messages.value = [...messages.value, msg]
       }
       cache.setMessages(convId, messages.value)
