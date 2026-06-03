@@ -37,7 +37,12 @@ import {
 import { registerWaInboxUiHandlers, getWaInboxUiHandlers } from '~/composables/whatsapp-inbox/waInboxUiBridge'
 import { ensureWaInboxEchoChannel } from '~/composables/whatsapp-inbox/ensureWaInboxEchoChannel'
 import { bindWaInboxLiveHandlers, getWaInboxLiveHandlers } from '~/composables/whatsapp-inbox/waInboxLiveBridge'
-import { exposeWaInboxWsDiagnostics, waInboxLog, waInboxWarn } from '~/composables/whatsapp-inbox/waInboxWsLog'
+import {
+  exposeWaInboxWsDiagnostics,
+  waInboxLog,
+  waInboxTrace,
+  waInboxWarn
+} from '~/composables/whatsapp-inbox/waInboxWsLog'
 import { getEchoInstance } from '~/composables/websocket/useEcho'
 import { WA_INBOX_WS_CHANNEL } from '~/constants/whatsappInboxWs'
 
@@ -946,6 +951,8 @@ export function useWhatsappInbox() {
   }, { immediate: true })
 
   if (import.meta.client) {
+    waInboxTrace('inbox.composable.client', { path: route.path })
+
     exposeWaInboxWsDiagnostics(() => ({
       route: route.path,
       selectedConversationId: selectedConversationId.value,

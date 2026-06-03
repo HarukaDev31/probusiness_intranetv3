@@ -523,9 +523,13 @@ function onConversationsScroll(e: Event) {
 
 onMounted(async () => {
   try {
+    const { waInboxTrace } = await import('~/composables/whatsapp-inbox/waInboxWsLog')
+    waInboxTrace('view.mounted')
     await init()
+    waInboxTrace('view.init.done')
   } catch (err) {
-    console.error('[WaInbox] Error al iniciar:', err)
+    const { waInboxTrace } = await import('~/composables/whatsapp-inbox/waInboxWsLog')
+    waInboxTrace('view.init.error', { err: String(err) }, 'warn')
   }
 })
 </script>

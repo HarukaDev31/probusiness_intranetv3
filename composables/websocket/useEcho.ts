@@ -2,7 +2,7 @@ import Echo from 'laravel-echo'
 import type { Channel, PresenceChannel } from 'pusher-js'
 import { ref } from 'vue'
 import type { EchoConfig, WebSocketRole, WebSocketChannel } from '../../types/websocket/echo'
-import { isWaInboxWsDebug } from '~/composables/whatsapp-inbox/waInboxWsLog'
+import { waInboxTrace } from '~/composables/whatsapp-inbox/waInboxWsLog'
 
 let echoInstance: Echo | null = null
 let isInitializing = false
