@@ -37,6 +37,33 @@ const inflight = {
   messages: new Map<number, Promise<void>>()
 }
 
+function waMessageNumericId(id: unknown): number {
+  const n = Number(id)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
+function sortMessagesChronologically(list: WaInboxMessage[]): WaInboxMessage[] {
+  return [...list].sort((a, b) => {
+    const ta = a.sent_at ? new Date(a.sent_at).getTime() : 0
+    const tb = b.sent_at ? new Date(b.sent_at).getTime() : 0
+    if (ta !== tb) return ta - tb
+    return waMessageNumericId(a.id) - waMessageNumericId(b.id)
+  })
+}
+
+function mergeMessageLists(...sources: WaInboxMessage[][]): WaInboxMessage[] {
+  const byId = new Map<number, WaInboxMessage>()
+  for (const list of sources) {
+    for (const m of list) {
+      const id = waMessageNumericId(m.id)
+      if (!id) continue
+      const prev = byId.get(id)
+      byId.set(id, prev ? { ...prev, ...m, id } : { ...m, id })
+    }
+  }
+  return sortMessagesChronologically(Array.from(byId.values()))
+}
+
 export function useWhatsappInbox() {
   const route = useRoute()
   const router = useRouter()
@@ -53,6 +80,8 @@ export function useWhatsappInbox() {
   const assignableUsers = ref<WaInboxAssignableUser[]>([])
 
   const selectedConversationId = ref<number | null>(null)
+  /** Conversación a la que corresponde `messages` (evita mostrar otro chat tras cargas en paralelo). */
+  const messagesConversationId = ref<number | null>(null)
   const search = ref('')
   const filter = ref<WaInboxFilter>('todas')
   const sendingMessage = ref(false)
@@ -126,8 +155,53 @@ export function useWhatsappInbox() {
     cache.setAllConversations(allConversations.value)
   }
 
+  function findMessageIndex(list: WaInboxMessage[], messageId: unknown): number {
+    const id = waMessageNumericId(messageId)
+    if (!id) return -1
+    return list.findIndex((m) => waMessageNumericId(m.id) === id)
+  }
+
+  function syncMessagesCacheForConversation(convId: number) {
+    const cached = cache.getMessages(convId)
+    cache.setMessages(convId, messages.value, cached?.conversationPatch)
+  }
+
+  function upsertMessageInConversation(convId: number, msg: WaInboxMessage) {
+    const msgId = waMessageNumericId(msg.id)
+    if (!msgId) return
+
+    if (selectedConversationId.value === convId) {
+      const idx = findMessageIndex(messages.value, msgId)
+      const next = [...messages.value]
+      if (idx >= 0) {
+        next[idx] = { ...next[idx], ...msg, id: msgId }
+      } else {
+        next.push({ ...msg, id: msgId })
+      }
+      messages.value = next
+      messagesConversationId.value = convId
+      syncMessagesCacheForConversation(convId)
+    } else {
+      const cached = cache.getMessages(convId)
+      if (cached) {
+        const mi = findMessageIndex(cached.messages, msgId)
+        const list = [...cached.messages]
+        if (mi >= 0) {
+          list[mi] = { ...list[mi], ...msg, id: msgId }
+        } else {
+          list.push({ ...msg, id: msgId })
+        }
+        cache.setMessages(convId, list, cached.conversationPatch)
+      } else {
+        cache.setMessages(convId, [{ ...msg, id: msgId }])
+      }
+    }
+  }
+
   function applyRealtimeMessage(payload: WaInboxWsMessageCreatedPayload) {
-    const convId = payload.conversation_id
+    const convId = Number(payload.conversation_id)
+    if (!convId) return
+
     if (payload.conversation) {
       const viewing = selectedConversationId.value === convId
       const patch = { ...payload.conversation }
@@ -138,54 +212,61 @@ export function useWhatsappInbox() {
     }
 
     const msg = payload.message
-    if (!msg?.id) return
+    if (!waMessageNumericId(msg?.id)) return
 
-    if (selectedConversationId.value === convId) {
-      if (!messages.value.some((m) => m.id === msg.id)) {
-        messages.value = [...messages.value, msg]
-      }
-      cache.setMessages(convId, messages.value)
-      if (msg.direction === 'in') {
-        WhatsappInboxService.markRead(convId).catch(() => {})
-      }
-    } else {
-      cache.appendMessage(convId, msg)
+    if (
+      selectedConversationId.value === convId
+      && messagesConversationId.value !== convId
+    ) {
+      hydrateMessagesFromCache(convId)
+    }
+
+    upsertMessageInConversation(convId, msg as WaInboxMessage)
+
+    if (selectedConversationId.value === convId && msg?.direction === 'in') {
+      WhatsappInboxService.markRead(convId).catch(() => {})
     }
   }
 
   function applyRealtimeStatus(payload: WaInboxWsMessageStatusPayload) {
-    const convId = payload.conversation_id
-    const patch: Partial<WaInboxMessage> = payload.message ?? {
-      delivery_status: payload.delivery_status
+    const convId = Number(payload.conversation_id)
+    const messageId = waMessageNumericId(payload.message_id)
+    if (!convId || !messageId) return
+
+    const patch: Partial<WaInboxMessage> = {
+      ...(payload.message ?? {}),
+      id: messageId,
+      delivery_status: payload.delivery_status ?? payload.message?.delivery_status
     }
 
     if (selectedConversationId.value === convId) {
-      let idx = messages.value.findIndex((m) => m.id === payload.message_id)
-      if (idx < 0 && payload.message?.id) {
-        messages.value = [...messages.value, payload.message as WaInboxMessage]
-        idx = messages.value.length - 1
+      let idx = findMessageIndex(messages.value, messageId)
+      if (idx < 0 && payload.message) {
+        upsertMessageInConversation(convId, payload.message as WaInboxMessage)
+        idx = findMessageIndex(messages.value, messageId)
       }
       if (idx >= 0) {
-        messages.value[idx] = { ...messages.value[idx], ...patch }
+        const next = [...messages.value]
+        next[idx] = { ...next[idx], ...patch, id: messageId }
+        messages.value = next
+        messagesConversationId.value = convId
+        syncMessagesCacheForConversation(convId)
+
         if (patch.delivery_status === 'failed') {
           showError(
             'No llegó a WhatsApp',
             patch.failed_reason || 'Meta rechazó la entrega. Revisa tamaño o formato del archivo.'
           )
         }
-        const cached = cache.getMessages(convId)
-        cache.setMessages(convId, messages.value, cached?.conversationPatch)
       }
-    } else if (convId) {
+    } else {
       const cached = cache.getMessages(convId)
       if (cached) {
-        const mi = cached.messages.findIndex((m) => m.id === payload.message_id)
+        const mi = findMessageIndex(cached.messages, messageId)
         if (mi >= 0) {
-          cached.messages[mi] = {
-            ...cached.messages[mi],
-            ...(payload.message ?? { delivery_status: payload.delivery_status })
-          }
-          cache.setMessages(convId, cached.messages, cached.conversationPatch)
+          const list = [...cached.messages]
+          list[mi] = { ...list[mi], ...patch, id: messageId }
+          cache.setMessages(convId, list, cached.conversationPatch)
         }
       }
     }
@@ -198,6 +279,24 @@ export function useWhatsappInbox() {
     return raw?.trim() ? raw.trim() : null
   }
 
+  function applyMessagesForConversation(conversationId: number, list: WaInboxMessage[]) {
+    if (selectedConversationId.value !== conversationId) return
+    messages.value = list
+    messagesConversationId.value = conversationId
+  }
+
+  function hydrateMessagesFromCache(conversationId: number) {
+    const cached = cache.getMessages(conversationId)
+    if (cached) {
+      applyMessagesForConversation(conversationId, cached.messages)
+      return
+    }
+    if (selectedConversationId.value === conversationId) {
+      messages.value = []
+      messagesConversationId.value = null
+    }
+  }
+
   function ensureSelectedConversation() {
     if (getRouteConversationSlug()) return
 
@@ -205,6 +304,7 @@ export function useWhatsappInbox() {
     if (!list.length) {
       selectedConversationId.value = null
       messages.value = []
+      messagesConversationId.value = null
       return
     }
     const still = selectedConversationId.value
@@ -214,7 +314,7 @@ export function useWhatsappInbox() {
     }
   }
 
-  let resolvingRoute = false
+  let resolveRouteChain: Promise<void> = Promise.resolve()
 
   async function resolveRouteConversation(explicitSlug?: string) {
     const slug = explicitSlug ?? getRouteConversationSlug()
@@ -227,9 +327,7 @@ export function useWhatsappInbox() {
       return
     }
 
-    if (resolvingRoute) return
-    resolvingRoute = true
-    try {
+    const run = async () => {
       let conv = findConversationInList(allConversations.value, parsed)
 
       if (!conv && parsed.kind === 'id') {
@@ -264,6 +362,7 @@ export function useWhatsappInbox() {
         showError('Chat no encontrado', 'Este número o conversación no está en el inbox.')
         selectedConversationId.value = null
         messages.value = []
+        messagesConversationId.value = null
         await router.replace(WA_INBOX_BASE_PATH)
         return
       }
@@ -274,16 +373,17 @@ export function useWhatsappInbox() {
 
       if (selectedConversationId.value !== conv.id) {
         await selectConversation(conv.id, { skipRoute: true })
-      } else {
+      } else if (messagesConversationId.value !== conv.id) {
         await loadMessages(conv.id)
       }
 
       if (needsCanonicalUrl && route.path !== canonicalPath) {
         await router.replace(canonicalPath)
       }
-    } finally {
-      resolvingRoute = false
     }
+
+    resolveRouteChain = resolveRouteChain.then(run, run)
+    await resolveRouteChain
   }
 
   async function syncConversationFromRoute() {
@@ -437,13 +537,22 @@ export function useWhatsappInbox() {
     const pending = inflight.messages.get(conversationId)
     if (pending && !options.force) {
       await pending
+      if (selectedConversationId.value === conversationId && messagesConversationId.value !== conversationId) {
+        hydrateMessagesFromCache(conversationId)
+      }
       return
     }
 
     const run = async () => {
       const cached = !options.force ? cache.getMessages(conversationId) : null
       if (cached) {
-        messages.value = cached.messages
+        const localList =
+          selectedConversationId.value === conversationId
+          && messagesConversationId.value === conversationId
+            ? messages.value
+            : []
+        const mergedCached = mergeMessageLists(cached.messages, localList)
+        applyMessagesForConversation(conversationId, mergedCached)
         if (cached.conversationPatch) {
           cache.patchConversation(conversationId, cached.conversationPatch)
           const idx = allConversations.value.findIndex((c) => c.id === conversationId)
@@ -454,16 +563,29 @@ export function useWhatsappInbox() {
             }
           }
         }
-        markConversationRead(conversationId)
+        if (selectedConversationId.value === conversationId) {
+          markConversationRead(conversationId)
+        }
         if (!options.force) return
       }
 
-      loadingMessages.value = true
+      const stillSelected = () => selectedConversationId.value === conversationId
+      if (stillSelected()) {
+        loadingMessages.value = true
+      }
       try {
         const res = await WhatsappInboxService.getMessages(conversationId, { per_page: 200 })
-        messages.value = Array.isArray(res?.data) ? res.data : []
+        const rows = Array.isArray(res?.data) ? res.data : []
         const convPatch = res?.conversation as Partial<WaInboxConversation> | undefined
-        cache.setMessages(conversationId, messages.value, convPatch)
+        const cachedList = cache.getMessages(conversationId)?.messages ?? []
+        const localList =
+          selectedConversationId.value === conversationId
+          && messagesConversationId.value === conversationId
+            ? messages.value
+            : []
+        const merged = mergeMessageLists(rows, cachedList, localList)
+        cache.setMessages(conversationId, merged, convPatch)
+        applyMessagesForConversation(conversationId, merged)
         if (convPatch) {
           cache.patchConversation(conversationId, convPatch)
           const idx = allConversations.value.findIndex((c) => c.id === conversationId)
@@ -471,11 +593,14 @@ export function useWhatsappInbox() {
             allConversations.value[idx] = { ...allConversations.value[idx], ...convPatch }
           }
         }
-        markConversationRead(conversationId)
+        if (stillSelected()) {
+          markConversationRead(conversationId)
+        }
       } catch (e: any) {
-        if (!cached) {
+        if (!cached && stillSelected()) {
           showError('Error', e?.message || 'No se pudo cargar mensajes')
           messages.value = []
+          messagesConversationId.value = null
         }
       } finally {
         loadingMessages.value = false
@@ -491,12 +616,14 @@ export function useWhatsappInbox() {
 
   async function selectConversation(id: number, options: { skipRoute?: boolean } = {}) {
     selectedConversationId.value = id
+    hydrateMessagesFromCache(id)
     if (!options.skipRoute) {
       const target = waInboxConversationPath(id)
       if (route.path !== target) {
         await router.push(target)
       }
     }
+    if (selectedConversationId.value !== id) return
     await loadMessages(id)
   }
 
@@ -534,13 +661,14 @@ export function useWhatsappInbox() {
         replyToMetaMessageId: payload.replyToMetaMessageId
       })
       const msg = res?.data as WaInboxMessage | undefined
-      if (msg?.id) {
-        if (!messages.value.some((m) => m.id === msg.id)) {
-          messages.value = [...messages.value, { ...msg, delivery_status: msg.delivery_status ?? 'pending' }]
+      if (waMessageNumericId(msg?.id)) {
+        const outbound: WaInboxMessage = {
+          ...msg!,
+          delivery_status: msg!.delivery_status ?? 'pending'
         }
-        cache.setMessages(conv.id, messages.value)
-        const preview = text || msg.body || `[${msg.message_type || 'archivo'}]`
-        patchConversationAfterOutbound(conv, preview, msg)
+        upsertMessageInConversation(conv.id, outbound)
+        const preview = text || msg!.body || `[${msg!.message_type || 'archivo'}]`
+        patchConversationAfterOutbound(conv, preview, outbound)
       }
     } catch (e: any) {
       showError('Error', e?.message || 'No se pudo enviar el mensaje')
@@ -583,13 +711,7 @@ export function useWhatsappInbox() {
         throw new Error(msg.failed_reason || 'La plantilla no se pudo enviar')
       }
 
-      if (!messages.value.some((m) => m.id === msg.id)) {
-        messages.value = [...messages.value, msg]
-      } else {
-        const idx = messages.value.findIndex((m) => m.id === msg.id)
-        if (idx >= 0) messages.value[idx] = msg
-      }
-      cache.setMessages(conv.id, messages.value)
+      upsertMessageInConversation(conv.id, msg)
       patchConversationAfterOutbound(conv, msg.body || '[Template enviado]', msg)
       showSuccess('Plantilla enviada', 'Registrada en el chat. Si ves ✗ después, el archivo puede ser demasiado grande para WhatsApp.')
     } catch (e: any) {
@@ -632,6 +754,7 @@ export function useWhatsappInbox() {
         upsertConversation(conv)
         selectedConversationId.value = conv.id
         messages.value = []
+        messagesConversationId.value = conv.id
         cache.setMessages(conv.id, [], conv)
         await router.replace(waInboxConversationPath(conv.id))
         await loadMessages(conv.id)
@@ -784,6 +907,7 @@ export function useWhatsappInbox() {
         if (prev) {
           selectedConversationId.value = null
           messages.value = []
+          messagesConversationId.value = null
         }
         return
       }
@@ -793,7 +917,12 @@ export function useWhatsappInbox() {
         await resolveRouteConversation(slug)
         return
       }
-      if (parsed.kind === 'id' && selectedConversationId.value === parsed.id) return
+      if (parsed.kind === 'id' && selectedConversationId.value === parsed.id) {
+        if (messagesConversationId.value !== parsed.id) {
+          await loadMessages(parsed.id)
+        }
+        return
+      }
       if (parsed.kind === 'phone') {
         const sel = allConversations.value.find((c) => c.id === selectedConversationId.value)
         if (sel?.phone_e164 === parsed.phoneE164) return

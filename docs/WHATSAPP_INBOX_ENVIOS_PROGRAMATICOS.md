@@ -24,6 +24,24 @@ Flujo: el batch 1 registra en `wa_inbox_*` (pending o sync). Al terminar batch 1
 
 **Media en chat:** plantillas con PDF/imagen en S3 (ej. `templates/CONSIDERATIONS.pdf`) se muestran con URL firmada (`OBJECT_STORAGE_INBOX_DISPLAY_PRESIGNED=true`), no CDN, para evitar Access Denied.
 
+## Producción — jobs de cola y BD
+
+Si en logs aparece `Access denied for user 'root'@'localhost' (using password: NO)` en `ProcessWaInboxInboundJob`, el worker estaba usando `mysql_local` porque el dominio del job quedó en `localhost`.
+
+**Causa:** el webhook de Meta no envía `Origin`/`Referer`; sin host del API el job caía a `localhost`.
+
+**En `.env` del backend (recomendado):**
+
+```env
+META_WHATSAPP_INBOX_JOB_DOMAIN=intranetv2.probusiness.pe
+# o el mismo host donde corre el API (APP_URL)
+QUEUE_JOB_DB_DOMAIN=intranetv2.probusiness.pe
+```
+
+Tras desplegar el fix de `WaInboxJobContext`, al encolar desde el webhook se guarda el host del request. Reiniciar workers Horizon: `php artisan horizon:terminate`.
+
+Webhooks fallidos (`wa_inbox_webhook_logs` con `processed_at` null) pueden reprocesarse manualmente o llegarán nuevos eventos de Meta.
+
 ## Carga en el front (inbox)
 
 Al abrir un chat: **1×** `messages`, **1×** `read` (si había no leídos). Plantillas (`templates`), sesión, asignables y lista de conversaciones se piden **una vez por sesión** (caché en memoria ~45s–1h); no se repiten al cambiar de chat. Botón actualizar fuerza refresco.
