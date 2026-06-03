@@ -36,6 +36,15 @@ function isFresh(fetchedAt: number, ttl: number) {
   return fetchedAt > 0 && Date.now() - fetchedAt < ttl
 }
 
+function sortConversationsList(list: WaInboxConversation[]) {
+  return [...list].sort((a, b) => {
+    const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
+    const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0
+    if (tb !== ta) return tb - ta
+    return b.id - a.id
+  })
+}
+
 export function useWaInboxCache() {
   function getSession() {
     if (!isFresh(cache.sessionAt, TTL.session)) return null
@@ -81,7 +90,24 @@ export function useWaInboxCache() {
     const idx = cache.allConversations.findIndex((c) => c.id === id)
     if (idx >= 0) {
       cache.allConversations[idx] = { ...cache.allConversations[idx], ...patch }
+      cache.conversationsAt = Date.now()
     }
+  }
+
+  /** Actualiza lista global aunque el usuario no esté en la vista del inbox (WS). */
+  function upsertConversation(conv: WaInboxConversation) {
+    const idx = cache.allConversations.findIndex((c) => c.id === conv.id)
+    if (idx >= 0) {
+      cache.allConversations[idx] = { ...cache.allConversations[idx], ...conv }
+    } else {
+      cache.allConversations = [conv, ...cache.allConversations]
+    }
+    cache.allConversations = sortConversationsList(cache.allConversations)
+    cache.conversationsAt = Date.now()
+  }
+
+  function getConversationsSnapshot(): WaInboxConversation[] {
+    return cache.allConversations
   }
 
   function appendMessage(conversationId: number, message: WaInboxMessage) {
@@ -144,7 +170,9 @@ export function useWaInboxCache() {
     setAssignable,
     getAllConversations,
     setAllConversations,
+    getConversationsSnapshot,
     patchConversation,
+    upsertConversation,
     appendMessage,
     getMessages,
     setMessages,

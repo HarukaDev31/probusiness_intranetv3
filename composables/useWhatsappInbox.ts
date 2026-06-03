@@ -23,6 +23,12 @@ import {
   parseWaInboxConversationSlug,
   waInboxConversationPath
 } from '~/utils/whatsappInboxRoute'
+import {
+  mergeWaInboxMessage,
+  mergeMessageLists,
+  waMessageNumericId
+} from '~/composables/whatsapp-inbox/waInboxMessageUtils'
+import { setWaInboxViewingConversationId } from '~/composables/whatsapp-inbox/waInboxRealtimeSync'
 
 const CONVERSATIONS_PER_PAGE = 30
 const WA_INBOX_BASE_PATH = '/coordinacion/whatsapp-inbox'
@@ -55,101 +61,6 @@ function scheduleMarkReadApi(conversationId: number) {
 function clearMarkReadDebounce() {
   for (const t of markReadDebounce.values()) clearTimeout(t)
   markReadDebounce.clear()
-}
-
-function waMessageNumericId(id: unknown): number {
-  const n = Number(id)
-  return Number.isFinite(n) && n > 0 ? n : 0
-}
-
-const DELIVERY_STATUS_RANK: Record<string, number> = {
-  pending: 0,
-  sent: 1,
-  delivered: 2,
-  read: 3
-}
-
-/** Evita que un WS MessageCreated tardío (pending) pise un StatusUpdated (sent). */
-function mergeDeliveryStatus(
-  current?: string | null,
-  incoming?: string | null
-): string | null | undefined {
-  if (!incoming) return current
-  if (!current) return incoming
-  if (incoming === 'failed') return 'failed'
-  if (current === 'failed') return current
-  const curRank = DELIVERY_STATUS_RANK[current] ?? -1
-  const incRank = DELIVERY_STATUS_RANK[incoming] ?? -1
-  return incRank >= curRank ? incoming : current
-}
-
-function resolveIncomingDeliveryStatus(
-  payload: WaInboxWsMessageStatusPayload
-): string | null {
-  const top = typeof payload.delivery_status === 'string'
-    ? payload.delivery_status.trim()
-    : ''
-  if (top) return top
-  const nested = typeof payload.message?.delivery_status === 'string'
-    ? payload.message.delivery_status.trim()
-    : ''
-  return nested || null
-}
-
-function applyDeliveryStatusPatch(
-  prev: WaInboxMessage,
-  payload: WaInboxWsMessageStatusPayload,
-  incomingStatus: string
-): WaInboxMessage {
-  const msgId = waMessageNumericId(payload.message_id) || waMessageNumericId(prev.id)
-  const merged: WaInboxMessage = {
-    ...prev,
-    id: msgId,
-    delivery_status:
-      mergeDeliveryStatus(prev.delivery_status, incomingStatus)
-      ?? incomingStatus
-      ?? prev.delivery_status
-  }
-  const nested = payload.message
-  if (nested?.meta_message_id) {
-    merged.meta_message_id = nested.meta_message_id
-  }
-  if (nested?.failed_reason != null && nested.failed_reason !== '') {
-    merged.failed_reason = nested.failed_reason
-  }
-  return merged
-}
-
-function mergeWaInboxMessage(prev: WaInboxMessage, incoming: WaInboxMessage): WaInboxMessage {
-  const id = waMessageNumericId(incoming.id)
-  return {
-    ...prev,
-    ...incoming,
-    id,
-    delivery_status: mergeDeliveryStatus(prev.delivery_status, incoming.delivery_status) ?? incoming.delivery_status
-  }
-}
-
-function sortMessagesChronologically(list: WaInboxMessage[]): WaInboxMessage[] {
-  return [...list].sort((a, b) => {
-    const ta = a.sent_at ? new Date(a.sent_at).getTime() : 0
-    const tb = b.sent_at ? new Date(b.sent_at).getTime() : 0
-    if (ta !== tb) return ta - tb
-    return waMessageNumericId(a.id) - waMessageNumericId(b.id)
-  })
-}
-
-function mergeMessageLists(...sources: WaInboxMessage[][]): WaInboxMessage[] {
-  const byId = new Map<number, WaInboxMessage>()
-  for (const list of sources) {
-    for (const m of list) {
-      const id = waMessageNumericId(m.id)
-      if (!id) continue
-      const prev = byId.get(id)
-      byId.set(id, prev ? mergeWaInboxMessage(prev, { ...m, id }) : { ...m, id })
-    }
-  }
-  return sortMessagesChronologically(Array.from(byId.values()))
 }
 
 export function useWhatsappInbox() {
@@ -216,9 +127,9 @@ export function useWhatsappInbox() {
     const cachedAssignable = cache.getAssignable()
     if (cachedAssignable) assignableUsers.value = cachedAssignable
 
-    const cachedConvs = cache.getAllConversations()
-    if (cachedConvs) {
-      allConversations.value = cachedConvs
+    const cachedConvs = cache.getAllConversations() ?? cache.getConversationsSnapshot()
+    if (cachedConvs.length > 0) {
+      allConversations.value = [...cachedConvs]
       ensureSelectedConversation()
     }
   }
@@ -241,6 +152,21 @@ export function useWhatsappInbox() {
     }
     allConversations.value = sortConversationsList(allConversations.value)
     cache.setAllConversations(allConversations.value)
+  }
+
+  function syncConversationsFromStore() {
+    const snap = cache.getConversationsSnapshot()
+    if (snap.length > 0) {
+      allConversations.value = [...snap]
+    }
+  }
+
+  function syncOpenMessagesFromStore(convId: number) {
+    if (selectedConversationId.value !== convId) return
+    const entry = cache.getMessages(convId)
+    if (!entry) return
+    messages.value = [...entry.messages]
+    messagesConversationId.value = convId
   }
 
   function findMessageIndex(list: WaInboxMessage[], messageId: unknown): number {
@@ -290,14 +216,7 @@ export function useWhatsappInbox() {
     const convId = Number(payload.conversation_id)
     if (!convId) return
 
-    if (payload.conversation) {
-      const viewing = selectedConversationId.value === convId
-      const patch = { ...payload.conversation }
-      if (viewing) {
-        patch.unread_count = 0
-      }
-      upsertConversation(patch as WaInboxConversation)
-    }
+    syncConversationsFromStore()
 
     const msg = payload.message
     if (!waMessageNumericId(msg?.id)) return
@@ -309,7 +228,7 @@ export function useWhatsappInbox() {
       hydrateMessagesFromCache(convId)
     }
 
-    upsertMessageInConversation(convId, msg as WaInboxMessage)
+    syncOpenMessagesFromStore(convId)
 
     if (selectedConversationId.value === convId && msg?.direction === 'in') {
       markConversationRead(convId, { forceServer: true })
@@ -321,54 +240,16 @@ export function useWhatsappInbox() {
     const messageId = waMessageNumericId(payload.message_id)
     if (!convId || !messageId) return
 
-    const incomingStatus = resolveIncomingDeliveryStatus(payload)
-    if (!incomingStatus) return
+    syncConversationsFromStore()
 
     if (selectedConversationId.value === convId) {
-      let idx = findMessageIndex(messages.value, messageId)
-      if (idx < 0 && payload.message) {
-        const seed = applyDeliveryStatusPatch(
-          { ...payload.message, id: messageId } as WaInboxMessage,
-          payload,
-          incomingStatus
+      syncOpenMessagesFromStore(convId)
+      const merged = messages.value.find((m) => waMessageNumericId(m.id) === messageId)
+      if (merged?.delivery_status === 'failed') {
+        showError(
+          'No llegó a WhatsApp',
+          merged.failed_reason || 'Meta rechazó la entrega. Revisa tamaño o formato del archivo.'
         )
-        upsertMessageInConversation(convId, seed)
-        idx = findMessageIndex(messages.value, messageId)
-      }
-      if (idx >= 0) {
-        const merged = applyDeliveryStatusPatch(messages.value[idx], payload, incomingStatus)
-        const next = [...messages.value]
-        next[idx] = merged
-        messages.value = next
-        messagesConversationId.value = convId
-        syncMessagesCacheForConversation(convId)
-
-        if (merged.delivery_status === 'failed') {
-          showError(
-            'No llegó a WhatsApp',
-            merged.failed_reason || 'Meta rechazó la entrega. Revisa tamaño o formato del archivo.'
-          )
-        }
-      }
-    } else {
-      const cached = cache.getMessages(convId)
-      if (cached) {
-        const mi = findMessageIndex(cached.messages, messageId)
-        if (mi >= 0) {
-          const list = [...cached.messages]
-          list[mi] = applyDeliveryStatusPatch(list[mi], payload, incomingStatus)
-          cache.setMessages(convId, list, cached.conversationPatch)
-        } else if (payload.message) {
-          const list = [...cached.messages]
-          list.push(
-            applyDeliveryStatusPatch(
-              { ...payload.message, id: messageId } as WaInboxMessage,
-              payload,
-              incomingStatus
-            )
-          )
-          cache.setMessages(convId, list, cached.conversationPatch)
-        }
       }
     }
   }
@@ -738,6 +619,7 @@ export function useWhatsappInbox() {
         }
       } finally {
         loadingMessages.value = false
+        syncConversationsFromStore()
       }
     }
 
@@ -749,6 +631,7 @@ export function useWhatsappInbox() {
   }
 
   async function selectConversation(id: number, options: { skipRoute?: boolean } = {}) {
+    syncConversationsFromStore()
     selectedConversationId.value = id
     hydrateMessagesFromCache(id)
     if (!options.skipRoute) {
@@ -977,8 +860,13 @@ export function useWhatsappInbox() {
 
   function disconnectWebSocket() {
     clearMarkReadDebounce()
+    setWaInboxViewingConversationId(null)
     waInboxWs.disconnect()
   }
+
+  watch(selectedConversationId, (id) => {
+    setWaInboxViewingConversationId(id)
+  }, { immediate: true })
 
   async function init() {
     hydrateFromCache()

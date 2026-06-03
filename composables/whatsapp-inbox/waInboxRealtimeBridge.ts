@@ -7,6 +7,10 @@ import {
   payloadConversationId,
   payloadMessageId
 } from '~/composables/whatsapp-inbox/waInboxWsParse'
+import {
+  applyMessageCreatedToStore,
+  applyStatusUpdatedToStore
+} from '~/composables/whatsapp-inbox/waInboxRealtimeSync'
 
 export type WaInboxRealtimeHandlers = {
   onMessageCreated?: (payload: WaInboxWsMessageCreatedPayload) => void
@@ -22,10 +26,12 @@ export function setWaInboxRealtimeHandlers(handlers: WaInboxRealtimeHandlers | n
 export function dispatchWaInboxMessageCreated(raw: unknown) {
   const p = parseWaInboxWsPayload<WaInboxWsMessageCreatedPayload>(raw)
   if (!payloadConversationId(p) || !p?.message) return
-  activeHandlers?.onMessageCreated?.({
+  const payload = {
     ...p,
     conversation_id: payloadConversationId(p)
-  })
+  } as WaInboxWsMessageCreatedPayload
+  applyMessageCreatedToStore(payload)
+  activeHandlers?.onMessageCreated?.(payload)
 }
 
 export function dispatchWaInboxMessageStatusUpdated(raw: unknown) {
@@ -35,9 +41,11 @@ export function dispatchWaInboxMessageStatusUpdated(raw: unknown) {
     payloadMessageId(p)
     || Number((p?.message as { id?: unknown } | undefined)?.id)
   if (!conversationId || !Number.isFinite(messageId) || messageId <= 0) return
-  activeHandlers?.onMessageStatusUpdated?.({
+  const payload = {
     ...p!,
     conversation_id: conversationId,
     message_id: messageId
-  })
+  } as WaInboxWsMessageStatusPayload
+  applyStatusUpdatedToStore(payload)
+  activeHandlers?.onMessageStatusUpdated?.(payload)
 }
