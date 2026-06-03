@@ -323,30 +323,57 @@ const getDocumentIcon = computed(() => {
 })
 
 
+function isCrossOriginFileUrl(fileUrl: string) {
+    try {
+        return new URL(fileUrl, window.location.href).origin !== window.location.origin
+    } catch {
+        return true
+    }
+}
+
+function triggerBrowserDownload(fileUrl: string, fileName: string) {
+    const a = document.createElement('a')
+    a.href = fileUrl
+    a.download = fileName || 'archivo'
+    a.rel = 'noopener'
+    a.target = '_blank'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+}
+
 const downloadFile = async () => {
     if (!props.file?.file_url) return
-    
+
+    const fileUrl = props.file.file_url
+    const fileName = props.file.file_name || 'archivo'
+
+    // S3 presigned / CDN: fetch exige CORS en el bucket; enlace directo no.
+    if (isCrossOriginFileUrl(fileUrl)) {
+        triggerBrowserDownload(fileUrl, fileName)
+        return
+    }
+
     try {
         await withSpinner(async () => {
-            const fileUrl = props.file!.file_url!
             const response = await fetch(fileUrl)
-            
+
             if (!response.ok) {
                 throw new Error(`Error al descargar: ${response.status}`)
             }
-            
+
             const blob = await response.blob()
-            const url = window.URL.createObjectURL(blob)
+            const objectUrl = window.URL.createObjectURL(blob)
             const a = document.createElement('a')
-            a.href = url
-            a.download = props.file!.file_name || 'archivo'
+            a.href = objectUrl
+            a.download = fileName
             document.body.appendChild(a)
             a.click()
             document.body.removeChild(a)
-            window.URL.revokeObjectURL(url)
+            window.URL.revokeObjectURL(objectUrl)
         }, 'Descargando archivo...')
-    } catch (error) {
-        showError('Error al descargar archivo', 'Error al descargar archivo')
+    } catch {
+        triggerBrowserDownload(fileUrl, fileName)
     }
 }
 

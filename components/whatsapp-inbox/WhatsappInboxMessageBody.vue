@@ -149,22 +149,19 @@ const showDocumentBubble = computed(() => {
   return !esImagenInlineAdjunto(mediaNombre.value, props.msg.media_mime || undefined)
 })
 
+function isBracketMediaPlaceholder(body: string) {
+  return /^\[(image|video|document|audio|sticker)\]$/i.test(body.trim())
+}
+
 const captionEnBurbuja = computed(() => {
   const t = props.msg.body?.trim() || ''
-  if (!t || t === mediaNombre.value) return ''
+  if (!t || t === mediaNombre.value || isBracketMediaPlaceholder(t)) return ''
   return t
 })
 
 const videoCaption = computed(() =>
   props.msg.message_type === 'video' ? captionEnBurbuja.value : ''
 )
-
-function isMediaPlaceholderBody(body: string, messageType?: string) {
-  const t = body.trim().toLowerCase()
-  const type = (messageType || '').toLowerCase()
-  if (!type) return false
-  return t === `[${type}]`
-}
 
 const isMediaTypeWithoutUrl = computed(() => {
   const type = props.msg.message_type
@@ -189,20 +186,17 @@ const mediaPlaceholderLabel = computed(() => {
 })
 
 const textoVisible = computed(() => {
-  if (mediaUrl.value && props.msg.message_type) {
-    const t = props.msg.body?.trim() || ''
-    if (
-      ['image', 'video', 'document', 'audio'].includes(props.msg.message_type)
-      && (!t || isMediaPlaceholderBody(t, props.msg.message_type) || t === mediaNombre.value)
-    ) {
-      return false
-    }
-  }
-  if (isMediaTypeWithoutUrl.value) return false
-  if (showDocumentBubble.value && captionEnBurbuja.value) return false
   const t = props.msg.body?.trim() || ''
-  if (!t) return false
-  if (mediaUrl.value && t === mediaNombre.value) return false
+  if (!t || isBracketMediaPlaceholder(t)) return false
+  if (isMediaTypeWithoutUrl.value) return false
+  if (mediaUrl.value) {
+    if (showAsImage.value && !captionEnBurbuja.value) return false
+    if (props.msg.message_type === 'video' && !videoCaption.value) return false
+    if (showDocumentBubble.value && !captionEnBurbuja.value) return false
+    if (props.msg.message_type === 'audio') return false
+    if (t === mediaNombre.value) return false
+  }
+  if (showDocumentBubble.value && captionEnBurbuja.value) return false
   if (props.msg.is_template && !mediaUrl.value && t.length < 3) return true
   return true
 })
