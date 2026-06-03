@@ -37,6 +37,26 @@ const inflight = {
   messages: new Map<number, Promise<void>>()
 }
 
+/** PATCH /read agrupado; no dispara recargas de UI. */
+const markReadDebounce = new Map<number, ReturnType<typeof setTimeout>>()
+
+function scheduleMarkReadApi(conversationId: number) {
+  const prev = markReadDebounce.get(conversationId)
+  if (prev) clearTimeout(prev)
+  markReadDebounce.set(
+    conversationId,
+    setTimeout(() => {
+      markReadDebounce.delete(conversationId)
+      WhatsappInboxService.markRead(conversationId).catch(() => {})
+    }, 400)
+  )
+}
+
+function clearMarkReadDebounce() {
+  for (const t of markReadDebounce.values()) clearTimeout(t)
+  markReadDebounce.clear()
+}
+
 function waMessageNumericId(id: unknown): number {
   const n = Number(id)
   return Number.isFinite(n) && n > 0 ? n : 0
@@ -61,6 +81,43 @@ function mergeDeliveryStatus(
   const curRank = DELIVERY_STATUS_RANK[current] ?? -1
   const incRank = DELIVERY_STATUS_RANK[incoming] ?? -1
   return incRank >= curRank ? incoming : current
+}
+
+function resolveIncomingDeliveryStatus(
+  payload: WaInboxWsMessageStatusPayload
+): string | null {
+  const top = typeof payload.delivery_status === 'string'
+    ? payload.delivery_status.trim()
+    : ''
+  if (top) return top
+  const nested = typeof payload.message?.delivery_status === 'string'
+    ? payload.message.delivery_status.trim()
+    : ''
+  return nested || null
+}
+
+function applyDeliveryStatusPatch(
+  prev: WaInboxMessage,
+  payload: WaInboxWsMessageStatusPayload,
+  incomingStatus: string
+): WaInboxMessage {
+  const msgId = waMessageNumericId(payload.message_id) || waMessageNumericId(prev.id)
+  const merged: WaInboxMessage = {
+    ...prev,
+    id: msgId,
+    delivery_status:
+      mergeDeliveryStatus(prev.delivery_status, incomingStatus)
+      ?? incomingStatus
+      ?? prev.delivery_status
+  }
+  const nested = payload.message
+  if (nested?.meta_message_id) {
+    merged.meta_message_id = nested.meta_message_id
+  }
+  if (nested?.failed_reason != null && nested.failed_reason !== '') {
+    merged.failed_reason = nested.failed_reason
+  }
+  return merged
 }
 
 function mergeWaInboxMessage(prev: WaInboxMessage, incoming: WaInboxMessage): WaInboxMessage {
@@ -255,7 +312,7 @@ export function useWhatsappInbox() {
     upsertMessageInConversation(convId, msg as WaInboxMessage)
 
     if (selectedConversationId.value === convId && msg?.direction === 'in') {
-      WhatsappInboxService.markRead(convId).catch(() => {})
+      markConversationRead(convId, { forceServer: true })
     }
   }
 
@@ -264,34 +321,32 @@ export function useWhatsappInbox() {
     const messageId = waMessageNumericId(payload.message_id)
     if (!convId || !messageId) return
 
-    const incomingStatus = payload.delivery_status ?? payload.message?.delivery_status
-    const patch: Partial<WaInboxMessage> = {
-      ...(payload.message ?? {}),
-      id: messageId,
-      delivery_status: incomingStatus
-    }
+    const incomingStatus = resolveIncomingDeliveryStatus(payload)
+    if (!incomingStatus) return
 
     if (selectedConversationId.value === convId) {
       let idx = findMessageIndex(messages.value, messageId)
       if (idx < 0 && payload.message) {
-        upsertMessageInConversation(convId, payload.message as WaInboxMessage)
+        const seed = applyDeliveryStatusPatch(
+          { ...payload.message, id: messageId } as WaInboxMessage,
+          payload,
+          incomingStatus
+        )
+        upsertMessageInConversation(convId, seed)
         idx = findMessageIndex(messages.value, messageId)
       }
       if (idx >= 0) {
+        const merged = applyDeliveryStatusPatch(messages.value[idx], payload, incomingStatus)
         const next = [...messages.value]
-        const merged = { ...next[idx], ...patch, id: messageId }
-        merged.delivery_status = mergeDeliveryStatus(next[idx].delivery_status, incomingStatus)
-          ?? incomingStatus
-          ?? next[idx].delivery_status
         next[idx] = merged
         messages.value = next
         messagesConversationId.value = convId
         syncMessagesCacheForConversation(convId)
 
-        if (patch.delivery_status === 'failed') {
+        if (merged.delivery_status === 'failed') {
           showError(
             'No llegó a WhatsApp',
-            patch.failed_reason || 'Meta rechazó la entrega. Revisa tamaño o formato del archivo.'
+            merged.failed_reason || 'Meta rechazó la entrega. Revisa tamaño o formato del archivo.'
           )
         }
       }
@@ -301,11 +356,17 @@ export function useWhatsappInbox() {
         const mi = findMessageIndex(cached.messages, messageId)
         if (mi >= 0) {
           const list = [...cached.messages]
-          const merged = { ...list[mi], ...patch, id: messageId }
-          merged.delivery_status = mergeDeliveryStatus(list[mi].delivery_status, incomingStatus)
-            ?? incomingStatus
-            ?? list[mi].delivery_status
-          list[mi] = merged
+          list[mi] = applyDeliveryStatusPatch(list[mi], payload, incomingStatus)
+          cache.setMessages(convId, list, cached.conversationPatch)
+        } else if (payload.message) {
+          const list = [...cached.messages]
+          list.push(
+            applyDeliveryStatusPatch(
+              { ...payload.message, id: messageId } as WaInboxMessage,
+              payload,
+              incomingStatus
+            )
+          )
           cache.setMessages(convId, list, cached.conversationPatch)
         }
       }
@@ -319,8 +380,22 @@ export function useWhatsappInbox() {
     return raw?.trim() ? raw.trim() : null
   }
 
+  function isMessagesHydrated(conversationId: number, candidate: WaInboxMessage[]) {
+    if (selectedConversationId.value !== conversationId) return false
+    if (messagesConversationId.value !== conversationId) return false
+    if (messages.value.length !== candidate.length) return false
+    if (candidate.length === 0) return true
+    const curLast = messages.value[messages.value.length - 1]
+    const candLast = candidate[candidate.length - 1]
+    return waMessageNumericId(curLast?.id) === waMessageNumericId(candLast?.id)
+  }
+
   function applyMessagesForConversation(conversationId: number, list: WaInboxMessage[]) {
     if (selectedConversationId.value !== conversationId) return
+    if (isMessagesHydrated(conversationId, list)) {
+      messagesConversationId.value = conversationId
+      return
+    }
     messages.value = list
     messagesConversationId.value = conversationId
   }
@@ -435,13 +510,28 @@ export function useWhatsappInbox() {
     ensureSelectedConversation()
   }
 
-  function markConversationRead(conversationId: number) {
-    WhatsappInboxService.markRead(conversationId).catch(() => {})
-    const c = allConversations.value.find((x) => x.id === conversationId)
-    if (c) {
-      c.unread_count = 0
+  /**
+   * Actualiza badge local y sincroniza servidor solo si hace falta.
+   * forceServer: mensaje entrante con chat abierto (servidor puede tener unread > 0).
+   */
+  function markConversationRead(
+    conversationId: number,
+    options: { forceServer?: boolean } = {}
+  ) {
+    const idx = allConversations.value.findIndex((x) => x.id === conversationId)
+    const hadUnread = idx >= 0 && (allConversations.value[idx].unread_count || 0) > 0
+
+    if (hadUnread && idx >= 0) {
+      allConversations.value[idx] = {
+        ...allConversations.value[idx],
+        unread_count: 0
+      }
       cache.patchConversation(conversationId, { unread_count: 0 })
     }
+
+    if (!options.forceServer && !hadUnread) return
+
+    scheduleMarkReadApi(conversationId)
   }
 
   async function loadSession(options: { background?: boolean; force?: boolean } = {}) {
@@ -592,6 +682,8 @@ export function useWhatsappInbox() {
             ? messages.value
             : []
         const mergedCached = mergeMessageLists(cached.messages, localList)
+        const hadUnread =
+          (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
         applyMessagesForConversation(conversationId, mergedCached)
         if (cached.conversationPatch) {
           cache.patchConversation(conversationId, cached.conversationPatch)
@@ -604,7 +696,7 @@ export function useWhatsappInbox() {
           }
         }
         if (selectedConversationId.value === conversationId) {
-          markConversationRead(conversationId)
+          markConversationRead(conversationId, { forceServer: hadUnread })
         }
         if (!options.force) return
       }
@@ -624,6 +716,8 @@ export function useWhatsappInbox() {
             ? messages.value
             : []
         const merged = mergeMessageLists(rows, cachedList, localList)
+        const hadUnread =
+          (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
         cache.setMessages(conversationId, merged, convPatch)
         applyMessagesForConversation(conversationId, merged)
         if (convPatch) {
@@ -634,7 +728,7 @@ export function useWhatsappInbox() {
           }
         }
         if (stillSelected()) {
-          markConversationRead(conversationId)
+          markConversationRead(conversationId, { forceServer: hadUnread })
         }
       } catch (e: any) {
         if (!cached && stillSelected()) {
@@ -882,6 +976,7 @@ export function useWhatsappInbox() {
   }
 
   function disconnectWebSocket() {
+    clearMarkReadDebounce()
     waInboxWs.disconnect()
   }
 

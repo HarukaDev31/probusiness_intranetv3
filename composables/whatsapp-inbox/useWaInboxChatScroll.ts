@@ -5,6 +5,11 @@ import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 const NEAR_BOTTOM_PX = 80
 const OPEN_SCROLL_MAX_ATTEMPTS = 10
 
+function waMessageNumericId(id: unknown): number {
+  const n = Number(id)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
 export function useWaInboxChatScroll(
   messages: Ref<WaInboxMessage[]>,
   conversationId: Ref<number | null>,
@@ -136,9 +141,15 @@ export function useWaInboxChatScroll(
   )
 
   watch(
-    messages,
-    (list, prev) => {
-      const prevLen = prev?.length ?? 0
+    () => {
+      const list = messages.value
+      if (!list.length) return '0'
+      const last = list[list.length - 1]
+      return `${list.length}:${waMessageNumericId(last.id)}:${last.direction}`
+    },
+    (sig, prevSig) => {
+      const list = messages.value
+      const prevLen = prevSig ? Number(prevSig.split(':')[0]) || 0 : 0
 
       if (pendingOpenScroll.value && list.length > 0) {
         void tryPendingOpenScroll()
@@ -164,8 +175,7 @@ export function useWaInboxChatScroll(
           newBelowCount.value += incomingCount
         }
       })
-    },
-    { deep: true }
+    }
   )
 
   return {
