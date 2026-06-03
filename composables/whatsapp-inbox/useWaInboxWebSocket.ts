@@ -54,9 +54,46 @@ function payloadMessageId(payload: { message_id?: unknown } | null): number {
 
 let activeHandlers: WaInboxWebSocketHandlers | null = null
 let echoReadyListener: (() => void) | null = null
+/** listen('.EventName') directo; bindChannelHandlers antiguo solo usaba subscription.bind. */
+let inboxDirectListenBound = false
 
 export function useWaInboxWebSocket() {
   const { subscribeToChannel, unsubscribeFromChannel } = useEcho()
+
+  function bindInboxDirectListen() {
+    if (inboxDirectListenBound) return
+    const echo = getEchoInstance() as {
+      private?: (name: string) => { listen?: (event: string, cb: (data: unknown) => void) => void }
+    } | null
+    if (!echo?.private) return
+    const channel = echo.private(WA_INBOX_WS_CHANNEL)
+    if (!channel?.listen) return
+
+    channel.listen(`.${WA_INBOX_WS_EVENTS.MESSAGE_CREATED}`, (raw: unknown) => {
+      const p = parsePayload<WaInboxWsMessageCreatedPayload>(raw)
+      if (!payloadConversationId(p) || !p?.message) return
+      activeHandlers?.onMessageCreated?.({
+        ...p,
+        conversation_id: payloadConversationId(p)
+      })
+    })
+
+    channel.listen(`.${WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED}`, (raw: unknown) => {
+      const p = parsePayload<WaInboxWsMessageStatusPayload>(raw)
+      const conversationId = payloadConversationId(p)
+      const messageId =
+        payloadMessageId(p)
+        || Number((p?.message as { id?: unknown } | undefined)?.id)
+      if (!conversationId || !Number.isFinite(messageId) || messageId <= 0) return
+      activeHandlers?.onMessageStatusUpdated?.({
+        ...p!,
+        conversation_id: conversationId,
+        message_id: messageId
+      })
+    })
+
+    inboxDirectListenBound = true
+  }
 
   function bindInboxChannel(handlers: WaInboxWebSocketHandlers): boolean {
     if (!getEchoInstance()) {
@@ -99,19 +136,15 @@ export function useWaInboxWebSocket() {
       ]
     })
 
+    bindInboxDirectListen()
+
     return true
   }
 
   function connect(handlers: WaInboxWebSocketHandlers) {
     activeHandlers = handlers
 
-    const tryBind = () => {
-      if (!getEchoInstance()) return false
-      unsubscribeFromChannel(WA_INBOX_WS_CHANNEL)
-      return bindInboxChannel(handlers)
-    }
-
-    if (tryBind()) return
+    if (bindInboxChannel(handlers)) return
 
     if (typeof window === 'undefined') return
 
@@ -121,7 +154,7 @@ export function useWaInboxWebSocket() {
     }
 
     echoReadyListener = () => {
-      tryBind()
+      bindInboxChannel(handlers)
       if (echoReadyListener) {
         window.removeEventListener('echo-ready', echoReadyListener)
         echoReadyListener = null
@@ -130,7 +163,7 @@ export function useWaInboxWebSocket() {
     window.addEventListener('echo-ready', echoReadyListener)
 
     if (getEchoInstance()) {
-      tryBind()
+      bindInboxChannel(handlers)
       if (echoReadyListener) {
         window.removeEventListener('echo-ready', echoReadyListener)
         echoReadyListener = null
@@ -145,6 +178,7 @@ export function useWaInboxWebSocket() {
     }
     unsubscribeFromChannel(WA_INBOX_WS_CHANNEL)
     activeHandlers = null
+    inboxDirectListenBound = false
   }
 
   function updateHandlers(handlers: WaInboxWebSocketHandlers) {

@@ -188,17 +188,14 @@ export const useEcho = () => {
         if (!channelInstance || typeof channelInstance !== 'object') {
           return
         }
-        let attached = false
+        // Laravel broadcastAs → escuchar con .EventName (listen); bind nativo es respaldo.
+        if (typeof channelInstance.listen === 'function') {
+          channelInstance.listen(eventNameEcho, onEvent)
+        }
         const subscription = channelInstance.subscription
         if (subscription && typeof subscription.bind === 'function') {
           subscription.bind(eventNamePusher, onEvent)
-          attached = true
-        }
-        if (!attached && typeof channelInstance.listen === 'function') {
-          channelInstance.listen(eventNameEcho, onEvent)
-          attached = true
-        }
-        if (!attached && typeof channelInstance.bind === 'function') {
+        } else if (typeof channelInstance.bind === 'function') {
           channelInstance.bind(eventNamePusher, onEvent)
         }
       } catch (err) {
