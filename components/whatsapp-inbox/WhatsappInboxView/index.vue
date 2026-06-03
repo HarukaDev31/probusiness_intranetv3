@@ -175,7 +175,15 @@
         </div>
 
         <template v-if="selectedConversation" #footer>
-          <div class="space-y-2 border-t border-default p-3">
+          <div class="flex flex-col">
+            <WhatsappInboxTemplatesStrip
+              :templates="templates"
+              :loading="loadingTemplates"
+              :window-open="windowIsOpen"
+              @open-modal="openTemplateModal()"
+              @select="openTemplateModal"
+            />
+            <div class="space-y-2 p-3">
             <div
               v-if="!selectedConversation.can_send_text"
               class="flex flex-wrap items-center justify-between gap-2"
@@ -185,9 +193,9 @@
                 color="error"
                 variant="subtle"
                 title="Ventana cerrada"
-                description="Solo puedes enviar plantillas para reactivar la conversación."
+                description="El texto libre no está disponible. Usa una plantilla para reactivar la conversación."
               />
-              <UButton size="xs" color="primary" label="Enviar template" @click="templateModalOpen = true" />
+              <UButton size="xs" color="primary" label="Elegir plantilla" @click="openTemplateModal()" />
             </div>
             <div class="flex items-end gap-2">
               <UTextarea
@@ -195,7 +203,7 @@
                 :disabled="!selectedConversation.can_send_text"
                 :placeholder="selectedConversation.can_send_text
                   ? 'Escribe un mensaje…'
-                  : 'Ventana cerrada — envía un template'"
+                  : 'Ventana cerrada — elige una plantilla arriba'"
                 :rows="1"
                 autoresize
                 class="flex-1"
@@ -205,8 +213,8 @@
                 icon="i-heroicons-document-text"
                 color="neutral"
                 variant="outline"
-                aria-label="Plantilla"
-                @click="templateModalOpen = true"
+                aria-label="Plantillas"
+                @click="openTemplateModal()"
               />
               <UButton
                 icon="i-heroicons-paper-airplane"
@@ -216,6 +224,7 @@
                 @click="sendTextMessage"
               />
             </div>
+            </div>
           </div>
         </template>
       </ChatPanelShell>
@@ -224,16 +233,23 @@
     <WhatsappInboxTemplateModal
       v-model:open="templateModalOpen"
       :templates="templates"
+      :preselect="templatePreselect"
       @send="sendTemplateMessage"
     />
   </UCard>
 </template>
 
 <script setup lang="ts">
-import type { WaInboxConversation, WaInboxFilter, WaInboxWindowState } from '~/types/whatsapp-inbox'
+import type {
+  WaInboxConversation,
+  WaInboxFilter,
+  WaInboxTemplate,
+  WaInboxWindowState
+} from '~/types/whatsapp-inbox'
 import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
 import WhatsappInboxTemplateModal from '~/components/whatsapp-inbox/WhatsappInboxTemplateModal.vue'
+import WhatsappInboxTemplatesStrip from '~/components/whatsapp-inbox/WhatsappInboxTemplatesStrip.vue'
 
 const panelCardUi = {
   body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0',
@@ -254,6 +270,7 @@ const {
   draftMessage,
   loadingConversations,
   loadingMessages,
+  loadingTemplates,
   refreshing,
   unreadTotal,
   init,
@@ -261,10 +278,23 @@ const {
   selectConversation,
   sendTextMessage,
   sendTemplateMessage,
-  assignConversation
+  assignConversation,
+  disconnectWebSocket
 } = useWhatsappInbox()
 
 const templateModalOpen = ref(false)
+const templatePreselect = ref<WaInboxTemplate | null>(null)
+
+const windowIsOpen = computed(() => {
+  const c = selectedConversation.value
+  if (!c) return false
+  return c.window_state === 'open' || c.window_state === 'warn'
+})
+
+function openTemplateModal(tpl?: WaInboxTemplate) {
+  templatePreselect.value = tpl ?? null
+  templateModalOpen.value = true
+}
 
 const filterOptions: { value: WaInboxFilter; label: string }[] = [
   { value: 'todas', label: 'Todas' },
@@ -316,5 +346,9 @@ function onAssign(val: number | undefined) {
 
 onMounted(() => {
   init()
+})
+
+onUnmounted(() => {
+  disconnectWebSocket()
 })
 </script>

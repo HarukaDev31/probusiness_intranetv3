@@ -1,5 +1,10 @@
 import { WhatsappInboxService } from '~/services/whatsappInbox/whatsappInboxService'
 import { useWaInboxCache } from '~/composables/whatsapp-inbox/waInboxCache'
+import { useWaInboxWebSocket } from '~/composables/whatsapp-inbox/useWaInboxWebSocket'
+import type {
+  WaInboxWsMessageCreatedPayload,
+  WaInboxWsMessageStatusPayload
+} from '~/types/whatsapp-inbox-ws'
 import type {
   WaInboxConversation,
   WaInboxFilter,
@@ -44,6 +49,7 @@ export function useWhatsappInbox() {
   const { showSuccess, showError } = useModal()
   const { currentId } = useUserRole()
   const cache = useWaInboxCache()
+  const waInboxWs = useWaInboxWebSocket()
 
   const session = ref<WaInboxSession | null>(null)
   const allConversations = ref<WaInboxConversation[]>([])
@@ -57,6 +63,7 @@ export function useWhatsappInbox() {
   const draftMessage = ref('')
   const loadingConversations = ref(false)
   const loadingMessages = ref(false)
+  const loadingTemplates = ref(false)
   const refreshing = ref(false)
   const error = ref<string | null>(null)
 
@@ -92,6 +99,65 @@ export function useWhatsappInbox() {
     if (cachedConvs) {
       allConversations.value = cachedConvs
       ensureSelectedConversation()
+    }
+  }
+
+  function sortConversationsList(list: WaInboxConversation[]) {
+    return [...list].sort((a, b) => {
+      const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
+      const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0
+      if (tb !== ta) return tb - ta
+      return b.id - a.id
+    })
+  }
+
+  function upsertConversation(conv: WaInboxConversation) {
+    const idx = allConversations.value.findIndex((c) => c.id === conv.id)
+    if (idx >= 0) {
+      allConversations.value[idx] = { ...allConversations.value[idx], ...conv }
+    } else {
+      allConversations.value = [conv, ...allConversations.value]
+    }
+    allConversations.value = sortConversationsList(allConversations.value)
+    cache.setAllConversations(allConversations.value)
+  }
+
+  function applyRealtimeMessage(payload: WaInboxWsMessageCreatedPayload) {
+    const convId = payload.conversation_id
+    if (payload.conversation) {
+      const viewing = selectedConversationId.value === convId
+      const patch = { ...payload.conversation }
+      if (viewing) {
+        patch.unread_count = 0
+      }
+      upsertConversation(patch as WaInboxConversation)
+    }
+
+    const msg = payload.message
+    if (!msg?.id) return
+
+    if (selectedConversationId.value === convId) {
+      if (!messages.value.some((m) => m.id === msg.id)) {
+        messages.value = [...messages.value, msg]
+        cache.appendMessage(convId, msg)
+      }
+      if (msg.direction === 'in') {
+        WhatsappInboxService.markRead(convId).catch(() => {})
+      }
+    } else {
+      cache.appendMessage(convId, msg)
+    }
+  }
+
+  function applyRealtimeStatus(payload: WaInboxWsMessageStatusPayload) {
+    if (selectedConversationId.value !== payload.conversation_id) return
+    const idx = messages.value.findIndex((m) => m.id === payload.message_id)
+    if (idx < 0) return
+    const patch = payload.message ?? { delivery_status: payload.delivery_status }
+    messages.value[idx] = { ...messages.value[idx], ...patch }
+    const cached = cache.getMessages(payload.conversation_id)
+    if (cached) {
+      cache.setMessages(payload.conversation_id, messages.value, cached.conversationPatch)
     }
   }
 
@@ -211,7 +277,10 @@ export function useWhatsappInbox() {
 
   async function selectConversation(id: number) {
     selectedConversationId.value = id
-    await loadMessages(id)
+    await Promise.all([
+      loadMessages(id),
+      loadTemplates({ background: true })
+    ])
   }
 
   async function sendTextMessage() {
@@ -275,16 +344,28 @@ export function useWhatsappInbox() {
     }, 'Asignando…')
   }
 
-  async function loadTemplates(options: { background?: boolean } = {}) {
-    const cached = cache.getTemplates()
-    if (cached) {
+  async function loadTemplates(options: { background?: boolean; force?: boolean } = {}) {
+    const cached = !options.force ? cache.getTemplates() : null
+    if (cached?.length) {
       templates.value = cached
-      if (!options.background) return
+      if (!options.background && !options.force) return
     }
 
-    const res = await WhatsappInboxService.getTemplates()
-    templates.value = Array.isArray(res?.data) ? res.data : []
-    cache.setTemplates(templates.value)
+    if (!options.background) {
+      loadingTemplates.value = true
+    }
+
+    try {
+      const res = await WhatsappInboxService.getTemplates()
+      templates.value = Array.isArray(res?.data) ? res.data : []
+      cache.setTemplates(templates.value)
+    } catch {
+      if (!cached?.length) {
+        templates.value = []
+      }
+    } finally {
+      loadingTemplates.value = false
+    }
   }
 
   async function loadAssignableUsers(options: { background?: boolean } = {}) {
@@ -299,8 +380,20 @@ export function useWhatsappInbox() {
     cache.setAssignable(assignableUsers.value)
   }
 
+  function connectWebSocket() {
+    waInboxWs.connect({
+      onMessageCreated: applyRealtimeMessage,
+      onMessageStatusUpdated: applyRealtimeStatus
+    })
+  }
+
+  function disconnectWebSocket() {
+    waInboxWs.disconnect()
+  }
+
   async function init() {
     hydrateFromCache()
+    connectWebSocket()
     const hasCachedUi = Boolean(
       cache.getSession()
       || cache.getAllConversations()?.length
@@ -344,7 +437,7 @@ export function useWhatsappInbox() {
       await Promise.all([
         loadSession(),
         loadAllConversations({ force: true }),
-        loadTemplates({ background: true }),
+        loadTemplates({ background: true, force: true }),
         loadAssignableUsers({ background: true })
       ])
       if (selectedConversationId.value) {
@@ -378,11 +471,14 @@ export function useWhatsappInbox() {
     draftMessage,
     loadingConversations,
     loadingMessages,
+    loadingTemplates,
     refreshing,
     error,
     unreadTotal,
     init,
     refreshInbox,
+    connectWebSocket,
+    disconnectWebSocket,
     loadAllConversations,
     selectConversation,
     sendTextMessage,

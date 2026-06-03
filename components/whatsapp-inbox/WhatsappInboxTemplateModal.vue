@@ -2,6 +2,9 @@
   <UModal v-model:open="open" title="Enviar plantilla" :ui="{ width: 'sm:max-w-lg' }">
     <template #body>
       <div class="max-h-[60vh] space-y-3 overflow-y-auto">
+        <p v-if="!templates.length" class="py-6 text-center text-sm text-muted">
+          No hay plantillas cargadas. Intenta actualizar el inbox.
+        </p>
         <button
           v-for="tpl in templates"
           :key="tpl.name"
@@ -57,8 +60,9 @@ import type { WaInboxTemplate } from '~/types/whatsapp-inbox'
 
 const open = defineModel<boolean>('open', { default: false })
 
-defineProps<{
+const props = defineProps<{
   templates: WaInboxTemplate[]
+  preselect?: WaInboxTemplate | null
 }>()
 
 const emit = defineEmits<{
@@ -100,10 +104,24 @@ function emitSend() {
   paramValues.value = {}
 }
 
+function applyPreselect(tpl: WaInboxTemplate | null | undefined) {
+  if (!tpl) return
+  selected.value = tpl
+  paramValues.value = {}
+}
+
 watch(open, (v) => {
-  if (!v) {
-    selected.value = null
-    paramValues.value = {}
+  if (v) {
+    applyPreselect(props.preselect)
+    return
+  }
+  selected.value = null
+  paramValues.value = {}
+})
+
+watch(() => props.preselect, (tpl) => {
+  if (open.value && tpl) {
+    applyPreselect(tpl)
   }
 })
 </script>

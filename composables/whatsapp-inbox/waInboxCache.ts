@@ -84,6 +84,14 @@ export function useWaInboxCache() {
     }
   }
 
+  function appendMessage(conversationId: number, message: WaInboxMessage) {
+    const entry = cache.messagesByConvId[conversationId]
+    if (!entry) return
+    if (entry.messages.some((m) => m.id === message.id)) return
+    entry.messages = [...entry.messages, message]
+    entry.fetchedAt = Date.now()
+  }
+
   function getMessages(conversationId: number) {
     const entry = cache.messagesByConvId[conversationId]
     if (!entry || !isFresh(entry.fetchedAt, TTL.messages)) return null
@@ -137,6 +145,7 @@ export function useWaInboxCache() {
     getAllConversations,
     setAllConversations,
     patchConversation,
+    appendMessage,
     getMessages,
     setMessages,
     invalidateConversations,
