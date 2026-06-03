@@ -4,6 +4,11 @@ import {
   WS_EVENTS 
 } from '~/config/websocket/channels'
 import { ROLES } from '~/constants/roles'
+import { WA_INBOX_WS_CHANNEL, WA_INBOX_WS_EVENTS } from '~/constants/whatsappInboxWs'
+import {
+  dispatchWaInboxMessageCreated,
+  dispatchWaInboxMessageStatusUpdated
+} from '~/composables/whatsapp-inbox/waInboxRealtimeBridge'
 import { useModal } from '~/composables/commons/useModal'
 import { useUserRole } from '~/composables/auth/useUserRole'
 const { currentId } = useUserRole()
@@ -49,6 +54,9 @@ export const registerCoordinacionEvents = () => {
     showSuccess('Cotización Inspectada', data.message || 'Se ha inspeccionado la cotización.')
   })
 
+  registerEventHandler(WA_INBOX_WS_EVENTS.MESSAGE_CREATED, dispatchWaInboxMessageCreated)
+  registerEventHandler(WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED, dispatchWaInboxMessageStatusUpdated)
+
   registerEventHandler(WS_EVENTS.PLANTILLA_FINAL_BATCH_FINISHED, (data) => {
     const { showSuccess, showError } = useModal()
     const estado = String(data?.estado || '').toUpperCase()
@@ -83,6 +91,16 @@ export const registerCoordinacionEvents = () => {
       WS_EVENTS.COTIZACION_CHINA_RECEIVED,
       WS_EVENTS.COTIZACION_CHINA_INSPECTIONED,
       WS_EVENTS.PLANTILLA_FINAL_BATCH_FINISHED
+    ],
+    'private'
+  )
+
+  subscribeEventsToRole(
+    ROLES.COORDINACION,
+    WA_INBOX_WS_CHANNEL,
+    [
+      WA_INBOX_WS_EVENTS.MESSAGE_CREATED,
+      WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED
     ],
     'private'
   )

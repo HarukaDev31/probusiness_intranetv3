@@ -527,6 +527,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // Solo quita handlers; el canal inbox queda suscrito con el rol (evita ping-pong subscribe/unsubscribe).
   disconnectWebSocket()
 })
 </script>
