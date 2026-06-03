@@ -36,15 +36,14 @@
           loading="lazy"
         >
       </button>
-      <button
+      <WhatsappInboxVideoBubble
         v-else-if="msg.message_type === 'video'"
-        type="button"
-        class="flex max-w-full items-center gap-2 rounded-lg bg-elevated/80 px-3 py-2 ring-1 ring-default/50"
-        @click.stop="abrirMedia"
-      >
-        <UIcon name="i-heroicons-film" class="size-8 shrink-0 text-primary" />
-        <span class="truncate text-sm">{{ mediaNombre }}</span>
-      </button>
+        :url="mediaUrl"
+        :nombre="mediaNombre"
+        :caption="videoCaption"
+        :inverted="direction === 'out'"
+        @abrir="abrirMedia()"
+      />
       <button
         v-else-if="msg.message_type === 'audio'"
         type="button"
@@ -95,6 +94,7 @@ import type { FileItem } from '~/types/commons/file'
 import SoporteTiChatReplyPreview from '~/components/soporte-ti/SoporteTiChatReplyPreview.vue'
 import SoporteTiChatAdjuntoMensaje from '~/components/soporte-ti/SoporteTiChatAdjuntoMensaje.vue'
 import WhatsappInboxDocumentBubble from '~/components/whatsapp-inbox/WhatsappInboxDocumentBubble.vue'
+import WhatsappInboxVideoBubble from '~/components/whatsapp-inbox/WhatsappInboxVideoBubble.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import { esImagenInlineAdjunto, extensionAdjunto } from '~/utils/soporteTiChatAdjunto'
 
@@ -146,7 +146,12 @@ const captionEnBurbuja = computed(() => {
   return t
 })
 
+const videoCaption = computed(() =>
+  props.msg.message_type === 'video' ? captionEnBurbuja.value : ''
+)
+
 const textoVisible = computed(() => {
+  if (props.msg.message_type === 'video' && mediaUrl.value) return false
   if (showDocumentBubble.value && captionEnBurbuja.value) return false
   const t = props.msg.body?.trim() || ''
   if (!t) return false
@@ -179,11 +184,12 @@ function abrirMedia(url?: string, nombre?: string) {
   const n = nombre || mediaNombre.value
   const ext = extensionAdjunto(n)
   const esImg = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
+  const esVideo = props.msg.message_type === 'video' || ['mp4', 'webm', 'mov', 'm4v'].includes(ext)
   const fileItem: FileItem = {
     id: 0,
     file_name: n,
     file_url: u,
-    type: esImg ? 'image' : 'file',
+    type: esImg ? 'image' : esVideo ? 'video' : 'file',
     size: 0,
     lastModified: 0,
     file_ext: ext
