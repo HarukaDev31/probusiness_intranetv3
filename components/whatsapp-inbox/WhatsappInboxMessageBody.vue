@@ -58,6 +58,7 @@
         :url="mediaUrl"
         :nombre="mediaNombre"
         :caption="captionEnBurbuja"
+        :size-bytes="msg.media_size_bytes"
         :inverted="direction === 'out'"
         @abrir="abrirMedia()"
       />
@@ -69,6 +70,14 @@
         forzar-documento
         @abrir="abrirMedia"
       />
+    </div>
+
+    <div
+      v-else-if="isMediaTypeWithoutUrl"
+      class="flex max-w-[min(100%,280px)] items-center gap-2 rounded-lg bg-elevated/80 px-3 py-2 text-sm text-muted ring-1 ring-default/40"
+    >
+      <UIcon :name="mediaPlaceholderIcon" class="size-8 shrink-0" />
+      <span>{{ mediaPlaceholderLabel }}</span>
     </div>
 
     <UCard
@@ -150,8 +159,46 @@ const videoCaption = computed(() =>
   props.msg.message_type === 'video' ? captionEnBurbuja.value : ''
 )
 
+function isMediaPlaceholderBody(body: string, messageType?: string) {
+  const t = body.trim().toLowerCase()
+  const type = (messageType || '').toLowerCase()
+  if (!type) return false
+  return t === `[${type}]`
+}
+
+const isMediaTypeWithoutUrl = computed(() => {
+  const type = props.msg.message_type
+  if (!type || mediaUrl.value) return false
+  return ['image', 'video', 'document', 'audio'].includes(type)
+})
+
+const mediaPlaceholderIcon = computed(() => {
+  const type = props.msg.message_type
+  if (type === 'image') return 'i-heroicons-photo'
+  if (type === 'video') return 'i-heroicons-film'
+  if (type === 'audio') return 'i-heroicons-musical-note'
+  return 'i-heroicons-document'
+})
+
+const mediaPlaceholderLabel = computed(() => {
+  const type = props.msg.message_type
+  if (type === 'image') return 'Imagen no disponible'
+  if (type === 'video') return 'Video no disponible'
+  if (type === 'audio') return 'Audio no disponible'
+  return 'Archivo no disponible'
+})
+
 const textoVisible = computed(() => {
-  if (props.msg.message_type === 'video' && mediaUrl.value) return false
+  if (mediaUrl.value && props.msg.message_type) {
+    const t = props.msg.body?.trim() || ''
+    if (
+      ['image', 'video', 'document', 'audio'].includes(props.msg.message_type)
+      && (!t || isMediaPlaceholderBody(t, props.msg.message_type) || t === mediaNombre.value)
+    ) {
+      return false
+    }
+  }
+  if (isMediaTypeWithoutUrl.value) return false
   if (showDocumentBubble.value && captionEnBurbuja.value) return false
   const t = props.msg.body?.trim() || ''
   if (!t) return false

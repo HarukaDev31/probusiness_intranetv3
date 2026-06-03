@@ -24,6 +24,13 @@
         >
           {{ nombre }}
         </p>
+        <p
+          v-if="metaLine"
+          class="mt-0.5 truncate text-[12px]"
+          :class="inverted ? 'text-white/70' : 'text-muted dark:text-white/60'"
+        >
+          {{ metaLine }}
+        </p>
       </div>
       <span
         v-if="timeLabel"
@@ -82,6 +89,7 @@ const props = defineProps<{
   nombre: string
   caption?: string | null
   timeLabel?: string | null
+  sizeBytes?: number | null
   inverted?: boolean
 }>()
 
@@ -91,6 +99,17 @@ const emit = defineEmits<{
 }>()
 
 const ext = computed(() => extensionAdjunto(props.nombre))
+
+const metaLine = computed(() => {
+  const label = extBadge.value
+  const size = props.sizeBytes
+  if (size && size > 0) {
+    const kb = size / 1024
+    const sizeLabel = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} kB`
+    return `${label} • ${sizeLabel}`
+  }
+  return label || null
+})
 
 const extBadge = computed(() => {
   const e = ext.value.toUpperCase()

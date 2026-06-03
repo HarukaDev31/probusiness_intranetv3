@@ -44,6 +44,7 @@ export interface WaInboxMessage {
   media_url?: string | null
   media_mime?: string | null
   media_filename?: string | null
+  media_size_bytes?: number | null
   reply_to_meta_message_id?: string | null
 }
 
