@@ -80,7 +80,7 @@ function upsertMessageInCache(convId: number, msg: WaInboxMessage) {
   const msgId = waMessageNumericId(msg.id)
   if (!msgId) return
 
-  const entry = cache.getMessages(convId)
+  const entry = cache.getMessagesEntry(convId)
   if (entry) {
     const mi = entry.messages.findIndex((m) => waMessageNumericId(m.id) === msgId)
     const list = [...entry.messages]
@@ -89,9 +89,11 @@ function upsertMessageInCache(convId: number, msg: WaInboxMessage) {
     } else {
       list.push({ ...msg, id: msgId })
     }
-    cache.setMessages(convId, list, entry.conversationPatch)
+    cache.setMessages(convId, list, entry.conversationPatch, {
+      fullHistory: entry.fullHistory !== false
+    })
   } else {
-    cache.setMessages(convId, [{ ...msg, id: msgId }])
+    cache.setMessages(convId, [{ ...msg, id: msgId }], undefined, { fullHistory: false })
   }
 }
 
@@ -102,7 +104,7 @@ function patchStatusInCache(
   incomingStatus: string
 ) {
   const cache = useWaInboxCache()
-  const entry = cache.getMessages(convId)
+  const entry = cache.getMessagesEntry(convId)
   if (!entry) {
     if (payload.message) {
       cache.setMessages(
@@ -113,7 +115,9 @@ function patchStatusInCache(
             payload,
             incomingStatus
           )
-        ]
+        ],
+        undefined,
+        { fullHistory: false }
       )
     }
     return
@@ -130,13 +134,17 @@ function patchStatusInCache(
         incomingStatus
       )
     )
-    cache.setMessages(convId, list, entry.conversationPatch)
+    cache.setMessages(convId, list, entry.conversationPatch, {
+      fullHistory: entry.fullHistory !== false
+    })
     return
   }
 
   const list = [...entry.messages]
   list[mi] = applyDeliveryStatusPatch(list[mi], payload, incomingStatus)
-  cache.setMessages(convId, list, entry.conversationPatch)
+  cache.setMessages(convId, list, entry.conversationPatch, {
+    fullHistory: entry.fullHistory !== false
+  })
 }
 
 /**

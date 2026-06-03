@@ -192,8 +192,10 @@ export function useWhatsappInbox() {
   }
 
   function syncMessagesCacheForConversation(convId: number) {
-    const cached = cache.getMessages(convId)
-    cache.setMessages(convId, messages.value, cached?.conversationPatch)
+    const cached = cache.getMessagesEntry(convId)
+    cache.setMessages(convId, messages.value, cached?.conversationPatch, {
+      fullHistory: cached?.fullHistory !== false
+    })
   }
 
   function upsertMessageInConversation(convId: number, msg: WaInboxMessage) {
@@ -221,9 +223,13 @@ export function useWhatsappInbox() {
         } else {
           list.push({ ...msg, id: msgId })
         }
-        cache.setMessages(convId, list, cached.conversationPatch)
+        cache.setMessages(convId, list, cached.conversationPatch, {
+          fullHistory: cached?.fullHistory !== false
+        })
       } else {
-        cache.setMessages(convId, [{ ...msg, id: msgId }])
+        cache.setMessages(convId, [{ ...msg, id: msgId }], undefined, {
+          fullHistory: false
+        })
       }
     }
   }
@@ -336,9 +342,9 @@ export function useWhatsappInbox() {
   }
 
   function hydrateMessagesFromCache(conversationId: number) {
-    const cached = cache.getMessages(conversationId)
-    if (cached) {
-      applyMessagesForConversation(conversationId, cached.messages)
+    const entry = cache.getMessagesEntry(conversationId)
+    if (entry?.fullHistory !== false && entry.messages.length > 0) {
+      applyMessagesForConversation(conversationId, entry.messages)
       return
     }
     if (selectedConversationId.value === conversationId) {
@@ -609,24 +615,27 @@ export function useWhatsappInbox() {
     }
 
     const run = async () => {
-      const cached = !options.force ? cache.getMessages(conversationId) : null
-      if (cached) {
+      const cachedEntry = !options.force ? cache.getMessages(conversationId) : null
+      const hasFullHistoryCache =
+        Boolean(cachedEntry && cachedEntry.fullHistory !== false)
+
+      if (hasFullHistoryCache && cachedEntry) {
         const localList =
           selectedConversationId.value === conversationId
           && messagesConversationId.value === conversationId
             ? messages.value
             : []
-        const mergedCached = mergeMessageLists(cached.messages, localList)
+        const mergedCached = mergeMessageLists(cachedEntry.messages, localList)
         const hadUnread =
           (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
         applyMessagesForConversation(conversationId, mergedCached)
-        if (cached.conversationPatch) {
-          cache.patchConversation(conversationId, cached.conversationPatch)
+        if (cachedEntry.conversationPatch) {
+          cache.patchConversation(conversationId, cachedEntry.conversationPatch)
           const idx = allConversations.value.findIndex((c) => c.id === conversationId)
           if (idx >= 0) {
             allConversations.value[idx] = {
               ...allConversations.value[idx],
-              ...cached.conversationPatch
+              ...cachedEntry.conversationPatch
             }
           }
         }
@@ -653,7 +662,7 @@ export function useWhatsappInbox() {
         const merged = mergeMessageLists(rows, cachedList, localList)
         const hadUnread =
           (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
-        cache.setMessages(conversationId, merged, convPatch)
+        cache.setMessages(conversationId, merged, convPatch, { fullHistory: true })
         applyMessagesForConversation(conversationId, merged)
         if (convPatch) {
           cache.patchConversation(conversationId, convPatch)
@@ -666,7 +675,7 @@ export function useWhatsappInbox() {
           markConversationRead(conversationId, { forceServer: hadUnread })
         }
       } catch (e: any) {
-        if (!cached && stillSelected()) {
+        if (!hasFullHistoryCache && stillSelected()) {
           showError('Error', e?.message || 'No se pudo cargar mensajes')
           messages.value = []
           messagesConversationId.value = null
@@ -917,11 +926,7 @@ export function useWhatsappInbox() {
   function connectWebSocket() {
     if (!import.meta.client) return
 
-    try {
-      ensureWaInboxEchoChannel()
-    } catch (err) {
-      waInboxWarn('connect.ensureFailed', { err: String(err) })
-    }
+    ensureWaInboxEchoChannel()
 
     try {
       registerWaInboxUiHandlers(inboxRealtimeHandlers)

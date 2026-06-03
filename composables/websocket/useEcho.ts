@@ -33,6 +33,57 @@ async function loadPusherConstructor(): Promise<PusherConstructor> {
   return candidate as PusherConstructor
 }
 
+function bindChannelHandlers(
+  channelName: string,
+  channelInstance: any,
+  handlers: WebSocketChannel['handlers']
+) {
+  const boundKeys = boundHandlersByChannel.get(channelName) ?? new Set<string>()
+  let channelCallbacks = handlerCallbacksByChannel.get(channelName)
+  if (!channelCallbacks) {
+    channelCallbacks = new Map()
+    handlerCallbacksByChannel.set(channelName, channelCallbacks)
+  }
+
+  handlers.forEach(({ event, callback }) => {
+    const eventKey = event.startsWith('.') ? event : `.${event}`
+    channelCallbacks!.set(eventKey, callback)
+
+    const eventNamePusher = eventKey.slice(1)
+    const eventNameEcho = eventKey
+
+    const onEvent = (data: unknown) => {
+      if (process.dev && eventNamePusher.startsWith('Calendar')) {
+        console.log('[WS] Evento calendario recibido:', eventNamePusher, data)
+      }
+      handlerCallbacksByChannel.get(channelName)?.get(eventKey)?.(data)
+    }
+
+    if (boundKeys.has(eventKey)) return
+    boundKeys.add(eventKey)
+
+    try {
+      if (!channelInstance || typeof channelInstance !== 'object') {
+        return
+      }
+      if (typeof channelInstance.listen === 'function') {
+        channelInstance.listen(eventNameEcho, onEvent)
+      } else {
+        const subscription = channelInstance.subscription
+        if (subscription && typeof subscription.bind === 'function') {
+          subscription.bind(eventNamePusher, onEvent)
+        } else if (typeof channelInstance.bind === 'function') {
+          channelInstance.bind(eventNamePusher, onEvent)
+        }
+      }
+    } catch (err) {
+      console.error('❌ Error registrando evento:', eventKey, err)
+    }
+  })
+
+  boundHandlersByChannel.set(channelName, boundKeys)
+}
+
 export const useEcho = () => {
   const isConnected = ref(false)
   const error = ref<Error | null>(null)
@@ -157,54 +208,6 @@ export const useEcho = () => {
     } finally {
       isInitializing = false
     }
-  }
-
-  const bindChannelHandlers = (channelName: string, channelInstance: any, handlers: WebSocketChannel['handlers']) => {
-    const boundKeys = boundHandlersByChannel.get(channelName) ?? new Set<string>()
-    let channelCallbacks = handlerCallbacksByChannel.get(channelName)
-    if (!channelCallbacks) {
-      channelCallbacks = new Map()
-      handlerCallbacksByChannel.set(channelName, channelCallbacks)
-    }
-
-    handlers.forEach(({ event, callback }) => {
-      const eventKey = event.startsWith('.') ? event : `.${event}`
-      channelCallbacks!.set(eventKey, callback)
-
-      const eventNamePusher = eventKey.slice(1)
-      const eventNameEcho = eventKey
-
-      const onEvent = (data: unknown) => {
-        if (process.dev && eventNamePusher.startsWith('Calendar')) {
-          console.log('[WS] Evento calendario recibido:', eventNamePusher, data)
-        }
-        handlerCallbacksByChannel.get(channelName)?.get(eventKey)?.(data)
-      }
-
-      if (boundKeys.has(eventKey)) return
-      boundKeys.add(eventKey)
-
-      try {
-        if (!channelInstance || typeof channelInstance !== 'object') {
-          return
-        }
-        // Laravel broadcastAs → listen con punto. No duplicar listen + bind (dispara el handler 2×).
-        if (typeof channelInstance.listen === 'function') {
-          channelInstance.listen(eventNameEcho, onEvent)
-        } else {
-          const subscription = channelInstance.subscription
-          if (subscription && typeof subscription.bind === 'function') {
-            subscription.bind(eventNamePusher, onEvent)
-          } else if (typeof channelInstance.bind === 'function') {
-            channelInstance.bind(eventNamePusher, onEvent)
-          }
-        }
-      } catch (err) {
-        console.error('❌ Error registrando evento:', eventKey, err)
-      }
-    })
-
-    boundHandlersByChannel.set(channelName, boundKeys)
   }
 
   const subscribeToChannel = (channel: WebSocketChannel) => {
@@ -347,3 +350,19 @@ export const useEcho = () => {
 }
 
 export const getEchoInstance = () => echoInstance
+
+/**
+ * Actualiza callbacks de un canal ya suscrito (sin volver a llamar echo.private).
+ */
+export function rebindChannelHandlers(
+  channelName: string,
+  handlers: WebSocketChannel['handlers']
+): boolean {
+  if (!echoInstance) return false
+
+  const existing = sharedActiveChannels.value.get(channelName)
+  if (!existing) return false
+
+  bindChannelHandlers(channelName, existing, handlers)
+  return true
+}

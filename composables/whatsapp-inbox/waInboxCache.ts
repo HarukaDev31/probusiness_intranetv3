@@ -18,6 +18,8 @@ type MessagesCacheEntry = {
   messages: WaInboxMessage[]
   conversationPatch?: Partial<WaInboxConversation>
   fetchedAt: number
+  /** false = caché parcial por WS; al abrir el chat hay que pedir GET historial */
+  fullHistory?: boolean
 }
 
 const cache = reactive({
@@ -132,12 +134,20 @@ export function useWaInboxCache() {
   function setMessages(
     conversationId: number,
     messages: WaInboxMessage[],
-    conversationPatch?: Partial<WaInboxConversation>
+    conversationPatch?: Partial<WaInboxConversation>,
+    options?: { fullHistory?: boolean }
   ) {
+    const prev = cache.messagesByConvId[conversationId]
+    const fullHistory =
+      options?.fullHistory !== undefined
+        ? options.fullHistory
+        : (prev?.fullHistory ?? true)
+
     cache.messagesByConvId[conversationId] = {
       messages,
-      conversationPatch,
-      fetchedAt: Date.now()
+      conversationPatch: conversationPatch ?? prev?.conversationPatch,
+      fetchedAt: Date.now(),
+      fullHistory
     }
   }
 
