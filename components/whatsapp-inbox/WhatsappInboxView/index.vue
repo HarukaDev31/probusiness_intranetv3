@@ -177,23 +177,30 @@
               <div
                 v-for="msg in messages"
                 :key="msg.id"
-                class="mb-2 flex flex-col"
+                class="group mb-2 flex flex-col"
                 :class="msg.direction === 'out' ? 'items-end' : 'items-start'"
               >
-                <p
-                  v-if="msg.is_template && msg.template_name"
-                  class="mb-1 text-[10px] font-semibold uppercase text-info"
+                <div
+                  class="flex max-w-[85%] items-end gap-1"
+                  :class="msg.direction === 'out' ? 'flex-row-reverse' : 'flex-row'"
                 >
-                  {{ msg.template_name }}
-                </p>
-                <UCard
-                  :color="msg.direction === 'out' ? 'primary' : 'neutral'"
-                  :variant="msg.direction === 'out' ? 'solid' : 'subtle'"
-                  :ui="{ body: 'px-3 py-2 text-sm leading-relaxed max-w-[75%]' }"
-                  :class="msg.direction === 'out' ? 'rounded-br-sm' : 'rounded-bl-sm'"
-                >
-                  <span class="whitespace-pre-wrap">{{ msg.body }}</span>
-                </UCard>
+                  <WhatsappInboxMessageBody
+                    :msg="msg"
+                    :direction="msg.direction"
+                    :reply-preview="replyPreviewFor(msg)"
+                  />
+                  <UButton
+                    v-if="msg.meta_message_id && selectedConversation?.can_send_text"
+                    type="button"
+                    color="neutral"
+                    variant="ghost"
+                    size="xs"
+                    icon="i-heroicons-arrow-uturn-left"
+                    class="shrink-0 opacity-0 transition group-hover:opacity-100"
+                    title="Responder"
+                    @click="iniciarRespuesta(msg)"
+                  />
+                </div>
                 <span class="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
                   <span>{{ formatMessageTime(msg) }}</span>
                   <UTooltip
@@ -236,35 +243,13 @@
         </div>
 
         <template v-if="selectedConversation" #footer>
-          <div class="space-y-2 p-3">
-            <UAlert
-              v-if="!selectedConversation.can_send_text"
-              color="error"
-              variant="subtle"
-              title="Ventana cerrada"
-              description="El texto libre no está disponible. Usa Plantillas en la barra superior."
-            />
-            <div class="flex items-end gap-2">
-              <UTextarea
-                v-model="draftMessage"
-                :disabled="!selectedConversation.can_send_text"
-                :placeholder="selectedConversation.can_send_text
-                  ? 'Escribe un mensaje…'
-                  : 'Ventana cerrada — usa Plantillas arriba'"
-                :rows="1"
-                autoresize
-                class="flex-1"
-                @keydown.enter.exact.prevent="sendTextMessage"
-              />
-              <UButton
-                icon="i-heroicons-paper-airplane"
-                color="primary"
-                :disabled="!selectedConversation.can_send_text || !draftMessage.trim()"
-                aria-label="Enviar"
-                @click="sendTextMessage"
-              />
-            </div>
-          </div>
+          <WhatsappInboxComposer
+            :can-send="selectedConversation.can_send_text"
+            :sending="sendingMessage"
+            :reply-target="replyTarget"
+            @send="onComposerSend"
+            @cancel-reply="replyTarget = null"
+          />
         </template>
       </ChatPanelShell>
     </div>
@@ -297,7 +282,9 @@ import type {
   WaInboxFilter,
   WaInboxMessage,
   WaInboxTemplate,
-  WaInboxWindowState
+  WaInboxWindowState,
+  WaInboxComposerReplyTarget,
+  WaInboxComposerSendPayload
 } from '~/types/whatsapp-inbox'
 import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
@@ -305,6 +292,9 @@ import WhatsappInboxTemplatePickerModal from '~/components/whatsapp-inbox/Whatsa
 import WhatsappInboxTemplateParamsModal from '~/components/whatsapp-inbox/WhatsappInboxTemplateParamsModal.vue'
 import WhatsappInboxNewContactModal from '~/components/whatsapp-inbox/WhatsappInboxNewContactModal.vue'
 import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
+import WhatsappInboxComposer from '~/components/whatsapp-inbox/WhatsappInboxComposer.vue'
+import WhatsappInboxMessageBody from '~/components/whatsapp-inbox/WhatsappInboxMessageBody.vue'
+import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { useWaInboxChatScroll } from '~/composables/whatsapp-inbox/useWaInboxChatScroll'
 import { formatDatePe } from '~/utils/formatters'
@@ -325,7 +315,7 @@ const {
   selectedConversation,
   search,
   filter,
-  draftMessage,
+  sendingMessage,
   loadingConversations,
   loadingMoreConversations,
   loadMoreConversations,
@@ -337,7 +327,7 @@ const {
   init,
   refreshInbox,
   selectConversation,
-  sendTextMessage,
+  sendComposerMessage,
   sendTemplateMessage,
   sendingTemplate,
   assignConversation,
@@ -355,6 +345,9 @@ const {
 } = useWaInboxChatScroll(messages, selectedConversationId, loadingMessages)
 
 const { showError: showModalError } = useModal()
+const { withSpinner } = useSpinner()
+
+const replyTarget = ref<WaInboxComposerReplyTarget | null>(null)
 
 const templatePickerOpen = ref(false)
 const templateParamsOpen = ref(false)
@@ -398,6 +391,55 @@ async function onTemplateSend(payload: {
 function showTemplateError(message: string) {
   showModalError('Archivo', message)
 }
+
+function replyPreviewFor(msg: WaInboxMessage) {
+  const metaId = msg.reply_to_meta_message_id
+  if (!metaId) return null
+  const original = messages.value.find((m) => m.meta_message_id === metaId)
+  if (!original) {
+    return { metaId, label: 'Mensaje', text: '…', imageUrl: null }
+  }
+  return {
+    metaId,
+    label: original.direction === 'out' ? 'Tú' : (selectedConversation.value?.contact_name || 'Cliente'),
+    text: original.body?.trim() || etiquetaMedia(original),
+    imageUrl: original.message_type === 'image' ? original.media_url : null
+  }
+}
+
+function etiquetaMedia(msg: WaInboxMessage) {
+  if (msg.media_url) {
+    if (msg.message_type === 'image') return 'Foto'
+    if (msg.message_type === 'video') return 'Video'
+    if (msg.message_type === 'audio') return 'Audio'
+    return msg.media_filename || 'Documento'
+  }
+  return 'Mensaje'
+}
+
+function iniciarRespuesta(msg: WaInboxMessage) {
+  if (!msg.meta_message_id) return
+  replyTarget.value = {
+    metaMessageId: msg.meta_message_id,
+    label: msg.direction === 'out' ? 'Tú' : (selectedConversation.value?.contact_name || 'Cliente'),
+    text: msg.body?.trim() || etiquetaMedia(msg),
+    imageUrl: msg.message_type === 'image' ? msg.media_url : null
+  }
+}
+
+async function onComposerSend(payload: WaInboxComposerSendPayload) {
+  try {
+    await withSpinner(async () => {
+      await sendComposerMessage(payload)
+    }, 'Enviando…')
+  } catch {
+    /* modal en composable */
+  }
+}
+
+watch(selectedConversationId, () => {
+  replyTarget.value = null
+})
 
 const filterOptions: { value: WaInboxFilter; label: string }[] = [
   { value: 'todas', label: 'Todas' },

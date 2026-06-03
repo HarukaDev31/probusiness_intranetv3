@@ -40,6 +40,25 @@ export interface WaInboxMessage {
   is_template?: boolean
   template_name?: string | null
   message_type?: string
+  meta_message_id?: string | null
+  media_url?: string | null
+  media_mime?: string | null
+  media_filename?: string | null
+  reply_to_meta_message_id?: string | null
+}
+
+export interface WaInboxComposerReplyTarget {
+  metaMessageId: string
+  label: string
+  text: string
+  imageUrl?: string | null
+}
+
+export interface WaInboxComposerSendPayload {
+  text: string
+  file?: File
+  mediaKind?: 'image' | 'video' | 'document' | 'audio'
+  replyToMetaMessageId?: string | null
 }
 
 export type WaInboxTemplateParamType = 'text' | 'file'

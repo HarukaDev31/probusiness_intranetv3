@@ -11,7 +11,8 @@ import type {
   WaInboxMessage,
   WaInboxSession,
   WaInboxTemplate,
-  WaInboxAssignableUser
+  WaInboxAssignableUser,
+  WaInboxComposerSendPayload
 } from '~/types/whatsapp-inbox'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -44,7 +45,7 @@ export function useWhatsappInbox() {
   const selectedConversationId = ref<number | null>(null)
   const search = ref('')
   const filter = ref<WaInboxFilter>('todas')
-  const draftMessage = ref('')
+  const sendingMessage = ref(false)
   const loadingConversations = ref(false)
   const loadingMessages = ref(false)
   const loadingTemplates = ref(false)
@@ -464,30 +465,39 @@ export function useWhatsappInbox() {
     })
   }
 
-  async function sendTextMessage() {
+  async function sendComposerMessage(payload: WaInboxComposerSendPayload) {
     const conv = selectedConversation.value
-    const text = draftMessage.value.trim()
-    if (!conv || !text) return
+    if (!conv) return
     if (!conv.can_send_text) {
       showError('Ventana cerrada', 'Solo puedes enviar plantillas mientras la ventana esté cerrada.')
       return
     }
 
-    draftMessage.value = ''
+    const text = payload.text.trim()
+    if (!text && !payload.file) return
 
+    sendingMessage.value = true
     try {
-      const res = await WhatsappInboxService.sendMessage(conv.id, text)
+      const res = await WhatsappInboxService.sendMessage(conv.id, {
+        message: text || undefined,
+        file: payload.file,
+        mediaKind: payload.mediaKind,
+        replyToMetaMessageId: payload.replyToMetaMessageId
+      })
       const msg = res?.data as WaInboxMessage | undefined
       if (msg?.id) {
         if (!messages.value.some((m) => m.id === msg.id)) {
           messages.value = [...messages.value, { ...msg, delivery_status: msg.delivery_status ?? 'pending' }]
         }
         cache.setMessages(conv.id, messages.value)
-        patchConversationAfterOutbound(conv, text, msg)
+        const preview = text || msg.body || `[${msg.message_type || 'archivo'}]`
+        patchConversationAfterOutbound(conv, preview, msg)
       }
     } catch (e: any) {
-      draftMessage.value = text
       showError('Error', e?.message || 'No se pudo enviar el mensaje')
+      throw e
+    } finally {
+      sendingMessage.value = false
     }
   }
 
@@ -746,7 +756,7 @@ export function useWhatsappInbox() {
     selectedConversation,
     search,
     filter,
-    draftMessage,
+    sendingMessage,
     loadingConversations,
     loadingMoreConversations,
     conversationsHasMore,
@@ -764,7 +774,7 @@ export function useWhatsappInbox() {
     disconnectWebSocket,
     loadAllConversations,
     selectConversation,
-    sendTextMessage,
+    sendComposerMessage,
     sendTemplateMessage,
     assignConversation,
     createManualContact,

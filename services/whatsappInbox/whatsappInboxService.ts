@@ -42,10 +42,37 @@ export class WhatsappInboxService extends BaseService {
     })
   }
 
-  static async sendMessage(conversationId: number, message: string) {
+  static async sendMessage(
+    conversationId: number,
+    payload: {
+      message?: string
+      file?: File
+      mediaKind?: string
+      replyToMetaMessageId?: string | null
+    }
+  ) {
+    const text = payload.message?.trim() || ''
+    const file = payload.file
+    if (file) {
+      const fd = new FormData()
+      if (text) fd.append('message', text)
+      fd.append('file', file)
+      if (payload.mediaKind) fd.append('media_kind', payload.mediaKind)
+      if (payload.replyToMetaMessageId) {
+        fd.append('reply_to_meta_message_id', payload.replyToMetaMessageId)
+      }
+      return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        body: fd
+      })
+    }
+
     return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/messages`, {
       method: 'POST',
-      body: { message }
+      body: {
+        message: text,
+        reply_to_meta_message_id: payload.replyToMetaMessageId || undefined
+      }
     })
   }
 

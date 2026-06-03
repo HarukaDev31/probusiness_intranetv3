@@ -23,7 +23,7 @@ Documento de referencia para implementar la vista tipo `probusiness_inbox.html` 
 | Rol intranet | Solo **`Coordinación`** |
 | Copiloto (ventas) | **Congelado** hasta tener el otro número; luego tablas/módulo propios |
 | Asignación | Desde intranet (`assigned_user_id`); filtros operativos; en MVP quien tiene el menú puede escribir en cualquier chat |
-| Bitrix histórico | **No** alimenta el inbox; registro outbound en jobs de coordinación puede seguir aparte |
+| Bitrix histórico | **No** alimenta el inbox; envíos programáticos (`queueCoordinacionWhatsApp`) pasan por **wa_inbox_*** con `META_WHATSAPP_ROUTE_TO_INBOX=true` (sin open line Bitrix) |
 
 ---
 
