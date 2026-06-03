@@ -79,8 +79,13 @@
             @click="filter = f.value"
           />
         </div>
-        <div class="min-h-0 flex-1 overflow-y-auto">
-          <p v-if="loadingConversations" class="p-4 text-center text-xs text-muted">Cargando…</p>
+        <div
+          class="min-h-0 flex-1 overflow-y-auto"
+          @scroll="onConversationsScroll"
+        >
+          <p v-if="loadingConversations && !conversations.length" class="p-4 text-center text-xs text-muted">
+            Cargando…
+          </p>
           <p v-else-if="!conversations.length" class="p-4 text-center text-xs text-muted">Sin conversaciones</p>
           <button
             v-for="c in conversations"
@@ -106,10 +111,16 @@
               <p class="truncate text-xs text-muted">{{ c.last_message_preview || '—' }}</p>
             </div>
             <div class="flex shrink-0 flex-col items-end gap-1">
-              <span class="text-[10px] text-muted">{{ c.last_message_time_label }}</span>
+              <span class="text-[10px] text-muted">{{ formatConversationTime(c) }}</span>
               <UBadge v-if="c.unread_count" color="primary" size="xs">{{ c.unread_count }}</UBadge>
             </div>
           </button>
+          <p
+            v-if="loadingMoreConversations"
+            class="py-3 text-center text-xs text-muted"
+          >
+            Cargando más…
+          </p>
         </div>
       </UCard>
 
@@ -183,17 +194,32 @@
                 >
                   <span class="whitespace-pre-wrap">{{ msg.body }}</span>
                 </UCard>
-                <span
-                  class="mt-0.5 flex items-center gap-1 text-[10px] text-muted"
-                  :title="msg.delivery_status === 'failed' ? (msg.failed_reason || 'Error de envío') : undefined"
-                >
-                  {{ msg.time_label }}
-                  <span
+                <span class="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
+                  <span>{{ formatMessageTime(msg) }}</span>
+                  <UTooltip
                     v-if="msg.direction === 'out'"
-                    :class="msg.delivery_status === 'failed' ? 'text-error' : ''"
+                    :text="deliveryTooltip(msg)"
+                    :delay-duration="150"
                   >
-                    {{ deliveryIcon(msg.delivery_status) }}
-                  </span>
+                    <span
+                      class="inline-flex size-6 cursor-default items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      tabindex="0"
+                      :aria-label="deliveryTooltip(msg)"
+                    >
+                      <UIcon
+                        v-if="msg.delivery_status === 'pending'"
+                        name="i-heroicons-clock"
+                        class="size-4 shrink-0 text-warning"
+                      />
+                      <span
+                        v-else
+                        class="select-none text-lg font-bold leading-none tracking-tighter"
+                        :class="deliveryStatusClass(msg.delivery_status)"
+                      >
+                        {{ deliveryIcon(msg.delivery_status) }}
+                      </span>
+                    </span>
+                  </UTooltip>
                 </span>
               </div>
             </template>
@@ -269,6 +295,7 @@
 import type {
   WaInboxConversation,
   WaInboxFilter,
+  WaInboxMessage,
   WaInboxTemplate,
   WaInboxWindowState
 } from '~/types/whatsapp-inbox'
@@ -280,6 +307,7 @@ import WhatsappInboxNewContactModal from '~/components/whatsapp-inbox/WhatsappIn
 import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useWaInboxChatScroll } from '~/composables/whatsapp-inbox/useWaInboxChatScroll'
+import { formatDatePe } from '~/utils/formatters'
 
 const panelCardUi = {
   body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0',
@@ -299,6 +327,9 @@ const {
   filter,
   draftMessage,
   loadingConversations,
+  loadingMoreConversations,
+  loadMoreConversations,
+  conversationsHasMore,
   loadingMessages,
   loadingTemplates,
   refreshing,
@@ -320,10 +351,8 @@ const {
   newBelowCount,
   showJumpButton,
   onMessagesScroll,
-  jumpToBottom,
-  scrollToBottom,
-  resetScrollState
-} = useWaInboxChatScroll(messages)
+  jumpToBottom
+} = useWaInboxChatScroll(messages, selectedConversationId)
 
 const { showError: showModalError } = useModal()
 
@@ -410,23 +439,49 @@ function deliveryIcon(status?: string | null) {
   if (status === 'delivered') return '✓✓'
   if (status === 'sent') return '✓'
   if (status === 'failed') return '✗'
-  if (status === 'pending') return '🕐'
   return ''
+}
+
+function deliveryStatusClass(status?: string | null) {
+  if (status === 'failed') return 'text-error'
+  if (status === 'read') return 'text-info'
+  if (status === 'delivered') return 'text-highlighted'
+  if (status === 'sent') return 'text-muted'
+  return 'text-muted'
+}
+
+function formatMessageTime(msg: WaInboxMessage) {
+  if (msg.sent_at) return formatDatePe(msg.sent_at)
+  return msg.time_label || ''
+}
+
+function formatConversationTime(c: WaInboxConversation) {
+  if (c.last_message_at) return formatDatePe(c.last_message_at)
+  return c.last_message_time_label || ''
+}
+
+function deliveryTooltip(msg: WaInboxMessage) {
+  const status = msg.delivery_status
+  if (status === 'failed') {
+    return msg.failed_reason?.trim() || 'No se entregó al WhatsApp del cliente'
+  }
+  if (status === 'pending') return 'Enviando…'
+  if (status === 'sent') return 'Enviado (aceptado por Meta)'
+  if (status === 'delivered') return 'Entregado al teléfono'
+  if (status === 'read') return 'Leído por el cliente'
+  return 'Estado de envío'
 }
 
 function onAssign(val: number | undefined) {
   assignConversation(val && val > 0 ? val : null)
 }
 
-watch(selectedConversationId, () => {
-  resetScrollState()
-})
-
-watch(loadingMessages, async (loading, wasLoading) => {
-  if (wasLoading && !loading) {
-    await scrollToBottom(false)
-  }
-})
+function onConversationsScroll(e: Event) {
+  const el = e.target as HTMLElement
+  if (!el || !conversationsHasMore.value || loadingMoreConversations.value) return
+  const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+  if (nearBottom) loadMoreConversations()
+}
 
 onMounted(() => {
   init()

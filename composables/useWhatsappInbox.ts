@@ -16,33 +16,9 @@ import type {
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import { formatDatePe } from '~/utils/formatters'
 
-function matchesSearch(c: WaInboxConversation, q: string) {
-  if (!q) return true
-  const needle = q.toLowerCase()
-  return (
-    (c.contact_name || '').toLowerCase().includes(needle)
-    || (c.phone_display || '').toLowerCase().includes(needle)
-    || (c.phone_e164 || '').includes(needle)
-  )
-}
-
-function applyClientFilter(
-  list: WaInboxConversation[],
-  filter: WaInboxFilter,
-  authUserId: number
-) {
-  if (filter === 'sin-asignar') {
-    return list.filter((c) => !c.assigned_user_id)
-  }
-  if (filter === 'mis' && authUserId > 0) {
-    return list.filter((c) => c.assigned_user_id === authUserId)
-  }
-  if (filter === 'cerradas') {
-    return list.filter((c) => c.status === 'closed')
-  }
-  return list
-}
+const CONVERSATIONS_PER_PAGE = 30
 
 export function useWhatsappInbox() {
   const { withSpinner } = useSpinner()
@@ -66,15 +42,23 @@ export function useWhatsappInbox() {
   const loadingTemplates = ref(false)
   const refreshing = ref(false)
   const savingNewContact = ref(false)
+  const loadingMoreConversations = ref(false)
   const error = ref<string | null>(null)
+
+  const conversationsPagination = ref({
+    current_page: 1,
+    last_page: 1,
+    per_page: CONVERSATIONS_PER_PAGE,
+    total: 0
+  })
 
   const authUserId = computed(() => Number(currentId.value) || 0)
 
-  const conversations = computed(() => {
-    const q = search.value.trim()
-    const filtered = applyClientFilter(allConversations.value, filter.value, authUserId.value)
-    return filtered.filter((c) => matchesSearch(c, q))
-  })
+  const conversations = computed(() => allConversations.value)
+
+  const conversationsHasMore = computed(
+    () => conversationsPagination.value.current_page < conversationsPagination.value.last_page
+  )
 
   const selectedConversation = computed(() =>
     allConversations.value.find((c) => c.id === selectedConversationId.value)
@@ -159,7 +143,9 @@ export function useWhatsappInbox() {
     const convId = payload.conversation_id
     const idx = messages.value.findIndex((m) => m.id === payload.message_id)
     if (selectedConversationId.value === convId && idx >= 0) {
-      const patch = payload.message ?? { delivery_status: payload.delivery_status }
+      const patch: Partial<WaInboxMessage> = payload.message ?? {
+        delivery_status: payload.delivery_status
+      }
       messages.value[idx] = { ...messages.value[idx], ...patch }
       if (patch.delivery_status === 'failed') {
         showError(
@@ -212,15 +198,25 @@ export function useWhatsappInbox() {
     cache.setSession(session.value)
   }
 
-  async function loadAllConversations(options: { background?: boolean; force?: boolean } = {}) {
-    const cached = !options.force ? cache.getAllConversations() : null
-    if (cached) {
-      allConversations.value = cached
-      ensureSelectedConversation()
-      if (!options.background && !options.force) return
+  async function loadConversations(
+    options: { page?: number; append?: boolean; background?: boolean; force?: boolean } = {}
+  ) {
+    const page = options.page ?? 1
+    const append = options.append ?? false
+    const useCache = !options.force && !append && page === 1 && !search.value.trim()
+
+    if (useCache) {
+      const cached = cache.getAllConversations()
+      if (cached) {
+        allConversations.value = cached
+        ensureSelectedConversation()
+        if (!options.background && !options.force) return
+      }
     }
 
-    if (!options.background) {
+    if (append) {
+      loadingMoreConversations.value = true
+    } else if (!options.background) {
       loadingConversations.value = true
     } else {
       refreshing.value = true
@@ -229,21 +225,62 @@ export function useWhatsappInbox() {
 
     try {
       const res = await WhatsappInboxService.getConversations({
-        filter: 'todas',
-        per_page: 100
+        filter: filter.value,
+        search: search.value.trim() || undefined,
+        per_page: CONVERSATIONS_PER_PAGE,
+        page
       })
-      allConversations.value = Array.isArray(res?.data) ? res.data : []
-      cache.setAllConversations(allConversations.value)
+      const rows = Array.isArray(res?.data) ? res.data : []
+      if (append) {
+        const seen = new Set(allConversations.value.map((c) => c.id))
+        const merged = [...allConversations.value]
+        for (const row of rows) {
+          if (!seen.has(row.id)) merged.push(row)
+        }
+        allConversations.value = sortConversationsList(merged)
+      } else {
+        allConversations.value = rows
+      }
+
+      if (res?.pagination) {
+        conversationsPagination.value = {
+          current_page: Number(res.pagination.current_page) || page,
+          last_page: Number(res.pagination.last_page) || 1,
+          per_page: Number(res.pagination.per_page) || CONVERSATIONS_PER_PAGE,
+          total: Number(res.pagination.total) || rows.length
+        }
+      }
+
+      if (page === 1 && !search.value.trim()) {
+        cache.setAllConversations(allConversations.value)
+      }
       ensureSelectedConversation()
     } catch (e: any) {
-      if (!cached) {
-        error.value = e?.message || 'No se pudo cargar conversaciones'
-        allConversations.value = []
+      if (!append) {
+        if (!useCache || !cache.getAllConversations()) {
+          error.value = e?.message || 'No se pudo cargar conversaciones'
+          allConversations.value = []
+        }
       }
     } finally {
       loadingConversations.value = false
+      loadingMoreConversations.value = false
       refreshing.value = false
     }
+  }
+
+  async function loadAllConversations(options: { background?: boolean; force?: boolean } = {}) {
+    await loadConversations({ page: 1, ...options })
+  }
+
+  async function loadMoreConversations() {
+    if (loadingMoreConversations.value || loadingConversations.value) return
+    if (!conversationsHasMore.value) return
+    await loadConversations({
+      page: conversationsPagination.value.current_page + 1,
+      append: true,
+      background: true
+    })
   }
 
   async function loadMessages(conversationId: number, options: { background?: boolean } = {}) {
@@ -318,8 +355,7 @@ export function useWhatsappInbox() {
       ...conv,
       last_message_preview: preview.slice(0, 200),
       last_message_at: sentAt,
-      last_message_time_label: msg?.time_label
-        || new Date(sentAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+      last_message_time_label: formatDatePe(sentAt) || msg?.time_label || ''
     })
   }
 
@@ -554,13 +590,15 @@ export function useWhatsappInbox() {
   }
 
   watch(filter, () => {
-    ensureSelectedConversation()
+    loadConversations({ page: 1, force: true, background: true })
   })
 
   let searchTimer: ReturnType<typeof setTimeout> | null = null
   watch(search, () => {
     if (searchTimer) clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => ensureSelectedConversation(), 150)
+    searchTimer = setTimeout(() => {
+      loadConversations({ page: 1, force: true, background: true })
+    }, 350)
   })
 
   return {
@@ -576,6 +614,9 @@ export function useWhatsappInbox() {
     filter,
     draftMessage,
     loadingConversations,
+    loadingMoreConversations,
+    conversationsHasMore,
+    loadMoreConversations,
     loadingMessages,
     loadingTemplates,
     sendingTemplate,

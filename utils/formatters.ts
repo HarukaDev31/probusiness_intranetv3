@@ -85,6 +85,22 @@ export function formatSoporteTiMarcaTiempo(val: string | Date | null | undefined
 }
 
 /**
+ * Hora corta en zona Perú (America/Lima), p. ej. «14:30».
+ * Usar en chats e inbox donde el servidor puede estar en UTC.
+ */
+export function formatDatePe(val: string | Date | number | null | undefined): string {
+  const d = val == null ? null : parseInstante(val)
+  if (!d) return typeof val === 'string' ? val : ''
+
+  return new Intl.DateTimeFormat('es-PE', {
+    timeZone: TIMEZONE_PERU,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(d)
+}
+
+/**
  * Formatea un número como moneda
  * @param amount - Cantidad a formatear
  * @param type - Tipo de moneda (por defecto 'USD')

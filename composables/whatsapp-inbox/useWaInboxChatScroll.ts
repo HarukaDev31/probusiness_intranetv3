@@ -4,14 +4,17 @@ import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 
 const NEAR_BOTTOM_PX = 80
 
-export function useWaInboxChatScroll(messages: Ref<WaInboxMessage[]>) {
+export function useWaInboxChatScroll(
+  messages: Ref<WaInboxMessage[]>,
+  conversationId: Ref<number | null>
+) {
   const scrollRef = ref<InstanceType<typeof ChatMessagesScroll> | null>(null)
   const isNearBottom = ref(true)
   const newBelowCount = ref(0)
+  const pendingOpenScroll = ref(false)
 
-  const showJumpButton = computed(
-    () => !isNearBottom.value && messages.value.length > 0
-  )
+  /** Solo mensajes entrantes (cliente → yo) mientras no estoy abajo. */
+  const showJumpButton = computed(() => newBelowCount.value > 0)
 
   function getScrollEl(): HTMLElement | null {
     const exposed = scrollRef.value as { scrollRef?: HTMLElement | null } | null
@@ -44,6 +47,7 @@ export function useWaInboxChatScroll(messages: Ref<WaInboxMessage[]>) {
     } else {
       el.scrollTop = el.scrollHeight
     }
+    await nextTick()
     isNearBottom.value = true
     newBelowCount.value = 0
   }
@@ -55,20 +59,45 @@ export function useWaInboxChatScroll(messages: Ref<WaInboxMessage[]>) {
   function resetScrollState() {
     isNearBottom.value = true
     newBelowCount.value = 0
+    pendingOpenScroll.value = false
   }
+
+  watch(conversationId, (id, prevId) => {
+    if (id === prevId) return
+    resetScrollState()
+    pendingOpenScroll.value = id != null
+  })
 
   watch(
     messages,
     (list, prev) => {
       const prevLen = prev?.length ?? 0
+
+      if (pendingOpenScroll.value && list.length > 0) {
+        nextTick(() => {
+          scrollToBottom(false)
+          pendingOpenScroll.value = false
+        })
+        return
+      }
+
       if (list.length <= prevLen) return
 
+      const added = list.slice(prevLen)
+      const incomingCount = added.filter((m) => m.direction === 'in').length
+      const hasOutbound = added.some((m) => m.direction === 'out')
+
       nextTick(() => {
+        if (hasOutbound) {
+          scrollToBottom(false)
+          return
+        }
+
         measureNearBottom()
         if (isNearBottom.value) {
           scrollToBottom(false)
-        } else {
-          newBelowCount.value += list.length - prevLen
+        } else if (incomingCount > 0) {
+          newBelowCount.value += incomingCount
         }
       })
     },
