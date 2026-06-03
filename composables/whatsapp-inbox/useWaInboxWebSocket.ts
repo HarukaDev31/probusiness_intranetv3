@@ -22,19 +22,19 @@ function parsePayload<T>(data: unknown): T | null {
   return data as T
 }
 
-let channelSubscribed = false
 let activeHandlers: WaInboxWebSocketHandlers | null = null
 let echoReadyListener: (() => void) | null = null
 
 export function useWaInboxWebSocket() {
   const { subscribeToChannel, unsubscribeFromChannel } = useEcho()
 
-  function trySubscribe(handlers: WaInboxWebSocketHandlers): boolean {
-    if (channelSubscribed || !getEchoInstance()) {
-      return channelSubscribed
+  function bindInboxChannel(handlers: WaInboxWebSocketHandlers): boolean {
+    if (!getEchoInstance()) {
+      return false
     }
 
     activeHandlers = handlers
+
     subscribeToChannel({
       name: WA_INBOX_WS_CHANNEL,
       type: 'private',
@@ -57,13 +57,14 @@ export function useWaInboxWebSocket() {
         }
       ]
     })
-    channelSubscribed = true
+
     return true
   }
 
   function connect(handlers: WaInboxWebSocketHandlers) {
     activeHandlers = handlers
-    if (trySubscribe(handlers)) return
+
+    if (bindInboxChannel(handlers)) return
 
     if (typeof window === 'undefined') return
 
@@ -73,7 +74,7 @@ export function useWaInboxWebSocket() {
     }
 
     echoReadyListener = () => {
-      trySubscribe(handlers)
+      bindInboxChannel(handlers)
       if (echoReadyListener) {
         window.removeEventListener('echo-ready', echoReadyListener)
         echoReadyListener = null
@@ -82,7 +83,7 @@ export function useWaInboxWebSocket() {
     window.addEventListener('echo-ready', echoReadyListener)
 
     if (getEchoInstance()) {
-      trySubscribe(handlers)
+      bindInboxChannel(handlers)
       if (echoReadyListener) {
         window.removeEventListener('echo-ready', echoReadyListener)
         echoReadyListener = null
@@ -95,10 +96,7 @@ export function useWaInboxWebSocket() {
       window.removeEventListener('echo-ready', echoReadyListener)
       echoReadyListener = null
     }
-    if (channelSubscribed) {
-      unsubscribeFromChannel(WA_INBOX_WS_CHANNEL)
-    }
-    channelSubscribed = false
+    unsubscribeFromChannel(WA_INBOX_WS_CHANNEL)
     activeHandlers = null
   }
 

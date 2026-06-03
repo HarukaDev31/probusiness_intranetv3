@@ -140,16 +140,14 @@ export function useWhatsappInbox() {
     const msg = payload.message
     if (!msg?.id) return
 
-    // No mostrar burbuja fantasma si otro cliente encoló y falló (solo actualización por estado).
-    if (msg.delivery_status === 'failed') {
-      return
-    }
-
     if (selectedConversationId.value === convId) {
-      if (!messages.value.some((m) => m.id === msg.id)) {
+      const idx = messages.value.findIndex((m) => m.id === msg.id)
+      if (idx >= 0) {
+        messages.value[idx] = { ...messages.value[idx], ...msg }
+      } else {
         messages.value = [...messages.value, msg]
-        cache.appendMessage(convId, msg)
       }
+      cache.setMessages(convId, messages.value)
       if (msg.direction === 'in') {
         WhatsappInboxService.markRead(convId).catch(() => {})
       }
@@ -160,21 +158,26 @@ export function useWhatsappInbox() {
 
   function applyRealtimeStatus(payload: WaInboxWsMessageStatusPayload) {
     const convId = payload.conversation_id
-    const idx = messages.value.findIndex((m) => m.id === payload.message_id)
-    if (selectedConversationId.value === convId && idx >= 0) {
-      const patch: Partial<WaInboxMessage> = payload.message ?? {
-        delivery_status: payload.delivery_status
+    const patch: Partial<WaInboxMessage> = payload.message ?? {
+      delivery_status: payload.delivery_status
+    }
+
+    if (selectedConversationId.value === convId) {
+      let idx = messages.value.findIndex((m) => m.id === payload.message_id)
+      if (idx < 0 && payload.message?.id) {
+        messages.value = [...messages.value, payload.message as WaInboxMessage]
+        idx = messages.value.length - 1
       }
-      messages.value[idx] = { ...messages.value[idx], ...patch }
-      if (patch.delivery_status === 'failed') {
-        showError(
-          'No llegó a WhatsApp',
-          patch.failed_reason || 'Meta rechazó la entrega. Revisa tamaño o formato del archivo.'
-        )
-      }
-      const cached = cache.getMessages(convId)
-      if (cached) {
-        cache.setMessages(convId, messages.value, cached.conversationPatch)
+      if (idx >= 0) {
+        messages.value[idx] = { ...messages.value[idx], ...patch }
+        if (patch.delivery_status === 'failed') {
+          showError(
+            'No llegó a WhatsApp',
+            patch.failed_reason || 'Meta rechazó la entrega. Revisa tamaño o formato del archivo.'
+          )
+        }
+        const cached = cache.getMessages(convId)
+        cache.setMessages(convId, messages.value, cached?.conversationPatch)
       }
     } else if (convId) {
       const cached = cache.getMessages(convId)

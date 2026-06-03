@@ -7,6 +7,9 @@ let echoInstance: Echo | null = null
 let isInitializing = false
 let isInitialized = false
 
+/** Evita duplicar callbacks; se limpia al hacer leave del canal. */
+const boundHandlersByChannel = new Map<string, Set<string>>()
+
 type PusherConstructor = typeof import('pusher-js').default
 
 /** Resuelve el constructor Pusher con distintas formas de export (CJS/ESM en Vite). */
@@ -151,111 +154,96 @@ export const useEcho = () => {
     }
   }
 
+  const bindChannelHandlers = (channelName: string, channelInstance: any, handlers: WebSocketChannel['handlers']) => {
+    const boundKeys = boundHandlersByChannel.get(channelName) ?? new Set<string>()
+
+    handlers.forEach(({ event, callback }) => {
+      const eventKey = event.startsWith('.') ? event : `.${event}`
+      if (boundKeys.has(eventKey)) return
+      boundKeys.add(eventKey)
+
+      const eventNamePusher = eventKey.slice(1)
+      const eventNameEcho = eventKey
+
+      const onEvent = (data: unknown) => {
+        if (process.dev && eventNamePusher.startsWith('Calendar')) {
+          console.log('[WS] Evento calendario recibido:', eventNamePusher, data)
+        }
+        if (process.dev && eventNamePusher.startsWith('WaInbox')) {
+          console.log('[WS] WhatsApp Inbox:', eventNamePusher, data)
+        }
+        callback(data)
+      }
+
+      try {
+        if (!channelInstance || typeof channelInstance !== 'object') {
+          return
+        }
+        let attached = false
+        const subscription = channelInstance.subscription
+        if (subscription && typeof subscription.bind === 'function') {
+          subscription.bind(eventNamePusher, onEvent)
+          attached = true
+        }
+        if (!attached && typeof channelInstance.listen === 'function') {
+          channelInstance.listen(eventNameEcho, onEvent)
+          attached = true
+        }
+        if (!attached && typeof channelInstance.bind === 'function') {
+          channelInstance.bind(eventNamePusher, onEvent)
+        }
+      } catch (err) {
+        console.error('❌ Error registrando evento:', eventKey, err)
+      }
+    })
+
+    boundHandlersByChannel.set(channelName, boundKeys)
+  }
+
   const subscribeToChannel = (channel: WebSocketChannel) => {
     if (!echoInstance) {
       throw new Error('Echo instance not initialized')
     }
 
-    // Verificar si ya estamos suscritos a este canal para evitar duplicados
-    if (activeChannels.value.has(channel.name)) {
-      
-      return activeChannels.value.get(channel.name)
+    const existing = activeChannels.value.get(channel.name)
+    if (existing) {
+      bindChannelHandlers(channel.name, existing, channel.handlers)
+      return existing
     }
 
-    
     let channelInstance: any
 
     try {
       switch (channel.type) {
         case 'private':
-          
           channelInstance = echoInstance.private(channel.name)
-          
           break
         case 'presence':
-          
           channelInstance = echoInstance.join(channel.name)
-          
           break
         default:
           throw new Error(`Tipo de canal no soportado: ${channel.type}`)
       }
 
-      // Agregar listeners de estado del canal
       if (channelInstance) {
         try {
-          // Intentar diferentes métodos para los eventos de suscripción
           if (typeof channelInstance.bind === 'function') {
-            channelInstance.bind('pusher:subscription_succeeded', () => {
-              
-            })
-
-            channelInstance.bind('pusher:subscription_error', (err: any) => {
+            channelInstance.bind('pusher:subscription_succeeded', () => {})
+            channelInstance.bind('pusher:subscription_error', (err: unknown) => {
               console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
             })
           } else if (typeof channelInstance.listen === 'function') {
-            channelInstance.listen('pusher:subscription_succeeded', () => {
-              
-            })
-
-            channelInstance.listen('pusher:subscription_error', (err: any) => {
+            channelInstance.listen('pusher:subscription_succeeded', () => {})
+            channelInstance.listen('pusher:subscription_error', (err: unknown) => {
               console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
             })
-          } else {
-            
           }
         } catch (err) {
           console.warn(`⚠️ Error registrando eventos de suscripción para ${channel.name}:`, err)
         }
       }
 
-      // Registrar los manejadores de eventos para este canal.
-      // Laravel Echo expone el canal real en .subscription; enlazar ahí garantiza el mismo comportamiento que los canales por rol.
-      const registeredEvents = new Set()
-      channel.handlers.forEach(({ event, callback }) => {
-        const eventKey = `${channel.name}:${event}`
-        if (registeredEvents.has(eventKey)) return
-        registeredEvents.add(eventKey)
-
-        const eventNamePusher = event.startsWith('.') ? event.slice(1) : event
-        const eventNameEcho = event.startsWith('.') ? event : '.' + event
-
-        const onEvent = (data: any) => {
-          if (process.dev && eventNamePusher.startsWith('Calendar')) {
-            console.log('[WS] Evento calendario recibido:', eventNamePusher, data)
-          }
-          callback(data)
-        }
-
-        try {
-          if (!channelInstance || typeof channelInstance !== 'object') {
-            console.error('❌ channelInstance no es un objeto válido:', channelInstance)
-            return
-          }
-          let bound = false
-          // 1) Mismo camino que los canales por rol: enlazar en el canal real de Pusher (.subscription)
-          const subscription = channelInstance.subscription
-          if (subscription && typeof subscription.bind === 'function') {
-            subscription.bind(eventNamePusher, onEvent)
-            bound = true
-          }
-          // 2) Si no hay .subscription (canal no Echo), usar .listen() del wrapper Echo
-          if (!bound && typeof channelInstance.listen === 'function') {
-            channelInstance.listen(eventNameEcho, onEvent)
-            bound = true
-          }
-          if (!bound && typeof channelInstance.bind === 'function') {
-            channelInstance.bind(eventNamePusher, onEvent)
-            bound = true
-          }
-          if (!bound) {
-            console.warn('⚠️ Canal sin subscription.bind/listen para evento:', event, Object.getOwnPropertyNames(channelInstance))
-          }
-        } catch (err) {
-          console.error('❌ Error registrando evento:', event, err)
-        }
-      })
-
+      bindChannelHandlers(channel.name, channelInstance, channel.handlers)
       activeChannels.value.set(channel.name, channelInstance)
       return channelInstance
     } catch (err) {
@@ -279,13 +267,12 @@ export const useEcho = () => {
   }
 
   const unsubscribeFromChannel = (channelName: string) => {
-    
     const channel = activeChannels.value.get(channelName)
     if (channel) {
       try {
         echoInstance?.leave(channelName)
         activeChannels.value.delete(channelName)
-        
+        boundHandlersByChannel.delete(channelName)
       } catch (err) {
         console.error(`❌ Error desuscribiendo del canal ${channelName}:`, err)
       }
@@ -308,11 +295,11 @@ export const useEcho = () => {
   }
 
   const resetEcho = () => {
-    
     echoInstance = null
     isInitialized = false
     isInitializing = false
     activeChannels.value.clear()
+    boundHandlersByChannel.clear()
     isConnected.value = false
     error.value = null
   }
