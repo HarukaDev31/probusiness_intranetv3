@@ -42,6 +42,37 @@ function waMessageNumericId(id: unknown): number {
   return Number.isFinite(n) && n > 0 ? n : 0
 }
 
+const DELIVERY_STATUS_RANK: Record<string, number> = {
+  pending: 0,
+  sent: 1,
+  delivered: 2,
+  read: 3
+}
+
+/** Evita que un WS MessageCreated tardío (pending) pise un StatusUpdated (sent). */
+function mergeDeliveryStatus(
+  current?: string | null,
+  incoming?: string | null
+): string | null | undefined {
+  if (!incoming) return current
+  if (!current) return incoming
+  if (incoming === 'failed') return 'failed'
+  if (current === 'failed') return current
+  const curRank = DELIVERY_STATUS_RANK[current] ?? -1
+  const incRank = DELIVERY_STATUS_RANK[incoming] ?? -1
+  return incRank >= curRank ? incoming : current
+}
+
+function mergeWaInboxMessage(prev: WaInboxMessage, incoming: WaInboxMessage): WaInboxMessage {
+  const id = waMessageNumericId(incoming.id)
+  return {
+    ...prev,
+    ...incoming,
+    id,
+    delivery_status: mergeDeliveryStatus(prev.delivery_status, incoming.delivery_status) ?? incoming.delivery_status
+  }
+}
+
 function sortMessagesChronologically(list: WaInboxMessage[]): WaInboxMessage[] {
   return [...list].sort((a, b) => {
     const ta = a.sent_at ? new Date(a.sent_at).getTime() : 0
@@ -58,7 +89,7 @@ function mergeMessageLists(...sources: WaInboxMessage[][]): WaInboxMessage[] {
       const id = waMessageNumericId(m.id)
       if (!id) continue
       const prev = byId.get(id)
-      byId.set(id, prev ? { ...prev, ...m, id } : { ...m, id })
+      byId.set(id, prev ? mergeWaInboxMessage(prev, { ...m, id }) : { ...m, id })
     }
   }
   return sortMessagesChronologically(Array.from(byId.values()))
@@ -174,7 +205,7 @@ export function useWhatsappInbox() {
       const idx = findMessageIndex(messages.value, msgId)
       const next = [...messages.value]
       if (idx >= 0) {
-        next[idx] = { ...next[idx], ...msg, id: msgId }
+        next[idx] = mergeWaInboxMessage(next[idx], { ...msg, id: msgId })
       } else {
         next.push({ ...msg, id: msgId })
       }
@@ -187,7 +218,7 @@ export function useWhatsappInbox() {
         const mi = findMessageIndex(cached.messages, msgId)
         const list = [...cached.messages]
         if (mi >= 0) {
-          list[mi] = { ...list[mi], ...msg, id: msgId }
+          list[mi] = mergeWaInboxMessage(list[mi], { ...msg, id: msgId })
         } else {
           list.push({ ...msg, id: msgId })
         }
@@ -233,10 +264,11 @@ export function useWhatsappInbox() {
     const messageId = waMessageNumericId(payload.message_id)
     if (!convId || !messageId) return
 
+    const incomingStatus = payload.delivery_status ?? payload.message?.delivery_status
     const patch: Partial<WaInboxMessage> = {
       ...(payload.message ?? {}),
       id: messageId,
-      delivery_status: payload.delivery_status ?? payload.message?.delivery_status
+      delivery_status: incomingStatus
     }
 
     if (selectedConversationId.value === convId) {
@@ -247,7 +279,11 @@ export function useWhatsappInbox() {
       }
       if (idx >= 0) {
         const next = [...messages.value]
-        next[idx] = { ...next[idx], ...patch, id: messageId }
+        const merged = { ...next[idx], ...patch, id: messageId }
+        merged.delivery_status = mergeDeliveryStatus(next[idx].delivery_status, incomingStatus)
+          ?? incomingStatus
+          ?? next[idx].delivery_status
+        next[idx] = merged
         messages.value = next
         messagesConversationId.value = convId
         syncMessagesCacheForConversation(convId)
@@ -265,7 +301,11 @@ export function useWhatsappInbox() {
         const mi = findMessageIndex(cached.messages, messageId)
         if (mi >= 0) {
           const list = [...cached.messages]
-          list[mi] = { ...list[mi], ...patch, id: messageId }
+          const merged = { ...list[mi], ...patch, id: messageId }
+          merged.delivery_status = mergeDeliveryStatus(list[mi].delivery_status, incomingStatus)
+            ?? incomingStatus
+            ?? list[mi].delivery_status
+          list[mi] = merged
           cache.setMessages(convId, list, cached.conversationPatch)
         }
       }
