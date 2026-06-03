@@ -59,6 +59,10 @@ const inflight = {
   messages: new Map<number, Promise<void>>()
 }
 
+/** Cola de selección: evita carreras entre clics rápidos (URL / mensajes desincronizados). */
+let selectConversationChain: Promise<void> = Promise.resolve()
+let selectConversationGeneration = 0
+
 /** PATCH /read agrupado; no dispara recargas de UI. */
 const markReadDebounce = new Map<number, ReturnType<typeof setTimeout>>()
 
@@ -336,12 +340,33 @@ export function useWhatsappInbox() {
 
   async function navigateToConversation(convId: number) {
     const target = waInboxConversationPath(convId)
+    const slug = String(convId)
+    if (route.path === target && getRouteConversationSlug() === slug) {
+      waInboxLog('navigate.skip', { convId, target })
+      return
+    }
     try {
-      await navigateTo(target)
+      await router.replace(target)
       await nextTick()
-      waInboxLog('navigate.ok', { convId, target, slug: getRouteConversationSlug() })
+      waInboxLog('navigate.ok', {
+        convId,
+        target,
+        path: route.path,
+        slug: getRouteConversationSlug()
+      })
     } catch (err) {
-      waInboxWarn('navigate.failed', { convId, target, err: String(err) })
+      try {
+        await navigateTo(target, { replace: true })
+        await nextTick()
+        waInboxLog('navigate.ok.fallback', { convId, target, path: route.path })
+      } catch (fallbackErr) {
+        waInboxWarn('navigate.failed', {
+          convId,
+          target,
+          err: String(err),
+          fallback: String(fallbackErr)
+        })
+      }
     }
   }
 
@@ -732,30 +757,75 @@ export function useWhatsappInbox() {
     await task
   }
 
-  async function selectConversation(id: number, options: { skipRoute?: boolean } = {}) {
-    const convId = normalizeConversationId(id)
-    if (!convId) return
-
+  async function runSelectConversation(
+    convId: number,
+    options: { skipRoute?: boolean },
+    generation: number
+  ) {
     const prevId = selectedConversationId.value
     const switched = prevId !== convId
 
-    waInboxLog('selectConversation', { id: convId, from: prevId, skipRoute: options.skipRoute })
-    connectWebSocket()
-    syncConversationsFromStore()
-    selectedConversationId.value = convId
-    hydrateMessagesFromCache(convId)
+    waInboxLog('selectConversation.run', {
+      id: convId,
+      from: prevId,
+      generation,
+      skipRoute: options.skipRoute
+    })
 
     if (!options.skipRoute && !isRouteOnConversation(convId)) {
       await navigateToConversation(convId)
     }
 
-    if (selectedConversationId.value !== convId) return
+    if (generation !== selectConversationGeneration) {
+      waInboxLog('selectConversation.staleAfterNav', { id: convId, generation })
+      return
+    }
+
+    syncConversationsFromStore()
+    selectedConversationId.value = convId
+    setWaInboxViewingConversationId(convId)
+    hydrateMessagesFromCache(convId)
+
+    if (generation !== selectConversationGeneration) return
+
+    waInboxLog('loadMessages.start', {
+      convId,
+      generation,
+      messagesConv: messagesConversationId.value
+    })
 
     await loadMessages(convId, {
       force: switched || messagesConversationId.value !== convId
     })
+
+    if (generation !== selectConversationGeneration) return
+
+    waInboxLog('loadMessages.done', {
+      convId,
+      generation,
+      count: messages.value.length,
+      messagesConv: messagesConversationId.value
+    })
+
     syncConversationsFromStore()
     syncOpenMessagesFromStore(convId)
+  }
+
+  async function selectConversation(id: number, options: { skipRoute?: boolean } = {}) {
+    const convId = normalizeConversationId(id)
+    if (!convId) return
+
+    const generation = ++selectConversationGeneration
+    waInboxLog('selectConversation.enqueue', {
+      id: convId,
+      from: selectedConversationId.value,
+      generation,
+      skipRoute: options.skipRoute
+    })
+
+    const run = () => runSelectConversation(convId, options, generation)
+    selectConversationChain = selectConversationChain.then(run, run)
+    await selectConversationChain
   }
 
   function patchConversationAfterOutbound(

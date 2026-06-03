@@ -93,7 +93,7 @@
             type="button"
             class="flex w-full gap-2 border-b border-default px-3 py-2.5 text-left transition-colors"
             :class="convRowClass(c)"
-            @click="onSelectConversation(c.id)"
+            @click.stop="onSelectConversation(c.id)"
           >
             <div class="relative shrink-0">
               <UAvatar
