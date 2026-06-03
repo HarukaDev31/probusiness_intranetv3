@@ -1,5 +1,5 @@
 import { WA_INBOX_WS_CHANNEL, WA_INBOX_WS_EVENTS } from '~/constants/whatsappInboxWs'
-import { useEcho } from '~/composables/websocket/useEcho'
+import { useEcho, getEchoInstance } from '~/composables/websocket/useEcho'
 import {
   dispatchWaInboxMessageCreated,
   dispatchWaInboxMessageStatusUpdated
