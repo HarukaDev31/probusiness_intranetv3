@@ -309,6 +309,7 @@ Respuesta API por conversación:
 |--------|------|-------------|
 | GET | `/api/whatsapp-inbox/session` | Línea activa (topbar) |
 | GET | `/api/whatsapp-inbox/conversations` | Lista + filtros + búsqueda + paginación |
+| POST | `/api/whatsapp-inbox/conversations` | Alta manual contacto → `wa_inbox_conversations` |
 | GET | `/api/whatsapp-inbox/conversations/{id}/messages` | Historial mensajes |
 | POST | `/api/whatsapp-inbox/conversations/{id}/messages` | Texto (ventana abierta) → encola `SendWaInboxOutboundJob` |
 | POST | `/api/whatsapp-inbox/conversations/{id}/templates` | Plantilla + parámetros → encola `SendWaInboxOutboundJob` |

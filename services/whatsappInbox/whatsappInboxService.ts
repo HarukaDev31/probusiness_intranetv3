@@ -20,6 +20,21 @@ export class WhatsappInboxService extends BaseService {
     })
   }
 
+  static async createConversation(payload: {
+    contact_name: string
+    phone: string
+    assigned_user_id?: number | null
+  }) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations`, {
+      method: 'POST',
+      body: {
+        contact_name: payload.contact_name,
+        phone: payload.phone,
+        assigned_user_id: payload.assigned_user_id ?? 0
+      }
+    })
+  }
+
   static async getMessages(conversationId: number, params: { per_page?: number; page?: number } = {}) {
     return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/messages`, {
       method: 'GET',
@@ -40,9 +55,12 @@ export class WhatsappInboxService extends BaseService {
       template_name: string
       params: Record<string, string>
       files?: Record<string, File>
+      /** document | image | video por clave de archivo (p. ej. header_media) */
+      fileKinds?: Record<string, string>
     }
   ) {
     const files = payload.files ?? {}
+    const fileKinds = payload.fileKinds ?? {}
     const fileKeys = Object.keys(files)
     if (fileKeys.length === 0) {
       return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/templates`, {
@@ -60,12 +78,8 @@ export class WhatsappInboxService extends BaseService {
     for (const key of fileKeys) {
       const file = files[key]
       fd.append(key, file)
-      if (key === 'header_media') {
-        const kind = file.type.startsWith('image/')
-          ? 'image'
-          : file.type.startsWith('video/')
-            ? 'video'
-            : 'document'
+      const kind = fileKinds[key]
+      if (key === 'header_media' && kind) {
         fd.append('header_file_kind', kind)
       }
     }

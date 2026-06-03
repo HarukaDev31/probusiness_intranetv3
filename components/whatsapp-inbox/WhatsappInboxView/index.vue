@@ -46,9 +46,19 @@
         :ui="panelCardUi"
       >
         <div class="border-b border-default p-3">
-          <div class="mb-2 flex items-center justify-between">
+          <div class="mb-2 flex items-center justify-between gap-2">
             <h2 class="text-sm font-bold text-highlighted">Conversaciones</h2>
-            <UBadge v-if="unreadTotal" color="primary" size="xs">{{ unreadTotal }}</UBadge>
+            <div class="flex items-center gap-1">
+              <UButton
+                icon="i-heroicons-user-plus"
+                color="primary"
+                variant="soft"
+                size="xs"
+                aria-label="Nuevo contacto"
+                @click="newContactOpen = true"
+              />
+              <UBadge v-if="unreadTotal" color="primary" size="xs">{{ unreadTotal }}</UBadge>
+            </div>
           </div>
           <UInput
             v-model="search"
@@ -246,6 +256,12 @@
       @send="onTemplateSend"
       @error="(msg) => showTemplateError(msg)"
     />
+    <WhatsappInboxNewContactModal
+      v-model:open="newContactOpen"
+      :assignable-users="assignableUsers"
+      :saving="savingNewContact"
+      @save="onNewContactSave"
+    />
   </UCard>
 </template>
 
@@ -260,6 +276,7 @@ import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
 import WhatsappInboxTemplatePickerModal from '~/components/whatsapp-inbox/WhatsappInboxTemplatePickerModal.vue'
 import WhatsappInboxTemplateParamsModal from '~/components/whatsapp-inbox/WhatsappInboxTemplateParamsModal.vue'
+import WhatsappInboxNewContactModal from '~/components/whatsapp-inbox/WhatsappInboxNewContactModal.vue'
 import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useWaInboxChatScroll } from '~/composables/whatsapp-inbox/useWaInboxChatScroll'
@@ -293,6 +310,8 @@ const {
   sendTemplateMessage,
   sendingTemplate,
   assignConversation,
+  createManualContact,
+  savingNewContact,
   disconnectWebSocket
 } = useWhatsappInbox()
 
@@ -311,6 +330,20 @@ const { showError: showModalError } = useModal()
 const templatePickerOpen = ref(false)
 const templateParamsOpen = ref(false)
 const templateForParams = ref<WaInboxTemplate | null>(null)
+const newContactOpen = ref(false)
+
+async function onNewContactSave(payload: {
+  contact_name: string
+  phone: string
+  assigned_user_id: number | null
+}) {
+  try {
+    await createManualContact(payload)
+    newContactOpen.value = false
+  } catch {
+    /* error modal en composable */
+  }
+}
 
 function onTemplatePicked(tpl: WaInboxTemplate) {
   templateForParams.value = tpl
@@ -321,8 +354,14 @@ async function onTemplateSend(payload: {
   template: WaInboxTemplate
   params: Record<string, string>
   files: Record<string, File>
+  fileKinds: Record<string, string>
 }) {
-  await sendTemplateMessage(payload.template.name, payload.params, payload.files)
+  await sendTemplateMessage(
+    payload.template.name,
+    payload.params,
+    payload.files,
+    payload.fileKinds
+  )
   templateParamsOpen.value = false
   templateForParams.value = null
 }

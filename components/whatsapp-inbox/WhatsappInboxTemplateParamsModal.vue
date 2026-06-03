@@ -24,13 +24,13 @@
               </span>
             </template>
             <FileUploader
-              v-if="def.type === 'file'"
+              v-if="def.type === 'file' && template"
               :model-files="filesByParam[def.name] ?? []"
-              :accepted-types="acceptedTypesForParam(def)"
-              :custom-message="`Sube el archivo para {{${def.name}}}`"
+              :accepted-types="acceptedTypesForParam(def, template)"
+              :custom-message="uploadMessageForParam(def, template)"
               :immediate="true"
               :show-save-button="false"
-              @files-selected="(list) => setFiles(def.name, list)"
+              @files-selected="(list) => onFilesSelected(def, list)"
               @file-removed="() => clearFiles(def.name)"
               @error="onUploaderError"
             />
@@ -68,15 +68,18 @@
 
 <script setup lang="ts">
 import FileUploader from '~/components/commons/FileUploader.vue'
-import type { WaInboxTemplate } from '~/types/whatsapp-inbox'
+import type { WaInboxTemplate, WaInboxTemplateParamDef } from '~/types/whatsapp-inbox'
 import {
   acceptedTypesForParam,
   buildTemplatePreview,
+  fileMatchesParamKind,
   fileParamsFilled,
   getTemplateParamDefs,
   paramTypeBadgeColor,
   paramTypeLabel,
-  textParamsFilled
+  resolveParamFileKind,
+  textParamsFilled,
+  uploadMessageForParam
 } from '~/utils/whatsappInboxTemplateParams'
 
 const open = defineModel<boolean>('open', { default: false })
@@ -87,7 +90,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  send: [payload: { template: WaInboxTemplate; params: Record<string, string>; files: Record<string, File> }]
+  send: [payload: {
+    template: WaInboxTemplate
+    params: Record<string, string>
+    files: Record<string, File>
+    fileKinds: Record<string, string>
+  }]
   error: [message: string]
 }>()
 
@@ -114,8 +122,15 @@ function setText(name: string, val: string) {
   textValues.value = { ...textValues.value, [name]: val }
 }
 
-function setFiles(name: string, list: File[]) {
-  filesByParam.value = { ...filesByParam.value, [name]: list.slice(0, 1) }
+function onFilesSelected(def: WaInboxTemplateParamDef, list: File[]) {
+  const tpl = props.template
+  if (!tpl) return
+  const file = list[0]
+  if (file && !fileMatchesParamKind(file, def, tpl)) {
+    emit('error', uploadMessageForParam(def, tpl))
+    return
+  }
+  filesByParam.value = { ...filesByParam.value, [def.name]: list.slice(0, 1) }
 }
 
 function clearFiles(name: string) {
@@ -139,16 +154,25 @@ function close() {
 
 function emitSend() {
   if (!props.template || !canSend.value) return
+  const tpl = props.template
   const files: Record<string, File> = {}
+  const fileKinds: Record<string, string> = {}
   for (const def of paramDefs.value) {
     if (def.type !== 'file') continue
     const f = filesByParam.value[def.name]?.[0]
-    if (f) files[def.name] = f
+    if (!f) continue
+    if (!fileMatchesParamKind(f, def, tpl)) {
+      emit('error', uploadMessageForParam(def, tpl))
+      return
+    }
+    files[def.name] = f
+    fileKinds[def.name] = resolveParamFileKind(def, tpl)
   }
   emit('send', {
-    template: props.template,
+    template: tpl,
     params: { ...textValues.value },
-    files
+    files,
+    fileKinds
   })
 }
 

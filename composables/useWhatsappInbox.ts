@@ -46,7 +46,7 @@ function applyClientFilter(
 
 export function useWhatsappInbox() {
   const { withSpinner } = useSpinner()
-  const { showError } = useModal()
+  const { showError, showSuccess } = useModal()
   const { currentId } = useUserRole()
   const cache = useWaInboxCache()
   const waInboxWs = useWaInboxWebSocket()
@@ -65,6 +65,7 @@ export function useWhatsappInbox() {
   const loadingMessages = ref(false)
   const loadingTemplates = ref(false)
   const refreshing = ref(false)
+  const savingNewContact = ref(false)
   const error = ref<string | null>(null)
 
   const authUserId = computed(() => Number(currentId.value) || 0)
@@ -348,7 +349,8 @@ export function useWhatsappInbox() {
   async function sendTemplateMessage(
     templateName: string,
     params: Record<string, string>,
-    files: Record<string, File> = {}
+    files: Record<string, File> = {},
+    fileKinds: Record<string, string> = {}
   ) {
     const conv = selectedConversation.value
     if (!conv) return
@@ -358,7 +360,8 @@ export function useWhatsappInbox() {
       const res = await WhatsappInboxService.sendTemplate(conv.id, {
         template_name: templateName,
         params,
-        files
+        files,
+        fileKinds
       }) as { success?: boolean; message?: string; data?: WaInboxMessage }
 
       if (res?.success === false) {
@@ -403,6 +406,41 @@ export function useWhatsappInbox() {
         }
       }
     }, 'Asignando…')
+  }
+
+  async function createManualContact(payload: {
+    contact_name: string
+    phone: string
+    assigned_user_id?: number | null
+  }) {
+    savingNewContact.value = true
+    try {
+      await withSpinner(async () => {
+        const res = await WhatsappInboxService.createConversation(payload)
+        if (!res?.success || !res?.data) {
+          throw new Error(res?.message || 'No se pudo registrar el contacto')
+        }
+
+        const conv = res.data as WaInboxConversation
+        upsertConversation(conv)
+        selectedConversationId.value = conv.id
+        messages.value = []
+        cache.setMessages(conv.id, [], conv)
+        await loadMessages(conv.id)
+
+        const title = res.created === false ? 'Contacto existente' : 'Contacto agregado'
+        const detail = res.message
+          || (res.created === false
+            ? 'Este número ya estaba en el inbox.'
+            : 'Puedes enviar una plantilla para iniciar la conversación.')
+        showSuccess(title, detail)
+      }, 'Registrando contacto…')
+    } catch (e: any) {
+      showError('Error', e?.message || 'No se pudo registrar el contacto')
+      throw e
+    } finally {
+      savingNewContact.value = false
+    }
   }
 
   async function loadTemplates(options: { background?: boolean; force?: boolean } = {}) {
@@ -535,6 +573,7 @@ export function useWhatsappInbox() {
     loadingTemplates,
     sendingTemplate,
     refreshing,
+    savingNewContact,
     error,
     unreadTotal,
     init,
@@ -546,6 +585,7 @@ export function useWhatsappInbox() {
     sendTextMessage,
     sendTemplateMessage,
     assignConversation,
+    createManualContact,
     loadTemplates
   }
 }
