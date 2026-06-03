@@ -352,7 +352,7 @@ const {
   showJumpButton,
   onMessagesScroll,
   jumpToBottom
-} = useWaInboxChatScroll(messages, selectedConversationId)
+} = useWaInboxChatScroll(messages, selectedConversationId, loadingMessages)
 
 const { showError: showModalError } = useModal()
 

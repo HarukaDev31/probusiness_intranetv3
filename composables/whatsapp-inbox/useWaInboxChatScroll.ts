@@ -3,10 +3,12 @@ import type ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 
 const NEAR_BOTTOM_PX = 80
+const OPEN_SCROLL_MAX_ATTEMPTS = 10
 
 export function useWaInboxChatScroll(
   messages: Ref<WaInboxMessage[]>,
-  conversationId: Ref<number | null>
+  conversationId: Ref<number | null>,
+  loadingMessages: Ref<boolean> = ref(false)
 ) {
   const scrollRef = ref<InstanceType<typeof ChatMessagesScroll> | null>(null)
   const isNearBottom = ref(true)
@@ -38,21 +40,66 @@ export function useWaInboxChatScroll(
     measureNearBottom()
   }
 
+  function isAtBottom(el: HTMLElement): boolean {
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+    return distance < NEAR_BOTTOM_PX
+  }
+
   async function scrollToBottom(smooth = true) {
     await nextTick()
     const el = getScrollEl()
-    if (!el) return
+    if (!el) return false
     if (smooth) {
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
     } else {
       el.scrollTop = el.scrollHeight
     }
     await nextTick()
-    isNearBottom.value = true
-    newBelowCount.value = 0
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    isNearBottom.value = isAtBottom(el)
+    if (isNearBottom.value) {
+      newBelowCount.value = 0
+    }
+    return isNearBottom.value
+  }
+
+  /** Tras abrir chat o recargar: espera DOM, fin de loading y altura estable. */
+  async function flushOpenScroll() {
+    if (!conversationId.value || loadingMessages.value || messages.value.length === 0) {
+      return false
+    }
+
+    for (let attempt = 0; attempt < OPEN_SCROLL_MAX_ATTEMPTS; attempt++) {
+      await nextTick()
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+      const el = getScrollEl()
+      if (!el) continue
+
+      el.scrollTop = el.scrollHeight
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+      if (isAtBottom(el)) {
+        isNearBottom.value = true
+        newBelowCount.value = 0
+        pendingOpenScroll.value = false
+        return true
+      }
+    }
+
+    return scrollToBottom(false)
+  }
+
+  async function tryPendingOpenScroll() {
+    if (!pendingOpenScroll.value) return
+    const ok = await flushOpenScroll()
+    if (ok) {
+      pendingOpenScroll.value = false
+    }
   }
 
   function jumpToBottom() {
+    pendingOpenScroll.value = false
     scrollToBottom(true)
   }
 
@@ -66,7 +113,27 @@ export function useWaInboxChatScroll(
     if (id === prevId) return
     resetScrollState()
     pendingOpenScroll.value = id != null
+    if (id != null) {
+      void tryPendingOpenScroll()
+    }
   })
+
+  watch(loadingMessages, (loading, wasLoading) => {
+    if (wasLoading && !loading) {
+      void tryPendingOpenScroll()
+    }
+  })
+
+  watch(scrollRef, () => {
+    void tryPendingOpenScroll()
+  })
+
+  watch(
+    () => messages.value.length,
+    () => {
+      void tryPendingOpenScroll()
+    }
+  )
 
   watch(
     messages,
@@ -74,10 +141,7 @@ export function useWaInboxChatScroll(
       const prevLen = prev?.length ?? 0
 
       if (pendingOpenScroll.value && list.length > 0) {
-        nextTick(() => {
-          scrollToBottom(false)
-          pendingOpenScroll.value = false
-        })
+        void tryPendingOpenScroll()
         return
       }
 
