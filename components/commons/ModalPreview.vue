@@ -65,18 +65,30 @@
                         </div>
                     </div>
 
-                    <!-- Video -->
-                    <div v-else-if="isVideo" class="w-full flex justify-center">
-                        <video 
-                            :src="file?.file_url || ''" 
+                    <!-- Video (sin crossorigin: rompe URLs firmadas S3 sin CORS) -->
+                    <div v-else-if="isVideo" class="w-full">
+                        <div v-if="videoPlaybackError" class="flex flex-col items-center gap-3 rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+                            <UIcon name="i-heroicons-exclamation-triangle" class="size-10 text-warning" />
+                            <p class="text-center text-sm text-muted">
+                                No se pudo reproducir aquí. Abre el archivo en una pestaña nueva o descárgalo.
+                            </p>
+                            <div class="flex flex-wrap justify-center gap-2">
+                                <UButton label="Abrir en pestaña" icon="i-heroicons-arrow-top-right-on-square" @click="openInNewTab" />
+                                <UButton label="Descargar" icon="i-heroicons-arrow-down-tray" variant="outline" @click="downloadFile" />
+                            </div>
+                        </div>
+                        <video
+                            v-else
+                            ref="videoPlayerRef"
+                            :key="file?.file_url || ''"
+                            :src="file?.file_url || ''"
                             controls
                             playsinline
-                            webkit-playsinline="true"
-                            preload="metadata"
-                            class="max-w-full max-h-[45vh] rounded-lg shadow-lg"
-                            crossorigin="anonymous">
-                            <source :src="file?.file_url || ''" :type="getVideoMimeType">
-                            Tu navegador no soporta el elemento de video.
+                            preload="auto"
+                            class="mx-auto max-h-[55vh] w-full max-w-full rounded-lg shadow-lg"
+                            @error="onVideoPlaybackError"
+                        >
+                            Tu navegador no soporta la reproducción de video.
                         </video>
                     </div>
 
@@ -226,6 +238,7 @@
 
 <script setup lang="ts">
 import type { FileItem } from '~/types/commons/file'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 const { withSpinner } = useSpinner()
@@ -253,6 +266,8 @@ const dragOffset = ref({ x: 0, y: 0 })
 const excelData = ref<any>(null)
 const activeSheet = ref(0)
 const isLoadingExcel = ref(false)
+const videoPlayerRef = ref<HTMLVideoElement | null>(null)
+const videoPlaybackError = ref(false)
 
 // Computed properties
 const isImage = computed(() => {
@@ -262,9 +277,10 @@ const isImage = computed(() => {
 })
 
 const isVideo = computed(() => {
-    if (!props.file?.file_name) return false
-    const extension = props.file.file_name.split('.').pop()?.toLowerCase()
-    return ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(extension || '')
+    if (!props.file) return false
+    if (props.file.type === 'video') return true
+    const fromExt = (props.file.file_ext || props.file.file_name.split('.').pop() || '').toLowerCase()
+    return ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', 'mkv'].includes(fromExt)
 })
 
 const isDocument = computed(() => {
@@ -283,20 +299,6 @@ const isPdfFile = computed(() => {
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
     return ['pdf'].includes(extension || '')
 })
-const getVideoMimeType = computed(() => {
-    if (!props.file?.file_name) return 'video/mp4'
-    const extension = props.file.file_name.split('.').pop()?.toLowerCase()
-    const mimeTypes: Record<string, string> = {
-        'mp4': 'video/mp4',
-        'avi': 'video/avi',
-        'mov': 'video/quicktime',
-        'wmv': 'video/x-ms-wmv',
-        'flv': 'video/x-flv',
-        'webm': 'video/webm'
-    }
-    return mimeTypes[extension || ''] || 'video/mp4'
-})
-
 const getFileExtension = computed(() => {
     if (!props.file?.file_name) return 'Archivo'
     const extension = props.file.file_name.split('.').pop()?.toUpperCase()
@@ -350,8 +352,22 @@ const downloadFile = async () => {
 
 const openInNewTab = () => {
     if (props.file?.file_url) {
-        window.open(props.file.file_url, '_blank')
+        window.open(props.file.file_url, '_blank', 'noopener,noreferrer')
     }
+}
+
+function onVideoPlaybackError() {
+    videoPlaybackError.value = true
+}
+
+function reloadVideoPlayer() {
+    videoPlaybackError.value = false
+    nextTick(() => {
+        const el = videoPlayerRef.value
+        if (el) {
+            el.load()
+        }
+    })
 }
 
 // Excel preview methods
@@ -553,10 +569,14 @@ const handleWheel = (event: WheelEvent) => {
 watch([() => props.isOpen, () => props.file], () => {
     if (props.isOpen) {
         resetImage()
-        // Load Excel file if it's an Excel file
         if (isExcelFile.value) {
             loadExcelFile()
         }
+        if (isVideo.value) {
+            reloadVideoPlayer()
         }
+    } else {
+        videoPlaybackError.value = false
+    }
 })
 </script>

@@ -181,10 +181,17 @@ function nombreDesdeUrl(url: string) {
 function abrirMedia(url?: string, nombre?: string) {
   const u = url || mediaUrl.value
   if (!u) return
-  const n = nombre || mediaNombre.value
-  const ext = extensionAdjunto(n)
+  let n = nombre || mediaNombre.value
+  const esVideoMsg = props.msg.message_type === 'video'
+  let ext = extensionAdjunto(n)
+  if (esVideoMsg && !ext) {
+    ext = 'mp4'
+    if (!/\.\w{2,5}$/i.test(n)) {
+      n = `${n}.mp4`
+    }
+  }
   const esImg = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
-  const esVideo = props.msg.message_type === 'video' || ['mp4', 'webm', 'mov', 'm4v'].includes(ext)
+  const esVideo = esVideoMsg || ['mp4', 'webm', 'mov', 'm4v', 'mkv'].includes(ext)
   const fileItem: FileItem = {
     id: 0,
     file_name: n,
@@ -192,7 +199,8 @@ function abrirMedia(url?: string, nombre?: string) {
     type: esImg ? 'image' : esVideo ? 'video' : 'file',
     size: 0,
     lastModified: 0,
-    file_ext: ext
+    file_ext: ext,
+    content_type: props.msg.media_mime || (esVideo ? 'video/mp4' : null)
   }
   modalPreview.open({ file: fileItem, isOpen: true })
 }
