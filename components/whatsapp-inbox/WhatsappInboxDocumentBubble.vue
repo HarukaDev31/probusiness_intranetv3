@@ -68,7 +68,7 @@
           : 'border-default/25 bg-muted/70 text-highlighted dark:border-white/10 dark:bg-[#0b141a] dark:text-white/95'
       "
     >
-      <span class="whitespace-pre-wrap">{{ caption }}</span>
+      <span class="block whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{{ caption }}</span>
     </div>
   </div>
 </template>

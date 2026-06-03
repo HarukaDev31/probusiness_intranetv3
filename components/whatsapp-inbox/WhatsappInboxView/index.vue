@@ -181,10 +181,11 @@
                 :class="msg.direction === 'out' ? 'items-end' : 'items-start'"
               >
                 <div
-                  class="flex max-w-[85%] items-end gap-1"
+                  class="flex min-w-0 max-w-[85%] items-end gap-1"
                   :class="msg.direction === 'out' ? 'flex-row-reverse' : 'flex-row'"
                 >
                   <WhatsappInboxMessageBody
+                    class="min-w-0 flex-1"
                     :msg="msg"
                     :direction="msg.direction"
                     :reply-preview="replyPreviewFor(msg)"

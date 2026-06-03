@@ -1,9 +1,9 @@
 <template>
-  <div class="flex flex-col gap-1" :class="rootAlign">
+  <div class="flex min-w-0 max-w-full flex-col gap-1" :class="rootAlign">
     <button
       v-if="replyPreview"
       type="button"
-      class="mb-0.5 max-w-[85%] text-left"
+      class="mb-0.5 min-w-0 max-w-[min(100%,320px)] text-left"
       :class="replyBtnClass"
       @click.stop="emit('scroll-to-reply', replyPreview.metaId)"
     >
@@ -76,10 +76,13 @@
       v-if="textoVisible"
       :color="direction === 'out' ? 'primary' : 'neutral'"
       :variant="direction === 'out' ? 'solid' : 'subtle'"
-      :ui="{ body: 'px-3 py-2 text-sm leading-relaxed max-w-[75%]' }"
-      :class="direction === 'out' ? 'rounded-br-sm' : 'rounded-bl-sm'"
+      :ui="{ body: 'min-w-0 px-3 py-2 text-sm leading-relaxed' }"
+      class="min-w-0 w-full max-w-[min(100%,320px)]"
+      :class="[
+        direction === 'out' ? 'rounded-br-sm' : 'rounded-bl-sm'
+      ]"
     >
-      <span class="whitespace-pre-wrap">{{ msg.body }}</span>
+      <span class="block whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{{ msg.body }}</span>
     </UCard>
   </div>
 </template>
