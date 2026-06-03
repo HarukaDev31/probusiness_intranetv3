@@ -865,9 +865,14 @@ export function useWhatsappInbox() {
   }
 
   function connectWebSocket() {
-    ensureWaInboxEchoChannel()
-    registerWaInboxUiHandlers(inboxRealtimeHandlers)
-    waInboxWs.connect(inboxRealtimeHandlers)
+    if (!import.meta.client) return
+    try {
+      ensureWaInboxEchoChannel()
+      registerWaInboxUiHandlers(inboxRealtimeHandlers)
+      waInboxWs.connect(inboxRealtimeHandlers)
+    } catch (err) {
+      console.error('[WaInbox] No se pudo enlazar WebSocket:', err)
+    }
   }
 
   function disconnectWebSocket() {
@@ -885,19 +890,19 @@ export function useWhatsappInbox() {
     setWaInboxViewingConversationId(id)
   }, { immediate: true })
 
-  watch(
-    () => route.path,
-    (path) => {
+  if (import.meta.client) {
+    watch(() => route.path, (path) => {
       if (isInboxRoute(path)) {
         connectWebSocket()
       } else {
         disconnectWebSocket()
       }
-    },
-    { immediate: true }
-  )
+    })
 
-  if (import.meta.client) {
+    onMounted(() => {
+      if (isInboxRoute(route.path)) connectWebSocket()
+    })
+
     const g = globalThis as typeof globalThis & { __waInboxEchoReadyBound?: boolean }
     if (!g.__waInboxEchoReadyBound) {
       g.__waInboxEchoReadyBound = true

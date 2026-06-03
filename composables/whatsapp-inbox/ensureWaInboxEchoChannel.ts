@@ -15,21 +15,25 @@ export function ensureWaInboxEchoChannel() {
   const { subscribeToChannel, getEchoInstance } = useEcho()
   if (!getEchoInstance()) return
 
-  const allHandlers = getAllEventHandlers()
-  subscribeToChannel({
-    name: WA_INBOX_WS_CHANNEL,
-    type: 'private',
-    handlers: [
-      {
-        event: WA_INBOX_WS_EVENTS.MESSAGE_CREATED,
-        callback: allHandlers[WA_INBOX_WS_EVENTS.MESSAGE_CREATED] ?? dispatchWaInboxMessageCreated
-      },
-      {
-        event: WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED,
-        callback:
-          allHandlers[WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED]
-          ?? dispatchWaInboxMessageStatusUpdated
-      }
-    ]
-  })
+  try {
+    const allHandlers = getAllEventHandlers()
+    subscribeToChannel({
+      name: WA_INBOX_WS_CHANNEL,
+      type: 'private',
+      handlers: [
+        {
+          event: WA_INBOX_WS_EVENTS.MESSAGE_CREATED,
+          callback: allHandlers[WA_INBOX_WS_EVENTS.MESSAGE_CREATED] ?? dispatchWaInboxMessageCreated
+        },
+        {
+          event: WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED,
+          callback:
+            allHandlers[WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED]
+            ?? dispatchWaInboxMessageStatusUpdated
+        }
+      ]
+    })
+  } catch (err) {
+    console.error('[WaInbox] ensureWaInboxEchoChannel:', err)
+  }
 }

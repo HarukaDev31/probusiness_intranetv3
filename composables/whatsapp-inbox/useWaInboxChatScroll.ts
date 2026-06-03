@@ -1,4 +1,4 @@
-import type { Ref } from 'vue'
+import { computed, nextTick, ref, watch, type Ref } from 'vue'
 import type ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 

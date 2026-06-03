@@ -11,12 +11,13 @@ import {
 } from '~/composables/whatsapp-inbox/waInboxRealtimeBridge'
 import { useModal } from '~/composables/commons/useModal'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { currentId } = useUserRole()
+
 /**
  * Configuración de eventos para el rol Coordinación
  * Este archivo se ejecuta antes de la suscripción a los canales
  */
 export const registerCoordinacionEvents = () => {
+  const { currentId } = useUserRole()
   // ============================================
   // HANDLERS PARA EVENTOS DE COORDINACIÓN
   // ============================================

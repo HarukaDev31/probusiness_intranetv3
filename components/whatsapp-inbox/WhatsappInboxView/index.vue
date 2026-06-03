@@ -521,7 +521,11 @@ function onConversationsScroll(e: Event) {
   if (nearBottom) loadMoreConversations()
 }
 
-onMounted(() => {
-  init()
+onMounted(async () => {
+  try {
+    await init()
+  } catch (err) {
+    console.error('[WaInbox] Error al iniciar:', err)
+  }
 })
 </script>
