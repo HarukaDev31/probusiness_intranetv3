@@ -27,7 +27,7 @@
         v-if="showAsImage"
         type="button"
         class="block overflow-hidden rounded-lg ring-1 ring-default/40"
-        @click.stop="abrirMedia"
+        @click.stop="() => abrirMedia()"
       >
         <img
           :src="mediaUrl"
@@ -48,7 +48,7 @@
         v-else-if="msg.message_type === 'audio'"
         type="button"
         class="flex max-w-full items-center gap-2 rounded-lg bg-elevated/80 px-3 py-2 ring-1 ring-default/50"
-        @click.stop="abrirMedia"
+        @click.stop="() => abrirMedia()"
       >
         <UIcon name="i-heroicons-musical-note" class="size-8 shrink-0 text-primary" />
         <span class="truncate text-sm">Audio</span>
@@ -219,10 +219,22 @@ function nombreDesdeUrl(url: string) {
   }
 }
 
+function isUsableMediaUrl(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  const t = value.trim()
+  if (!t || t.includes('[object')) return false
+  return (
+    t.startsWith('http://')
+    || t.startsWith('https://')
+    || t.startsWith('blob:')
+    || t.startsWith('/')
+  )
+}
+
 function abrirMedia(url?: string, nombre?: string) {
-  const u = url || mediaUrl.value
+  const u = isUsableMediaUrl(url) ? url.trim() : mediaUrl.value
   if (!u) return
-  let n = nombre || mediaNombre.value
+  let n = typeof nombre === 'string' && nombre.trim() ? nombre.trim() : mediaNombre.value
   const esVideoMsg = props.msg.message_type === 'video'
   let ext = extensionAdjunto(n)
   if (esVideoMsg && !ext) {

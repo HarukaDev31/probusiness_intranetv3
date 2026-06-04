@@ -271,9 +271,10 @@ const videoPlaybackError = ref(false)
 
 // Computed properties
 const isImage = computed(() => {
+    if (props.file?.type === 'image') return true
     if (!props.file?.file_name) return false
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg','jpeg'].includes(extension || '')
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'jpeg'].includes(extension || '')
 })
 
 const isVideo = computed(() => {
@@ -378,9 +379,9 @@ const downloadFile = async () => {
 }
 
 const openInNewTab = () => {
-    if (props.file?.file_url) {
-        window.open(props.file.file_url, '_blank', 'noopener,noreferrer')
-    }
+    const url = props.file?.file_url?.trim()
+    if (!url || url.includes('[object')) return
+    window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 function onVideoPlaybackError() {

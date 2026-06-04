@@ -45,6 +45,7 @@ import {
 } from '~/composables/whatsapp-inbox/waInboxWsLog'
 import { getEchoInstance } from '~/composables/websocket/useEcho'
 import { WA_INBOX_WS_CHANNEL } from '~/constants/whatsappInboxWs'
+import { conversationPatchFromWaInboxMessage } from '~/utils/whatsappInboxSidebarPreview'
 
 const CONVERSATIONS_PER_PAGE = 30
 const WA_INBOX_BASE_PATH = '/coordinacion/whatsapp-inbox'
@@ -290,6 +291,7 @@ export function useWhatsappInbox() {
       selected: selectedConversationId.value
     })
 
+    patchConversationLastMessageStatus(convId, messageId, incomingStatus)
     syncConversationsFromStore()
 
     if (selectedConversationId.value === convId) {
@@ -833,17 +835,45 @@ export function useWhatsappInbox() {
     await selectConversationChain
   }
 
+  function patchConversationLastMessageStatus(
+    convId: number,
+    messageId: number,
+    status: string
+  ) {
+    const idx = allConversations.value.findIndex((c) => c.id === convId)
+    if (idx < 0) return
+    const conv = allConversations.value[idx]
+    if (conv.last_direction !== 'out' || conv.last_message_id !== messageId) return
+    const patch = { last_message_delivery_status: status }
+    allConversations.value[idx] = { ...conv, ...patch }
+    cache.patchConversation(convId, patch)
+  }
+
   function patchConversationAfterOutbound(
     conv: WaInboxConversation,
     preview: string,
     msg?: WaInboxMessage
   ) {
     const sentAt = msg?.sent_at ?? new Date().toISOString()
+    const patch = msg
+      ? conversationPatchFromWaInboxMessage(msg)
+      : {
+          last_message_preview: preview.slice(0, 200),
+          last_message_at: sentAt,
+          last_direction: 'out' as const,
+          last_message_type: 'text',
+          last_message_delivery_status: 'pending',
+          last_message_time_label: formatDatePe(sentAt) || ''
+        }
     upsertConversation({
       ...conv,
-      last_message_preview: preview.slice(0, 200),
-      last_message_at: sentAt,
-      last_message_time_label: formatDatePe(sentAt) || msg?.time_label || ''
+      ...patch,
+      last_message_time_label:
+        patch.last_message_time_label
+        || formatDatePe(sentAt)
+        || msg?.time_label
+        || conv.last_message_time_label
+        || ''
     })
   }
 

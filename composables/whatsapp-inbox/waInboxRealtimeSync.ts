@@ -10,6 +10,7 @@ import {
   waMessageNumericId
 } from '~/composables/whatsapp-inbox/waInboxMessageUtils'
 import { waInboxLog } from '~/composables/whatsapp-inbox/waInboxWsLog'
+import { conversationPatchFromWaInboxMessage } from '~/utils/whatsappInboxSidebarPreview'
 
 /**
  * No leídos entrantes: incrementa en cliente y no deja que el WS pise con un valor menor (ej. siempre 1).
@@ -31,22 +32,6 @@ function resolveUnreadCountForInbound(
     return Math.max(server, localNext)
   }
   return localNext
-}
-
-function conversationPatchFromMessage(msg: WaInboxMessage): Partial<WaInboxConversation> {
-  const body = msg.body?.trim()
-  let preview = body ? body.slice(0, 200) : ''
-  if (!preview && msg.media_url) {
-    if (msg.message_type === 'image') preview = 'Foto'
-    else if (msg.message_type === 'video') preview = 'Video'
-    else preview = msg.media_filename || 'Adjunto'
-  }
-  if (!preview) preview = 'Mensaje'
-  return {
-    last_message_preview: preview,
-    last_message_at: msg.sent_at || new Date().toISOString(),
-    ...(msg.time_label ? { last_message_time_label: msg.time_label } : {})
-  }
 }
 
 /** Chat abierto en la UI (null si el usuario no está en el inbox o no eligió conversación). */
@@ -195,7 +180,7 @@ export function applyMessageCreatedToStore(payload: WaInboxWsMessageCreatedPaylo
   } else if (msg) {
     const snap = cache.getConversationsSnapshot()
     const existing = snap.find((c) => c.id === convId)
-    const previewPatch = conversationPatchFromMessage(msg as WaInboxMessage)
+    const previewPatch = conversationPatchFromWaInboxMessage(msg as WaInboxMessage)
     const unread = resolveUnreadCountForInbound(convId, msg as WaInboxMessage, undefined)
     if (existing) {
       cache.patchConversation(convId, {
@@ -222,6 +207,17 @@ export function applyMessageCreatedToStore(payload: WaInboxWsMessageCreatedPaylo
   upsertMessageInCache(convId, msg as WaInboxMessage)
 }
 
+function patchConversationLastDeliveryInCache(
+  convId: number,
+  messageId: number,
+  status: string
+) {
+  const cache = useWaInboxCache()
+  const conv = cache.getConversationsSnapshot().find((c) => c.id === convId)
+  if (!conv || conv.last_direction !== 'out' || conv.last_message_id !== messageId) return
+  cache.patchConversation(convId, { last_message_delivery_status: status })
+}
+
 export function applyStatusUpdatedToStore(payload: WaInboxWsMessageStatusPayload) {
   const convId = Number(payload.conversation_id)
   const messageId = waMessageNumericId(payload.message_id)
@@ -231,6 +227,7 @@ export function applyStatusUpdatedToStore(payload: WaInboxWsMessageStatusPayload
   if (!incomingStatus) return
 
   patchStatusInCache(convId, messageId, payload, incomingStatus)
+  patchConversationLastDeliveryInCache(convId, messageId, incomingStatus)
   waInboxLog('store.statusUpdated', {
     convId,
     messageId,

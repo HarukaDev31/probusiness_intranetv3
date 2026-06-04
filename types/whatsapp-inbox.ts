@@ -18,6 +18,10 @@ export interface WaInboxConversation {
   last_message_preview?: string | null
   last_message_at?: string | null
   last_message_time_label?: string
+  last_direction?: 'in' | 'out' | null
+  last_message_type?: string | null
+  last_message_delivery_status?: string | null
+  last_message_id?: number | null
   unread_count: number
   assigned_user_id?: number | null
   assigned_user_name?: string | null

@@ -108,7 +108,7 @@
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium text-highlighted">{{ c.contact_name }}</p>
-              <p class="truncate text-xs text-muted">{{ c.last_message_preview || '—' }}</p>
+              <WhatsappInboxSidebarPreview :conversation="c" />
             </div>
             <div class="flex shrink-0 flex-col items-end gap-1">
               <span class="text-[10px] text-muted">{{ formatConversationTime(c) }}</span>
@@ -309,6 +309,7 @@ import WhatsappInboxTemplatePickerModal from '~/components/whatsapp-inbox/Whatsa
 import WhatsappInboxTemplateParamsModal from '~/components/whatsapp-inbox/WhatsappInboxTemplateParamsModal.vue'
 import WhatsappInboxNewContactModal from '~/components/whatsapp-inbox/WhatsappInboxNewContactModal.vue'
 import WhatsappInboxRenameContactModal from '~/components/whatsapp-inbox/WhatsappInboxRenameContactModal.vue'
+import WhatsappInboxSidebarPreview from '~/components/whatsapp-inbox/WhatsappInboxSidebarPreview.vue'
 import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
 import WhatsappInboxComposer from '~/components/whatsapp-inbox/WhatsappInboxComposer.vue'
 import WhatsappInboxMessageBody from '~/components/whatsapp-inbox/WhatsappInboxMessageBody.vue'
