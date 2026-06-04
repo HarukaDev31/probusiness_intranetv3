@@ -1,6 +1,6 @@
 <template>
   <UCard
-    class="flex h-full max-h-full min-h-0 flex-col overflow-hidden max-lg:rounded-none max-lg:border-x-0 max-lg:border-b-0"
+    class="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:rounded-none max-lg:border-x-0 max-lg:border-b-0 lg:max-h-[calc(100dvh-1.5rem)] lg:h-full"
     variant="outline"
     :ui="inboxCardUi"
   >
@@ -38,7 +38,7 @@
       </div>
     </template>
 
-    <div class="flex h-0 min-h-0 flex-1 overflow-hidden">
+    <div class="flex min-h-0 flex-1 overflow-hidden">
       <!-- Sidebar -->
       <UCard
         class="flex h-full min-h-0 flex-col overflow-hidden rounded-none border-y-0 border-l-0 lg:w-72 lg:shrink-0 xl:w-80"
@@ -129,7 +129,7 @@
       <ChatPanelShell
         :full-height="false"
         fill-parent
-        class="h-0 min-h-0 min-w-0 flex-1 overflow-hidden rounded-none border-0"
+        class="min-h-0 min-w-0 flex-1 overflow-hidden rounded-none border-0"
         :class="chatPanelClass"
       >
         <template v-if="selectedConversation" #header>
@@ -250,10 +250,10 @@
           </div>
         </template>
 
-        <div v-if="selectedConversation" class="relative flex h-0 min-h-0 flex-1 flex-col overflow-hidden">
+        <div v-if="selectedConversation" class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <ChatMessagesScroll
             ref="messagesScrollRef"
-            class="h-0 min-h-0 flex-1 p-4"
+            class="min-h-0 flex-1 basis-0 p-4"
             :body-class="isDesktop ? '' : 'pb-40'"
             @scroll="onMessagesScroll"
           >
@@ -413,14 +413,14 @@ import { formatDatePe } from '~/utils/formatters'
 
 const inboxCardUi = {
   root: 'flex h-full max-h-full min-h-0 flex-col overflow-hidden',
-  body: 'flex h-0 min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0',
+  body: 'flex min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0',
   header: 'shrink-0 px-4 py-3 sm:px-4',
   footer: 'p-0 sm:p-0'
 }
 
 const panelCardUi = {
   root: 'flex h-full max-h-full min-h-0 flex-col overflow-hidden',
-  body: 'flex h-0 min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0',
+  body: 'flex min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0',
   header: 'shrink-0 p-0 sm:p-0',
   footer: 'p-0 sm:p-0'
 }

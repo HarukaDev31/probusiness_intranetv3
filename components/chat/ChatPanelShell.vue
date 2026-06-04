@@ -8,10 +8,7 @@
       <slot name="header" />
     </template>
 
-    <div
-      class="relative flex min-h-0 flex-1 flex-col overflow-hidden"
-      :class="fillParent ? 'h-0' : ''"
-    >
+    <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <slot />
     </div>
 
