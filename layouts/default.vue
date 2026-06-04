@@ -25,7 +25,7 @@
       </header>
 
       <!-- Page Content -->
-      <main id="main-content" ref="mainContentRef" :class="['flex-1 min-h-0 p-3 bg-[#f0f4f9] dark:bg-gray-900 flex flex-col', route.path.startsWith('/calendar') ? 'overflow-hidden' : '']" :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}">
+      <main id="main-content" ref="mainContentRef" :class="['flex-1 min-h-0 p-3 bg-[#f0f4f9] dark:bg-gray-900 flex flex-col', mainOverflowHidden ? 'overflow-hidden' : '']" :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}">
         <div class="">
           <!-- <Breadcrumbs /> -->
         </div>
@@ -81,6 +81,12 @@ const sidebarVisible = ref(true)
 const sidebarCollapsed = ref(false)
 const mainContentRef = ref<HTMLElement | null>(null)
 const route = useRoute()
+
+const mainOverflowHidden = computed(
+  () =>
+    route.path.startsWith('/calendar')
+    || route.path.startsWith('/coordinacion/whatsapp-inbox')
+)
 
 const pageTitle = computed(() => {
 

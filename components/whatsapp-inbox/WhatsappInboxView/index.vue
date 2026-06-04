@@ -1,6 +1,6 @@
 <template>
   <UCard
-    class="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:h-full max-lg:rounded-none max-lg:border-x-0 max-lg:border-b-0 lg:h-[calc(100vh-4rem)]"
+    class="flex h-full min-h-0 flex-1 flex-col overflow-hidden max-lg:rounded-none max-lg:border-x-0 max-lg:border-b-0"
     variant="outline"
     :ui="{ body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0', header: 'px-4 py-3 sm:px-4', footer: 'p-0' }"
   >
@@ -38,10 +38,10 @@
       </div>
     </template>
 
-    <div class="flex min-h-0 flex-1 max-lg:h-full">
+    <div class="flex min-h-0 flex-1 overflow-hidden">
       <!-- Sidebar -->
       <UCard
-        class="flex flex-col rounded-none border-y-0 border-l-0 lg:w-72 lg:shrink-0 xl:w-80"
+        class="flex h-full min-h-0 flex-col overflow-hidden rounded-none border-y-0 border-l-0 lg:w-72 lg:shrink-0 xl:w-80"
         :class="sidebarPanelClass"
         variant="outline"
         :ui="panelCardUi"
@@ -128,8 +128,8 @@
       <!-- Chat -->
       <ChatPanelShell
         :full-height="false"
-        panel-class="h-full max-lg:!min-h-0"
-        class="min-h-0 min-w-0 flex-1 rounded-none border-0"
+        panel-class="!min-h-0 h-full max-h-full"
+        class="min-h-0 min-w-0 flex-1 overflow-hidden rounded-none border-0"
         :class="chatPanelClass"
       >
         <template v-if="selectedConversation" #header>
@@ -250,7 +250,7 @@
           </div>
         </template>
 
-        <div v-if="selectedConversation" class="relative flex min-h-0 flex-1 flex-col">
+        <div v-if="selectedConversation" class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <ChatMessagesScroll
             ref="messagesScrollRef"
             class="min-h-0 flex-1 p-4"
