@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="block w-full overflow-hidden rounded-lg text-left shadow-sm ring-1 transition active:opacity-95"
+    class="block w-full min-w-0 overflow-hidden rounded-lg text-left shadow-sm ring-1 transition active:opacity-95"
     :class="
       inverted
         ? 'ring-primary-500/25'

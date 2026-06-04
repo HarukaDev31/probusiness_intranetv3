@@ -270,7 +270,7 @@
                   :class="msg.direction === 'out' ? 'flex-row-reverse' : 'flex-row'"
                 >
                   <WhatsappInboxMessageBody
-                    class="min-w-0 flex-1"
+                    class="max-w-full shrink-0"
                     :msg="msg"
                     :direction="msg.direction"
                     :reply-preview="replyPreviewFor(msg)"

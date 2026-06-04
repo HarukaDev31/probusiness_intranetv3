@@ -1,5 +1,11 @@
 <template>
-  <div class="flex min-w-0 max-w-full flex-col gap-1" :class="rootAlign">
+  <div
+    class="flex flex-col gap-1"
+    :class="[
+      rootAlign,
+      mediaUrl ? 'w-[280px] max-w-full shrink-0' : 'min-w-0 max-w-full'
+    ]"
+  >
     <button
       v-if="replyPreview"
       type="button"
@@ -24,7 +30,7 @@
 
     <div
       v-if="mediaUrl"
-      class="w-[min(100%,280px)] max-w-full shrink-0"
+      class="w-full"
       :class="direction === 'out' ? 'self-end' : 'self-start'"
     >
       <button
@@ -100,7 +106,7 @@
 
     <div
       v-else-if="isMediaTypeWithoutUrl"
-      class="flex w-[min(100%,280px)] max-w-full shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1"
+      class="flex w-[280px] max-w-full shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1"
       :class="
         direction === 'out'
           ? 'bg-primary text-inverted ring-primary-600/40'
