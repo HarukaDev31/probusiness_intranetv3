@@ -66,7 +66,7 @@
                     </div>
 
                     <!-- Video (sin crossorigin: rompe URLs firmadas S3 sin CORS) -->
-                    <div v-else-if="isVideo" class="w-full">
+                    <div v-else-if="isVideo" class="w-full space-y-3">
                         <div v-if="videoPlaybackError" class="flex flex-col items-center gap-3 rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
                             <UIcon name="i-heroicons-exclamation-triangle" class="size-10 text-warning" />
                             <p class="text-center text-sm text-muted">
@@ -77,19 +77,33 @@
                                 <UButton label="Descargar" icon="i-heroicons-arrow-down-tray" variant="outline" @click="downloadFile" />
                             </div>
                         </div>
-                        <video
-                            v-else
-                            ref="videoPlayerRef"
-                            :key="file?.file_url || ''"
-                            :src="file?.file_url || ''"
-                            controls
-                            playsinline
-                            preload="auto"
-                            class="mx-auto max-h-[55vh] w-full max-w-full rounded-lg shadow-lg"
-                            @error="onVideoPlaybackError"
-                        >
-                            Tu navegador no soporta la reproducción de video.
-                        </video>
+                        <template v-else>
+                            <video
+                                ref="videoPlayerRef"
+                                :key="file?.file_url || ''"
+                                :src="file?.file_url || ''"
+                                controls
+                                playsinline
+                                preload="auto"
+                                class="mx-auto max-h-[55vh] w-full max-w-full rounded-lg shadow-lg"
+                                @error="onVideoPlaybackError"
+                                @loadedmetadata="applyVideoPlaybackRate"
+                            >
+                                Tu navegador no soporta la reproducción de video.
+                            </video>
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="text-xs font-medium text-muted">Velocidad</span>
+                                <UButton
+                                    v-for="speed in videoSpeedOptions"
+                                    :key="speed"
+                                    size="xs"
+                                    :label="`${speed}x`"
+                                    :color="videoPlaybackRate === speed ? 'primary' : 'neutral'"
+                                    :variant="videoPlaybackRate === speed ? 'solid' : 'outline'"
+                                    @click="setVideoPlaybackRate(speed)"
+                                />
+                            </div>
+                        </template>
                     </div>
 
                     <!-- Documento -->
@@ -268,6 +282,8 @@ const activeSheet = ref(0)
 const isLoadingExcel = ref(false)
 const videoPlayerRef = ref<HTMLVideoElement | null>(null)
 const videoPlaybackError = ref(false)
+const videoSpeedOptions = [1, 1.5, 2] as const
+const videoPlaybackRate = ref<(typeof videoSpeedOptions)[number]>(1)
 
 // Computed properties
 const isImage = computed(() => {
@@ -388,12 +404,26 @@ function onVideoPlaybackError() {
     videoPlaybackError.value = true
 }
 
+function applyVideoPlaybackRate() {
+    const el = videoPlayerRef.value
+    if (el) {
+        el.playbackRate = videoPlaybackRate.value
+    }
+}
+
+function setVideoPlaybackRate(speed: (typeof videoSpeedOptions)[number]) {
+    videoPlaybackRate.value = speed
+    applyVideoPlaybackRate()
+}
+
 function reloadVideoPlayer() {
     videoPlaybackError.value = false
+    videoPlaybackRate.value = 1
     nextTick(() => {
         const el = videoPlayerRef.value
         if (el) {
             el.load()
+            el.playbackRate = 1
         }
     })
 }

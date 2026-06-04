@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="block w-full max-w-[min(100%,300px)] overflow-hidden rounded-lg text-left shadow-sm ring-1 transition active:opacity-95"
+    class="block w-full overflow-hidden rounded-lg text-left shadow-sm ring-1 transition active:opacity-95"
     :class="
       inverted
         ? 'ring-primary-500/25'
@@ -70,7 +70,7 @@
       "
     >
       <p
-        class="line-clamp-2 text-[13px] leading-snug"
+        class="truncate text-[13px] leading-snug"
         :class="inverted ? 'text-white' : 'text-highlighted dark:text-white/95'"
       >
         {{ nombre }}
@@ -103,6 +103,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   abrir: []
+  'media-ready': []
 }>()
 
 const videoRef = ref<HTMLVideoElement | null>(null)
@@ -120,6 +121,7 @@ function onLoadedMetadata() {
     durationSec.value = el.duration
   }
   showHd.value = el.videoHeight >= 720 || el.videoWidth >= 1280
+  emit('media-ready')
 }
 
 function onVideoError() {

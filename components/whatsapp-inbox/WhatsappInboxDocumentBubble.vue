@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full max-w-[min(100%,300px)] overflow-hidden rounded-lg text-left shadow-sm ring-1"
+    class="w-full overflow-hidden rounded-lg text-left shadow-sm ring-1"
     :class="
       inverted
         ? 'bg-primary ring-primary-600/30'

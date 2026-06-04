@@ -274,6 +274,7 @@
                     :msg="msg"
                     :direction="msg.direction"
                     :reply-preview="replyPreviewFor(msg)"
+                    @media-rendered="onChatMediaRendered"
                   />
                   <UButton
                     v-if="msg.meta_message_id && selectedConversation?.can_send_text"
@@ -479,8 +480,19 @@ const {
   newBelowCount,
   showJumpButton,
   onMessagesScroll,
+  scrollToBottom,
   jumpToBottom
 } = useWaInboxChatScroll(messages, selectedConversationId, loadingMessages)
+
+function onChatMediaRendered() {
+  void scrollToBottom(false)
+}
+
+watch(showChatPanel, (visible) => {
+  if (visible && selectedConversationId.value && !loadingMessages.value) {
+    void scrollToBottom(false)
+  }
+})
 
 const { showError: showModalError } = useModal()
 

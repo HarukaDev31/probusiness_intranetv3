@@ -22,27 +22,34 @@
       {{ msg.template_name }}
     </p>
 
-    <div v-if="mediaUrl" class="max-w-[min(100%,280px)]">
+    <div
+      v-if="mediaUrl"
+      class="w-[min(100%,280px)] max-w-full shrink-0"
+      :class="direction === 'out' ? 'self-end' : 'self-start'"
+    >
       <button
         v-if="showAsImage"
         type="button"
-        class="block overflow-hidden rounded-lg ring-1 ring-default/40"
+        class="block w-full overflow-hidden rounded-lg ring-1 ring-default/40"
         @click.stop="() => abrirMedia()"
       >
         <img
           :src="mediaUrl"
           :alt="mediaNombre"
-          class="max-h-52 w-full object-cover"
+          class="aspect-[4/3] max-h-52 w-full object-cover"
           loading="lazy"
+          @load="onMediaRendered"
         >
       </button>
       <WhatsappInboxVideoBubble
         v-else-if="msg.message_type === 'video'"
+        class="w-full"
         :url="mediaUrl"
         :nombre="mediaNombre"
         :caption="videoCaption"
         :inverted="direction === 'out'"
         @abrir="abrirMedia()"
+        @media-ready="onMediaRendered"
       />
       <button
         v-else-if="msg.message_type === 'audio'"
@@ -64,6 +71,7 @@
       </button>
       <WhatsappInboxDocumentBubble
         v-else-if="showDocumentBubble"
+        class="w-full"
         :url="mediaUrl"
         :nombre="mediaNombre"
         :caption="captionEnBurbuja"
@@ -73,7 +81,7 @@
       />
       <div
         v-else
-        class="overflow-hidden rounded-lg ring-1"
+        class="w-full overflow-hidden rounded-lg ring-1"
         :class="
           direction === 'out'
             ? 'bg-primary text-inverted ring-primary-600/30'
@@ -92,7 +100,7 @@
 
     <div
       v-else-if="isMediaTypeWithoutUrl"
-      class="flex max-w-[min(100%,280px)] items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1"
+      class="flex w-[min(100%,280px)] max-w-full shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1"
       :class="
         direction === 'out'
           ? 'bg-primary text-inverted ring-primary-600/40'
@@ -142,6 +150,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'scroll-to-reply': [metaId: string]
+  'media-rendered': []
 }>()
 
 const overlay = useOverlay()
@@ -251,6 +260,10 @@ function isUsableMediaUrl(value: unknown): value is string {
     || t.startsWith('blob:')
     || t.startsWith('/')
   )
+}
+
+function onMediaRendered() {
+  emit('media-rendered')
 }
 
 function abrirMedia(url?: string, nombre?: string) {

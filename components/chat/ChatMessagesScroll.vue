@@ -1,11 +1,13 @@
 <template>
   <div
     ref="scrollRef"
-    class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto scroll-smooth px-3 py-4 sm:px-4"
+    class="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-auto px-3 py-4 sm:px-4"
     :class="bodyClass"
     @scroll="onScroll"
   >
-    <slot />
+    <div ref="contentRef" class="flex flex-col gap-3">
+      <slot />
+    </div>
   </div>
 </template>
 
@@ -26,6 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const scrollRef = ref<HTMLElement | null>(null)
+const contentRef = ref<HTMLElement | null>(null)
 
 function onScroll(event: Event) {
   emit('scroll', event)
@@ -40,6 +43,7 @@ async function scrollToBottom() {
 
 defineExpose({
   scrollRef,
+  contentRef,
   scrollToBottom
 })
 </script>

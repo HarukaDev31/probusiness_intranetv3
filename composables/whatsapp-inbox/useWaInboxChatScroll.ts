@@ -1,9 +1,10 @@
-import { computed, nextTick, ref, watch, type Ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import type ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 
 const NEAR_BOTTOM_PX = 80
-const OPEN_SCROLL_MAX_ATTEMPTS = 10
+const OPEN_SCROLL_MAX_ATTEMPTS = 24
+const OPEN_SCROLL_STABLE_READS = 2
 
 function waMessageNumericId(id: unknown): number {
   const n = Number(id)
@@ -20,12 +21,20 @@ export function useWaInboxChatScroll(
   const newBelowCount = ref(0)
   const pendingOpenScroll = ref(false)
 
+  let openScrollObserver: ResizeObserver | null = null
+  let openScrollMediaCleanup: (() => void) | null = null
+
   /** Solo mensajes entrantes (cliente → yo) mientras no estoy abajo. */
   const showJumpButton = computed(() => newBelowCount.value > 0)
 
   function getScrollEl(): HTMLElement | null {
     const exposed = scrollRef.value as { scrollRef?: HTMLElement | null } | null
     return exposed?.scrollRef ?? null
+  }
+
+  function getContentEl(): HTMLElement | null {
+    const exposed = scrollRef.value as { contentRef?: HTMLElement | null } | null
+    return exposed?.contentRef ?? null
   }
 
   function measureNearBottom() {
@@ -50,6 +59,13 @@ export function useWaInboxChatScroll(
     return distance < NEAR_BOTTOM_PX
   }
 
+  function snapScrollToBottom(el: HTMLElement) {
+    const prev = el.style.scrollBehavior
+    el.style.scrollBehavior = 'auto'
+    el.scrollTop = el.scrollHeight
+    el.style.scrollBehavior = prev
+  }
+
   async function scrollToBottom(smooth = true) {
     await nextTick()
     const el = getScrollEl()
@@ -57,7 +73,7 @@ export function useWaInboxChatScroll(
     if (smooth) {
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
     } else {
-      el.scrollTop = el.scrollHeight
+      snapScrollToBottom(el)
     }
     await nextTick()
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
@@ -68,31 +84,102 @@ export function useWaInboxChatScroll(
     return isNearBottom.value
   }
 
+  function stopOpenScrollObservers() {
+    openScrollObserver?.disconnect()
+    openScrollObserver = null
+    openScrollMediaCleanup?.()
+    openScrollMediaCleanup = null
+  }
+
+  function onOpenScrollMediaLoaded() {
+    if (!pendingOpenScroll.value) return
+    const el = getScrollEl()
+    if (!el) return
+    snapScrollToBottom(el)
+    if (isAtBottom(el)) {
+      isNearBottom.value = true
+      newBelowCount.value = 0
+    }
+  }
+
+  function startOpenScrollObservers() {
+    stopOpenScrollObservers()
+    if (!pendingOpenScroll.value) return
+
+    const scrollEl = getScrollEl()
+    const contentEl = getContentEl()
+    if (!scrollEl) return
+
+    const onMediaLoad = () => {
+      onOpenScrollMediaLoaded()
+    }
+    scrollEl.addEventListener('load', onMediaLoad, true)
+    scrollEl.addEventListener('loadedmetadata', onMediaLoad, true)
+    openScrollMediaCleanup = () => {
+      scrollEl.removeEventListener('load', onMediaLoad, true)
+      scrollEl.removeEventListener('loadedmetadata', onMediaLoad, true)
+    }
+
+    if (typeof ResizeObserver === 'undefined' || !contentEl) return
+
+    openScrollObserver = new ResizeObserver(() => {
+      if (!pendingOpenScroll.value) return
+      onOpenScrollMediaLoaded()
+    })
+    openScrollObserver.observe(contentEl)
+  }
+
   /** Tras abrir chat o recargar: espera DOM, fin de loading y altura estable. */
   async function flushOpenScroll() {
     if (!conversationId.value || loadingMessages.value || messages.value.length === 0) {
       return false
     }
 
+    startOpenScrollObservers()
+
+    let stableReads = 0
+    let lastHeight = -1
+
     for (let attempt = 0; attempt < OPEN_SCROLL_MAX_ATTEMPTS; attempt++) {
       await nextTick()
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
       const el = getScrollEl()
-      if (!el) continue
+      if (!el) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 40))
+        continue
+      }
 
-      el.scrollTop = el.scrollHeight
+      snapScrollToBottom(el)
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-      if (isAtBottom(el)) {
+      const height = el.scrollHeight
+      const atBottom = isAtBottom(el)
+
+      if (atBottom && height === lastHeight) {
+        stableReads += 1
+      } else {
+        stableReads = 0
+      }
+      lastHeight = height
+
+      if (atBottom && stableReads >= OPEN_SCROLL_STABLE_READS) {
         isNearBottom.value = true
         newBelowCount.value = 0
         pendingOpenScroll.value = false
+        stopOpenScrollObservers()
         return true
       }
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 50 + attempt * 25))
     }
 
-    return scrollToBottom(false)
+    const ok = await scrollToBottom(false)
+    if (ok) {
+      pendingOpenScroll.value = false
+      stopOpenScrollObservers()
+    }
+    return ok
   }
 
   async function tryPendingOpenScroll() {
@@ -100,11 +187,13 @@ export function useWaInboxChatScroll(
     const ok = await flushOpenScroll()
     if (ok) {
       pendingOpenScroll.value = false
+      stopOpenScrollObservers()
     }
   }
 
   function jumpToBottom() {
     pendingOpenScroll.value = false
+    stopOpenScrollObservers()
     scrollToBottom(true)
   }
 
@@ -112,6 +201,7 @@ export function useWaInboxChatScroll(
     isNearBottom.value = true
     newBelowCount.value = 0
     pendingOpenScroll.value = false
+    stopOpenScrollObservers()
   }
 
   watch(conversationId, (id, prevId) => {
@@ -125,18 +215,23 @@ export function useWaInboxChatScroll(
 
   watch(loadingMessages, (loading, wasLoading) => {
     if (wasLoading && !loading) {
+      pendingOpenScroll.value = true
       void tryPendingOpenScroll()
     }
   })
 
   watch(scrollRef, () => {
-    void tryPendingOpenScroll()
+    if (pendingOpenScroll.value) {
+      void tryPendingOpenScroll()
+    }
   })
 
   watch(
     () => messages.value.length,
     () => {
-      void tryPendingOpenScroll()
+      if (pendingOpenScroll.value) {
+        void tryPendingOpenScroll()
+      }
     }
   )
 
@@ -177,6 +272,10 @@ export function useWaInboxChatScroll(
       })
     }
   )
+
+  onBeforeUnmount(() => {
+    stopOpenScrollObservers()
+  })
 
   return {
     scrollRef,
