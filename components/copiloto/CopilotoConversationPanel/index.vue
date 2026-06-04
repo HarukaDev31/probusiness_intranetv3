@@ -1,14 +1,64 @@
 <template>
-  <section v-if="lead" class="flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-gray-900">
+  <section v-if="lead && conversation" class="flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-gray-900">
     <ChatConversationHeader
       :avatar-text="lead.av"
       :title="lead.name"
       :subtitle="lead.sub"
     >
       <template v-if="!readonly" #actions>
-        <UButton icon="i-heroicons-document-text" color="neutral" variant="ghost" size="xs" title="Nota interna" />
-        <UButton icon="i-heroicons-arrow-top-right-on-square" color="neutral" variant="ghost" size="xs" title="Bitrix24" />
-        <UButton icon="i-heroicons-phone" color="neutral" variant="ghost" size="xs" title="Llamadas" />
+        <UBadge
+          v-if="conversation.pending_contact"
+          color="info"
+          variant="subtle"
+          size="xs"
+        >
+          Directorio
+        </UBadge>
+        <UBadge
+          v-else-if="conversation.window_label"
+          :color="conversation.window_state === 'open' ? 'success' : 'warning'"
+          variant="subtle"
+          size="xs"
+        >
+          {{ conversation.window_label }}
+        </UBadge>
+        <UButton
+          icon="i-heroicons-document-text"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          title="Plantillas"
+          @click="templatePickerOpen = true"
+        />
+        <UButton icon="i-heroicons-arrow-path" color="neutral" variant="ghost" size="xs" title="Actualizar" @click="emit('refresh')" />
+        <UPopover v-if="!conversation.pending_contact" :content="{ side: 'bottom', align: 'end' }">
+          <UButton icon="i-heroicons-ellipsis-vertical" color="neutral" variant="ghost" size="xs" aria-label="Más" />
+          <template #content>
+            <div class="w-56 space-y-3 p-3">
+              <div v-if="assignSelectItems.length">
+                <p class="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted">Asignar</p>
+                <USelectMenu
+                  :model-value="conversation.assigned_user_id ?? undefined"
+                  :items="assignSelectItems"
+                  value-key="value"
+                  placeholder="Asignar"
+                  size="sm"
+                  class="w-full"
+                  @update:model-value="(v) => emit('assign', v ?? null)"
+                />
+              </div>
+              <UButton
+                icon="i-heroicons-pencil-square"
+                color="neutral"
+                variant="soft"
+                size="sm"
+                label="Renombrar"
+                block
+                @click="renameContactOpen = true"
+              />
+            </div>
+          </template>
+        </UPopover>
       </template>
     </ChatConversationHeader>
 
@@ -33,8 +83,18 @@
       />
     </div>
 
+    <UAlert
+      v-if="mainTab === 'wa' && conversation.pending_contact"
+      class="m-2 shrink-0"
+      color="info"
+      variant="subtle"
+      icon="i-heroicons-user-plus"
+      title="Contacto del directorio"
+      :description="originLineText || 'Aún no hay chat en esta línea. Envía una plantilla para iniciar la conversación.'"
+    />
+
     <div
-      v-if="mainTab === 'wa' && suggestion"
+      v-if="mainTab === 'wa' && suggestion && !conversation.pending_contact"
       class="shrink-0 border-b px-3 py-2 text-xs"
       :style="{ background: suggestion.cfg.sBg, borderColor: suggestion.cfg.sBrd }"
     >
@@ -44,108 +104,71 @@
       </p>
       <p class="mt-1 leading-snug" :style="{ color: suggestion.cfg.sTxt }">{{ suggestion.text }}</p>
       <div v-if="!readonly" class="mt-2 flex flex-wrap gap-1">
-        <UButton
-          size="xs"
-          color="neutral"
-          variant="soft"
-          label="Responder con cotización"
-          @click="emit('apply-chip', 'Te comparto la cotización actualizada con flete fijo y tiempos de tránsito.')"
-        />
+        <UButton size="xs" color="neutral" variant="soft" label="Usar sugerencia" @click="emit('apply-chip', suggestion.text)" />
       </div>
     </div>
 
-    <ChatPanelShell v-if="mainTab === 'wa'" :full-height="false" class="min-h-0 flex-1">
-      <div v-if="loading" class="flex flex-1 items-center justify-center p-4 text-sm text-muted">
-        Cargando conversación...
-      </div>
-      <ChatMessagesScroll v-else ref="scrollRef" class="flex-1">
-        <p v-if="!lead.msgs.length" class="py-6 text-center text-xs text-muted">
-          Sin mensajes en esta conversación.
-        </p>
-        <template v-for="(msg, mi) in lead.msgs" :key="`${lead.id}-${mi}-${msg.t}`">
-          <div v-if="msg.dir === 'sys'" class="w-full py-1 text-center">
-            <UBadge color="neutral" variant="subtle" size="xs">{{ msg.txt }}</UBadge>
-          </div>
-          <div v-else-if="msg.dir === 'out'" class="flex flex-col items-end gap-0.5">
-            <UCard color="primary" variant="solid" :ui="{ body: 'px-3 py-2 text-sm' }">
-              {{ msg.txt }}
-            </UCard>
-            <span class="text-[10px] text-muted">{{ msg.t }}</span>
-          </div>
-          <div v-else class="flex gap-2">
-            <div
-              class="mt-2 w-1 shrink-0 rounded-full"
-              :style="{ background: tempCfg(msg.temp ?? 0).bar, minHeight: '24px' }"
-            />
-            <div class="min-w-0 flex-1">
-              <UCard
-                variant="soft"
-                color="neutral"
-                :ui="{ body: 'px-3 py-2 text-sm border-s-2', root: 'border-s-2' }"
-                :style="{ borderLeftColor: tempCfg(msg.temp ?? 0).bar }"
-              >
-                {{ msg.txt }}
-              </UCard>
-              <div v-if="msg.temp != null" class="mt-1 flex flex-wrap items-center gap-1">
-                <UBadge
-                  size="xs"
-                  variant="subtle"
-                  class="cursor-pointer"
-                  :style="{ background: tempCfg(msg.temp).bg, color: tempCfg(msg.temp).color }"
-                  @click="emit('toggle-insight', mi)"
-                >
-                  <UIcon :name="tempCfg(msg.temp).icon" class="size-3" />
-                  {{ msg.temp }}% {{ tempCfg(msg.temp).lbl }}
-                </UBadge>
-                <UBadge
-                  v-for="sig in msg.sigs || []"
-                  :key="sig"
-                  size="xs"
-                  variant="outline"
-                  color="neutral"
-                >
-                  {{ sig }}
-                </UBadge>
-              </div>
-              <p v-if="expandedMessageIndex === mi && msg.why" class="mt-1 text-[10px] text-muted">
-                {{ msg.why }}
-              </p>
-              <span class="text-[10px] text-muted">{{ msg.t }}</span>
-            </div>
-          </div>
-        </template>
-      </ChatMessagesScroll>
-      <template v-if="!readonly" #footer>
-        <ChatComposerSimple
-          v-model="draftModel"
-          placeholder="Escribe un mensaje al cliente..."
-          @send="emit('send')"
-        />
-      </template>
-    </ChatPanelShell>
+    <div
+      v-else-if="mainTab === 'wa' && conversation.pending_contact && !readonly"
+      class="shrink-0 border-b px-3 py-2"
+    >
+      <UButton
+        block
+        size="sm"
+        color="primary"
+        icon="i-heroicons-document-text"
+        label="Elegir plantilla para escribir"
+        @click="templatePickerOpen = true"
+      />
+    </div>
+
+    <CopilotoWaChatCore
+      v-if="mainTab === 'wa' && !conversation.pending_contact"
+      :conversation="conversation"
+      :messages="messages"
+      :loading-messages="loading"
+      :sending-message="sending"
+      :readonly="readonly"
+      @send="emit('send-wa', $event)"
+    />
+
+    <div
+      v-else-if="mainTab === 'wa' && conversation.pending_contact"
+      class="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted"
+    >
+      Sin mensajes en esta línea todavía.
+    </div>
 
     <div v-else class="flex min-h-0 flex-1 flex-col p-4 text-sm text-muted">
-      <UAlert
-        color="info"
-        variant="subtle"
-        icon="i-heroicons-information-circle"
-        title="Llamadas"
-        description="Las grabaciones se capturan desde VoIP al finalizar cada llamada."
-      />
-      <div class="mt-4 flex flex-1 items-center justify-center text-xs">
-        Sin grabaciones en esta demo.
-      </div>
-      <UButton
-        v-if="!readonly"
-        block
-        color="neutral"
-        variant="outline"
-        size="sm"
-        icon="i-heroicons-cloud-arrow-up"
-        label="Subir grabación manualmente"
-        class="mt-auto"
-      />
+      <UAlert color="info" variant="subtle" icon="i-heroicons-information-circle" title="Llamadas" description="Las grabaciones se capturan desde VoIP al finalizar cada llamada." />
     </div>
+
+    <WhatsappInboxTemplatePickerModal
+      v-model:open="templatePickerOpen"
+      :templates="templates"
+      :loading="loadingTemplates"
+      @select="onTemplatePicked"
+    />
+    <WhatsappInboxTemplateParamsModal
+      v-model:open="templateParamsOpen"
+      :template="templateForParams"
+      :sending="sendingTemplate"
+      @send="onTemplateSend"
+      @error="(msg) => showModalError('Plantilla', msg)"
+    />
+    <WhatsappInboxNewContactModal
+      v-model:open="newContactOpen"
+      :assignable-users="assignableUsers"
+      :saving="savingNewContact"
+      @save="onNewContactSave"
+    />
+    <WhatsappInboxRenameContactModal
+      v-model:open="renameContactOpen"
+      :initial-name="conversation?.contact_name"
+      :phone-display="conversation?.phone_display"
+      :saving="savingRename"
+      @save="onRenameContactSave"
+    />
   </section>
   <section v-else class="flex flex-1 items-center justify-center bg-white text-sm text-muted dark:bg-gray-900">
     Selecciona un lead de la cola
@@ -153,54 +176,112 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, computed } from 'vue'
+import { ref, computed } from 'vue'
 import type { CopilotoLead } from '~/types/copiloto/lead'
 import type { CopilotoMainTab } from '~/composables/copiloto/useCopilotoDashboard'
+import type {
+  WaCopilotoAssignableUser,
+  WaCopilotoComposerSendPayload,
+  WaCopilotoConversation,
+  WaCopilotoMessage,
+  WaCopilotoTemplate
+} from '~/types/wa-copiloto'
 import { getCopilotoTempConfig } from '~/constants/copiloto/temperature'
-import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
-import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
-import ChatComposerSimple from '~/components/chat/ChatComposerSimple.vue'
+import { useModal } from '~/composables/commons/useModal'
 import ChatConversationHeader from '~/components/chat/ChatConversationHeader.vue'
+import CopilotoWaChatCore from '~/components/copiloto/CopilotoWaChatCore/index.vue'
+import WhatsappInboxTemplatePickerModal from '~/components/whatsapp-inbox/WhatsappInboxTemplatePickerModal.vue'
+import WhatsappInboxTemplateParamsModal from '~/components/whatsapp-inbox/WhatsappInboxTemplateParamsModal.vue'
+import WhatsappInboxNewContactModal from '~/components/whatsapp-inbox/WhatsappInboxNewContactModal.vue'
+import WhatsappInboxRenameContactModal from '~/components/whatsapp-inbox/WhatsappInboxRenameContactModal.vue'
 
 const props = withDefaults(
   defineProps<{
     lead: CopilotoLead | null
+    conversation: WaCopilotoConversation | null
+    messages: WaCopilotoMessage[]
+    templates: WaCopilotoTemplate[]
+    assignableUsers: WaCopilotoAssignableUser[]
     mainTab: CopilotoMainTab
-    draftMessage: string
     readonly?: boolean
     loading?: boolean
-    expandedMessageIndex: number | null
+    loadingTemplates?: boolean
+    sending?: boolean
+    sendingTemplate?: boolean
+    savingNewContact?: boolean
+    savingRename?: boolean
     suggestion: { label: string; text: string; cfg: ReturnType<typeof getCopilotoTempConfig> } | null
   }>(),
   {
     readonly: false,
-    loading: false
+    loading: false,
+    loadingTemplates: false,
+    sending: false,
+    sendingTemplate: false,
+    savingNewContact: false,
+    savingRename: false
   }
 )
 
 const emit = defineEmits<{
   'update:mainTab': [tab: CopilotoMainTab]
-  'update:draftMessage': [text: string]
-  send: []
-  'toggle-insight': [index: number]
+  'send-wa': [payload: WaCopilotoComposerSendPayload]
+  'send-template': [name: string, params: Record<string, string>, files: Record<string, File>, fileKinds: Record<string, string>]
+  'create-contact': [payload: { contact_name: string; phone: string; assigned_user_id: number | null }]
+  rename: [name: string]
+  assign: [userId: number | null]
   'apply-chip': [text: string]
+  refresh: []
 }>()
 
-const draftModel = computed({
-  get: () => props.draftMessage,
-  set: (v: string) => emit('update:draftMessage', v)
+const { showError: showModalError } = useModal()
+
+const templatePickerOpen = ref(false)
+const templateParamsOpen = ref(false)
+const templateForParams = ref<WaCopilotoTemplate | null>(null)
+const newContactOpen = ref(false)
+const renameContactOpen = ref(false)
+
+const assignSelectItems = computed(() =>
+  props.assignableUsers.map((u) => ({ label: u.name, value: u.id }))
+)
+
+const originLineText = computed(() => {
+  const conv = props.conversation
+  if (!conv?.origin_line_number) return ''
+  const label = conv.origin_line_label || 'línea'
+  return `Primer registro desde ${label} (${conv.origin_line_number}). Aún no hay chat en esta línea — envía una plantilla para iniciar.`
 })
 
-const scrollRef = ref<InstanceType<typeof ChatMessagesScroll> | null>(null)
-const tempCfg = getCopilotoTempConfig
+function onTemplatePicked(t: WaCopilotoTemplate) {
+  templateForParams.value = t
+  templateParamsOpen.value = true
+}
 
-watch(
-  () => [props.lead?.id, props.lead?.msgs.length, props.loading] as const,
-  async () => {
-    if (props.loading) return
-    await nextTick()
-    scrollRef.value?.scrollToBottom()
-  },
-  { flush: 'post' }
-)
+function onTemplateSend(payload: {
+  params: Record<string, string>
+  files: Record<string, File>
+  fileKinds: Record<string, string>
+}) {
+  const name = templateForParams.value?.name
+  if (!name) return
+  emit('send-template', name, payload.params, payload.files, payload.fileKinds)
+  templateParamsOpen.value = false
+}
+
+async function onNewContactSave(payload: {
+  contact_name: string
+  phone: string
+  assigned_user_id: number | null
+}) {
+  emit('create-contact', payload)
+  newContactOpen.value = false
+}
+
+async function onRenameContactSave(name: string) {
+  emit('rename', name)
+  renameContactOpen.value = false
+}
+
+defineExpose({ openNewContact: () => { newContactOpen.value = true } })
 </script>

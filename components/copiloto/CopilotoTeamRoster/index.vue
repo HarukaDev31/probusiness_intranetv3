@@ -1,5 +1,5 @@
 <template>
-  <aside class="flex w-44 shrink-0 flex-col border-r border-default bg-white dark:bg-gray-900">
+  <aside class="flex h-full min-h-0 max-h-full w-44 shrink-0 flex-col overflow-hidden border-r border-default bg-white dark:bg-gray-900">
     <p class="shrink-0 border-b border-default px-3 py-2 text-xs font-bold text-highlighted">Equipo</p>
     <div class="min-h-0 flex-1 overflow-y-auto p-2 space-y-1">
       <button

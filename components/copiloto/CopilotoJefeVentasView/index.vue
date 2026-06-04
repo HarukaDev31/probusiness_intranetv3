@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-3 md:p-4">
+  <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden md:p-4">
     <PageHeader
       title="Equipo"
       subtitle="Supervisión de cola y conversaciones (solo lectura)"
@@ -9,7 +9,7 @@
 
     <CopilotoKpiStrip :metrics="kpiMetrics" />
 
-    <div class="grid min-h-0 flex-1 overflow-hidden rounded-lg border border-default md:grid-cols-[176px_190px_1fr_240px] md:min-h-[min(68vh,720px)]">
+    <div class="grid min-h-0 flex-1 overflow-hidden rounded-lg border border-default md:grid-cols-[176px_minmax(260px,280px)_1fr_minmax(220px,240px)]">
       <CopilotoTeamRoster
         :members="teamMembers"
         :selected-id="selectedAdvisorId"
@@ -17,7 +17,9 @@
       />
       <CopilotoLeadQueue
         title="Cola"
+        v-model:search="queueSearch"
         :leads="leads"
+        :loading="loadingLeads"
         :selected-index="selectedLeadIndex"
         readonly
         @select="selectLead"
@@ -45,14 +47,15 @@
           v-if="jefeView === 'cola'"
           :key="selectedLead?.id ?? 'none'"
           :lead="selectedLead"
+          :conversation="selectedConversation"
+          :messages="waMessages"
+          :templates="[]"
+          :assignable-users="[]"
           :loading="loadingConversation"
-          :main-tab="mainTab"
-          draft-message=""
           readonly
-          :expanded-message-index="expandedMessageIndex"
+          :main-tab="mainTab"
           :suggestion="suggestion"
           @update:main-tab="setMainTab"
-          @toggle-insight="toggleMessageInsight"
         />
         <div v-else class="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
           <UAlert color="neutral" variant="subtle" title="Pipeline" description="Vista resumen por etapa (demo)." />
@@ -102,19 +105,21 @@ const {
   leads,
   selectedLeadIndex,
   selectedLead,
+  selectedConversation,
+  waMessages,
   selectedAdvisorId,
   mainTab,
   fichaTab,
   jefeView,
-  expandedMessageIndex,
   loadingConversation,
+  loadingLeads,
+  queueSearch,
   suggestion,
   selectLead,
   selectAdvisor,
   setMainTab,
   setFichaTab,
-  setJefeView,
-  toggleMessageInsight
+  setJefeView
 } = useCopilotoDashboard({ readonly: true })
 
 onMounted(() => {

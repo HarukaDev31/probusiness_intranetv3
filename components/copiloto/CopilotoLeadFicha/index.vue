@@ -1,7 +1,7 @@
 <template>
   <aside
     v-if="lead"
-    class="flex min-h-0 w-64 shrink-0 flex-col border-l border-default bg-white dark:bg-gray-900 xl:w-72"
+    class="flex h-full min-h-0 max-h-full w-64 shrink-0 flex-col overflow-hidden border-l border-default bg-white dark:bg-gray-900 xl:w-72"
     :class="{ 'opacity-95': readonly }"
   >
     <div class="shrink-0 space-y-2 border-b border-default p-3">
