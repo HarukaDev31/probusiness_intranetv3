@@ -1,8 +1,8 @@
 <template>
   <UCard
-    class="flex h-full min-h-0 flex-1 flex-col overflow-hidden max-lg:rounded-none max-lg:border-x-0 max-lg:border-b-0"
+    class="flex h-full max-h-full min-h-0 flex-col overflow-hidden max-lg:rounded-none max-lg:border-x-0 max-lg:border-b-0"
     variant="outline"
-    :ui="{ body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0', header: 'px-4 py-3 sm:px-4', footer: 'p-0' }"
+    :ui="inboxCardUi"
   >
     <template #header>
       <div v-show="showInboxHeader" class="flex items-center gap-2 sm:gap-3">
@@ -38,7 +38,7 @@
       </div>
     </template>
 
-    <div class="flex min-h-0 flex-1 overflow-hidden">
+    <div class="flex h-0 min-h-0 flex-1 overflow-hidden">
       <!-- Sidebar -->
       <UCard
         class="flex h-full min-h-0 flex-col overflow-hidden rounded-none border-y-0 border-l-0 lg:w-72 lg:shrink-0 xl:w-80"
@@ -128,8 +128,8 @@
       <!-- Chat -->
       <ChatPanelShell
         :full-height="false"
-        panel-class="!min-h-0 h-full max-h-full"
-        class="min-h-0 min-w-0 flex-1 overflow-hidden rounded-none border-0"
+        fill-parent
+        class="h-0 min-h-0 min-w-0 flex-1 overflow-hidden rounded-none border-0"
         :class="chatPanelClass"
       >
         <template v-if="selectedConversation" #header>
@@ -250,10 +250,10 @@
           </div>
         </template>
 
-        <div v-if="selectedConversation" class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div v-if="selectedConversation" class="relative flex h-0 min-h-0 flex-1 flex-col overflow-hidden">
           <ChatMessagesScroll
             ref="messagesScrollRef"
-            class="min-h-0 flex-1 p-4"
+            class="h-0 min-h-0 flex-1 p-4"
             :body-class="isDesktop ? '' : 'pb-40'"
             @scroll="onMessagesScroll"
           >
@@ -411,9 +411,17 @@ import { useWaInboxChatScroll } from '~/composables/whatsapp-inbox/useWaInboxCha
 import { useWindowSize } from '~/composables/useWindowSize'
 import { formatDatePe } from '~/utils/formatters'
 
+const inboxCardUi = {
+  root: 'flex h-full max-h-full min-h-0 flex-col overflow-hidden',
+  body: 'flex h-0 min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0',
+  header: 'shrink-0 px-4 py-3 sm:px-4',
+  footer: 'p-0 sm:p-0'
+}
+
 const panelCardUi = {
-  body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0',
-  header: 'p-0 sm:p-0',
+  root: 'flex h-full max-h-full min-h-0 flex-col overflow-hidden',
+  body: 'flex h-0 min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0',
+  header: 'shrink-0 p-0 sm:p-0',
   footer: 'p-0 sm:p-0'
 }
 

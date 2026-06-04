@@ -8,7 +8,10 @@
       <slot name="header" />
     </template>
 
-    <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div
+      class="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+      :class="fillParent ? 'h-0' : ''"
+    >
       <slot />
     </div>
 
@@ -26,15 +29,21 @@ import { computed } from 'vue'
 const props = withDefaults(
   defineProps<{
     fullHeight?: boolean
+    /** Ocupa el alto del padre (inbox); el scroll va dentro del panel, no crece con mensajes. */
+    fillParent?: boolean
     panelClass?: string
   }>(),
   {
     fullHeight: true,
+    fillParent: false,
     panelClass: ''
   }
 )
 
 const alturaClase = computed(() => {
+  if (props.fillParent) {
+    return ['h-full min-h-0 max-h-full', props.panelClass].filter(Boolean).join(' ')
+  }
   const base = props.fullHeight ? 'min-h-[min(70vh,720px)]' : 'min-h-[320px]'
   return [base, props.panelClass].filter(Boolean).join(' ')
 })

@@ -1,8 +1,8 @@
 <template>
   <div
-    class="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:-mx-3 max-lg:-mb-3 max-lg:h-[calc(100dvh-4.75rem)] lg:h-[calc(100dvh-4.5rem)]"
+    class="flex h-full min-h-0 flex-1 flex-col overflow-hidden max-lg:-mx-3 max-lg:-mb-3"
   >
-    <WhatsappInboxView class="h-full min-h-0" />
+    <WhatsappInboxView class="h-full min-h-0 max-h-full" />
   </div>
 </template>
 

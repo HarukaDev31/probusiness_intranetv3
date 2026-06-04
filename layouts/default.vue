@@ -1,5 +1,8 @@
 <template>
-  <div class="min-h-screen bg-[#f0f4f9] dark:bg-gray-900 flex">
+  <div
+    class="flex bg-[#f0f4f9] dark:bg-gray-900"
+    :class="shellViewportLocked ? 'h-dvh max-h-dvh overflow-hidden' : 'min-h-screen'"
+  >
   <!-- Skip link para accesibilidad (teclado / lectores de pantalla) -->
   <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded focus:outline-none focus:ring-2 focus:ring-primary-800">
     Saltar al contenido principal
@@ -25,11 +28,23 @@
       </header>
 
       <!-- Page Content -->
-      <main id="main-content" ref="mainContentRef" :class="['flex-1 min-h-0 p-3 bg-[#f0f4f9] dark:bg-gray-900 flex flex-col', mainOverflowHidden ? 'overflow-hidden' : '']" :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}">
-        <div class="">
+      <main
+        id="main-content"
+        ref="mainContentRef"
+        :class="[
+          'flex flex-1 min-h-0 flex-col bg-[#f0f4f9] p-3 dark:bg-gray-900',
+          shellViewportLocked ? 'overflow-hidden' : ''
+        ]"
+        :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}"
+      >
+        <div v-if="!shellViewportLocked" class="">
           <!-- <Breadcrumbs /> -->
         </div>
-        <slot />
+        <div
+          :class="shellViewportLocked ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : ''"
+        >
+          <slot />
+        </div>
       </main>
     </div>
 
@@ -82,7 +97,7 @@ const sidebarCollapsed = ref(false)
 const mainContentRef = ref<HTMLElement | null>(null)
 const route = useRoute()
 
-const mainOverflowHidden = computed(
+const shellViewportLocked = computed(
   () =>
     route.path.startsWith('/calendar')
     || route.path.startsWith('/coordinacion/whatsapp-inbox')
