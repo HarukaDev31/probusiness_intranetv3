@@ -1,6 +1,6 @@
 <template>
   <UCard
-    class="flex min-h-0 flex-col overflow-hidden"
+    class="flex h-full min-h-0 flex-col overflow-hidden"
     :class="alturaClase"
     :ui="cardUi"
   >
@@ -8,12 +8,14 @@
       <slot name="header" />
     </template>
 
-    <div class="relative flex min-h-0 flex-1 flex-col">
+    <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <slot />
     </div>
 
     <template v-if="$slots.footer" #footer>
-      <slot name="footer" />
+      <div class="mt-auto shrink-0">
+        <slot name="footer" />
+      </div>
     </template>
   </UCard>
 </template>
@@ -38,9 +40,9 @@ const alturaClase = computed(() => {
 })
 
 const cardUi = {
-  root: 'flex min-h-0 flex-col overflow-hidden',
-  body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0',
-  header: 'p-0 sm:p-0',
-  footer: 'p-0 sm:p-0'
+  root: 'flex h-full min-h-0 flex-col overflow-hidden',
+  body: 'flex min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0',
+  header: 'shrink-0 p-0 sm:p-0',
+  footer: 'shrink-0 p-0 sm:p-0'
 }
 </script>

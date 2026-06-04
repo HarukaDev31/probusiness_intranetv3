@@ -3,7 +3,7 @@
     class="w-full max-w-[min(100%,300px)] overflow-hidden rounded-lg text-left shadow-sm ring-1"
     :class="
       inverted
-        ? 'bg-primary-700/95 ring-primary-500/30'
+        ? 'bg-primary ring-primary-600/30'
         : 'bg-elevated ring-default/40 dark:bg-[#1f2c34] dark:ring-white/10'
     "
   >

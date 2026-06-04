@@ -1,5 +1,5 @@
 <template>
-  <div class="p-2 md:p-4">
+  <div class="flex min-h-0 flex-1 flex-col max-lg:-mx-3 max-lg:-mb-3 max-lg:h-[calc(100dvh-4.75rem)] max-lg:overflow-hidden">
     <WhatsappInboxView />
   </div>
 </template>
@@ -10,7 +10,6 @@ import WhatsappInboxView from '~/components/whatsapp-inbox/WhatsappInboxView/ind
 definePageMeta({
   layout: 'default',
   middleware: ['whatsapp-inbox-coordinacion'],
-  /** Misma instancia al cambiar de /whatsapp-inbox/6 → /7 (evita onUnmounted que cortaba WS UI). */
   key: 'whatsapp-inbox'
 })
 </script>

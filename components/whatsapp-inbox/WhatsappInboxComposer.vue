@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2 p-3">
+  <div class="space-y-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
     <UAlert
       v-if="!canSend"
       color="error"

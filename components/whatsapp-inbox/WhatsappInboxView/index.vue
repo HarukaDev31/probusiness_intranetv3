@@ -1,19 +1,19 @@
 <template>
   <UCard
-    class="flex h-[calc(100vh-4rem)] min-h-0 flex-col overflow-hidden"
+    class="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:h-full max-lg:rounded-none max-lg:border-x-0 max-lg:border-b-0 lg:h-[calc(100vh-4rem)]"
     variant="outline"
     :ui="{ body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0', header: 'px-4 py-3 sm:px-4', footer: 'p-0' }"
   >
     <template #header>
-      <div class="flex items-center gap-3">
-        <span class="flex items-center gap-2 font-bold text-primary">
+      <div v-show="showInboxHeader" class="flex items-center gap-2 sm:gap-3">
+        <span class="flex items-center gap-2 text-sm font-bold text-primary sm:text-base">
           <span
             class="size-2 rounded-full"
             :class="refreshing ? 'animate-pulse bg-warning' : 'bg-success'"
           />
           PROBUSINESS
         </span>
-        <span class="text-sm text-muted">/ WhatsApp Inbox</span>
+        <span class="hidden text-sm text-muted sm:inline">/ WhatsApp Inbox</span>
         <div class="flex-1" />
         <UCard
           v-if="session"
@@ -24,7 +24,7 @@
             class="size-1.5 shrink-0 rounded-full"
             :class="refreshing ? 'animate-pulse bg-warning' : 'bg-success'"
           />
-          <span class="text-xs text-muted">{{ session.display_number || session.label }}</span>
+          <span class="max-w-[8rem] truncate text-xs text-muted sm:max-w-none">{{ session.display_number || session.label }}</span>
         </UCard>
         <UButton
           icon="i-heroicons-arrow-path"
@@ -38,10 +38,11 @@
       </div>
     </template>
 
-    <div class="flex min-h-0 flex-1">
+    <div class="flex min-h-0 flex-1 max-lg:h-full">
       <!-- Sidebar -->
       <UCard
-        class="flex w-72 shrink-0 flex-col rounded-none border-y-0 border-l-0 md:w-80"
+        class="flex flex-col rounded-none border-y-0 border-l-0 lg:w-72 lg:shrink-0 xl:w-80"
+        :class="sidebarPanelClass"
         variant="outline"
         :ui="panelCardUi"
       >
@@ -125,53 +126,127 @@
       </UCard>
 
       <!-- Chat -->
-      <ChatPanelShell :full-height="false" class="min-h-0 min-w-0 flex-1 rounded-none border-0">
+      <ChatPanelShell
+        :full-height="false"
+        panel-class="h-full max-lg:!min-h-0"
+        class="min-h-0 min-w-0 flex-1 rounded-none border-0"
+        :class="chatPanelClass"
+      >
         <template v-if="selectedConversation" #header>
-          <div class="flex items-center gap-3 border-b border-default px-4 py-3">
-            <UAvatar
-              :text="selectedConversation.initials"
-              size="md"
-              :ui="{ fallback: 'text-primary font-bold' }"
-            />
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-semibold text-highlighted">{{ selectedConversation.contact_name }}</p>
-              <p class="truncate text-xs text-muted">
-                {{ selectedConversation.phone_display }} · {{ selectedConversation.channel_label }}
-              </p>
+          <div class="border-b border-default px-2 py-2 sm:px-4 sm:py-3">
+            <div class="flex items-center gap-2 sm:gap-3">
+              <UButton
+                v-if="!isDesktop"
+                icon="i-heroicons-arrow-left"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                aria-label="Volver a conversaciones"
+                class="shrink-0"
+                @click="backToConversationList"
+              />
+              <UAvatar
+                :text="selectedConversation.initials"
+                size="md"
+                :ui="{ fallback: 'text-primary font-bold' }"
+              />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-highlighted">{{ selectedConversation.contact_name }}</p>
+                <p class="truncate text-xs text-muted">
+                  {{ selectedConversation.phone_display }} · {{ selectedConversation.channel_label }}
+                </p>
+              </div>
+              <UBadge
+                :color="windowBadgeColor(selectedConversation.window_state)"
+                variant="subtle"
+                size="sm"
+                class="hidden shrink-0 sm:inline-flex"
+              >
+                {{ selectedConversation.window_label }}
+              </UBadge>
+              <div class="hidden shrink-0 items-center gap-2 lg:flex">
+                <USelectMenu
+                  :model-value="selectedConversation.assigned_user_id ?? undefined"
+                  :items="assignSelectItems"
+                  value-key="value"
+                  placeholder="Asignar"
+                  size="sm"
+                  class="w-40"
+                  @update:model-value="onAssign"
+                />
+                <UButton
+                  icon="i-heroicons-pencil-square"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Renombrar contacto"
+                  title="Renombrar contacto"
+                  @click="renameContactOpen = true"
+                />
+                <UButton
+                  icon="i-heroicons-document-text"
+                  color="primary"
+                  variant="soft"
+                  size="sm"
+                  label="Plantillas"
+                  @click="templatePickerOpen = true"
+                />
+              </div>
+              <div class="flex shrink-0 items-center gap-1 lg:hidden">
+                <UButton
+                  icon="i-heroicons-document-text"
+                  color="primary"
+                  variant="soft"
+                  size="sm"
+                  aria-label="Plantillas"
+                  @click="templatePickerOpen = true"
+                />
+                <UPopover :content="{ side: 'bottom', align: 'end' }">
+                  <UButton
+                    icon="i-heroicons-ellipsis-vertical"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Más acciones"
+                  />
+                  <template #content>
+                    <div class="w-56 space-y-3 p-3">
+                      <div>
+                        <p class="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted">Ventana</p>
+                        <UBadge
+                          :color="windowBadgeColor(selectedConversation.window_state)"
+                          variant="subtle"
+                          size="sm"
+                        >
+                          {{ selectedConversation.window_label }}
+                        </UBadge>
+                      </div>
+                      <div>
+                        <p class="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted">Asignar</p>
+                        <USelectMenu
+                          :model-value="selectedConversation.assigned_user_id ?? undefined"
+                          :items="assignSelectItems"
+                          value-key="value"
+                          placeholder="Asignar"
+                          size="sm"
+                          class="w-full"
+                          @update:model-value="onAssign"
+                        />
+                      </div>
+                      <UButton
+                        icon="i-heroicons-pencil-square"
+                        color="neutral"
+                        variant="soft"
+                        size="sm"
+                        label="Renombrar contacto"
+                        block
+                        @click="renameContactOpen = true"
+                      />
+                    </div>
+                  </template>
+                </UPopover>
+              </div>
             </div>
-            <UBadge
-              :color="windowBadgeColor(selectedConversation.window_state)"
-              variant="subtle"
-              size="sm"
-            >
-              {{ selectedConversation.window_label }}
-            </UBadge>
-            <USelectMenu
-              :model-value="selectedConversation.assigned_user_id ?? undefined"
-              :items="assignSelectItems"
-              value-key="value"
-              placeholder="Asignar"
-              size="sm"
-              class="w-40"
-              @update:model-value="onAssign"
-            />
-            <UButton
-              icon="i-heroicons-pencil-square"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              aria-label="Renombrar contacto"
-              title="Renombrar contacto"
-              @click="renameContactOpen = true"
-            />
-            <UButton
-              icon="i-heroicons-document-text"
-              color="primary"
-              variant="soft"
-              size="sm"
-              label="Plantillas"
-              @click="templatePickerOpen = true"
-            />
           </div>
         </template>
 
@@ -179,6 +254,7 @@
           <ChatMessagesScroll
             ref="messagesScrollRef"
             class="min-h-0 flex-1 p-4"
+            :body-class="isDesktop ? '' : 'pb-40'"
             @scroll="onMessagesScroll"
           >
             <p v-if="loadingMessages" class="py-8 text-center text-sm text-muted">Cargando mensajes…</p>
@@ -190,7 +266,7 @@
                 :class="msg.direction === 'out' ? 'items-end' : 'items-start'"
               >
                 <div
-                  class="flex min-w-0 max-w-[85%] items-end gap-1"
+                  class="flex min-w-0 max-w-[92%] items-end gap-1 sm:max-w-[85%]"
                   :class="msg.direction === 'out' ? 'flex-row-reverse' : 'flex-row'"
                 >
                   <WhatsappInboxMessageBody
@@ -244,15 +320,16 @@
           <WhatsappInboxJumpToBottomButton
             :visible="showJumpButton && !loadingMessages"
             :count="newBelowCount"
+            button-class="max-lg:bottom-24"
             @click="jumpToBottom"
           />
         </div>
 
-        <div v-else class="flex flex-1 items-center justify-center text-sm text-muted">
+        <div v-else class="hidden flex-1 items-center justify-center text-sm text-muted lg:flex">
           Selecciona una conversación
         </div>
 
-        <template v-if="selectedConversation" #footer>
+        <template v-if="selectedConversation && isDesktop" #footer>
           <WhatsappInboxComposer
             :can-send="selectedConversation.can_send_text"
             :sending="sendingMessage"
@@ -263,6 +340,21 @@
         </template>
       </ChatPanelShell>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="selectedConversation && !isDesktop"
+        class="fixed inset-x-0 bottom-0 z-[100] border-t border-default bg-default shadow-[0_-4px_16px_rgba(0,0,0,0.08)]"
+      >
+        <WhatsappInboxComposer
+          :can-send="selectedConversation.can_send_text"
+          :sending="sendingMessage"
+          :reply-target="replyTarget"
+          @send="onComposerSend"
+          @cancel-reply="replyTarget = null"
+        />
+      </div>
+    </Teleport>
 
     <WhatsappInboxTemplatePickerModal
       v-model:open="templatePickerOpen"
@@ -315,6 +407,7 @@ import WhatsappInboxComposer from '~/components/whatsapp-inbox/WhatsappInboxComp
 import WhatsappInboxMessageBody from '~/components/whatsapp-inbox/WhatsappInboxMessageBody.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useWaInboxChatScroll } from '~/composables/whatsapp-inbox/useWaInboxChatScroll'
+import { useWindowSize } from '~/composables/useWindowSize'
 import { formatDatePe } from '~/utils/formatters'
 
 const panelCardUi = {
@@ -345,6 +438,7 @@ const {
   init,
   refreshInbox,
   selectConversation,
+  clearConversationSelection,
   sendComposerMessage,
   sendTemplateMessage,
   sendingTemplate,
@@ -354,6 +448,31 @@ const {
   savingNewContact,
   savingRename
 } = useWhatsappInbox()
+
+const { isDesktop } = useWindowSize()
+
+const showConversationList = computed(
+  () => isDesktop.value || !selectedConversationId.value
+)
+const showChatPanel = computed(
+  () => isDesktop.value || Boolean(selectedConversationId.value)
+)
+const showInboxHeader = computed(
+  () => isDesktop.value || !selectedConversationId.value
+)
+
+const sidebarPanelClass = computed(() => [
+  showConversationList.value ? 'flex' : 'hidden lg:flex',
+  isDesktop.value ? '' : 'w-full'
+])
+
+const chatPanelClass = computed(() =>
+  showChatPanel.value ? 'flex' : 'hidden lg:flex'
+)
+
+async function backToConversationList() {
+  await clearConversationSelection()
+}
 
 const {
   scrollRef: messagesScrollRef,

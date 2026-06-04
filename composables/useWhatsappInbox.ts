@@ -100,6 +100,8 @@ export function useWhatsappInbox() {
   const assignableUsers = ref<WaInboxAssignableUser[]>([])
 
   const selectedConversationId = ref<number | null>(null)
+  /** En móvil, evita reabrir el primer chat al volver a la lista. */
+  const suppressAutoSelect = ref(false)
   /** Conversación a la que corresponde `messages` (evita mostrar otro chat tras cargas en paralelo). */
   const messagesConversationId = ref<number | null>(null)
   const search = ref('')
@@ -425,8 +427,18 @@ export function useWhatsappInbox() {
     }
   }
 
+  function shouldAutoPickFirstConversation() {
+    if (getRouteConversationSlug()) return false
+    if (suppressAutoSelect.value) return false
+    if (import.meta.client && window.innerWidth < 1024) return false
+    return true
+  }
+
   function ensureSelectedConversation() {
-    if (getRouteConversationSlug()) return
+    if (getRouteConversationSlug()) {
+      suppressAutoSelect.value = false
+      return
+    }
 
     const list = conversations.value
     if (!list.length) {
@@ -435,10 +447,36 @@ export function useWhatsappInbox() {
       messagesConversationId.value = null
       return
     }
-    const still = selectedConversationId.value
-      && list.some((c) => c.id === selectedConversationId.value)
-    if (!still) {
+
+    const currentId = selectedConversationId.value
+    const currentValid = currentId != null && list.some((c) => c.id === currentId)
+
+    if (currentValid) return
+
+    if (shouldAutoPickFirstConversation()) {
       selectedConversationId.value = list[0].id
+      return
+    }
+
+    selectedConversationId.value = null
+    messages.value = []
+    messagesConversationId.value = null
+  }
+
+  async function clearConversationSelection() {
+    suppressAutoSelect.value = true
+    selectedConversationId.value = null
+    messages.value = []
+    messagesConversationId.value = null
+    setWaInboxViewingConversationId(null)
+
+    if (!getRouteConversationSlug()) return
+
+    try {
+      await router.replace(WA_INBOX_BASE_PATH)
+      await nextTick()
+    } catch {
+      await navigateTo(WA_INBOX_BASE_PATH, { replace: true })
     }
   }
 
@@ -810,6 +848,7 @@ export function useWhatsappInbox() {
     })
 
     selectConversationInFlight = true
+    suppressAutoSelect.value = false
     try {
       if (!options.skipRoute && !isRouteOnConversation(convId)) {
         await navigateToConversation(convId)
@@ -1246,12 +1285,15 @@ export function useWhatsappInbox() {
       async (slug, prev) => {
         if (!slug) {
           if (prev) {
+            suppressAutoSelect.value = true
             selectedConversationId.value = null
             messages.value = []
             messagesConversationId.value = null
           }
           return
         }
+
+        suppressAutoSelect.value = false
 
         const convId = conversationIdFromSlug(slug)
         if (!convId) {
@@ -1315,6 +1357,7 @@ export function useWhatsappInbox() {
     disconnectWebSocket,
     loadAllConversations,
     selectConversation,
+    clearConversationSelection,
     sendComposerMessage,
     sendTemplateMessage,
     assignConversation,

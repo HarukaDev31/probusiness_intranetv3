@@ -47,10 +47,19 @@
       <button
         v-else-if="msg.message_type === 'audio'"
         type="button"
-        class="flex max-w-full items-center gap-2 rounded-lg bg-elevated/80 px-3 py-2 ring-1 ring-default/50"
+        class="flex max-w-full items-center gap-2 rounded-lg px-3 py-2 ring-1"
+        :class="
+          direction === 'out'
+            ? 'bg-primary text-inverted ring-primary-600/40'
+            : 'bg-elevated/80 ring-default/50'
+        "
         @click.stop="() => abrirMedia()"
       >
-        <UIcon name="i-heroicons-musical-note" class="size-8 shrink-0 text-primary" />
+        <UIcon
+          name="i-heroicons-musical-note"
+          class="size-8 shrink-0"
+          :class="direction === 'out' ? 'text-inverted' : 'text-primary'"
+        />
         <span class="truncate text-sm">Audio</span>
       </button>
       <WhatsappInboxDocumentBubble
@@ -62,36 +71,49 @@
         :inverted="direction === 'out'"
         @abrir="abrirMedia()"
       />
-      <SoporteTiChatAdjuntoMensaje
+      <div
         v-else
-        :url="mediaUrl"
-        :nombre="mediaNombre"
-        :inverted="direction === 'out'"
-        forzar-documento
-        @abrir="abrirMedia"
-      />
+        class="overflow-hidden rounded-lg ring-1"
+        :class="
+          direction === 'out'
+            ? 'bg-primary text-inverted ring-primary-600/30'
+            : 'ring-default/40'
+        "
+      >
+        <SoporteTiChatAdjuntoMensaje
+          :url="mediaUrl"
+          :nombre="mediaNombre"
+          :inverted="direction === 'out'"
+          forzar-documento
+          @abrir="abrirMedia"
+        />
+      </div>
     </div>
 
     <div
       v-else-if="isMediaTypeWithoutUrl"
-      class="flex max-w-[min(100%,280px)] items-center gap-2 rounded-lg bg-elevated/80 px-3 py-2 text-sm text-muted ring-1 ring-default/40"
+      class="flex max-w-[min(100%,280px)] items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1"
+      :class="
+        direction === 'out'
+          ? 'bg-primary text-inverted ring-primary-600/40'
+          : 'bg-elevated/80 text-muted ring-default/40'
+      "
     >
       <UIcon :name="mediaPlaceholderIcon" class="size-8 shrink-0" />
       <span>{{ mediaPlaceholderLabel }}</span>
     </div>
 
-    <UCard
+    <div
       v-if="textoVisible"
-      :color="direction === 'out' ? 'primary' : 'neutral'"
-      :variant="direction === 'out' ? 'solid' : 'subtle'"
-      :ui="{ body: 'min-w-0 px-3 py-2 text-sm leading-relaxed' }"
-      class="min-w-0 w-full max-w-[min(100%,320px)]"
-      :class="[
-        direction === 'out' ? 'rounded-br-sm' : 'rounded-bl-sm'
-      ]"
+      class="min-w-0 w-full max-w-[min(100%,320px)] whitespace-pre-wrap break-words px-3 py-2 text-sm leading-relaxed shadow-sm [overflow-wrap:anywhere] rounded-2xl"
+      :class="
+        direction === 'out'
+          ? 'rounded-br-sm bg-primary text-inverted'
+          : 'rounded-bl-sm bg-elevated text-highlighted ring-1 ring-default/40'
+      "
     >
-      <span class="block whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{{ msg.body }}</span>
-    </UCard>
+      {{ msg.body }}
+    </div>
   </div>
 </template>
 

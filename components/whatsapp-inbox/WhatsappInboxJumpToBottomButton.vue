@@ -11,6 +11,7 @@
       v-if="visible"
       type="button"
       class="absolute bottom-4 left-1/2 z-20 flex size-10 -translate-x-1/2 items-center justify-center rounded-full bg-elevated shadow-lg ring-1 ring-default transition-transform hover:scale-105 active:scale-95"
+      :class="buttonClass"
       aria-label="Ir a mensajes recientes"
       @click="emit('click')"
     >
@@ -29,6 +30,7 @@
 defineProps<{
   visible: boolean
   count?: number
+  buttonClass?: string
 }>()
 
 const emit = defineEmits<{
