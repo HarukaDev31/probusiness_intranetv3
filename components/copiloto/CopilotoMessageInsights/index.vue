@@ -1,10 +1,18 @@
 <template>
   <div v-if="insights.length" class="mt-1.5 flex w-full max-w-[min(100%,22rem)] flex-col gap-1">
-    <div
+    <component
+      :is="selectable && item.kind === 'sugerencia' ? 'button' : 'div'"
       v-for="item in insights"
       :key="item.id"
-      class="rounded-lg border px-2.5 py-1.5 text-[11px] leading-snug"
-      :class="kindClass(item.kind)"
+      :type="selectable && item.kind === 'sugerencia' ? 'button' : undefined"
+      class="rounded-lg border px-2.5 py-1.5 text-left text-[11px] leading-snug"
+      :class="[
+        kindClass(item.kind),
+        selectable && item.kind === 'sugerencia'
+          ? 'cursor-pointer transition hover:ring-2 hover:ring-primary-400/60'
+          : ''
+      ]"
+      @click="selectable && item.kind === 'sugerencia' ? emit('select', item) : undefined"
     >
       <p class="flex items-center gap-1 font-semibold">
         <UIcon :name="kindIcon(item.kind)" class="size-3.5 shrink-0" />
@@ -17,17 +25,32 @@
         >
           {{ item.score }}
         </UBadge>
+        <UIcon
+          v-if="selectable && item.kind === 'sugerencia'"
+          name="i-heroicons-arrow-up-left"
+          class="ms-auto size-3.5 text-primary"
+        />
       </p>
       <p class="mt-0.5 text-muted">{{ item.body }}</p>
-    </div>
+    </component>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { WaCopilotoMessageInsight } from '~/types/wa-copiloto'
 
-defineProps<{
-  insights: WaCopilotoMessageInsight[]
+withDefaults(
+  defineProps<{
+    insights: WaCopilotoMessageInsight[]
+    selectable?: boolean
+  }>(),
+  {
+    selectable: false
+  }
+)
+
+const emit = defineEmits<{
+  select: [insight: WaCopilotoMessageInsight]
 }>()
 
 function kindLabel(kind: WaCopilotoMessageInsight['kind']) {

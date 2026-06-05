@@ -1231,6 +1231,11 @@ export function useWaCopilotoInbox() {
         [phone]: { ...payload.ficha }
       }
     }
+
+    const leadTemp = payload.temperatura_lead ?? payload.ficha?.temperatura
+    if (convId && leadTemp != null && Number.isFinite(Number(leadTemp))) {
+      cache.patchConversation(convId, { temperatura: Math.min(100, Math.max(0, Number(leadTemp))) })
+    }
   }
 
   const inboxRealtimeHandlers = {

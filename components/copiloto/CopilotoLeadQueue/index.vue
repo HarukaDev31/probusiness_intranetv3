@@ -6,14 +6,29 @@
           {{ title }}
           <UBadge color="primary" variant="solid" size="xs" class="ms-1">{{ leads.length }}</UBadge>
         </span>
-        <UButton
-          v-if="!readonly"
-          icon="i-heroicons-arrows-up-down"
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          aria-label="Ordenar"
-        />
+        <div class="flex items-center gap-0.5">
+          <UButton
+            v-if="!readonly"
+            icon="i-heroicons-user-plus"
+            color="primary"
+            variant="soft"
+            size="xs"
+            aria-label="Nuevo contacto"
+            title="Nuevo contacto"
+            @click="emit('new-contact')"
+          />
+          <UButton
+            v-if="!readonly"
+            icon="i-heroicons-arrow-path"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :loading="loading"
+            aria-label="Sincronizar directorio"
+            title="Sincronizar directorio de contactos"
+            @click="emit('sync')"
+          />
+        </div>
       </div>
       <UInput
         :model-value="search"
@@ -57,7 +72,7 @@
             {{ lead.tLbl }}
           </UBadge>
           <span class="text-xs font-bold tabular-nums" :style="{ color: tempCfg(lead.temp).bar }">
-            {{ lead.score }}
+            {{ lead.tLbl === 'Sin IA' ? '—' : lead.temp }}
           </span>
         </div>
       </button>
@@ -89,6 +104,8 @@ withDefaults(
 const emit = defineEmits<{
   select: [index: number]
   'update:search': [value: string]
+  'new-contact': []
+  sync: []
 }>()
 
 const tempCfg = getCopilotoTempConfig

@@ -55,6 +55,7 @@
           readonly
           :main-tab="mainTab"
           :suggestion="suggestion"
+          :suggestion-options="suggestionOptions"
           @update:main-tab="setMainTab"
         />
         <div v-else class="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
@@ -71,6 +72,7 @@
         :key="`ficha-${selectedLead?.id ?? 'none'}`"
         :lead="selectedLead"
         :ficha-tab="fichaTab"
+        :suggestion-logs="suggestionLogs"
         readonly
         compact
         @update:ficha-tab="setFichaTab"
@@ -115,6 +117,8 @@ const {
   loadingLeads,
   queueSearch,
   suggestion,
+  suggestionOptions,
+  suggestionLogs,
   selectLead,
   selectAdvisor,
   setMainTab,

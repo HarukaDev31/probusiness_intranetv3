@@ -280,7 +280,7 @@ const { showConfirmation, showSuccess, showError } = useModal()
 const copyToClipboard = async (text: string, successMessage: string = 'Copiado al portapapeles') => {
     try {
         await navigator.clipboard.writeText(text)
-        showSuccess('Ã‰xito', successMessage)
+        showSuccess('Éxito', successMessage)
     } catch (error) {
         showError('Error al copiar', 'No se pudo copiar al portapapeles')
     }

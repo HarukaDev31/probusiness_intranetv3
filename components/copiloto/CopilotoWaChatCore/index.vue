@@ -43,6 +43,8 @@
               <CopilotoMessageInsights
                 v-if="msg.direction === 'in' && msg.insights?.length"
                 :insights="msg.insights"
+                :selectable="!readonly"
+                @select="onInsightSelect($event, msg.id)"
               />
             </div>
             <span class="mt-0.5 text-[11px] text-muted">{{ formatTime(msg) }}</span>
@@ -58,6 +60,7 @@
 
     <template v-if="!readonly" #footer>
       <WhatsappInboxComposer
+        v-model="composerText"
         :can-send="conversation.can_send_text"
         :sending="sendingMessage"
         :reply-target="replyTarget"
@@ -71,9 +74,11 @@
 <script setup lang="ts">
 import { ref, toRef, computed } from 'vue'
 import type {
+  CopilotoSuggestionOption,
   WaCopilotoComposerSendPayload,
   WaCopilotoConversation,
-  WaCopilotoMessage
+  WaCopilotoMessage,
+  WaCopilotoMessageInsight
 } from '~/types/wa-copiloto'
 import type { WaInboxComposerReplyTarget } from '~/types/whatsapp-inbox'
 import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
@@ -91,19 +96,28 @@ const props = withDefaults(
     loadingMessages?: boolean
     sendingMessage?: boolean
     readonly?: boolean
+    composerDraft?: string
   }>(),
   {
     loadingMessages: false,
     sendingMessage: false,
-    readonly: false
+    readonly: false,
+    composerDraft: ''
   }
 )
 
 const emit = defineEmits<{
   send: [payload: WaCopilotoComposerSendPayload]
+  'update:composerDraft': [value: string]
+  'select-suggestion': [option: CopilotoSuggestionOption]
 }>()
 
 const replyTarget = ref<WaInboxComposerReplyTarget | null>(null)
+
+const composerText = computed({
+  get: () => props.composerDraft,
+  set: (value: string) => emit('update:composerDraft', value)
+})
 
 const {
   scrollRef,
@@ -144,5 +158,16 @@ function onSend(payload: WaCopilotoComposerSendPayload) {
     replyToMetaMessageId: replyTarget.value?.metaMessageId || payload.replyToMetaMessageId
   })
   replyTarget.value = null
+}
+
+function onInsightSelect(insight: WaCopilotoMessageInsight, messageId: number) {
+  if (insight.kind !== 'sugerencia') return
+  emit('select-suggestion', {
+    id: `ins-${insight.id}`,
+    text: insight.body,
+    label: insight.label || 'Sugerencia IA',
+    insightId: insight.id,
+    messageId
+  })
 }
 </script>

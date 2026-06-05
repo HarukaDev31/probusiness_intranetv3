@@ -94,17 +94,29 @@
     />
 
     <div
-      v-if="mainTab === 'wa' && suggestion && !conversation.pending_contact"
+      v-if="mainTab === 'wa' && suggestionOptions.length && !conversation.pending_contact"
       class="shrink-0 border-b px-3 py-2 text-xs"
-      :style="{ background: suggestion.cfg.sBg, borderColor: suggestion.cfg.sBrd }"
+      :style="{ background: suggestionBanner.cfg.sBg, borderColor: suggestionBanner.cfg.sBrd }"
     >
-      <p class="flex items-center gap-1 font-semibold" :style="{ color: suggestion.cfg.sLbl }">
+      <p class="flex items-center gap-1 font-semibold" :style="{ color: suggestionBanner.cfg.sLbl }">
         <UIcon name="i-heroicons-sparkles" class="size-3.5" />
-        {{ suggestion.label }}
+        {{ suggestionBanner.label }}
       </p>
-      <p class="mt-1 leading-snug" :style="{ color: suggestion.cfg.sTxt }">{{ suggestion.text }}</p>
-      <div v-if="!readonly" class="mt-2 flex flex-wrap gap-1">
-        <UButton size="xs" color="neutral" variant="soft" label="Usar sugerencia" @click="emit('apply-chip', suggestion.text)" />
+      <p class="mt-1 text-[10px] text-muted">Toca una opción para cargarla en el mensaje. Puedes editarla antes de enviar.</p>
+      <div v-if="!readonly" class="mt-2 flex flex-col gap-1.5">
+        <button
+          v-for="option in suggestionOptions"
+          :key="option.id"
+          type="button"
+          class="rounded-lg border px-2.5 py-2 text-left transition"
+          :class="selectedSuggestionId === option.id
+            ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-400 dark:bg-primary-950/40'
+            : 'border-default/80 bg-white/70 hover:border-primary-300 dark:bg-gray-900/40'"
+          @click="emit('apply-chip', option)"
+        >
+          <span class="block text-[10px] font-semibold uppercase text-primary">{{ option.label || 'Sugerencia' }}</span>
+          <span class="mt-0.5 block leading-snug text-highlighted">{{ option.text }}</span>
+        </button>
       </div>
     </div>
 
@@ -129,7 +141,10 @@
       :loading-messages="loading"
       :sending-message="sending"
       :readonly="readonly"
+      :composer-draft="composerDraft"
+      @update:composer-draft="emit('update:composerDraft', $event)"
       @send="emit('send-wa', $event)"
+      @select-suggestion="emit('apply-chip', $event)"
     />
 
     <div
@@ -180,6 +195,7 @@ import { ref, computed } from 'vue'
 import type { CopilotoLead } from '~/types/copiloto/lead'
 import type { CopilotoMainTab } from '~/composables/copiloto/useCopilotoDashboard'
 import type {
+  CopilotoSuggestionOption,
   WaCopilotoAssignableUser,
   WaCopilotoComposerSendPayload,
   WaCopilotoConversation,
@@ -210,6 +226,9 @@ const props = withDefaults(
     sendingTemplate?: boolean
     savingNewContact?: boolean
     savingRename?: boolean
+    composerDraft?: string
+    selectedSuggestionId?: string | null
+    suggestionOptions?: CopilotoSuggestionOption[]
     suggestion: { label: string; text: string; cfg: ReturnType<typeof getCopilotoTempConfig> } | null
   }>(),
   {
@@ -219,7 +238,10 @@ const props = withDefaults(
     sending: false,
     sendingTemplate: false,
     savingNewContact: false,
-    savingRename: false
+    savingRename: false,
+    composerDraft: '',
+    selectedSuggestionId: null,
+    suggestionOptions: () => []
   }
 )
 
@@ -230,9 +252,18 @@ const emit = defineEmits<{
   'create-contact': [payload: { contact_name: string; phone: string; assigned_user_id: number | null }]
   rename: [name: string]
   assign: [userId: number | null]
-  'apply-chip': [text: string]
+  'apply-chip': [option: CopilotoSuggestionOption | string]
+  'update:composerDraft': [value: string]
   refresh: []
 }>()
+
+const suggestionBanner = computed(() => {
+  const cfg = props.suggestion?.cfg ?? getCopilotoTempConfig(0)
+  return {
+    label: props.suggestion?.label ?? 'Copiloto sugiere',
+    cfg
+  }
+})
 
 const { showError: showModalError } = useModal()
 

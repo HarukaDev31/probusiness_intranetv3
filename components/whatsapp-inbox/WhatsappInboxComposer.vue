@@ -174,20 +174,35 @@ const props = withDefaults(
     canSend?: boolean
     sending?: boolean
     replyTarget?: WaInboxComposerReplyTarget | null
+    modelValue?: string
   }>(),
   {
     canSend: true,
     sending: false,
-    replyTarget: null
+    replyTarget: null,
+    modelValue: undefined
   }
 )
 
 const emit = defineEmits<{
   send: [payload: WaInboxComposerSendPayload]
   'cancel-reply': []
+  'update:modelValue': [value: string]
 }>()
 
-const texto = ref('')
+const internalText = ref('')
+const texto = computed({
+  get() {
+    return props.modelValue !== undefined ? props.modelValue : internalText.value
+  },
+  set(value: string) {
+    if (props.modelValue !== undefined) {
+      emit('update:modelValue', value)
+    } else {
+      internalText.value = value
+    }
+  }
+})
 const menuAdjuntosAbierto = ref(false)
 const adjuntoPendiente = ref<File | null>(null)
 const mediaKindPendiente = ref<'image' | 'video' | 'document' | 'audio' | null>(null)

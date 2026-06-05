@@ -17,6 +17,9 @@ export type WaCopilotoConversation = BaseConversation & {
   source?: string
   origin_line_number?: string | null
   origin_line_label?: string | null
+  /** Puntaje IA del lead (0–100), cacheado en conversación. */
+  temperatura?: number | null
+  ai_temperatura_at?: string | null
 }
 
 export type WaCopilotoFilter = import('~/types/whatsapp-inbox').WaInboxFilter
@@ -48,4 +51,25 @@ export type WaCopilotoFichaSnapshot = {
   sugerencia_corta?: string | null
   accion_sugerida?: string | null
   motivo?: string | null
+}
+
+export type WaCopilotoSuggestionOutcome = 'used' | 'modified' | 'ignored'
+
+export type WaCopilotoSuggestionUsage = {
+  id: number
+  conversation_id: number
+  message_id?: number | null
+  insight_id?: number | null
+  outcome: WaCopilotoSuggestionOutcome
+  suggested_text: string
+  final_text?: string | null
+  created_at?: string
+}
+
+export type CopilotoSuggestionOption = {
+  id: string
+  text: string
+  label?: string
+  insightId?: number
+  messageId?: number
 }

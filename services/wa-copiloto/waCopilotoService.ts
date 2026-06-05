@@ -163,4 +163,27 @@ export class WaCopilotoService extends BaseService {
       body: payload
     })
   }
+
+  static async getSuggestionUsages(conversationId: number, params: { limit?: number } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/suggestion-usages`, {
+      method: 'GET',
+      params
+    })
+  }
+
+  static async recordSuggestionUsage(
+    conversationId: number,
+    payload: {
+      outcome: 'used' | 'modified' | 'ignored'
+      suggested_text: string
+      final_text?: string
+      message_id?: number
+      insight_id?: number
+    }
+  ) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/suggestion-usages`, {
+      method: 'POST',
+      body: payload
+    })
+  }
 }

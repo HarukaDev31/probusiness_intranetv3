@@ -14,7 +14,7 @@
       <UCard variant="subtle" :ui="{ body: 'p-2.5 space-y-2' }">
         <div class="flex justify-between">
           <div>
-            <p class="text-2xl font-bold tabular-nums" :style="{ color: tempCfg(lead.temp).bar }">{{ lead.score }}</p>
+            <p class="text-2xl font-bold tabular-nums" :style="{ color: tempCfg(lead.temp).bar }">{{ lead.temp }}</p>
             <p class="text-[10px] text-muted">{{ lead.tLbl }}</p>
           </div>
           <div class="text-right">
@@ -25,9 +25,10 @@
         <div class="h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
           <div
             class="h-full rounded-full transition-all"
-            :style="{ width: `${lead.temp}%`, background: tempCfg(lead.temp).bar }"
+            :style="{ width: `${Math.max(lead.temp, lead.temp > 0 ? 4 : 0)}%`, background: tempCfg(lead.temp).bar }"
           />
         </div>
+        <p v-if="lead.temp <= 0" class="text-[10px] text-muted">Sin puntaje IA aún — llegará con el primer análisis del chat.</p>
       </UCard>
       <UCard variant="outline" :ui="{ body: 'p-2.5' }">
         <p class="text-[10px] font-semibold uppercase text-muted">
@@ -63,6 +64,27 @@
           <p v-if="msg.why" class="mt-1 text-[10px] text-muted">{{ msg.why }}</p>
         </UCard>
         <p v-if="!incomingWithInsight.length" class="text-muted">Sin señales detalladas.</p>
+
+        <div v-if="suggestionLogs.length" class="space-y-2 pt-2">
+          <p class="text-[10px] font-semibold uppercase text-muted">Uso de sugerencias IA</p>
+          <UCard
+            v-for="log in suggestionLogs"
+            :key="log.id"
+            variant="outline"
+            :ui="{ body: 'p-2 space-y-1' }"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <UBadge size="xs" :color="outcomeColor(log.outcome)" variant="subtle">
+                {{ outcomeLabel(log.outcome) }}
+              </UBadge>
+              <span class="text-[10px] text-muted">{{ formatLogTime(log.created_at) }}</span>
+            </div>
+            <p class="text-[11px] text-highlighted">{{ log.suggested_text }}</p>
+            <p v-if="log.final_text && log.outcome === 'modified'" class="text-[10px] text-muted">
+              Enviado: {{ log.final_text }}
+            </p>
+          </UCard>
+        </div>
       </div>
 
       <div v-else-if="fichaTab === 'hist'" class="space-y-2">
@@ -94,6 +116,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { WaCopilotoSuggestionUsage } from '~/types/wa-copiloto'
 import type { CopilotoLead } from '~/types/copiloto/lead'
 import type { CopilotoFichaTab } from '~/composables/copiloto/useCopilotoDashboard'
 import { getCopilotoTempConfig } from '~/constants/copiloto/temperature'
@@ -102,12 +125,14 @@ const props = withDefaults(
   defineProps<{
     lead: CopilotoLead | null
     fichaTab: CopilotoFichaTab
+    suggestionLogs?: WaCopilotoSuggestionUsage[]
     readonly?: boolean
     compact?: boolean
   }>(),
   {
     readonly: false,
-    compact: false
+    compact: false,
+    suggestionLogs: () => []
   }
 )
 
@@ -132,4 +157,23 @@ const incomingWithInsight = computed(() => {
   if (!props.lead) return []
   return props.lead.msgs.filter((m) => m.dir === 'in' && m.why)
 })
+
+function outcomeLabel(outcome: WaCopilotoSuggestionUsage['outcome']) {
+  if (outcome === 'used') return 'Usó sugerencia'
+  if (outcome === 'modified') return 'Editó sugerencia'
+  return 'No usó sugerencia'
+}
+
+function outcomeColor(outcome: WaCopilotoSuggestionUsage['outcome']) {
+  if (outcome === 'used') return 'success'
+  if (outcome === 'modified') return 'warning'
+  return 'neutral'
+}
+
+function formatLogTime(raw?: string | null) {
+  if (!raw) return ''
+  const d = new Date(String(raw))
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
 </script>

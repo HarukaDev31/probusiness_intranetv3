@@ -1,27 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden md:p-4">
-    <PageHeader title="Copiloto IA" :subtitle="headerSubtitle" icon="i-heroicons-sparkles" :hide-back-button="true">
-      <template #actions>
-        <UButton
-          v-if="!readonly"
-          size="sm"
-          color="neutral"
-          variant="soft"
-          icon="i-heroicons-user-plus"
-          label="Nuevo contacto"
-          @click="conversationPanelRef?.openNewContact?.()"
-        />
-        <UButton
-          size="sm"
-          color="neutral"
-          variant="ghost"
-          icon="i-heroicons-arrow-path"
-          :loading="loadingLeads"
-          title="Sincronizar directorio de contactos"
-          @click="onRefresh"
-        />
-      </template>
-    </PageHeader>
+    <PageHeader title="Copiloto IA" :subtitle="headerSubtitle" icon="i-heroicons-sparkles" :hide-back-button="true" />
 
     <div class="grid min-h-0 flex-1 overflow-hidden rounded-lg border border-default bg-[#f0f4f9] dark:bg-gray-950 md:grid-cols-[minmax(260px,280px)_1fr_minmax(240px,272px)]">
       <CopilotoLeadQueue
@@ -31,9 +10,10 @@
         :loading="loadingLeads"
         :selected-index="Math.max(selectedLeadIndex, 0)"
         @select="selectLead"
+        @new-contact="newContactOpen = true"
+        @sync="onRefresh"
       />
       <CopilotoConversationPanel
-        ref="conversationPanelRef"
         :key="selectedConversation?.contact_id ? `ct-${selectedConversation.contact_id}` : (selectedConversation?.id ?? selectedLead?.id ?? 'none')"
         :lead="selectedLead"
         :conversation="selectedConversation"
@@ -48,6 +28,10 @@
         :saving-rename="savingRename"
         :main-tab="mainTab"
         :suggestion="suggestion"
+        :suggestion-options="suggestionOptions"
+        :selected-suggestion-id="selectedSuggestionId"
+        :composer-draft="composerDraft"
+        @update:composer-draft="setComposerDraft"
         @update:main-tab="setMainTab"
         @send-wa="sendWaMessage"
         @send-template="onSendTemplate"
@@ -61,9 +45,17 @@
         :key="`ficha-${selectedLead?.id ?? 'none'}`"
         :lead="selectedLead"
         :ficha-tab="fichaTab"
+        :suggestion-logs="suggestionLogs"
         @update:ficha-tab="setFichaTab"
       />
     </div>
+
+    <WhatsappInboxNewContactModal
+      v-model:open="newContactOpen"
+      :assignable-users="assignableUsers"
+      :saving="savingNewContact"
+      @save="onCreateContact"
+    />
   </div>
 </template>
 
@@ -73,12 +65,13 @@ import PageHeader from '~/components/PageHeader.vue'
 import CopilotoLeadQueue from '~/components/copiloto/CopilotoLeadQueue/index.vue'
 import CopilotoConversationPanel from '~/components/copiloto/CopilotoConversationPanel/index.vue'
 import CopilotoLeadFicha from '~/components/copiloto/CopilotoLeadFicha/index.vue'
+import WhatsappInboxNewContactModal from '~/components/whatsapp-inbox/WhatsappInboxNewContactModal.vue'
 import { useCopilotoDashboard } from '~/composables/copiloto/useCopilotoDashboard'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { setContentNarrow } from '~/composables/usePageLayout'
 
 const { userData } = useUserRole()
-const conversationPanelRef = ref<{ openNewContact?: () => void } | null>(null)
+const newContactOpen = ref(false)
 
 const {
   leads,
@@ -99,6 +92,10 @@ const {
   savingNewContact,
   savingRename,
   suggestion,
+  suggestionOptions,
+  selectedSuggestionId,
+  composerDraft,
+  suggestionLogs,
   selectLead,
   setMainTab,
   setFichaTab,
@@ -108,11 +105,10 @@ const {
   renameConversation,
   assignConversation,
   applySuggestionChip,
+  setComposerDraft,
   refreshLeads,
   syncContacts
 } = useCopilotoDashboard({ readonly: false })
-
-const readonly = false
 
 const headerSubtitle = computed(() => {
   const name = userData.value?.nombre || 'Cotizador'
@@ -140,6 +136,7 @@ async function onCreateContact(payload: {
   assigned_user_id: number | null
 }) {
   await createManualContact(payload)
+  newContactOpen.value = false
 }
 
 async function onRename(name: string) {
