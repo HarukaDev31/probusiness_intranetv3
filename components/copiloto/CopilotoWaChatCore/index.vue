@@ -40,11 +40,6 @@
                   @click="replyTarget = buildReplyTarget(msg)"
                 />
               </div>
-              <CopilotoMessageInsights
-                v-if="msg.direction === 'in' && msg.insights?.length"
-                :insights="msg.insights"
-                hide-suggestions
-              />
             </div>
             <span class="mt-0.5 text-[11px] text-muted">{{ formatTime(msg) }}</span>
           </div>
@@ -83,7 +78,6 @@ import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import WhatsappInboxMessageBody from '~/components/whatsapp-inbox/WhatsappInboxMessageBody.vue'
 import WhatsappInboxComposer from '~/components/whatsapp-inbox/WhatsappInboxComposer.vue'
 import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
-import CopilotoMessageInsights from '~/components/copiloto/CopilotoMessageInsights/index.vue'
 import { useWaCopilotoChatScroll } from '~/composables/wa-copiloto-inbox/useWaCopilotoChatScroll'
 
 const props = withDefaults(
