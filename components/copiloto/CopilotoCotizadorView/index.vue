@@ -7,6 +7,7 @@
         title="Mi cola"
         v-model:search="queueSearch"
         :leads="leads"
+        :conversations="queueConversations"
         :loading="loadingLeads"
         :selected-index="Math.max(selectedLeadIndex, 0)"
         @select="selectLead"
@@ -75,6 +76,7 @@ const newContactOpen = ref(false)
 
 const {
   leads,
+  queueConversations,
   selectedLeadIndex,
   selectedLead,
   selectedConversation,

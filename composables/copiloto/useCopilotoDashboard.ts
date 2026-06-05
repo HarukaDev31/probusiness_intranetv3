@@ -8,6 +8,7 @@ import type {
   WaCopilotoSuggestionUsage
 } from '~/types/wa-copiloto'
 import { getCopilotoTempConfig } from '~/constants/copiloto/temperature'
+import { getWaInboxSidebarPreviewMeta } from '~/utils/whatsappInboxSidebarPreview'
 import { COPILOTO_TEAM_MEMBERS } from '~/constants/copiloto/team'
 import { CopilotoService } from '~/services/copiloto/copilotoService'
 import { WaCopilotoService } from '~/services/wa-copiloto/waCopilotoService'
@@ -98,6 +99,7 @@ function mapConversationToLead(conv: WaCopilotoConversation, ficha?: Record<stri
     : null
 
   const senales = Array.isArray(ficha?.senales) ? ficha.senales as string[] : []
+  const previewMeta = pending ? null : getWaInboxSidebarPreviewMeta(conv)
 
   return {
     id: conversationRowKey(conv),
@@ -115,7 +117,8 @@ function mapConversationToLead(conv: WaCopilotoConversation, ficha?: Record<stri
       || (senales.length ? senales.slice(0, 2).join(' · ') : 'Sin análisis IA disponible aún'),
     prev: pending
       ? 'Sin chat en esta línea — usa plantilla'
-      : (String(conv.last_message_preview ?? '').trim() || 'Sin mensajes'),
+      : (previewMeta?.label || String(conv.last_message_preview ?? '').trim() || 'Sin mensajes'),
+    prevTime: conv.last_message_time_label || formatMessageTime(conv.last_message_at),
     dot: pending ? '#3b82f6' : (direction === 'in' ? '#22c55e' : '#64748b'),
     cbm: ficha?.cbm ? String(ficha.cbm) : '—',
     inv: ficha?.inversion ? String(ficha.inversion) : '—',
@@ -209,6 +212,14 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     const advisor = options?.filterAdvisorId ?? selectedAdvisorId.value
     if (advisor === 'all') return allLeads.value
     return allLeads.value.filter((l) => l.advisorId === advisor || !l.advisorId)
+  })
+
+  const filteredConversations = computed(() => {
+    const advisor = options?.filterAdvisorId ?? selectedAdvisorId.value
+    if (advisor === 'all') return wa.conversations.value
+    return wa.conversations.value.filter(
+      (c) => !c.assigned_user_id || String(c.assigned_user_id) === advisor
+    )
   })
 
   const selectedLeadIndex = computed(() => {
@@ -488,6 +499,7 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     readonly,
     teamMembers: COPILOTO_TEAM_MEMBERS,
     leads: filteredLeads,
+    queueConversations: filteredConversations,
     selectedLeadIndex,
     selectedLead,
     selectedAdvisorId,

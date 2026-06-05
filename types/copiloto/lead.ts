@@ -29,6 +29,7 @@ export interface CopilotoLead {
   action: string
   why: string
   prev: string
+  prevTime?: string
   dot: string
   cbm: string
   inv: string

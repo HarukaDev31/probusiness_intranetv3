@@ -19,6 +19,7 @@
         title="Cola"
         v-model:search="queueSearch"
         :leads="leads"
+        :conversations="queueConversations"
         :loading="loadingLeads"
         :selected-index="selectedLeadIndex"
         readonly
@@ -105,6 +106,7 @@ const kpiMetrics = COPILOTO_KPI_METRICS
 const {
   teamMembers,
   leads,
+  queueConversations,
   selectedLeadIndex,
   selectedLead,
   selectedConversation,
