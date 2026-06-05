@@ -43,8 +43,7 @@
               <CopilotoMessageInsights
                 v-if="msg.direction === 'in' && msg.insights?.length"
                 :insights="msg.insights"
-                :selectable="!readonly"
-                @select="onInsightSelect($event, msg.id)"
+                hide-suggestions
               />
             </div>
             <span class="mt-0.5 text-[11px] text-muted">{{ formatTime(msg) }}</span>
@@ -74,11 +73,9 @@
 <script setup lang="ts">
 import { ref, toRef, computed } from 'vue'
 import type {
-  CopilotoSuggestionOption,
   WaCopilotoComposerSendPayload,
   WaCopilotoConversation,
-  WaCopilotoMessage,
-  WaCopilotoMessageInsight
+  WaCopilotoMessage
 } from '~/types/wa-copiloto'
 import type { WaInboxComposerReplyTarget } from '~/types/whatsapp-inbox'
 import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
@@ -109,7 +106,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   send: [payload: WaCopilotoComposerSendPayload]
   'update:composerDraft': [value: string]
-  'select-suggestion': [option: CopilotoSuggestionOption]
 }>()
 
 const replyTarget = ref<WaInboxComposerReplyTarget | null>(null)
@@ -158,16 +154,5 @@ function onSend(payload: WaCopilotoComposerSendPayload) {
     replyToMetaMessageId: replyTarget.value?.metaMessageId || payload.replyToMetaMessageId
   })
   replyTarget.value = null
-}
-
-function onInsightSelect(insight: WaCopilotoMessageInsight, messageId: number) {
-  if (insight.kind !== 'sugerencia') return
-  emit('select-suggestion', {
-    id: `ins-${insight.id}`,
-    text: insight.body,
-    label: insight.label || 'Sugerencia IA',
-    insightId: insight.id,
-    messageId
-  })
 }
 </script>

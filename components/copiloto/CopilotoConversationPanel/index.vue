@@ -144,7 +144,6 @@
       :composer-draft="composerDraft"
       @update:composer-draft="emit('update:composerDraft', $event)"
       @send="emit('send-wa', $event)"
-      @select-suggestion="emit('apply-chip', $event)"
     />
 
     <div

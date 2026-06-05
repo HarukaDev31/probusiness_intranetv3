@@ -126,6 +126,19 @@ function mapConversationToLead(conv: WaCopilotoConversation, ficha?: Record<stri
   }
 }
 
+function normalizeSuggestionKey(text: string): string {
+  return text.trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+function isDuplicateSuggestion(text: string, seen: Set<string>): boolean {
+  const key = normalizeSuggestionKey(text)
+  if (!key || seen.has(key)) return true
+  for (const existing of seen) {
+    if (existing.includes(key) || key.includes(existing)) return true
+  }
+  return false
+}
+
 function collectSuggestionOptions(
   messages: WaCopilotoMessage[],
   lead: CopilotoLead | null,
@@ -135,15 +148,16 @@ function collectSuggestionOptions(
   const options: CopilotoSuggestionOption[] = []
 
   const pushOption = (option: CopilotoSuggestionOption) => {
-    const key = option.text.trim()
-    if (!key || seen.has(key)) return
-    seen.add(key)
+    if (isDuplicateSuggestion(option.text, seen)) return
+    seen.add(normalizeSuggestionKey(option.text))
     options.push(option)
   }
 
+  let hasInsightSuggestion = false
   for (const msg of [...messages].reverse()) {
     for (const insight of msg.insights ?? []) {
       if (insight.kind !== 'sugerencia') continue
+      hasInsightSuggestion = true
       pushOption({
         id: `ins-${insight.id}`,
         text: insight.body,
@@ -155,16 +169,19 @@ function collectSuggestionOptions(
     if (options.length >= 6) break
   }
 
-  const fichaSug = String(ficha?.sugerencia || ficha?.accion_sugerida || '').trim()
-  if (fichaSug) {
-    pushOption({ id: 'ficha-sug', text: fichaSug, label: 'Respuesta sugerida' })
+  if (!hasInsightSuggestion) {
+    const fichaSug = String(ficha?.sugerencia || ficha?.accion_sugerida || ficha?.sugerencia_corta || '').trim()
+    if (fichaSug) {
+      pushOption({ id: 'ficha-sug', text: fichaSug, label: 'Respuesta sugerida' })
+    }
   }
 
-  if (lead?.action) {
-    pushOption({ id: 'ficha-action', text: lead.action, label: 'Siguiente acción' })
+  const actionText = String(lead?.action || '').trim()
+  if (actionText && !isDuplicateSuggestion(actionText, seen)) {
+    pushOption({ id: 'ficha-action', text: actionText, label: 'Próximo paso' })
   }
 
-  return options.slice(0, 6)
+  return options.slice(0, 4)
 }
 
 export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvisorId?: string | null }) {

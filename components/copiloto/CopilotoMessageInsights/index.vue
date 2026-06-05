@@ -1,8 +1,8 @@
 <template>
-  <div v-if="insights.length" class="mt-1.5 flex w-full max-w-[min(100%,22rem)] flex-col gap-1">
+  <div v-if="visibleInsights.length" class="mt-1.5 flex w-full max-w-[min(100%,22rem)] flex-col gap-1">
     <component
       :is="selectable && item.kind === 'sugerencia' ? 'button' : 'div'"
-      v-for="item in insights"
+      v-for="item in visibleInsights"
       :key="item.id"
       :type="selectable && item.kind === 'sugerencia' ? 'button' : undefined"
       class="rounded-lg border px-2.5 py-1.5 text-left text-[11px] leading-snug"
@@ -37,16 +37,26 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { WaCopilotoMessageInsight } from '~/types/wa-copiloto'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     insights: WaCopilotoMessageInsight[]
     selectable?: boolean
+    /** Las sugerencias accionables van en el banner superior; aquí solo análisis. */
+    hideSuggestions?: boolean
   }>(),
   {
-    selectable: false
+    selectable: false,
+    hideSuggestions: false
   }
+)
+
+const visibleInsights = computed(() =>
+  props.hideSuggestions
+    ? props.insights.filter((item) => item.kind !== 'sugerencia')
+    : props.insights
 )
 
 const emit = defineEmits<{
