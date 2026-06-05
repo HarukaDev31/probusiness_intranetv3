@@ -363,6 +363,8 @@ export function rebindChannelHandlers(
   const existing = sharedActiveChannels.value.get(channelName)
   if (!existing) return false
 
+  // Fuerza re-enlace de listeners (el mapa de callbacks ya se actualiza siempre).
+  boundHandlersByChannel.delete(channelName)
   bindChannelHandlers(channelName, existing, handlers)
   return true
 }

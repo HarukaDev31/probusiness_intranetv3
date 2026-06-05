@@ -36,11 +36,7 @@ import {
   resolveWaCopilotoDeliveryStatus
 } from '~/composables/wa-copiloto-inbox/waCopilotoRealtimeSync'
 import { registerWaCopilotoUiHandlers, getWaCopilotoUiHandlers } from '~/composables/wa-copiloto-inbox/waCopilotoUiBridge'
-import {
-  ensureWaCopilotoEchoChannel,
-  subscribeWaCopilotoEchoChannel
-} from '~/composables/wa-copiloto-inbox/ensureWaCopilotoEchoChannel'
-import { syncRoleChannelsFromAuthUser } from '~/composables/websocket/syncRoleChannelsFromAuth'
+import { ensureWaCopilotoEchoChannel } from '~/composables/wa-copiloto-inbox/ensureWaCopilotoEchoChannel'
 import { bindWaCopilotoLiveHandlers, getWaCopilotoLiveHandlers } from '~/composables/wa-copiloto-inbox/waCopilotoLiveBridge'
 import {
   exposeWaCopilotoWsDiagnostics,
@@ -1251,8 +1247,6 @@ export function useWaCopilotoInbox() {
   function connectWebSocket() {
     if (!import.meta.client) return
 
-    syncRoleChannelsFromAuthUser()
-    subscribeWaCopilotoEchoChannel()
     ensureWaCopilotoEchoChannel()
 
     try {
@@ -1322,7 +1316,6 @@ export function useWaCopilotoInbox() {
       g.__WaCopilotoEchoReadyBound = true
       window.addEventListener('echo-ready', () => {
         WaCopilotoLog('echo-ready')
-        syncRoleChannelsFromAuthUser()
         if (isInboxRoute(route.path)) connectWebSocket()
       })
     }

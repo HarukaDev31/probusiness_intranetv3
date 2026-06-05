@@ -488,7 +488,6 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
 
   onMounted(async () => {
     await wa.init()
-    wa.connectWebSocket()
   })
 
   return {

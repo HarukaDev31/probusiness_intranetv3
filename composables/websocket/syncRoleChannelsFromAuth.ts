@@ -1,7 +1,5 @@
 import { getWebsocketRoles } from '~/config/websocket/channels'
 import { getEchoInstance, useEcho } from '~/composables/websocket/useEcho'
-import { subscribeWaCopilotoEchoChannel } from '~/composables/wa-copiloto-inbox/ensureWaCopilotoEchoChannel'
-import { subscribeWaInboxEchoChannel } from '~/composables/whatsapp-inbox/ensureWaInboxEchoChannel'
 
 function readAuthRole(): string | null {
   if (!import.meta.client) return null
@@ -38,7 +36,5 @@ export function syncRoleChannelsFromAuthUser(): boolean {
     return false
   }
 
-  subscribeWaCopilotoEchoChannel()
-  subscribeWaInboxEchoChannel()
   return true
 }
