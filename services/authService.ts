@@ -3,6 +3,7 @@ import { getWebsocketRoles, getAllEventHandlers } from '../config/websocket/chan
 import { CALENDAR_EVENTS, getUserCalendarChannelName } from '../config/websocket/events/calendar'
 import { useEcho } from '../composables/websocket/useEcho'
 import { buildEchoClientConfig } from '../utils/websocket-config'
+import { syncRoleChannelsFromAuthUser } from '../composables/websocket/syncRoleChannelsFromAuth'
 
 interface ApiPlugin {
   call: <T>(endpoint: string, options?: any) => Promise<T>
@@ -82,6 +83,7 @@ class AuthService {
       if (role) {
         this.setupWebSocketChannels(role)
       }
+      syncRoleChannelsFromAuthUser()
     }
   }
 

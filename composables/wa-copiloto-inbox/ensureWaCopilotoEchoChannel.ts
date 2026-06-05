@@ -1,5 +1,5 @@
 import { WA_COPILOTO_WS_CHANNEL, WA_COPILOTO_WS_EVENTS } from '~/constants/waCopilotoWs'
-import { getEchoInstance, rebindChannelHandlers } from '~/composables/websocket/useEcho'
+import { getEchoInstance, rebindChannelHandlers, useEcho } from '~/composables/websocket/useEcho'
 import {
   dispatchWaCopilotoMessageCreated,
   dispatchWaCopilotoMessageInsightsReady,
@@ -23,7 +23,33 @@ const INBOX_HANDLERS = [
 ] as const
 
 /**
- * Re-enlaza callbacks del canal inbox (solo actualiza el mapa; no re-suscribe con echo.private).
+ * Suscribe el canal privado Copiloto (idempotente si ya existe).
+ */
+export function subscribeWaCopilotoEchoChannel(): boolean {
+  if (!import.meta.client) return false
+
+  if (!getEchoInstance()) {
+    WaCopilotoLog('channel.subscribe.skip', { reason: 'echoNotReady' })
+    return false
+  }
+
+  try {
+    const { subscribeToChannel } = useEcho()
+    subscribeToChannel({
+      name: WA_COPILOTO_WS_CHANNEL,
+      type: 'private',
+      handlers: [...INBOX_HANDLERS]
+    })
+    WaCopilotoTrace('channel.subscribe.ok', { channel: WA_COPILOTO_WS_CHANNEL })
+    return true
+  } catch (err) {
+    WaCopilotoLog('channel.subscribe.fail', { err: String(err) })
+    return false
+  }
+}
+
+/**
+ * Re-enlaza callbacks o suscribe el canal si aún no está en Echo.
  */
 export function ensureWaCopilotoEchoChannel() {
   if (!import.meta.client) return
@@ -34,6 +60,11 @@ export function ensureWaCopilotoEchoChannel() {
   }
 
   const rebound = rebindChannelHandlers(WA_COPILOTO_WS_CHANNEL, [...INBOX_HANDLERS])
+  if (!rebound) {
+    subscribeWaCopilotoEchoChannel()
+    return
+  }
+
   WaCopilotoTrace('channel.ensure.ok', {
     channel: WA_COPILOTO_WS_CHANNEL,
     rebound

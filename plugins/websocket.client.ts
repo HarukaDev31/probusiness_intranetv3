@@ -1,11 +1,12 @@
 import { useEcho, getEchoInstance } from '../composables/websocket/useEcho'
 import { getAllEventHandlers, getWebsocketRoles } from '../config/websocket/channels'
 import { CALENDAR_EVENTS, getUserCalendarChannelName } from '../config/websocket/events/calendar'
+import { syncRoleChannelsFromAuthUser } from '../composables/websocket/syncRoleChannelsFromAuth'
 import { buildEchoClientConfig } from '../utils/websocket-config'
 
 export default defineNuxtPlugin({
   name: 'websocket',
-  dependsOn: ['auth'],
+  dependsOn: ['auth', 'websocket-events'],
   async setup() {
   // Solo ejecutar en el cliente
   if (process.server) return
@@ -20,8 +21,9 @@ export default defineNuxtPlugin({
   const initializeWebSockets = async () => {
     
     
-    // Evitar inicialización múltiple
+    // Echo ya inicializado (p. ej. plugin auth): igual sincronizar canales del rol
     if (isInitializing || isInitialized) {
+      syncRoleChannelsFromAuthUser()
       return
     }
 
@@ -83,16 +85,7 @@ export default defineNuxtPlugin({
         }
 
         // 2) Canales por rol (Coordinación, Documentación, etc.) desde auth_user, no useUserRole (puede no estar cargado al recargar)
-        if (role) {
-          const roleConfig = getWebsocketRoles()[role]
-          if (roleConfig) {
-            try {
-              subscribeToRoleChannels(roleConfig)
-            } catch (e) {
-              console.warn('Role channels:', e)
-            }
-          }
-        }
+        syncRoleChannelsFromAuthUser()
 
         isInitialized = true
 
@@ -103,6 +96,7 @@ export default defineNuxtPlugin({
           } catch {
             /* noop */
           }
+          syncRoleChannelsFromAuthUser()
           window.dispatchEvent(new CustomEvent('echo-ready'))
           const { sincronizarSalasGlobales } = await import(
             '~/composables/useSoporteTiChatGlobal'

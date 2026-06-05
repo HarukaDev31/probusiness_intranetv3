@@ -1,5 +1,5 @@
 import { WA_INBOX_WS_CHANNEL, WA_INBOX_WS_EVENTS } from '~/constants/whatsappInboxWs'
-import { getEchoInstance, rebindChannelHandlers } from '~/composables/websocket/useEcho'
+import { getEchoInstance, rebindChannelHandlers, useEcho } from '~/composables/websocket/useEcho'
 import {
   dispatchWaInboxMessageCreated,
   dispatchWaInboxMessageStatusUpdated
@@ -17,9 +17,29 @@ const INBOX_HANDLERS = [
   }
 ] as const
 
-/**
- * Re-enlaza callbacks del canal inbox (solo actualiza el mapa; no re-suscribe con echo.private).
- */
+export function subscribeWaInboxEchoChannel(): boolean {
+  if (!import.meta.client) return false
+
+  if (!getEchoInstance()) {
+    waInboxLog('channel.subscribe.skip', { reason: 'echoNotReady' })
+    return false
+  }
+
+  try {
+    const { subscribeToChannel } = useEcho()
+    subscribeToChannel({
+      name: WA_INBOX_WS_CHANNEL,
+      type: 'private',
+      handlers: [...INBOX_HANDLERS]
+    })
+    waInboxTrace('channel.subscribe.ok', { channel: WA_INBOX_WS_CHANNEL })
+    return true
+  } catch (err) {
+    waInboxLog('channel.subscribe.fail', { err: String(err) })
+    return false
+  }
+}
+
 export function ensureWaInboxEchoChannel() {
   if (!import.meta.client) return
 
@@ -29,6 +49,11 @@ export function ensureWaInboxEchoChannel() {
   }
 
   const rebound = rebindChannelHandlers(WA_INBOX_WS_CHANNEL, [...INBOX_HANDLERS])
+  if (!rebound) {
+    subscribeWaInboxEchoChannel()
+    return
+  }
+
   waInboxTrace('channel.ensure.ok', {
     channel: WA_INBOX_WS_CHANNEL,
     rebound

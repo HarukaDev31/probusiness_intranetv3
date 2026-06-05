@@ -1,4 +1,4 @@
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import type { CopilotoLead, CopilotoChatMessage } from '~/types/copiloto/lead'
 import type {
   CopilotoSuggestionOption,
@@ -489,10 +489,6 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
   onMounted(async () => {
     await wa.init()
     wa.connectWebSocket()
-  })
-
-  onBeforeUnmount(() => {
-    wa.disconnectWebSocket()
   })
 
   return {

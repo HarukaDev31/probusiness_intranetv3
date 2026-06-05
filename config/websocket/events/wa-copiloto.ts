@@ -16,6 +16,14 @@ const WA_COPILOTO_WS_EVENT_LIST = [
   WA_COPILOTO_WS_EVENTS.MESSAGE_INSIGHTS_READY
 ] as const
 
+/** Roles autorizados en backend routes/channels.php para whatsapp-copiloto.ventas */
+const WA_COPILOTO_WS_ROLES = [
+  ROLES.COTIZADOR,
+  ROLES.ADMINISTRACION,
+  'GERENCIA',
+  ROLES.ADMIN
+] as const
+
 function registerWaCopilotoHandlers() {
   registerEventHandler(WA_COPILOTO_WS_EVENTS.MESSAGE_CREATED, dispatchWaCopilotoMessageCreated)
   registerEventHandler(
@@ -34,10 +42,10 @@ function subscribeWaCopilotoChannelForRole(role: string) {
 
 /**
  * Canal privado Copiloto ventas (`whatsapp-copiloto.ventas`).
- * Cotizadores y admins que usan /copiloto deben estar suscritos para tiempo real.
  */
 export const registerWaCopilotoEvents = () => {
   registerWaCopilotoHandlers()
-  subscribeWaCopilotoChannelForRole(ROLES.COTIZADOR)
-  subscribeWaCopilotoChannelForRole(ROLES.ADMIN)
+  for (const role of WA_COPILOTO_WS_ROLES) {
+    subscribeWaCopilotoChannelForRole(role)
+  }
 }
