@@ -41,7 +41,33 @@
                 />
               </div>
             </div>
-            <span class="mt-0.5 text-[11px] text-muted">{{ formatTime(msg) }}</span>
+            <span class="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
+              <span>{{ formatTime(msg) }}</span>
+              <UTooltip
+                v-if="msg.direction === 'out'"
+                :text="deliveryTooltip(msg.delivery_status, msg.failed_reason)"
+                :delay-duration="150"
+              >
+                <span
+                  class="inline-flex size-6 cursor-default items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  tabindex="0"
+                  :aria-label="deliveryTooltip(msg.delivery_status, msg.failed_reason)"
+                >
+                  <UIcon
+                    v-if="msg.delivery_status === 'pending'"
+                    name="i-heroicons-clock"
+                    class="size-4 shrink-0 text-warning"
+                  />
+                  <span
+                    v-else
+                    class="select-none text-lg font-bold leading-none tracking-tighter"
+                    :class="deliveryStatusClass(msg.delivery_status)"
+                  >
+                    {{ deliveryIcon(msg.delivery_status) }}
+                  </span>
+                </span>
+              </UTooltip>
+            </span>
           </div>
         </template>
       </ChatMessagesScroll>
@@ -79,6 +105,11 @@ import WhatsappInboxMessageBody from '~/components/whatsapp-inbox/WhatsappInboxM
 import WhatsappInboxComposer from '~/components/whatsapp-inbox/WhatsappInboxComposer.vue'
 import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
 import { useWaCopilotoChatScroll } from '~/composables/wa-copiloto-inbox/useWaCopilotoChatScroll'
+import {
+  deliveryIcon,
+  deliveryStatusClass,
+  deliveryTooltip
+} from '~/utils/whatsappDeliveryStatus'
 
 const props = withDefaults(
   defineProps<{
