@@ -10,6 +10,7 @@ import type {
   WaCopilotoConversation,
   WaCopilotoFilter,
   WaCopilotoMessage,
+  WaCopilotoMessageInsight,
   WaCopilotoSession,
   WaCopilotoTemplate,
   WaCopilotoAssignableUser,
@@ -74,6 +75,12 @@ let selectConversationInFlight = false
 
 /** PATCH /read agrupado; no dispara recargas de UI. */
 const markReadDebounce = new Map<number, ReturnType<typeof setTimeout>>()
+
+/** Insights WS que llegaron antes que el mensaje esté en la lista abierta/caché. */
+const pendingInsightsByMessageId = new Map<
+  number,
+  { convId: number; insights: WaCopilotoMessageInsight[] }
+>()
 
 function scheduleMarkReadApi(conversationId: number) {
   const prev = markReadDebounce.get(conversationId)
@@ -149,6 +156,15 @@ export function useWaCopilotoInbox() {
     return pendingContactSelection.value
   })
 
+  /** Mensajes solo si pertenecen a la conversación abierta (evita mezclar chats al cambiar de lead). */
+  const openMessagesForSelection = computed(() => {
+    const convId = selectedConversationId.value
+    if (!convId || messagesConversationId.value !== convId) {
+      return [] as WaCopilotoMessage[]
+    }
+    return messages.value
+  })
+
   const unreadTotal = computed(() =>
     allConversations.value.reduce((sum, c) => sum + (c.unread_count || 0), 0)
   )
@@ -222,6 +238,42 @@ export function useWaCopilotoInbox() {
     return list.findIndex((m) => waMessageNumericId(m.id) === id)
   }
 
+  function withPendingInsights(msg: WaCopilotoMessage, convId: number): WaCopilotoMessage {
+    const msgId = waMessageNumericId(msg.id)
+    if (!msgId) return msg
+    const pending = pendingInsightsByMessageId.get(msgId)
+    if (!pending || pending.convId !== convId || !pending.insights.length) return msg
+    pendingInsightsByMessageId.delete(msgId)
+    return { ...msg, insights: [...pending.insights] }
+  }
+
+  function applyInsightsToMessageList(
+    list: WaCopilotoMessage[],
+    msgId: number,
+    insights: WaCopilotoMessageInsight[]
+  ): { list: WaCopilotoMessage[]; applied: boolean } {
+    const idx = findMessageIndex(list, msgId)
+    if (idx < 0) return { list, applied: false }
+    const next = [...list]
+    next[idx] = { ...next[idx], insights: [...insights] }
+    return { list: next, applied: true }
+  }
+
+  function flushPendingInsightsForConversation(convId: number, list: WaCopilotoMessage[]): WaCopilotoMessage[] {
+    let next = [...list]
+    let changed = false
+    for (const [msgId, pending] of pendingInsightsByMessageId.entries()) {
+      if (pending.convId !== convId) continue
+      const result = applyInsightsToMessageList(next, msgId, pending.insights)
+      if (result.applied) {
+        next = result.list
+        pendingInsightsByMessageId.delete(msgId)
+        changed = true
+      }
+    }
+    return changed ? next : list
+  }
+
   function syncMessagesCacheForConversation(convId: number) {
     const cached = cache.getMessagesEntry(convId)
     cache.setMessages(convId, messages.value, cached?.conversationPatch, {
@@ -237,11 +289,14 @@ export function useWaCopilotoInbox() {
       const idx = findMessageIndex(messages.value, msgId)
       const next = [...messages.value]
       if (idx >= 0) {
-        next[idx] = mergeWaCopilotoMessage(next[idx], { ...msg, id: msgId })
+        next[idx] = withPendingInsights(
+          mergeWaCopilotoMessage(next[idx], { ...msg, id: msgId }),
+          convId
+        )
       } else {
-        next.push({ ...msg, id: msgId })
+        next.push(withPendingInsights({ ...msg, id: msgId }, convId))
       }
-      messages.value = next
+      messages.value = flushPendingInsightsForConversation(convId, next)
       messagesConversationId.value = convId
       syncMessagesCacheForConversation(convId)
     } else {
@@ -250,11 +305,15 @@ export function useWaCopilotoInbox() {
         const mi = findMessageIndex(cached.messages, msgId)
         const list = [...cached.messages]
         if (mi >= 0) {
-          list[mi] = mergeWaCopilotoMessage(list[mi], { ...msg, id: msgId })
+          list[mi] = withPendingInsights(
+            mergeWaCopilotoMessage(list[mi], { ...msg, id: msgId }),
+            convId
+          )
         } else {
-          list.push({ ...msg, id: msgId })
+          list.push(withPendingInsights({ ...msg, id: msgId }, convId))
         }
-        cache.setMessages(convId, list, cached.conversationPatch, {
+        const flushed = flushPendingInsightsForConversation(convId, list)
+        cache.setMessages(convId, flushed, cached.conversationPatch, {
           fullHistory: cached?.fullHistory !== false
         })
       } else {
@@ -763,7 +822,10 @@ export function useWaCopilotoInbox() {
         const mergedCached = mergeMessageLists(cachedEntry.messages ?? [], localList)
         const hadUnread =
           (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
-        applyMessagesForConversation(conversationId, mergedCached)
+        applyMessagesForConversation(
+          conversationId,
+          flushPendingInsightsForConversation(conversationId, mergedCached)
+        )
         if (cachedEntry.conversationPatch) {
           cache.patchConversation(conversationId, cachedEntry.conversationPatch)
           const idx = allConversations.value.findIndex((c) => c.id === conversationId)
@@ -798,7 +860,8 @@ export function useWaCopilotoInbox() {
         const hadUnread =
           (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
         cache.setMessages(conversationId, merged, convPatch, { fullHistory: true })
-        applyMessagesForConversation(conversationId, merged)
+        const withPending = flushPendingInsightsForConversation(conversationId, merged)
+        applyMessagesForConversation(conversationId, withPending)
         if (convPatch) {
           cache.patchConversation(conversationId, convPatch)
           const idx = allConversations.value.findIndex((c) => c.id === conversationId)
@@ -1197,31 +1260,47 @@ export function useWaCopilotoInbox() {
     const msgId = waMessageNumericId(payload.message_id)
     if (!convId || !msgId || !Array.isArray(payload.insights)) return
 
+    const insights = [...payload.insights] as WaCopilotoMessageInsight[]
+
     WaCopilotoLog('ui.messageInsights', {
       convId,
       msgId,
-      count: payload.insights.length,
+      count: insights.length,
       selected: selectedConversationId.value
     })
 
-    const patchMessage = (list: WaCopilotoMessage[]) => {
-      const idx = findMessageIndex(list, msgId)
-      if (idx < 0) return list
-      const next = [...list]
-      next[idx] = { ...next[idx], insights: [...payload.insights] }
-      return next
-    }
+    let applied = false
 
     if (selectedConversationId.value === convId && messagesConversationId.value === convId) {
-      messages.value = patchMessage(messages.value)
-      syncMessagesCacheForConversation(convId)
-    } else {
+      const result = applyInsightsToMessageList(messages.value, msgId, insights)
+      if (result.applied) {
+        messages.value = result.list
+        applied = true
+        syncMessagesCacheForConversation(convId)
+      }
+    }
+
+    if (!applied) {
       const cached = cache.getMessages(convId)
       if (cached?.messages?.length) {
-        cache.setMessages(convId, patchMessage(cached.messages), cached.conversationPatch, {
-          fullHistory: cached.fullHistory !== false
-        })
+        const result = applyInsightsToMessageList(cached.messages, msgId, insights)
+        if (result.applied) {
+          cache.setMessages(convId, result.list, cached.conversationPatch, {
+            fullHistory: cached.fullHistory !== false
+          })
+          applied = true
+          if (selectedConversationId.value === convId) {
+            syncOpenMessagesFromStore(convId)
+          }
+        }
       }
+    }
+
+    if (applied) {
+      pendingInsightsByMessageId.delete(msgId)
+    } else {
+      pendingInsightsByMessageId.set(msgId, { convId, insights })
+      WaCopilotoTrace('insights.pending', { convId, msgId })
     }
 
     const phone = String(payload.phone_e164 || '').trim()
@@ -1234,7 +1313,13 @@ export function useWaCopilotoInbox() {
 
     const leadTemp = payload.temperatura_lead ?? payload.ficha?.temperatura
     if (convId && leadTemp != null && Number.isFinite(Number(leadTemp))) {
-      cache.patchConversation(convId, { temperatura: Math.min(100, Math.max(0, Number(leadTemp))) })
+      const temp = Math.min(100, Math.max(0, Number(leadTemp)))
+      cache.patchConversation(convId, { temperatura: temp })
+      const idx = allConversations.value.findIndex((c) => c.id === convId)
+      if (idx >= 0) {
+        allConversations.value[idx] = { ...allConversations.value[idx], temperatura: temp }
+      }
+      syncConversationsFromStore()
     }
   }
 
@@ -1466,6 +1551,7 @@ export function useWaCopilotoInbox() {
     assignableUsers,
     selectedConversationId,
     selectedConversation,
+    openMessagesForSelection,
     pendingContactSelection,
     search,
     filter,

@@ -156,11 +156,14 @@ function collectSuggestionOptions(
     options.push(option)
   }
 
-  let hasInsightSuggestion = false
+  const fichaSug = String(ficha?.sugerencia || ficha?.accion_sugerida || ficha?.sugerencia_corta || '').trim()
+  if (fichaSug) {
+    pushOption({ id: 'ficha-sug-latest', text: fichaSug, label: 'Respuesta sugerida' })
+  }
+
   for (const msg of [...messages].reverse()) {
     for (const insight of msg.insights ?? []) {
       if (insight.kind !== 'sugerencia') continue
-      hasInsightSuggestion = true
       pushOption({
         id: `ins-${insight.id}`,
         text: insight.body,
@@ -170,13 +173,6 @@ function collectSuggestionOptions(
       })
     }
     if (options.length >= 6) break
-  }
-
-  if (!hasInsightSuggestion) {
-    const fichaSug = String(ficha?.sugerencia || ficha?.accion_sugerida || ficha?.sugerencia_corta || '').trim()
-    if (fichaSug) {
-      pushOption({ id: 'ficha-sug', text: fichaSug, label: 'Respuesta sugerida' })
-    }
   }
 
   const actionText = String(lead?.action || '').trim()
@@ -248,7 +244,7 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
 
     const phone = String(conv.phone_e164 ?? '')
     const ficha = phone ? fichaByPhone.value[phone] : undefined
-    const msgs = buildLeadMessages(wa.messages.value)
+    const msgs = buildLeadMessages(wa.openMessagesForSelection.value)
 
     return {
       ...lead,
@@ -261,7 +257,7 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     if (!selectedLead.value || wa.selectedConversation.value?.pending_contact) return []
     const phone = String(wa.selectedConversation.value?.phone_e164 ?? '')
     return collectSuggestionOptions(
-      wa.messages.value,
+      wa.openMessagesForSelection.value,
       selectedLead.value,
       phone ? fichaByPhone.value[phone] : undefined
     )
@@ -348,7 +344,6 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     const convId = Number(lead.id)
     if (!Number.isFinite(convId) || convId <= 0) return
     void wa.selectConversation(convId)
-    void loadSuggestionLogs(convId)
     expandedMessageIndex.value = null
   }
 
@@ -427,15 +422,35 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     selectedSuggestionId.value = null
   }
 
+  function mergeFichaFromInsights(phone: string) {
+    const key = String(phone || '').trim()
+    if (!key) return
+    const snapshot = wa.insightsFichaByPhone.value[key]
+    if (!snapshot) return
+    fichaByPhone.value = {
+      ...fichaByPhone.value,
+      [key]: { ...(fichaByPhone.value[key] ?? {}), ...snapshot }
+    }
+  }
+
   async function loadFichaForPhone(phone: string) {
     const key = String(phone || '').trim()
-    if (!key || fichaByPhone.value[key]) return
+    if (!key) return
+
+    mergeFichaFromInsights(key)
 
     loadingFicha.value = true
     try {
       const response = await CopilotoService.getFicha(key)
       if (response?.data) {
-        fichaByPhone.value = { ...fichaByPhone.value, [key]: response.data }
+        fichaByPhone.value = {
+          ...fichaByPhone.value,
+          [key]: {
+            ...(fichaByPhone.value[key] ?? {}),
+            ...response.data,
+            ...(wa.insightsFichaByPhone.value[key] ?? {})
+          }
+        }
       }
     } catch {
       // Ficha IA opcional mientras se migra el backend legacy
@@ -444,17 +459,33 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     }
   }
 
+  function syncLeadContextFromSelection() {
+    const conv = wa.selectedConversation.value
+    if (!conv || conv.pending_contact) return
+
+    const phone = String(conv.phone_e164 ?? '').trim()
+    const convId = Number(conv.id)
+    if (!phone || !Number.isFinite(convId) || convId <= 0) return
+
+    mergeFichaFromInsights(phone)
+    void loadFichaForPhone(phone)
+    void loadSuggestionLogs(convId)
+  }
+
   watch(
-    () => wa.insightsFichaByPhone.value,
-    (map) => {
-      if (!map || !Object.keys(map).length) return
-      fichaByPhone.value = { ...fichaByPhone.value, ...map }
+    () => {
+      const phone = String(wa.selectedConversation.value?.phone_e164 ?? '').trim()
+      return phone ? wa.insightsFichaByPhone.value[phone] : undefined
+    },
+    (snapshot) => {
+      if (!snapshot) return
+      mergeFichaFromInsights(String(wa.selectedConversation.value?.phone_e164 ?? ''))
     },
     { deep: true }
   )
 
   watch(
-    () => wa.messages.value,
+    () => wa.openMessagesForSelection.value,
     (messages, prev) => {
       if (!activeSuggestion.value || !prev?.length) return
       const prevIds = new Set(
@@ -471,19 +502,14 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
   )
 
   watch(
-    () => wa.selectedConversation.value?.phone_e164,
-    (phone) => {
-      if (phone) void loadFichaForPhone(phone)
-    }
-  )
-
-  watch(
     () => wa.selectedConversation.value?.id,
-    (id) => {
-      if (id && !wa.selectedConversation.value?.pending_contact) {
-        void loadSuggestionLogs(Number(id))
-      }
-    }
+    (id, prevId) => {
+      if (id === prevId) return
+      activeSuggestion.value = null
+      selectedSuggestionId.value = null
+      syncLeadContextFromSelection()
+    },
+    { immediate: true }
   )
 
   onMounted(async () => {
@@ -500,7 +526,7 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     selectedAdvisorId,
     selectedConversation: wa.selectedConversation,
     pendingContactSelection: wa.pendingContactSelection,
-    waMessages: wa.messages,
+    waMessages: wa.openMessagesForSelection,
     templates: wa.templates,
     assignableUsers: wa.assignableUsers,
     loadingConversation: wa.loadingMessages,

@@ -95,6 +95,7 @@
 
     <div
       v-if="mainTab === 'wa' && suggestionOptions.length && !conversation.pending_contact"
+      :key="suggestionBannerKey"
       class="shrink-0 border-b px-3 py-2 text-xs"
       :style="{ background: suggestionBanner.cfg.sBg, borderColor: suggestionBanner.cfg.sBrd }"
     >
@@ -263,6 +264,10 @@ const suggestionBanner = computed(() => {
     cfg
   }
 })
+
+const suggestionBannerKey = computed(() =>
+  props.suggestionOptions.map((o) => `${o.id}:${o.text}`).join('|')
+)
 
 const { showError: showModalError } = useModal()
 
