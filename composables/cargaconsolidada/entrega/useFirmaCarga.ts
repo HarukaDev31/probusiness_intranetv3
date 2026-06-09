@@ -3,6 +3,25 @@ import { EntregaService } from '~/services/cargaconsolidada/entrega/entregaServi
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 
+/** PDF público en CDN: fetch simple sin Authorization (evita preflight OPTIONS). */
+function isCdnPublicUrl(url: string): boolean {
+  return /^https?:\/\/cdn\.probusiness\.pe\//i.test(url)
+}
+
+function buildPdfFetchInit(absoluteUrl: string): RequestInit {
+  if (isCdnPublicUrl(absoluteUrl)) {
+    return { mode: 'cors', credentials: 'omit' }
+  }
+
+  const token = import.meta.client ? localStorage.getItem('auth_token') : null
+  return {
+    credentials: 'include',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+  }
+}
+
 /** Ruta relativa del storage Laravel → URL absoluta (mismo criterio que factura-guía). */
 export function resolveStorageFileUrl(url: string): string {
   const cleaned = (url || '').replace(/\\\//g, '/').trim()
@@ -53,13 +72,7 @@ export function useFirmaCarga() {
       throw new Error('URL del PDF no disponible')
     }
 
-    const token = import.meta.client ? localStorage.getItem('auth_token') : null
-    const res = await fetch(absoluteUrl, {
-      credentials: 'include',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      }
-    })
+    const res = await fetch(absoluteUrl, buildPdfFetchInit(absoluteUrl))
 
     if (!res.ok) {
       throw new Error(`No se pudo descargar el PDF (${res.status})`)
@@ -154,14 +167,7 @@ export function useFirmaCarga() {
     }
     try {
       await withSpinner(async () => {
-        const res = await fetch(pdfUrl.value, {
-          credentials: 'include',
-          headers: {
-            ...(import.meta.client && localStorage.getItem('auth_token')
-              ? { Authorization: `Bearer ${localStorage.getItem('auth_token')}` }
-              : {})
-          }
-        })
+        const res = await fetch(pdfUrl.value, buildPdfFetchInit(pdfUrl.value))
         const blob = await res.blob()
         const link = document.createElement('a')
         link.href = URL.createObjectURL(blob)
