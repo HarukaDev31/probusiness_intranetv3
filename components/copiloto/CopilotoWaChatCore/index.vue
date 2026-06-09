@@ -26,6 +26,10 @@
                   class="max-w-full shrink-0"
                   :msg="msg"
                   :direction="msg.direction"
+                  :avatar-text="audioAvatarText(msg)"
+                  :time-label="formatTime(msg)"
+                  :delivery-icon="msg.direction === 'out' ? deliveryIcon(msg.delivery_status) : undefined"
+                  :delivery-class="msg.direction === 'out' ? deliveryStatusClass(msg.delivery_status) : undefined"
                   @media-rendered="onChatMediaRendered"
                 />
                 <UButton
@@ -41,7 +45,10 @@
                 />
               </div>
             </div>
-            <span class="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
+            <span
+              v-if="msg.message_type !== 'audio'"
+              class="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted"
+            >
               <span>{{ formatTime(msg) }}</span>
               <UTooltip
                 v-if="msg.direction === 'out'"
@@ -155,6 +162,11 @@ const {
 
 function onChatMediaRendered() {
   void scrollToBottom(false)
+}
+
+function audioAvatarText(msg: WaCopilotoMessage) {
+  if (msg.direction === 'out') return 'PB'
+  return props.conversation?.initials || 'C'
 }
 
 function formatTime(msg: WaCopilotoMessage) {

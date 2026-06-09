@@ -57,24 +57,17 @@
         @abrir="abrirMedia()"
         @media-ready="onMediaRendered"
       />
-      <button
+      <WhatsappInboxAudioBubble
         v-else-if="msg.message_type === 'audio'"
-        type="button"
-        class="flex max-w-full items-center gap-2 rounded-lg px-3 py-2 ring-1"
-        :class="
-          direction === 'out'
-            ? 'bg-primary text-inverted ring-primary-600/40'
-            : 'bg-elevated/80 ring-default/50'
-        "
-        @click.stop="() => abrirMedia()"
-      >
-        <UIcon
-          name="i-heroicons-musical-note"
-          class="size-8 shrink-0"
-          :class="direction === 'out' ? 'text-inverted' : 'text-primary'"
-        />
-        <span class="truncate text-sm">Audio</span>
-      </button>
+        class="w-full"
+        :url="mediaUrl"
+        :inverted="direction === 'out'"
+        :avatar-text="avatarText"
+        :time-label="timeLabel"
+        :delivery-icon="deliveryIcon"
+        :delivery-class="deliveryClass"
+        @media-ready="onMediaRendered"
+      />
       <WhatsappInboxDocumentBubble
         v-else-if="showDocumentBubble"
         class="w-full"
@@ -103,6 +96,17 @@
         />
       </div>
     </div>
+
+    <WhatsappInboxAudioBubble
+      v-else-if="isMediaTypeWithoutUrl && msg.message_type === 'audio'"
+      class="w-[280px] max-w-full shrink-0"
+      url=""
+      :inverted="direction === 'out'"
+      :avatar-text="avatarText"
+      :time-label="timeLabel"
+      :delivery-icon="deliveryIcon"
+      :delivery-class="deliveryClass"
+    />
 
     <div
       v-else-if="isMediaTypeWithoutUrl"
@@ -138,6 +142,7 @@ import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 import type { FileItem } from '~/types/commons/file'
 import SoporteTiChatReplyPreview from '~/components/soporte-ti/SoporteTiChatReplyPreview.vue'
 import SoporteTiChatAdjuntoMensaje from '~/components/soporte-ti/SoporteTiChatAdjuntoMensaje.vue'
+import WhatsappInboxAudioBubble from '~/components/whatsapp-inbox/WhatsappInboxAudioBubble.vue'
 import WhatsappInboxDocumentBubble from '~/components/whatsapp-inbox/WhatsappInboxDocumentBubble.vue'
 import WhatsappInboxVideoBubble from '~/components/whatsapp-inbox/WhatsappInboxVideoBubble.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
@@ -146,6 +151,10 @@ import { esImagenInlineAdjunto, extensionAdjunto } from '~/utils/soporteTiChatAd
 const props = defineProps<{
   msg: WaInboxMessage
   direction: 'in' | 'out'
+  avatarText?: string
+  timeLabel?: string
+  deliveryIcon?: string
+  deliveryClass?: string
   replyPreview?: {
     metaId: string
     label: string

@@ -273,6 +273,10 @@
                     class="max-w-full shrink-0"
                     :msg="msg"
                     :direction="msg.direction"
+                    :avatar-text="audioAvatarText(msg)"
+                    :time-label="formatMessageTime(msg)"
+                    :delivery-icon="msg.direction === 'out' ? deliveryIcon(msg.delivery_status) : undefined"
+                    :delivery-class="msg.direction === 'out' ? deliveryStatusClass(msg.delivery_status) : undefined"
                     :reply-preview="replyPreviewFor(msg)"
                     @media-rendered="onChatMediaRendered"
                   />
@@ -288,7 +292,10 @@
                     @click="iniciarRespuesta(msg)"
                   />
                 </div>
-                <span class="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
+                <span
+                  v-if="!isAudioMessage(msg)"
+                  class="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted"
+                >
                   <span>{{ formatMessageTime(msg) }}</span>
                   <UTooltip
                     v-if="msg.direction === 'out'"
@@ -572,6 +579,15 @@ function replyPreviewFor(msg: WaInboxMessage) {
     text: original.body?.trim() || etiquetaMedia(original),
     imageUrl: original.message_type === 'image' ? original.media_url : null
   }
+}
+
+function isAudioMessage(msg: WaInboxMessage) {
+  return msg.message_type === 'audio'
+}
+
+function audioAvatarText(msg: WaInboxMessage) {
+  if (msg.direction === 'out') return 'PB'
+  return selectedConversation.value?.initials || 'C'
 }
 
 function etiquetaMedia(msg: WaInboxMessage) {
