@@ -5,23 +5,35 @@
   >
     <div class="flex items-center gap-2 px-2 py-2">
       <div class="relative shrink-0">
-        <UAvatar
-          :text="avatarText || '?'"
-          size="md"
-          :ui="{
-            root: inverted ? 'ring-1 ring-white/20' : 'ring-1 ring-default/30',
-            fallback: inverted
-              ? 'bg-[#0b3d32] text-white font-bold'
-              : 'bg-elevated text-primary font-bold'
-          }"
-        />
-        <span
-          class="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#00a884] ring-2"
-          :class="inverted ? 'ring-[#005c4b] dark:ring-[#005c4b]' : 'ring-white dark:ring-[#202c33]'"
-          aria-hidden="true"
+        <button
+          v-if="playing"
+          type="button"
+          class="flex size-10 items-center justify-center rounded-full text-[13px] font-semibold tabular-nums transition hover:bg-black/5 dark:hover:bg-white/10"
+          :class="speedBtnClass"
+          :aria-label="`Velocidad ${speedLabel}. Toca para cambiar`"
+          @click.stop="cycleSpeed"
         >
-          <UIcon name="i-heroicons-microphone" class="size-2.5 text-white" />
-        </span>
+          {{ speedLabel }}
+        </button>
+        <template v-else>
+          <UAvatar
+            :text="avatarText || '?'"
+            size="md"
+            :ui="{
+              root: inverted ? 'ring-1 ring-white/20' : 'ring-1 ring-default/30',
+              fallback: inverted
+                ? 'bg-[#0b3d32] text-white font-bold'
+                : 'bg-elevated text-primary font-bold'
+            }"
+          />
+          <span
+            class="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#00a884] ring-2"
+            :class="inverted ? 'ring-[#005c4b] dark:ring-[#005c4b]' : 'ring-white dark:ring-[#202c33]'"
+            aria-hidden="true"
+          >
+            <UIcon name="i-heroicons-microphone" class="size-2.5 text-white" />
+          </span>
+        </template>
       </div>
 
       <div class="min-w-0 flex-1">
@@ -42,26 +54,32 @@
 
           <div
             ref="waveformRef"
-            class="relative flex h-7 min-w-0 flex-1 cursor-pointer items-center gap-[2px] px-0.5"
+            class="relative flex h-7 min-w-0 flex-1 cursor-pointer select-none items-center gap-[2px] px-0.5 touch-none"
             role="slider"
-            :aria-valuenow="Math.round(progress * 100)"
+            :aria-valuenow="Math.round(displayProgress * 100)"
             aria-valuemin="0"
             aria-valuemax="100"
             :aria-label="durationLabel || 'Progreso del audio'"
-            @click.stop="onWaveformClick"
+            @pointerdown.stop="onWaveformPointerDown"
           >
             <span
               v-for="(height, index) in waveformBars"
               :key="index"
-              class="w-[2px] shrink-0 rounded-full transition-colors duration-150"
+              class="pointer-events-none w-[2px] shrink-0 rounded-full"
               :class="barClass(index)"
               :style="{ height: `${height}%` }"
             />
             <span
               v-if="url && !loadError"
-              class="pointer-events-none absolute top-1/2 size-3 -translate-y-1/2 rounded-full bg-[#53bdeb] shadow-sm ring-2 ring-white/80 dark:ring-[#005c4b]/60"
-              :style="{ left: `calc(${progress * 100}% - 6px)` }"
-            />
+              class="absolute top-1/2 z-10 size-5 -translate-y-1/2 cursor-grab active:cursor-grabbing"
+              :class="isDragging ? 'cursor-grabbing' : ''"
+              :style="scrubberStyle"
+              @pointerdown.stop="onScrubberPointerDown"
+            >
+              <span
+                class="absolute left-1/2 top-1/2 block size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#53bdeb] shadow-sm ring-2 ring-white/80 dark:ring-[#005c4b]/60"
+              />
+            </span>
           </div>
         </div>
 
@@ -90,7 +108,6 @@
       preload="metadata"
       class="hidden"
       @loadedmetadata="onLoadedMetadata"
-      @timeupdate="onTimeUpdate"
       @ended="onEnded"
       @error="onAudioError"
     />
@@ -101,6 +118,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const WA_AUDIO_STOP_EVENT = 'wa-inbox-audio-stop'
+const PLAYBACK_SPEEDS = [1, 1.5, 2] as const
 
 const props = defineProps<{
   url: string
@@ -122,9 +140,29 @@ const progress = ref(0)
 const durationSec = ref<number | null>(null)
 const currentSec = ref(0)
 const loadError = ref(false)
+const isDragging = ref(false)
+const speedIndex = ref(0)
 const playerId = `wa-audio-${Math.random().toString(36).slice(2, 10)}`
 
+let rafId: number | null = null
+let activePointerId: number | null = null
+
 const waveformBars = computed(() => generateWaveformBars(props.url || 'placeholder', 48))
+
+const playbackRate = computed(() => PLAYBACK_SPEEDS[speedIndex.value])
+
+const speedLabel = computed(() => {
+  const rate = PLAYBACK_SPEEDS[speedIndex.value]
+  return rate === 1 ? '1×' : `${rate}×`
+})
+
+const displayProgress = computed(() => progress.value)
+
+const scrubberStyle = computed(() => ({
+  left: `${displayProgress.value * 100}%`,
+  transform: 'translate(-50%, -50%)',
+  willChange: playing.value || isDragging.value ? 'left' : 'auto'
+}))
 
 const bubbleClass = computed(() =>
   props.inverted
@@ -133,6 +171,12 @@ const bubbleClass = computed(() =>
 )
 
 const iconClass = computed(() =>
+  props.inverted
+    ? 'text-[#111b21] dark:text-white'
+    : 'text-[#54656f] dark:text-white/90'
+)
+
+const speedBtnClass = computed(() =>
   props.inverted
     ? 'text-[#111b21] dark:text-white'
     : 'text-[#54656f] dark:text-white/90'
@@ -147,14 +191,14 @@ const metaClass = computed(() =>
 const durationLabel = computed(() => formatAudioDuration(durationSec.value))
 
 const displayTime = computed(() => {
-  if (playing.value || currentSec.value > 0) {
+  if (playing.value || currentSec.value > 0 || isDragging.value) {
     return formatAudioDuration(currentSec.value)
   }
   return durationLabel.value || '0:00'
 })
 
 function barClass(index: number) {
-  const playedRatio = progress.value
+  const playedRatio = displayProgress.value
   const barRatio = (index + 1) / waveformBars.value.length
   const isPlayed = barRatio <= playedRatio
 
@@ -191,6 +235,55 @@ function formatAudioDuration(seconds: number | null): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+function applyPlaybackRate() {
+  const el = audioRef.value
+  if (el) el.playbackRate = playbackRate.value
+}
+
+function syncProgressFromAudio() {
+  const el = audioRef.value
+  if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return
+  currentSec.value = el.currentTime
+  progress.value = Math.min(1, el.currentTime / el.duration)
+}
+
+function startProgressLoop() {
+  stopProgressLoop()
+  const tick = () => {
+    if (!playing.value || isDragging.value) {
+      rafId = null
+      return
+    }
+    syncProgressFromAudio()
+    rafId = requestAnimationFrame(tick)
+  }
+  rafId = requestAnimationFrame(tick)
+}
+
+function stopProgressLoop() {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+}
+
+function ratioFromClientX(clientX: number): number {
+  const container = waveformRef.value
+  if (!container) return 0
+  const rect = container.getBoundingClientRect()
+  if (rect.width <= 0) return 0
+  return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+}
+
+function seekToRatio(ratio: number) {
+  const el = audioRef.value
+  if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return
+  const nextTime = ratio * el.duration
+  el.currentTime = nextTime
+  currentSec.value = nextTime
+  progress.value = ratio
+}
+
 function onLoadedMetadata() {
   const el = audioRef.value
   if (!el) return
@@ -198,27 +291,27 @@ function onLoadedMetadata() {
   if (Number.isFinite(el.duration) && el.duration > 0) {
     durationSec.value = el.duration
   }
+  applyPlaybackRate()
   emit('media-ready')
-}
-
-function onTimeUpdate() {
-  const el = audioRef.value
-  if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return
-  currentSec.value = el.currentTime
-  progress.value = Math.min(1, el.currentTime / el.duration)
 }
 
 function onEnded() {
   playing.value = false
+  stopProgressLoop()
   progress.value = 0
   currentSec.value = 0
+  speedIndex.value = 0
   const el = audioRef.value
-  if (el) el.currentTime = 0
+  if (el) {
+    el.currentTime = 0
+    el.playbackRate = 1
+  }
 }
 
 function onAudioError() {
   loadError.value = true
   playing.value = false
+  stopProgressLoop()
 }
 
 function stopPlayback() {
@@ -226,15 +319,24 @@ function stopPlayback() {
   if (el) {
     el.pause()
     el.currentTime = 0
+    el.playbackRate = 1
   }
   playing.value = false
+  stopProgressLoop()
   progress.value = 0
   currentSec.value = 0
+  speedIndex.value = 0
+  endDrag()
 }
 
 function onExternalStop(e: Event) {
   const detail = (e as CustomEvent<{ except?: string }>).detail
   if (detail?.except !== playerId) stopPlayback()
+}
+
+function cycleSpeed() {
+  speedIndex.value = (speedIndex.value + 1) % PLAYBACK_SPEEDS.length
+  applyPlaybackRate()
 }
 
 async function togglePlay() {
@@ -244,6 +346,7 @@ async function togglePlay() {
   if (playing.value) {
     el.pause()
     playing.value = false
+    stopProgressLoop()
     return
   }
 
@@ -251,26 +354,64 @@ async function togglePlay() {
     new CustomEvent(WA_AUDIO_STOP_EVENT, { detail: { except: playerId } })
   )
 
+  applyPlaybackRate()
+
   try {
     await el.play()
     playing.value = true
+    startProgressLoop()
   } catch {
     playing.value = false
+    stopProgressLoop()
   }
 }
 
-function onWaveformClick(e: MouseEvent) {
-  const el = audioRef.value
-  const container = waveformRef.value
-  if (!el || !container || !props.url || loadError.value) return
+function onWaveformPointerDown(e: PointerEvent) {
+  if (!props.url || loadError.value || e.button !== 0) return
+  beginDrag(e)
+}
 
-  const rect = container.getBoundingClientRect()
-  const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+function onScrubberPointerDown(e: PointerEvent) {
+  if (!props.url || loadError.value || e.button !== 0) return
+  e.preventDefault()
+  beginDrag(e)
+}
 
-  if (Number.isFinite(el.duration) && el.duration > 0) {
-    el.currentTime = ratio * el.duration
-    currentSec.value = el.currentTime
-    progress.value = ratio
+function beginDrag(e: PointerEvent) {
+  isDragging.value = true
+  activePointerId = e.pointerId
+  waveformRef.value?.setPointerCapture(e.pointerId)
+  seekToRatio(ratioFromClientX(e.clientX))
+  window.addEventListener('pointermove', onWindowPointerMove)
+  window.addEventListener('pointerup', onWindowPointerUp)
+  window.addEventListener('pointercancel', onWindowPointerUp)
+}
+
+function onWindowPointerMove(e: PointerEvent) {
+  if (!isDragging.value || activePointerId !== e.pointerId) return
+  seekToRatio(ratioFromClientX(e.clientX))
+}
+
+function onWindowPointerUp(e: PointerEvent) {
+  if (!isDragging.value || activePointerId !== e.pointerId) return
+  seekToRatio(ratioFromClientX(e.clientX))
+  endDrag()
+  if (playing.value) startProgressLoop()
+}
+
+function endDrag() {
+  const pointerId = activePointerId
+  isDragging.value = false
+  activePointerId = null
+  window.removeEventListener('pointermove', onWindowPointerMove)
+  window.removeEventListener('pointerup', onWindowPointerUp)
+  window.removeEventListener('pointercancel', onWindowPointerUp)
+  if (pointerId !== null) {
+    try {
+      waveformRef.value?.releasePointerCapture(pointerId)
+    } catch {
+      /* sin captura activa */
+    }
   }
 }
 
@@ -289,6 +430,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener(WA_AUDIO_STOP_EVENT, onExternalStop)
+  endDrag()
   stopPlayback()
 })
 </script>
