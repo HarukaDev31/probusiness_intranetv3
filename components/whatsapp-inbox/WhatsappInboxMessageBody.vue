@@ -3,135 +3,219 @@
     class="flex flex-col gap-1"
     :class="[
       rootAlign,
-      mediaUrl ? 'w-[280px] max-w-full shrink-0' : 'min-w-0 max-w-full'
+      mediaUrl && !hasReply ? 'w-[280px] max-w-full shrink-0' : 'min-w-0 max-w-full'
     ]"
   >
-    <button
-      v-if="replyPreview"
-      type="button"
-      class="mb-0.5 min-w-0 max-w-[min(100%,320px)] text-left"
-      :class="replyBtnClass"
-      @click.stop="emit('scroll-to-reply', replyPreview.metaId)"
-    >
-      <SoporteTiChatReplyPreview
-        :remitente="replyPreview.label"
-        :texto="replyPreview.text"
-        :imagen-url="replyPreview.imageUrl"
-        :inverted="direction === 'out'"
-      />
-    </button>
-
     <p
-      v-if="msg.is_template && msg.template_name"
+      v-if="msg.is_template && msg.template_name && !hasReply"
       class="text-[10px] font-semibold uppercase text-info"
     >
       {{ msg.template_name }}
     </p>
 
+    <!-- Con cita: todo dentro de una sola burbuja (estilo WhatsApp) -->
     <div
-      v-if="mediaUrl"
-      class="w-full"
-      :class="direction === 'out' ? 'self-end' : 'self-start'"
+      v-if="hasReply"
+      class="wa-inbox-bubble-shell min-w-0 overflow-hidden shadow-sm"
+      :class="[
+        shellWidthClass,
+        direction === 'out'
+          ? 'rounded-2xl rounded-br-sm bg-primary text-inverted'
+          : 'rounded-2xl rounded-bl-sm bg-elevated text-highlighted ring-1 ring-default/40'
+      ]"
     >
       <button
-        v-if="showAsImage"
         type="button"
-        class="block w-full overflow-hidden rounded-lg ring-1 ring-default/40"
-        @click.stop="() => abrirMedia()"
+        class="block w-full px-2 pt-2 text-left transition-opacity hover:opacity-90"
+        @click.stop="emit('scroll-to-reply', replyPreview!.metaId)"
       >
-        <img
-          :src="mediaUrl"
-          :alt="mediaNombre"
-          class="aspect-[4/3] max-h-52 w-full object-cover"
-          loading="lazy"
-          @load="onMediaRendered"
-        >
+        <WhatsappInboxReplyQuote
+          :remitente="replyPreview!.label"
+          :texto="replyPreview!.text"
+          :imagen-url="replyPreview!.imageUrl"
+          :inverted="direction === 'out'"
+        />
       </button>
-      <WhatsappInboxVideoBubble
-        v-else-if="msg.message_type === 'video'"
+
+      <p
+        v-if="msg.is_template && msg.template_name"
+        class="px-3 pt-1 text-[10px] font-semibold uppercase text-info"
+      >
+        {{ msg.template_name }}
+      </p>
+
+      <div v-if="mediaUrl" class="w-full px-1 pb-1 pt-1">
+        <button
+          v-if="showAsImage"
+          type="button"
+          class="block w-full overflow-hidden rounded-lg"
+          @click.stop="() => abrirMedia()"
+        >
+          <img
+            :src="mediaUrl"
+            :alt="mediaNombre"
+            class="aspect-[4/3] max-h-52 w-full object-cover"
+            loading="lazy"
+            @load="onMediaRendered"
+          >
+        </button>
+        <WhatsappInboxVideoBubble
+          v-else-if="msg.message_type === 'video'"
+          class="w-full"
+          :url="mediaUrl"
+          :nombre="mediaNombre"
+          :caption="videoCaption"
+          :inverted="direction === 'out'"
+          @abrir="abrirMedia()"
+          @media-ready="onMediaRendered"
+        />
+        <WhatsappInboxAudioBubble
+          v-else-if="msg.message_type === 'audio'"
+          class="w-full"
+          :url="mediaUrl"
+          :inverted="direction === 'out'"
+          :avatar-text="avatarText"
+          :time-label="timeLabel"
+          :delivery-icon="deliveryIcon"
+          :delivery-class="deliveryClass"
+          @media-ready="onMediaRendered"
+        />
+        <WhatsappInboxDocumentBubble
+          v-else-if="showDocumentBubble"
+          class="w-full"
+          :url="mediaUrl"
+          :nombre="mediaNombre"
+          :caption="captionEnBurbuja"
+          :size-bytes="msg.media_size_bytes"
+          :inverted="direction === 'out'"
+          @abrir="abrirMedia()"
+        />
+        <div v-else class="w-full overflow-hidden rounded-lg">
+          <SoporteTiChatAdjuntoMensaje
+            :url="mediaUrl"
+            :nombre="mediaNombre"
+            :inverted="direction === 'out'"
+            forzar-documento
+            @abrir="abrirMedia"
+          />
+        </div>
+      </div>
+
+      <div
+        v-if="textoVisible"
+        class="min-w-0 whitespace-pre-wrap break-words px-3 py-2 text-sm leading-relaxed [overflow-wrap:anywhere]"
+      >
+        {{ msg.body }}
+      </div>
+    </div>
+
+    <!-- Sin cita: layout anterior -->
+    <template v-else>
+      <div
+        v-if="mediaUrl"
         class="w-full"
-        :url="mediaUrl"
-        :nombre="mediaNombre"
-        :caption="videoCaption"
-        :inverted="direction === 'out'"
-        @abrir="abrirMedia()"
-        @media-ready="onMediaRendered"
-      />
+        :class="direction === 'out' ? 'self-end' : 'self-start'"
+      >
+        <button
+          v-if="showAsImage"
+          type="button"
+          class="block w-full overflow-hidden rounded-lg ring-1 ring-default/40"
+          @click.stop="() => abrirMedia()"
+        >
+          <img
+            :src="mediaUrl"
+            :alt="mediaNombre"
+            class="aspect-[4/3] max-h-52 w-full object-cover"
+            loading="lazy"
+            @load="onMediaRendered"
+          >
+        </button>
+        <WhatsappInboxVideoBubble
+          v-else-if="msg.message_type === 'video'"
+          class="w-full"
+          :url="mediaUrl"
+          :nombre="mediaNombre"
+          :caption="videoCaption"
+          :inverted="direction === 'out'"
+          @abrir="abrirMedia()"
+          @media-ready="onMediaRendered"
+        />
+        <WhatsappInboxAudioBubble
+          v-else-if="msg.message_type === 'audio'"
+          class="w-full"
+          :url="mediaUrl"
+          :inverted="direction === 'out'"
+          :avatar-text="avatarText"
+          :time-label="timeLabel"
+          :delivery-icon="deliveryIcon"
+          :delivery-class="deliveryClass"
+          @media-ready="onMediaRendered"
+        />
+        <WhatsappInboxDocumentBubble
+          v-else-if="showDocumentBubble"
+          class="w-full"
+          :url="mediaUrl"
+          :nombre="mediaNombre"
+          :caption="captionEnBurbuja"
+          :size-bytes="msg.media_size_bytes"
+          :inverted="direction === 'out'"
+          @abrir="abrirMedia()"
+        />
+        <div
+          v-else
+          class="w-full overflow-hidden rounded-lg ring-1"
+          :class="
+            direction === 'out'
+              ? 'bg-primary text-inverted ring-primary-600/30'
+              : 'ring-default/40'
+          "
+        >
+          <SoporteTiChatAdjuntoMensaje
+            :url="mediaUrl"
+            :nombre="mediaNombre"
+            :inverted="direction === 'out'"
+            forzar-documento
+            @abrir="abrirMedia"
+          />
+        </div>
+      </div>
+
       <WhatsappInboxAudioBubble
-        v-else-if="msg.message_type === 'audio'"
-        class="w-full"
-        :url="mediaUrl"
+        v-else-if="isMediaTypeWithoutUrl && msg.message_type === 'audio'"
+        class="w-[280px] max-w-full shrink-0"
+        url=""
         :inverted="direction === 'out'"
         :avatar-text="avatarText"
         :time-label="timeLabel"
         :delivery-icon="deliveryIcon"
         :delivery-class="deliveryClass"
-        @media-ready="onMediaRendered"
       />
-      <WhatsappInboxDocumentBubble
-        v-else-if="showDocumentBubble"
-        class="w-full"
-        :url="mediaUrl"
-        :nombre="mediaNombre"
-        :caption="captionEnBurbuja"
-        :size-bytes="msg.media_size_bytes"
-        :inverted="direction === 'out'"
-        @abrir="abrirMedia()"
-      />
+
       <div
-        v-else
-        class="w-full overflow-hidden rounded-lg ring-1"
+        v-else-if="isMediaTypeWithoutUrl"
+        class="flex w-[280px] max-w-full shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1"
         :class="
           direction === 'out'
-            ? 'bg-primary text-inverted ring-primary-600/30'
-            : 'ring-default/40'
+            ? 'bg-primary text-inverted ring-primary-600/40'
+            : 'bg-elevated/80 text-muted ring-default/40'
         "
       >
-        <SoporteTiChatAdjuntoMensaje
-          :url="mediaUrl"
-          :nombre="mediaNombre"
-          :inverted="direction === 'out'"
-          forzar-documento
-          @abrir="abrirMedia"
-        />
+        <UIcon :name="mediaPlaceholderIcon" class="size-8 shrink-0" />
+        <span>{{ mediaPlaceholderLabel }}</span>
       </div>
-    </div>
 
-    <WhatsappInboxAudioBubble
-      v-else-if="isMediaTypeWithoutUrl && msg.message_type === 'audio'"
-      class="w-[280px] max-w-full shrink-0"
-      url=""
-      :inverted="direction === 'out'"
-      :avatar-text="avatarText"
-      :time-label="timeLabel"
-      :delivery-icon="deliveryIcon"
-      :delivery-class="deliveryClass"
-    />
-
-    <div
-      v-else-if="isMediaTypeWithoutUrl"
-      class="flex w-[280px] max-w-full shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1"
-      :class="
-        direction === 'out'
-          ? 'bg-primary text-inverted ring-primary-600/40'
-          : 'bg-elevated/80 text-muted ring-default/40'
-      "
-    >
-      <UIcon :name="mediaPlaceholderIcon" class="size-8 shrink-0" />
-      <span>{{ mediaPlaceholderLabel }}</span>
-    </div>
-
-    <div
-      v-if="textoVisible"
-      class="min-w-0 w-full max-w-[min(100%,320px)] whitespace-pre-wrap break-words px-3 py-2 text-sm leading-relaxed shadow-sm [overflow-wrap:anywhere] rounded-2xl"
-      :class="
-        direction === 'out'
-          ? 'rounded-br-sm bg-primary text-inverted'
-          : 'rounded-bl-sm bg-elevated text-highlighted ring-1 ring-default/40'
-      "
-    >
-      {{ msg.body }}
-    </div>
+      <div
+        v-if="textoVisible"
+        class="wa-inbox-bubble-shell min-w-0 w-full max-w-[min(100%,320px)] whitespace-pre-wrap break-words px-3 py-2 text-sm leading-relaxed shadow-sm [overflow-wrap:anywhere] rounded-2xl"
+        :class="
+          direction === 'out'
+            ? 'rounded-br-sm bg-primary text-inverted'
+            : 'rounded-bl-sm bg-elevated text-highlighted ring-1 ring-default/40'
+        "
+      >
+        {{ msg.body }}
+      </div>
+    </template>
   </div>
 </template>
 
@@ -140,7 +224,7 @@ import { computed } from 'vue'
 import { useOverlay } from '#imports'
 import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 import type { FileItem } from '~/types/commons/file'
-import SoporteTiChatReplyPreview from '~/components/soporte-ti/SoporteTiChatReplyPreview.vue'
+import WhatsappInboxReplyQuote from '~/components/whatsapp-inbox/WhatsappInboxReplyQuote.vue'
 import SoporteTiChatAdjuntoMensaje from '~/components/soporte-ti/SoporteTiChatAdjuntoMensaje.vue'
 import WhatsappInboxAudioBubble from '~/components/whatsapp-inbox/WhatsappInboxAudioBubble.vue'
 import WhatsappInboxDocumentBubble from '~/components/whatsapp-inbox/WhatsappInboxDocumentBubble.vue'
@@ -170,6 +254,14 @@ const emit = defineEmits<{
 
 const overlay = useOverlay()
 const modalPreview = overlay.create(ModalPreview)
+
+const hasReply = computed(() => Boolean(props.replyPreview?.metaId))
+
+const shellWidthClass = computed(() =>
+  props.mediaUrl || props.msg.message_type === 'audio'
+    ? 'w-[280px] max-w-full shrink-0'
+    : 'max-w-[min(100%,320px)]'
+)
 
 const mediaUrl = computed(() => props.msg.media_url?.trim() || '')
 const mediaNombre = computed(
@@ -249,10 +341,6 @@ const textoVisible = computed(() => {
 
 const rootAlign = computed(() =>
   props.direction === 'out' ? 'items-end' : 'items-start'
-)
-
-const replyBtnClass = computed(() =>
-  props.direction === 'out' ? 'self-end' : 'self-start'
 )
 
 function nombreDesdeUrl(url: string) {

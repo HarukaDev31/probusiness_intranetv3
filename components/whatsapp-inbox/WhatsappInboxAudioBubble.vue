@@ -54,7 +54,7 @@
 
           <div
             ref="waveformRef"
-            class="relative flex h-7 min-w-0 flex-1 cursor-pointer select-none items-center gap-[2px] px-0.5 touch-none"
+            class="relative flex h-8 min-w-0 flex-1 cursor-pointer select-none items-center px-0.5 touch-none"
             role="slider"
             :aria-valuenow="Math.round(displayProgress * 100)"
             aria-valuemin="0"
@@ -62,22 +62,24 @@
             :aria-label="durationLabel || 'Progreso del audio'"
             @pointerdown.stop="onWaveformPointerDown"
           >
-            <span
-              v-for="(height, index) in waveformBars"
-              :key="index"
-              class="pointer-events-none w-[2px] shrink-0 rounded-full"
-              :class="barClass(index)"
-              :style="{ height: `${height}%` }"
-            />
+            <div class="flex h-[18px] w-full items-end gap-[2px]">
+              <span
+                v-for="(height, index) in waveformBars"
+                :key="index"
+                class="pointer-events-none w-[2px] shrink-0 rounded-full"
+                :class="barClass(index)"
+                :style="{ height: `${height}%` }"
+              />
+            </div>
             <span
               v-if="url && !loadError"
-              class="absolute top-1/2 z-10 size-5 -translate-y-1/2 cursor-grab active:cursor-grabbing"
-              :class="isDragging ? 'cursor-grabbing' : ''"
+              class="pointer-events-auto absolute z-10 flex size-5 items-center justify-center"
+              :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
               :style="scrubberStyle"
               @pointerdown.stop="onScrubberPointerDown"
             >
               <span
-                class="absolute left-1/2 top-1/2 block size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#53bdeb] shadow-sm ring-2 ring-white/80 dark:ring-[#005c4b]/60"
+                class="block size-3 shrink-0 rounded-full bg-[#53bdeb] shadow-sm ring-2 ring-white/80 dark:ring-[#005c4b]/60"
               />
             </span>
           </div>
@@ -160,6 +162,7 @@ const displayProgress = computed(() => progress.value)
 
 const scrubberStyle = computed(() => ({
   left: `${displayProgress.value * 100}%`,
+  top: '50%',
   transform: 'translate(-50%, -50%)',
   willChange: playing.value || isDragging.value ? 'left' : 'auto'
 }))

@@ -885,6 +885,57 @@ export function useWhatsappInbox() {
     await task
   }
 
+  async function ensureMessageByMetaId(metaId: string): Promise<WaInboxMessage | null> {
+    const trimmed = metaId.trim()
+    if (!trimmed) return null
+
+    const convId = selectedConversationId.value
+    if (!convId) return null
+
+    const findInList = (list: WaInboxMessage[]) =>
+      list.find((m) => m.meta_message_id === trimmed) ?? null
+
+    let found = findInList(messages.value)
+    if (found) return found
+
+    const cachedEntry = cache.getMessagesEntry(convId)
+    const cached: WaInboxMessage[] = cachedEntry?.messages ?? []
+    found = findInList(cached)
+    if (found && messagesConversationId.value === convId) {
+      const merged = mergeMessageLists(messages.value, [found])
+      applyMessagesForConversation(convId, merged)
+      return found
+    }
+
+    try {
+      let page = 1
+      let lastPage = 1
+      let accumulated = mergeMessageLists(messages.value, cached)
+
+      do {
+        const res = await WhatsappInboxService.getMessages(convId, { per_page: 200, page })
+        const rows = Array.isArray(res?.data) ? res.data : []
+        lastPage = Math.max(1, Number(res?.pagination?.last_page) || 1)
+        accumulated = mergeMessageLists(accumulated, rows)
+        found = findInList(accumulated)
+        if (found) {
+          const convPatch = res?.conversation as Partial<WaInboxConversation> | undefined
+          cache.setMessages(convId, accumulated, convPatch, { fullHistory: page >= lastPage })
+          applyMessagesForConversation(convId, accumulated)
+          if (convPatch) {
+            cache.patchConversation(convId, convPatch)
+          }
+          return found
+        }
+        page += 1
+      } while (page <= lastPage)
+    } catch {
+      return null
+    }
+
+    return null
+  }
+
   async function applyConversationSelection(
     convId: number,
     options: { forceMessages?: boolean } = {}
@@ -1459,6 +1510,7 @@ export function useWhatsappInbox() {
     renameConversation,
     savingRename,
     createManualContact,
-    loadTemplates
+    loadTemplates,
+    ensureMessageByMetaId
   }
 }

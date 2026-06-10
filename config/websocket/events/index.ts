@@ -17,6 +17,7 @@ import { registerUserEvents } from './user'
 import { registerReintegroEvents } from './reintegros'
 import { registerCalendarEvents } from './calendar'
 import { registerContabilidadEvents } from './contabilidad'
+import { registerAdministracionEvents } from './administracion'
 import { registerWaCopilotoEvents } from './wa-copiloto'
 /**
  * Registra todos los eventos de todos los roles
@@ -34,5 +35,6 @@ export const registerAllRoleEvents = () => {
   registerReintegroEvents()
   registerCalendarEvents()
   registerContabilidadEvents()
+  registerAdministracionEvents()
 }
 

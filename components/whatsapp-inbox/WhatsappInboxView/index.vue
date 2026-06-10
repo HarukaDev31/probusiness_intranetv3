@@ -270,11 +270,14 @@
                 />
                 <div
                   v-else
-                  class="group flex flex-col"
+                  class="group flex flex-col transition-[background-color] duration-300"
                   :class="[
                     item.msg.direction === 'out' ? 'items-end' : 'items-start',
-                    item.msg.reaction_inbound_emoji ? 'mb-3' : 'mb-2'
+                    item.msg.reaction_inbound_emoji ? 'mb-3' : 'mb-2',
+                    highlightedMetaId === item.msg.meta_message_id ? 'wa-inbox-msg-row-highlight' : ''
                   ]"
+                  :data-wa-msg-id="item.msg.id"
+                  :data-wa-msg-meta-id="item.msg.meta_message_id || undefined"
                 >
                   <div class="relative inline-block min-w-0 max-w-[92%] sm:max-w-[85%]">
                     <WhatsappInboxMessageBody
@@ -286,6 +289,7 @@
                       :delivery-icon="item.msg.direction === 'out' ? deliveryIcon(item.msg.delivery_status) : undefined"
                       :delivery-class="item.msg.direction === 'out' ? deliveryStatusClass(item.msg.delivery_status) : undefined"
                       :reply-preview="replyPreviewFor(item.msg)"
+                      @scroll-to-reply="onScrollToReply"
                       @media-rendered="onChatMediaRendered"
                     />
                     <span
@@ -451,6 +455,7 @@ import WhatsappInboxMessageInfoModal from '~/components/whatsapp-inbox/WhatsappI
 import { useModal } from '~/composables/commons/useModal'
 import { useWaInboxChatScroll } from '~/composables/whatsapp-inbox/useWaInboxChatScroll'
 import { useWaInboxChatDateBadge } from '~/composables/whatsapp-inbox/useWaInboxChatDateBadge'
+import { useWaInboxScrollToMessage } from '~/composables/whatsapp-inbox/useWaInboxScrollToMessage'
 import { useWindowSize } from '~/composables/useWindowSize'
 import { formatDatePe } from '~/utils/formatters'
 
@@ -498,7 +503,8 @@ const {
   renameConversation,
   createManualContact,
   savingNewContact,
-  savingRename
+  savingRename,
+  ensureMessageByMetaId
 } = useWhatsappInbox()
 
 const { isDesktop } = useWindowSize()
@@ -542,6 +548,11 @@ const {
   onMessagesScroll: onDateBadgeScroll,
   updateFloatingDay
 } = useWaInboxChatDateBadge(messagesScrollRef, messages)
+
+const { highlightedMetaId, scrollToMessageMetaId } = useWaInboxScrollToMessage(
+  messagesScrollRef,
+  ensureMessageByMetaId
+)
 
 function onChatScroll() {
   onMessagesScroll()
@@ -623,13 +634,20 @@ function replyPreviewFor(msg: WaInboxMessage) {
   if (!metaId) return null
   const original = messages.value.find((m) => m.meta_message_id === metaId)
   if (!original) {
-    return { metaId, label: 'Mensaje', text: '…', imageUrl: null }
+    return { metaId, label: 'Mensaje', text: 'Toca para ir al mensaje', imageUrl: null }
   }
   return {
     metaId,
     label: original.direction === 'out' ? 'Tú' : (selectedConversation.value?.contact_name || 'Cliente'),
     text: original.body?.trim() || etiquetaMedia(original),
     imageUrl: original.message_type === 'image' ? original.media_url : null
+  }
+}
+
+async function onScrollToReply(metaId: string) {
+  const ok = await scrollToMessageMetaId(metaId)
+  if (!ok) {
+    showModalError('Mensaje', 'No se encontró el mensaje citado en esta conversación.')
   }
 }
 
@@ -806,3 +824,21 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.wa-inbox-msg-row-highlight :deep(.wa-inbox-bubble-shell) {
+  animation: wa-inbox-msg-flash 1.6s ease-out;
+}
+
+@keyframes wa-inbox-msg-flash {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+
+  18%,
+  42% {
+    box-shadow: 0 0 0 3px rgb(234 179 8 / 0.55);
+  }
+}
+</style>
