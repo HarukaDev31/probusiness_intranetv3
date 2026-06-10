@@ -7,7 +7,7 @@
       :hide-back-button="true"
     />
 
-    <CopilotoKpiStrip :metrics="kpiMetrics" />
+    <CopilotoKpiStrip :metrics="kpiMetrics" :loading="loadingKpis" />
 
     <CopilotoViewNav
       :scope="routeScope"
@@ -92,12 +92,15 @@ import CopilotoPipelineKanban from '~/components/copiloto/CopilotoPipelineKanban
 import { useCopilotoDashboard } from '~/composables/copiloto/useCopilotoDashboard'
 import { setContentNarrow } from '~/composables/usePageLayout'
 
+const dashboard = useCopilotoDashboard({ readonly: true })
+const kpiMetrics = dashboard.kpiMetrics
+const loadingKpis = dashboard.loadingKpis
+
 const {
   routeScope,
   isPipelineRoute,
   canManagePipelineStages,
   advisorFilterOptions,
-  kpiMetrics,
   pipelineColumns,
   loadingKanban,
   leads,
@@ -134,7 +137,7 @@ const {
   assignConversation,
   setMainTab,
   setFichaTab
-} = useCopilotoDashboard({ readonly: true })
+} = dashboard
 
 async function onAssign(userId: number | null) {
   await assignConversation(userId)

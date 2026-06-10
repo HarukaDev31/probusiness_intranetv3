@@ -49,6 +49,19 @@ export class WaCopilotoService extends BaseService {
     })
   }
 
+  static async scheduleMessage(
+    conversationId: number,
+    payload: { message: string; scheduledAt: string }
+  ) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/scheduled-messages`, {
+      method: 'POST',
+      body: {
+        message: payload.message.trim(),
+        scheduled_at: payload.scheduledAt
+      }
+    })
+  }
+
   static async sendMessage(
     conversationId: number,
     payload: {

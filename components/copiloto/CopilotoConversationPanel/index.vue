@@ -191,11 +191,13 @@
       :messages="messages"
       :loading-messages="loading"
       :sending-message="sending"
+      :scheduling-message="scheduling"
       :readonly="readonly"
       :composer-draft="composerDraft"
       :is-message-analysis-pending="isMessageAnalysisPending"
       @update:composer-draft="emit('update:composerDraft', $event)"
       @send="emit('send-wa', $event)"
+      @schedule="emit('schedule-wa', $event)"
       @apply-chip="emit('apply-chip', $event)"
     />
 
@@ -276,6 +278,7 @@ const props = withDefaults(
     loading?: boolean
     loadingTemplates?: boolean
     sending?: boolean
+    scheduling?: boolean
     sendingTemplate?: boolean
     savingNewContact?: boolean
     savingRename?: boolean
@@ -292,6 +295,7 @@ const props = withDefaults(
     loading: false,
     loadingTemplates: false,
     sending: false,
+    scheduling: false,
     sendingTemplate: false,
     savingNewContact: false,
     savingRename: false,
@@ -306,6 +310,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:mainTab': [tab: CopilotoMainTab]
   'send-wa': [payload: WaCopilotoComposerSendPayload]
+  'schedule-wa': [payload: { text: string; scheduledAt: string }]
   'send-template': [name: string, params: Record<string, string>, files: Record<string, File>, fileKinds: Record<string, string>]
   'create-contact': [payload: { contact_name: string; phone: string; assigned_user_id: number | null }]
   rename: [name: string]

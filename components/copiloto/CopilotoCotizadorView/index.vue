@@ -42,6 +42,7 @@
         :loading="loadingConversation || isChatHydrating"
         :loading-templates="loadingTemplates"
         :sending="sendingMessage"
+        :scheduling="schedulingMessage"
         :sending-template="sendingTemplate"
         :saving-new-contact="savingNewContact"
         :saving-rename="savingRename"
@@ -55,6 +56,7 @@
         @update:composer-draft="setComposerDraft"
         @update:main-tab="setMainTab"
         @send-wa="sendWaMessage"
+        @schedule-wa="scheduleWaMessage"
         @send-template="onSendTemplate"
         @create-contact="onCreateContact"
         @rename="onRename"
@@ -122,6 +124,7 @@ const {
   queueSearch,
   loadingTemplates,
   sendingMessage,
+  schedulingMessage,
   sendingTemplate,
   savingNewContact,
   savingRename,
@@ -144,6 +147,7 @@ const {
   setMainTab,
   setFichaTab,
   sendWaMessage,
+  scheduleWaMessage,
   sendTemplateMessage,
   createManualContact,
   renameConversation,

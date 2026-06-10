@@ -471,6 +471,14 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     selectedSuggestionId.value = null
   }
 
+  async function scheduleWaMessage(payload: { text: string; scheduledAt: string }) {
+    if (readonly.value) return
+    await wa.scheduleComposerMessage(payload)
+    composerDraft.value = ''
+    activeSuggestion.value = null
+    selectedSuggestionId.value = null
+  }
+
   function mergeFichaFromInsights(phone: string) {
     const key = String(phone || '').trim()
     if (!key) return
@@ -625,6 +633,8 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     if (onPipeline) void pipeline.loadKanban()
   })
 
+  const kpiMetrics = computed(() => pipeline.kpiMetrics.value)
+
   onMounted(async () => {
     await wa.init()
     if (isJefeView.value) {
@@ -635,11 +645,15 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     }
   })
 
+  watch(isJefeView, (jefe) => {
+    if (jefe) void pipeline.loadKpis()
+  })
+
   return {
     readonly,
     advisorFilterOptions,
     isJefeView,
-    kpiMetrics: pipeline.kpiMetrics,
+    kpiMetrics,
     pipelineColumns: pipeline.columns,
     loadingKanban: pipeline.loadingKanban,
     loadingKpis: pipeline.loadingKpis,
@@ -659,6 +673,7 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     loadingLeads: wa.loadingConversations,
     loadingTemplates: wa.loadingTemplates,
     sendingMessage: wa.sendingMessage,
+    schedulingMessage: wa.schedulingMessage,
     sendingTemplate: wa.sendingTemplate,
     savingNewContact: wa.savingNewContact,
     savingRename: wa.savingRename,
@@ -699,6 +714,7 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     setFichaTab,
     toggleMessageInsight,
     sendWaMessage,
+    scheduleWaMessage,
     sendTemplateMessage: wa.sendTemplateMessage,
     createManualContact: wa.createManualContact,
     renameConversation: wa.renameConversation,

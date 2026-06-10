@@ -144,6 +144,20 @@
       </div>
 
       <UButton
+        v-if="showSchedule"
+        type="button"
+        color="neutral"
+        variant="soft"
+        size="md"
+        icon="i-heroicons-clock"
+        class="shrink-0"
+        :disabled="!canSend || sending"
+        title="Programar mensaje"
+        aria-label="Programar mensaje"
+        @click="emit('schedule')"
+      />
+
+      <UButton
         color="primary"
         size="md"
         icon="i-heroicons-paper-airplane"
@@ -175,17 +189,20 @@ const props = withDefaults(
     sending?: boolean
     replyTarget?: WaInboxComposerReplyTarget | null
     modelValue?: string
+    showSchedule?: boolean
   }>(),
   {
     canSend: true,
     sending: false,
     replyTarget: null,
-    modelValue: undefined
+    modelValue: undefined,
+    showSchedule: false
   }
 )
 
 const emit = defineEmits<{
   send: [payload: WaInboxComposerSendPayload]
+  schedule: []
   'cancel-reply': []
   'update:modelValue': [value: string]
 }>()

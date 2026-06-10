@@ -17,6 +17,77 @@ const MAJOR_HEADER_COLORS: Record<string, string> = {
   postventa: '#1d4ed8'
 }
 
+function toKpiNumber(value: unknown): number {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
+/** Normaliza la respuesta API (soporta data anidada o plana). */
+export function extractPipelineKpis(res: unknown): WaCopilotoPipelineKpis | null {
+  if (!res || typeof res !== 'object') return null
+
+  const root = res as Record<string, unknown>
+  const candidates: unknown[] = [root.data, root]
+
+  if (root.data && typeof root.data === 'object') {
+    const layer = root.data as Record<string, unknown>
+    if (layer.data && typeof layer.data === 'object') {
+      candidates.unshift(layer.data)
+    }
+  }
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== 'object') continue
+    const row = candidate as Record<string, unknown>
+    if (!('deals_cerrados' in row) && !('pipeline_activo' in row)) continue
+
+    return {
+      deals_cerrados: toKpiNumber(row.deals_cerrados),
+      deals_meta: toKpiNumber(row.deals_meta),
+      pipeline_activo: toKpiNumber(row.pipeline_activo),
+      conversion_pct: toKpiNumber(row.conversion_pct),
+      alertas: toKpiNumber(row.alertas),
+      leads_activos: toKpiNumber(row.leads_activos)
+    }
+  }
+
+  return null
+}
+
+function buildKpiMetricsFromData(data: WaCopilotoPipelineKpis): CopilotoKpiMetric[] {
+  return [
+    {
+      ...COPILOTO_KPI_METRICS[0],
+      value: `${data.deals_cerrados}/${data.deals_meta}`,
+      sub: 'Mes actual'
+    },
+    {
+      ...COPILOTO_KPI_METRICS[1],
+      value: String(data.pipeline_activo),
+      sub: 'En progreso'
+    },
+    {
+      ...COPILOTO_KPI_METRICS[2],
+      value: `${data.conversion_pct}%`,
+      sub: 'Cierre / inbound'
+    },
+    {
+      ...COPILOTO_KPI_METRICS[3],
+      value: String(data.alertas),
+      sub: 'Sin leer + calientes'
+    }
+  ]
+}
+
+function emptyKpiMetrics(): CopilotoKpiMetric[] {
+  return [
+    { ...COPILOTO_KPI_METRICS[0], value: '0/0', sub: 'Mes actual' },
+    { ...COPILOTO_KPI_METRICS[1], value: '0', sub: 'En progreso' },
+    { ...COPILOTO_KPI_METRICS[2], value: '0%', sub: 'Cierre / inbound' },
+    { ...COPILOTO_KPI_METRICS[3], value: '0', sub: 'Sin leer + calientes' }
+  ]
+}
+
 export function stageHeaderColor(major: string): string {
   return MAJOR_HEADER_COLORS[major] ?? '#475569'
 }
@@ -35,30 +106,8 @@ export function useCopilotoPipeline(options?: { canManageStages?: boolean }) {
 
   const kpiMetrics = computed<CopilotoKpiMetric[]>(() => {
     const data = kpis.value
-    if (!data) return COPILOTO_KPI_METRICS
-
-    return [
-      {
-        ...COPILOTO_KPI_METRICS[0],
-        value: `${data.deals_cerrados}/${data.deals_meta}`,
-        sub: 'Mes actual'
-      },
-      {
-        ...COPILOTO_KPI_METRICS[1],
-        value: String(data.pipeline_activo),
-        sub: 'En progreso'
-      },
-      {
-        ...COPILOTO_KPI_METRICS[2],
-        value: `${data.conversion_pct}%`,
-        sub: 'Cierre / inbound'
-      },
-      {
-        ...COPILOTO_KPI_METRICS[3],
-        value: String(data.alertas),
-        sub: 'Sin leer + calientes'
-      }
-    ]
+    if (!data) return emptyKpiMetrics()
+    return buildKpiMetricsFromData(data)
   })
 
   async function loadStages() {
@@ -89,7 +138,7 @@ export function useCopilotoPipeline(options?: { canManageStages?: boolean }) {
       const res = await WaCopilotoService.getPipelineKpis({
         assigned_user_id: assignedFilter.value ?? undefined
       })
-      kpis.value = res?.data ?? null
+      kpis.value = extractPipelineKpis(res)
     } catch {
       kpis.value = null
     } finally {

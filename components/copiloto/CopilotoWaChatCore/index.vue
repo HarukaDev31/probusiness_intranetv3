@@ -114,9 +114,18 @@
         v-model="composerText"
         :can-send="conversation.can_send_text"
         :sending="sendingMessage"
+        :show-schedule="conversation.can_send_text"
         :reply-target="replyTarget"
         @send="onSend"
+        @schedule="scheduleModalOpen = true"
         @cancel-reply="replyTarget = null"
+      />
+      <CopilotoScheduleMessageModal
+        v-model:open="scheduleModalOpen"
+        :initial-text="composerText"
+        :window-expires-at="conversation.window_expires_at"
+        :scheduling="schedulingMessage"
+        @schedule="onSchedule"
       />
     </template>
   </ChatPanelShell>
@@ -140,6 +149,7 @@ import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import WhatsappInboxMessageBody from '~/components/whatsapp-inbox/WhatsappInboxMessageBody.vue'
 import WhatsappInboxComposer from '~/components/whatsapp-inbox/WhatsappInboxComposer.vue'
 import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
+import CopilotoScheduleMessageModal from '~/components/copiloto/CopilotoScheduleMessageModal/index.vue'
 import { useWaCopilotoChatScroll } from '~/composables/wa-copiloto-inbox/useWaCopilotoChatScroll'
 import {
   deliveryIcon,
@@ -153,6 +163,7 @@ const props = withDefaults(
     messages: WaCopilotoMessage[]
     loadingMessages?: boolean
     sendingMessage?: boolean
+    schedulingMessage?: boolean
     readonly?: boolean
     composerDraft?: string
     isMessageAnalysisPending?: (messageId: number) => boolean
@@ -160,6 +171,7 @@ const props = withDefaults(
   {
     loadingMessages: false,
     sendingMessage: false,
+    schedulingMessage: false,
     readonly: false,
     composerDraft: '',
     isMessageAnalysisPending: () => false
@@ -168,9 +180,12 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   send: [payload: WaCopilotoComposerSendPayload]
+  schedule: [payload: { text: string; scheduledAt: string }]
   'update:composerDraft': [value: string]
   'apply-chip': [option: CopilotoSuggestionOption]
 }>()
+
+const scheduleModalOpen = ref(false)
 
 function messageAnalysisPending(msg: WaCopilotoMessage) {
   const id = waMessageNumericId(msg.id)
@@ -239,5 +254,10 @@ function onSend(payload: WaCopilotoComposerSendPayload) {
     replyToMetaMessageId: replyTarget.value?.metaMessageId || payload.replyToMetaMessageId
   })
   replyTarget.value = null
+}
+
+function onSchedule(payload: { text: string; scheduledAt: string }) {
+  emit('schedule', payload)
+  scheduleModalOpen.value = false
 }
 </script>

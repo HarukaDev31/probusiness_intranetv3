@@ -1130,6 +1130,61 @@ export function useWaCopilotoInbox(options?: {
     }
   }
 
+  const schedulingMessage = ref(false)
+
+  async function scheduleComposerMessage(payload: { text: string; scheduledAt: string }) {
+    const conv = selectedConversation.value
+    if (!conv) return
+    if (!conv.can_send_text) {
+      showError('Ventana cerrada', 'Solo puedes enviar plantillas mientras la ventana esté cerrada.')
+      return
+    }
+
+    const text = payload.text.trim()
+    if (!text) return
+
+    const scheduledAt = payload.scheduledAt
+    const scheduledDate = new Date(scheduledAt)
+    if (Number.isNaN(scheduledDate.getTime())) {
+      showError('Fecha inválida', 'Indica una fecha y hora válidas.')
+      return
+    }
+
+    if (scheduledDate.getTime() <= Date.now()) {
+      showError('Fecha inválida', 'La fecha debe ser en el futuro.')
+      return
+    }
+
+    const expiresRaw = conv.window_expires_at
+    if (expiresRaw) {
+      const expires = new Date(expiresRaw)
+      if (!Number.isNaN(expires.getTime()) && scheduledDate.getTime() >= expires.getTime()) {
+        showError(
+          'Fuera de la ventana',
+          'Ese horario queda fuera de la ventana de 24 h. Programa antes del cierre o usa una plantilla.'
+        )
+        return
+      }
+    }
+
+    schedulingMessage.value = true
+    try {
+      const res = await WaCopilotoService.scheduleMessage(conv.id, {
+        message: text,
+        scheduledAt
+      })
+      if (res?.success === false) {
+        throw new Error(res?.message || 'No se pudo programar el mensaje')
+      }
+      showSuccess('Mensaje programado', 'Se enviará en el horario indicado.')
+    } catch (e: any) {
+      showError('Error', e?.message || 'No se pudo programar el mensaje')
+      throw e
+    } finally {
+      schedulingMessage.value = false
+    }
+  }
+
   const sendingTemplate = ref(false)
 
   async function ensureConversationForTemplate(): Promise<WaCopilotoConversation | null> {
@@ -1651,6 +1706,7 @@ export function useWaCopilotoInbox(options?: {
     search,
     filter,
     sendingMessage,
+    schedulingMessage,
     loadingConversations,
     loadingMoreConversations,
     conversationsHasMore,
@@ -1676,6 +1732,7 @@ export function useWaCopilotoInbox(options?: {
     selectConversation,
     clearConversationSelection,
     sendComposerMessage,
+    scheduleComposerMessage,
     sendTemplateMessage,
     assignConversation,
     renameConversation,
