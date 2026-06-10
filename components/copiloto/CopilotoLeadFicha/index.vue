@@ -1,11 +1,19 @@
 <template>
   <aside
-    v-if="lead"
-    class="flex h-full min-h-0 max-h-full w-64 shrink-0 flex-col overflow-hidden border-l border-default bg-white dark:bg-gray-900 xl:w-72"
+    v-if="lead || loadingHistorial"
+    class="flex h-full min-h-0 max-h-full min-w-0 w-full flex-col overflow-hidden border-l border-default bg-white dark:bg-gray-900"
     :class="{ 'opacity-95': readonly }"
   >
+    <div v-if="!lead && loadingHistorial" class="flex flex-1 flex-col gap-3 p-3" aria-hidden="true">
+      <USkeleton class="h-4 w-40" />
+      <USkeleton class="h-24 w-full rounded-lg" />
+      <USkeleton class="h-16 w-full rounded-lg" />
+      <USkeleton class="h-8 w-full" />
+      <USkeleton class="h-32 w-full rounded-lg" />
+    </div>
+    <template v-else-if="lead">
     <div class="shrink-0 space-y-2 border-b border-default p-3">
-      <p class="text-xs font-bold text-highlighted">
+      <p class="break-words text-xs font-bold text-highlighted">
         Ficha IA — {{ lead.name }}
         <span v-if="readonly && lead.advisorName" class="block text-[10px] font-normal text-muted">
           {{ lead.advisorName }}
@@ -34,12 +42,12 @@
         <p class="text-[10px] font-semibold uppercase text-muted">
           {{ readonly ? 'Recomendación' : 'Siguiente acción' }}
         </p>
-        <p class="mt-1 text-xs font-semibold text-highlighted">{{ lead.action }}</p>
-        <p v-if="!compact" class="mt-1 text-[10px] leading-snug text-muted">{{ lead.why }}</p>
+        <p class="mt-1 break-words text-xs font-semibold text-highlighted">{{ lead.action }}</p>
+        <p v-if="!compact" class="mt-1 break-words text-[10px] leading-snug text-muted">{{ lead.why }}</p>
       </UCard>
     </div>
 
-    <div class="flex shrink-0 border-b border-default">
+    <div class="flex min-w-0 shrink-0 border-b border-default">
       <UButton
         v-for="tab in fichaTabs"
         :key="tab.value"
@@ -47,12 +55,12 @@
         :variant="fichaTab === tab.value ? 'soft' : 'ghost'"
         :color="fichaTab === tab.value ? 'primary' : 'neutral'"
         :label="tab.label"
-        class="flex-1 rounded-none"
+        class="min-w-0 flex-1 rounded-none px-1 text-[10px] sm:px-2 sm:text-xs"
         @click="emit('update:fichaTab', tab.value)"
       />
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto p-3 text-xs">
+    <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 text-xs">
       <div v-if="fichaTab === 'sigs'" class="space-y-2">
         <UCard
           v-for="(msg, i) in incomingWithInsight"
@@ -176,6 +184,7 @@
         </template>
       </div>
     </div>
+    </template>
   </aside>
 </template>
 
@@ -228,16 +237,11 @@ watch(
 
 const tempCfg = getCopilotoTempConfig
 
-const fichaTabs = computed((): { value: CopilotoFichaTab; label: string }[] => {
-  const base: { value: CopilotoFichaTab; label: string }[] = [
-    { value: 'sigs', label: 'Señales' },
-    { value: 'hist', label: 'Hist.' }
-  ]
-  if (!props.compact) {
-    base.push({ value: 'aduana', label: 'Aduanas' })
-  }
-  return base
-})
+const fichaTabs: { value: CopilotoFichaTab; label: string }[] = [
+  { value: 'sigs', label: 'Señales' },
+  { value: 'hist', label: 'Hist.' },
+  { value: 'aduana', label: 'Aduana' }
+]
 
 function aduanaTipoLabel(tipo: CopilotoAduanaItemTipo) {
   const map: Record<CopilotoAduanaItemTipo, string> = {

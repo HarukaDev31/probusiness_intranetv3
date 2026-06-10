@@ -2,7 +2,26 @@
   <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden md:p-4">
     <PageHeader title="Copiloto IA" :subtitle="headerSubtitle" icon="i-heroicons-sparkles" :hide-back-button="true" />
 
-    <div class="grid min-h-0 flex-1 overflow-hidden rounded-lg border border-default bg-[#f0f4f9] dark:bg-gray-950 md:grid-cols-[minmax(260px,280px)_1fr_minmax(240px,272px)]">
+    <CopilotoViewNav
+      :scope="routeScope"
+      :is-pipeline="isPipelineRoute"
+      :conversation-id="selectedConversation?.id ?? null"
+      cola-label="Mi cola"
+    />
+
+    <CopilotoPipelineKanban
+      v-if="isPipelineRoute"
+      :columns="pipelineColumns"
+      :loading="loadingKanban"
+      :selected-id="selectedConversation?.id ?? null"
+      @select="selectKanbanConversation"
+      @move="moveKanbanCard"
+    />
+
+    <div
+      v-else
+      class="grid min-h-0 flex-1 overflow-hidden rounded-lg border border-default bg-[#f0f4f9] dark:bg-gray-950 md:grid-cols-[minmax(260px,280px)_minmax(0,1fr)_minmax(15rem,18rem)]"
+    >
       <CopilotoLeadQueue
         title="Mi cola"
         v-model:search="queueSearch"
@@ -15,13 +34,12 @@
         @sync="onRefresh"
       />
       <CopilotoConversationPanel
-        :key="selectedConversation?.contact_id ? `ct-${selectedConversation.contact_id}` : (selectedConversation?.id ?? selectedLead?.id ?? 'none')"
         :lead="selectedLead"
         :conversation="selectedConversation"
         :messages="waMessages"
         :templates="templates"
         :assignable-users="assignableUsers"
-        :loading="loadingConversation"
+        :loading="loadingConversation || isChatHydrating"
         :loading-templates="loadingTemplates"
         :sending="sendingMessage"
         :sending-template="sendingTemplate"
@@ -45,7 +63,6 @@
         @refresh="onRefresh"
       />
       <CopilotoLeadFicha
-        :key="`ficha-${selectedLead?.id ?? 'none'}`"
         :lead="selectedLead"
         :ficha-tab="fichaTab"
         :suggestion-logs="suggestionLogs"
@@ -71,9 +88,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import PageHeader from '~/components/PageHeader.vue'
+import CopilotoViewNav from '~/components/copiloto/CopilotoViewNav/index.vue'
 import CopilotoLeadQueue from '~/components/copiloto/CopilotoLeadQueue/index.vue'
 import CopilotoConversationPanel from '~/components/copiloto/CopilotoConversationPanel/index.vue'
 import CopilotoLeadFicha from '~/components/copiloto/CopilotoLeadFicha/index.vue'
+import CopilotoPipelineKanban from '~/components/copiloto/CopilotoPipelineKanban/index.vue'
 import WhatsappInboxNewContactModal from '~/components/whatsapp-inbox/WhatsappInboxNewContactModal.vue'
 import { useCopilotoDashboard } from '~/composables/copiloto/useCopilotoDashboard'
 import { useUserRole } from '~/composables/auth/useUserRole'
@@ -83,6 +102,10 @@ const { userData } = useUserRole()
 const newContactOpen = ref(false)
 
 const {
+  routeScope,
+  isPipelineRoute,
+  pipelineColumns,
+  loadingKanban,
   leads,
   queueConversations,
   selectedLeadIndex,
@@ -94,6 +117,7 @@ const {
   mainTab,
   fichaTab,
   loadingConversation,
+  isChatHydrating,
   loadingLeads,
   queueSearch,
   loadingTemplates,
@@ -115,6 +139,8 @@ const {
   loadingAduana,
   searchAduanaContext,
   selectLead,
+  selectKanbanConversation,
+  moveKanbanCard,
   setMainTab,
   setFichaTab,
   sendWaMessage,

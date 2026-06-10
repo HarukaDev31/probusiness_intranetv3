@@ -1,11 +1,11 @@
 <template>
-  <section v-if="lead && conversation" class="flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-gray-900">
+  <section v-if="conversation" class="flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-gray-900">
     <ChatConversationHeader
-      :avatar-text="lead.av"
-      :title="lead.name"
-      :subtitle="lead.sub"
+      :avatar-text="headerLead.av"
+      :title="headerLead.name"
+      :subtitle="headerLead.sub"
     >
-      <template v-if="!readonly" #actions>
+      <template v-if="!readonly || canAssign" #actions>
         <UBadge
           v-if="conversation.pending_contact"
           color="info"
@@ -23,6 +23,7 @@
           {{ conversation.window_label }}
         </UBadge>
         <UButton
+          v-if="!readonly"
           icon="i-heroicons-document-text"
           color="neutral"
           variant="ghost"
@@ -30,8 +31,19 @@
           title="Plantillas"
           @click="templatePickerOpen = true"
         />
-        <UButton icon="i-heroicons-arrow-path" color="neutral" variant="ghost" size="xs" title="Actualizar" @click="emit('refresh')" />
-        <UPopover v-if="!conversation.pending_contact" :content="{ side: 'bottom', align: 'end' }">
+        <UButton
+          v-if="!readonly"
+          icon="i-heroicons-arrow-path"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          title="Actualizar"
+          @click="emit('refresh')"
+        />
+        <UPopover
+          v-if="!conversation.pending_contact && (!readonly || canAssign)"
+          :content="{ side: 'bottom', align: 'end' }"
+        >
           <UButton icon="i-heroicons-ellipsis-vertical" color="neutral" variant="ghost" size="xs" aria-label="Más" />
           <template #content>
             <div class="w-56 space-y-3 p-3">
@@ -48,6 +60,7 @@
                 />
               </div>
               <UButton
+                v-if="!readonly"
                 icon="i-heroicons-pencil-square"
                 color="neutral"
                 variant="soft"
@@ -259,6 +272,7 @@ const props = withDefaults(
     assignableUsers: WaCopilotoAssignableUser[]
     mainTab: CopilotoMainTab
     readonly?: boolean
+    canAssign?: boolean
     loading?: boolean
     loadingTemplates?: boolean
     sending?: boolean
@@ -274,6 +288,7 @@ const props = withDefaults(
   }>(),
   {
     readonly: false,
+    canAssign: false,
     loading: false,
     loadingTemplates: false,
     sending: false,
@@ -352,6 +367,24 @@ const renameContactOpen = ref(false)
 const assignSelectItems = computed(() =>
   props.assignableUsers.map((u) => ({ label: u.name, value: u.id }))
 )
+
+const headerLead = computed(() => {
+  if (props.lead) return props.lead
+  const conv = props.conversation
+  if (!conv) {
+    return { av: 'LD', name: 'Lead', sub: '' }
+  }
+  const name = String(conv.contact_name ?? conv.phone_display ?? conv.phone_e164 ?? '').trim() || 'Lead'
+  const words = name.split(/\s+/).filter(Boolean)
+  const av = words.length === 1
+    ? words[0].slice(0, 2).toUpperCase()
+    : `${words[0]?.[0] ?? ''}${words[1]?.[0] ?? ''}`.toUpperCase()
+  return {
+    av: av || 'LD',
+    name,
+    sub: conv.channel_label || 'WhatsApp'
+  }
+})
 
 const originLineText = computed(() => {
   const conv = props.conversation

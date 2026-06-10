@@ -1,4 +1,13 @@
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  copilotoConversationPath,
+  copilotoIsPipelinePath,
+  copilotoListPath,
+  copilotoPipelinePath,
+  copilotoRouteConversationSlug,
+  type CopilotoRouteScope
+} from '~/utils/copilotoRoute'
 import type { CopilotoLead, CopilotoChatMessage } from '~/types/copiloto/lead'
 import type {
   CopilotoSuggestionOption,
@@ -9,7 +18,7 @@ import type {
 } from '~/types/wa-copiloto'
 import { getCopilotoTempConfig } from '~/constants/copiloto/temperature'
 import { getWaInboxSidebarPreviewMeta } from '~/utils/whatsappInboxSidebarPreview'
-import { COPILOTO_TEAM_MEMBERS } from '~/constants/copiloto/team'
+import { useCopilotoPipeline } from '~/composables/copiloto/useCopilotoPipeline'
 import { CopilotoService } from '~/services/copiloto/copilotoService'
 import { WaCopilotoService } from '~/services/wa-copiloto/waCopilotoService'
 import { useWaCopilotoInbox } from '~/composables/useWaCopilotoInbox'
@@ -18,8 +27,6 @@ import type { CopilotoAduanaItem } from '~/types/copiloto/aduana'
 
 export type CopilotoMainTab = 'wa' | 'calls'
 export type CopilotoFichaTab = 'sigs' | 'hist' | 'aduana'
-export type CopilotoJefeView = 'cola' | 'pipeline'
-
 export type CopilotoActiveSuggestion = {
   optionId: string
   text: string
@@ -176,16 +183,27 @@ function collectSuggestionOptionsForMessage(msg: WaCopilotoMessage | null): Copi
 }
 
 export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvisorId?: string | null }) {
+  const route = useRoute()
+  const router = useRouter()
   const readonly = computed(() => options?.readonly ?? false)
   const selectedAdvisorId = ref<string>('all')
+  const isJefeView = computed(() => options?.readonly === true)
+  const routeScope = computed<CopilotoRouteScope>(() => (isJefeView.value ? 'equipo' : 'advisor'))
 
-  const wa = useWaCopilotoInbox()
+  const wa = useWaCopilotoInbox({
+    copilotoQueue: isJefeView.value ? 'copiloto-jefe' : 'copiloto-advisor',
+    routeScope: routeScope.value,
+    syncRoute: true
+  })
+  const pipeline = useCopilotoPipeline({ canManageStages: isJefeView.value })
+
+  const isPipelineRoute = computed(() => copilotoIsPipelinePath(route.path, routeScope.value))
+  const hasConversationRoute = computed(() => Boolean(copilotoRouteConversationSlug(route)))
 
   const fichaByPhone = ref<Record<string, Record<string, unknown>>>({})
   const loadingFicha = ref(false)
   const mainTab = ref<CopilotoMainTab>('wa')
   const fichaTab = ref<CopilotoFichaTab>('sigs')
-  const jefeView = ref<CopilotoJefeView>('cola')
   const composerDraft = ref('')
   const activeSuggestion = ref<CopilotoActiveSuggestion | null>(null)
   const selectedSuggestionId = ref<string | null>(null)
@@ -200,19 +218,17 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     wa.conversations.value.map((conv) => mapConversationToLead(conv, fichaByPhone.value[conv.phone_e164]))
   )
 
-  const filteredLeads = computed(() => {
-    const advisor = options?.filterAdvisorId ?? selectedAdvisorId.value
-    if (advisor === 'all') return allLeads.value
-    return allLeads.value.filter((l) => l.advisorId === advisor || !l.advisorId)
+  const advisorFilterOptions = computed(() => {
+    const rows = [{ label: 'Todo el equipo', value: 'all' }]
+    for (const user of wa.assignableUsers.value) {
+      rows.push({ label: user.name, value: String(user.id) })
+    }
+    return rows
   })
 
-  const filteredConversations = computed(() => {
-    const advisor = options?.filterAdvisorId ?? selectedAdvisorId.value
-    if (advisor === 'all') return wa.conversations.value
-    return wa.conversations.value.filter(
-      (c) => !c.assigned_user_id || String(c.assigned_user_id) === advisor
-    )
-  })
+  const filteredLeads = computed(() => allLeads.value)
+
+  const filteredConversations = computed(() => wa.conversations.value)
 
   const selectedLeadIndex = computed(() => {
     const conv = wa.selectedConversation.value
@@ -227,26 +243,21 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     return filteredLeads.value.findIndex((l) => l.id === key)
   })
 
-  const selectedLeadBase = computed(() => {
-    const idx = selectedLeadIndex.value
-    if (idx < 0) return null
-    return filteredLeads.value[idx] ?? null
-  })
-
   const selectedLead = computed(() => {
-    const lead = selectedLeadBase.value
     const conv = wa.selectedConversation.value
-    if (!lead || !conv || conv.pending_contact) return lead
+    if (!conv) {
+      const pending = wa.pendingContactSelection.value
+      if (!pending) return null
+      return mapConversationToLead(pending, undefined)
+    }
 
     const phone = String(conv.phone_e164 ?? '')
     const ficha = phone ? fichaByPhone.value[phone] : undefined
-    const msgs = buildLeadMessages(wa.openMessagesForSelection.value)
+    const base = mapConversationToLead(conv, ficha)
+    if (conv.pending_contact) return base
 
-    return {
-      ...lead,
-      ...mapConversationToLead(conv, ficha),
-      msgs
-    }
+    const msgs = buildLeadMessages(wa.openMessagesForSelection.value)
+    return { ...base, msgs }
   })
 
   const latestInboundMessage = computed(() =>
@@ -347,18 +358,49 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
 
     const convId = Number(lead.id)
     if (!Number.isFinite(convId) || convId <= 0) return
-    void wa.selectConversation(convId)
+    await wa.selectConversation(convId)
     expandedMessageIndex.value = null
+  }
+
+  function goPipeline() {
+    void router.push(copilotoPipelinePath(routeScope.value))
+  }
+
+  function goCola() {
+    const id = wa.selectedConversationId.value
+    if (id) void router.push(copilotoConversationPath(routeScope.value, id))
+    else void router.push(copilotoListPath(routeScope.value))
   }
 
   function selectAdvisor(id: string) {
     selectedAdvisorId.value = id
+    const userId = id === 'all' ? null : Number(id)
+    wa.setAssignedUserFilter(Number.isFinite(userId) && userId! > 0 ? userId : null)
+    if (isJefeView.value) {
+      pipeline.setAssignedFilter(Number.isFinite(userId) && userId! > 0 ? userId : null)
+    }
     const first = filteredLeads.value[0]
     if (first) {
       void selectLead(0)
     } else {
       wa.clearConversationSelection()
     }
+  }
+
+  async function selectKanbanConversation(conversationId: number) {
+    await wa.selectConversation(conversationId)
+  }
+
+  async function moveKanbanCard(conversationId: number, stageId: number) {
+    await pipeline.moveCard(conversationId, stageId)
+  }
+
+  async function createPipelineStage(label: string, conversationId?: number) {
+    await pipeline.createProgressStage(label, conversationId)
+  }
+
+  async function reorderPipelineStages(orderedStageIds: number[]) {
+    await pipeline.reorderProgressStages(orderedStageIds)
   }
 
   function setMainTab(tab: CopilotoMainTab) {
@@ -374,10 +416,6 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
 
   function searchAduanaContext(query: string) {
     void loadAduanaContext(query)
-  }
-
-  function setJefeView(view: CopilotoJefeView) {
-    jefeView.value = view
   }
 
   function toggleMessageInsight(messageIndex: number) {
@@ -583,13 +621,29 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     }
   )
 
+  watch(isPipelineRoute, (onPipeline) => {
+    if (onPipeline) void pipeline.loadKanban()
+  })
+
   onMounted(async () => {
     await wa.init()
+    if (isJefeView.value) {
+      await pipeline.loadKpis()
+    }
+    if (isPipelineRoute.value) {
+      await pipeline.loadKanban()
+    }
   })
 
   return {
     readonly,
-    teamMembers: COPILOTO_TEAM_MEMBERS,
+    advisorFilterOptions,
+    isJefeView,
+    kpiMetrics: pipeline.kpiMetrics,
+    pipelineColumns: pipeline.columns,
+    loadingKanban: pipeline.loadingKanban,
+    loadingKpis: pipeline.loadingKpis,
+    refreshPipeline: pipeline.refreshAll,
     leads: filteredLeads,
     queueConversations: filteredConversations,
     selectedLeadIndex,
@@ -601,6 +655,7 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     templates: wa.templates,
     assignableUsers: wa.assignableUsers,
     loadingConversation: wa.loadingMessages,
+    isChatHydrating: wa.isChatHydrating,
     loadingLeads: wa.loadingConversations,
     loadingTemplates: wa.loadingTemplates,
     sendingMessage: wa.sendingMessage,
@@ -609,7 +664,12 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     savingRename: wa.savingRename,
     mainTab,
     fichaTab,
-    jefeView,
+    routeScope,
+    isPipelineRoute,
+    hasConversationRoute,
+    goPipeline,
+    goCola,
+    canManagePipelineStages: pipeline.canManageStages,
     composerDraft,
     activeSuggestion,
     selectedSuggestionId,
@@ -631,15 +691,21 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     isMessageAnalysisPending: wa.isMessageAnalysisPending,
     selectLead,
     selectAdvisor,
+    selectKanbanConversation,
+    moveKanbanCard,
+    createPipelineStage,
+    reorderPipelineStages,
     setMainTab,
     setFichaTab,
-    setJefeView,
     toggleMessageInsight,
     sendWaMessage,
     sendTemplateMessage: wa.sendTemplateMessage,
     createManualContact: wa.createManualContact,
     renameConversation: wa.renameConversation,
-    assignConversation: wa.assignConversation,
+    assignConversation: async (userId: number | null) => {
+      await wa.assignConversation(userId)
+      await pipeline.refreshAll()
+    },
     applySuggestionChip,
     setComposerDraft,
     refreshLeads: wa.refreshInbox,

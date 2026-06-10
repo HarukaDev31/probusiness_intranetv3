@@ -6,7 +6,7 @@
         class="min-h-0 flex-1 p-3"
         @scroll="onMessagesScroll"
       >
-        <p v-if="loadingMessages" class="py-8 text-center text-sm text-muted">Cargando mensajes…</p>
+        <CopilotoChatSkeleton v-if="loadingMessages && !messages.length" />
         <template v-else>
           <div
             v-for="msg in messages"
@@ -95,6 +95,12 @@
             </span>
           </div>
         </template>
+        <div
+          v-if="loadingMessages && messages.length"
+          class="pointer-events-none absolute inset-x-0 top-0 z-10 h-1 overflow-hidden bg-transparent"
+        >
+          <div class="h-full w-1/3 animate-pulse rounded-full bg-primary-500/80" />
+        </div>
       </ChatMessagesScroll>
       <WhatsappInboxJumpToBottomButton
         :visible="showJumpButton && !loadingMessages"
@@ -127,6 +133,7 @@ import type {
 } from '~/types/wa-copiloto'
 import { waMessageNumericId } from '~/composables/wa-copiloto-inbox/waCopilotoMessageUtils'
 import CopilotoMessageInsights from '~/components/copiloto/CopilotoMessageInsights/index.vue'
+import CopilotoChatSkeleton from '~/components/copiloto/CopilotoChatSkeleton/index.vue'
 import type { WaInboxComposerReplyTarget } from '~/types/whatsapp-inbox'
 import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
 import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'

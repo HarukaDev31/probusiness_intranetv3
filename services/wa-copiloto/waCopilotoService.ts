@@ -17,6 +17,9 @@ export class WaCopilotoService extends BaseService {
     filter?: WaCopilotoFilter
     per_page?: number
     page?: number
+    solo_cliente_inbound?: number
+    include_contacts?: number
+    assigned_user_id?: number
   } = {}) {
     return await this.apiCall<any>(`${this.baseUrl}/conversations`, {
       method: 'GET',
@@ -168,6 +171,51 @@ export class WaCopilotoService extends BaseService {
     return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/suggestion-usages`, {
       method: 'GET',
       params
+    })
+  }
+
+  static async getPipelineStages() {
+    return await this.apiCall<any>(`${this.baseUrl}/pipeline/stages`, { method: 'GET' })
+  }
+
+  static async createPipelineStage(label: string) {
+    return await this.apiCall<any>(`${this.baseUrl}/pipeline/stages`, {
+      method: 'POST',
+      body: { label }
+    })
+  }
+
+  static async reorderPipelineStages(stageIds: number[]) {
+    return await this.apiCall<any>(`${this.baseUrl}/pipeline/stages/reorder`, {
+      method: 'PATCH',
+      body: { stage_ids: stageIds }
+    })
+  }
+
+  static async getPipelineKanban(params: { assigned_user_id?: number; solo_cliente_inbound?: number } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/pipeline/kanban`, { method: 'GET', params })
+  }
+
+  static async getPipelineKpis(params: { assigned_user_id?: number } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/pipeline/kpis`, { method: 'GET', params })
+  }
+
+  static async updatePipelineStage(conversationId: number, stageId: number, note?: string) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/pipeline-stage`, {
+      method: 'PATCH',
+      body: { stage_id: stageId, note }
+    })
+  }
+
+  static async getAssignmentHistory(conversationId: number) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/assignment-history`, {
+      method: 'GET'
+    })
+  }
+
+  static async getPipelineHistory(conversationId: number) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/pipeline-history`, {
+      method: 'GET'
     })
   }
 

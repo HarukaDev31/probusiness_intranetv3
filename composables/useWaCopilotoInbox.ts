@@ -26,6 +26,14 @@ import {
   waCopilotoConversationPath
 } from '~/utils/waCopilotoRoute'
 import {
+  copilotoBasePath,
+  copilotoConversationPath,
+  copilotoConversationIdFromSlug,
+  copilotoListPath,
+  copilotoRouteConversationSlug,
+  type CopilotoRouteScope
+} from '~/utils/copilotoRoute'
+import {
   mergeWaCopilotoMessage,
   mergeMessageLists,
   waMessageNumericId
@@ -107,7 +115,21 @@ function clearMarkReadDebounce() {
   markReadDebounce.clear()
 }
 
-export function useWaCopilotoInbox() {
+export type WaCopilotoInboxMode = 'default' | 'copiloto-jefe' | 'copiloto-advisor'
+
+export function useWaCopilotoInbox(options?: {
+  copilotoQueue?: WaCopilotoInboxMode
+  routeScope?: CopilotoRouteScope
+  /** Si false, la selección no cambia la URL. */
+  syncRoute?: boolean
+}) {
+  const copilotoQueue = options?.copilotoQueue ?? 'default'
+  const routeScope: CopilotoRouteScope = options?.routeScope
+    ?? (copilotoQueue === 'copiloto-jefe' ? 'equipo' : 'advisor')
+  const routeBase = copilotoQueue === 'default'
+    ? WA_COPILOTO_BASE_PATH
+    : copilotoBasePath(routeScope)
+  const syncRoute = options?.syncRoute ?? copilotoQueue === 'default'
   const route = useRoute()
   const router = useRouter()
   const { withSpinner } = useSpinner()
@@ -129,7 +151,38 @@ export function useWaCopilotoInbox() {
   /** Conversación a la que corresponde `messages` (evita mostrar otro chat tras cargas en paralelo). */
   const messagesConversationId = ref<number | null>(null)
   const search = ref('')
-  const filter = ref<WaCopilotoFilter>('todas')
+  const filter = ref<WaCopilotoFilter>(copilotoQueue === 'copiloto-advisor' ? 'mis' : 'todas')
+  const soloClienteInbound = ref(copilotoQueue !== 'default')
+  const includeContactsInList = ref(copilotoQueue === 'default')
+  const assignedUserFilter = ref<number | null>(null)
+
+  function conversationListParams(page: number, append = false) {
+    const params: {
+      filter?: WaCopilotoFilter
+      search?: string
+      per_page: number
+      page: number
+      solo_cliente_inbound?: number
+      include_contacts?: number
+      assigned_user_id?: number
+    } = {
+      filter: filter.value,
+      search: search.value.trim() || undefined,
+      per_page: CONVERSATIONS_PER_PAGE,
+      page
+    }
+    if (soloClienteInbound.value) params.solo_cliente_inbound = 1
+    if (!includeContactsInList.value) params.include_contacts = 0
+    if (assignedUserFilter.value && assignedUserFilter.value > 0) {
+      params.assigned_user_id = assignedUserFilter.value
+    }
+    return params
+  }
+
+  function setAssignedUserFilter(userId: number | null) {
+    assignedUserFilter.value = userId && userId > 0 ? userId : null
+    void loadConversations({ page: 1, force: true })
+  }
   const sendingMessage = ref(false)
   const loadingConversations = ref(false)
   const loadingMessages = ref(false)
@@ -171,6 +224,12 @@ export function useWaCopilotoInbox() {
       return [] as WaCopilotoMessage[]
     }
     return messages.value
+  })
+
+  const isChatHydrating = computed(() => {
+    const convId = selectedConversationId.value
+    if (!convId) return false
+    return loadingMessages.value || messagesConversationId.value !== convId
   })
 
   const unreadTotal = computed(() =>
@@ -419,6 +478,9 @@ export function useWaCopilotoInbox() {
   }
 
   function getRouteConversationSlug(): string | null {
+    if (copilotoQueue !== 'default') {
+      return copilotoRouteConversationSlug(route)
+    }
     const p = route.params.conversation
     if (!p) return null
     const raw = Array.isArray(p) ? p[0] : String(p)
@@ -441,7 +503,9 @@ export function useWaCopilotoInbox() {
   }
 
   async function navigateToConversation(convId: number) {
-    const target = waCopilotoConversationPath(convId)
+    const target = copilotoQueue === 'default'
+      ? waCopilotoConversationPath(convId)
+      : copilotoConversationPath(routeScope, convId)
     const slug = String(convId)
     if (route.path === target && getRouteConversationSlug() === slug) {
       WaCopilotoLog('navigate.skip', { convId, target })
@@ -473,6 +537,9 @@ export function useWaCopilotoInbox() {
   }
 
   function conversationIdFromSlug(slug: string): number | null {
+    if (copilotoQueue !== 'default') {
+      return copilotoConversationIdFromSlug(slug, allConversations.value)
+    }
     const parsed = parseWaCopilotoConversationSlug(slug)
     if (!parsed) return null
     if (parsed.kind === 'id') return parsed.id
@@ -520,14 +587,15 @@ export function useWaCopilotoInbox() {
       applyMessagesForConversation(conversationId, cachedMsgs)
       return
     }
-    if (selectedConversationId.value === conversationId) {
-      messages.value = []
-      messagesConversationId.value = null
-    }
+  }
+
+  function isCopilotoPipelineRoute() {
+    return copilotoQueue !== 'default' && route.path.endsWith('/pipeline')
   }
 
   function shouldAutoPickFirstConversation() {
     if (getRouteConversationSlug()) return false
+    if (isCopilotoPipelineRoute()) return false
     if (suppressAutoSelect.value) return false
     if (import.meta.client && window.innerWidth < 1024) return false
     return true
@@ -536,6 +604,10 @@ export function useWaCopilotoInbox() {
   function ensureSelectedConversation() {
     if (getRouteConversationSlug()) {
       suppressAutoSelect.value = false
+      return
+    }
+
+    if (isCopilotoPipelineRoute()) {
       return
     }
 
@@ -571,11 +643,12 @@ export function useWaCopilotoInbox() {
 
     if (!getRouteConversationSlug()) return
 
+    const listPath = copilotoQueue === 'default' ? WA_COPILOTO_BASE_PATH : copilotoListPath(routeScope)
     try {
-      await router.replace(WA_COPILOTO_BASE_PATH)
+      await router.replace(listPath)
       await nextTick()
     } catch {
-      await navigateTo(WA_COPILOTO_BASE_PATH, { replace: true })
+      await navigateTo(listPath, { replace: true })
     }
   }
 
@@ -588,7 +661,7 @@ export function useWaCopilotoInbox() {
     const parsed = parseWaCopilotoConversationSlug(slug)
     if (!parsed) {
       showError('Enlace no válido', 'No se reconoce este chat.')
-      await router.replace(WA_COPILOTO_BASE_PATH)
+      await router.replace(copilotoQueue === 'default' ? WA_COPILOTO_BASE_PATH : copilotoListPath(routeScope))
       return
     }
 
@@ -628,11 +701,13 @@ export function useWaCopilotoInbox() {
         selectedConversationId.value = null
         messages.value = []
         messagesConversationId.value = null
-        await router.replace(WA_COPILOTO_BASE_PATH)
+        await router.replace(copilotoQueue === 'default' ? WA_COPILOTO_BASE_PATH : copilotoListPath(routeScope))
         return
       }
 
-      const canonicalPath = waCopilotoConversationPath(conv.id)
+      const canonicalPath = copilotoQueue === 'default'
+        ? waCopilotoConversationPath(conv.id)
+        : copilotoConversationPath(routeScope, conv.id)
       const needsCanonicalUrl =
         parsed.kind === 'phone' || slug !== String(conv.id)
 
@@ -724,7 +799,7 @@ export function useWaCopilotoInbox() {
       }
     }
 
-    const convKey = `${filter.value}|${search.value.trim()}|${page}|${append ? 1 : 0}`
+    const convKey = `${filter.value}|${search.value.trim()}|${page}|${append ? 1 : 0}|${soloClienteInbound.value ? 1 : 0}|${includeContactsInList.value ? 1 : 0}|${assignedUserFilter.value ?? 0}`
     if (inflight.conversations && inflight.conversationsKey === convKey && !options.force) {
       await inflight.conversations
       return
@@ -741,12 +816,7 @@ export function useWaCopilotoInbox() {
 
     const fetchConversations = async () => {
       try {
-        const res = await WaCopilotoService.getConversations({
-          filter: filter.value,
-          search: search.value.trim() || undefined,
-          per_page: CONVERSATIONS_PER_PAGE,
-          page
-        })
+        const res = await WaCopilotoService.getConversations(conversationListParams(page, append))
         const rows = Array.isArray(res?.data) ? res.data : []
         if (append) {
           const seen = new Set(allConversations.value.map((c) => conversationRowKey(c)))
@@ -915,6 +985,9 @@ export function useWaCopilotoInbox() {
     const switched = prevId !== convId
 
     syncConversationsFromStore()
+    if (switched && messagesConversationId.value !== convId) {
+      loadingMessages.value = true
+    }
     selectedConversationId.value = convId
     setWaCopilotoViewingConversationId(convId)
     hydrateMessagesFromCache(convId)
@@ -954,10 +1027,10 @@ export function useWaCopilotoInbox() {
     selectConversationInFlight = true
     suppressAutoSelect.value = false
     try {
-      if (!options.skipRoute && !isRouteOnConversation(convId)) {
+      await applyConversationSelection(convId)
+      if (syncRoute && !options.skipRoute && !isRouteOnConversation(convId)) {
         await navigateToConversation(convId)
       }
-      await applyConversationSelection(convId)
     } finally {
       selectConversationInFlight = false
     }
@@ -1380,7 +1453,8 @@ export function useWaCopilotoInbox() {
   }
 
   function isInboxRoute(path: string) {
-    return path === WA_COPILOTO_BASE_PATH || path.startsWith(`${WA_COPILOTO_BASE_PATH}/`)
+    const base = copilotoQueue === 'default' ? WA_COPILOTO_BASE_PATH : routeBase
+    return path === base || path.startsWith(`${base}/`)
   }
 
   watch(selectedConversationId, (id) => {
@@ -1513,7 +1587,7 @@ export function useWaCopilotoInbox() {
     }, 'Actualizando…')
   }
 
-  if (import.meta.client) {
+  if (import.meta.client && syncRoute) {
     watch(
       () => getRouteConversationSlug(),
       async (slug, prev) => {
@@ -1572,6 +1646,7 @@ export function useWaCopilotoInbox() {
     selectedConversationId,
     selectedConversation,
     openMessagesForSelection,
+    isChatHydrating,
     pendingContactSelection,
     search,
     filter,
@@ -1606,6 +1681,8 @@ export function useWaCopilotoInbox() {
     renameConversation,
     savingRename,
     createManualContact,
-    loadTemplates
+    loadTemplates,
+    setAssignedUserFilter,
+    assignedUserFilter
   }
 }

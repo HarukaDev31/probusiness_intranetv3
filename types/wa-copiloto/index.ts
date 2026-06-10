@@ -20,6 +20,50 @@ export type WaCopilotoConversation = BaseConversation & {
   /** Puntaje IA del lead (0–100), cacheado en conversación. */
   temperatura?: number | null
   ai_temperatura_at?: string | null
+  customer_initiated_at?: string | null
+  pipeline_stage_id?: number | null
+  pipeline_stage_slug?: string | null
+  pipeline_stage_label?: string | null
+  pipeline_major?: string | null
+}
+
+export type WaCopilotoPipelineMajor = 'nuevo' | 'en_progreso' | 'cerrado' | 'postventa'
+
+export type WaCopilotoPipelineStage = {
+  id: number
+  major: WaCopilotoPipelineMajor
+  slug: string
+  label: string
+  sort_order: number
+  is_system: boolean
+}
+
+export type WaCopilotoKanbanCard = {
+  conversation_id: number
+  contact_name: string
+  phone_e164: string
+  assigned_user_id?: number | null
+  assigned_user_name?: string | null
+  unread_count: number
+  temperatura?: number | null
+  last_message_at?: string | null
+  last_message_preview?: string
+  pipeline_stage_id?: number | null
+}
+
+export type WaCopilotoKanbanColumn = {
+  stage: WaCopilotoPipelineStage
+  cards: WaCopilotoKanbanCard[]
+  count: number
+}
+
+export type WaCopilotoPipelineKpis = {
+  deals_cerrados: number
+  deals_meta: number
+  pipeline_activo: number
+  conversion_pct: number
+  alertas: number
+  leads_activos: number
 }
 
 export type WaCopilotoFilter = import('~/types/whatsapp-inbox').WaInboxFilter
