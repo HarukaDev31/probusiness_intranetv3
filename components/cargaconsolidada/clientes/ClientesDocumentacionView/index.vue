@@ -419,24 +419,26 @@
 
                 </UCard>
 
-                <!-- Sección de Cotizaciones -->
-                <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg h-40 shadow-md"
-                    v-if="currentRole === ROLES.COORDINACION">
+                <div v-if="isCoordinacion" class="space-y-4">
+                    <DocumentacionExpedienteObservacionesPanel
+                        :proveedor-id="proveedorActivo?.id"
+                    />
 
-                    <div class="space-y-4">
+                    <!-- Sección de Cotizaciones -->
+                    <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg h-40 shadow-md">
+                        <div class="space-y-4">
+                            <!-- Botón de descarga de cotización inicial -->
+                            <UButton label="Descargar cotización inicial" color="neutral" variant="outline"
+                                icon="i-heroicons-arrow-down-tray" class="w-full" @click="handleDownloadCotizacionInicial"
+                                :disabled="!cliente?.cotizacion_file_url" />
 
-
-                        <!-- Botón de descarga de cotización inicial -->
-                        <UButton label="Descargar cotización inicial" color="neutral" variant="outline"
-                            icon="i-heroicons-arrow-down-tray" class="w-full" @click="handleDownloadCotizacionInicial"
-                            :disabled="!cliente?.cotizacion_file_url" />
-
-                        <!-- Botón de descarga de cotización final -->
-                        <UButton label="Descargar cotización final" color="neutral" variant="outline"
-                            icon="i-heroicons-arrow-down-tray" class="w-full" @click="handleDownloadCotizacionFinal"
-                            :disabled="!cliente?.cotizacion_final_url" />
-                    </div>
-                </UCard>
+                            <!-- Botón de descarga de cotización final -->
+                            <UButton label="Descargar cotización final" color="neutral" variant="outline"
+                                icon="i-heroicons-arrow-down-tray" class="w-full" @click="handleDownloadCotizacionFinal"
+                                :disabled="!cliente?.cotizacion_final_url" />
+                        </div>
+                    </UCard>
+                </div>
             </div>
 
 
@@ -457,6 +459,7 @@ import type { id } from '@nuxt/ui/runtime/locale/index.js'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import { CUSTOMIZED_ICONS_URL } from '~/constants/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import DocumentacionExpedienteObservacionesPanel from '~/components/cargaconsolidada/clientes/DocumentacionExpedienteObservacionesPanel/index.vue'
 const { currentRole: authCurrentRole, currentId } = useUserRole()
 const props = withDefaults(defineProps<ClientesDocumentacionViewProps>(), {
     role: undefined,
