@@ -7,7 +7,8 @@ import { ROLES } from '~/constants/roles'
 import { WA_INBOX_WS_CHANNEL, WA_INBOX_WS_EVENTS } from '~/constants/whatsappInboxWs'
 import {
   dispatchWaInboxMessageCreated,
-  dispatchWaInboxMessageStatusUpdated
+  dispatchWaInboxMessageStatusUpdated,
+  dispatchWaInboxConversationRead
 } from '~/composables/whatsapp-inbox/waInboxRealtimeBridge'
 import { useModal } from '~/composables/commons/useModal'
 import { useUserRole } from '~/composables/auth/useUserRole'
@@ -57,6 +58,7 @@ export const registerCoordinacionEvents = () => {
 
   registerEventHandler(WA_INBOX_WS_EVENTS.MESSAGE_CREATED, dispatchWaInboxMessageCreated)
   registerEventHandler(WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED, dispatchWaInboxMessageStatusUpdated)
+  registerEventHandler(WA_INBOX_WS_EVENTS.CONVERSATION_READ, dispatchWaInboxConversationRead)
 
   registerEventHandler(WS_EVENTS.PLANTILLA_FINAL_BATCH_FINISHED, (data) => {
     const { showSuccess, showError } = useModal()
@@ -101,7 +103,8 @@ export const registerCoordinacionEvents = () => {
     WA_INBOX_WS_CHANNEL,
     [
       WA_INBOX_WS_EVENTS.MESSAGE_CREATED,
-      WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED
+      WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED,
+      WA_INBOX_WS_EVENTS.CONVERSATION_READ
     ],
     'private'
   )

@@ -9,7 +9,8 @@ export const registerAdministracionEvents = () => {
     WA_INBOX_WS_CHANNEL,
     [
       WA_INBOX_WS_EVENTS.MESSAGE_CREATED,
-      WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED
+      WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED,
+      WA_INBOX_WS_EVENTS.CONVERSATION_READ
     ],
     'private'
   )

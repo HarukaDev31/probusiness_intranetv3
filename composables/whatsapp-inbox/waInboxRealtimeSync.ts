@@ -1,4 +1,5 @@
 import type {
+  WaInboxWsConversationReadPayload,
   WaInboxWsMessageCreatedPayload,
   WaInboxWsMessageStatusPayload
 } from '~/types/whatsapp-inbox-ws'
@@ -24,14 +25,18 @@ function resolveUnreadCountForInbound(
 
   if (viewingConversationId === convId) return 0
 
-  const cache = useWaInboxCache()
-  const existing = cache.getConversationsSnapshot().find((c) => c.id === convId)
-  const localNext = (existing?.unread_count || 0) + 1
   const server = Number(serverUnread)
-  if (Number.isFinite(server) && server > 0) {
+  if (Number.isFinite(server)) {
+    if (server === 0) return 0
+    const cache = useWaInboxCache()
+    const existing = cache.getConversationsSnapshot().find((c) => c.id === convId)
+    const localNext = (existing?.unread_count || 0) + 1
     return Math.max(server, localNext)
   }
-  return localNext
+
+  const cache = useWaInboxCache()
+  const existing = cache.getConversationsSnapshot().find((c) => c.id === convId)
+  return (existing?.unread_count || 0) + 1
 }
 
 /** Chat abierto en la UI (null si el usuario no está en el inbox o no eligió conversación). */
@@ -234,6 +239,19 @@ export function applyStatusUpdatedToStore(payload: WaInboxWsMessageStatusPayload
     status: incomingStatus,
     viewing: viewingConversationId === convId
   })
+}
+
+export function applyConversationReadToStore(payload: WaInboxWsConversationReadPayload) {
+  const convId = Number(payload.conversation_id)
+  if (!convId) return
+
+  const cache = useWaInboxCache()
+  const patch: Partial<WaInboxConversation> = payload.conversation
+    ? { ...payload.conversation, unread_count: 0 }
+    : { unread_count: 0 }
+
+  cache.patchConversation(convId, patch)
+  waInboxLog('store.conversationRead', { convId, viewing: viewingConversationId === convId })
 }
 
 export function resolveWaInboxDeliveryStatus(payload: WaInboxWsMessageStatusPayload) {

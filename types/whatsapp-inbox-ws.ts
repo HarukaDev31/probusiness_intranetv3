@@ -12,3 +12,8 @@ export interface WaInboxWsMessageStatusPayload {
   delivery_status: string
   message?: WaInboxMessage | null
 }
+
+export interface WaInboxWsConversationReadPayload {
+  conversation_id: number
+  conversation?: WaInboxConversation | null
+}

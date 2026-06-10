@@ -3,7 +3,8 @@ import { useWaInboxCache } from '~/composables/whatsapp-inbox/waInboxCache'
 import { useWaInboxWebSocket } from '~/composables/whatsapp-inbox/useWaInboxWebSocket'
 import type {
   WaInboxWsMessageCreatedPayload,
-  WaInboxWsMessageStatusPayload
+  WaInboxWsMessageStatusPayload,
+  WaInboxWsConversationReadPayload
 } from '~/types/whatsapp-inbox-ws'
 import type {
   WaInboxConversation,
@@ -305,7 +306,7 @@ export function useWhatsappInbox() {
     upsertMessageInConversation(convId, msg as WaInboxMessage)
 
     if (selectedConversationId.value === convId && msg?.direction === 'in') {
-      markConversationRead(convId, { forceServer: true })
+      markConversationRead(convId)
     }
 
     waInboxLog('ui.messageCreated.done', {
@@ -353,6 +354,27 @@ export function useWhatsappInbox() {
           'No llegó a WhatsApp',
           merged.failed_reason || 'Meta rechazó la entrega. Revisa tamaño o formato del archivo.'
         )
+      }
+    }
+  }
+
+  function applyRealtimeConversationRead(payload: WaInboxWsConversationReadPayload) {
+    const convId = Number(payload.conversation_id)
+    if (!convId) return
+
+    syncConversationsFromStore()
+
+    const idx = allConversations.value.findIndex((c) => c.id === convId)
+    if (idx >= 0) {
+      allConversations.value[idx] = {
+        ...allConversations.value[idx],
+        unread_count: 0
+      }
+    }
+    if (selectedConversationMeta.value?.id === convId) {
+      selectedConversationMeta.value = {
+        ...selectedConversationMeta.value,
+        unread_count: 0
       }
     }
   }
@@ -459,21 +481,23 @@ export function useWhatsappInbox() {
         ? messages.value
         : []
     const mergedCached = mergeMessageLists(cachedEntry.messages ?? [], localList)
-    const hadUnread =
-      (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
     applyMessagesForConversation(conversationId, mergedCached)
     if (cachedEntry.conversationPatch) {
-      cache.patchConversation(conversationId, cachedEntry.conversationPatch)
+      const patch = { ...cachedEntry.conversationPatch }
+      if (selectedConversationId.value === conversationId) {
+        patch.unread_count = 0
+      }
+      cache.patchConversation(conversationId, patch)
       const idx = allConversations.value.findIndex((c) => c.id === conversationId)
       if (idx >= 0) {
         allConversations.value[idx] = {
           ...allConversations.value[idx],
-          ...cachedEntry.conversationPatch
+          ...patch
         }
       }
     }
     if (selectedConversationId.value === conversationId) {
-      markConversationRead(conversationId, { forceServer: hadUnread })
+      markConversationRead(conversationId)
     }
     return mergedCached
   }
@@ -654,26 +678,24 @@ export function useWhatsappInbox() {
   }
 
   /**
-   * Actualiza badge local y sincroniza servidor solo si hace falta.
-   * forceServer: mensaje entrante con chat abierto (servidor puede tener unread > 0).
+   * Bandeja compartida: al abrir el chat, limpia badge local y avisa al servidor (todos los agentes).
    */
-  function markConversationRead(
-    conversationId: number,
-    options: { forceServer?: boolean } = {}
-  ) {
+  function markConversationRead(conversationId: number) {
     const idx = allConversations.value.findIndex((x) => x.id === conversationId)
-    const hadUnread = idx >= 0 && (allConversations.value[idx].unread_count || 0) > 0
 
-    if (hadUnread && idx >= 0) {
+    if (idx >= 0) {
       allConversations.value[idx] = {
         ...allConversations.value[idx],
         unread_count: 0
       }
-      cache.patchConversation(conversationId, { unread_count: 0 })
     }
-
-    if (!options.forceServer && !hadUnread) return
-
+    if (selectedConversationMeta.value?.id === conversationId) {
+      selectedConversationMeta.value = {
+        ...selectedConversationMeta.value,
+        unread_count: 0
+      }
+    }
+    cache.patchConversation(conversationId, { unread_count: 0 })
     scheduleMarkReadApi(conversationId)
   }
 
@@ -850,19 +872,21 @@ export function useWhatsappInbox() {
             ? messages.value
             : []
         const merged = mergeMessageLists(rows, cachedList, localList)
-        const hadUnread =
-          (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
         cache.setMessages(conversationId, merged, convPatch, { fullHistory: true })
         applyMessagesForConversation(conversationId, merged)
         if (convPatch) {
-          cache.patchConversation(conversationId, convPatch)
+          const patch = { ...convPatch } as Partial<WaInboxConversation>
+          if (stillSelected()) {
+            patch.unread_count = 0
+          }
+          cache.patchConversation(conversationId, patch)
           const idx = allConversations.value.findIndex((c) => c.id === conversationId)
           if (idx >= 0) {
-            allConversations.value[idx] = { ...allConversations.value[idx], ...convPatch }
+            allConversations.value[idx] = { ...allConversations.value[idx], ...patch }
           }
         }
         if (stillSelected()) {
-          markConversationRead(conversationId, { forceServer: hadUnread })
+          markConversationRead(conversationId)
         }
       } catch (e: any) {
         if (!hasFullHistoryCache && stillSelected()) {
@@ -943,6 +967,7 @@ export function useWhatsappInbox() {
     rememberSelectedConversation(convId)
     selectedConversationId.value = convId
     setWaInboxViewingConversationId(convId)
+    markConversationRead(convId)
     pinSelectedConversationInList()
     hydrateMessagesFromCache(convId)
 
@@ -1286,7 +1311,8 @@ export function useWhatsappInbox() {
 
   const inboxRealtimeHandlers = {
     onMessageCreated: applyRealtimeMessage,
-    onMessageStatusUpdated: applyRealtimeStatus
+    onMessageStatusUpdated: applyRealtimeStatus,
+    onConversationRead: applyRealtimeConversationRead
   }
 
   function connectWebSocket() {

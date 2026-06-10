@@ -1,4 +1,5 @@
 import type {
+  WaInboxWsConversationReadPayload,
   WaInboxWsMessageCreatedPayload,
   WaInboxWsMessageStatusPayload
 } from '~/types/whatsapp-inbox-ws'
@@ -8,6 +9,7 @@ import {
   payloadMessageId
 } from '~/composables/whatsapp-inbox/waInboxWsParse'
 import {
+  applyConversationReadToStore,
   applyMessageCreatedToStore,
   applyStatusUpdatedToStore,
   getWaInboxViewingConversationId
@@ -19,6 +21,7 @@ import { waInboxLog, waInboxTrace, waInboxWarn } from '~/composables/whatsapp-in
 export type WaInboxRealtimeHandlers = {
   onMessageCreated?: (payload: WaInboxWsMessageCreatedPayload) => void
   onMessageStatusUpdated?: (payload: WaInboxWsMessageStatusPayload) => void
+  onConversationRead?: (payload: WaInboxWsConversationReadPayload) => void
 }
 
 /** @deprecated Usar registerWaInboxUiHandlers; se mantiene por compatibilidad con useWaInboxWebSocket */
@@ -41,7 +44,7 @@ function collectHandlerSets(): WaInboxRealtimeHandlers[] {
 }
 
 function notifyUiHandlers(
-  event: 'created' | 'status',
+  event: 'created' | 'status' | 'read',
   fn: (h: WaInboxRealtimeHandlers) => void,
   meta: Record<string, unknown>
 ) {
@@ -116,4 +119,21 @@ export function dispatchWaInboxMessageStatusUpdated(raw: unknown) {
     messageId,
     status: payload.delivery_status ?? payload.message?.delivery_status
   })
+}
+
+export function dispatchWaInboxConversationRead(raw: unknown) {
+  waInboxTrace('dispatch.conversationRead.raw')
+  const p = parseWaInboxWsPayload<WaInboxWsConversationReadPayload>(raw)
+  const convId = payloadConversationId(p)
+  if (!convId) {
+    waInboxWarn('dispatch.conversationRead.parseFail', { hasPayload: Boolean(p), convId })
+    return
+  }
+  const payload = {
+    ...p,
+    conversation_id: convId
+  } as WaInboxWsConversationReadPayload
+
+  applyConversationReadToStore(payload)
+  notifyUiHandlers('read', (h) => h.onConversationRead?.(payload), { convId })
 }
