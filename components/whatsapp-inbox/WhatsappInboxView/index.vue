@@ -273,12 +273,9 @@
                   class="group mb-2 flex flex-col"
                   :class="item.msg.direction === 'out' ? 'items-end' : 'items-start'"
                 >
-                  <div
-                    class="inline-flex min-w-0 max-w-[92%] items-end gap-0.5 sm:max-w-[85%]"
-                    :class="item.msg.direction === 'out' ? 'flex-row-reverse' : 'flex-row'"
-                  >
+                  <div class="relative inline-block min-w-0 max-w-[92%] sm:max-w-[85%]">
                     <WhatsappInboxMessageBody
-                      class="max-w-full shrink-0"
+                      class="max-w-full"
                       :msg="item.msg"
                       :direction="item.msg.direction"
                       :avatar-text="audioAvatarText(item.msg)"
@@ -288,7 +285,9 @@
                       :reply-preview="replyPreviewFor(item.msg)"
                       @media-rendered="onChatMediaRendered"
                     />
-                    <div class="inline-flex shrink-0 items-center self-end">
+                    <div
+                      class="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-end p-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                    >
                       <UDropdownMenu :items="messageMenuItems(item.msg)">
                         <UButton
                           type="button"
@@ -296,21 +295,15 @@
                           variant="ghost"
                           size="xs"
                           icon="i-heroicons-chevron-down"
-                          class="size-7 shrink-0 opacity-0 transition group-hover:opacity-100 focus:opacity-100"
+                          class="pointer-events-auto !size-6 min-w-6 rounded-md shadow-sm backdrop-blur-sm"
+                          :class="
+                            item.msg.direction === 'out'
+                              ? 'bg-black/30 text-white hover:bg-black/45'
+                              : 'bg-default/95 text-muted hover:bg-elevated'
+                          "
                           aria-label="Opciones del mensaje"
                         />
                       </UDropdownMenu>
-                      <UButton
-                        v-if="item.msg.meta_message_id && selectedConversation?.can_send_text"
-                        type="button"
-                        color="neutral"
-                        variant="ghost"
-                        size="xs"
-                        icon="i-heroicons-arrow-uturn-left"
-                        class="size-7 shrink-0 opacity-0 transition group-hover:opacity-100 focus:opacity-100"
-                        title="Responder"
-                        @click="iniciarRespuesta(item.msg)"
-                      />
                     </div>
                   </div>
                   <span
