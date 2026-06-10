@@ -100,6 +100,8 @@ export function useWhatsappInbox() {
   const assignableUsers = ref<WaInboxAssignableUser[]>([])
 
   const selectedConversationId = ref<number | null>(null)
+  /** Metadatos del chat abierto aunque no esté en la lista filtrada (búsqueda). */
+  const selectedConversationMeta = ref<WaInboxConversation | null>(null)
   /** En móvil, evita reabrir el primer chat al volver a la lista. */
   const suppressAutoSelect = ref(false)
   /** Conversación a la que corresponde `messages` (evita mostrar otro chat tras cargas en paralelo). */
@@ -130,11 +132,14 @@ export function useWhatsappInbox() {
     () => conversationsPagination.value.current_page < conversationsPagination.value.last_page
   )
 
-  const selectedConversation = computed(() =>
-    allConversations.value.find((c) => c.id === selectedConversationId.value)
-    ?? conversations.value.find((c) => c.id === selectedConversationId.value)
-    ?? null
-  )
+  function findConversationById(convId: number | null | undefined): WaInboxConversation | null {
+    if (!convId) return null
+    return allConversations.value.find((c) => c.id === convId)
+      ?? cache.getConversationsSnapshot().find((c) => c.id === convId)
+      ?? (selectedConversationMeta.value?.id === convId ? selectedConversationMeta.value : null)
+  }
+
+  const selectedConversation = computed(() => findConversationById(selectedConversationId.value))
 
   const unreadTotal = computed(() =>
     allConversations.value.reduce((sum, c) => sum + (c.unread_count || 0), 0)
@@ -177,11 +182,43 @@ export function useWhatsappInbox() {
     cache.setAllConversations(allConversations.value)
   }
 
+  function rememberSelectedConversation(convId: number) {
+    const conv =
+      allConversations.value.find((c) => c.id === convId)
+      ?? cache.getConversationsSnapshot().find((c) => c.id === convId)
+      ?? (selectedConversationMeta.value?.id === convId ? selectedConversationMeta.value : null)
+    if (conv) {
+      selectedConversationMeta.value = { ...conv }
+      cache.upsertConversation(conv)
+    }
+  }
+
+  function pinSelectedConversationInList() {
+    const convId = selectedConversationId.value
+    if (!convId || !search.value.trim()) return
+    if (allConversations.value.some((c) => c.id === convId)) return
+    const conv = findConversationById(convId)
+    if (conv) {
+      allConversations.value = sortConversationsList([conv, ...allConversations.value])
+    }
+  }
+
   function syncConversationsFromStore() {
     const snap = cache.getConversationsSnapshot()
-    if (snap.length > 0) {
-      allConversations.value = [...snap]
+    if (!snap.length) return
+
+    const query = search.value.trim()
+    if (query) {
+      const byId = new Map(snap.map((c) => [c.id, c]))
+      allConversations.value = allConversations.value.map((c) => {
+        const fresh = byId.get(c.id)
+        return fresh ? { ...c, ...fresh } : c
+      })
+      pinSelectedConversationInList()
+      return
     }
+
+    allConversations.value = [...snap]
   }
 
   function syncOpenMessagesFromStore(convId: number) {
@@ -399,6 +436,48 @@ export function useWhatsappInbox() {
     return waMessageNumericId(curLast?.id) === waMessageNumericId(candLast?.id)
   }
 
+  /** Caché completa y el último mensaje coincide con la lista (WS al día). */
+  function isMessageCacheSynced(conversationId: number): boolean {
+    const conv = allConversations.value.find((c) => c.id === conversationId)
+    const entry = cache.getMessagesEntry(conversationId)
+    if (!entry?.messages?.length || entry.fullHistory === false) return false
+
+    const lastId = conv?.last_message_id
+    if (!lastId) return true
+
+    const cachedLast = entry.messages[entry.messages.length - 1]
+    return waMessageNumericId(cachedLast?.id) === waMessageNumericId(lastId)
+  }
+
+  function applyCachedMessagesEntry(
+    conversationId: number,
+    cachedEntry: NonNullable<ReturnType<typeof cache.getMessagesEntry>>
+  ) {
+    const localList =
+      selectedConversationId.value === conversationId
+      && messagesConversationId.value === conversationId
+        ? messages.value
+        : []
+    const mergedCached = mergeMessageLists(cachedEntry.messages ?? [], localList)
+    const hadUnread =
+      (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
+    applyMessagesForConversation(conversationId, mergedCached)
+    if (cachedEntry.conversationPatch) {
+      cache.patchConversation(conversationId, cachedEntry.conversationPatch)
+      const idx = allConversations.value.findIndex((c) => c.id === conversationId)
+      if (idx >= 0) {
+        allConversations.value[idx] = {
+          ...allConversations.value[idx],
+          ...cachedEntry.conversationPatch
+        }
+      }
+    }
+    if (selectedConversationId.value === conversationId) {
+      markConversationRead(conversationId, { forceServer: hadUnread })
+    }
+    return mergedCached
+  }
+
   function applyMessagesForConversation(conversationId: number, list: WaInboxMessage[]) {
     if (selectedConversationId.value !== conversationId) return
     if (isMessagesHydrated(conversationId, list)) {
@@ -440,9 +519,19 @@ export function useWhatsappInbox() {
       return
     }
 
+    if (selectedConversationId.value != null) {
+      pinSelectedConversationInList()
+      return
+    }
+
+    if (search.value.trim()) {
+      return
+    }
+
     const list = conversations.value
     if (!list.length) {
       selectedConversationId.value = null
+      selectedConversationMeta.value = null
       messages.value = []
       messagesConversationId.value = null
       return
@@ -455,10 +544,12 @@ export function useWhatsappInbox() {
 
     if (shouldAutoPickFirstConversation()) {
       selectedConversationId.value = list[0].id
+      rememberSelectedConversation(list[0].id)
       return
     }
 
     selectedConversationId.value = null
+    selectedConversationMeta.value = null
     messages.value = []
     messagesConversationId.value = null
   }
@@ -466,6 +557,7 @@ export function useWhatsappInbox() {
   async function clearConversationSelection() {
     suppressAutoSelect.value = true
     selectedConversationId.value = null
+    selectedConversationMeta.value = null
     messages.value = []
     messagesConversationId.value = null
     setWaInboxViewingConversationId(null)
@@ -725,45 +817,33 @@ export function useWhatsappInbox() {
     }
 
     const run = async () => {
-      const cachedEntry = !options.force ? cache.getMessages(conversationId) : null
-      const hasFullHistoryCache =
-        Boolean(cachedEntry && cachedEntry.fullHistory !== false)
+      const entry = cache.getMessagesEntry(conversationId)
+      const hasFullHistoryCache = Boolean(
+        entry && entry.fullHistory !== false && entry.messages?.length
+      )
+      const freshCache = !options.force && Boolean(cache.getMessages(conversationId))
+      const syncedCache = hasFullHistoryCache && isMessageCacheSynced(conversationId)
 
-      if (hasFullHistoryCache && cachedEntry) {
-        const localList =
-          selectedConversationId.value === conversationId
-          && messagesConversationId.value === conversationId
-            ? messages.value
-            : []
-        const mergedCached = mergeMessageLists(cachedEntry.messages ?? [], localList)
-        const hadUnread =
-          (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
-        applyMessagesForConversation(conversationId, mergedCached)
-        if (cachedEntry.conversationPatch) {
-          cache.patchConversation(conversationId, cachedEntry.conversationPatch)
-          const idx = allConversations.value.findIndex((c) => c.id === conversationId)
-          if (idx >= 0) {
-            allConversations.value[idx] = {
-              ...allConversations.value[idx],
-              ...cachedEntry.conversationPatch
-            }
-          }
-        }
-        if (selectedConversationId.value === conversationId) {
-          markConversationRead(conversationId, { forceServer: hadUnread })
-        }
-        if (!options.force) return
+      if (hasFullHistoryCache && entry) {
+        applyCachedMessagesEntry(conversationId, entry)
+      }
+
+      // Estilo WhatsApp: historial en memoria + WS → no pedir todo de nuevo sin cambios.
+      if (!options.force && hasFullHistoryCache && (freshCache || syncedCache)) {
+        return
       }
 
       const stillSelected = () => selectedConversationId.value === conversationId
-      if (stillSelected()) {
+      const background = options.background ?? hasFullHistoryCache
+
+      if (!background && stillSelected()) {
         loadingMessages.value = true
       }
       try {
         const res = await WhatsappInboxService.getMessages(conversationId, { per_page: 200 })
         const rows = Array.isArray(res?.data) ? res.data : []
         const convPatch = res?.conversation as Partial<WaInboxConversation> | undefined
-        const cachedList = cache.getMessages(conversationId)?.messages ?? []
+        const cachedList = cache.getMessagesEntry(conversationId)?.messages ?? []
         const localList =
           selectedConversationId.value === conversationId
           && messagesConversationId.value === conversationId
@@ -791,7 +871,9 @@ export function useWhatsappInbox() {
           messagesConversationId.value = null
         }
       } finally {
-        loadingMessages.value = false
+        if (!background && stillSelected()) {
+          loadingMessages.value = false
+        }
         syncConversationsFromStore()
       }
     }
@@ -807,22 +889,31 @@ export function useWhatsappInbox() {
     convId: number,
     options: { forceMessages?: boolean } = {}
   ) {
-    const prevId = selectedConversationId.value
-    const switched = prevId !== convId
-
-    syncConversationsFromStore()
+    rememberSelectedConversation(convId)
     selectedConversationId.value = convId
     setWaInboxViewingConversationId(convId)
+    pinSelectedConversationInList()
     hydrateMessagesFromCache(convId)
+
+    const entry = cache.getMessagesEntry(convId)
+    const hasFullCache = Boolean(
+      entry && entry.fullHistory !== false && entry.messages?.length
+    )
+    const needsNetwork =
+      !hasFullCache
+      || (!options.forceMessages && !isMessageCacheSynced(convId))
 
     waInboxLog('loadMessages.start', {
       convId,
       messagesConv: messagesConversationId.value,
-      force: options.forceMessages
+      force: options.forceMessages,
+      hasFullCache,
+      needsNetwork
     })
 
     await loadMessages(convId, {
-      force: options.forceMessages ?? (switched || messagesConversationId.value !== convId)
+      force: options.forceMessages === true,
+      background: hasFullCache && !options.forceMessages
     })
 
     waInboxLog('loadMessages.done', {
@@ -1287,6 +1378,7 @@ export function useWhatsappInbox() {
           if (prev) {
             suppressAutoSelect.value = true
             selectedConversationId.value = null
+            selectedConversationMeta.value = null
             messages.value = []
             messagesConversationId.value = null
           }
@@ -1304,12 +1396,15 @@ export function useWhatsappInbox() {
         if (selectConversationInFlight) return
 
         if (selectedConversationId.value !== convId) {
-          await applyConversationSelection(convId, { forceMessages: true })
+          await applyConversationSelection(convId)
           return
         }
 
         if (messagesConversationId.value !== convId) {
-          await loadMessages(convId, { force: true })
+          hydrateMessagesFromCache(convId)
+          await loadMessages(convId, {
+            background: Boolean(cache.getMessagesEntry(convId)?.messages?.length)
+          })
         }
       },
       { flush: 'post' }
