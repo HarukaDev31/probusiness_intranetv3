@@ -57,6 +57,8 @@
           :main-tab="mainTab"
           :suggestion="suggestion"
           :suggestion-options="suggestionOptions"
+          :analysis-pending="isLatestInboundAnalysisPending"
+          :is-message-analysis-pending="isMessageAnalysisPending"
           @update:main-tab="setMainTab"
         />
         <div v-else class="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
@@ -74,9 +76,15 @@
         :lead="selectedLead"
         :ficha-tab="fichaTab"
         :suggestion-logs="suggestionLogs"
+        :loading-historial="loadingFicha"
+        :aduana-items="aduanaItems"
+        :aduana-search-terms="aduanaSearchTerms"
+        :aduana-search-query="aduanaSearchQuery"
+        :loading-aduana="loadingAduana"
         readonly
         compact
         @update:ficha-tab="setFichaTab"
+        @search-aduana="searchAduanaContext"
       />
     </div>
   </div>
@@ -120,7 +128,15 @@ const {
   queueSearch,
   suggestion,
   suggestionOptions,
+  isLatestInboundAnalysisPending,
+  isMessageAnalysisPending,
   suggestionLogs,
+  loadingFicha,
+  aduanaItems,
+  aduanaSearchTerms,
+  aduanaSearchQuery,
+  loadingAduana,
+  searchAduanaContext,
   selectLead,
   selectAdvisor,
   setMainTab,

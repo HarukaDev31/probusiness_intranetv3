@@ -10,10 +10,13 @@ export interface CopilotoChatMessage {
 }
 
 export interface CopilotoImportHistoryRow {
+  id?: number
   f: string
   r: string
   c: string
   p: string
+  estado_cotizador?: string | null
+  estado_cliente?: string | null
 }
 
 export interface CopilotoLead {

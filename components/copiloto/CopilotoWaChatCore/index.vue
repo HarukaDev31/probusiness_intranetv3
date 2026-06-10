@@ -44,6 +44,24 @@
                   @click="replyTarget = buildReplyTarget(msg)"
                 />
               </div>
+              <div
+                v-if="msg.direction === 'in'"
+                class="mt-1.5 w-full max-w-[min(100%,24rem)]"
+              >
+                <div
+                  v-if="messageAnalysisPending(msg)"
+                  class="flex items-center gap-2 rounded-lg border border-dashed border-primary-300/80 bg-primary-50/50 px-2.5 py-2 text-[11px] text-muted dark:border-primary-800 dark:bg-primary-950/20"
+                >
+                  <UIcon name="i-heroicons-sparkles" class="size-3.5 shrink-0 animate-pulse text-primary" />
+                  <span>Copiloto analizando este mensaje…</span>
+                </div>
+                <CopilotoMessageInsights
+                  v-else-if="(msg.insights ?? []).length"
+                  :insights="msg.insights ?? []"
+                  :selectable="!readonly"
+                  @select="(insight) => onSelectInsight(msg, insight)"
+                />
+              </div>
             </div>
             <span
               v-if="msg.message_type !== 'audio'"
@@ -101,10 +119,14 @@
 <script setup lang="ts">
 import { ref, toRef, computed } from 'vue'
 import type {
+  CopilotoSuggestionOption,
   WaCopilotoComposerSendPayload,
   WaCopilotoConversation,
-  WaCopilotoMessage
+  WaCopilotoMessage,
+  WaCopilotoMessageInsight
 } from '~/types/wa-copiloto'
+import { waMessageNumericId } from '~/composables/wa-copiloto-inbox/waCopilotoMessageUtils'
+import CopilotoMessageInsights from '~/components/copiloto/CopilotoMessageInsights/index.vue'
 import type { WaInboxComposerReplyTarget } from '~/types/whatsapp-inbox'
 import ChatPanelShell from '~/components/chat/ChatPanelShell.vue'
 import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
@@ -126,19 +148,38 @@ const props = withDefaults(
     sendingMessage?: boolean
     readonly?: boolean
     composerDraft?: string
+    isMessageAnalysisPending?: (messageId: number) => boolean
   }>(),
   {
     loadingMessages: false,
     sendingMessage: false,
     readonly: false,
-    composerDraft: ''
+    composerDraft: '',
+    isMessageAnalysisPending: () => false
   }
 )
 
 const emit = defineEmits<{
   send: [payload: WaCopilotoComposerSendPayload]
   'update:composerDraft': [value: string]
+  'apply-chip': [option: CopilotoSuggestionOption]
 }>()
+
+function messageAnalysisPending(msg: WaCopilotoMessage) {
+  const id = waMessageNumericId(msg.id)
+  return id > 0 && props.isMessageAnalysisPending(id)
+}
+
+function onSelectInsight(msg: WaCopilotoMessage, insight: WaCopilotoMessageInsight) {
+  if (insight.kind !== 'sugerencia') return
+  emit('apply-chip', {
+    id: `ins-${insight.id}`,
+    text: insight.body,
+    label: insight.label || 'Sugerencia IA',
+    insightId: insight.id,
+    messageId: msg.id
+  })
+}
 
 const replyTarget = ref<WaInboxComposerReplyTarget | null>(null)
 

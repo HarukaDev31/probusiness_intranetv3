@@ -30,6 +30,8 @@
         :main-tab="mainTab"
         :suggestion="suggestion"
         :suggestion-options="suggestionOptions"
+        :analysis-pending="isLatestInboundAnalysisPending"
+        :is-message-analysis-pending="isMessageAnalysisPending"
         :selected-suggestion-id="selectedSuggestionId"
         :composer-draft="composerDraft"
         @update:composer-draft="setComposerDraft"
@@ -47,7 +49,13 @@
         :lead="selectedLead"
         :ficha-tab="fichaTab"
         :suggestion-logs="suggestionLogs"
+        :loading-historial="loadingFicha"
+        :aduana-items="aduanaItems"
+        :aduana-search-terms="aduanaSearchTerms"
+        :aduana-search-query="aduanaSearchQuery"
+        :loading-aduana="loadingAduana"
         @update:ficha-tab="setFichaTab"
+        @search-aduana="searchAduanaContext"
       />
     </div>
 
@@ -95,9 +103,17 @@ const {
   savingRename,
   suggestion,
   suggestionOptions,
+  isLatestInboundAnalysisPending,
+  isMessageAnalysisPending,
   selectedSuggestionId,
   composerDraft,
   suggestionLogs,
+  loadingFicha,
+  aduanaItems,
+  aduanaSearchTerms,
+  aduanaSearchQuery,
+  loadingAduana,
+  searchAduanaContext,
   selectLead,
   setMainTab,
   setFichaTab,

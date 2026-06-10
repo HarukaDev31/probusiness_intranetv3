@@ -36,7 +36,14 @@ import {
   mergeWaCopilotoStatusIntoMessage,
   resolveWaCopilotoDeliveryStatus
 } from '~/composables/wa-copiloto-inbox/waCopilotoRealtimeSync'
-import { waCopilotoInsightsFichaByPhone } from '~/composables/wa-copiloto-inbox/waCopilotoInsightsStore'
+import {
+  clearWaCopilotoAnalysisPending,
+  isWaCopilotoAnalysisPending,
+  markWaCopilotoAnalysisPending,
+  syncWaCopilotoPendingAnalysisForMessages,
+  waCopilotoInsightsFichaByPhone,
+  waCopilotoPendingAnalysis
+} from '~/composables/wa-copiloto-inbox/waCopilotoInsightsStore'
 import { registerWaCopilotoUiHandlers, getWaCopilotoUiHandlers } from '~/composables/wa-copiloto-inbox/waCopilotoUiBridge'
 import { ensureWaCopilotoEchoChannel } from '~/composables/wa-copiloto-inbox/ensureWaCopilotoEchoChannel'
 import { bindWaCopilotoLiveHandlers, getWaCopilotoLiveHandlers } from '~/composables/wa-copiloto-inbox/waCopilotoLiveBridge'
@@ -351,6 +358,13 @@ export function useWaCopilotoInbox() {
 
     upsertMessageInConversation(convId, msg as WaCopilotoMessage)
 
+    if (msg?.direction === 'in') {
+      const inboundId = waMessageNumericId(msg.id)
+      if (inboundId) {
+        markWaCopilotoAnalysisPending(convId, inboundId)
+      }
+    }
+
     if (selectedConversationId.value === convId && msg?.direction === 'in') {
       markConversationRead(convId, { forceServer: true })
     }
@@ -491,6 +505,7 @@ export function useWaCopilotoInbox() {
     }
     messages.value = list
     messagesConversationId.value = conversationId
+    syncWaCopilotoPendingAnalysisForMessages(conversationId, list)
   }
 
   function hydrateMessagesFromCache(conversationId: number) {
@@ -1299,6 +1314,7 @@ export function useWaCopilotoInbox() {
 
     if (applied) {
       pendingInsightsByMessageId.delete(msgId)
+      clearWaCopilotoAnalysisPending(msgId)
     } else {
       pendingInsightsByMessageId.set(msgId, { convId, insights })
       WaCopilotoTrace('insights.pending', { convId, msgId })
@@ -1332,7 +1348,7 @@ export function useWaCopilotoInbox() {
     onMessageStatusUpdated: applyRealtimeStatus,
     onMessageInsightsReady: applyRealtimeInsights
   }
-
+co
   function connectWebSocket() {
     if (!import.meta.client) return
 
@@ -1571,6 +1587,8 @@ export function useWaCopilotoInbox() {
     savingNewContact,
     error,
     insightsFichaByPhone,
+    pendingAnalysisByMessageId: waCopilotoPendingAnalysis,
+    isMessageAnalysisPending: isWaCopilotoAnalysisPending,
     unreadTotal,
     init,
     refreshInbox,

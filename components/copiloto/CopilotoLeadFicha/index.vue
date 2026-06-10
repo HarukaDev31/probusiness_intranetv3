@@ -88,36 +88,102 @@
       </div>
 
       <div v-else-if="fichaTab === 'hist'" class="space-y-2">
-        <div class="grid grid-cols-2 gap-2">
-          <UCard variant="subtle" :ui="{ body: 'p-2 text-center' }">
-            <p class="font-bold">{{ lead.cbm }}</p>
-            <p class="text-[10px] text-muted">Prom. mensual</p>
-          </UCard>
-          <UCard variant="subtle" :ui="{ body: 'p-2 text-center' }">
-            <p class="font-bold">{{ lead.inv }}</p>
-            <p class="text-[10px] text-muted">Total invertido</p>
-          </UCard>
+        <div v-if="loadingHistorial" class="space-y-2 py-4 text-center text-muted">
+          <UIcon name="i-heroicons-arrow-path" class="mx-auto size-5 animate-spin" />
+          <p class="text-[11px]">Cargando cotizaciones del cliente…</p>
         </div>
-        <div v-for="row in lead.hist" :key="row.f" class="border-b border-default py-1.5 last:border-0">
-          <span class="font-medium">{{ row.f }}</span> · {{ row.r }} · {{ row.c }} · {{ row.p }}
-        </div>
-        <p v-if="!lead.hist.length" class="text-muted">Sin historial de importaciones.</p>
+        <template v-else>
+          <div class="grid grid-cols-2 gap-2">
+            <UCard variant="subtle" :ui="{ body: 'p-2 text-center' }">
+              <p class="font-bold tabular-nums">{{ lead.cbm }}</p>
+              <p class="text-[10px] text-muted">Prom. CBM</p>
+            </UCard>
+            <UCard variant="subtle" :ui="{ body: 'p-2 text-center' }">
+              <p class="font-bold tabular-nums">{{ lead.inv }}</p>
+              <p class="text-[10px] text-muted">Total cotizado</p>
+            </UCard>
+          </div>
+          <p v-if="lead.hist.length" class="text-[10px] font-semibold uppercase text-muted">
+            {{ lead.hist.length }} cotización{{ lead.hist.length === 1 ? '' : 'es' }}
+          </p>
+          <UCard
+            v-for="row in lead.hist"
+            :key="row.id ?? `${row.f}-${row.r}`"
+            variant="outline"
+            :ui="{ body: 'p-2 space-y-0.5' }"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <span class="font-semibold text-highlighted">{{ row.f }}</span>
+              <span class="shrink-0 font-medium tabular-nums text-primary">{{ row.p }}</span>
+            </div>
+            <p class="text-[11px] text-muted">{{ row.r }}</p>
+            <p class="text-[11px] text-highlighted">{{ row.c }}</p>
+          </UCard>
+          <p v-if="!lead.hist.length" class="text-muted">Sin cotizaciones registradas con este número.</p>
+        </template>
       </div>
 
-      <div v-else class="space-y-2">
-        <UCard variant="subtle" :ui="{ body: 'p-2 text-[11px] leading-relaxed' }">
-          <strong>Cap. 61 — Prendas de punto</strong><br>
-          Partida 6109.10: 12% arancel. Certificado de origen requerido en TLC Perú-China.
-        </UCard>
+      <div v-else-if="fichaTab === 'aduana'" class="space-y-2">
+        <p class="text-[10px] text-muted">
+          Productos, permisos y regulaciones de base de datos. El copiloto usa esto al analizar el chat.
+        </p>
+        <div class="flex gap-1.5">
+          <UInput
+            v-model="aduanaQuery"
+            size="xs"
+            placeholder="Buscar producto, rubro, partida…"
+            class="min-w-0 flex-1"
+            @keyup.enter="emit('search-aduana', aduanaQuery)"
+          />
+          <UButton
+            size="xs"
+            color="primary"
+            variant="soft"
+            icon="i-heroicons-magnifying-glass"
+            :loading="loadingAduana"
+            @click="emit('search-aduana', aduanaQuery)"
+          />
+        </div>
+        <p v-if="aduanaSearchTerms.length" class="text-[10px] text-muted">
+          Términos: {{ aduanaSearchTerms.join(', ') }}
+        </p>
+        <div v-if="loadingAduana" class="py-6 text-center text-muted">
+          <UIcon name="i-heroicons-arrow-path" class="mx-auto size-5 animate-spin" />
+          <p class="mt-2 text-[11px]">Consultando base de datos…</p>
+        </div>
+        <template v-else>
+          <UCard
+            v-for="item in aduanaItems"
+            :key="`${item.tipo}-${item.id}`"
+            variant="outline"
+            :ui="{ body: 'p-2 space-y-1' }"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <p class="font-semibold leading-snug text-highlighted">{{ item.titulo }}</p>
+              <UBadge size="xs" :color="aduanaTipoColor(item.tipo)" variant="subtle">
+                {{ aduanaTipoLabel(item.tipo) }}
+              </UBadge>
+            </div>
+            <p v-if="item.rubro" class="text-[10px] text-muted">Rubro: {{ item.rubro }}</p>
+            <p v-if="item.subpartida" class="text-[10px] text-muted">Partida: {{ item.subpartida }}</p>
+            <p v-if="item.entidad" class="text-[10px] text-muted">Entidad: {{ item.entidad }}</p>
+            <p v-if="item.detalle" class="text-[11px] text-highlighted">{{ item.detalle }}</p>
+            <p v-if="item.observaciones" class="text-[10px] leading-snug text-muted">{{ item.observaciones }}</p>
+          </UCard>
+          <p v-if="!aduanaItems.length" class="text-muted">
+            Sin coincidencias. Prueba con el nombre del producto o busca manualmente.
+          </p>
+        </template>
       </div>
     </div>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { WaCopilotoSuggestionUsage } from '~/types/wa-copiloto'
 import type { CopilotoLead } from '~/types/copiloto/lead'
+import type { CopilotoAduanaItem, CopilotoAduanaItemTipo } from '~/types/copiloto/aduana'
 import type { CopilotoFichaTab } from '~/composables/copiloto/useCopilotoDashboard'
 import { getCopilotoTempConfig } from '~/constants/copiloto/temperature'
 
@@ -126,32 +192,71 @@ const props = withDefaults(
     lead: CopilotoLead | null
     fichaTab: CopilotoFichaTab
     suggestionLogs?: WaCopilotoSuggestionUsage[]
+    loadingHistorial?: boolean
+    aduanaItems?: CopilotoAduanaItem[]
+    aduanaSearchTerms?: string[]
+    aduanaSearchQuery?: string
+    loadingAduana?: boolean
     readonly?: boolean
     compact?: boolean
   }>(),
   {
     readonly: false,
     compact: false,
-    suggestionLogs: () => []
+    suggestionLogs: () => [],
+    loadingHistorial: false,
+    aduanaItems: () => [],
+    aduanaSearchTerms: () => [],
+    aduanaSearchQuery: '',
+    loadingAduana: false
   }
 )
 
 const emit = defineEmits<{
   'update:fichaTab': [tab: CopilotoFichaTab]
+  'search-aduana': [query: string]
 }>()
+
+const aduanaQuery = ref(props.aduanaSearchQuery || '')
+
+watch(
+  () => props.aduanaSearchQuery,
+  (q) => {
+    aduanaQuery.value = q || ''
+  }
+)
 
 const tempCfg = getCopilotoTempConfig
 
-const fichaTabs = computed(() => {
-  const base = [
-    { value: 'sigs' as const, label: 'Señales' },
-    { value: 'hist' as const, label: 'Hist.' }
+const fichaTabs = computed((): { value: CopilotoFichaTab; label: string }[] => {
+  const base: { value: CopilotoFichaTab; label: string }[] = [
+    { value: 'sigs', label: 'Señales' },
+    { value: 'hist', label: 'Hist.' }
   ]
   if (!props.compact) {
-    base.push({ value: 'aduana' as const, label: 'Aduanas' })
+    base.push({ value: 'aduana', label: 'Aduanas' })
   }
   return base
 })
+
+function aduanaTipoLabel(tipo: CopilotoAduanaItemTipo) {
+  const map: Record<CopilotoAduanaItemTipo, string> = {
+    producto: 'Producto',
+    rubro: 'Rubro',
+    permiso: 'Permiso',
+    antidumping: 'Antidumping',
+    etiquetado: 'Etiquetado',
+    documento_especial: 'Doc. esp.'
+  }
+  return map[tipo] || tipo
+}
+
+function aduanaTipoColor(tipo: CopilotoAduanaItemTipo) {
+  if (tipo === 'permiso' || tipo === 'documento_especial') return 'warning'
+  if (tipo === 'antidumping') return 'error'
+  if (tipo === 'etiquetado') return 'info'
+  return 'neutral'
+}
 
 const incomingWithInsight = computed(() => {
   if (!props.lead) return []

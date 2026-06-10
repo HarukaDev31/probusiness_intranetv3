@@ -94,30 +94,67 @@
     />
 
     <div
-      v-if="mainTab === 'wa' && suggestionOptions.length && !conversation.pending_contact"
-      :key="suggestionBannerKey"
-      class="shrink-0 border-b px-3 py-2 text-xs"
+      v-if="mainTab === 'wa' && showSuggestionBar && !conversation.pending_contact"
+      class="shrink-0 border-b text-xs transition-shadow duration-500"
+      :class="suggestionHighlight ? 'ring-2 ring-inset ring-primary-400/70' : ''"
       :style="{ background: suggestionBanner.cfg.sBg, borderColor: suggestionBanner.cfg.sBrd }"
     >
-      <p class="flex items-center gap-1 font-semibold" :style="{ color: suggestionBanner.cfg.sLbl }">
-        <UIcon name="i-heroicons-sparkles" class="size-3.5" />
-        {{ suggestionBanner.label }}
-      </p>
-      <p class="mt-1 text-[10px] text-muted">Toca una opción para cargarla en el mensaje. Puedes editarla antes de enviar.</p>
-      <div v-if="!readonly" class="mt-2 flex flex-col gap-1.5">
-        <button
-          v-for="option in suggestionOptions"
-          :key="option.id"
-          type="button"
-          class="rounded-lg border px-2.5 py-2 text-left transition"
-          :class="selectedSuggestionId === option.id
-            ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-400 dark:bg-primary-950/40'
-            : 'border-default/80 bg-white/70 hover:border-primary-300 dark:bg-gray-900/40'"
-          @click="emit('apply-chip', option)"
+      <button
+        type="button"
+        class="flex w-full items-center gap-2 px-3 py-2 text-left"
+        @click="suggestionPanelOpen = !suggestionPanelOpen"
+      >
+        <UIcon name="i-heroicons-sparkles" class="size-3.5 shrink-0" :style="{ color: suggestionBanner.cfg.sLbl }" />
+        <span class="min-w-0 flex-1 font-semibold" :style="{ color: suggestionBanner.cfg.sLbl }">
+          {{ suggestionBanner.label }}
+        </span>
+        <span
+          v-if="analysisPending"
+          class="inline-flex items-center gap-1 rounded-full bg-white/60 px-2 py-0.5 text-[10px] font-medium text-primary dark:bg-gray-900/50"
         >
-          <span class="block text-[10px] font-semibold uppercase text-primary">{{ option.label || 'Sugerencia' }}</span>
-          <span class="mt-0.5 block leading-snug text-highlighted">{{ option.text }}</span>
-        </button>
+          <UIcon name="i-heroicons-arrow-path" class="size-3 animate-spin" />
+          Analizando
+        </span>
+        <UBadge
+          v-else-if="suggestionOptions.length"
+          size="xs"
+          variant="subtle"
+          color="primary"
+        >
+          {{ suggestionOptions.length }}
+        </UBadge>
+        <UIcon
+          :name="suggestionPanelOpen ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'"
+          class="size-4 shrink-0 text-muted"
+        />
+      </button>
+
+      <div v-show="suggestionPanelOpen" class="border-t border-default/40 px-3 pb-2 pt-1.5">
+        <p v-if="analysisPending && !suggestionOptions.length" class="flex items-center gap-2 py-2 text-[11px] text-muted">
+          <UIcon name="i-heroicons-sparkles" class="size-4 animate-pulse text-primary" />
+          Copiloto está analizando el último mensaje del cliente…
+        </p>
+        <template v-else-if="suggestionOptions.length">
+          <p class="text-[10px] text-muted">
+            Sugerencias para el último mensaje del cliente. Toca una para cargarla en el compositor.
+          </p>
+          <div v-if="!readonly" class="mt-2 flex flex-col gap-1.5">
+            <button
+              v-for="option in suggestionOptions"
+              :key="option.id"
+              type="button"
+              class="rounded-lg border px-2.5 py-2 text-left transition"
+              :class="selectedSuggestionId === option.id
+                ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-400 dark:bg-primary-950/40'
+                : 'border-default/80 bg-white/70 hover:border-primary-300 dark:bg-gray-900/40'"
+              @click="emit('apply-chip', option)"
+            >
+              <span class="block text-[10px] font-semibold uppercase text-primary">{{ option.label || 'Sugerencia' }}</span>
+              <span class="mt-0.5 block leading-snug text-highlighted">{{ option.text }}</span>
+            </button>
+          </div>
+          <p v-else class="mt-2 text-[11px] leading-snug text-muted">{{ suggestionOptions[0]?.text }}</p>
+        </template>
       </div>
     </div>
 
@@ -143,8 +180,10 @@
       :sending-message="sending"
       :readonly="readonly"
       :composer-draft="composerDraft"
+      :is-message-analysis-pending="isMessageAnalysisPending"
       @update:composer-draft="emit('update:composerDraft', $event)"
       @send="emit('send-wa', $event)"
+      @apply-chip="emit('apply-chip', $event)"
     />
 
     <div
@@ -191,7 +230,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { CopilotoLead } from '~/types/copiloto/lead'
 import type { CopilotoMainTab } from '~/composables/copiloto/useCopilotoDashboard'
 import type {
@@ -230,6 +269,8 @@ const props = withDefaults(
     selectedSuggestionId?: string | null
     suggestionOptions?: CopilotoSuggestionOption[]
     suggestion: { label: string; text: string; cfg: ReturnType<typeof getCopilotoTempConfig> } | null
+    analysisPending?: boolean
+    isMessageAnalysisPending?: (messageId: number) => boolean
   }>(),
   {
     readonly: false,
@@ -241,7 +282,9 @@ const props = withDefaults(
     savingRename: false,
     composerDraft: '',
     selectedSuggestionId: null,
-    suggestionOptions: () => []
+    suggestionOptions: () => [],
+    analysisPending: false,
+    isMessageAnalysisPending: () => false
   }
 )
 
@@ -265,8 +308,37 @@ const suggestionBanner = computed(() => {
   }
 })
 
+const suggestionPanelOpen = ref(true)
+const suggestionHighlight = ref(false)
+
+const showSuggestionBar = computed(
+  () => props.analysisPending || props.suggestionOptions.length > 0
+)
+
 const suggestionBannerKey = computed(() =>
-  props.suggestionOptions.map((o) => `${o.id}:${o.text}`).join('|')
+  [
+    props.analysisPending ? 'pending' : 'ready',
+    ...props.suggestionOptions.map((o) => `${o.id}:${o.text}`)
+  ].join('|')
+)
+
+let highlightTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(suggestionBannerKey, () => {
+  suggestionPanelOpen.value = true
+  suggestionHighlight.value = true
+  if (highlightTimer) clearTimeout(highlightTimer)
+  highlightTimer = setTimeout(() => {
+    suggestionHighlight.value = false
+    highlightTimer = null
+  }, 2200)
+})
+
+watch(
+  () => props.analysisPending,
+  (pending) => {
+    if (pending) suggestionPanelOpen.value = true
+  }
 )
 
 const { showError: showModalError } = useModal()

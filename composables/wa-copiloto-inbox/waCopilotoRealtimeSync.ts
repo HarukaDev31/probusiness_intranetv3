@@ -10,6 +10,7 @@ import {
   waMessageNumericId
 } from '~/composables/wa-copiloto-inbox/waCopilotoMessageUtils'
 import { WaCopilotoLog } from '~/composables/wa-copiloto-inbox/waCopilotoWsLog'
+import { markWaCopilotoAnalysisPending } from '~/composables/wa-copiloto-inbox/waCopilotoInsightsStore'
 import { conversationPatchFromWaInboxMessage } from '~/utils/whatsappInboxSidebarPreview'
 
 /**
@@ -205,6 +206,10 @@ export function applyMessageCreatedToStore(payload: WaCopilotoWsMessageCreatedPa
 
   if (!waMessageNumericId(msg?.id)) return
   upsertMessageInCache(convId, msg as WaCopilotoMessage)
+
+  if (msg?.direction === 'in') {
+    markWaCopilotoAnalysisPending(convId, waMessageNumericId(msg.id))
+  }
 }
 
 function patchConversationLastDeliveryInCache(

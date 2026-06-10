@@ -34,6 +34,16 @@ export class CopilotoService extends BaseService {
     })
   }
 
+  static async getAduanaContext(params: { q: string; limit?: number }) {
+    return await this.apiCall<any>(`${this.baseUrl}/aduana`, {
+      method: 'GET',
+      params: {
+        q: params.q,
+        limit: params.limit ?? 18
+      }
+    })
+  }
+
   static async responder(payload: { phone: string; message: string; conversation_id?: number | null }) {
     return await this.apiCall<any>(`${this.baseUrl}/responder`, {
       method: 'POST',

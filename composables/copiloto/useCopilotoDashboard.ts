@@ -13,6 +13,8 @@ import { COPILOTO_TEAM_MEMBERS } from '~/constants/copiloto/team'
 import { CopilotoService } from '~/services/copiloto/copilotoService'
 import { WaCopilotoService } from '~/services/wa-copiloto/waCopilotoService'
 import { useWaCopilotoInbox } from '~/composables/useWaCopilotoInbox'
+import { waMessageNumericId } from '~/composables/wa-copiloto-inbox/waCopilotoMessageUtils'
+import type { CopilotoAduanaItem } from '~/types/copiloto/aduana'
 
 export type CopilotoMainTab = 'wa' | 'calls'
 export type CopilotoFichaTab = 'sigs' | 'hist' | 'aduana'
@@ -120,9 +122,11 @@ function mapConversationToLead(conv: WaCopilotoConversation, ficha?: Record<stri
       : (previewMeta?.label || String(conv.last_message_preview ?? '').trim() || 'Sin mensajes'),
     prevTime: conv.last_message_time_label || formatMessageTime(conv.last_message_at),
     dot: pending ? '#3b82f6' : (direction === 'in' ? '#22c55e' : '#64748b'),
-    cbm: ficha?.cbm ? String(ficha.cbm) : '—',
-    inv: ficha?.inversion ? String(ficha.inversion) : '—',
-    hist: Array.isArray(ficha?.historial) ? ficha.historial as CopilotoLead['hist'] : [],
+    cbm: ficha?.cbm != null && String(ficha.cbm).trim() !== '' ? String(ficha.cbm) : '—',
+    inv: ficha?.inversion != null && String(ficha.inversion).trim() !== '' ? String(ficha.inversion) : '—',
+    hist: Array.isArray(ficha?.historial)
+      ? (ficha.historial as CopilotoLead['hist'])
+      : [],
     msgs: [],
     advisorId: conv.assigned_user_id ? String(conv.assigned_user_id) : undefined,
     advisorName: conv.assigned_user_name || undefined
@@ -142,42 +146,30 @@ function isDuplicateSuggestion(text: string, seen: Set<string>): boolean {
   return false
 }
 
-function collectSuggestionOptions(
-  messages: WaCopilotoMessage[],
-  lead: CopilotoLead | null,
-  ficha?: Record<string, unknown>
-): CopilotoSuggestionOption[] {
+function findLatestInboundMessage(messages: WaCopilotoMessage[]): WaCopilotoMessage | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].direction === 'in') return messages[i]
+  }
+  return null
+}
+
+function collectSuggestionOptionsForMessage(msg: WaCopilotoMessage | null): CopilotoSuggestionOption[] {
+  if (!msg) return []
+
   const seen = new Set<string>()
   const options: CopilotoSuggestionOption[] = []
 
-  const pushOption = (option: CopilotoSuggestionOption) => {
-    if (isDuplicateSuggestion(option.text, seen)) return
-    seen.add(normalizeSuggestionKey(option.text))
-    options.push(option)
-  }
-
-  const fichaSug = String(ficha?.sugerencia || ficha?.accion_sugerida || ficha?.sugerencia_corta || '').trim()
-  if (fichaSug) {
-    pushOption({ id: 'ficha-sug-latest', text: fichaSug, label: 'Respuesta sugerida' })
-  }
-
-  for (const msg of [...messages].reverse()) {
-    for (const insight of msg.insights ?? []) {
-      if (insight.kind !== 'sugerencia') continue
-      pushOption({
-        id: `ins-${insight.id}`,
-        text: insight.body,
-        label: insight.label || 'Sugerencia IA',
-        insightId: insight.id,
-        messageId: msg.id
-      })
-    }
-    if (options.length >= 6) break
-  }
-
-  const actionText = String(lead?.action || '').trim()
-  if (actionText && !isDuplicateSuggestion(actionText, seen)) {
-    pushOption({ id: 'ficha-action', text: actionText, label: 'Próximo paso' })
+  for (const insight of msg.insights ?? []) {
+    if (insight.kind !== 'sugerencia') continue
+    if (isDuplicateSuggestion(insight.body, seen)) continue
+    seen.add(normalizeSuggestionKey(insight.body))
+    options.push({
+      id: `ins-${insight.id}`,
+      text: insight.body,
+      label: insight.label || 'Sugerencia IA',
+      insightId: insight.id,
+      messageId: msg.id
+    })
   }
 
   return options.slice(0, 4)
@@ -199,6 +191,10 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
   const selectedSuggestionId = ref<string | null>(null)
   const suggestionLogs = ref<WaCopilotoSuggestionUsage[]>([])
   const expandedMessageIndex = ref<number | null>(null)
+  const aduanaItems = ref<CopilotoAduanaItem[]>([])
+  const aduanaSearchTerms = ref<string[]>([])
+  const aduanaSearchQuery = ref('')
+  const loadingAduana = ref(false)
 
   const allLeads = computed(() =>
     wa.conversations.value.map((conv) => mapConversationToLead(conv, fichaByPhone.value[conv.phone_e164]))
@@ -253,14 +249,19 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     }
   })
 
+  const latestInboundMessage = computed(() =>
+    findLatestInboundMessage(wa.openMessagesForSelection.value)
+  )
+
+  const isLatestInboundAnalysisPending = computed(() => {
+    const msg = latestInboundMessage.value
+    const msgId = msg ? waMessageNumericId(msg.id) : 0
+    return msgId > 0 ? wa.isMessageAnalysisPending(msgId) : false
+  })
+
   const suggestionOptions = computed(() => {
     if (!selectedLead.value || wa.selectedConversation.value?.pending_contact) return []
-    const phone = String(wa.selectedConversation.value?.phone_e164 ?? '')
-    return collectSuggestionOptions(
-      wa.openMessagesForSelection.value,
-      selectedLead.value,
-      phone ? fichaByPhone.value[phone] : undefined
-    )
+    return collectSuggestionOptionsForMessage(latestInboundMessage.value)
   })
 
   const suggestion = computed(() => {
@@ -268,9 +269,12 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     if (!lead) return null
     const cfg = getCopilotoTempConfig(lead.temp)
     const primary = suggestionOptions.value[0]
+    const pending = isLatestInboundAnalysisPending.value
     return {
-      label: lead.temp >= 70 ? 'Mensaje nuevo — actuar ahora' : 'Copiloto sugiere',
-      text: primary?.text || lead.action,
+      label: pending
+        ? 'Copiloto analizando…'
+        : (lead.temp >= 70 ? 'Mensaje nuevo — actuar ahora' : 'Copiloto sugiere'),
+      text: primary?.text || (pending ? '' : lead.action),
       cfg
     }
   })
@@ -363,6 +367,13 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
 
   function setFichaTab(tab: CopilotoFichaTab) {
     fichaTab.value = tab
+    if (tab === 'aduana') {
+      syncAduanaFromOpenChat()
+    }
+  }
+
+  function searchAduanaContext(query: string) {
+    void loadAduanaContext(query)
   }
 
   function setJefeView(view: CopilotoJefeView) {
@@ -430,6 +441,54 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     fichaByPhone.value = {
       ...fichaByPhone.value,
       [key]: { ...(fichaByPhone.value[key] ?? {}), ...snapshot }
+    }
+  }
+
+  function buildAduanaSearchFromMessages(messages: WaCopilotoMessage[]): string {
+    const chunks: string[] = []
+    for (let i = messages.length - 1; i >= 0 && chunks.length < 4; i--) {
+      const msg = messages[i]
+      if (msg.direction !== 'in') continue
+      const text = String(msg.body ?? '').trim()
+      if (text) chunks.push(text)
+    }
+    return chunks.reverse().join(' ')
+  }
+
+  async function loadAduanaContext(query?: string) {
+    const q = String(query ?? aduanaSearchQuery.value ?? '').trim()
+    if (!q) {
+      aduanaItems.value = []
+      aduanaSearchTerms.value = []
+      return
+    }
+
+    loadingAduana.value = true
+    try {
+      const response = await CopilotoService.getAduanaContext({ q, limit: 18 })
+      const data = response?.data
+      aduanaItems.value = Array.isArray(data?.items) ? data.items : []
+      aduanaSearchTerms.value = Array.isArray(data?.terms) ? data.terms : []
+      aduanaSearchQuery.value = q
+    } catch {
+      aduanaItems.value = []
+      aduanaSearchTerms.value = []
+    } finally {
+      loadingAduana.value = false
+    }
+  }
+
+  function syncAduanaFromOpenChat() {
+    const msgs = wa.openMessagesForSelection.value
+    const autoQuery = buildAduanaSearchFromMessages(msgs)
+    if (!autoQuery.trim()) {
+      aduanaItems.value = []
+      aduanaSearchTerms.value = []
+      aduanaSearchQuery.value = ''
+      return
+    }
+    if (autoQuery !== aduanaSearchQuery.value) {
+      void loadAduanaContext(autoQuery)
     }
   }
 
@@ -507,9 +566,21 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
       if (id === prevId) return
       activeSuggestion.value = null
       selectedSuggestionId.value = null
+      aduanaItems.value = []
+      aduanaSearchTerms.value = []
+      aduanaSearchQuery.value = ''
       syncLeadContextFromSelection()
     },
     { immediate: true }
+  )
+
+  watch(
+    () => [fichaTab.value, wa.openMessagesForSelection.value.length] as const,
+    ([tab]) => {
+      if (tab === 'aduana') {
+        syncAduanaFromOpenChat()
+      }
+    }
   )
 
   onMounted(async () => {
@@ -546,9 +617,18 @@ export function useCopilotoDashboard(options?: { readonly?: boolean; filterAdvis
     expandedMessageIndex,
     loading: wa.loadingConversations,
     loadingFicha,
+    loadFichaForPhone,
+    aduanaItems,
+    aduanaSearchTerms,
+    aduanaSearchQuery,
+    loadingAduana,
+    searchAduanaContext,
     error: wa.error,
     suggestion,
     suggestionOptions,
+    latestInboundMessage,
+    isLatestInboundAnalysisPending,
+    isMessageAnalysisPending: wa.isMessageAnalysisPending,
     selectLead,
     selectAdvisor,
     setMainTab,
