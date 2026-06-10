@@ -1348,7 +1348,7 @@ export function useWaCopilotoInbox() {
     onMessageStatusUpdated: applyRealtimeStatus,
     onMessageInsightsReady: applyRealtimeInsights
   }
-co
+
   function connectWebSocket() {
     if (!import.meta.client) return
 
