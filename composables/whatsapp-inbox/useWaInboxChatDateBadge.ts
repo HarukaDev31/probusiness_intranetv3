@@ -2,6 +2,7 @@ import { computed, nextTick, ref, watch, type Ref } from 'vue'
 import type ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 import { formatWaChatDayLabel, waChatDayKey } from '~/utils/whatsappInboxChatDate'
+import { isWaInboxReactionNoise } from '~/composables/whatsapp-inbox/waInboxMessageUtils'
 
 export type WaInboxChatTimelineItem =
   | { kind: 'divider'; dayKey: string; label: string }
@@ -22,6 +23,8 @@ export function useWaInboxChatDateBadge(
     let lastDayKey = ''
 
     for (const msg of messages.value) {
+      if (isWaInboxReactionNoise(msg)) continue
+
       const dayKey = waChatDayKey(msg.sent_at) || `unknown-${msg.id}`
       if (dayKey !== lastDayKey) {
         items.push({

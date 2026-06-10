@@ -1,5 +1,11 @@
 import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 
+export function isWaInboxReactionNoise(msg: WaInboxMessage): boolean {
+  if (msg.message_type === 'reaction') return true
+  const body = msg.body?.trim() || ''
+  return /^\[reaction\]$/i.test(body)
+}
+
 export const DELIVERY_STATUS_RANK: Record<string, number> = {
   pending: 0,
   sent: 1,

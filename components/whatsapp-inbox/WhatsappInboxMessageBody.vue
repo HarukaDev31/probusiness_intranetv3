@@ -233,7 +233,7 @@ const mediaPlaceholderLabel = computed(() => {
 
 const textoVisible = computed(() => {
   const t = props.msg.body?.trim() || ''
-  if (!t || isBracketMediaPlaceholder(t)) return false
+  if (!t || isBracketMediaPlaceholder(t) || /^\[reaction\]$/i.test(t)) return false
   if (isMediaTypeWithoutUrl.value) return false
   if (mediaUrl.value) {
     if (showAsImage.value && !captionEnBurbuja.value) return false

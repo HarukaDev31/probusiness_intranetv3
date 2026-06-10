@@ -270,8 +270,11 @@
                 />
                 <div
                   v-else
-                  class="group mb-2 flex flex-col"
-                  :class="item.msg.direction === 'out' ? 'items-end' : 'items-start'"
+                  class="group flex flex-col"
+                  :class="[
+                    item.msg.direction === 'out' ? 'items-end' : 'items-start',
+                    item.msg.reaction_inbound_emoji ? 'mb-3' : 'mb-2'
+                  ]"
                 >
                   <div class="relative inline-block min-w-0 max-w-[92%] sm:max-w-[85%]">
                     <WhatsappInboxMessageBody
@@ -285,6 +288,14 @@
                       :reply-preview="replyPreviewFor(item.msg)"
                       @media-rendered="onChatMediaRendered"
                     />
+                    <span
+                      v-if="item.msg.reaction_inbound_emoji"
+                      class="absolute -bottom-2 z-[5] flex min-h-6 min-w-6 items-center justify-center rounded-full bg-elevated px-1.5 text-base leading-none shadow-md ring-1 ring-default/50"
+                      :class="item.msg.direction === 'out' ? 'right-1' : 'left-1'"
+                      aria-label="Reacción"
+                    >
+                      {{ item.msg.reaction_inbound_emoji }}
+                    </span>
                     <div
                       class="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-end p-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                     >
