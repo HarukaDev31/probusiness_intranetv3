@@ -251,78 +251,100 @@
         </template>
 
         <div v-if="selectedConversation" class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <WhatsappInboxFloatingDayBadge
+            :label="floatingDayLabel"
+            :visible="showFloatingDayBadge && !loadingMessages"
+          />
           <ChatMessagesScroll
             ref="messagesScrollRef"
             class="min-h-0 flex-1 basis-0 p-4"
             :body-class="isDesktop ? '' : 'pb-40'"
-            @scroll="onMessagesScroll"
+            @scroll="onChatScroll"
           >
             <p v-if="loadingMessages" class="py-8 text-center text-sm text-muted">Cargando mensajes…</p>
             <template v-else>
-              <div
-                v-for="msg in messages"
-                :key="msg.id"
-                class="group mb-2 flex flex-col"
-                :class="msg.direction === 'out' ? 'items-end' : 'items-start'"
-              >
+              <template v-for="item in timelineItems" :key="item.kind === 'divider' ? `d-${item.dayKey}` : `m-${item.msg.id}`">
+                <WhatsappInboxDayDivider
+                  v-if="item.kind === 'divider'"
+                  :label="item.label"
+                />
                 <div
-                  class="flex min-w-0 max-w-[92%] items-end gap-1 sm:max-w-[85%]"
-                  :class="msg.direction === 'out' ? 'flex-row-reverse' : 'flex-row'"
+                  v-else
+                  class="group mb-2 flex flex-col"
+                  :class="item.msg.direction === 'out' ? 'items-end' : 'items-start'"
                 >
-                  <WhatsappInboxMessageBody
-                    class="max-w-full shrink-0"
-                    :msg="msg"
-                    :direction="msg.direction"
-                    :avatar-text="audioAvatarText(msg)"
-                    :time-label="formatMessageTime(msg)"
-                    :delivery-icon="msg.direction === 'out' ? deliveryIcon(msg.delivery_status) : undefined"
-                    :delivery-class="msg.direction === 'out' ? deliveryStatusClass(msg.delivery_status) : undefined"
-                    :reply-preview="replyPreviewFor(msg)"
-                    @media-rendered="onChatMediaRendered"
-                  />
-                  <UButton
-                    v-if="msg.meta_message_id && selectedConversation?.can_send_text"
-                    type="button"
-                    color="neutral"
-                    variant="ghost"
-                    size="xs"
-                    icon="i-heroicons-arrow-uturn-left"
-                    class="shrink-0 opacity-0 transition group-hover:opacity-100"
-                    title="Responder"
-                    @click="iniciarRespuesta(msg)"
-                  />
-                </div>
-                <span
-                  v-if="!isAudioMessage(msg)"
-                  class="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted"
-                >
-                  <span>{{ formatMessageTime(msg) }}</span>
-                  <UTooltip
-                    v-if="msg.direction === 'out'"
-                    :text="deliveryTooltip(msg)"
-                    :delay-duration="150"
+                  <div
+                    class="inline-flex min-w-0 max-w-[92%] items-end gap-0.5 sm:max-w-[85%]"
+                    :class="item.msg.direction === 'out' ? 'flex-row-reverse' : 'flex-row'"
                   >
-                    <span
-                      class="inline-flex size-6 cursor-default items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                      tabindex="0"
-                      :aria-label="deliveryTooltip(msg)"
-                    >
-                      <UIcon
-                        v-if="msg.delivery_status === 'pending'"
-                        name="i-heroicons-clock"
-                        class="size-4 shrink-0 text-warning"
+                    <WhatsappInboxMessageBody
+                      class="max-w-full shrink-0"
+                      :msg="item.msg"
+                      :direction="item.msg.direction"
+                      :avatar-text="audioAvatarText(item.msg)"
+                      :time-label="formatMessageTime(item.msg)"
+                      :delivery-icon="item.msg.direction === 'out' ? deliveryIcon(item.msg.delivery_status) : undefined"
+                      :delivery-class="item.msg.direction === 'out' ? deliveryStatusClass(item.msg.delivery_status) : undefined"
+                      :reply-preview="replyPreviewFor(item.msg)"
+                      @media-rendered="onChatMediaRendered"
+                    />
+                    <div class="inline-flex shrink-0 items-center self-end">
+                      <UDropdownMenu :items="messageMenuItems(item.msg)">
+                        <UButton
+                          type="button"
+                          color="neutral"
+                          variant="ghost"
+                          size="xs"
+                          icon="i-heroicons-chevron-down"
+                          class="size-7 shrink-0 opacity-0 transition group-hover:opacity-100 focus:opacity-100"
+                          aria-label="Opciones del mensaje"
+                        />
+                      </UDropdownMenu>
+                      <UButton
+                        v-if="item.msg.meta_message_id && selectedConversation?.can_send_text"
+                        type="button"
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        icon="i-heroicons-arrow-uturn-left"
+                        class="size-7 shrink-0 opacity-0 transition group-hover:opacity-100 focus:opacity-100"
+                        title="Responder"
+                        @click="iniciarRespuesta(item.msg)"
                       />
+                    </div>
+                  </div>
+                  <span
+                    v-if="!isAudioMessage(item.msg)"
+                    class="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted"
+                  >
+                    <span>{{ formatMessageTime(item.msg) }}</span>
+                    <UTooltip
+                      v-if="item.msg.direction === 'out'"
+                      :text="deliveryTooltip(item.msg)"
+                      :delay-duration="150"
+                    >
                       <span
-                        v-else
-                        class="select-none text-lg font-bold leading-none tracking-tighter"
-                        :class="deliveryStatusClass(msg.delivery_status)"
+                        class="inline-flex size-6 cursor-default items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        tabindex="0"
+                        :aria-label="deliveryTooltip(item.msg)"
                       >
-                        {{ deliveryIcon(msg.delivery_status) }}
+                        <UIcon
+                          v-if="item.msg.delivery_status === 'pending'"
+                          name="i-heroicons-clock"
+                          class="size-4 shrink-0 text-warning"
+                        />
+                        <span
+                          v-else
+                          class="select-none text-lg font-bold leading-none tracking-tighter"
+                          :class="deliveryStatusClass(item.msg.delivery_status)"
+                        >
+                          {{ deliveryIcon(item.msg.delivery_status) }}
+                        </span>
                       </span>
-                    </span>
-                  </UTooltip>
-                </span>
-              </div>
+                    </UTooltip>
+                  </span>
+                </div>
+              </template>
             </template>
           </ChatMessagesScroll>
           <WhatsappInboxJumpToBottomButton
@@ -390,6 +412,12 @@
       :saving="savingRename"
       @save="onRenameContactSave"
     />
+    <WhatsappInboxMessageInfoModal
+      v-model:open="messageInfoOpen"
+      :msg="messageInfoTarget"
+      :avatar-text="messageInfoTarget ? audioAvatarText(messageInfoTarget) : undefined"
+      :reply-preview="messageInfoTarget ? replyPreviewFor(messageInfoTarget) : null"
+    />
   </UCard>
 </template>
 
@@ -413,8 +441,12 @@ import WhatsappInboxSidebarPreview from '~/components/whatsapp-inbox/WhatsappInb
 import WhatsappInboxJumpToBottomButton from '~/components/whatsapp-inbox/WhatsappInboxJumpToBottomButton.vue'
 import WhatsappInboxComposer from '~/components/whatsapp-inbox/WhatsappInboxComposer.vue'
 import WhatsappInboxMessageBody from '~/components/whatsapp-inbox/WhatsappInboxMessageBody.vue'
+import WhatsappInboxDayDivider from '~/components/whatsapp-inbox/WhatsappInboxDayDivider.vue'
+import WhatsappInboxFloatingDayBadge from '~/components/whatsapp-inbox/WhatsappInboxFloatingDayBadge.vue'
+import WhatsappInboxMessageInfoModal from '~/components/whatsapp-inbox/WhatsappInboxMessageInfoModal.vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useWaInboxChatScroll } from '~/composables/whatsapp-inbox/useWaInboxChatScroll'
+import { useWaInboxChatDateBadge } from '~/composables/whatsapp-inbox/useWaInboxChatDateBadge'
 import { useWindowSize } from '~/composables/useWindowSize'
 import { formatDatePe } from '~/utils/formatters'
 
@@ -499,8 +531,22 @@ const {
   jumpToBottom
 } = useWaInboxChatScroll(messages, selectedConversationId, loadingMessages)
 
+const {
+  timelineItems,
+  floatingDayLabel,
+  showFloatingBadge: showFloatingDayBadge,
+  onMessagesScroll: onDateBadgeScroll,
+  updateFloatingDay
+} = useWaInboxChatDateBadge(messagesScrollRef, messages)
+
+function onChatScroll() {
+  onMessagesScroll()
+  onDateBadgeScroll()
+}
+
 function onChatMediaRendered() {
   void scrollToBottom(false)
+  nextTick(() => updateFloatingDay())
 }
 
 watch(showChatPanel, (visible) => {
@@ -512,6 +558,8 @@ watch(showChatPanel, (visible) => {
 const { showError: showModalError } = useModal()
 
 const replyTarget = ref<WaInboxComposerReplyTarget | null>(null)
+const messageInfoOpen = ref(false)
+const messageInfoTarget = ref<WaInboxMessage | null>(null)
 
 const templatePickerOpen = ref(false)
 const templateParamsOpen = ref(false)
@@ -610,6 +658,31 @@ function iniciarRespuesta(msg: WaInboxMessage) {
   }
 }
 
+function abrirInfoMensaje(msg: WaInboxMessage) {
+  messageInfoTarget.value = msg
+  messageInfoOpen.value = true
+}
+
+function messageMenuItems(msg: WaInboxMessage) {
+  const items = [
+    {
+      label: 'Info',
+      icon: 'i-heroicons-information-circle',
+      onSelect: () => abrirInfoMensaje(msg)
+    }
+  ]
+
+  if (msg.meta_message_id && selectedConversation.value?.can_send_text) {
+    items.push({
+      label: 'Responder',
+      icon: 'i-heroicons-arrow-uturn-left',
+      onSelect: () => iniciarRespuesta(msg)
+    })
+  }
+
+  return [items]
+}
+
 async function onComposerSend(payload: WaInboxComposerSendPayload) {
   try {
     await sendComposerMessage(payload)
@@ -621,6 +694,8 @@ async function onComposerSend(payload: WaInboxComposerSendPayload) {
 watch(selectedConversationId, () => {
   replyTarget.value = null
   renameContactOpen.value = false
+  messageInfoOpen.value = false
+  messageInfoTarget.value = null
 })
 
 const filterOptions: { value: WaInboxFilter; label: string }[] = [
