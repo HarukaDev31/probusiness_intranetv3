@@ -36,6 +36,7 @@ import {
   mergeWaCopilotoStatusIntoMessage,
   resolveWaCopilotoDeliveryStatus
 } from '~/composables/wa-copiloto-inbox/waCopilotoRealtimeSync'
+import { waCopilotoInsightsFichaByPhone } from '~/composables/wa-copiloto-inbox/waCopilotoInsightsStore'
 import { registerWaCopilotoUiHandlers, getWaCopilotoUiHandlers } from '~/composables/wa-copiloto-inbox/waCopilotoUiBridge'
 import { ensureWaCopilotoEchoChannel } from '~/composables/wa-copiloto-inbox/ensureWaCopilotoEchoChannel'
 import { bindWaCopilotoLiveHandlers, getWaCopilotoLiveHandlers } from '~/composables/wa-copiloto-inbox/waCopilotoLiveBridge'
@@ -130,7 +131,7 @@ export function useWaCopilotoInbox() {
   const savingNewContact = ref(false)
   const loadingMoreConversations = ref(false)
   const error = ref<string | null>(null)
-  const insightsFichaByPhone = ref<Record<string, Record<string, unknown>>>({})
+  const insightsFichaByPhone = waCopilotoInsightsFichaByPhone
 
   const conversationsPagination = ref({
     current_page: 1,
@@ -1307,7 +1308,10 @@ export function useWaCopilotoInbox() {
     if (phone && payload.ficha) {
       insightsFichaByPhone.value = {
         ...insightsFichaByPhone.value,
-        [phone]: { ...payload.ficha }
+        [phone]: {
+          ...(insightsFichaByPhone.value[phone] ?? {}),
+          ...payload.ficha
+        }
       }
     }
 

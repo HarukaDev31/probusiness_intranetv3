@@ -13,6 +13,7 @@ import {
   applyStatusUpdatedToStore,
   getWaCopilotoViewingConversationId
 } from '~/composables/wa-copiloto-inbox/waCopilotoRealtimeSync'
+import { applyInsightsReadyToStore } from '~/composables/wa-copiloto-inbox/waCopilotoInsightsStore'
 import { getWaCopilotoUiHandlers } from '~/composables/wa-copiloto-inbox/waCopilotoUiBridge'
 import { getWaCopilotoLiveHandlers } from '~/composables/wa-copiloto-inbox/waCopilotoLiveBridge'
 import { WaCopilotoLog, WaCopilotoTrace, waCopilotoWarn } from '~/composables/wa-copiloto-inbox/waCopilotoWsLog'
@@ -111,6 +112,7 @@ export function dispatchWaCopilotoMessageInsightsReady(raw: unknown) {
     message_id: messageId
   } as WaCopilotoWsMessageInsightsPayload
 
+  applyInsightsReadyToStore(payload)
   notifyUiHandlers('insights', (h) => h.onMessageInsightsReady?.(payload), {
     convId,
     messageId,
