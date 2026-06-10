@@ -1,5 +1,5 @@
 import { useUserRole } from '~/composables/auth/useUserRole'
-import { ROLES } from '~/constants/roles'
+import { WA_INBOX_ALLOWED_ROLES } from '~/constants/whatsappInboxAccess'
 
 export default defineNuxtRouteMiddleware(() => {
   if (process.server) return
@@ -9,12 +9,12 @@ export default defineNuxtRouteMiddleware(() => {
     return navigateTo('/login')
   }
 
-  const { hasRole, fetchCurrentUser, currentRole } = useUserRole()
+  const { hasAnyRole, fetchCurrentUser, currentRole } = useUserRole()
   if (!currentRole.value) {
     fetchCurrentUser()
   }
 
-  if (!hasRole(ROLES.COORDINACION)) {
+  if (!hasAnyRole(WA_INBOX_ALLOWED_ROLES)) {
     return navigateTo('/unauthorized')
   }
 })

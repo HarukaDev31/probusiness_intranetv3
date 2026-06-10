@@ -1,5 +1,6 @@
 import { useUserRole } from "~/composables/auth/useUserRole"
 import { ID_JEFEVENTAS, ROLES } from "~/constants/roles"
+import { WA_INBOX_ALLOWED_ROLES } from "~/constants/whatsappInboxAccess"
 
 // Cache para evitar verificaciones repetidas en la misma sesión
 let cachedRole: string | null = null
@@ -48,7 +49,7 @@ export default defineNuxtRouteMiddleware((to) => {
       const { hasRole: checkRole, isCotizador, currentId } = useUserRole()
       return isCotizador.value || Number(currentId.value) === ID_JEFEVENTAS || checkRole(ROLES.ADMIN)
     },
-    '/coordinacion/whatsapp-inbox': () => hasRole(ROLES.COORDINACION)
+    '/coordinacion/whatsapp-inbox': () => hasAnyRole(WA_INBOX_ALLOWED_ROLES)
   }
 
   // Verificar solo si la ruta está protegida

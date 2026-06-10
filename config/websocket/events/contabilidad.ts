@@ -4,6 +4,7 @@ import {
   WS_EVENTS
 } from '~/config/websocket/channels'
 import { ROLES } from '~/constants/roles'
+import { WA_INBOX_WS_CHANNEL, WA_INBOX_WS_EVENTS } from '~/constants/whatsappInboxWs'
 import { useModal } from '~/composables/commons/useModal'
 
 /**
@@ -36,6 +37,16 @@ export const registerContabilidadEvents = () => {
     ROLES.CONTABILIDAD,
     `${ROLES.CONTABILIDAD}-notifications`,
     [WS_EVENTS.USUARIO_DATOS_FACTURACION_IMPORT_FINISHED],
+    'private'
+  )
+
+  subscribeEventsToRole(
+    ROLES.CONTABILIDAD,
+    WA_INBOX_WS_CHANNEL,
+    [
+      WA_INBOX_WS_EVENTS.MESSAGE_CREATED,
+      WA_INBOX_WS_EVENTS.MESSAGE_STATUS_UPDATED
+    ],
     'private'
   )
 }
