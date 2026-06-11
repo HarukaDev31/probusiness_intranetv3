@@ -67,7 +67,8 @@
                 </template>
                 <!-- Mobile: compact date control next to back button -->
                 <template #back-extra>
-                    <div class="bg-white dark:bg-gray-800 flex items-center gap-2 p-2 rounded shadow-sm md:hidden">
+                    <div
+                        class="bg-white dark:bg-gray-800 flex items-center gap-2 p-2 rounded shadow-sm md:hidden">
                         <div class="text-xs font-semibold text-orange-600">F. Max. Doc</div>
                         <input type="date" v-model="fMaxDocumentacion"
                             class="text-sm text-gray-700 dark:text-gray-400 bg-transparent outline-none border border-gray-200 dark:border-gray-700 rounded px-2 py-1 w-28" />
@@ -186,7 +187,7 @@ function renderEstadoPermisoPorTipo(list: Array<{ id_tipo_permiso?: number; nomb
 
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
-const { currentRole: authCurrentRole, currentId, isCoordinacion } = useUserRole()
+const { currentRole: authCurrentRole, currentId, isCoordinacion, isCotizador } = useUserRole()
 
 const props = withDefaults(defineProps<ClientesViewProps>(), {
   backBasePath: undefined
@@ -197,7 +198,11 @@ const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const route = useRoute()
 const id = route.params.id
-const tab = ref<string>(isCoordinacion.value || currentRole.value === ROLES.JEFE_IMPORTACIONES || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
+const initialTabFromRoute = typeof route.query.tab === 'string' ? route.query.tab : ''
+const tab = ref<string>(
+    initialTabFromRoute
+        || (isCoordinacion.value || currentRole.value === ROLES.JEFE_IMPORTACIONES || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
+)
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 // F. Max. Documentacion (visible in the UI)
@@ -1682,66 +1687,36 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
         showError('Error', err?.message || 'No se pudo guardar el estado del proveedor')
     }
 }
-onMounted(() => {
+const configureTabsForRole = () => {
     if (currentRole.value === ROLES.DOCUMENTACION) {
+        tabs.value = [{ label: 'Documentacion', value: 'general' }]
+    } else if (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES || currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) {
         tabs.value = [
-            {
-                label: 'Documentacion',
-                value: 'general'
-            }
+            { label: 'Seguimiento', value: 'embarcados' },
+            { label: 'Documentacion', value: 'general' },
+            { label: 'VariaciÃ³n', value: 'variacion' },
         ]
-    }
-    else if (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
+    } else if (isCotizador.value && Number(currentId.value) === ID_JEFEVENTAS) {
         tabs.value = [
-            {
-                label: 'Seguimiento',
-                value: 'embarcados'
-            },
-            {
-                label: 'Documentacion',
-                value: 'general'
-            },
-            {
-                label: 'VariaciÃ³n',
-                value: 'variacion'
-            },
-
-        ]
-    } else if (currentRole.value === ROLES.COTIZADOR && currentId.value == ID_JEFEVENTAS) {
-        tabs.value = [
-            {
-                label: 'Seguimiento',
-                value: 'embarcados'
-            },
-            {
-                label: 'Documentacion',
-                value: 'general'
-            },
-            {
-                label: 'VariaciÃ³n',
-                value: 'variacion'
-            }
+            { label: 'Seguimiento', value: 'embarcados' },
+            { label: 'Documentacion', value: 'general' },
+            { label: 'VariaciÃ³n', value: 'variacion' },
         ]
     } else if (currentRole.value === ROLES.JEFE_MARKETING) {
+        tabs.value = [{ label: 'Documentacion', value: 'general' }]
+    } else {
         tabs.value = [
-            {
-                label: 'Documentacion',
-                value: 'general'
-            }
+            { label: 'Documentacion', value: 'general' },
+            { label: 'VariaciÃ³n', value: 'variacion' },
         ]
     }
-    else {
-        tabs.value = [
-            {
-                label: 'Documentacion',
-                value: 'general'
-            },
-            {
-                label: 'VariaciÃ³n',
-                value: 'variacion'
-            }
-        ]
-    }
+}
+
+watch([currentRole, currentId, isCotizador], () => {
+    configureTabsForRole()
+}, { immediate: true })
+
+onMounted(() => {
     handleTabChange(tab.value)
 })
 watch(() => tab.value, async (newVal) => {

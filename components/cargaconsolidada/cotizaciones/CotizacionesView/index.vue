@@ -16,18 +16,37 @@
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
                         :loading="loadingCotizaciones || loadingHeaders" />
-                    <div class="flex items-center gap-4">
-                        <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill" class="mb-1 w-80 h-15"
-                            v-if="tabs.length > 1" />
-                        <span v-if="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION) && fCierre"
-                            class="text-xs md:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            F. LÃ­mite pago: {{ formatDateTimeToDmy(fCierre) }}
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex flex-wrap items-center gap-3 min-w-0">
+                            <UTabs v-model="tab" color="neutral" :items="tabs" size="sm" variant="pill"
+                                class="mb-1 w-80 h-15 shrink-0" v-if="tabs.length > 1" />
+                            <span v-if="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION) && fCierre"
+                                class="text-xs md:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                F. LÃ­mite pago: {{ formatDateTimeToDmy(fCierre) }}
+                            </span>
+                        </div>
+                    </div>
+                    <div v-if="showVincularDriveButton"
+                        class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/40 px-3 py-2.5">
+                        <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 shrink-0">
+                            Excel seguimiento
                         </span>
+                        <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
+                            <SeguimientoDriveCorteConfig />
+                            <UButton v-if="driveSeguimientoStatus?.vinculado" icon="i-simple-icons-googledrive"
+                                label="Abrir en Drive" color="success" variant="outline" size="sm"
+                                @click="openDriveSeguimiento" />
+                            <UButton icon="i-simple-icons-googledrive"
+                                :label="isDriveLinkPending ? 'Vinculando…' : (driveSeguimientoStatus?.vinculado ? 'Nuevo Excel en Drive' : 'Vincular al Drive')"
+                                color="primary" variant="solid" size="sm"
+                                :loading="loadingDriveSeguimiento || isDriveLinkPending"
+                                :disabled="isDriveLinkPending"
+                                @click="handleVincularAlDrive" />
+                        </div>
                     </div>
                 </div>
             </template>
             <template #actions>
-
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" class="py-3 md:flex hidden"
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
@@ -149,7 +168,10 @@ import PagoGrid from '~/components/PagoGrid.vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones/index.vue'
 import DeleteCotizacionReasonModal from '~/components/cargaconsolidada/cotizaciones/DeleteCotizacionReasonModal/index.vue'
+import SeguimientoDriveCorteConfig from '~/components/cargaconsolidada/cotizaciones/SeguimientoDriveCorteConfig/index.vue'
 import type { DeleteCotizacionReasonModalHandlers } from '~/components/cargaconsolidada/cotizaciones/DeleteCotizacionReasonModal/types'
+import { useSeguimientoDrive } from '~/composables/cargaconsolidada/seguimiento-drive'
+import type { CotizacionesHeadersResponse } from '~/types/cargaconsolidada/cotizaciones'
 
 const UInput = ((props: any) => {
     const isDisabled = Boolean(props?.disabled)
@@ -343,7 +365,35 @@ const mountedTabs = ref({
     pagos: false
 })
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
-const { currentRole: authCurrentRole, currentId } = useUserRole()
+const { currentRole: authCurrentRole, currentId, isCotizador } = useUserRole()
+const {
+    driveSeguimientoStatus,
+    loadingDriveSeguimiento,
+    isDriveLinkPending,
+    syncDriveFromHeaders,
+    teardownDriveSeguimiento,
+    vincularAlDrive,
+} = useSeguimientoDrive()
+const isCotizadorNoJefe = computed(() =>
+    isCotizador.value && Number(currentId.value) !== ID_JEFEVENTAS
+)
+const showVincularDriveButton = computed(() =>
+    isCotizadorNoJefe.value && tab.value === 'prospectos'
+)
+const handleVincularAlDrive = async () => {
+    await vincularAlDrive(Number(id))
+}
+const openDriveSeguimiento = () => {
+    if (driveSeguimientoStatus.value?.drive_link) {
+        window.open(driveSeguimientoStatus.value.drive_link, '_blank')
+    }
+}
+const syncDriveSeguimientoFromHeaders = (
+    headersResponse: CotizacionesHeadersResponse | null | undefined
+) => {
+    if (!showVincularDriveButton.value || !headersResponse?.excel_seguimiento_drive) return
+    syncDriveFromHeaders(Number(id), headersResponse.excel_seguimiento_drive)
+}
 
 const props = withDefaults(defineProps<CotizacionesViewProps>(), {
     backBasePath: undefined
@@ -3013,11 +3063,13 @@ watch(() => tab.value, async (newVal) => {
                 syncTabRoute('prospectos')
                 // reset search to avoid sending stale query param to backend
                 try { searchCotizaciones.value = '' } catch (e) { /* ignore */ }
-                await Promise.all([
-                    getCotizaciones(Number(id)),
-                    getHeaders(Number(id))
-                ])
-            } else if (newVal === 'embarque') {
+                const headersRes = await getHeaders(Number(id))
+                await getCotizaciones(Number(id))
+                syncDriveSeguimientoFromHeaders(headersRes)
+            } else {
+                teardownDriveSeguimiento()
+            }
+            if (newVal === 'embarque') {
                 syncTabRoute('embarque')
                 try { search.value = '' } catch (e) { /* ignore */ }
                 await Promise.all([
@@ -3116,6 +3168,13 @@ onMounted(() => {
     if (tab.value === 'prospectos' || tab.value === 'embarque' || tab.value === 'pagos') {
         mountedTabs.value[tab.value] = true
     }
+    if (tab.value === 'prospectos') {
+        getHeaders(Number(id)).then((res) => syncDriveSeguimientoFromHeaders(res))
+    }
+})
+
+onUnmounted(() => {
+    teardownDriveSeguimiento()
 })
 </script>
 <style scoped>

@@ -1,4 +1,8 @@
 import type { PaginationInfo } from "../data-table"
+import type { HeaderResponse } from '../data-table'
+import type { SeguimientoDriveHeadersPayload } from './seguimiento-drive'
+
+export type CotizacionesHeadersResponse = HeaderResponse & SeguimientoDriveHeadersPayload
 
 export interface Cotizacion {
     id: number

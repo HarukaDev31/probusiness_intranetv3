@@ -113,7 +113,7 @@ const columns: TableColumn<any>[] = [
   {
     accessorKey: 'reimbursement_date',
     header: 'Fecha Reintegro',
-    cell: ({ row }: { row: any }) => formatDateTimeToDmy(row.original.reimbursement_date)
+    cell: ({ row }: { row: any }) => formatSoporteTiRegistro(row.original.created_at)
   },
   {
     accessorKey: 'requesting_area',

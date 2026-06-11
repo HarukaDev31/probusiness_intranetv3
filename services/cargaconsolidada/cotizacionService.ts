@@ -1,4 +1,5 @@
 import type { HeaderResponse } from "~/types/data-table"
+import type { CotizacionesHeadersResponse } from '~/types/cargaconsolidada/cotizaciones'
 import { BaseService } from "../base/BaseService"
 import type { CotizacionFilters , Cotizacion, CotizacionResponse } from "~/types/cargaconsolidada/cotizaciones"
 export class CotizacionService extends BaseService {
@@ -136,9 +137,9 @@ export class CotizacionService extends BaseService {
             throw new Error(error)
         }
     }
-    static async getHeaders(id: number): Promise<HeaderResponse> {
+    static async getHeaders(id: number): Promise<CotizacionesHeadersResponse> {
         try {
-            const response = await this.apiCall<HeaderResponse>(`${this.baseUrl}/cotizaciones/${id}/headers`, {
+            const response = await this.apiCall<CotizacionesHeadersResponse>(`${this.baseUrl}/cotizaciones/${id}/headers`, {
                 method: 'GET'
             })
             return response

@@ -100,5 +100,27 @@ Cuando una feature necesita datos del backend o acciones (GET/POST/PUT/DELETE):
 - **Nueva página que consume un endpoint**:
   - Crear/usar `useXxxStore` o `useXxx` en `composables/`.
   - Poner ahí las llamadas a `XxxService`.
-  - En la page solo usar el composable (`const { loadXxx, items } = useXxxStore()`).
+   - En la page solo usar el composable (`const { loadXxx, items } = useXxxStore()`).
+
+## Composables modulares (convención del proyecto)
+
+Cuando un composable crece (WebSocket, helpers, constantes, varios archivos), **no** dejar un solo `useXxx.ts` monolítico en `composables/`. Usar carpeta kebab-case:
+
+```
+composables/<dominio>/<feature-kebab>/
+  index.ts                  # re-export público (composable + tipos)
+  use<Feature>.ts           # composable principal (estado + orquestación)
+  constants.ts              # nombres de canal WS, eventos, labels
+  statusHelpers.ts          # funciones puras (merge, isProcessing, etc.)
+  wsPayload.ts              # parse/normalize de payloads WS
+  use<Feature>Echo.ts        # suscripción Echo/Pusher aislada (si aplica)
+
+types/<dominio>/<feature-kebab>.ts   # tipos compartidos (status, payloads, responses)
+```
+
+**Reglas:**
+- Pages/components importan desde `~/composables/.../<feature>` (el `index.ts`), no desde archivos internos.
+- Tipos de dominio van en `types/`, no inline en el composable.
+- Services tipan respuestas con los mismos types de `types/<dominio>/`.
+- Referencia: `composables/cargaconsolidada/seguimiento-drive/`.
 
