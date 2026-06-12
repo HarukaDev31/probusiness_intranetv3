@@ -410,7 +410,9 @@ import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { formatDateTimeToDmy, formatCurrency } from '~/utils/formatters'
 import { ROLES } from '~/constants/roles'
-import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const CreatePagoModal = createLazyView(() => import('~/components/commons/CreatePagoModal.vue'))
 import { USelect } from '#components'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import type { UpdateViaticoRequest, ViaticoPago, ViaticoRetribucion } from '~/types/viatico'

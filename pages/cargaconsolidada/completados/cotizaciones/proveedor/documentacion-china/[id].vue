@@ -3,5 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import CotizacionesProveedorDocumentacionChinaView from '~/components/cargaconsolidada/cotizaciones/CotizacionesProveedorDocumentacionChinaView/index.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const CotizacionesProveedorDocumentacionChinaView = createLazyView(() => import('~/components/cargaconsolidada/cotizaciones/CotizacionesProveedorDocumentacionChinaView/index.vue'))
 </script>

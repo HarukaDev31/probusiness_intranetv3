@@ -18,7 +18,7 @@ export default defineNuxtConfig({
     defaults: {
       nuxtLink: {
         prefetch: true,
-        prefetchOn: { visibility: false, interaction: true },
+        prefetchOn: { visibility: true, interaction: true },
       },
     },
   },

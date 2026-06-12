@@ -72,7 +72,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import PageHeader from '~/components/PageHeader.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const PageHeader = createLazyView(() => import('~/components/PageHeader.vue'))
 import FileUploader from '~/components/commons/FileUploader.vue'
 import { CalculadoraImportacionService } from '~/services/calculadora-importacion/calculadoraImportacionService'
 import { useModal } from '~/composables/commons/useModal'

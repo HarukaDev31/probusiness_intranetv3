@@ -72,8 +72,8 @@
 import { ref, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import { isContentNarrow, setContentNarrow } from '~/composables/usePageLayout'
 import { useAuth } from '../composables/auth/useAuth'
+import { useMenuPrefetch } from '../composables/navigation/useMenuPrefetch'
 import { useWebSocketNotifications } from '../composables/useWebSocketNotifications'
-import { useWebSocketRole } from '../composables/websocket/useWebSocketRole'
 // Lazy load componentes pesados para mejorar tiempo de carga inicial
 const SidebarMenu = defineAsyncComponent(() => import('../components/SidebarMenu.vue'))
 const Breadcrumbs = defineAsyncComponent(() => import('../components/Breadcrumbs.vue'))
@@ -209,11 +209,9 @@ const pageTitle = computed(() => {
 })
 
 const { user, logout, initializeAuth, menu } = useAuth()
+const { schedulePrefetchFromStorage } = useMenuPrefetch()
 
-// Inicializar sistema de WebSocket
-useWebSocketRole()
-
-// Inicializar notificaciones de WebSocket
+// Notificaciones modales vía evento window (ligero; no abre sockets extra)
 useWebSocketNotifications()
 
 // Convertir menús del login al formato del sidebar
@@ -387,10 +385,8 @@ const toggleSidebar = () => {
 }
 
 onMounted(async () => {
-  
   await initializeAuth()
-  
-  
+  schedulePrefetchFromStorage()
 })
 
 onMounted(() => {

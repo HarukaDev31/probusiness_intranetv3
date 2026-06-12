@@ -252,7 +252,9 @@ import { ROLES } from '~/constants/roles'
 import { getEstadoColor, formatPhoneNumber, formatDocument } from '~/utils/consolidado'
 import { formatCurrency } from '~/utils/formatters'
 import { UButton, USelect, UBadge } from '#components'
-import DynamicModal from '~/components/DynamicModal.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const DynamicModal = createLazyView(() => import('~/components/DynamicModal.vue'))
 import type { ModalData } from '~/composables/commons/useModal'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { STATUS_BG_CLASSES } from '~/constants/ui'

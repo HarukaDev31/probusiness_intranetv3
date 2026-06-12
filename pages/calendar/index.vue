@@ -388,7 +388,9 @@ import { useOverlay } from '#imports'
 const EventModal = defineAsyncComponent(() => import('~/components/calendar/EventModal.vue'))
 const QuickCreateModal = defineAsyncComponent(() => import('~/components/calendar/QuickCreateModal.vue'))
 // Skeleton se mantiene síncrono para mostrar estado de carga de inmediato
-import CalendarSkeleton from '~/components/calendar/CalendarSkeleton.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const CalendarSkeleton = createLazyView(() => import('~/components/calendar/CalendarSkeleton.vue'))
 const CalendarFilters = defineAsyncComponent(() => import('~/components/calendar/CalendarFilters.vue'))
 const ActivityTable = defineAsyncComponent(() => import('~/components/calendar/ActivityTable.vue'))
 const ActivityModal = defineAsyncComponent(() => import('~/components/calendar/ActivityModal.vue'))

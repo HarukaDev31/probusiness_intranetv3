@@ -51,7 +51,9 @@ import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { UButton, UBadge } from '#components'
 import { formatDateTimeToDmy, formatCurrency } from '~/utils/formatters'
-import CreateViaticoModal from '~/components/viaticos/CreateViaticoModal.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const CreateViaticoModal = createLazyView(() => import('~/components/viaticos/CreateViaticoModal.vue'))
 import EvidenciasModal from '~/components/viaticos/EvidenciasModal.vue'
 import RetribucionesModal from '~/components/viaticos/RetribucionesModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'

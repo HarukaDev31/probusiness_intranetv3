@@ -227,8 +227,9 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useOverlay } from '#imports'
 import type { CalendarEvent, CreateCalendarEventRequest } from '~/types/calendar'
 import { MONTHS_SHORT, countWeekdaysBetween } from '~/constants/calendar'
-import ActivityModal from '~/components/calendar/ActivityModal.vue'
+import { createLazyView } from '~/utils/lazyView'
 
+const ActivityModal = createLazyView(() => import('~/components/calendar/ActivityModal.vue'))
 const {
   visibleActivities,
   eventsPagination,

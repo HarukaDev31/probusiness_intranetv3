@@ -6,5 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import PlantillasFinalesView from '~/components/cargaconsolidada/cotizacion-final/PlantillasFinalesView/index.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const PlantillasFinalesView = createLazyView(() => import('~/components/cargaconsolidada/cotizacion-final/PlantillasFinalesView/index.vue'))
 </script>

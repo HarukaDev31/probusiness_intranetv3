@@ -16,8 +16,9 @@
 
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
-import PageHeader from '~/components/PageHeader.vue'
+import { createLazyView } from '~/utils/lazyView'
 
+const PageHeader = createLazyView(() => import('~/components/PageHeader.vue'))
 const HorariosAdmin = defineAsyncComponent(
   () => import('~/components/admin/HorariosAdmin.vue')
 )

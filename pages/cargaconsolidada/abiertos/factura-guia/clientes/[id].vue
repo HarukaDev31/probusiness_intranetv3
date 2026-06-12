@@ -3,5 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import FacturaGuiaClientesView from '~/components/cargaconsolidada/factura-guia/FacturaGuiaClientesView/index.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const FacturaGuiaClientesView = createLazyView(() => import('~/components/cargaconsolidada/factura-guia/FacturaGuiaClientesView/index.vue'))
 </script>

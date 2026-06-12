@@ -7,6 +7,8 @@
 </template>
 
 <script setup lang="ts">
-import CotizacionFinalView from '~/components/cargaconsolidada/cotizacion-final/CotizacionFinalView/index.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const CotizacionFinalView = createLazyView(() => import('~/components/cargaconsolidada/cotizacion-final/CotizacionFinalView/index.vue'))
 import { ROLES } from '~/constants/roles'
 </script>

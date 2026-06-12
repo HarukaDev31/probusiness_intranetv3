@@ -26,22 +26,15 @@
                             </span>
                         </div>
                     </div>
-                    <div v-if="showVincularDriveButton"
+                    <div v-if="showDriveSeguimientoLink"
                         class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/40 px-3 py-2.5">
                         <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 shrink-0">
                             Excel seguimiento
                         </span>
                         <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
-                            <SeguimientoDriveCorteConfig />
-                            <UButton v-if="driveSeguimientoStatus?.vinculado" icon="i-simple-icons-googledrive"
+                            <UButton icon="i-simple-icons-googledrive"
                                 label="Abrir en Drive" color="success" variant="outline" size="sm"
                                 @click="openDriveSeguimiento" />
-                            <UButton icon="i-simple-icons-googledrive"
-                                :label="isDriveLinkPending ? 'Vinculando…' : (driveSeguimientoStatus?.vinculado ? 'Nuevo Excel en Drive' : 'Vincular al Drive')"
-                                color="primary" variant="solid" size="sm"
-                                :loading="loadingDriveSeguimiento || isDriveLinkPending"
-                                :disabled="isDriveLinkPending"
-                                @click="handleVincularAlDrive" />
                         </div>
                     </div>
                 </div>
@@ -168,7 +161,6 @@ import PagoGrid from '~/components/PagoGrid.vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones/index.vue'
 import DeleteCotizacionReasonModal from '~/components/cargaconsolidada/cotizaciones/DeleteCotizacionReasonModal/index.vue'
-import SeguimientoDriveCorteConfig from '~/components/cargaconsolidada/cotizaciones/SeguimientoDriveCorteConfig/index.vue'
 import type { DeleteCotizacionReasonModalHandlers } from '~/components/cargaconsolidada/cotizaciones/DeleteCotizacionReasonModal/types'
 import { useSeguimientoDrive } from '~/composables/cargaconsolidada/seguimiento-drive'
 import type { CotizacionesHeadersResponse } from '~/types/cargaconsolidada/cotizaciones'
@@ -368,21 +360,17 @@ import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
 const { currentRole: authCurrentRole, currentId, isCotizador } = useUserRole()
 const {
     driveSeguimientoStatus,
-    loadingDriveSeguimiento,
-    isDriveLinkPending,
     syncDriveFromHeaders,
     teardownDriveSeguimiento,
-    vincularAlDrive,
 } = useSeguimientoDrive()
 const isCotizadorNoJefe = computed(() =>
     isCotizador.value && Number(currentId.value) !== ID_JEFEVENTAS
 )
-const showVincularDriveButton = computed(() =>
-    isCotizadorNoJefe.value && tab.value === 'prospectos'
+const showDriveSeguimientoLink = computed(() =>
+    isCotizadorNoJefe.value
+    && tab.value === 'prospectos'
+    && Boolean(driveSeguimientoStatus.value?.vinculado)
 )
-const handleVincularAlDrive = async () => {
-    await vincularAlDrive(Number(id))
-}
 const openDriveSeguimiento = () => {
     if (driveSeguimientoStatus.value?.drive_link) {
         window.open(driveSeguimientoStatus.value.drive_link, '_blank')
@@ -391,7 +379,7 @@ const openDriveSeguimiento = () => {
 const syncDriveSeguimientoFromHeaders = (
     headersResponse: CotizacionesHeadersResponse | null | undefined
 ) => {
-    if (!showVincularDriveButton.value || !headersResponse?.excel_seguimiento_drive) return
+    if (!isCotizadorNoJefe.value || !headersResponse?.excel_seguimiento_drive) return
     syncDriveFromHeaders(Number(id), headersResponse.excel_seguimiento_drive)
 }
 

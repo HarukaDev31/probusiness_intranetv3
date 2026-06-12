@@ -552,7 +552,9 @@ import { useCalendarStore } from '~/composables/useCalendarStore'
 import { useModal } from '~/composables/commons/useModal'
 import type { CalendarEvent, CalendarEventCharge, CalendarEventStatus, CalendarEventPriority } from '~/types/calendar'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, countWeekdaysBetween } from '~/constants/calendar'
-import StatusDropdown from '~/components/calendar/StatusDropdown.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const StatusDropdown = createLazyView(() => import('~/components/calendar/StatusDropdown.vue'))
 import PriorityDropdown from '~/components/calendar/PriorityDropdown.vue'
 import ActivityTrackingModal from '~/components/calendar/ActivityTrackingModal.vue'
 import CreateSubtasksModal from '~/components/calendar/CreateSubtasksModal.vue'

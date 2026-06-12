@@ -16,8 +16,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import ClienteDocumentacionView from '~/components/cargaconsolidada/documentacion/ClienteDocumentacionView/index.vue'
+import { createLazyView } from '~/utils/lazyView'
 
+const ClienteDocumentacionView = createLazyView(() => import('~/components/cargaconsolidada/documentacion/ClienteDocumentacionView/index.vue'))
 const route = useRoute()
 const clienteId = Number(route.params.id)
 

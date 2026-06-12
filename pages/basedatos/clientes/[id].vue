@@ -130,7 +130,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, h } from 'vue'
-import DataTable from '~/components/DataTable.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const DataTable = createLazyView(() => import('~/components/DataTable.vue'))
 import type { Cliente } from '~/services/clienteService'
 import type { TableColumn } from '@nuxt/ui'
 import { UButton } from '#components'

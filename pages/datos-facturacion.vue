@@ -39,7 +39,9 @@
 <script setup lang="ts">
 import { h, onMounted, onUnmounted, ref, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import SimpleUploadFile from '~/components/commons/SimpleUploadFile.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const SimpleUploadFile = createLazyView(() => import('~/components/commons/SimpleUploadFile.vue'))
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { useUsuarioDatosFacturacionImport } from '~/composables/basedatos/useUsuarioDatosFacturacionImport'

@@ -499,7 +499,9 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useOverlay } from '#imports'
-import FileUploader from '~/components/commons/FileUploader.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const FileUploader = createLazyView(() => import('~/components/commons/FileUploader.vue'))
 import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import { useTramiteDocumentos } from '~/composables/basedatos/useTramiteDocumentos'

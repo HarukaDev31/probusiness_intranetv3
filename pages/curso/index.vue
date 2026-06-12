@@ -66,7 +66,9 @@ import type { TableColumn } from '@nuxt/ui'
 import { useRoute } from 'vue-router'
 import { usePagos } from '~/composables/curso/usePagos'
 import type { FilterConfig } from '~/types/data-table'
-import PagoGrid from '~/components/PagoGrid.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const PagoGrid = createLazyView(() => import('~/components/PagoGrid.vue'))
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'

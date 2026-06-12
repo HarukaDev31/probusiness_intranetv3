@@ -1,35 +1,9 @@
 import type { AuthMenu } from '~/services/authService'
+import { collectMenuRoutes, getMenuItemRoute, normalizeMenuPath } from '~/utils/menuRoutes'
 
-const normalizePath = (path: string): string => {
-  if (!path) return '/'
-  const normalized = `/${path.replace(/\\/g, '/').replace(/^\/+/, '')}`.replace(/\/{2,}/g, '/')
-  return normalized === '/' ? normalized : normalized.replace(/\/+$/, '')
-}
+const getMenuRoute = (item: AuthMenu): string | null => getMenuItemRoute(item)
 
-const getMenuRoute = (item: AuthMenu): string | null => {
-  const intranetUrl = (item.url_intranet_v2 ?? '').trim()
-  if (intranetUrl && intranetUrl !== '#') {
-    return normalizePath(intranetUrl)
-  }
-  return null
-}
-
-const collectAllowedRoutes = (items: AuthMenu[] = []): string[] => {
-  const routes = new Set<string>()
-
-  const walk = (menuItems: AuthMenu[]) => {
-    for (const item of menuItems) {
-      const route = getMenuRoute(item)
-      if (route) routes.add(route)
-
-      if (Array.isArray(item.Hijos) && item.Hijos.length) walk(item.Hijos)
-      if (Array.isArray(item.SubHijos) && item.SubHijos.length) walk(item.SubHijos)
-    }
-  }
-
-  walk(items)
-  return Array.from(routes)
-}
+const collectAllowedRoutes = (items: AuthMenu[] = []): string[] => collectMenuRoutes(items)
 
 const canAccessRoute = (currentPath: string, allowedRoutes: string[]): boolean => {
   if (!allowedRoutes.length) return false
@@ -89,7 +63,7 @@ export default defineNuxtRouteMiddleware((to) => {
   }
 
   const allowedRoutes = collectAllowedRoutes(menu)
-  const currentPath = normalizePath(to.path)
+  const currentPath = normalizeMenuPath(to.path)
 
   if (canAccessRoute(currentPath, allowedRoutes)) return
   if (canAccessNumericDetailUnderAllowedParent(currentPath, allowedRoutes)) return

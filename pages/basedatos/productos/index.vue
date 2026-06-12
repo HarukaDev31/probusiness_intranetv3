@@ -56,7 +56,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, h, resolveComponent } from 'vue'
-import DataTable from '~/components/DataTable.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const DataTable = createLazyView(() => import('~/components/DataTable.vue'))
 import ImageLazy from '~/components/ImageLazy.vue'
 import { ProductService } from '~/services/productService'
 import type { ProductMapped } from '~/types/product'

@@ -37,8 +37,9 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { formatCurrency } from '~/utils/formatters'
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
-import PagoGrid from '~/components/PagoGrid.vue'
+import { createLazyView } from '~/utils/lazyView'
 
+const PagoGrid = createLazyView(() => import('~/components/PagoGrid.vue'))
 const {
     inspeccionados,
     loading,

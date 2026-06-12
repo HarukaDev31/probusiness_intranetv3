@@ -33,7 +33,9 @@
 import { ref, computed, onMounted, h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { useOverlay } from '#imports'
-import DataTable from '~/components/DataTable.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const DataTable = createLazyView(() => import('~/components/DataTable.vue'))
 import BoletinQuimicoModal from '~/components/basedatos/BoletinQuimicoModal.vue'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { BoletinQuimicoService } from '~/services/basedatos/boletinQuimicoService'

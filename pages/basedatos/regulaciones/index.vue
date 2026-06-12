@@ -732,7 +732,9 @@ import {AntidumpingService} from '~/services/antidumpingService'
 import {PermisoService} from '~/services/permisoService'
 import {EtiquetadoService} from '~/services/etiquetadoService'
 import {DocumentoService} from '~/services/documentoService'
-import ImageModal from '~/components/ImageModal.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const ImageModal = createLazyView(() => import('~/components/ImageModal.vue'))
 import DocumentPreview from '~/components/DocumentPreview.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'

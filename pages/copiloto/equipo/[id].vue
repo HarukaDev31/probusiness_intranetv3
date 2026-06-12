@@ -13,7 +13,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import CopilotoJefeVentasView from '~/components/copiloto/CopilotoJefeVentasView/index.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const CopilotoJefeVentasView = createLazyView(() => import('~/components/copiloto/CopilotoJefeVentasView/index.vue'))
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { ID_JEFEVENTAS, ROLES } from '~/constants/roles'
 

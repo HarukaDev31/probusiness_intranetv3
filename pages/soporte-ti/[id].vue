@@ -34,7 +34,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { navigateTo, useRoute } from '#imports'
-import PageHeader from '~/components/PageHeader.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const PageHeader = createLazyView(() => import('~/components/PageHeader.vue'))
 import SoporteTiDetailPageSkeleton from '~/components/soporte-ti/SoporteTiDetailPageSkeleton.vue'
 import { useSoporteTi } from '~/composables/useSoporteTi'
 import { sincronizarSalasGlobales } from '~/composables/useSoporteTiChatGlobal'

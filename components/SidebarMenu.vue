@@ -106,6 +106,7 @@
                               
                               <UButton variant="ghost" class="w-full text-sm gap-2 py-1 rounded-md"
                                 :class="[isActiveRoute(sub.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0' : 'justify-start px-2']"
+                              @mouseenter="onMenuHover(sub.route)"
                                 @click="handleNavigation(sub.route)"
                                 :aria-label="collapsed ? sub.name : undefined">
                                 <template #default>
@@ -130,6 +131,7 @@
                    
                           <UButton variant="ghost" class="w-full text-sm gap-2 py-2 px-2 rounded-md"
                             :class="[isActiveRoute(child.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'justify-start px-2']"
+                            @mouseenter="onMenuHover(child.route)"
                             @click="handleNavigation(child.route)"
                             :aria-label="collapsed ? getCustomMenuName(item.name, child.name) : undefined">
                             <template #default>
@@ -157,6 +159,7 @@
                     class="w-full text-sm gap-3 py-2 rounded-md"
                     :class="[isActiveRoute(item.route) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0 gap-0' : 'justify-start px-3']"
                     :aria-label="collapsed ? item.name : undefined"
+                    @mouseenter="onMenuHover(item.route)"
                     @click="handleNavigation(item.route)" />
                 </div>
               </template>
@@ -241,6 +244,7 @@ import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar'
 import { useUserRole } from '../composables/auth/useUserRole'
 import { useAuth } from '../composables/auth/useAuth'
 import { useNotifications } from '../composables/useNotifications'
+import { useMenuPrefetch } from '../composables/navigation/useMenuPrefetch'
 interface AuthUser {
   id: number | string
   email: string
@@ -281,6 +285,8 @@ const {
   unreadCount,
   fetchUnreadCount
 } = useNotifications()
+
+const { prefetchRoute } = useMenuPrefetch()
 
 // Refs para cleanup en onUnmounted (registrado de forma síncrona en setup)
 const notificationIntervalRef = ref<ReturnType<typeof setInterval> | null>(null)
@@ -348,17 +354,18 @@ const hideSidebarOnMobile = () => {
   }
 }
 
+const onMenuHover = (route: string) => {
+  prefetchRoute(route)
+}
+
 const handleNavigation = async (route: string) => {
-  console.log('route', route)
   if (!route) return
   await navigateTo(route)
   hideSidebarOnMobile()
 }
 
 const navigateOrToggle = async (item: any) => {
-  // si tiene ruta válida, navegamos; si no, toggle
   const route = item?.route
-  console.log('route', route)
   if (route && route !== '' && route !== '#') {
     await navigateTo(route)
     hideSidebarOnMobile()

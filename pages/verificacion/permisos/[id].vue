@@ -317,7 +317,9 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
 import { ROLES } from '~/constants/roles'
 import { formatCurrency, formatDateTimeToDmy } from '~/utils/formatters'
-import ModalPreview from '~/components/commons/ModalPreview.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const ModalPreview = createLazyView(() => import('~/components/commons/ModalPreview.vue'))
 import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import type { TramiteAduana, TramiteAduanaTipoPermisoItem, PagoConDatos, TramiteDocumento } from '~/types/basedatos/tramiteAduana'

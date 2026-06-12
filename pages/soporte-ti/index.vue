@@ -62,7 +62,9 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSoporteTiChatRoom } from '~/composables/useSoporteTiChatRoom'
 import type { SoporteTiCreatePayload, SoporteTiListFilters, SoporteTiSolicitud } from '~/types/soporteTi'
 import type { FilterConfig } from '~/types/data-table'
-import DataTable from '~/components/DataTable.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const DataTable = createLazyView(() => import('~/components/DataTable.vue'))
 import SoporteTiStatsCards from '~/components/soporte-ti/SoporteTiStatsCards.vue'
 import SoporteTiKanbanCard from '~/components/soporte-ti/SoporteTiKanbanCard.vue'
 import SoporteTiModalCreate from '~/components/soporte-ti/SoporteTiModalCreate.vue'

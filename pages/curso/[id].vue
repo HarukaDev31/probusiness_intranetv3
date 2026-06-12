@@ -240,7 +240,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCursos } from '~/composables/useCursos'
 import type { DatosClientePorPedido } from '~/types/cursos/cursos'
 import { useOverlay } from '#imports'
-import ModalPreview from '~/components/commons/ModalPreview.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const ModalPreview = createLazyView(() => import('~/components/commons/ModalPreview.vue'))
 import { CalendarDate, DateFormatter, getLocalTimeZone, parseDate } from '@internationalized/date'
 import { useLocation } from '~/composables/commons/useLocation'
 import { useModal } from '~/composables/commons/useModal'

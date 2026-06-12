@@ -3,7 +3,11 @@
 </template>
 
 <script setup lang="ts">
-import CargaConsolidadaCompletadosView from '~/components/cargaconsolidada/consolidado/CargaConsolidadaCompletadosView/index.vue'
+definePageMeta({ name: 'cargaconsolidada-completados', keepalive: true })
+
+import { createLazyView } from '~/utils/lazyView'
+
+const CargaConsolidadaCompletadosView = createLazyView(() => import('~/components/cargaconsolidada/consolidado/CargaConsolidadaCompletadosView/index.vue'))
 import { useUserRole } from '~/composables/auth/useUserRole'
 
 const { currentRole } = useUserRole()

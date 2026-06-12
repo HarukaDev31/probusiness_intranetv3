@@ -36,7 +36,9 @@ import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportaci
 const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList } = useCalculadoraImportacion()
 import type { TableColumn } from '@nuxt/ui'
 import { UButton, USelect, UBadge } from '#components'
-import MoveCotizacionModal from '~/components/shared/MoveCotizacionModal/index.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const MoveCotizacionModal = createLazyView(() => import('~/components/shared/MoveCotizacionModal/index.vue'))
 import { useModal } from '~/composables/commons/useModal';
 import { useSpinner } from '~/composables/commons/useSpinner';
 import type { FilterConfig } from '~/types/data-table'

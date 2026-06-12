@@ -111,8 +111,16 @@ export default defineNuxtPlugin({
       }
   }
 
-  // Intentar inicializar inmediatamente
-  await initializeWebSockets()
+  // Diferir WebSocket hasta después del primer paint (no bloquea navegación inicial)
+  const scheduleWebSocketInit = () => {
+    if (typeof requestIdleCallback !== 'undefined') {
+      requestIdleCallback(() => { void initializeWebSockets() }, { timeout: 3000 })
+    } else {
+      setTimeout(() => { void initializeWebSockets() }, 800)
+    }
+  }
+
+  scheduleWebSocketInit()
 
   // Escuchar cambios en el localStorage para detectar login/logout
   if (process.client) {

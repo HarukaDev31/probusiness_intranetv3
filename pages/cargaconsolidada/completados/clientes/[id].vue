@@ -7,7 +7,9 @@
 </template>
 
 <script setup lang="ts">
-import ClientesView from '~/components/cargaconsolidada/clientes/ClientesView/index.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const ClientesView = createLazyView(() => import('~/components/cargaconsolidada/clientes/ClientesView/index.vue'))
 import { useUserRole } from '~/composables/auth/useUserRole'
 
 const { currentRole } = useUserRole()

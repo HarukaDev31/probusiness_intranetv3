@@ -6,6 +6,8 @@
 </template>
 
 <script setup lang="ts">
-import DocumentacionCotizacionesView from '~/components/cargaconsolidada/cotizaciones/DocumentacionCotizacionesView/index.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const DocumentacionCotizacionesView = createLazyView(() => import('~/components/cargaconsolidada/cotizaciones/DocumentacionCotizacionesView/index.vue'))
 import { ROLES } from '~/constants/roles'
 </script>

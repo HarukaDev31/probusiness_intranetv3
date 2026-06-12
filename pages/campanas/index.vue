@@ -22,7 +22,9 @@ import type { TableColumn } from '@nuxt/ui'
 import { UButton } from '#components'
 import { useCampaigns } from '~/composables/useCampaigns'
 import { useNotifications } from '~/composables/useNotifications'
-import CreateCampaignModal from '~/components/campanas/CreateCampaignModal.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const CreateCampaignModal = createLazyView(() => import('~/components/campanas/CreateCampaignModal.vue'))
 import { useOverlay } from '#imports'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'

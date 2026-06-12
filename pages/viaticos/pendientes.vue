@@ -43,6 +43,8 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({ name: 'viaticos-pendientes', keepalive: true })
+
 import { ref, watch, onMounted, computed, h } from 'vue'
 import { useViaticos } from '~/composables/useViaticos'
 import { useUserRole } from '~/composables/auth/useUserRole'
@@ -53,7 +55,9 @@ import type { FilterConfig } from '~/types/data-table'
 import { UButton, UBadge } from '#components'
 import { formatDateTimeToDmy, formatCurrency } from '~/utils/formatters'
 import { ROLES } from '~/constants/roles'
-import EvidenciasModal from '~/components/viaticos/EvidenciasModal.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const EvidenciasModal = createLazyView(() => import('~/components/viaticos/EvidenciasModal.vue'))
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import CreateViaticoModal from '~/components/viaticos/CreateViaticoModal.vue'
 import type { FileItem } from '~/types/commons/file'

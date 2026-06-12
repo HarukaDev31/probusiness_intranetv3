@@ -7,8 +7,9 @@
 </template>
 
 <script setup lang="ts">
-import WhatsappInboxView from '~/components/whatsapp-inbox/WhatsappInboxView/index.vue'
+import { createLazyView } from '~/utils/lazyView'
 
+const WhatsappInboxView = createLazyView(() => import('~/components/whatsapp-inbox/WhatsappInboxView/index.vue'))
 definePageMeta({
   layout: 'default',
   middleware: ['whatsapp-inbox-coordinacion'],

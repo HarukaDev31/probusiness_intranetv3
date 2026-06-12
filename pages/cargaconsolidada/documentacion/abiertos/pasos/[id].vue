@@ -7,6 +7,8 @@
 </template>
 
 <script setup lang="ts">
-import ConsolidadoPasosView from '~/components/cargaconsolidada/consolidado/ConsolidadoPasosView/index.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const ConsolidadoPasosView = createLazyView(() => import('~/components/cargaconsolidada/consolidado/ConsolidadoPasosView/index.vue'))
 import { ROLES } from '~/constants/roles'
 </script>
