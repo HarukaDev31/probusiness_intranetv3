@@ -7,3 +7,6 @@ export const WA_INBOX_CHAT_ACCEPT_DOCUMENTOS =
 
 /** Audio (notas de voz / archivos de audio). */
 export const WA_INBOX_CHAT_ACCEPT_AUDIO = 'audio/*,.mp3,.ogg,.m4a,.aac,.wav'
+
+/** Máximo de imágenes/videos en la vista previa antes de enviar. */
+export const WA_INBOX_MAX_COMPOSE_MEDIA = 30

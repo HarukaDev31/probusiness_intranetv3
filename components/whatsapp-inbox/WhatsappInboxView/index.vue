@@ -250,7 +250,11 @@
           </div>
         </template>
 
-        <div v-if="selectedConversation" class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div
+          v-if="selectedConversation"
+          class="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+          @paste.capture="onChatPaste"
+        >
           <WhatsappInboxFloatingDayBadge
             :label="floatingDayLabel"
             :visible="showFloatingDayBadge && !loadingMessages"
@@ -369,6 +373,7 @@
 
         <template v-if="selectedConversation && isDesktop" #footer>
           <WhatsappInboxComposer
+            ref="composerRef"
             :can-send="selectedConversation.can_send_text"
             :sending="sendingMessage"
             :reply-target="replyTarget"
@@ -385,6 +390,7 @@
         class="fixed inset-x-0 bottom-0 z-[100] border-t border-default bg-default shadow-[0_-4px_16px_rgba(0,0,0,0.08)]"
       >
         <WhatsappInboxComposer
+          ref="composerRef"
           :can-send="selectedConversation.can_send_text"
           :sending="sendingMessage"
           :reply-target="replyTarget"
@@ -573,6 +579,7 @@ watch(showChatPanel, (visible) => {
 const { showError: showModalError } = useModal()
 
 const replyTarget = ref<WaInboxComposerReplyTarget | null>(null)
+const composerRef = ref<InstanceType<typeof WhatsappInboxComposer> | null>(null)
 const messageInfoOpen = ref(false)
 const messageInfoTarget = ref<WaInboxMessage | null>(null)
 
@@ -703,6 +710,11 @@ function messageMenuItems(msg: WaInboxMessage) {
   }
 
   return [items]
+}
+
+function onChatPaste(e: ClipboardEvent) {
+  if (!selectedConversation.value?.can_send_text) return
+  composerRef.value?.handlePaste(e)
 }
 
 async function onComposerSend(payload: WaInboxComposerSendPayload) {

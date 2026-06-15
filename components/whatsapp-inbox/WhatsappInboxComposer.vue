@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+  <div class="space-y-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]" @paste.capture="onPaste">
     <UAlert
       v-if="!canSend"
       color="error"
@@ -9,7 +9,7 @@
     />
 
     <UCard
-      v-if="replyTarget"
+      v-if="replyTarget && !modoVistaMedia"
       color="neutral"
       variant="soft"
       :ui="{ body: 'flex items-start gap-2 p-2.5 sm:p-2.5' }"
@@ -34,7 +34,7 @@
     </UCard>
 
     <UCard
-      v-if="adjuntoPendiente"
+      v-if="adjuntoPendiente && !modoVistaMedia"
       variant="subtle"
       :ui="{ body: 'flex items-center gap-2 p-2' }"
     >
@@ -49,12 +49,13 @@
       />
     </UCard>
 
-    <div class="flex items-end gap-2">
+    <div v-if="!modoVistaMedia" class="flex items-end gap-2">
       <input
         ref="fileMediaRef"
         type="file"
         class="hidden"
         :accept="WA_INBOX_CHAT_ACCEPT_MEDIA"
+        multiple
         @change="onPickMedia"
       >
       <input
@@ -168,20 +169,45 @@
         @click="enviar"
       />
     </div>
+
+    <WhatsappInboxMediaComposeOverlay
+      :open="modoVistaMedia"
+      :items="mediaPendientes"
+      :active-index="indiceMedia"
+      :caption="texto"
+      :sending="sending"
+      :can-add-more="mediaPendientes.length < WA_INBOX_MAX_COMPOSE_MEDIA"
+      @update:active-index="indiceMedia = $event"
+      @update:caption="texto = $event"
+      @append-emoji="insertarEmoji"
+      @cancel="descartarMediaPendiente"
+      @send="enviar"
+      @add-more="abrirMedia"
+      @remove="quitarMedia"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { WaInboxComposerReplyTarget, WaInboxComposerSendPayload } from '~/types/whatsapp-inbox'
 import SoporteTiChatReplyPreview from '~/components/soporte-ti/SoporteTiChatReplyPreview.vue'
 import SoporteTiChatEmojiPicker from '~/components/soporte-ti/SoporteTiChatEmojiPicker.vue'
+import WhatsappInboxMediaComposeOverlay, {
+  type WaInboxComposeMediaItem
+} from '~/components/whatsapp-inbox/WhatsappInboxMediaComposeOverlay.vue'
 import {
   WA_INBOX_CHAT_ACCEPT_AUDIO,
   WA_INBOX_CHAT_ACCEPT_DOCUMENTOS,
-  WA_INBOX_CHAT_ACCEPT_MEDIA
+  WA_INBOX_CHAT_ACCEPT_MEDIA,
+  WA_INBOX_MAX_COMPOSE_MEDIA
 } from '~/constants/whatsappInboxChat'
 import { guessWaInboxMediaKind } from '~/utils/whatsappInboxMedia'
+import {
+  esMediaVisualWaInbox,
+  mediaVisualDesdePortapapeles,
+  normalizarArchivoPegado
+} from '~/utils/waInboxClipboard'
 
 const props = withDefaults(
   defineProps<{
@@ -223,13 +249,18 @@ const texto = computed({
 const menuAdjuntosAbierto = ref(false)
 const adjuntoPendiente = ref<File | null>(null)
 const mediaKindPendiente = ref<'image' | 'video' | 'document' | 'audio' | null>(null)
+const mediaPendientes = ref<WaInboxComposeMediaItem[]>([])
+const indiceMedia = ref(0)
 
 const fileMediaRef = ref<HTMLInputElement | null>(null)
 const fileDocRef = ref<HTMLInputElement | null>(null)
 const fileAudioRef = ref<HTMLInputElement | null>(null)
 
+const modoVistaMedia = computed(() => mediaPendientes.value.length > 0)
+
 const puedeEnviar = computed(() => {
   if (!props.canSend || props.sending) return false
+  if (modoVistaMedia.value) return mediaPendientes.value.length > 0
   return Boolean(texto.value.trim() || adjuntoPendiente.value)
 })
 
@@ -264,15 +295,64 @@ function abrirAudio() {
   fileAudioRef.value?.click()
 }
 
+function revocarPreview(item?: WaInboxComposeMediaItem | null) {
+  if (item?.preview) URL.revokeObjectURL(item.preview)
+}
+
+function limpiarMediaPendientes() {
+  mediaPendientes.value.forEach((item) => revocarPreview(item))
+  mediaPendientes.value = []
+  indiceMedia.value = 0
+}
+
+function descartarMediaPendiente() {
+  limpiarMediaPendientes()
+}
+
+function agregarMediaVisual(files: File[]) {
+  if (!props.canSend || !files.length) return
+
+  adjuntoPendiente.value = null
+  mediaKindPendiente.value = null
+
+  const restantes = WA_INBOX_MAX_COMPOSE_MEDIA - mediaPendientes.value.length
+  const nuevos: WaInboxComposeMediaItem[] = []
+
+  files.slice(0, restantes).forEach((raw) => {
+    const file = normalizarArchivoPegado(raw)
+    if (!esMediaVisualWaInbox(file)) return
+    nuevos.push({
+      file,
+      preview: URL.createObjectURL(file),
+      mediaKind: guessWaInboxMediaKind(file)
+    })
+  })
+
+  if (!nuevos.length) return
+
+  mediaPendientes.value = [...mediaPendientes.value, ...nuevos]
+  indiceMedia.value = mediaPendientes.value.length - 1
+}
+
 function asignarArchivo(file: File) {
+  if (esMediaVisualWaInbox(file)) {
+    agregarMediaVisual([file])
+    return
+  }
+  limpiarMediaPendientes()
   adjuntoPendiente.value = file
   mediaKindPendiente.value = guessWaInboxMediaKind(file)
 }
 
 function onPickMedia(e: Event) {
   const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (file) asignarArchivo(file)
+  const files = input.files ? Array.from(input.files) : []
+  if (files.length) {
+    const visuales = files.filter((file) => esMediaVisualWaInbox(file))
+    const otros = files.filter((file) => !esMediaVisualWaInbox(file))
+    if (visuales.length) agregarMediaVisual(visuales)
+    if (otros.length && !visuales.length) asignarArchivo(otros[0])
+  }
   input.value = ''
 }
 
@@ -295,8 +375,49 @@ function quitarAdjunto() {
   mediaKindPendiente.value = null
 }
 
+function quitarMedia(index: number) {
+  const item = mediaPendientes.value[index]
+  revocarPreview(item)
+  const restantes = mediaPendientes.value.filter((_, i) => i !== index)
+  mediaPendientes.value = restantes
+  if (!restantes.length) {
+    indiceMedia.value = 0
+    return
+  }
+  if (indiceMedia.value >= restantes.length) {
+    indiceMedia.value = restantes.length - 1
+  }
+}
+
+function onPaste(e: ClipboardEvent) {
+  if (!props.canSend) return
+  const archivos = mediaVisualDesdePortapapeles(e)
+  if (!archivos.length) return
+  e.preventDefault()
+  agregarMediaVisual(archivos)
+}
+
+function ingestClipboardFiles(files: File[]) {
+  if (!props.canSend) return
+  const visuales = files.filter((file) => esMediaVisualWaInbox(file))
+  if (visuales.length) agregarMediaVisual(visuales)
+}
+
 function enviar() {
   if (!puedeEnviar.value) return
+
+  if (mediaPendientes.value.length) {
+    emit('send', {
+      text: texto.value.trim(),
+      files: mediaPendientes.value.map((item) => item.file),
+      replyToMetaMessageId: props.replyTarget?.metaMessageId ?? null
+    })
+    texto.value = ''
+    limpiarMediaPendientes()
+    emit('cancel-reply')
+    return
+  }
+
   emit('send', {
     text: texto.value.trim(),
     file: adjuntoPendiente.value ?? undefined,
@@ -314,4 +435,23 @@ function onKeydown(e: KeyboardEvent) {
     enviar()
   }
 }
+
+watch(
+  () => props.canSend,
+  (abierta) => {
+    if (!abierta) {
+      limpiarMediaPendientes()
+      quitarAdjunto()
+    }
+  }
+)
+
+onBeforeUnmount(() => {
+  limpiarMediaPendientes()
+})
+
+defineExpose({
+  handlePaste: onPaste,
+  ingestClipboardFiles
+})
 </script>

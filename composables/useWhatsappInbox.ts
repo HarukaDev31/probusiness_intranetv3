@@ -47,6 +47,7 @@ import {
 import { getEchoInstance } from '~/composables/websocket/useEcho'
 import { WA_INBOX_WS_CHANNEL } from '~/constants/whatsappInboxWs'
 import { conversationPatchFromWaInboxMessage } from '~/utils/whatsappInboxSidebarPreview'
+import { dispatchWaInboxComposerSends } from '~/utils/whatsappInboxComposerSend'
 
 const CONVERSATIONS_PER_PAGE = 30
 const WA_INBOX_BASE_PATH = '/coordinacion/whatsapp-inbox'
@@ -1091,27 +1092,34 @@ export function useWhatsappInbox() {
       return
     }
 
+    const files = payload.files?.length
+      ? payload.files
+      : payload.file
+        ? [payload.file]
+        : []
     const text = payload.text.trim()
-    if (!text && !payload.file) return
+    if (!text && !files.length) return
 
     sendingMessage.value = true
     try {
-      const res = await WhatsappInboxService.sendMessage(conv.id, {
-        message: text || undefined,
-        file: payload.file,
-        mediaKind: payload.mediaKind,
-        replyToMetaMessageId: payload.replyToMetaMessageId
-      })
-      const msg = res?.data as WaInboxMessage | undefined
-      if (waMessageNumericId(msg?.id)) {
-        const outbound: WaInboxMessage = {
-          ...msg!,
-          delivery_status: msg!.delivery_status ?? 'pending'
+      await dispatchWaInboxComposerSends(payload, async (item) => {
+        const res = await WhatsappInboxService.sendMessage(conv.id, {
+          message: item.text || undefined,
+          file: item.file,
+          mediaKind: item.mediaKind,
+          replyToMetaMessageId: item.replyToMetaMessageId
+        })
+        const msg = res?.data as WaInboxMessage | undefined
+        if (waMessageNumericId(msg?.id)) {
+          const outbound: WaInboxMessage = {
+            ...msg!,
+            delivery_status: msg!.delivery_status ?? 'pending'
+          }
+          upsertMessageInConversation(conv.id, outbound)
+          const preview = item.text || msg!.body || `[${msg!.message_type || 'archivo'}]`
+          patchConversationAfterOutbound(conv, preview, outbound)
         }
-        upsertMessageInConversation(conv.id, outbound)
-        const preview = text || msg!.body || `[${msg!.message_type || 'archivo'}]`
-        patchConversationAfterOutbound(conv, preview, outbound)
-      }
+      })
     } catch (e: any) {
       showError('Error', e?.message || 'No se pudo enviar el mensaje')
       throw e

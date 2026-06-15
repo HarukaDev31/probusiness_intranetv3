@@ -1,6 +1,6 @@
 <template>
   <ChatPanelShell v-if="conversation" :full-height="false" class="min-h-0 flex-1">
-    <div class="relative flex min-h-0 flex-1 flex-col">
+    <div class="relative flex min-h-0 flex-1 flex-col" @paste.capture="onChatPaste">
       <ChatMessagesScroll
         ref="scrollRef"
         class="min-h-0 flex-1 p-3"
@@ -111,6 +111,7 @@
 
     <template v-if="!readonly" #footer>
       <WhatsappInboxComposer
+        ref="composerRef"
         v-model="composerText"
         :can-send="conversation.can_send_text"
         :sending="sendingMessage"
@@ -204,6 +205,7 @@ function onSelectInsight(msg: WaCopilotoMessage, insight: WaCopilotoMessageInsig
 }
 
 const replyTarget = ref<WaInboxComposerReplyTarget | null>(null)
+const composerRef = ref<InstanceType<typeof WhatsappInboxComposer> | null>(null)
 
 const composerText = computed({
   get: () => props.composerDraft,
@@ -246,6 +248,11 @@ function buildReplyTarget(msg: WaCopilotoMessage): WaInboxComposerReplyTarget {
     preview: msg.body || msg.message_type || 'Mensaje',
     author: msg.direction === 'out' ? 'Tú' : props.conversation?.contact_name || 'Cliente'
   }
+}
+
+function onChatPaste(e: ClipboardEvent) {
+  if (!props.conversation?.can_send_text || props.readonly) return
+  composerRef.value?.handlePaste(e)
 }
 
 function onSend(payload: WaCopilotoComposerSendPayload) {

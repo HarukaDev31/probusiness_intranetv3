@@ -63,6 +63,8 @@ export interface WaInboxComposerReplyTarget {
 export interface WaInboxComposerSendPayload {
   text: string
   file?: File
+  /** Varias imágenes/videos en un solo envío (se mandan en secuencia). */
+  files?: File[]
   mediaKind?: 'image' | 'video' | 'document' | 'audio'
   replyToMetaMessageId?: string | null
 }
