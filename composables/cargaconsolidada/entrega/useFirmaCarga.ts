@@ -2,6 +2,9 @@ import { ref, computed } from 'vue'
 import { EntregaService } from '~/services/cargaconsolidada/entrega/entregaService'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
+import { resolveStorageFileUrl } from '~/utils/storageFileUrl'
+
+export { resolveStorageFileUrl } from '~/utils/storageFileUrl'
 
 /** PDF público en CDN: fetch simple sin Authorization (evita preflight OPTIONS). */
 function isCdnPublicUrl(url: string): boolean {
@@ -20,23 +23,6 @@ function buildPdfFetchInit(absoluteUrl: string): RequestInit {
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     }
   }
-}
-
-/** Ruta relativa del storage Laravel → URL absoluta (mismo criterio que factura-guía). */
-export function resolveStorageFileUrl(url: string): string {
-  const cleaned = (url || '').replace(/\\\//g, '/').trim()
-  if (!cleaned) return ''
-  if (/^https?:\/\//i.test(cleaned)) return cleaned
-
-  const config = useRuntimeConfig()
-  const apiBase = String(config.public.apiBaseUrl || '').replace(/\/$/, '')
-  const origin = apiBase.replace(/\/api\/?$/i, '')
-  const path = cleaned.replace(/^\/+/, '')
-
-  if (path.startsWith('storage/')) {
-    return `${origin}/${path}`
-  }
-  return `${origin}/storage/${path}`
 }
 
 export interface FirmaCargaData {
