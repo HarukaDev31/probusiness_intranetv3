@@ -47,6 +47,7 @@ import {
 import { getEchoInstance } from '~/composables/websocket/useEcho'
 import { WA_INBOX_WS_CHANNEL } from '~/constants/whatsappInboxWs'
 import { conversationPatchFromWaInboxMessage } from '~/utils/whatsappInboxSidebarPreview'
+import { fetchWaInboxMessagesHistory } from '~/composables/whatsapp-inbox/fetchWaInboxMessagesHistory'
 import { dispatchWaInboxComposerSends } from '~/utils/whatsappInboxComposerSend'
 
 const CONVERSATIONS_PER_PAGE = 30
@@ -469,7 +470,15 @@ export function useWhatsappInbox() {
     if (!lastId) return true
 
     const cachedLast = entry.messages[entry.messages.length - 1]
-    return waMessageNumericId(cachedLast?.id) === waMessageNumericId(lastId)
+    const lastMatches =
+      waMessageNumericId(cachedLast?.id) === waMessageNumericId(lastId)
+    if (!lastMatches) return false
+
+    if (entry.messageTotal != null && entry.messages.length < entry.messageTotal) {
+      return false
+    }
+
+    return true
   }
 
   function applyCachedMessagesEntry(
@@ -844,15 +853,14 @@ export function useWhatsappInbox() {
       const hasFullHistoryCache = Boolean(
         entry && entry.fullHistory !== false && entry.messages?.length
       )
-      const freshCache = !options.force && Boolean(cache.getMessages(conversationId))
       const syncedCache = hasFullHistoryCache && isMessageCacheSynced(conversationId)
 
       if (hasFullHistoryCache && entry) {
         applyCachedMessagesEntry(conversationId, entry)
       }
 
-      // Estilo WhatsApp: historial en memoria + WS → no pedir todo de nuevo sin cambios.
-      if (!options.force && hasFullHistoryCache && (freshCache || syncedCache)) {
+      // Solo omitir red si el caché está al día con el último mensaje del servidor.
+      if (!options.force && syncedCache) {
         return
       }
 
@@ -863,9 +871,8 @@ export function useWhatsappInbox() {
         loadingMessages.value = true
       }
       try {
-        const res = await WhatsappInboxService.getMessages(conversationId, { per_page: 200 })
-        const rows = Array.isArray(res?.data) ? res.data : []
-        const convPatch = res?.conversation as Partial<WaInboxConversation> | undefined
+        const { messages: rows, conversation: convPatch, total, fullHistory } =
+          await fetchWaInboxMessagesHistory(conversationId)
         const cachedList = cache.getMessagesEntry(conversationId)?.messages ?? []
         const localList =
           selectedConversationId.value === conversationId
@@ -873,7 +880,10 @@ export function useWhatsappInbox() {
             ? messages.value
             : []
         const merged = mergeMessageLists(rows, cachedList, localList)
-        cache.setMessages(conversationId, merged, convPatch, { fullHistory: true })
+        cache.setMessages(conversationId, merged, convPatch, {
+          fullHistory,
+          messageTotal: total
+        })
         applyMessagesForConversation(conversationId, merged)
         if (convPatch) {
           const patch = { ...convPatch } as Partial<WaInboxConversation>

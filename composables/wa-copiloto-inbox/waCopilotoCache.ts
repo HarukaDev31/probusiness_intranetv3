@@ -18,8 +18,8 @@ type MessagesCacheEntry = {
   messages: WaCopilotoMessage[]
   conversationPatch?: Partial<WaCopilotoConversation>
   fetchedAt: number
-  /** false = caché parcial por WS; al abrir el chat hay que pedir GET historial */
   fullHistory?: boolean
+  messageTotal?: number
 }
 
 const cache = reactive({
@@ -139,19 +139,24 @@ export function useWaCopilotoCache() {
     conversationId: number,
     messages: WaCopilotoMessage[],
     conversationPatch?: Partial<WaCopilotoConversation>,
-    options?: { fullHistory?: boolean }
+    options?: { fullHistory?: boolean; messageTotal?: number }
   ) {
     const prev = cache.messagesByConvId[conversationId]
     const fullHistory =
       options?.fullHistory !== undefined
         ? options.fullHistory
         : (prev?.fullHistory ?? true)
+    const messageTotal =
+      options?.messageTotal !== undefined
+        ? options.messageTotal
+        : prev?.messageTotal
 
     cache.messagesByConvId[conversationId] = {
       messages,
       conversationPatch: conversationPatch ?? prev?.conversationPatch,
       fetchedAt: Date.now(),
-      fullHistory
+      fullHistory,
+      messageTotal
     }
   }
 

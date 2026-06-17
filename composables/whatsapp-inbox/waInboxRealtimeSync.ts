@@ -96,13 +96,18 @@ function upsertMessageInCache(convId: number, msg: WaInboxMessage) {
   if (entry) {
     const mi = entry.messages.findIndex((m) => waMessageNumericId(m.id) === msgId)
     const list = [...entry.messages]
+    const isNew = mi < 0
     if (mi >= 0) {
       list[mi] = mergeWaInboxMessage(list[mi], { ...msg, id: msgId })
     } else {
       list.push({ ...msg, id: msgId })
     }
+    const messageTotal = isNew && entry.messageTotal != null
+      ? entry.messageTotal + 1
+      : entry.messageTotal
     cache.setMessages(convId, list, entry.conversationPatch, {
-      fullHistory: entry.fullHistory !== false
+      fullHistory: entry.fullHistory !== false,
+      messageTotal
     })
   } else {
     cache.setMessages(convId, [{ ...msg, id: msgId }], undefined, { fullHistory: false })

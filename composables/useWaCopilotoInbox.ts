@@ -38,6 +38,7 @@ import {
   mergeMessageLists,
   waMessageNumericId
 } from '~/composables/wa-copiloto-inbox/waCopilotoMessageUtils'
+import { fetchWaCopilotoMessagesHistory } from '~/composables/wa-copiloto-inbox/fetchWaCopilotoMessagesHistory'
 import {
   setWaCopilotoViewingConversationId,
   getWaCopilotoViewingConversationId,
@@ -565,6 +566,26 @@ export function useWaCopilotoInbox(options?: {
     return waMessageNumericId(curLast?.id) === waMessageNumericId(candLast?.id)
   }
 
+  function isMessageCacheSynced(conversationId: number): boolean {
+    const conv = allConversations.value.find((c) => c.id === conversationId)
+    const entry = cache.getMessagesEntry(conversationId)
+    if (!entry?.messages?.length || entry.fullHistory === false) return false
+
+    const lastId = conv?.last_message_id
+    if (!lastId) return true
+
+    const cachedLast = entry.messages[entry.messages.length - 1]
+    const lastMatches =
+      waMessageNumericId(cachedLast?.id) === waMessageNumericId(lastId)
+    if (!lastMatches) return false
+
+    if (entry.messageTotal != null && entry.messages.length < entry.messageTotal) {
+      return false
+    }
+
+    return true
+  }
+
   function applyMessagesForConversation(conversationId: number, list: WaCopilotoMessage[]) {
     if (selectedConversationId.value !== conversationId) return
     if (isMessagesHydrated(conversationId, list)) {
@@ -896,37 +917,42 @@ export function useWaCopilotoInbox(options?: {
     }
 
     const run = async () => {
-      const cachedEntry = !options.force ? cache.getMessages(conversationId) : null
-      const hasFullHistoryCache =
-        Boolean(cachedEntry && cachedEntry.fullHistory !== false)
+      const entry = !options.force ? cache.getMessagesEntry(conversationId) : null
+      const hasFullHistoryCache = Boolean(
+        entry && entry.fullHistory !== false && entry.messages?.length
+      )
+      const syncedCache = hasFullHistoryCache && isMessageCacheSynced(conversationId)
 
-      if (hasFullHistoryCache && cachedEntry) {
+      if (hasFullHistoryCache && entry) {
         const localList =
           selectedConversationId.value === conversationId
           && messagesConversationId.value === conversationId
             ? messages.value
             : []
-        const mergedCached = mergeMessageLists(cachedEntry.messages ?? [], localList)
+        const mergedCached = mergeMessageLists(entry.messages ?? [], localList)
         const hadUnread =
           (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
         applyMessagesForConversation(
           conversationId,
           flushPendingInsightsForConversation(conversationId, mergedCached)
         )
-        if (cachedEntry.conversationPatch) {
-          cache.patchConversation(conversationId, cachedEntry.conversationPatch)
+        if (entry.conversationPatch) {
+          cache.patchConversation(conversationId, entry.conversationPatch)
           const idx = allConversations.value.findIndex((c) => c.id === conversationId)
           if (idx >= 0) {
             allConversations.value[idx] = {
               ...allConversations.value[idx],
-              ...cachedEntry.conversationPatch
+              ...entry.conversationPatch
             }
           }
         }
         if (selectedConversationId.value === conversationId) {
           markConversationRead(conversationId, { forceServer: hadUnread })
         }
-        if (!options.force) return
+      }
+
+      if (!options.force && syncedCache) {
+        return
       }
 
       const stillSelected = () => selectedConversationId.value === conversationId
@@ -934,10 +960,9 @@ export function useWaCopilotoInbox(options?: {
         loadingMessages.value = true
       }
       try {
-        const res = await WaCopilotoService.getMessages(conversationId, { per_page: 200 })
-        const rows = Array.isArray(res?.data) ? res.data : []
-        const convPatch = res?.conversation as Partial<WaCopilotoConversation> | undefined
-        const cachedList = cache.getMessages(conversationId)?.messages ?? []
+        const { messages: rows, conversation: convPatch, total, fullHistory } =
+          await fetchWaCopilotoMessagesHistory(conversationId)
+        const cachedList = cache.getMessagesEntry(conversationId)?.messages ?? []
         const localList =
           selectedConversationId.value === conversationId
           && messagesConversationId.value === conversationId
@@ -946,7 +971,10 @@ export function useWaCopilotoInbox(options?: {
         const merged = mergeMessageLists(rows, cachedList, localList)
         const hadUnread =
           (allConversations.value.find((c) => c.id === conversationId)?.unread_count || 0) > 0
-        cache.setMessages(conversationId, merged, convPatch, { fullHistory: true })
+        cache.setMessages(conversationId, merged, convPatch, {
+          fullHistory,
+          messageTotal: total
+        })
         const withPending = flushPendingInsightsForConversation(conversationId, merged)
         applyMessagesForConversation(conversationId, withPending)
         if (convPatch) {
