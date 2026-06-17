@@ -204,7 +204,7 @@ const isDesktop = ref(false)
 const tableMeta = {
   class: {
     tr: (row: TableRow<{ value: number }>) => {
-      return row.original.isVerified ? 'bg-green-500' : 'bg-white dark:bg-gray-800'
+      return row?.original?.isVerified ? 'bg-green-500' : 'bg-white dark:bg-gray-800'
     },
   },
 }

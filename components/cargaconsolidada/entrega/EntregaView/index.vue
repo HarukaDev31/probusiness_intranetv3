@@ -241,7 +241,7 @@ const handleTabChange = (value: string) => {
 const tableMeta = {
   class: {
     tr: (row: TableRow<any>) => {
-      return row.original.isVerified ? "bg-green-500" : "bg-white dark:bg-gray-800";
+      return row?.original?.isVerified ? "bg-green-500" : "bg-white dark:bg-gray-800";
     },
   },
 };

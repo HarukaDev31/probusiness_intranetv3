@@ -628,6 +628,7 @@ const applyTableMetaClasses = () => {
     if (typeof tdClassFn === 'function') {
       table.querySelectorAll('tbody tr').forEach((row, rowIdx) => {
         const rowData = filteredData.value?.[rowIdx]
+        if (!rowData) return
         row.querySelectorAll('td').forEach((td) => {
           const classes = tdClassFn?.({ original: rowData, index: rowIdx })
           if (classes && typeof classes === 'string') {
@@ -641,6 +642,7 @@ const applyTableMetaClasses = () => {
     if (typeof trClassFn === 'function') {
       table.querySelectorAll('tbody tr').forEach((row, rowIdx) => {
         const rowData = filteredData.value?.[rowIdx]
+        if (!rowData) return
         const classes = trClassFn?.({ original: rowData, index: rowIdx })
         if (classes && typeof classes === 'string' && !row.className.includes(classes.split(' ')[0])) {
           row.className = classes + ' ' + row.className
