@@ -17,13 +17,14 @@
     "@fortawesome/fontawesome-free": "^7.0.0",
     "@nuxt/ui": "^3.3.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
+    "@playwright/test": "^1.37.0",
     "@primevue/forms": "^4.3.6",
     "@tailwindcss/postcss": "^4.1.11",
     "chart.js": "^4.5.0",
     "exceljs": "^4.4.0",
     "laravel-echo": "^2.2.0",
     "nuxt": "^3.17.7",
-    "pdfjs-dist": "^5.4.296",
+    "pdfjs-dist": "^4.0.379",
     "pusher-js": "^8.5.0",
     "vue": "^3.5.17",
     "vue-chartjs": "^5.3.2",
@@ -49,5 +50,22 @@
     "storybook": "~9.0.5",
     "typescript": "^5.9.2",
     "vue-tsc": "^3.0.5"
-  }
+  },
+  "version": "1.0.0",
+  "description": "Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.",
+  "main": "tailwind.config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HarukaDev31/probusiness_intranetv3.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HarukaDev31/probusiness_intranetv3/issues"
+  },
+  "homepage": "https://github.com/HarukaDev31/probusiness_intranetv3#readme"
 }

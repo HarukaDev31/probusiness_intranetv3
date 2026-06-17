@@ -107,8 +107,8 @@ const setCanvasRef = (el: any, pageNum: number) => {
 const initPdfJs = async () => {
   if (pdfjsLib) return
   const [pdfjs, workerModule] = await Promise.all([
-    import('pdfjs-dist/legacy/build/pdf.mjs'),
-    import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')
+    import('pdfjs-dist'),
+    import('pdfjs-dist/build/pdf.worker.min.mjs?url')
   ])
   pdfjsLib = markRaw(pdfjs)
   pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default
