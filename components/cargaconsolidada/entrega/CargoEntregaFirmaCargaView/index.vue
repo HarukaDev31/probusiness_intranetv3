@@ -72,6 +72,7 @@ import type { CargoEntregaFirmaCargaViewProps } from './types'
 import { ref, onMounted, onUnmounted, nextTick, markRaw } from 'vue'
 import FirmaEntregaModal from '~/components/cargaconsolidada/entrega/FirmaEntregaModal/index.vue'
 import { useFirmaCarga } from '~/composables/cargaconsolidada/entrega/useFirmaCarga'
+import { ensurePromiseWithResolversPolyfill } from '~/utils/promiseWithResolversPolyfill'
 import { useOverlay } from '#imports'
 
 const props = defineProps<CargoEntregaFirmaCargaViewProps>()
@@ -106,9 +107,10 @@ const setCanvasRef = (el: any, pageNum: number) => {
 
 const initPdfJs = async () => {
   if (pdfjsLib) return
+  ensurePromiseWithResolversPolyfill()
   const [pdfjs, workerModule] = await Promise.all([
-    import('pdfjs-dist'),
-    import('pdfjs-dist/build/pdf.worker.min.mjs?url')
+    import('pdfjs-dist/legacy/build/pdf.min.mjs'),
+    import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')
   ])
   pdfjsLib = markRaw(pdfjs)
   pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default
