@@ -1,26 +1,21 @@
-import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
-import { ensurePromiseWithResolversPolyfill } from '~/utils/promiseWithResolversPolyfill'
-
-type PdfJsLegacyModule = typeof import('pdfjs-dist/legacy/build/pdf.min.mjs')
+type PdfJsLegacyModule = typeof import('pdfjs-dist/legacy/build/pdf.min.js')
 
 let pdfjsLib: PdfJsLegacyModule | null = null
 
 /**
- * PDF.js legacy (Safari < 17.4) con worker empaquetado por Vite (?url estático).
- * El import dinámico ?url devolvía JSON y provocaba "fake worker / unexpected token {".
+ * PDF.js 3 legacy sin Web Worker (disableWorker).
+ * Compatible con iOS 16 / Safari < 17.4 y evita errores de worker en Vite ("fake worker / unexpected token {").
  */
 export async function getPdfJsLegacy(): Promise<PdfJsLegacyModule> {
   if (pdfjsLib) return pdfjsLib
-  ensurePromiseWithResolversPolyfill()
-  const mod = await import('pdfjs-dist/legacy/build/pdf.min.mjs')
-  mod.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
-  pdfjsLib = mod
+  pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.min.js')
   return pdfjsLib
 }
 
 export function loadPdfDocument(pdfjs: PdfJsLegacyModule, data: ArrayBuffer) {
   return pdfjs.getDocument({
     data,
+    disableWorker: true,
     isEvalSupported: false,
   })
 }

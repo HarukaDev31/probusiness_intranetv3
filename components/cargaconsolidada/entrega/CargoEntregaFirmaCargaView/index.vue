@@ -332,7 +332,10 @@ const loadPDF = async () => {
     isPdfLoaded.value = true
   } catch (err: any) {
     console.error('Error cargando PDF:', err)
-    loadError.value = err?.message || 'No se pudo mostrar el documento'
+    const msg = err?.message || String(err)
+    loadError.value = msg.includes('fake worker')
+      ? 'No se pudo inicializar el visor PDF en este dispositivo. Intenta de nuevo.'
+      : (msg || 'No se pudo mostrar el documento')
     isPdfLoaded.value = false
   }
 }
