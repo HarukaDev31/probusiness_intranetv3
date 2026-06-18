@@ -115,6 +115,7 @@ const open = defineModel<boolean>('open', { default: false })
 const props = defineProps<{
   template: WaInboxTemplate | null
   sending?: boolean
+  initialParams?: Record<string, string> | null
 }>()
 
 const emit = defineEmits<{
@@ -227,6 +228,12 @@ function resetForm() {
   filesByParam.value = {}
 }
 
+function applyInitialParams() {
+  const initial = props.initialParams ?? {}
+  textValues.value = { ...initial }
+  filesByParam.value = {}
+}
+
 function close() {
   open.value = false
 }
@@ -258,10 +265,16 @@ function emitSend() {
 watch(open, (v) => {
   if (!v) {
     resetForm()
+    return
   }
+  applyInitialParams()
 })
 
-watch(() => props.template, () => {
-  resetForm()
-})
+watch(
+  () => [props.template, props.initialParams] as const,
+  () => {
+    if (!open.value) return
+    applyInitialParams()
+  }
+)
 </script>

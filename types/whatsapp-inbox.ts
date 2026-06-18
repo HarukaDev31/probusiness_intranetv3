@@ -43,6 +43,7 @@ export interface WaInboxMessage {
   failed_reason?: string | null
   is_template?: boolean
   template_name?: string | null
+  template_params?: Record<string, string> | null
   message_type?: string
   meta_message_id?: string | null
   media_url?: string | null

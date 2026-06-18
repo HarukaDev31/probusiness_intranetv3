@@ -11,6 +11,15 @@ function waMessageNumericId(id: unknown): number {
   return Number.isFinite(n) && n > 0 ? n : 0
 }
 
+function isHistoryPrepend(prev: WaInboxMessage[], next: WaInboxMessage[]): boolean {
+  if (!prev.length || next.length <= prev.length) return false
+  const prevFirst = waMessageNumericId(prev[0]?.id)
+  const prevLast = waMessageNumericId(prev[prev.length - 1]?.id)
+  const nextFirst = waMessageNumericId(next[0]?.id)
+  const nextLast = waMessageNumericId(next[next.length - 1]?.id)
+  return prevFirst > 0 && nextFirst !== prevFirst && nextLast === prevLast
+}
+
 export function useWaInboxChatScroll(
   messages: Ref<WaInboxMessage[]>,
   conversationId: Ref<number | null>,
@@ -23,6 +32,7 @@ export function useWaInboxChatScroll(
 
   let openScrollObserver: ResizeObserver | null = null
   let openScrollMediaCleanup: (() => void) | null = null
+  let prependAnchor: { scrollTop: number; scrollHeight: number } | null = null
 
   /** Solo mensajes entrantes (cliente → yo) mientras no estoy abajo. */
   const showJumpButton = computed(() => newBelowCount.value > 0)
@@ -52,6 +62,10 @@ export function useWaInboxChatScroll(
 
   function onMessagesScroll() {
     measureNearBottom()
+    if (!isNearBottom.value) {
+      pendingOpenScroll.value = false
+      stopOpenScrollObservers()
+    }
   }
 
   function isAtBottom(el: HTMLElement): boolean {
@@ -64,6 +78,23 @@ export function useWaInboxChatScroll(
     el.style.scrollBehavior = 'auto'
     el.scrollTop = el.scrollHeight
     el.style.scrollBehavior = prev
+  }
+
+  function restorePrependScroll(anchor: { scrollTop: number; scrollHeight: number }) {
+    nextTick(() => {
+      requestAnimationFrame(() => {
+        const el = getScrollEl()
+        if (!el) return
+        const delta = el.scrollHeight - anchor.scrollHeight
+        if (delta > 0) {
+          const prev = el.style.scrollBehavior
+          el.style.scrollBehavior = 'auto'
+          el.scrollTop = anchor.scrollTop + delta
+          el.style.scrollBehavior = prev
+        }
+        measureNearBottom()
+      })
+    })
   }
 
   async function scrollToBottom(smooth = true) {
@@ -135,6 +166,12 @@ export function useWaInboxChatScroll(
       return false
     }
 
+    if (!isNearBottom.value) {
+      pendingOpenScroll.value = false
+      stopOpenScrollObservers()
+      return false
+    }
+
     startOpenScrollObservers()
 
     let stableReads = 0
@@ -201,6 +238,7 @@ export function useWaInboxChatScroll(
     isNearBottom.value = true
     newBelowCount.value = 0
     pendingOpenScroll.value = false
+    prependAnchor = null
     stopOpenScrollObservers()
   }
 
@@ -214,7 +252,7 @@ export function useWaInboxChatScroll(
   })
 
   watch(loadingMessages, (loading, wasLoading) => {
-    if (wasLoading && !loading) {
+    if (wasLoading && !loading && isNearBottom.value) {
       pendingOpenScroll.value = true
       void tryPendingOpenScroll()
     }
@@ -226,52 +264,67 @@ export function useWaInboxChatScroll(
     }
   })
 
+  /** Captura scroll antes de insertar historial arriba (carga paginada / merge). */
   watch(
-    () => messages.value.length,
-    () => {
-      if (pendingOpenScroll.value) {
-        void tryPendingOpenScroll()
-      }
-    }
+    messages,
+    (list, prevList) => {
+      const prev = prevList ?? []
+      if (!isHistoryPrepend(prev, list)) return
+
+      const el = getScrollEl()
+      if (!el) return
+
+      prependAnchor = { scrollTop: el.scrollTop, scrollHeight: el.scrollHeight }
+      pendingOpenScroll.value = false
+      stopOpenScrollObservers()
+    },
+    { flush: 'pre' }
   )
 
-  watch(
-    () => {
-      const list = messages.value
-      if (!list.length) return '0'
-      const last = list[list.length - 1]
-      return `${list.length}:${waMessageNumericId(last.id)}:${last.direction}`
-    },
-    (sig, prevSig) => {
-      const list = messages.value
-      const prevLen = prevSig ? Number(prevSig.split(':')[0]) || 0 : 0
+  watch(messages, (list, prevList) => {
+    const prev = prevList ?? []
 
-      if (pendingOpenScroll.value && list.length > 0) {
-        void tryPendingOpenScroll()
+    if (prependAnchor) {
+      const anchor = prependAnchor
+      prependAnchor = null
+      restorePrependScroll(anchor)
+      return
+    }
+
+    if (pendingOpenScroll.value && list.length > 0) {
+      void tryPendingOpenScroll()
+      return
+    }
+
+    if (list.length <= prev.length) return
+
+    const prevLast = waMessageNumericId(prev[prev.length - 1]?.id)
+    const curLast = waMessageNumericId(list[list.length - 1]?.id)
+    if (!curLast || curLast === prevLast) return
+
+    const prevLastIdx = prevLast
+      ? list.findIndex((m) => waMessageNumericId(m.id) === prevLast)
+      : -1
+    const added = prevLastIdx >= 0 ? list.slice(prevLastIdx + 1) : []
+    if (!added.length) return
+
+    const incomingCount = added.filter((m) => m.direction === 'in').length
+    const hasOutbound = added.some((m) => m.direction === 'out')
+
+    nextTick(() => {
+      if (hasOutbound) {
+        scrollToBottom(false)
         return
       }
 
-      if (list.length <= prevLen) return
-
-      const added = list.slice(prevLen)
-      const incomingCount = added.filter((m) => m.direction === 'in').length
-      const hasOutbound = added.some((m) => m.direction === 'out')
-
-      nextTick(() => {
-        if (hasOutbound) {
-          scrollToBottom(false)
-          return
-        }
-
-        measureNearBottom()
-        if (isNearBottom.value) {
-          scrollToBottom(false)
-        } else if (incomingCount > 0) {
-          newBelowCount.value += incomingCount
-        }
-      })
-    }
-  )
+      measureNearBottom()
+      if (isNearBottom.value) {
+        scrollToBottom(false)
+      } else if (incomingCount > 0) {
+        newBelowCount.value += incomingCount
+      }
+    })
+  })
 
   onBeforeUnmount(() => {
     stopOpenScrollObservers()

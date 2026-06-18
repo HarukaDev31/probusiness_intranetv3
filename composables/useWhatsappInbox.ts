@@ -27,7 +27,9 @@ import {
 import {
   mergeWaInboxMessage,
   mergeMessageLists,
-  waMessageNumericId
+  waMessageNumericId,
+  isFailedOutboundTemplate,
+  normalizeWaInboxTemplateParams
 } from '~/composables/whatsapp-inbox/waInboxMessageUtils'
 import {
   setWaInboxViewingConversationId,
@@ -49,6 +51,13 @@ import { WA_INBOX_WS_CHANNEL } from '~/constants/whatsappInboxWs'
 import { conversationPatchFromWaInboxMessage } from '~/utils/whatsappInboxSidebarPreview'
 import { fetchWaInboxMessagesHistory } from '~/composables/whatsapp-inbox/fetchWaInboxMessagesHistory'
 import { dispatchWaInboxComposerSends } from '~/utils/whatsappInboxComposerSend'
+import { getTemplateParamDefs } from '~/utils/whatsappInboxTemplateParams'
+
+export type WaInboxFailedTemplateResendContext = {
+  template: WaInboxTemplate
+  initialParams: Record<string, string>
+  requiresFiles: boolean
+}
 
 const CONVERSATIONS_PER_PAGE = 30
 const WA_INBOX_BASE_PATH = '/coordinacion/whatsapp-inbox'
@@ -1181,6 +1190,48 @@ export function useWhatsappInbox() {
     }
   }
 
+  async function prepareFailedTemplateResend(
+    msg: WaInboxMessage
+  ): Promise<WaInboxFailedTemplateResendContext | null> {
+    if (!isFailedOutboundTemplate(msg)) return null
+
+    const templateName = msg.template_name?.trim()
+    if (!templateName) return null
+
+    let tpl = templates.value.find((t) => t.name === templateName)
+    if (!tpl) {
+      await loadTemplates({ force: true })
+      tpl = templates.value.find((t) => t.name === templateName)
+    }
+    if (!tpl) {
+      showError(
+        'Plantilla',
+        'No se encontró la plantilla en el catálogo. Actualiza el inbox e intenta de nuevo.'
+      )
+      return null
+    }
+
+    const defs = getTemplateParamDefs(tpl)
+    const initialParams = normalizeWaInboxTemplateParams(msg.template_params)
+    const requiresFiles = defs.some((d) => d.type === 'file')
+
+    return { template: tpl, initialParams, requiresFiles }
+  }
+
+  async function resendFailedTemplate(
+    msg: WaInboxMessage
+  ): Promise<{ action: 'none' } | { action: 'sent' } | ({ action: 'modal' } & WaInboxFailedTemplateResendContext)> {
+    const ctx = await prepareFailedTemplateResend(msg)
+    if (!ctx) return { action: 'none' }
+
+    if (ctx.requiresFiles) {
+      return { action: 'modal', ...ctx }
+    }
+
+    await sendTemplateMessage(ctx.template.name, ctx.initialParams)
+    return { action: 'sent' }
+  }
+
   async function assignConversation(userId: number | null) {
     const conv = selectedConversation.value
     if (!conv) return
@@ -1550,6 +1601,8 @@ export function useWhatsappInbox() {
     clearConversationSelection,
     sendComposerMessage,
     sendTemplateMessage,
+    resendFailedTemplate,
+    isFailedOutboundTemplate,
     assignConversation,
     renameConversation,
     savingRename,

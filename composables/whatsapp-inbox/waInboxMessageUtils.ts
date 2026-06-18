@@ -1,5 +1,23 @@
 import type { WaInboxMessage } from '~/types/whatsapp-inbox'
 
+export function isFailedOutboundTemplate(msg: WaInboxMessage): boolean {
+  if (msg.direction !== 'out' || msg.delivery_status !== 'failed') return false
+  if (!msg.template_name?.trim()) return false
+  return msg.is_template === true || msg.message_type === 'template'
+}
+
+export function normalizeWaInboxTemplateParams(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const out: Record<string, string> = {}
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!key || key.startsWith('_')) continue
+    if (value == null) continue
+    if (typeof value === 'string') out[key] = value
+    else if (typeof value === 'number' || typeof value === 'boolean') out[key] = String(value)
+  }
+  return out
+}
+
 export function isWaInboxReactionNoise(msg: WaInboxMessage): boolean {
   if (msg.message_type === 'reaction') return true
   const body = msg.body?.trim() || ''

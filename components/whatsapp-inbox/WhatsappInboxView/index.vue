@@ -265,7 +265,7 @@
             :body-class="isDesktop ? '' : 'pb-40'"
             @scroll="onChatScroll"
           >
-            <p v-if="loadingMessages" class="py-8 text-center text-sm text-muted">Cargando mensajes…</p>
+            <p v-if="loadingMessages && !messages.length" class="py-8 text-center text-sm text-muted">Cargando mensajes…</p>
             <template v-else>
               <template v-for="item in timelineItems" :key="item.kind === 'divider' ? `d-${item.dayKey}` : `m-${item.msg.id}`">
                 <WhatsappInboxDayDivider
@@ -409,6 +409,7 @@
     <WhatsappInboxTemplateParamsModal
       v-model:open="templateParamsOpen"
       :template="templateForParams"
+      :initial-params="templateInitialParams"
       :sending="sendingTemplate"
       @send="onTemplateSend"
       @error="(msg) => showTemplateError(msg)"
@@ -504,6 +505,8 @@ const {
   clearConversationSelection,
   sendComposerMessage,
   sendTemplateMessage,
+  resendFailedTemplate,
+  isFailedOutboundTemplate,
   sendingTemplate,
   assignConversation,
   renameConversation,
@@ -544,7 +547,9 @@ const {
   showJumpButton,
   onMessagesScroll,
   scrollToBottom,
-  jumpToBottom
+  jumpToBottom,
+  measureNearBottom,
+  isNearBottom
 } = useWaInboxChatScroll(messages, selectedConversationId, loadingMessages)
 
 const {
@@ -566,7 +571,10 @@ function onChatScroll() {
 }
 
 function onChatMediaRendered() {
-  void scrollToBottom(false)
+  measureNearBottom()
+  if (isNearBottom.value) {
+    void scrollToBottom(false)
+  }
   nextTick(() => updateFloatingDay())
 }
 
@@ -586,6 +594,7 @@ const messageInfoTarget = ref<WaInboxMessage | null>(null)
 const templatePickerOpen = ref(false)
 const templateParamsOpen = ref(false)
 const templateForParams = ref<WaInboxTemplate | null>(null)
+const templateInitialParams = ref<Record<string, string> | null>(null)
 const newContactOpen = ref(false)
 const renameContactOpen = ref(false)
 
@@ -612,6 +621,7 @@ async function onNewContactSave(payload: {
 }
 
 function onTemplatePicked(tpl: WaInboxTemplate) {
+  templateInitialParams.value = null
   templateForParams.value = tpl
   templateParamsOpen.value = true
 }
@@ -630,6 +640,7 @@ async function onTemplateSend(payload: {
   )
   templateParamsOpen.value = false
   templateForParams.value = null
+  templateInitialParams.value = null
 }
 
 function showTemplateError(message: string) {
@@ -692,6 +703,15 @@ function abrirInfoMensaje(msg: WaInboxMessage) {
   messageInfoOpen.value = true
 }
 
+async function reenviarTemplateFallido(msg: WaInboxMessage) {
+  const result = await resendFailedTemplate(msg)
+  if (result.action === 'modal') {
+    templateForParams.value = result.template
+    templateInitialParams.value = result.initialParams
+    templateParamsOpen.value = true
+  }
+}
+
 function messageMenuItems(msg: WaInboxMessage) {
   const items = [
     {
@@ -706,6 +726,14 @@ function messageMenuItems(msg: WaInboxMessage) {
       label: 'Responder',
       icon: 'i-heroicons-arrow-uturn-left',
       onSelect: () => iniciarRespuesta(msg)
+    })
+  }
+
+  if (isFailedOutboundTemplate(msg)) {
+    items.push({
+      label: 'Reenviar plantilla',
+      icon: 'i-heroicons-arrow-path',
+      onSelect: () => { void reenviarTemplateFallido(msg) }
     })
   }
 
