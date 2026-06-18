@@ -85,7 +85,7 @@ export default defineNuxtConfig({
     },
     optimizeDeps: {
       include: ['vue', 'vue-router', '@nuxt/icon', 'defu', 'vuedraggable', 'pusher-js', 'laravel-echo'],
-      exclude: ['chart.js', 'xlsx'], // Cargar bajo demanda
+      exclude: ['chart.js', 'xlsx', 'pdfjs-dist'], // Cargar bajo demanda; evita pre-bundle incorrecto del worker
     }
   },
   

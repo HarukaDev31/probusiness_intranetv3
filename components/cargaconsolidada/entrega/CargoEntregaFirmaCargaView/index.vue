@@ -72,7 +72,7 @@ import type { CargoEntregaFirmaCargaViewProps } from './types'
 import { ref, onMounted, onUnmounted, nextTick, markRaw } from 'vue'
 import FirmaEntregaModal from '~/components/cargaconsolidada/entrega/FirmaEntregaModal/index.vue'
 import { useFirmaCarga } from '~/composables/cargaconsolidada/entrega/useFirmaCarga'
-import { ensurePromiseWithResolversPolyfill } from '~/utils/promiseWithResolversPolyfill'
+import { getPdfJsLegacy, loadPdfDocument } from '~/utils/pdfJsLegacy'
 import { useOverlay } from '#imports'
 
 const props = defineProps<CargoEntregaFirmaCargaViewProps>()
@@ -107,13 +107,7 @@ const setCanvasRef = (el: any, pageNum: number) => {
 
 const initPdfJs = async () => {
   if (pdfjsLib) return
-  ensurePromiseWithResolversPolyfill()
-  const [pdfjs, workerModule] = await Promise.all([
-    import('pdfjs-dist/legacy/build/pdf.min.mjs'),
-    import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')
-  ])
-  pdfjsLib = markRaw(pdfjs)
-  pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default
+  pdfjsLib = markRaw(await getPdfJsLegacy())
 }
 
 let baseScale = 1.0
@@ -318,7 +312,7 @@ const loadPDF = async () => {
 
     await initPdfJs()
     const arrayBuffer = await fetchPdfArrayBuffer(pdfUrl.value)
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
+    const loadingTask = loadPdfDocument(pdfjsLib, arrayBuffer)
     const pdf = await loadingTask.promise
     pdfDoc.value = markRaw(pdf)
     totalPages.value = pdf.numPages
