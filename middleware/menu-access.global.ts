@@ -33,6 +33,18 @@ const canAccessNumericDetailUnderAllowedParent = (
   )
 }
 
+const canAccessEntregaFirmaCarga = (
+  currentPath: string,
+  allowedRoutes: string[],
+): boolean => {
+  const match = currentPath.match(/^(.+\/entrega)\/firma-carga\/\d+$/)
+  if (!match) return false
+  const entregaBase = match[1]
+  return allowedRoutes.some(
+    (r) => r === entregaBase || r.startsWith(`${entregaBase}/`) || entregaBase.startsWith(`${r}/`) || r.startsWith(`${entregaBase}/`),
+  )
+}
+
 export default defineNuxtRouteMiddleware((to) => {
   if (process.server) return
   if (to.path === '/login') return
@@ -67,6 +79,7 @@ export default defineNuxtRouteMiddleware((to) => {
 
   if (canAccessRoute(currentPath, allowedRoutes)) return
   if (canAccessNumericDetailUnderAllowedParent(currentPath, allowedRoutes)) return
+  if (canAccessEntregaFirmaCarga(currentPath, allowedRoutes)) return
 
   const fallbackRoute = allowedRoutes.find((route) => route && route !== '#')
   if (fallbackRoute && fallbackRoute !== currentPath) {
