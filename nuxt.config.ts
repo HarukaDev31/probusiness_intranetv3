@@ -99,10 +99,8 @@ export default defineNuxtConfig({
         'vuedraggable',
         'pusher-js',
         'laravel-echo',
-        'pdfjs-dist/legacy/build/pdf.min.js',
-        'pdfjs-dist/legacy/build/pdf.worker.min.js',
       ],
-      exclude: ['chart.js', 'xlsx'], // Cargar bajo demanda
+      exclude: ['chart.js', 'xlsx', 'pdfjs-dist'],
     }
   },
   
