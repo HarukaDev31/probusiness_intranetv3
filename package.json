@@ -9,7 +9,7 @@
     "preview:prod": "nuxt build && nuxt preview",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
+    "postinstall": "nuxt prepare && node scripts/copy-pdf-worker.mjs",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build"
   },
