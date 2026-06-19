@@ -18,7 +18,7 @@
           Firmado
         </span>
       </div>
-      <span v-if="!useNativePdfViewer && totalPages" class="text-[10px] sm:text-xs text-gray-400 shrink-0">{{ totalPages }} pág.</span>
+      <span class="text-[10px] sm:text-xs text-gray-400 shrink-0">{{ totalPages }} pág.</span>
     </div>
 
     <!-- Área PDF -->
@@ -26,7 +26,6 @@
       <div
         ref="scrollContainer"
         class="pdf-viewport"
-        :class="{ 'pdf-viewport--native': useNativePdfViewer }"
         @mousedown="onDragStart"
         @touchstart.prevent="onTouchStart"
         @touchmove.prevent="onTouchMove"
@@ -41,13 +40,7 @@
           <UIcon name="i-heroicons-document-text" class="w-10 h-10 sm:w-16 sm:h-16 text-gray-400 animate-pulse" />
           <p class="text-xs sm:text-base text-gray-500">Cargando documento...</p>
         </div>
-        <iframe
-          v-if="useNativePdfViewer && nativePdfBlobUrl && isPdfLoaded"
-          :src="nativePdfBlobUrl"
-          class="native-pdf-frame"
-          title="Cargo de entrega"
-        />
-        <div v-else ref="pdfViewer" class="pdf-pages">
+        <div ref="pdfViewer" class="pdf-pages">
           <div v-for="pageNum in totalPages" :key="pageNum" class="pdf-page">
             <canvas
               :ref="(el) => setCanvasRef(el, pageNum)"
@@ -61,12 +54,10 @@
     <!-- Barra inferior compacta -->
     <div class="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-t border-gray-200 dark:border-gray-700 px-2 py-1.5 sm:py-2 sm:static sm:mt-3 sm:bg-transparent sm:backdrop-blur-none sm:border-0 sm:px-0">
       <div class="flex items-center justify-center gap-2 sm:gap-3">
-        <template v-if="!useNativePdfViewer">
-          <UButton @click="zoomOut" :disabled="currentScale <= minScale" color="neutral" variant="ghost" size="xs" icon="i-heroicons-minus" />
-          <span class="text-[11px] sm:text-sm text-gray-500 min-w-[36px] text-center tabular-nums">{{ Math.round(currentScale * 100) }}%</span>
-          <UButton @click="zoomIn" :disabled="currentScale >= maxScale" color="neutral" variant="ghost" size="xs" icon="i-heroicons-plus" />
-          <div class="w-px h-4 bg-gray-300 dark:bg-gray-600" />
-        </template>
+        <UButton @click="zoomOut" :disabled="currentScale <= minScale" color="neutral" variant="ghost" size="xs" icon="i-heroicons-minus" />
+        <span class="text-[11px] sm:text-sm text-gray-500 min-w-[36px] text-center tabular-nums">{{ Math.round(currentScale * 100) }}%</span>
+        <UButton @click="zoomIn" :disabled="currentScale >= maxScale" color="neutral" variant="ghost" size="xs" icon="i-heroicons-plus" />
+        <div class="w-px h-4 bg-gray-300 dark:bg-gray-600" />
         <UButton v-if="!hasSignedPdf" @click="openSignatureModal" color="primary" variant="solid" size="xs" icon="i-heroicons-pencil">Firmar</UButton>
         <UButton @click="downloadPDF" color="neutral" variant="outline" size="xs" icon="i-heroicons-arrow-down-tray">
           {{ hasSignedPdf ? 'Firmado' : 'Descargar' }}
@@ -81,7 +72,7 @@ import type { CargoEntregaFirmaCargaViewProps } from './types'
 import { ref, onMounted, onUnmounted, onErrorCaptured, nextTick, markRaw } from 'vue'
 import FirmaEntregaModal from '~/components/cargaconsolidada/entrega/FirmaEntregaModal/index.vue'
 import { useFirmaCarga } from '~/composables/cargaconsolidada/entrega/useFirmaCarga'
-import { isAppleMobile } from '~/utils/isAppleMobile'
+import { getPdfJsLegacy, loadPdfDocument } from '~/utils/pdfJsLegacy'
 import { useOverlay } from '#imports'
 
 const props = defineProps<CargoEntregaFirmaCargaViewProps>()
@@ -99,8 +90,6 @@ const maxScale = ref(3.0)
 const pdfCanvases = ref<Record<number, HTMLCanvasElement>>({})
 const scrollContainer = ref<HTMLElement | null>(null)
 const pdfViewer = ref<HTMLElement | null>(null)
-const useNativePdfViewer = ref(false)
-const nativePdfBlobUrl = ref<string | null>(null)
 
 const {
   getCargoEntregaPdf,
@@ -118,7 +107,6 @@ const setCanvasRef = (el: any, pageNum: number) => {
 
 const initPdfJs = async () => {
   if (pdfjsLib) return
-  const { getPdfJsLegacy } = await import('~/utils/pdfJsLegacy')
   pdfjsLib = markRaw(await getPdfJsLegacy())
 }
 
@@ -192,7 +180,6 @@ let scrollStartX = 0
 let scrollStartY = 0
 
 const onDragStart = (e: MouseEvent) => {
-  if (useNativePdfViewer.value) return
   const container = scrollContainer.value
   if (!container) return
   if (container.scrollWidth <= container.clientWidth && container.scrollHeight <= container.clientHeight) return
@@ -241,7 +228,6 @@ function getTouchDist(e: TouchEvent): number {
 }
 
 const onTouchStart = (e: TouchEvent) => {
-  if (useNativePdfViewer.value) return
   const container = scrollContainer.value
   if (!container) return
 
@@ -266,7 +252,6 @@ const onTouchStart = (e: TouchEvent) => {
 let pinchRafId: number | null = null
 
 const onTouchMove = (e: TouchEvent) => {
-  if (useNativePdfViewer.value) return
   const container = scrollContainer.value
   if (!container) return
 
@@ -310,26 +295,11 @@ const waitForCanvasRefs = async (pageCount: number) => {
   throw new Error('No se pudieron renderizar las páginas del documento')
 }
 
-const revokeNativePdfBlob = () => {
-  if (nativePdfBlobUrl.value) {
-    URL.revokeObjectURL(nativePdfBlobUrl.value)
-    nativePdfBlobUrl.value = null
-  }
-}
-
-const loadNativePdf = async (url: string) => {
-  revokeNativePdfBlob()
-  const arrayBuffer = await fetchPdfArrayBuffer(url)
-  nativePdfBlobUrl.value = URL.createObjectURL(new Blob([arrayBuffer], { type: 'application/pdf' }))
-  isPdfLoaded.value = true
-}
-
 const loadPDF = async () => {
   loadError.value = null
   isPdfLoaded.value = false
   pdfCanvases.value = {}
   totalPages.value = 0
-  revokeNativePdfBlob()
 
   try {
     if (!props.idContenedor || !props.idCotizacion) {
@@ -340,13 +310,7 @@ const loadPDF = async () => {
       throw new Error('No se encontró el PDF de cargo de entrega')
     }
 
-    if (useNativePdfViewer.value) {
-      await loadNativePdf(pdfUrl.value)
-      return
-    }
-
     await initPdfJs()
-    const { loadPdfDocument } = await import('~/utils/pdfJsLegacy')
     const arrayBuffer = await fetchPdfArrayBuffer(pdfUrl.value)
     const loadingTask = loadPdfDocument(pdfjsLib, arrayBuffer)
     const pdf = await loadingTask.promise
@@ -399,7 +363,6 @@ const downloadPDF = () => {
 }
 
 onMounted(() => {
-  useNativePdfViewer.value = isAppleMobile()
   loadPDF()
 })
 
@@ -412,7 +375,6 @@ onErrorCaptured((err) => {
 
 onUnmounted(() => {
   onDragEnd()
-  revokeNativePdfBlob()
   if (pdfDoc.value) {
     pdfDoc.value.destroy?.()
   }
@@ -456,18 +418,5 @@ onUnmounted(() => {
 }
 .pdf-page canvas {
   display: block;
-}
-.pdf-viewport--native {
-  cursor: default;
-  overflow: hidden;
-}
-.native-pdf-frame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  min-height: 70vh;
-  border: 0;
-  background: #fff;
 }
 </style>

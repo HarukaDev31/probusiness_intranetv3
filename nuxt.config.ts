@@ -84,8 +84,18 @@ export default defineNuxtConfig({
       chunkSizeWarningLimit: 1000,
     },
     optimizeDeps: {
-      include: ['vue', 'vue-router', '@nuxt/icon', 'defu', 'vuedraggable', 'pusher-js', 'laravel-echo'],
-      exclude: ['chart.js', 'xlsx', 'pdfjs-dist'], // Cargar bajo demanda
+      include: [
+        'vue',
+        'vue-router',
+        '@nuxt/icon',
+        'defu',
+        'vuedraggable',
+        'pusher-js',
+        'laravel-echo',
+        'pdfjs-dist/legacy/build/pdf.min.js',
+        'pdfjs-dist/legacy/build/pdf.worker.min.js',
+      ],
+      exclude: ['chart.js', 'xlsx'], // Cargar bajo demanda
     }
   },
   
