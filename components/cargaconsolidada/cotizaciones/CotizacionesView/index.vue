@@ -5,7 +5,7 @@
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
-            :show-export="(currentId == ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(Number(currentId))) ? true : false"
+            :show-export="showProspectosExport"
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
@@ -437,6 +437,14 @@ const loadTabs = () => {
                 }
             ]
             break
+        case ROLES.JEFE_MARKETING:
+            tabs.value = [
+                {
+                    label: 'Prospectos',
+                    value: 'prospectos'
+                }
+            ]
+            break
         default:
             tabs.value = [
                 {
@@ -447,6 +455,11 @@ const loadTabs = () => {
             break
     }
 }
+const showProspectosExport = computed(() =>
+    currentRole.value === ROLES.JEFE_MARKETING
+    || currentId.value == ID_JEFEVENTAS
+    || COTIZADORES_WITH_PRIVILEGES.includes(Number(currentId.value))
+)
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 const simpleUploadFileModal = overlay.create(SimpleUploadFileModal)

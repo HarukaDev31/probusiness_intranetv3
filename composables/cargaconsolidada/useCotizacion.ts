@@ -245,6 +245,38 @@ export const useCotizacion = () => {
         }
     })
 
+    const buildExportParams = () => {
+        const params: Record<string, string | number> = {
+            sort_by: 'id',
+            sort_order: 'asc',
+        }
+        if (search.value.trim()) {
+            params.search = search.value.trim()
+        }
+        if (filters.value.fecha_inicio) {
+            params.fecha_inicio = filters.value.fecha_inicio
+        }
+        if (filters.value.fecha_fin) {
+            params.fecha_fin = filters.value.fecha_fin
+        }
+        if (filters.value.estado && filters.value.estado !== 'todos') {
+            params.estado = filters.value.estado
+        }
+        if (filters.value.estado_cotizador && filters.value.estado_cotizador !== 'todos') {
+            params.estado_cotizador = filters.value.estado_cotizador
+        }
+        if (filters.value.estado_coordinacion && filters.value.estado_coordinacion !== 'todos') {
+            params.estado_coordinacion = filters.value.estado_coordinacion
+        }
+        if (filters.value.estado_china && filters.value.estado_china !== 'todos') {
+            params.estado_china = filters.value.estado_china
+        }
+        if (route.query.idCotizacion) {
+            params.idCotizacion = String(route.query.idCotizacion)
+        }
+        return params
+    }
+
     const exportData = async (id?: number) => {
         loading.value = true
         error.value = null
@@ -252,7 +284,7 @@ export const useCotizacion = () => {
             await withSpinner(async () => {
                 const containerId = id ?? Number(route.params.id)
                 if (!containerId) throw new Error('ID de contenedor inválido para exportar')
-                const blob = await CotizacionService.exportCotizaciones(containerId)
+                const blob = await CotizacionService.exportCotizaciones(containerId, buildExportParams())
                 const cargaid = await CotizacionService.getHeaders(containerId)
                 carga.value = cargaid.carga // Asignar el valor correcto de tipo string
                 //crear archivo y descargarlo
