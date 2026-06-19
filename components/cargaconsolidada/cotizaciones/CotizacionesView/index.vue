@@ -652,6 +652,11 @@ const getFilterConfigPagos = () => {
     return []
 }
 const getFilterPerRole = () => {
+    if (currentRole.value === ROLES.JEFE_MARKETING) {
+        return filterConfigProspectosCoordinacion.value.filter(
+            (f: { key?: string }) => f.key !== 'estado_coordinacion' && f.key !== 'estado_cotizador'
+        )
+    }
     if ((currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
         return filterConfigProspectosCoordinacion.value
     } else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
