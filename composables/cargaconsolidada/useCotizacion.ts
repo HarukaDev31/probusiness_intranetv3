@@ -4,11 +4,13 @@ import type { Cotizacion, CotizacionFilters } from "../../types/cargaconsolidada
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from '#app'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { fi } from "@nuxt/ui/runtime/locale/index.js"
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
+
 const { withSpinner } = useSpinner()
 
-
 export const useCotizacion = () => {
+    const { currentRole } = useUserRole()
     const carga = ref<string | null>(null)
     const cotizaciones = ref<Cotizacion[]>([])
     const loading = ref(false)
@@ -273,6 +275,9 @@ export const useCotizacion = () => {
         }
         if (route.query.idCotizacion) {
             params.idCotizacion = String(route.query.idCotizacion)
+        }
+        if (currentRole.value === ROLES.JEFE_MARKETING) {
+            params.export_layout = 'prospectos_marketing'
         }
         return params
     }

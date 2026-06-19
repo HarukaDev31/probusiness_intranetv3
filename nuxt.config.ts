@@ -10,6 +10,10 @@ export default defineNuxtConfig({
     shim: false
   },
   ssr: false,
+
+  build: {
+    transpile: ['pdfjs-dist'],
+  },
   
   // Optimizaciones de rendimiento y lazy load
   experimental: {
@@ -70,6 +74,9 @@ export default defineNuxtConfig({
               // XLSX
               if (id.includes('xlsx')) {
                 return 'xlsx'
+              }
+              if (id.includes('pdfjs-dist')) {
+                return 'pdfjs'
               }
               // Pusher y Laravel Echo (WebSockets)
               if (id.includes('pusher') || id.includes('laravel-echo')) {

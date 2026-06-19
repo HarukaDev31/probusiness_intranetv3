@@ -1,4 +1,5 @@
 <template>
+  <ClientOnly>
   <div class="min-h-screen w-full bg-gray-50 dark:bg-gray-900 flex flex-col p-2 sm:p-4 pb-20 sm:pb-6">
     <!-- Header compacto -->
     <div class="flex items-center justify-between mb-2 sm:mb-4 px-1">
@@ -65,6 +66,13 @@
       </div>
     </div>
   </div>
+  <template #fallback>
+    <div class="min-h-screen w-full bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-2 p-4">
+      <UIcon name="i-heroicons-document-text" class="w-10 h-10 text-gray-400 animate-pulse" />
+      <p class="text-sm text-gray-500">Preparando visor PDF...</p>
+    </div>
+  </template>
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">
@@ -362,8 +370,9 @@ const downloadPDF = () => {
   downloadCargoEntrega()
 }
 
-onMounted(() => {
-  loadPDF()
+onMounted(async () => {
+  await nextTick()
+  await loadPDF()
 })
 
 onErrorCaptured((err) => {
