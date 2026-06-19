@@ -1,8 +1,8 @@
 [build]
-  command = "npm run generate"
-  publish = ".output/public"
+  command = "npm run build"
+  publish = "dist"
 
-# SPA: recarga / URL directa en rutas profundas
+# SPA: recarga y URL directa (Netlify sirve index.html si no hay archivo físico)
 [[redirects]]
   from = "/*"
   to = "/index.html"
