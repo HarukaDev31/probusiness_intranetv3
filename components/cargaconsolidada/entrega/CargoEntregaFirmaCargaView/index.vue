@@ -69,10 +69,9 @@
 
 <script setup lang="ts">
 import type { CargoEntregaFirmaCargaViewProps } from './types'
-import { ref, onMounted, onUnmounted, nextTick, markRaw } from 'vue'
+import { ref, onMounted, onUnmounted, onErrorCaptured, nextTick, markRaw } from 'vue'
 import FirmaEntregaModal from '~/components/cargaconsolidada/entrega/FirmaEntregaModal/index.vue'
 import { useFirmaCarga } from '~/composables/cargaconsolidada/entrega/useFirmaCarga'
-import { getPdfJsLegacy, loadPdfDocument } from '~/utils/pdfJsLegacy'
 import { useOverlay } from '#imports'
 
 const props = defineProps<CargoEntregaFirmaCargaViewProps>()
@@ -107,6 +106,7 @@ const setCanvasRef = (el: any, pageNum: number) => {
 
 const initPdfJs = async () => {
   if (pdfjsLib) return
+  const { getPdfJsLegacy } = await import('~/utils/pdfJsLegacy')
   pdfjsLib = markRaw(await getPdfJsLegacy())
 }
 
@@ -311,6 +311,7 @@ const loadPDF = async () => {
     }
 
     await initPdfJs()
+    const { loadPdfDocument } = await import('~/utils/pdfJsLegacy')
     const arrayBuffer = await fetchPdfArrayBuffer(pdfUrl.value)
     const loadingTask = loadPdfDocument(pdfjsLib, arrayBuffer)
     const pdf = await loadingTask.promise
@@ -364,6 +365,13 @@ const downloadPDF = () => {
 
 onMounted(() => {
   loadPDF()
+})
+
+onErrorCaptured((err) => {
+  console.error('CargoEntregaFirmaCargaView:', err)
+  loadError.value = (err as Error)?.message || 'No se pudo cargar la vista'
+  isPdfLoaded.value = false
+  return false
 })
 
 onUnmounted(() => {

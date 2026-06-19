@@ -7,11 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue'
-
-const CargoEntregaFirmaCargaView = defineAsyncComponent(
-  () => import('~/components/cargaconsolidada/entrega/CargoEntregaFirmaCargaView/index.vue')
-)
+import CargoEntregaFirmaCargaView from '~/components/cargaconsolidada/entrega/CargoEntregaFirmaCargaView/index.vue'
 
 const route = useRoute()
 const idCotizacion = Number(route.params.id)
