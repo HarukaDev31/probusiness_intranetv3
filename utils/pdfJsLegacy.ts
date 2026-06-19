@@ -5,15 +5,15 @@ let pdfjsLib: PdfJsLegacyModule | null = null
 const PDFJS_VERSION = '3.11.174'
 
 /**
- * PDF.js no puede inferir workerSrc cuando document.currentScript es null
- * (bundlers Vite/Nuxt, Safari/iPad). Hay que asignarlo siempre antes de getDocument.
+ * Worker en CDN (misma versión que pdfjs-dist) + fallback local en /public.
  * @see https://github.com/mozilla/pdf.js/issues/10478
  */
 function resolvePdfWorkerSrc(): string {
+  const cdnWorker = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`
   if (typeof window !== 'undefined') {
     return new URL('/pdf.worker.legacy.min.js', window.location.origin).href
   }
-  return `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`
+  return cdnWorker
 }
 
 function applyWorkerSrc(mod: PdfJsLegacyModule): void {
@@ -39,7 +39,6 @@ function applyWorkerSrc(mod: PdfJsLegacyModule): void {
 export async function getPdfJsLegacy(): Promise<PdfJsLegacyModule> {
   if (pdfjsLib) return pdfjsLib
 
-  // Priming: window.pdfjsWorker para fake worker (hilo principal)
   await import('pdfjs-dist/legacy/build/pdf.worker.min.js')
 
   const mod = await import('pdfjs-dist/legacy/build/pdf.min.js')

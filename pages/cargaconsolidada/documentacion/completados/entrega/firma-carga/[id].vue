@@ -1,5 +1,5 @@
 <template>
-  <CargoEntregaFirmaCargaView
+  <CargoEntregaFirmaCargaPageShell
     :back-url="backUrl"
     :id-cotizacion="idCotizacion"
     :id-contenedor="idContenedor"
@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import CargoEntregaFirmaCargaView from '~/components/cargaconsolidada/entrega/CargoEntregaFirmaCargaView/index.vue'
+import CargoEntregaFirmaCargaPageShell from '~/components/cargaconsolidada/entrega/CargoEntregaFirmaCargaPageShell.vue'
 
 const route = useRoute()
 const idCotizacion = Number(route.params.id)

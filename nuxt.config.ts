@@ -10,6 +10,10 @@ export default defineNuxtConfig({
     shim: false
   },
   ssr: false,
+
+  nitro: {
+    preset: 'static',
+  },
   
   // Optimizaciones de rendimiento y lazy load
   experimental: {
