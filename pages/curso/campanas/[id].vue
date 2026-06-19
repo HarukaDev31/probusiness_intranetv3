@@ -19,7 +19,7 @@
             :show-filters="false" 
             :filter-config="filterConfigList"
             :filters-value="studentsFilters" 
-            :show-export="false" 
+            :show-export="showStudentsExport" 
             :show-new-button="false"
             :hide-back-button="false"
             empty-state-message="No se encontraron estudiantes que coincidan con los criterios de búsqueda."
@@ -27,7 +27,8 @@
             @update:primarySearch="handleStudentsSearch" 
             @page-change="handleStudentsPageChange"
             @items-per-page-change="handleStudentsItemsPerPageChange" 
-            @filter-change="handleStudentsFilterChange" />
+            @filter-change="handleStudentsFilterChange"
+            @export="handleExport" />
     </div>
 </template>
 
@@ -40,9 +41,18 @@ import { useRoute } from 'vue-router'
 import type { CampaignStudent } from '~/services/campaignService'
 import { useCursos } from '~/composables/useCursos'
 import type { FilterConfig } from '~/types/data-table'
+import { ROLES } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
 
 const route = useRoute()
 const campaignId = computed(() => Number(route.params.id))
+const { currentRole } = useUserRole()
+const { withSpinner } = useSpinner()
+const { showSuccess, showError } = useModal()
+
+const showStudentsExport = computed(() => currentRole.value === ROLES.JEFE_MARKETING)
 
 const {
     students,
@@ -57,7 +67,8 @@ const {
     handleStudentsSearch,
     handleStudentsPageChange,
     handleStudentsItemsPerPageChange,
-    handleStudentsFilterChange
+    handleStudentsFilterChange,
+    exportCampaignStudents
 } = useCampaigns()
 
 // Obtener filtros de campañas desde useCursos (igual que en index.vue)
@@ -294,6 +305,22 @@ const handleDelete = (student: CampaignStudent) => {
 const handleSave = (student: CampaignStudent) => {
     console.log('Guardar estudiante:', student)
     // TODO: Implementar guardado/exportación
+}
+
+const handleExport = async () => {
+    if (!campaignId.value) return
+    try {
+        await withSpinner(async () => {
+            const response = await exportCampaignStudents(campaignId.value)
+            if (response.success) {
+                showSuccess('Exportación exitosa', 'La lista de estudiantes se exportó correctamente.')
+            } else {
+                showError('Error al exportar', response.error || 'No se pudo exportar la lista de estudiantes.')
+            }
+        }, 'Exportando estudiantes...')
+    } catch (error) {
+        showError('Error al exportar', error instanceof Error ? error.message : 'No se pudo exportar la lista de estudiantes.')
+    }
 }
 
 // Watchers para recargar cuando cambian los filtros o búsqueda

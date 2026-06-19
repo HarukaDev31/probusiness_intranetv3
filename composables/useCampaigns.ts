@@ -253,6 +253,47 @@ export const useCampaigns = () => {
     studentsCurrentPage.value = 1
   }
 
+  const buildStudentsExportParams = (): Record<string, string | number> => {
+    const params: Record<string, string | number> = {}
+    if (studentsSearchQuery.value) {
+      params.search = studentsSearchQuery.value
+    }
+    if (studentsFilters.value.estado) {
+      params.estados_pago = studentsFilters.value.estado
+    }
+    if (studentsFilters.value.fechaInicio) {
+      params.fechaInicio = studentsFilters.value.fechaInicio
+    }
+    if (studentsFilters.value.fechaFin) {
+      params.fechaFin = studentsFilters.value.fechaFin
+    }
+    if (studentsFilters.value.tipos_curso) {
+      params.tipos_curso = studentsFilters.value.tipos_curso
+    }
+    return params
+  }
+
+  const exportCampaignStudents = async (campaignId: number) => {
+    try {
+      const blob = await CampaignService.exportCampaignStudents(campaignId, buildStudentsExportParams())
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `campana_${campaignId}_estudiantes_${new Date().toISOString().split('T')[0]}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      return { success: true }
+    } catch (error) {
+      console.error('Error al exportar estudiantes:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error al exportar estudiantes',
+      }
+    }
+  }
+
 
   return {
     // Estado
@@ -293,6 +334,7 @@ export const useCampaigns = () => {
     handleStudentsSearch,
     handleStudentsPageChange,
     handleStudentsItemsPerPageChange,
-    handleStudentsFilterChange
+    handleStudentsFilterChange,
+    exportCampaignStudents
   }
 }

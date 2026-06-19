@@ -251,6 +251,33 @@ export class CampaignService extends BaseService {
       throw error
     }
   }
+
+  static async exportCampaignStudents(
+    id: number,
+    params: Record<string, string | number> = {}
+  ): Promise<Blob> {
+    try {
+      const queryParams = new URLSearchParams()
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '' && value !== 'todos') {
+          queryParams.append(key, String(value))
+        }
+      })
+      const qs = queryParams.toString()
+      const url = `${this.baseUrl}/${id}/students/exportar${qs ? `?${qs}` : ''}`
+      const response = await this.apiCall<Blob>(url, {
+        method: 'GET',
+        responseType: 'blob',
+        headers: {
+          Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        },
+      })
+      return response
+    } catch (error) {
+      console.error('Error en exportCampaignStudents:', error)
+      throw error
+    }
+  }
 }
 
 // Exportar instancia singleton
