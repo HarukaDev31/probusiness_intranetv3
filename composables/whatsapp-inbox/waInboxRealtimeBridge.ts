@@ -17,6 +17,7 @@ import {
 import { getWaInboxUiHandlers } from '~/composables/whatsapp-inbox/waInboxUiBridge'
 import { getWaInboxLiveHandlers } from '~/composables/whatsapp-inbox/waInboxLiveBridge'
 import { waInboxLog, waInboxTrace, waInboxWarn } from '~/composables/whatsapp-inbox/waInboxWsLog'
+import { notifyWaInboxInboundMessage } from '~/utils/waInboxChatNotify'
 
 export type WaInboxRealtimeHandlers = {
   onMessageCreated?: (payload: WaInboxWsMessageCreatedPayload) => void
@@ -85,6 +86,7 @@ export function dispatchWaInboxMessageCreated(raw: unknown) {
   } as WaInboxWsMessageCreatedPayload
 
   applyMessageCreatedToStore(payload)
+  notifyWaInboxInboundMessage(payload)
   notifyUiHandlers('created', (h) => h.onMessageCreated?.(payload), {
     convId,
     messageId: payload.message?.id,

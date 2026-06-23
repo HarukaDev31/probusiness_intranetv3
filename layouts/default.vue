@@ -62,6 +62,7 @@
 
     <SoporteTiChatNotificacionModal />
     <SoporteTiNotificacionesPermisoBar />
+    <WaInboxNotificacionesPermisoBar />
 
     <!-- Global Spinner -->
     <GlobalSpinner />
@@ -87,6 +88,9 @@ const SoporteTiChatNotificacionModal = defineAsyncComponent(
 )
 const SoporteTiNotificacionesPermisoBar = defineAsyncComponent(
   () => import('../components/soporte-ti/SoporteTiNotificacionesPermisoBar.vue')
+)
+const WaInboxNotificacionesPermisoBar = defineAsyncComponent(
+  () => import('../components/whatsapp-inbox/WaInboxNotificacionesPermisoBar.vue')
 )
 import type { AuthMenu } from '../services/authService'
 import type { SidebarCategory } from '../types/module'
