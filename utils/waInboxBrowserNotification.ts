@@ -38,6 +38,17 @@ export interface OpcionesNotificacionNavegadorWaInbox {
   urlDetalle?: string
 }
 
+async function esperarServiceWorkerListo(): Promise<ServiceWorkerRegistration | null> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null
+  try {
+    await registrarServiceWorkerNotificaciones()
+    return await navigator.serviceWorker.ready
+  } catch (e) {
+    console.warn('[WaInbox] Service worker no listo:', e)
+    return null
+  }
+}
+
 async function mostrarConServiceWorker(
   titulo: string,
   cuerpo: string,
@@ -45,14 +56,15 @@ async function mostrarConServiceWorker(
   path: string,
   icon?: string
 ): Promise<boolean> {
-  const reg = await registrarServiceWorkerNotificaciones()
+  const reg = await esperarServiceWorkerListo()
   if (!reg?.showNotification) return false
 
   const options: NotificationOptions = {
     body: cuerpo,
     tag,
     data: { url: path },
-    requireInteraction: false
+    requireInteraction: false,
+    silent: false
   }
   if (icon) options.icon = icon
 
@@ -70,7 +82,8 @@ function mostrarConNotificationApi(
   const notif = new Notification(titulo, {
     body: cuerpo,
     icon,
-    tag
+    tag,
+    silent: false
   })
 
   notif.onclick = (ev) => {
@@ -96,12 +109,30 @@ export async function mostrarNotificacionNavegadorWaInbox(
   )
   const cuerpo = `${contacto}: ${preview}`
   const path = opts.urlDetalle || waInboxConversationPath(opts.conversationId)
-  const tag = `wa-inbox-conv-${opts.conversationId}`
+  const tag = `wa-inbox-conv-${opts.conversationId || 'demo'}`
   const icon = iconoNotificacion()
+  const tabVisible =
+    typeof document !== 'undefined' && document.visibilityState === 'visible'
 
+  // Pestaña visible: Notification API (más fiable en Windows).
+  if (tabVisible) {
+    try {
+      mostrarConNotificationApi(titulo, cuerpo, tag, icon, path)
+      return true
+    } catch (e) {
+      console.warn('[WaInbox] Notification API falló:', e)
+    }
+  }
+
+  // Pestaña en segundo plano: service worker.
   try {
     const viaSw = await mostrarConServiceWorker(titulo, cuerpo, tag, path, icon)
     if (viaSw) return true
+  } catch (e) {
+    console.warn('[WaInbox] SW notification falló, probando Notification API:', e)
+  }
+
+  try {
     mostrarConNotificationApi(titulo, cuerpo, tag, icon, path)
     return true
   } catch (e) {

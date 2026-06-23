@@ -17,9 +17,12 @@ function usuarioTieneAccesoWaInbox(): boolean {
     if (!authUser) return false
     const user = JSON.parse(authUser) as {
       raw?: { grupo?: { nombre?: string } }
+      grupo?: { nombre?: string }
       role?: string
     }
-    const role = String(user?.raw?.grupo?.nombre || user?.role || '').trim()
+    const role = String(
+      user?.raw?.grupo?.nombre || user?.grupo?.nombre || user?.role || ''
+    ).trim()
     if (!role) return false
     const lower = role.toLowerCase()
     return WA_INBOX_ALLOWED_ROLES.some((r) => r.toLowerCase() === lower)
@@ -50,7 +53,7 @@ function nombreContacto(payload: WaInboxWsMessageCreatedPayload): string {
   return 'Contacto'
 }
 
-function debeNotificarMensajeEntrante(convId: number, msg: WaInboxMessage): boolean {
+function debeNotificarSonido(convId: number, msg: WaInboxMessage): boolean {
   if (!import.meta.client) return false
   if (!usuarioTieneAccesoWaInbox()) return false
   if (msg.direction !== 'in') return false
@@ -63,6 +66,12 @@ function debeNotificarMensajeEntrante(convId: number, msg: WaInboxMessage): bool
   return true
 }
 
+function debeNotificarNavegador(convId: number, msg: WaInboxMessage): boolean {
+  if (!debeNotificarSonido(convId, msg)) return false
+  if (typeof Notification === 'undefined') return false
+  return Notification.permission === 'granted'
+}
+
 /**
  * Aviso de sistema + sonido para mensajes entrantes del WhatsApp Inbox.
  */
@@ -70,13 +79,40 @@ export function notifyWaInboxInboundMessage(payload: WaInboxWsMessageCreatedPayl
   const convId = Number(payload.conversation_id)
   const msg = payload.message
   if (!convId || !msg) return
-  if (!debeNotificarMensajeEntrante(convId, msg)) return
 
-  reproducirSonidoWaInbox()
+  if (debeNotificarSonido(convId, msg)) {
+    reproducirSonidoWaInbox()
+  }
 
-  void mostrarNotificacionNavegadorWaInbox({
-    conversationId: convId,
-    contactName: nombreContacto(payload),
-    messagePreview: previewMensajeEntrante(msg, payload)
-  })
+  if (debeNotificarNavegador(convId, msg)) {
+    void mostrarNotificacionNavegadorWaInbox({
+      conversationId: convId,
+      contactName: nombreContacto(payload),
+      messagePreview: previewMensajeEntrante(msg, payload)
+    })
+    return
+  }
+
+  if (
+    debeNotificarSonido(convId, msg)
+    && typeof window !== 'undefined'
+    && typeof Notification !== 'undefined'
+    && Notification.permission !== 'granted'
+  ) {
+    const contacto = nombreContacto(payload)
+    const preview = previewMensajeEntrante(msg, payload)
+    window.dispatchEvent(
+      new CustomEvent('wa-inbox-permission-needed', { detail: { conversationId: convId } })
+    )
+    window.dispatchEvent(
+      new CustomEvent('websocket-modal', {
+        detail: {
+          type: 'info',
+          title: 'Tienes nuevos mensajes',
+          message: `${contacto}: ${preview}. Activa las notificaciones del navegador para ver avisos en Windows.`,
+          duration: 8000
+        }
+      })
+    )
+  }
 }

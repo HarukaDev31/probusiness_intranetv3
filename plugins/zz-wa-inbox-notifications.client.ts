@@ -13,7 +13,12 @@ export default defineNuxtPlugin(() => {
   registrarPrecalentadoSonidoWaInboxEnPrimerClic()
   registrarSolicitudPermisoNotificacionWaInboxEnPrimerClic()
 
-  if (localStorage.getItem('auth_token') && Notification.permission === 'granted') {
+  if (
+    typeof localStorage !== 'undefined'
+    && localStorage.getItem('auth_token')
+    && typeof Notification !== 'undefined'
+    && Notification.permission === 'granted'
+  ) {
     void registrarServiceWorkerNotificacionesWaInbox()
     precalentarSonidoWaInbox()
   }
