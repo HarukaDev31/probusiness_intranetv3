@@ -196,6 +196,16 @@
               </UButton>
             </div>
 
+            <div class="py-2">
+              <UButton variant="ghost" class="w-full rounded-md text-sm text-gray-700 dark:text-gray-300"
+                icon="i-heroicons-adjustments-horizontal" @click="openWsNotificationPreferences"
+                :class="collapsed ? 'justify-center' : 'justify-start'">
+                <template #default>
+                  <span v-if="!collapsed">Preferencias de avisos</span>
+                </template>
+              </UButton>
+            </div>
+
             <div class="flex items-center justify-between py-4">
               <div v-if="!collapsed" class="flex items-center gap-3">
                 <UIcon name="i-heroicons-moon" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -384,6 +394,11 @@ const openNotifications = async () => {
   // Refrescar contador antes de navegar
   await fetchUnreadCount()
   await navigateTo('/notificaciones')
+  hideSidebarOnMobile()
+}
+
+const openWsNotificationPreferences = async () => {
+  await navigateTo('/preferencias-notificaciones')
   hideSidebarOnMobile()
 }
 

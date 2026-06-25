@@ -5,15 +5,17 @@ import {
 } from '~/config/websocket/channels'
 import { ROLES } from '~/constants/roles'
 import { WA_INBOX_WS_CHANNEL, WA_INBOX_WS_EVENTS } from '~/constants/whatsappInboxWs'
-import { useModal } from '~/composables/commons/useModal'
+import {
+  wsShowSuccess,
+  wsShowError,
+  WS_NOTIFICATION_KEYS,
+} from '~/composables/notifications/preferences'
 
 /**
- * Configuracion de eventos para el rol Contabilidad.
+ * Configuración de eventos para el rol Contabilidad.
  */
 export const registerContabilidadEvents = () => {
   registerEventHandler(WS_EVENTS.USUARIO_DATOS_FACTURACION_IMPORT_FINISHED, (data) => {
-    const { showSuccess, showError } = useModal()
-
     const status = String(data?.status || '').toUpperCase()
     const title = status === 'COMPLETADO'
       ? 'Importacion de facturacion completada'
@@ -21,9 +23,9 @@ export const registerContabilidadEvents = () => {
     const message = data?.message || 'La importacion de datos de facturacion ha finalizado.'
 
     if (status === 'COMPLETADO') {
-      showSuccess(title, message)
+      wsShowSuccess(WS_NOTIFICATION_KEYS.FACTURACION_IMPORTACION, title, message)
     } else {
-      showError(title, message)
+      wsShowError(WS_NOTIFICATION_KEYS.FACTURACION_IMPORTACION, title, message)
     }
 
     if (process.client) {
@@ -51,4 +53,3 @@ export const registerContabilidadEvents = () => {
     'private'
   )
 }
-

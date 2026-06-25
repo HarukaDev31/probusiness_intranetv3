@@ -50,6 +50,7 @@ export default defineNuxtRouteMiddleware((to) => {
   if (to.path === '/login') return
   if (to.path === '/') return
   if (to.path === '/notificaciones') return
+  if (to.path === '/preferencias-notificaciones') return
   if (to.path === '/perfil') return
   if (to.path === '/copiloto') return
 

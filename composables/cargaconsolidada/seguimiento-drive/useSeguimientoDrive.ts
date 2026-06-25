@@ -10,6 +10,7 @@ import {
     mergeSeguimientoDriveStatus,
 } from './statusHelpers'
 import { useSeguimientoDriveEcho } from './useSeguimientoDriveEcho'
+import { canShowWsNotification, WS_NOTIFICATION_KEYS } from '~/composables/notifications/preferences'
 
 export const useSeguimientoDrive = () => {
     const { showSuccess, showError, showInfo } = useModal()
@@ -38,13 +39,13 @@ export const useSeguimientoDrive = () => {
         desuscribir()
 
         if (data.link_status === 'failed') {
-            if (notify) {
+            if (notify && canShowWsNotification(WS_NOTIFICATION_KEYS.SEGUIMIENTO_DRIVE, 'modal')) {
                 showError('Error', data.link_error || 'No se pudo vincular el Excel a Drive')
             }
             return
         }
 
-        if (data.vinculado && data.drive_link && notify) {
+        if (data.vinculado && data.drive_link && notify && canShowWsNotification(WS_NOTIFICATION_KEYS.SEGUIMIENTO_DRIVE, 'modal')) {
             showSuccess('Vinculado', 'El Excel de seguimiento quedó en Google Drive.')
         }
     }

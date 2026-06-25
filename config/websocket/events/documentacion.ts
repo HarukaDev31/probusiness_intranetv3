@@ -4,51 +4,40 @@ import {
   WS_EVENTS 
 } from '~/config/websocket/channels'
 import { ROLES } from '~/constants/roles'
-import { useModal } from '~/composables/commons/useModal'
+import { wsShowSuccess, WS_NOTIFICATION_KEYS } from '~/composables/notifications/preferences'
 
 /**
  * Configuración de eventos para el rol Documentacion
- * Este archivo se ejecuta antes de la suscripción a los canales
  */
 export const registerDocumentacionEvents = () => {
-  // ============================================
-  // HANDLERS PARA EVENTOS DE DOCUMENTACIÓN
-  // ============================================
-  
-  registerEventHandler(WS_EVENTS.DOCUMENT_NEW, (data) => {
-    // Handler para nuevo documento
+  registerEventHandler(WS_EVENTS.DOCUMENT_NEW, (_data) => {
+    // Sin UI por ahora
   })
 
-  registerEventHandler(WS_EVENTS.DOCUMENT_STATUS_CHANGE, (data) => {
-    // Handler para cambio de estado de documento
+  registerEventHandler(WS_EVENTS.DOCUMENT_STATUS_CHANGE, (_data) => {
+    // Sin UI por ahora
   })
 
-  registerEventHandler(WS_EVENTS.DOCUMENT_REQUEST, (data) => {
-    // Handler para solicitud de documento
+  registerEventHandler(WS_EVENTS.DOCUMENT_REQUEST, (_data) => {
+    // Sin UI por ahora
   })
 
   registerEventHandler(WS_EVENTS.IMPORTACION_EXCEL_COMPLETED, (data) => {
     try {
-      const { showSuccess } = useModal()
-      showSuccess('Importación Completada', data.message || 'La importación se ha completado exitosamente.')
-      
-      if (data.estadisticas) {
-        // Log adicional para debugging
-      }
+      wsShowSuccess(
+        WS_NOTIFICATION_KEYS.IMPORTACION_EXCEL,
+        'Importación Completada',
+        data.message || 'La importación se ha completado exitosamente.'
+      )
     } catch (error) {
       console.error('❌ Error en callback de ImportacionExcelCompleted:', error)
     }
   })
 
-  registerEventHandler(WS_EVENTS.TEST_EVENT, (data) => {
-    const { showSuccess } = useModal()
-    showSuccess('Evento de Prueba', 'WebSocket funcionando correctamente')
+  registerEventHandler(WS_EVENTS.TEST_EVENT, (_data) => {
+    wsShowSuccess(WS_NOTIFICATION_KEYS.IMPORTACION_EXCEL, 'Evento de Prueba', 'WebSocket funcionando correctamente')
   })
 
-  // ============================================
-  // SUSCRIBIR EVENTOS AL ROL DOCUMENTACIÓN
-  // ============================================
-  
   subscribeEventsToRole(
     ROLES.DOCUMENTACION,
     `${ROLES.DOCUMENTACION}-notifications`,
@@ -61,6 +50,4 @@ export const registerDocumentacionEvents = () => {
     ],
     'private'
   )
-
 }
-

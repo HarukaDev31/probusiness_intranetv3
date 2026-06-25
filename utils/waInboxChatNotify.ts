@@ -9,6 +9,7 @@ import {
 } from '~/utils/whatsappInboxSidebarPreview'
 import { mostrarNotificacionNavegadorWaInbox } from '~/utils/waInboxBrowserNotification'
 import { reproducirSonidoWaInbox } from '~/utils/waInboxNotificationSound'
+import { canShowWsNotification, WS_NOTIFICATION_KEYS } from '~/composables/notifications/preferences'
 
 function usuarioTieneAccesoWaInbox(): boolean {
   if (typeof localStorage === 'undefined') return false
@@ -80,11 +81,13 @@ export function notifyWaInboxInboundMessage(payload: WaInboxWsMessageCreatedPayl
   const msg = payload.message
   if (!convId || !msg) return
 
-  if (debeNotificarSonido(convId, msg)) {
+  const key = WS_NOTIFICATION_KEYS.WHATSAPP_INBOX_MENSAJE
+
+  if (debeNotificarSonido(convId, msg) && canShowWsNotification(key, 'sonido')) {
     reproducirSonidoWaInbox()
   }
 
-  if (debeNotificarNavegador(convId, msg)) {
+  if (debeNotificarNavegador(convId, msg) && canShowWsNotification(key, 'navegador')) {
     void mostrarNotificacionNavegadorWaInbox({
       conversationId: convId,
       contactName: nombreContacto(payload),
@@ -98,6 +101,7 @@ export function notifyWaInboxInboundMessage(payload: WaInboxWsMessageCreatedPayl
     && typeof window !== 'undefined'
     && typeof Notification !== 'undefined'
     && Notification.permission !== 'granted'
+    && canShowWsNotification(key, 'modal')
   ) {
     const contacto = nombreContacto(payload)
     const preview = previewMensajeEntrante(msg, payload)
@@ -110,7 +114,9 @@ export function notifyWaInboxInboundMessage(payload: WaInboxWsMessageCreatedPayl
           type: 'info',
           title: 'Tienes nuevos mensajes',
           message: `${contacto}: ${preview}. Activa las notificaciones del navegador para ver avisos en Windows.`,
-          duration: 8000
+          duration: 8000,
+          key,
+          canal: 'modal',
         }
       })
     )

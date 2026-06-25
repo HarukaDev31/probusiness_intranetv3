@@ -10,50 +10,59 @@ import {
   dispatchWaInboxMessageStatusUpdated,
   dispatchWaInboxConversationRead
 } from '~/composables/whatsapp-inbox/waInboxRealtimeBridge'
-import { useModal } from '~/composables/commons/useModal'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import {
+  wsShowSuccess,
+  wsShowError,
+  WS_NOTIFICATION_KEYS,
+} from '~/composables/notifications/preferences'
 
 /**
  * Configuración de eventos para el rol Coordinación
- * Este archivo se ejecuta antes de la suscripción a los canales
  */
 export const registerCoordinacionEvents = () => {
   const { currentId } = useUserRole()
-  // ============================================
-  // HANDLERS PARA EVENTOS DE COORDINACIÓN
-  // ============================================
-  
-  registerEventHandler(WS_EVENTS.TASK_ASSIGNMENT, (data) => {
-    // Handler para asignación de tarea
+
+  registerEventHandler(WS_EVENTS.TASK_ASSIGNMENT, (_data) => {
+    // Sin UI por ahora
   })
 
-  registerEventHandler(WS_EVENTS.SCHEDULE_UPDATE, (data) => {
-    // Handler para actualización de horario
+  registerEventHandler(WS_EVENTS.SCHEDULE_UPDATE, (_data) => {
+    // Sin UI por ahora
   })
+
   registerEventHandler(WS_EVENTS.COTIZACION_CHINA_CONTACTED, (data) => {
-    const { showSuccess } = useModal()
-    showSuccess(
-      'Contacto con China', 
+    wsShowSuccess(
+      WS_NOTIFICATION_KEYS.COTIZACION_CHINA_CONTACTADO,
+      'Contacto con China',
       data.message || 'Se ha contactado con China para la cotización.'
     )
   })
+
   registerEventHandler(WS_EVENTS.COTIZACION_CHANGE_CONTAINER, (data) => {
-    const { showSuccess } = useModal()
-    showSuccess('Cambio de Contenedor', data.message || 'Se ha cambiado el contenedor de la cotización.')
+    wsShowSuccess(
+      WS_NOTIFICATION_KEYS.COTIZACION_CARGA_ROLEADA,
+      'Cambio de Contenedor',
+      data.message || 'Se ha cambiado el contenedor de la cotización.'
+    )
   })
+
   registerEventHandler(WS_EVENTS.COTIZACION_CHINA_RECEIVED, (data) => {
-    if(data.usuario_id == currentId.value) {
-      return
-    }
-    const { showSuccess } = useModal()
-    showSuccess('Cotización Recibida', data.message || 'Se ha recibido la cotización.')
+    if (data.usuario_id == currentId.value) return
+    wsShowSuccess(
+      WS_NOTIFICATION_KEYS.COTIZACION_CHINA_RECIBIDA,
+      'Cotización Recibida',
+      data.message || 'Se ha recibido la cotización.'
+    )
   })
+
   registerEventHandler(WS_EVENTS.COTIZACION_CHINA_INSPECTIONED, (data) => {
-    if(data.usuario_id == currentId.value) {
-      return
-    }
-    const { showSuccess } = useModal()
-    showSuccess('Cotización Inspectada', data.message || 'Se ha inspeccionado la cotización.')
+    if (data.usuario_id == currentId.value) return
+    wsShowSuccess(
+      WS_NOTIFICATION_KEYS.COTIZACION_CHINA_INSPECCIONADA,
+      'Cotización Inspectada',
+      data.message || 'Se ha inspeccionado la cotización.'
+    )
   })
 
   registerEventHandler(WA_INBOX_WS_EVENTS.MESSAGE_CREATED, dispatchWaInboxMessageCreated)
@@ -61,7 +70,6 @@ export const registerCoordinacionEvents = () => {
   registerEventHandler(WA_INBOX_WS_EVENTS.CONVERSATION_READ, dispatchWaInboxConversationRead)
 
   registerEventHandler(WS_EVENTS.PLANTILLA_FINAL_BATCH_FINISHED, (data) => {
-    const { showSuccess, showError } = useModal()
     const estado = String(data?.estado || '').toUpperCase()
     const title = estado === 'COMPLETED'
       ? 'Plantillas finales listas'
@@ -69,9 +77,9 @@ export const registerCoordinacionEvents = () => {
     const message = data?.message || 'La generación masiva de plantillas finales ha finalizado.'
 
     if (estado === 'COMPLETED') {
-      showSuccess(title, message)
+      wsShowSuccess(WS_NOTIFICATION_KEYS.PLANTILLA_FINAL_LOTE, title, message)
     } else {
-      showError(title, message)
+      wsShowError(WS_NOTIFICATION_KEYS.PLANTILLA_FINAL_LOTE, title, message)
     }
 
     if (process.client) {
@@ -79,10 +87,6 @@ export const registerCoordinacionEvents = () => {
     }
   })
 
-  // ============================================
-  // SUSCRIBIR EVENTOS AL ROL COORDINACIÓN
-  // ============================================
-  
   subscribeEventsToRole(
     'Coordinación',
     `${'Coordinacion'}-notifications`,
@@ -108,6 +112,4 @@ export const registerCoordinacionEvents = () => {
     ],
     'private'
   )
-
 }
-

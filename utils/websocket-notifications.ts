@@ -1,4 +1,6 @@
 // Helper para manejar notificaciones de WebSocket
+import { canShowWsNotification, WS_NOTIFICATION_KEYS } from '~/composables/notifications/preferences'
+
 export interface ImportacionExcelData {
   id: number
   nombre_archivo: string
@@ -16,29 +18,25 @@ export interface ImportacionExcelData {
 }
 
 export const handleImportacionExcelCompleted = (data: string | ImportacionExcelData) => {
-  
-  
-  
-  
-  // Parsear los datos si vienen como string
+  if (!canShowWsNotification(WS_NOTIFICATION_KEYS.IMPORTACION_EXCEL, 'modal')) return
+
   const parsedData: ImportacionExcelData = typeof data === 'string' ? JSON.parse(data) : data
-  
-  // Crear el mensaje de notificación
+
   const message = parsedData.message || 'La importación de productos se ha completado correctamente.'
   const details = `Productos importados: ${parsedData.estadisticas?.productos_importados || 0} de ${parsedData.estadisticas?.total_productos || 0}`
-  
-  // Emitir un evento personalizado que será capturado por el sistema de modales
+
   if (typeof window !== 'undefined') {
     const notificationEvent = new CustomEvent('websocket-modal', {
       detail: {
         type: 'success',
         title: '¡Importación Completada!',
         message: `${message}\n\n${details}`,
-        duration: 5000
+        duration: 5000,
+        key: WS_NOTIFICATION_KEYS.IMPORTACION_EXCEL,
+        canal: 'modal',
       }
     })
-    
+
     window.dispatchEvent(notificationEvent)
   }
 }
-

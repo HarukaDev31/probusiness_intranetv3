@@ -1,6 +1,7 @@
 import { registerEventHandler, registerRole, WS_EVENTS } from '~/config/websocket/channels'
 import { ROLES } from '~/constants/roles'
 import { notifyCalendarUpdateFromSocket } from '~/composables/useCalendarUpdateNotification'
+import { canShowWsNotification, WS_NOTIFICATION_KEYS } from '~/composables/notifications/preferences'
 
 /** Nombres de eventos de calendario (canal por usuario). */
 export const CALENDAR_EVENTS = [
@@ -69,6 +70,9 @@ function didCurrentUserJustAct(): boolean {
  */
 function onCalendarSocketEvent(payload: unknown) {
   if (!isOnCalendarPath()) return
+
+  // Respetar la preferencia del usuario para este aviso.
+  if (!canShowWsNotification(WS_NOTIFICATION_KEYS.CALENDARIO_ACTIVIDAD, 'modal')) return
 
   const data = payload && typeof payload === 'object' && 'triggered_by_user_id' in payload
     ? (payload as { triggered_by_user_id?: number | string | null })

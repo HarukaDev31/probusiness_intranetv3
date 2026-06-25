@@ -1,15 +1,24 @@
 import type { SoporteTiWsEstadoPayload, SoporteTiWsMensajePayload } from '~/types/soporteTi'
 import { mostrarNotificacionNavegadorSoporteTi } from '~/utils/soporteTiBrowserNotification'
+import { canShowWsNotification, WS_NOTIFICATION_KEYS } from '~/composables/notifications/preferences'
 
 export function notifySoporteTiModal(
   type: 'info' | 'success' | 'warning',
   title: string,
   message: string
 ) {
+  if (!canShowWsNotification(WS_NOTIFICATION_KEYS.SOPORTE_TI_MENSAJE, 'modal')) return
   if (typeof window === 'undefined') return
   window.dispatchEvent(
     new CustomEvent('websocket-modal', {
-      detail: { type, title, message, duration: 6000 }
+      detail: {
+        type,
+        title,
+        message,
+        duration: 6000,
+        key: WS_NOTIFICATION_KEYS.SOPORTE_TI_MENSAJE,
+        canal: 'modal',
+      }
     })
   )
 }
@@ -23,14 +32,20 @@ export function notifySoporteTiChatEvent(
 ) {
   if (typeof window === 'undefined') return
 
+  const key = kind === 'estado'
+    ? WS_NOTIFICATION_KEYS.SOPORTE_TI_ESTADO
+    : WS_NOTIFICATION_KEYS.SOPORTE_TI_MENSAJE
+
   const detail = { chatUuid, codigo, title, message, kind }
-  window.dispatchEvent(
-    new CustomEvent('soporte-ti-chat-event', {
-      detail
-    })
-  )
+
+  if (canShowWsNotification(key, 'modal')) {
+    window.dispatchEvent(
+      new CustomEvent('soporte-ti-chat-event', { detail })
+    )
+  }
 
   if (kind !== 'mensaje') return
+  if (!canShowWsNotification(WS_NOTIFICATION_KEYS.SOPORTE_TI_MENSAJE, 'navegador')) return
 
   const urlDetalle = `/soporte-ti/${encodeURIComponent(chatUuid)}`
   void mostrarNotificacionNavegadorSoporteTi({
