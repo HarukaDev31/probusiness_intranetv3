@@ -26,7 +26,8 @@
   @update:currentPage="onPageChange"
   :prefetchNextPage="prefetchImagesForPage"
   @update:itemsPerPage="onItemsPerPageChange"
-  :showExport="false"
+  :showExport="true"
+  @export="handleExport"
   :showNewButton="false"
         :headers="headers"
       >
@@ -66,8 +67,12 @@ import DynamicModal from '~/components/DynamicModal.vue'
 import ImageModal from '~/components/ImageModal.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import type { ModalData } from '~/composables/commons/useModal'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 const userRole = useUserRole()
 const UButton = resolveComponent('UButton')
+const { showSuccess, showError } = useModal()
+const { withSpinner } = useSpinner()
 
 // Constante de roles
 const { hasRole, isDocumentacion } = useUserRole()
@@ -323,6 +328,18 @@ const onFiltersUpdate = (newFilters: Record<string, any>) => {
     if ((filters.value as any)[k] === undefined) delete (filters.value as any)[k]
   })
   applyFilters()
+}
+
+const handleExport = async () => {
+  try {
+    await withSpinner(async () => {
+      const ok = await exportProducts('excel')
+      if (!ok) throw new Error(error.value || 'No se pudo exportar los productos')
+    }, 'Exportando productos…')
+    showSuccess('Exportación lista', 'El archivo se descargó correctamente.')
+  } catch (e: unknown) {
+    showError('Error al exportar', e instanceof Error ? e.message : 'Ocurrió un error al exportar.')
+  }
 }
 
 const formatPrice = (price: number): string => {

@@ -193,12 +193,13 @@ export class ProductService extends BaseService {
   }): Promise<{ success: boolean; data?: Blob; error?: string }> {
     try {
       const queryParams = new URLSearchParams()
-      queryParams.append('format', params.format)
+      const format = params.format === 'excel' ? 'xlsx' : params.format
+      queryParams.append('format', format)
       
       if (params.search) queryParams.append('search', params.search)
       if (params.filters) {
         Object.entries(params.filters).forEach(([key, value]) => {
-          if (value) queryParams.append(key, value.toString())
+          if (value && value !== 'todos') queryParams.append(key, value.toString())
         })
       }
 
