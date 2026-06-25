@@ -207,6 +207,11 @@ class AuthService {
         // Inicializar Echo y configurar canales
         await this.initializeEcho()
 
+        // Avisar que cambió el usuario para recargar preferencias de notificaciones.
+        if (process.client && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth-login'))
+        }
+
         return {
           success: true,
           data: {
@@ -240,6 +245,8 @@ class AuthService {
 
       if (process.client && typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('soporte-ti-chat-reset'))
+        // Limpiar preferencias de notificaciones cacheadas del usuario saliente.
+        window.dispatchEvent(new CustomEvent('auth-logout'))
       }
 
       this.currentUser = null
