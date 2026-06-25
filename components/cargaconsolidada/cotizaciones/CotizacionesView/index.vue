@@ -226,6 +226,9 @@ const { getCotizacionProveedor,
     handlePageChange,
     handleItemsPerPageChange,
     handleFilterChange,
+    handleSortChange,
+    sortBy: embarqueSortBy,
+    sortOrder: embarqueSortOrder,
     resetFiltersProveedor,
     exportData: exportEmbarqueData,
     refreshRotuladoStatus,
@@ -1421,6 +1424,33 @@ const getPagosColumns = () => {
     if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columns as TableColumn<any>[])
     return columns
 }
+
+const buildEmbarqueContactoColumn = (cellClass = 'w-70'): TableColumn<any> => ({
+    accessorKey: 'contacto',
+    header: () => {
+        const isActive = embarqueSortBy.value === 'nombre'
+        const isAsc = embarqueSortOrder.value === 'asc'
+        return h(UButton, {
+            color: 'neutral',
+            variant: 'ghost',
+            label: 'Contacto',
+            icon: isActive
+                ? (isAsc ? 'i-lucide-arrow-up-narrow-wide' : 'i-lucide-arrow-down-wide-narrow')
+                : 'i-lucide-arrow-up-down',
+            class: '-mx-2.5',
+            onClick: () => handleSortChange('nombre')
+        })
+    },
+    cell: ({ row }: { row: any }) => {
+        const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
+        const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
+        return h('div', { class: `${cellClass} whitespace-normal` }, [
+            h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
+            telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
+        ])
+    }
+})
+
 const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
     //Asesor	Status	N.	Buyer	Whatsapp	Estado	Productos	Qty Box	CBM t.	Weight	Supplier	C. Supplier	P. Number	Qty Box.	CBM Ch.	Arrive Date	Acciones
     {
@@ -1477,18 +1507,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
             return row.index + 1
         }
     },
-    {
-        accessorKey: 'contacto',
-        header: 'Contacto',
-        cell: ({ row }: { row: any }) => {
-            const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
-            const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
-            return h('div', { class: 'w-70 whitespace-normal' }, [
-                h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
-                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
-            ])
-        }
-    },
+    buildEmbarqueContactoColumn(),
     {
         accessorKey: 'estado',
         header: 'Estado',
@@ -1944,18 +1963,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
             return row.index + 1
         }
     },
-    {
-        accessorKey: 'contacto',
-        header: 'Contacto',
-        cell: ({ row }: { row: any }) => {
-            const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
-            const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
-            return h('div', { class: 'w-70 whitespace-normal' }, [
-                h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
-                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
-            ])
-        }
-    },
+    buildEmbarqueContactoColumn(),
     {
         accessorKey: 'estado',
         header: 'Estado',
@@ -2416,18 +2424,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             return row.index + 1
         }
     },
-    {
-        accessorKey: 'contacto',
-        header: 'Contacto',
-        cell: ({ row }: { row: any }) => {
-            const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
-            const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
-            return h('div', { class: 'w-40 whitespace-normal' }, [
-                h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
-                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
-            ])
-        }
-    },
+    buildEmbarqueContactoColumn('w-40'),
     {
         accessorKey: 'productos',
         header: 'Productos',

@@ -54,6 +54,8 @@ export const    useCotizacionProveedor = () => {
     const filters = ref<CotizacionProveedorFilters>({ estado_china: 'todos', estado_coordinacion: 'todos', estado: 'todos', fecha_inicio: '', fecha_fin: '' })
     const search = ref('')
     const itemsPerPage = ref(100)
+    const sortBy = ref('id')
+    const sortOrder = ref<'asc' | 'desc'>('asc')
 
     // Datos específicos de China
     const documentosChina = ref<FileItem[]>([])
@@ -131,6 +133,8 @@ export const    useCotizacionProveedor = () => {
                 search.value,
                 itemsPerPage.value,
                 currentPage.value,
+                sortBy.value,
+                sortOrder.value,
                 signal
             )
 
@@ -261,6 +265,17 @@ export const    useCotizacionProveedor = () => {
         await getCotizacionProveedor(Number(route.params.id))
     }
 
+    const handleSortChange = (field: string) => {
+        if (sortBy.value === field) {
+            sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+        } else {
+            sortBy.value = field
+            sortOrder.value = 'asc'
+        }
+        pagination.value.current_page = 1
+        getCotizacionProveedor(Number(route.params.id))
+    }
+
     const getProveedorById = async (id: number) => {
         if (!id) return
         loading.value = true
@@ -384,6 +399,8 @@ export const    useCotizacionProveedor = () => {
             estado_coordinacion: 'todos',
             estado_china: 'todos'
         }
+        sortBy.value = 'id'
+        sortOrder.value = 'asc'
     }
 
     // Global clear listener: respond to centralized DataTable clear action
@@ -398,6 +415,8 @@ export const    useCotizacionProveedor = () => {
                     estado_china: 'todos'
                 }
                 pagination.value.current_page = 1
+                sortBy.value = 'id'
+                sortOrder.value = 'asc'
                 const id = Number(route.params.id)
                 if (id) getCotizacionProveedor(id)
             } catch (err) {
@@ -521,6 +540,8 @@ export const    useCotizacionProveedor = () => {
         pagination,
         search,
         itemsPerPage,
+        sortBy,
+        sortOrder,
 
         // Computed properties
         totalPages,
@@ -545,6 +566,7 @@ export const    useCotizacionProveedor = () => {
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange,
+        handleSortChange,
         getProveedorById,
         saveDocumentosChina,
         saveInspeccionChina,

@@ -23,6 +23,8 @@ export class CotizacionProveedorService extends BaseService {
         search: string,
         itemsPerPage: number,
         currentPage: number,
+        sortBy?: string,
+        sortOrder?: 'asc' | 'desc',
         signal?: AbortSignal
     ): Promise<ProveedoresResponse> {
         try {
@@ -35,7 +37,9 @@ export class CotizacionProveedorService extends BaseService {
                         ...filters,
                         search,
                         itemsPerPage,
-                        currentPage
+                        currentPage,
+                        sort_by: sortBy ?? 'id',
+                        sort_order: sortOrder ?? 'asc',
                     }
                 }
             )
