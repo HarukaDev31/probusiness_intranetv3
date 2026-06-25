@@ -103,10 +103,10 @@
             :show-pagination="false" :loading="tabSwitching || loadingPagos || loadingHeaders" :current-page="currentPagePagos"
             :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
             :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION)"
-            :filter-config="getFilterConfigPagos()" :show-export="false"
+            :filter-config="getFilterConfigPagos()" :show-export="showPagosExport"
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
-            @filter-change="handleFilterChangePagos" :show-body-top="true" :hide-back-button="false"
+            @filter-change="handleFilterChangePagos" @export="handleExportPagosContabilidad" :show-body-top="true" :hide-back-button="false"
             :previous-page-url="((currentRole == ROLES.COORDINACION || currentRole == ROLES.JEFE_IMPORTACIONES) || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -276,6 +276,7 @@ const {
     getCotizacionPagos,
     handleSearchPagos,
     handleFilterChange: handleFilterChangePagos,
+    exportContabilidadPagos,
 } = useCotizacionPagos()
 
 // Registrar/eliminar pagos para el grid de adelantos
@@ -307,6 +308,19 @@ const getSignUrl = (uuid: string): string => {
 }
 
 const tab = ref('')
+const showPagosExport = computed(() =>
+    (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) && tab.value === 'pagos'
+)
+const handleExportPagosContabilidad = async () => {
+    try {
+        await withSpinner(async () => {
+            await exportContabilidadPagos(Number(id))
+            showSuccess('Descarga lista', 'Excel de pagos descargado correctamente')
+        }, 'Generando Excel...')
+    } catch {
+        showError('Error', 'No se pudo descargar el Excel de pagos')
+    }
+}
 const showDeleteReasonModal = ref(false)
 const deleteTargetCotizacionId = ref<number | null>(null)
 const openDeleteReasonModal = (idCotizacion: number) => {

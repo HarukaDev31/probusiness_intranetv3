@@ -81,6 +81,26 @@ export const usePagos = () => {
         paginationPagos.value.current_page = 1
         getPagos(Number(id))
     }
+
+    const downloadBlob = (blob: Blob, filename: string) => {
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+    }
+
+    const exportContabilidadPagos = async (idContenedor: number) => {
+        const blob = await PagosService.exportContabilidadExcel(idContenedor, {
+            search: searchPagos.value,
+            filters: filtersPagos.value,
+        })
+        downloadBlob(blob, `pagos-final-contenedor-${idContenedor}-${new Date().toISOString().split('T')[0]}.xlsx`)
+    }
+
     const registrarPago = async (formData: FormData) => {
         try{
             const response = await PagosService.registrarPago(formData)
@@ -106,6 +126,7 @@ export const usePagos = () => {
         handlePageChangePagos,
         handleItemsPerPageChangePagos,
         handleFilterChangePagos,
-        registrarPago
+        registrarPago,
+        exportContabilidadPagos,
     }
 }   

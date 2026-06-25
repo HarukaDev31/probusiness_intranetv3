@@ -39,10 +39,10 @@
       :loading="loadingPagos || loadingHeaders" title="" :icon="''" :current-page="currentPagePagos"
       :total-pages="totalPagesPagos" :total-records="totalRecordsPagos" :items-per-page="itemsPerPagePagos"
       :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION)"
-      :filter-config="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION) ? filterConfigPagos : []" :show-export="false"
+      :filter-config="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION) ? filterConfigPagos : []" :show-export="showPagosExport"
       empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
       @page-change="handlePageChangePagos" @items-per-page-change="handleItemsPerPageChangePagos"
-      :show-pagination="false" @filter-change="handleFilterChangePagos" :show-body-top="true">
+      :show-pagination="false" @filter-change="handleFilterChangePagos" @export="handleExportPagosContabilidad" :show-body-top="true">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Cotizacion Final #${carga}`" :headers="headersPagos.length ? headersPagos : headers"
@@ -108,7 +108,7 @@ const currentRole = computed(() => props.role || authCurrentRole.value)
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const { general, loadingGeneral, updateEstadoCotizacionFinal, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, headersPagos, carga, fPuerto, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
-const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos } = usePagos()
+const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos, exportContabilidadPagos } = usePagos()
 const { cargosExtra, loadingCargosExtra, getCargosExtra, currentPageCargosExtra, totalPagesCargosExtra, totalRecordsCargosExtra, itemsPerPageCargosExtra, searchCargosExtra, handleSearchCargosExtra, handlePageChangeCargosExtra, handleItemsPerPageChangeCargosExtra } = useCargosExtra()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
 const { registrarPagoFinal, deletePago } = usePagosClientes()
@@ -121,6 +121,19 @@ const selectedCliente = ref('')
 
 // Tab state
 const activeTab = ref('') as Ref<string>
+const showPagosExport = computed(() =>
+  (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) && activeTab.value === 'pagos'
+)
+const handleExportPagosContabilidad = async () => {
+  try {
+    await withSpinner(async () => {
+      await exportContabilidadPagos(Number(id))
+      showSuccess('Descarga lista', 'Excel de pagos descargado correctamente')
+    }, 'Generando Excel...')
+  } catch {
+    showError('Error', 'No se pudo descargar el Excel de pagos')
+  }
+}
 
 // Tab configuration: para CONTABILIDAD primero Pagos luego General
 const canViewCargosExtra = computed(() =>

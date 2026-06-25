@@ -82,6 +82,29 @@ export const useCotizacionPagos = () => {
         await getCotizacionPagos(Number(idPagos))
     }
 
+    const downloadBlob = (blob: Blob, filename: string) => {
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+    }
+
+    const exportContabilidadPagos = async (idContenedor: number) => {
+        const idCotizacionQuery = route.query.idCotizacion
+        const blob = await CotizacionPagosService.exportContabilidadExcel(idContenedor, {
+            search: searchPagos.value,
+            filters: filtersPagos.value,
+            id_cotizacion: idCotizacionQuery != null && idCotizacionQuery !== ''
+                ? String(idCotizacionQuery)
+                : undefined,
+        })
+        downloadBlob(blob, `pagos-inicial-contenedor-${idContenedor}-${new Date().toISOString().split('T')[0]}.xlsx`)
+    }
+
     onBeforeUnmount(() => {
         if (currentAbortController) {
             currentAbortController.abort()
@@ -106,6 +129,7 @@ export const useCotizacionPagos = () => {
         handleSearchPagos,
         handleFilterChange,
         handlePageChange,
-        handleItemsPerPageChange
+        handleItemsPerPageChange,
+        exportContabilidadPagos,
     }
 }
