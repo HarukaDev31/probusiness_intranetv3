@@ -233,8 +233,7 @@ const calcLogisticaGeneralTotal = (row: {
   recargos_descuentos_final?: number | string | null
 }) => {
   const base = Number(row.logistica_final) || 0
-  const recargos = Number(row.recargos_descuentos_final) || 0
-  return base +recargos
+  return base
 }
 
 const getGeneralColumns = () => {
