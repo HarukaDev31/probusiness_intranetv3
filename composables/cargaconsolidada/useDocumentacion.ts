@@ -1,5 +1,23 @@
 import { ref } from 'vue'
 import { DocumentacionService } from '~/services/cargaconsolidada/documentacionService'
+import { normalizePublicFileUrl } from '~/utils/storageFileUrl'
+import type { DocumentacionFolder } from '~/types/cargaconsolidada/documentacion'
+
+function normalizeDocumentacionFolder(folder: DocumentacionFolder & { files?: Array<{ file_url?: string | null }> }) {
+  const files = Array.isArray(folder.files)
+    ? folder.files.map((file) => ({
+        ...file,
+        file_url: normalizePublicFileUrl(file.file_url ?? null)
+      }))
+    : folder.files
+
+  return {
+    ...folder,
+    file_url: normalizePublicFileUrl(folder.file_url),
+    lista_embarque_url: normalizePublicFileUrl(folder.lista_embarque_url),
+    files
+  }
+}
 
 export const useDocumentacion = () => {
   const folders = ref<any[]>([])
@@ -15,9 +33,10 @@ export const useDocumentacion = () => {
     try {
       const response = await DocumentacionService.getFolders(idContenedor)
       if (response.success) {
-        folders.value = response.data
-        hasData.value = response.data.length > 0
-        foldersByCategoria.value = response.data
+        const normalized = (response.data || []).map((folder) => normalizeDocumentacionFolder(folder))
+        folders.value = normalized
+        hasData.value = normalized.length > 0
+        foldersByCategoria.value = normalized
       } else {
         error.value = response.error || 'Error al obtener los folders'
       }

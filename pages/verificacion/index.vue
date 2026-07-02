@@ -9,10 +9,10 @@
         :loading="loadingConsolidado" :current-page="currentPage" :total-pages="totalPages"
         :total-records="totalRecords" :items-per-page="itemsPerPage" :primary-search-value="search"
         :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigConsolidado"
-        :filters-value="filtersConsolidado" :show-export="false"
+        :filters-value="filtersConsolidado" :show-export="false" :headers="headersConsolidado"
         empty-state-message="No se encontraron registros de consolidado." @update:primary-search="handleSearch"
         @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
-        @filter-change="handleFilterChange" :show-body-top="true">
+        @filter-change="handleFilterChange" :show-body-top="true" :show-headers="true">
         <!-- Botón de filtros personalizado -->
         <template #body-top>
           <div class="w-50 my-3 flex items-center">
@@ -35,15 +35,18 @@
               ]">
                 Delivery
               </button>
-            </div>
-          </div>
-          <div class="my-3 mr-20 flex justify-end items-center">
-            <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total:
-              <span
-                class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
-                {{ formatCurrency(totalImporteConsolidado) }}
-              </span>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
+              ]">
+                Permisos
+              </button>
+              <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Boletín Químico
+              </button>
             </div>
           </div>
         </template>
@@ -61,10 +64,11 @@
         :loading="loadingCursos" :current-page="currentPageCursos" :total-pages="totalPagesCursos"
         :total-records="totalRecordsCursos" :items-per-page="itemsPerPageCursos" :primary-search-value="searchCursos"
         :show-secondary-search="false" :show-filters="true" :filter-config="filterConfigCursos"
-        :filters-value="filtersCursos" :show-export="false" empty-state-message="No se encontraron registros de cursos."
+        :filters-value="filtersCursos" :show-export="false" :headers="headersCursos"
+        empty-state-message="No se encontraron registros de cursos."
         @update:primary-search="handleSearch" @page-change="handlePageChange"
         @items-per-page-change="handleItemsPerPageChange" @export="exportCursosData" @filter-change="handleFilterChange"
-        :show-body-top="true">
+        :show-body-top="true" :show-headers="true">
 
         <template #body-top>
           <div class="w-50 mb-6 flex items-center">
@@ -87,15 +91,18 @@
               ]">
                 Delivery
               </button>
-            </div>
-          </div>
-          <div class="my-3 mr-20 flex justify-end items-center">
-            <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total:
-              <span
-                class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
-                {{ formatCurrency(totalImporteCursos, 'PEN') }}
-              </span>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
+              ]">
+                Permisos
+              </button>
+              <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Boletín Químico
+              </button>
             </div>
           </div>
         </template>
@@ -106,16 +113,46 @@
       </DataTable>
     </div>
 
+    <div v-else-if="activeTab === 'permisos' && isAdministracion">
+      <!-- Permisos Tab (solo ADMINISTRACION) -->
+      <DataTable title="Permisos" subtitle="Verificación de pagos por permiso y tipo"
+        icon="i-heroicons-document-check" :data="permisosData" :columns="permisosColumns"
+        :loading="loadingPermisos" :current-page="paginationPermisos.current_page"
+        :total-pages="paginationPermisos.last_page" :total-records="totalRecordsPermisos"
+        :items-per-page="paginationPermisos.per_page" :primary-search-value="searchPermisos"
+        :show-primary-search="true" :show-filters="false"
+        empty-state-message="No hay registros de permisos." @update:primary-search="handleSearchPermisos"
+        @page-change="handlePageChangePermisos" @items-per-page-change="handleItemsPerPageChangePermisos"
+        :show-body-top="true">
+        <template #body-top>
+          <div class="w-50 mb-6 flex items-center">
+            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
+              <button type="button" @click="activeTab = 'consolidado'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isConsolidado ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Consolidado</button>
+              <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos</button>
+              <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
+              <button type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isPermisos ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Permisos</button>
+              <button type="button" @click="activeTab = 'boletin-quimico'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isBoletinQuimico ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Boletín Químico</button>
+            </div>
+          </div>
+        </template>
+        <template #error-state>
+          <ErrorState :message="errorPermisos || 'Error al cargar permisos'" />
+        </template>
+      </DataTable>
+    </div>
+
     <div v-else-if="activeTab === 'delivery'">
       <!-- Delivery Tab -->
       <DataTable title="Delivery" icon="i-heroicons-truck" :data="deliveryData" :columns="deliveryColumns"
         :loading="loadingDelivery" :current-page="currentPageDelivery" :total-pages="totalPagesDelivery"
         :total-records="totalRecordsDelivery" :items-per-page="itemsPerPageDelivery"
+        :show-summary="true"
         :primary-search-value="searchDelivery" :show-secondary-search="false" :show-filters="true"
         :filter-config="filterConfigDelivery" :filters-value="filtersDelivery" :show-export="false"
-        empty-state-message="No se encontraron registros de delivery." @update:primary-search="handleSearch"
-        @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportDeliveryData"
-        @filter-change="handleFilterChange" :show-body-top="true">
+        :headers="totalesDelivery" empty-state-message="No se encontraron registros de delivery."
+        @update:primary-search="handleSearch" @page-change="handlePageChange"
+        @items-per-page-change="handleItemsPerPageChange" @export="exportDeliveryData"
+        @filter-change="handleFilterChange" :show-body-top="true" :show-headers="true">
 
         <template #body-top>
           <div class="w-50 mb-6 flex items-center">
@@ -138,21 +175,61 @@
               ]">
                 Delivery
               </button>
-            </div>
-          </div>
-          <div class="my-3 mr-20 flex justify-end items-center">
-            <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              Importe total:
-              <span
-                class="text-primary-500 dark:text-primary-400 bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-300 dark:border-gray-700">
-                {{ formatCurrency(totalImporteDelivery, 'PEN') }}
-              </span>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isPermisos ? 'bg-white dark:bg-gray-800 border border-gray-200 shadow-sm' : 'text-gray-600'
+              ]">
+                Permisos
+              </button>
+              <button type="button" @click="activeTab = 'boletin-quimico'" :class="[
+                'px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300 text-gray-300',
+                isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600'
+              ]">
+                Boletín Químico
+              </button>
             </div>
           </div>
         </template>
         <!-- Estado de error -->
         <template #error-state>
           <ErrorState :message="errorDelivery || 'Error desconocido'" />
+        </template>
+      </DataTable>
+    </div>
+
+    <div v-else-if="activeTab === 'boletin-quimico'">
+      <DataTable
+        title="Verificación"
+        subtitle="Boletín Químico"
+        icon="i-heroicons-beaker"
+        :show-title="true"
+        :data="boletinData"
+        :columns="boletinColumns"
+        :loading="loadingBoletin"
+        :current-page="paginationBoletin.current_page"
+        :total-pages="paginationBoletin.last_page"
+        :total-records="paginationBoletin.total"
+        :items-per-page="itemsPerPageBoletin"
+        :primary-search-value="searchBoletin"
+        :show-primary-search="true"
+        primary-search-placeholder="Buscar por cliente o consolidado"
+        :show-filters="false"
+        empty-state-message="No hay registros de boletín químico."
+        :show-body-top="true"
+        @update:primary-search="handleSearchBoletin"
+        @page-change="handlePageChangeBoletin"
+        @items-per-page-change="handleItemsPerPageChangeBoletin"
+      >
+        <template #body-top>
+          <div class="w-50 mb-6 flex items-center">
+            <div class="inline-flex rounded-md bg-gray-100 dark:bg-gray-900 p-1 gap-2">
+              <button type="button" @click="activeTab = 'consolidado'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isConsolidado ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Consolidado</button>
+              <button type="button" @click="activeTab = 'cursos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isCursos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Cursos</button>
+              <button type="button" @click="activeTab = 'delivery'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isDelivery ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Delivery</button>
+              <button v-if="isAdministracion" type="button" @click="activeTab = 'permisos'" :class="['px-4 py-2 rounded-md text-sm font-medium transition border-2 border-gray-300', isPermisos ? 'bg-white dark:bg-gray-800 shadow-sm' : 'text-gray-600']">Permisos</button>
+              <button type="button" @click="activeTab = 'boletin-quimico'" :class="['px-4 py-2 rounded-md text-sm font-medium transition', isBoletinQuimico ? 'bg-white dark:bg-gray-800 border-2 border-gray-300 shadow-sm' : 'text-gray-600']">Boletín Químico</button>
+            </div>
+          </div>
         </template>
       </DataTable>
     </div>
@@ -167,27 +244,49 @@ import type { TableColumn } from '@nuxt/ui'
 import { useConsolidado } from '~/composables/usePagosConsolidado'
 import { usePagos } from '~/composables/usePagos'
 import { useEntrega } from '~/composables/cargaconsolidada/entrega/useEntrega'
+import { useTramitesAduana } from '~/composables/basedatos/useTramitesAduana'
+import { useUserRole } from '~/composables/auth/useUserRole'
 import { ESTADOS_PAGO, CARGAS_DISPONIBLES } from '~/constants/consolidado'
 import { ESTADOS_PAGO as ESTADOS_PAGO_CURSOS } from '~/constants/cursos'
-import { getEstadoColor, formatCurrency, formatPhoneNumber, formatDocument } from '~/utils/consolidado'
-import { getEstadoColor as getEstadoColorCursos, formatCurrency as formatCurrencyCursos, formatPhoneNumber as formatPhoneNumberCursos } from '~/utils/cursos'
-import { UButton, USelect } from '#components'
-import DynamicModal from '~/components/DynamicModal.vue'
+import { ROLES } from '~/constants/roles'
+import { getEstadoColor, formatPhoneNumber, formatDocument } from '~/utils/consolidado'
+import { formatCurrency } from '~/utils/formatters'
+import { UButton, USelect, UBadge } from '#components'
+import { createLazyView } from '~/utils/lazyView'
+
+const DynamicModal = createLazyView(() => import('~/components/DynamicModal.vue'))
 import type { ModalData } from '~/composables/commons/useModal'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
-// Tabs
-const tabs = [
-  { value: 'consolidado', label: 'Consolidado' },
-  { value: 'cursos', label: 'Cursos' },
-  { value: 'delivery', label: 'Delivery' }
-]
+import type { TramiteAduana, TramiteAduanaTipoPermisoItem } from '~/types/basedatos/tramiteAduana'
+import { TRAMITE_ESTADOS } from '~/types/basedatos/tramiteAduana'
+import { formatDateTimeToDmy } from '~/utils/formatters'
+import { BoletinQuimicoService } from '~/services/basedatos/boletinQuimicoService'
+import type { BoletinQuimicoRow } from '~/services/basedatos/boletinQuimicoService'
+import type { PagosDetails } from '~/types/cargaconsolidada/clientes/pagos'
+
+const router = useRouter()
+const { hasRole } = useUserRole()
+const isAdministracion = computed(() => hasRole(ROLES.ADMINISTRACION))
+
+// Tabs (Permisos solo visible para ADMINISTRACION)
+const tabs = computed(() => {
+  const base = [
+    { value: 'consolidado', label: 'Consolidado' },
+    { value: 'cursos', label: 'Cursos' },
+    { value: 'delivery', label: 'Delivery' },
+  ]
+  if (isAdministracion.value) base.push({ value: 'permisos', label: 'Permisos' })
+  return base
+})
 
 const activeTab = ref('consolidado')
 
 const isConsolidado = computed(() => activeTab.value === 'consolidado')
 const isCursos = computed(() => activeTab.value === 'cursos')
 const isDelivery = computed(() => activeTab.value === 'delivery')
+const isPermisos = computed(() => activeTab.value === 'permisos')
+const isBoletinQuimico = computed(() => activeTab.value === 'boletin-quimico')
 
 const modalVisible = ref(false)
 const modalMessage = ref<ModalData | null>(null)
@@ -228,7 +327,8 @@ const {
   totalRecords,
   currentPage,
   itemsPerPage,
-  search
+  search,
+  headersConsolidado
 } = useConsolidado()
 
 // Composable de cursos
@@ -252,7 +352,8 @@ const {
   totalRecordsCursos,
   currentPageCursos,
   itemsPerPageCursos,
-  searchCursos
+  searchCursos,
+  headersCursos
 } = usePagos()
 
 // Composable de entrega para delivery
@@ -275,10 +376,168 @@ const {
   fetchDeliveryData,
   updateFiltersDelivery,
   clearFiltersDelivery,
-  cargasDisponiblesDelivery
+  cargasDisponiblesDelivery,
+  totalesDelivery
 } = useEntrega()
 
+// Permisos (solo para ADMINISTRACION)
+const {
+  tramites: tramitesPermisos,
+  loading: loadingPermisos,
+  error: errorPermisos,
+  pagination: paginationPermisos,
+  search: searchPermisos,
+  loadTramites: loadPermisosVerificacion,
+  totalItems: totalRecordsPermisos
+} = useTramitesAduana()
+const permisosData = computed(() => tramitesPermisos.value || [])
 
+// Boletín Químico (verificación)
+const boletinData = ref<BoletinQuimicoRow[]>([])
+const loadingBoletin = ref(false)
+const searchBoletin = ref('')
+const itemsPerPageBoletin = ref(50)
+const paginationBoletin = ref({ current_page: 1, last_page: 1, per_page: 50, total: 0, from: 0, to: 0 })
+async function loadBoletin () {
+  loadingBoletin.value = true
+  try {
+    const res = await BoletinQuimicoService.getList({
+      page: paginationBoletin.value.current_page,
+      per_page: itemsPerPageBoletin.value,
+      search: searchBoletin.value || undefined
+    })
+    if (res.success) {
+      boletinData.value = res.data
+      paginationBoletin.value = res.pagination
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loadingBoletin.value = false
+  }
+}
+function handleSearchBoletin (v: string) {
+  searchBoletin.value = v
+  paginationBoletin.value.current_page = 1
+  loadBoletin()
+}
+function handlePageChangeBoletin (page: number) {
+  paginationBoletin.value.current_page = page
+  loadBoletin()
+}
+function handleItemsPerPageChangeBoletin (per: number) {
+  itemsPerPageBoletin.value = per
+  paginationBoletin.value.current_page = 1
+  loadBoletin()
+}
+function estadoBoletinLabel (estado: string) {
+  if (estado === 'pagado') return 'Pagado'
+  if (estado === 'pagado_gris') return 'Pagado'
+  if (estado === 'adelanto_pagado') return 'Adelanto'
+  return 'Pendiente'
+}
+/** Cuatro estados. Verde solo cuando estado es pagado Y todos los pagos están confirmados; si no, gris. */
+function estadoBoletinSelectClass (estado: string, item?: { pagos_details?: { status: string }[] }) {
+  const pagos = item?.pagos_details || []
+  const allConfirmados = pagos.length > 0 && pagos.every((p) => p.status === 'CONFIRMADO')
+  if (estado === 'pagado') return allConfirmados ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 border-green-200 dark:border-green-800' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+  if (estado === 'pagado_gris') return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600'
+  if (estado === 'adelanto_pagado') return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 border-amber-200 dark:border-amber-800'
+  return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+}
+const BoletinEstadoOptions = [
+  { label: 'Pendiente', value: 'pendiente' },
+  { label: 'Adelanto', value: 'adelanto_pagado' },
+  { label: 'Pagado (gris)', value: 'pagado_gris' },
+  { label: 'Pagado', value: 'pagado' }
+]
+const boletinColumns = computed<TableColumn<BoletinQuimicoRow>[]>(() => [
+  { accessorKey: 'cliente', header: 'Cliente', cell: ({ row }) => h('span', row.original.cliente) },
+  { accessorKey: 'consolidado', header: 'Consolidado', cell: ({ row }) => h('span', row.original.consolidado) },
+  {
+    accessorKey: 'items',
+    header: 'Items',
+    cell: ({ row }) => {
+      const items = row.original.items || []
+      const lines = items.map((i) => h('div', { class: 'text-sm', key: i.id }, i.item_nombre))
+      return h('div', { class: 'flex flex-col gap-1' }, lines.length ? lines : '—')
+    }
+  },
+  {
+    accessorKey: 'monto_boletin',
+    header: 'Monto por ítem',
+    cell: ({ row }) => {
+      const items = row.original.items || []
+      const lines = items.map((i) => h('div', { class: 'text-sm', key: i.id }, formatCurrency(i.monto_boletin, 'PEN')))
+      return h('div', { class: 'flex flex-col gap-1' }, lines.length ? lines : '—')
+    }
+  },
+  {
+    accessorKey: 'estado',
+    header: 'Estado',
+    cell: ({ row }) => {
+      const items = row.original.items || []
+      const selects = items.map((it) => h(USelect as any, {
+        key: it.id,
+        modelValue: it.estado,
+        items: BoletinEstadoOptions,
+        valueAttribute: 'value',
+        disabled: true,
+        variant: 'subtle',
+        class: `text-sm py-1.5 px-2 rounded-md border w-full min-w-[120px] ${estadoBoletinSelectClass(it.estado, it)}`
+      }))
+      return h('div', { class: 'flex flex-col gap-1' }, selects.length ? selects : '—')
+    }
+  },
+  {
+    accessorKey: 'adelantos',
+    header: 'Adelantos',
+    cell: ({ row }) => {
+      const r = row.original
+      const items = r.items || []
+      return h('div', { class: 'flex flex-col gap-2' }, items.map((item) => {
+        const details: PagosDetails[] = (item.pagos_details || []).map((p: any) => ({
+          id_pago: p.id_pago,
+          monto: String(p.monto),
+          status: p.status,
+          concepto: typeof p.concepto === 'object' ? p.concepto?.name : p.concepto,
+          payment_date: p.payment_date || '',
+          banco: p.banco || '',
+          voucher_url: p.voucher_url || ''
+        }))
+        return h(PagoGrid, {
+          key: item.id,
+          numberOfPagos: Math.max(1, details.length),
+          pagoDetails: details,
+          clienteNombre: r.cliente,
+          currency: 'PEN',
+          showDelete: false
+        })
+      }))
+    }
+  },
+  {
+    accessorKey: 'acciones',
+    header: 'Acciones',
+    cell: ({ row }) => {
+      const items = row.original.items || []
+      if (items.length === 0) return h('span', '—')
+      return h(UButton, {
+        size: 'xs',
+        color: 'primary',
+        variant: 'soft',
+        icon: 'i-heroicons-eye',
+        onClick: () => {
+          router.push({
+            path: '/verificacion/boletin-quimico/ver',
+            query: { ids: items.map((i: { id: number }) => i.id).join(',') },
+            state: { items, cliente: row.original.cliente, consolidado: row.original.consolidado } as any
+          })
+        }
+      })
+    }
+  }
+])
 
 // Configuración de filtros para consolidado
 // Opciones de cargas derivadas de los datos (únicas y ordenadas de menor a mayor)
@@ -470,7 +729,7 @@ const consolidadoColumns: TableColumn<any>[] = [
   {
     accessorKey: 'carga',
     header: 'Carga',
-    cell: ({ row }: { row: any }) => `#${row.getValue('carga')} `
+    cell: ({ row }: { row: any }) => row.original.carga_display || `#${row.getValue('carga')} `
   },
   {
     accessorKey: 'estado_pago',
@@ -746,7 +1005,7 @@ const deliveryColumns: TableColumn<any>[] = [
   {
     accessorKey: 'carga',
     header: 'Carga',
-    cell: ({ row }: { row: any }) => `#${row.getValue('carga')} `
+    cell: ({ row }: { row: any }) => row.original.carga_display || `#${row.getValue('carga')} `
   },
   {
     accessorKey: 'estado_pago',
@@ -826,15 +1085,85 @@ const deliveryColumns: TableColumn<any>[] = [
 
 ]
 
-const totalImporteConsolidado = computed(() =>
-  consolidadoData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
-)
-const totalImporteCursos = computed(() =>
-  cursosData.value.reduce((sum, item) => sum + (Number(item.monto_a_pagar_formateado) || 0), 0)
-)
-const totalImporteDelivery = computed(() =>
-  deliveryData.value.reduce((sum, item) => sum + (Number(item.pagado) || 0), 0)
-)
+// Columnas para Permisos (verificación): Cliente, Consolidado, Entidad, T. Permiso, Servicio, Acción
+const permisosColumns: TableColumn<TramiteAduana>[] = [
+  {
+    accessorKey: 'cliente',
+    header: 'Cliente',
+    cell: ({ row }: { row: any }) => {
+      const c = row.original.cliente
+      if (!c) return h('span', { class: 'text-gray-400' }, '-')
+      return h('div', { class: 'text-sm' }, [
+        h('div', { class: 'font-medium text-primary-600 dark:text-primary-400' }, c.nombre || '-'),
+        h('div', { class: 'text-gray-500' }, [c.ruc || '', c.telefono || ''].filter(Boolean).join(' ')),
+        h('div', { class: 'text-gray-500' }, c.email || 'Sin correo'),
+      ])
+    },
+  },
+  {
+    accessorKey: 'consolidado',
+    header: 'Consolidado',
+    cell: ({ row }: { row: any }) => {
+      const c = row.original.consolidado
+      const codigo = c?.codigo || c?.nombre
+      if (codigo) return h('span', {}, codigo)
+      return h('span', {}, `#${row.original.id_consolidado}`)
+    },
+  },
+  {
+    accessorKey: 'entidad',
+    header: 'Entidad',
+    cell: ({ row }: { row: any }) => {
+      const e = row.original.entidad
+      const nombre = (e && typeof e === 'object' && e !== null && 'nombre' in e)
+        ? (e.nombre ?? '')
+        : (typeof e === 'string' ? e : '')
+      return h('span', nombre.trim() || '-')
+    },
+  },
+  {
+    accessorKey: 'tipo_permiso',
+    header: 'T. Permiso',
+    cell: ({ row }: { row: any }) => {
+      const tipos = row.original.tipos_permiso ?? []
+      if (tipos.length === 0) return h('span', { class: 'text-gray-400 text-sm' }, '-')
+      return h('span', { class: 'text-sm' }, tipos.map((tp: TramiteAduanaTipoPermisoItem) => tp.nombre_permiso).join(', '))
+    },
+  },
+  {
+    accessorKey: 'precio',
+    header: 'Servicio',
+    cell: ({ row }: { row: any }) => {
+      const t = row.original
+      // Suma de todos los pagos_servicio subidos por documentación
+      const sumaPagos = Number(t.total_pago_servicio) || 0
+      const total = Number(t.pagos_servicio_count) || 0
+      const confirmados = Number(t.pagos_servicio_confirmados) || 0
+      // Gris: ninguno confirmado; Amarillo: alguno confirmado; Verde: todos confirmados (y hay al menos uno)
+      const bg =
+        total === 0 || confirmados === 0
+          ? 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300'
+          : confirmados < total
+            ? 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-200'
+            : 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-200'
+      return h('span', { class: `inline-flex px-2 py-1 rounded text-xs font-medium border ${bg}` }, `S/. ${sumaPagos.toFixed(2)}`)
+    },
+  },
+  {
+    id: 'actions',
+    header: 'Acción',
+    cell: ({ row }: { row: any }) =>
+      h(UButton as any, {
+        icon: 'i-heroicons-eye',
+        variant: 'ghost',
+        size: 'xs',
+        color: 'primary',
+        title: 'Ver detalle y verificar pagos',
+        onClick: () => navigateTo(`/verificacion/permisos/${row.original.id}`),
+      }),
+  },
+]
+
 
 // Computed para el total del consolidado (asegurar que sea un número)
 const totalAmountConsolidadoComputed = computed(() => {
@@ -875,8 +1204,18 @@ const handleSearch = async (query: string) => {
   } else if (activeTab.value === 'delivery') {
     searchDelivery.value = query
     await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
+  } else if (activeTab.value === 'permisos') {
+    searchPermisos.value = query
+    await loadPermisosVerificacion({ page: 1 })
   }
 }
+
+const handleSearchPermisos = (query: string) => {
+  searchPermisos.value = query
+  loadPermisosVerificacion({ page: 1 })
+}
+const handlePageChangePermisos = (page: number) => loadPermisosVerificacion({ page })
+const handleItemsPerPageChangePermisos = (limit: number) => loadPermisosVerificacion({ page: 1, limit })
 
 const handlePageChange = async (page: number) => {
   const idCotizacion = getIdCotizacionFromRoute()
@@ -889,6 +1228,8 @@ const handlePageChange = async (page: number) => {
   } else if (activeTab.value === 'delivery') {
     paginationDelivery.value.current_page = page
     await fetchDeliveryData(filtersDelivery.value, page, itemsPerPageDelivery.value)
+  } else if (activeTab.value === 'permisos') {
+    await loadPermisosVerificacion({ page })
   }
 }
 
@@ -903,6 +1244,8 @@ const handleItemsPerPageChange = async (items: number) => {
   } else if (activeTab.value === 'delivery') {
     paginationDelivery.value.per_page = items
     await fetchDeliveryData(filtersDelivery.value, 1, items)
+  } else if (activeTab.value === 'permisos') {
+    await loadPermisosVerificacion({ page: 1, limit: items })
   }
 }
 
@@ -1009,7 +1352,7 @@ onMounted(async () => {
   if (tabQuery) {
     activeTab.value = tabQuery as string
   } else {
-    activeTab.value = (tabs && tabs.length > 0) ? tabs[0].value : 'consolidado' // Cambiar a 'consolidado' como tab inicial
+    activeTab.value = (tabs.value && tabs.value.length > 0) ? tabs.value[0].value : 'consolidado'
   }
   
   
@@ -1021,8 +1364,11 @@ onMounted(async () => {
   } else if (activeTab.value === 'cursos') {
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   } else if (activeTab.value === 'delivery') {
-    // Cargar todos los datos de delivery
     await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
+  } else if (activeTab.value === 'permisos' && isAdministracion.value) {
+    await loadPermisosVerificacion({ page: 1 })
+  } else if (activeTab.value === 'boletin-quimico') {
+    await loadBoletin()
   }
 })
 watch(activeTab, async (newTab, oldTab) => {
@@ -1043,9 +1389,16 @@ watch(activeTab, async (newTab, oldTab) => {
     fetchCursosData(filtersCursos.value, 1, itemsPerPage.value, idPedido)
   } else if (newTab === 'delivery') {
     navigateTo(`/verificacion?tab=delivery`)
-    // Cargar todos los datos de delivery
     try { searchDelivery.value = '' } catch (e) { /* ignore */ }
     await fetchDeliveryData(filtersDelivery.value, 1, itemsPerPageDelivery.value)
+  } else if (newTab === 'permisos') {
+    navigateTo(`/verificacion?tab=permisos`)
+    try { searchPermisos.value = '' } catch (e) { /* ignore */ }
+    await loadPermisosVerificacion({ page: 1 })
+  } else if (newTab === 'boletin-quimico') {
+    navigateTo(`/verificacion?tab=boletin-quimico`)
+    try { searchBoletin.value = '' } catch (e) { /* ignore */ }
+    await loadBoletin()
   }
 })
 </script>

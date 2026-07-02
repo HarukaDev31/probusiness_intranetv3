@@ -32,6 +32,7 @@ export const usePagos = () => {
                 { label: 'Todos', value: 'todos' },
                 { label: 'PENDIENTE', value: 'PENDIENTE' },
                 { label: 'COTIZADO', value: 'COTIZADO' },
+                { label: 'COBRANDO', value: 'COBRANDO' },
                 { label: 'PAGADO', value: 'PAGADO' },
                 { label: 'AJUSTADO', value: 'AJUSTADO' },
                 { label: 'SOBREPAGO', value: 'SOBREPAGO' },
@@ -41,11 +42,10 @@ export const usePagos = () => {
     const getPagos = async (id: number) => {
         try {
             loadingPagos.value = true
-            const params = {
+            const params: any = {
                 page: currentPagePagos.value,
                 per_page: itemsPerPagePagos.value,
-                ...filtersPagos.value,
-
+                filters: { ...filtersPagos.value }
             }
             if (searchPagos.value) {
                 params.search = searchPagos.value
@@ -63,6 +63,44 @@ export const usePagos = () => {
         searchPagos.value = search
         getPagos(Number(id))
     }
+    const handleFilterChangePagos = (filterType: string, value: string) => {
+        if (value === 'todos' || value === '') {
+            const { [filterType]: _, ...rest } = filtersPagos.value
+            filtersPagos.value = rest
+        } else {
+            filtersPagos.value = { ...filtersPagos.value, [filterType]: value }
+        }
+        getPagos(Number(id))
+    }
+    const handlePageChangePagos = (page: number) => {
+        paginationPagos.value.current_page = page
+        getPagos(Number(id))
+    }
+    const handleItemsPerPageChangePagos = (itemsPerPage: number) => {
+        itemsPerPagePagos.value = itemsPerPage
+        paginationPagos.value.current_page = 1
+        getPagos(Number(id))
+    }
+
+    const downloadBlob = (blob: Blob, filename: string) => {
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+    }
+
+    const exportContabilidadPagos = async (idContenedor: number) => {
+        const blob = await PagosService.exportContabilidadExcel(idContenedor, {
+            search: searchPagos.value,
+            filters: filtersPagos.value,
+        })
+        downloadBlob(blob, `pagos-final-contenedor-${idContenedor}-${new Date().toISOString().split('T')[0]}.xlsx`)
+    }
+
     const registrarPago = async (formData: FormData) => {
         try{
             const response = await PagosService.registrarPago(formData)
@@ -85,6 +123,10 @@ export const usePagos = () => {
         getPagos,
         totalRecordsPagos,
         handleSearchPagos,
-        registrarPago
+        handlePageChangePagos,
+        handleItemsPerPageChangePagos,
+        handleFilterChangePagos,
+        registrarPago,
+        exportContabilidadPagos,
     }
 }   

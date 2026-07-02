@@ -1,6 +1,9 @@
 import type { User, LoginCredentials as _LoginCredentials, LoginResponse as _LoginResponse, ApiLoginResponse } from '../types/auth'
-import { getWebsocketRoles } from '../config/websocket/channels'
+import { getWebsocketRoles, getAllEventHandlers } from '../config/websocket/channels'
+import { CALENDAR_EVENTS, getUserCalendarChannelName } from '../config/websocket/events/calendar'
 import { useEcho } from '../composables/websocket/useEcho'
+import { buildEchoClientConfig } from '../utils/websocket-config'
+import { syncRoleChannelsFromAuthUser } from '../composables/websocket/syncRoleChannelsFromAuth'
 
 interface ApiPlugin {
   call: <T>(endpoint: string, options?: any) => Promise<T>
@@ -66,25 +69,56 @@ class AuthService {
 
   async initializeEcho() {
     if (!this.isEchoInitialized && this.token) {
-      const config = {
-        wsHost: this.nuxtApp.$config.public.pusherWsHost,
-        forceTLS: false,
-        enabledTransports: ['ws', 'wss'],
-        authEndpoint: `https://${this.nuxtApp.$config.public.pusherWsHost}/api/broadcasting/auth`,
-        auth: {
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-            Accept: 'application/json'
-          }
-        }
-      }
+      const echoConfig = buildEchoClientConfig(this.token)
 
-      await this.echo.initializeEcho(config)
+      await this.echo.initializeEcho(echoConfig)
       this.isEchoInitialized = true
+      if (process.client && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('echo-ready'))
+      }
+      // 1) Canal del usuario (calendario): private-App.Models.Usuario.{id} — debe existir una llamada a auth por usuario
+      this.setupUserChannel()
+      // 2) Canales por rol (Coordinación, Documentación, etc.)
       const role = this.currentUser?.raw?.grupo.nombre
       if (role) {
         this.setupWebSocketChannels(role)
       }
+      syncRoleChannelsFromAuthUser()
+    }
+  }
+
+  /** Suscripción al canal privado del usuario para eventos de calendario. */
+  private setupUserChannel() {
+    if (!this.isEchoInitialized) return
+    let userId: number | string | null = null
+    if (this.currentUser) {
+      const raw = (this.currentUser as any).raw
+      userId = this.currentUser.id ?? raw?.ID_Usuario ?? raw?.id ?? null
+    }
+    if (userId == null && process.client) {
+      try {
+        const stored = localStorage.getItem('auth_user')
+        if (stored) {
+          const parsed = JSON.parse(stored) as { id?: number | string; raw?: { ID_Usuario?: number; id?: number } }
+          userId = parsed?.id ?? parsed?.raw?.ID_Usuario ?? parsed?.raw?.id ?? null
+        }
+      } catch (_) { /* ignore */ }
+    }
+    if (userId == null) return
+    try {
+      const channelName = getUserCalendarChannelName(userId)
+      const allHandlers = getAllEventHandlers()
+      const handlers = CALENDAR_EVENTS.map((event) => ({
+        event,
+        callback: allHandlers[event] ?? (() => {})
+      }))
+      this.echo.subscribeToChannel({
+        name: channelName,
+        type: 'private',
+        handlers
+      })
+    } catch (e) {
+      console.warn('Canal de usuario (calendario):', e)
     }
   }
 
@@ -166,19 +200,17 @@ class AuthService {
 
         this.currentUser = user
         this.token = token
-        //if menu.show_father=0 then remove menu.Hijos
-        menu.forEach(
-          (item) => {
-            if (item.show_father == 0) {
-              item.Hijos = []
-            }
-          }
-        )
+        // No borrar Hijos aquí. El render del sidebar decide si aplanar/mostrar padre.
         this.menu = menu
         this.saveToStorage()
 
         // Inicializar Echo y configurar canales
         await this.initializeEcho()
+
+        // Avisar que cambió el usuario para recargar preferencias de notificaciones.
+        if (process.client && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth-login'))
+        }
 
         return {
           success: true,
@@ -209,6 +241,12 @@ class AuthService {
       if (this.isEchoInitialized) {
         this.echo.disconnect()
         this.isEchoInitialized = false
+      }
+
+      if (process.client && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('soporte-ti-chat-reset'))
+        // Limpiar preferencias de notificaciones cacheadas del usuario saliente.
+        window.dispatchEvent(new CustomEvent('auth-logout'))
       }
 
       this.currentUser = null

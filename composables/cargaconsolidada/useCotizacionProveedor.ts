@@ -30,6 +30,7 @@ export const    useCotizacionProveedor = () => {
                 { label: 'Todos', value: 'todos' },
                 { label: 'WAIT', value: 'WAIT' },
                 { label: 'NC', value: 'NC' },
+                { label: 'NP', value: 'NP' },
                 { label: 'C', value: 'C' },
                 { label: 'R', value: 'R' },
                 { label: 'INSPECTION', value: 'INSPECTION' },
@@ -53,6 +54,8 @@ export const    useCotizacionProveedor = () => {
     const filters = ref<CotizacionProveedorFilters>({ estado_china: 'todos', estado_coordinacion: 'todos', estado: 'todos', fecha_inicio: '', fecha_fin: '' })
     const search = ref('')
     const itemsPerPage = ref(100)
+    const sortBy = ref('id')
+    const sortOrder = ref<'asc' | 'desc'>('asc')
 
     // Datos específicos de China
     const documentosChina = ref<FileItem[]>([])
@@ -70,8 +73,10 @@ export const    useCotizacionProveedor = () => {
         id_proveedor: 0,
         code_supplier: '',
         qty_box_china: 0,
+        qty_pallet_china: 0,
         supplier_phone: '',
         cbm_total_china: 0,
+        peso_china: 0,
         arrive_date_china: '',
         cliente_nombre: '',
     })
@@ -82,12 +87,21 @@ export const    useCotizacionProveedor = () => {
     const hasData = computed(() => cotizacionProveedor.value.length > 0)
 
     const route = useRoute()
+    let currentAbortController: AbortController | null = null
+    const latestRequestId = ref(0)
 
     /**
      * Obtiene las cotizaciones de proveedores
      */
     const getCotizacionProveedor = async (id: number) => {
         if (!id) return
+
+        if (currentAbortController) {
+            currentAbortController.abort()
+        }
+        currentAbortController = new AbortController()
+        const signal = currentAbortController.signal
+        const requestId = ++latestRequestId.value
 
         loading.value = true
         error.value = null
@@ -118,16 +132,24 @@ export const    useCotizacionProveedor = () => {
                 filters.value,
                 search.value,
                 itemsPerPage.value,
-                currentPage.value
+                currentPage.value,
+                sortBy.value,
+                sortOrder.value,
+                signal
             )
 
-            cotizacionProveedor.value = response.data
-            pagination.value = response.pagination
+            if (requestId === latestRequestId.value) {
+                cotizacionProveedor.value = response.data
+                pagination.value = response.pagination
+            }
         } catch (err: any) {
+            if (err?.name === 'AbortError') return
             error.value = err.message || 'Error al obtener las cotizaciones de proveedores'
             console.error('Error en getCotizacionProveedor:', err)
         } finally {
-            loading.value = false
+            if (requestId === latestRequestId.value) {
+                loading.value = false
+            }
         }
     }
 
@@ -241,6 +263,17 @@ export const    useCotizacionProveedor = () => {
         }
         pagination.value.current_page = 1 // Resetear a la primera página
         await getCotizacionProveedor(Number(route.params.id))
+    }
+
+    const handleSortChange = (field: string) => {
+        if (sortBy.value === field) {
+            sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+        } else {
+            sortBy.value = field
+            sortOrder.value = 'asc'
+        }
+        pagination.value.current_page = 1
+        getCotizacionProveedor(Number(route.params.id))
     }
 
     const getProveedorById = async (id: number) => {
@@ -366,6 +399,8 @@ export const    useCotizacionProveedor = () => {
             estado_coordinacion: 'todos',
             estado_china: 'todos'
         }
+        sortBy.value = 'id'
+        sortOrder.value = 'asc'
     }
 
     // Global clear listener: respond to centralized DataTable clear action
@@ -380,6 +415,8 @@ export const    useCotizacionProveedor = () => {
                     estado_china: 'todos'
                 }
                 pagination.value.current_page = 1
+                sortBy.value = 'id'
+                sortOrder.value = 'asc'
                 const id = Number(route.params.id)
                 if (id) getCotizacionProveedor(id)
             } catch (err) {
@@ -389,6 +426,12 @@ export const    useCotizacionProveedor = () => {
         onMounted(() => window.addEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
         onBeforeUnmount(() => window.removeEventListener('probusiness:clear-all-filters', globalClearHandler as EventListener))
     }
+    onBeforeUnmount(() => {
+        if (currentAbortController) {
+            currentAbortController.abort()
+            currentAbortController = null
+        }
+    })
     const exportData = async () => {
         loading.value = true
         try {
@@ -497,6 +540,8 @@ export const    useCotizacionProveedor = () => {
         pagination,
         search,
         itemsPerPage,
+        sortBy,
+        sortOrder,
 
         // Computed properties
         totalPages,
@@ -521,6 +566,7 @@ export const    useCotizacionProveedor = () => {
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange,
+        handleSortChange,
         getProveedorById,
         saveDocumentosChina,
         saveInspeccionChina,

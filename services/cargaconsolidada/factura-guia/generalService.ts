@@ -45,6 +45,13 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+
+    static async uploadGuiasRemisionBatch(idCotizacion: number, files: File[]): Promise<any> {
+        const formData = new FormData()
+        formData.append('idCotizacion', String(idCotizacion))
+        files.forEach((f) => formData.append('files[]', f))
+        return this.apiCall<any>(`${this.baseUrl}/upload-guias-remision-batch`, { method: 'POST', body: formData })
+    }
     static async getHeaders(id: number): Promise<HeaderResponse> {
         try {
             const response = await this.apiCall<HeaderResponse>(`${this.baseUrl}/${id}/headers`)
@@ -76,12 +83,29 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+
+    static async deleteGuiaRemisionItem(guiaId: number): Promise<any> {
+        return this.apiCall<any>(`${this.baseUrl}/delete-guia-remision-item/${guiaId}`, { method: 'DELETE' })
+    }
     static async getFacturasComerciales(idCotizacion: number): Promise<{ success: boolean, data: any[] }> {
         try {
             const response = await this.apiCall<{ success: boolean, data: any[] }>(`${this.baseUrl}/get-facturas-comerciales/${idCotizacion}`)
             return response
         } catch (error) {
             console.error('Error al obtener facturas comerciales:', error)
+            throw error
+        }
+    }
+
+    static async updateRegistrado(idCotizacion: number, registrado: boolean): Promise<{ success: boolean; message: string; data?: any }> {
+        try {
+            return await this.apiCall(`api/carga-consolidada/contenedor/factura-guia/contabilidad/registrado/${idCotizacion}`, {
+                method: 'PUT',
+                body: JSON.stringify({ registrado }),
+                headers: { 'Content-Type': 'application/json' }
+            })
+        } catch (error) {
+            console.error('Error al actualizar registrado:', error)
             throw error
         }
     }

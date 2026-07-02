@@ -6,6 +6,7 @@ export const usePagos = () => {
   // State
   const campanasDisponibles = ref<{ value: string; label: string }[]>([])
   const cursosData = ref<CursoItem[]>([])
+  const headersCursos = ref<{ label: string; value: string; icon?: string }[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const filters = ref<CursosFilters>({})
@@ -73,9 +74,10 @@ export const usePagos = () => {
       }
 
       const response = await PagosService.getCursosPagos(mergedFilters)
-      
+
       cursosData.value = response.data
       pagination.value = response.pagination
+      headersCursos.value = (response as any).headers ?? []
       const apiCampanas = (response as any)?.campanas_disponibles ?? (response as any)?.filters?.campanas ?? []
       campanasDisponibles.value = [
         { value: '0', label: 'Todas las campañas' },
@@ -202,6 +204,7 @@ export const usePagos = () => {
     totalPaid,
     filteredData,
     searchCursos,
+    headersCursos,
     // Methods
     fetchCursosData,
     getCursoDetalle,

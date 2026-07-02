@@ -1,3 +1,5 @@
+import { ref, readonly, nextTick } from 'vue'
+
 // Singleton instance
 let spinnerInstance: ReturnType<typeof createSpinnerInstance> | null = null
 
@@ -22,6 +24,8 @@ function createSpinnerInstance() {
   ): Promise<T> => {
     try {
       showSpinner(message)
+      // Una pasada al DOM para que el overlay del spinner se pinte antes de operaciones muy rápidas
+      await nextTick()
       const result = await operation()
       return result
     } finally {

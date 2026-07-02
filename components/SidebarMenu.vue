@@ -5,7 +5,7 @@
     :class="[visible ? 'translate-x-0' : '-translate-x-full', collapsed ? 'w-20' : 'w-70']">
     <!-- Top: centered logo -->
     <div class="py-3 px-3 flex items-center gap-3" :class="[collapsed ? 'justify-center' : 'justify-start']">
-      <NuxtLink to="/" class="flex items-center gap-3">
+      <NuxtLink to="/" class="flex items-center gap-3" no-prefetch>
         <img src="https://intranet.probusiness.pe/assets/img/logos/probusiness.png" 
           :alt="collapsed ? 'Logo Probusiness' : ''"
           width="40" height="40" class="w-10 h-auto" />
@@ -13,10 +13,6 @@
       </NuxtLink>
     </div>
 
-
-
-
-    <!-- Nav: scrollable -->
     <nav class="px-2 overflow-y-auto flex-1">
       <!-- Floating midpoint control: always show collapse chevron on desktop -->
       <div class="absolute right-[-12px] top-1/2 transform -translate-y-1/2 z-50 hidden lg:block">
@@ -71,7 +67,7 @@
 
                   <transition name="fade" enter-active-class="transition-all duration-150"
                     leave-active-class="transition-all duration-150">
-                    <div v-show="expanded[String(item.id)]" class="mt-1 space-y-1"
+                    <div v-if="expanded[String(item.id)]" class="mt-1 space-y-1"
                       :class="[collapsed ? 'px-0' : 'pl-10']">
                       <template v-for="child in item.children" :key="child.id">
                         <!-- Child con sub-hijos -->
@@ -105,10 +101,12 @@
                             </button>
                           </div>
 
-                          <div v-show="expanded[String(child.id)]" class="pl-6 mt-1 space-y-1">
+                          <div v-if="expanded[String(child.id)]" class="pl-6 mt-1 space-y-1">
                             <template v-for="sub in child.children" :key="sub.id">
+                              
                               <UButton variant="ghost" class="w-full text-sm gap-2 py-1 rounded-md"
                                 :class="[isActiveRoute(sub.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0' : 'justify-start px-2']"
+                              @mouseenter="onMenuHover(sub.route)"
                                 @click="handleNavigation(sub.route)"
                                 :aria-label="collapsed ? sub.name : undefined">
                                 <template #default>
@@ -130,8 +128,10 @@
 
                         <!-- Child simple -->
                         <div v-else>
+                   
                           <UButton variant="ghost" class="w-full text-sm gap-2 py-2 px-2 rounded-md"
                             :class="[isActiveRoute(child.route) ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-2' : 'justify-start px-2']"
+                            @mouseenter="onMenuHover(child.route)"
                             @click="handleNavigation(child.route)"
                             :aria-label="collapsed ? getCustomMenuName(item.name, child.name) : undefined">
                             <template #default>
@@ -159,6 +159,7 @@
                     class="w-full text-sm gap-3 py-2 rounded-md"
                     :class="[isActiveRoute(item.route) ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700', collapsed ? 'justify-center px-0 gap-0' : 'justify-start px-3']"
                     :aria-label="collapsed ? item.name : undefined"
+                    @mouseenter="onMenuHover(item.route)"
                     @click="handleNavigation(item.route)" />
                 </div>
               </template>
@@ -174,6 +175,13 @@
             class="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
             Preferencias
           </div>
+          <WhatsappNumbersStatus :instances="[{ instanceName: 'ADMINISTRACION','key':'Administracion' }]"
+              :auto-refresh="true"
+              :refresh-interval="30000"
+              :full-width="true"
+              :compact="false"
+              v-if="currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD"
+            />
           <div class="mt-2 space-y-1 px-2">
             <div class="py-2">
               <UButton variant="ghost" class="w-full rounded-md text-sm text-gray-700 dark:text-gray-300"
@@ -184,6 +192,16 @@
                   <UBadge v-if="!collapsed && unreadCount > 0"
                     :label="unreadCount > 99 ? '99+' : unreadCount.toString()" color="error" variant="solid" size="xs"
                     class="ml-auto" />
+                </template>
+              </UButton>
+            </div>
+
+            <div class="py-2">
+              <UButton variant="ghost" class="w-full rounded-md text-sm text-gray-700 dark:text-gray-300"
+                icon="i-heroicons-adjustments-horizontal" @click="openWsNotificationPreferences"
+                :class="collapsed ? 'justify-center' : 'justify-start'">
+                <template #default>
+                  <span v-if="!collapsed">Preferencias de avisos</span>
                 </template>
               </UButton>
             </div>
@@ -200,14 +218,16 @@
                   class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transform peer-checked:translate-x-4 transition-transform" />
               </label>
             </div>
+            
           </div>
+          
         </div>
       </div>
     </nav>
 
     <!-- Bottom: user info + logout -->
     <div class="border-b border-gray-100 dark:border-gray-700 px-4 py-4">
-      <NuxtLink to="/perfil" class="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+      <NuxtLink to="/perfil" class="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer" no-prefetch>
         <UAvatar :src="userPhotoUrl || undefined" :alt="userName || 'Usuario'" :size="collapsed ? 'md' : 'sm'"
           :class="['w-10 h-10']" />
         <div class="flex-1 min-w-0" v-if="!collapsed">
@@ -234,7 +254,7 @@ import { CUSTOM_MENUS_PER_ROLE } from '~/constants/sidebar'
 import { useUserRole } from '../composables/auth/useUserRole'
 import { useAuth } from '../composables/auth/useAuth'
 import { useNotifications } from '../composables/useNotifications'
-
+import { useMenuPrefetch } from '../composables/navigation/useMenuPrefetch'
 interface AuthUser {
   id: number | string
   email: string
@@ -275,6 +295,16 @@ const {
   unreadCount,
   fetchUnreadCount
 } = useNotifications()
+
+const { prefetchRoute } = useMenuPrefetch()
+
+// Refs para cleanup en onUnmounted (registrado de forma síncrona en setup)
+const notificationIntervalRef = ref<ReturnType<typeof setInterval> | null>(null)
+const cleanupListenersRef = ref<(() => void) | null>(null)
+onUnmounted(() => {
+  cleanupListenersRef.value?.()
+  if (notificationIntervalRef.value) clearInterval(notificationIntervalRef.value)
+})
 
 // Dark mode
 const colorMode = useColorMode()
@@ -334,6 +364,10 @@ const hideSidebarOnMobile = () => {
   }
 }
 
+const onMenuHover = (route: string) => {
+  prefetchRoute(route)
+}
+
 const handleNavigation = async (route: string) => {
   if (!route) return
   await navigateTo(route)
@@ -341,7 +375,6 @@ const handleNavigation = async (route: string) => {
 }
 
 const navigateOrToggle = async (item: any) => {
-  // si tiene ruta válida, navegamos; si no, toggle
   const route = item?.route
   if (route && route !== '' && route !== '#') {
     await navigateTo(route)
@@ -361,6 +394,11 @@ const openNotifications = async () => {
   // Refrescar contador antes de navegar
   await fetchUnreadCount()
   await navigateTo('/notificaciones')
+  hideSidebarOnMobile()
+}
+
+const openWsNotificationPreferences = async () => {
+  await navigateTo('/preferencias-notificaciones')
   hideSidebarOnMobile()
 }
 
@@ -449,7 +487,7 @@ onMounted(async () => {
       fetchCurrentUser()
     }
 
-    // Si la ventana se redimensiona a mobile, ocultamos el sidebar
+    // Si la ventana se redimensiona: en mobile ocultamos el sidebar, en desktop lo mostramos
     // Usar throttling con requestAnimationFrame para evitar forced reflows
     let resizeRafId: number | null = null
     const handleResize = () => {
@@ -457,7 +495,12 @@ onMounted(async () => {
       resizeRafId = requestAnimationFrame(() => {
         resizeRafId = null
         try {
-          if (window.innerWidth < 1024) visible.value = false
+          if (window.innerWidth < 1024) {
+            visible.value = false
+          } else {
+            // Al volver a vista desktop, mostrar la sidebar de nuevo
+            visible.value = true
+          }
         } catch (e) {
           // noop
         }
@@ -467,31 +510,24 @@ onMounted(async () => {
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('auth_user_updated', handleAuthUserUpdate)
     window.addEventListener('resize', handleResize)
-
-    // Cleanup
-    onUnmounted(() => {
+    cleanupListenersRef.value = () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('auth_user_updated', handleAuthUserUpdate)
       window.removeEventListener('resize', handleResize)
-    })
+    }
   }
 
   // Cargar contador de notificaciones no leídas
   await fetchUnreadCount()
 
   // Actualizar contador cada 5 minutos
-  const interval = setInterval(async () => {
+  notificationIntervalRef.value = setInterval(async () => {
     try {
       await fetchUnreadCount()
     } catch (error) {
       console.error('Error actualizando contador de notificaciones:', error)
     }
   }, 1000 * 60 * 5) // 5 minutos
-
-  // Limpiar intervalo cuando el componente se desmonte
-  onUnmounted(() => {
-    clearInterval(interval)
-  })
 
   // Expandir ruta activa inicial
   const current = useRoute().path

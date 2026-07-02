@@ -1,0 +1,317 @@
+import { ref, computed } from 'vue'
+import { ViaticoService } from '~/services/viaticoService'
+import type {
+  Viatico,
+  CreateViaticoRequest,
+  UpdateViaticoRequest,
+  ViaticoFilters
+} from '~/types/viatico'
+
+export const useViaticos = () => {
+  const viaticos = ref<Viatico[]>([])
+  const currentViatico = ref<Viatico | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+  const headers = ref<{ label: string; value: string; icon?: string }[]>([])
+  const filterOptions = ref<{ solicitantes: { label: string; value: string }[] }>({
+    solicitantes: []
+  })
+  const pagination = ref({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0
+  })
+
+  const createDefaultFilters = (): ViaticoFilters => ({
+    fecha_inicio: '',
+    fecha_fin: '',
+    requesting_area: '',
+    area_solicitante: '',
+    solicitante: '',
+    search: ''
+  })
+
+  const filters = ref<ViaticoFilters>(createDefaultFilters())
+
+  /**
+   * Cargar viáticos
+   */
+  const loadViaticos = async (filters?: ViaticoFilters) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await ViaticoService.getViaticos(filters)
+
+      if (response.success) {
+        viaticos.value = response.data
+        pagination.value = response.pagination
+        headers.value = (response as any).headers ?? []
+        filterOptions.value = (response as any).filter_options ?? { solicitantes: [] }
+      } else {
+        throw new Error('Error al cargar viáticos')
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Error al cargar viáticos'
+      console.error('Error en loadViaticos:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Cargar viáticos pendientes (para administración)
+   */
+  const loadPendientes = async (filters?: Omit<ViaticoFilters, 'status'>) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await ViaticoService.getPendientes(filters)
+
+      if (response.success) {
+        viaticos.value = response.data
+        pagination.value = response.pagination
+        headers.value = (response as any).headers ?? []
+        filterOptions.value = (response as any).filter_options ?? { solicitantes: [] }
+      } else {
+        throw new Error('Error al cargar viáticos')
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Error al cargar viáticos'
+      console.error('Error en loadViaticos:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Cargar viáticos completados (para administración)
+   */
+  const loadCompletados = async (filters?: Omit<ViaticoFilters, 'status'>) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await ViaticoService.getCompletados(filters)
+
+      if (response.success) {
+        viaticos.value = response.data
+        pagination.value = response.pagination
+        headers.value = (response as any).headers ?? []
+        filterOptions.value = (response as any).filter_options ?? { solicitantes: [] }
+      } else {
+        throw new Error('Error al cargar viáticos')
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Error al cargar viáticos'
+      console.error('Error en loadViaticos:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Cargar un viático por ID
+   */
+  const loadViaticoById = async (id: number) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await ViaticoService.getViaticoById(id)
+
+      if (response.success) {
+        currentViatico.value = response.data
+      } else {
+        throw new Error('Error al cargar viático')
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Error al cargar viático'
+      console.error('Error en loadViaticoById:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Crear un nuevo viático
+   */
+  const createViatico = async (data: CreateViaticoRequest) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await ViaticoService.createViatico(data)
+
+      if (response.success) {
+        // Recargar la lista después de crear
+        await loadViaticos()
+        return response.data
+      } else {
+        throw new Error(response.message || 'Error al crear viático')
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Error al crear viático'
+      console.error('Error en createViatico:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Actualizar un viático
+   */
+  const updateViatico = async (id: number, data: UpdateViaticoRequest) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await ViaticoService.updateViatico(id, data)
+
+      if (response.success) {
+        // Actualizar el viático actual si es el mismo
+        if (currentViatico.value?.id === id) {
+          currentViatico.value = response.data
+        }
+        // Recargar la lista
+        await loadViaticos()
+        return response.data
+      } else {
+        throw new Error(response.message || 'Error al actualizar viático')
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Error al actualizar viático'
+      console.error('Error en updateViatico:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Eliminar un viático
+   */
+  const deleteViatico = async (id: number) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await ViaticoService.deleteViatico(id)
+
+      if (response.success) {
+        // Recargar la lista después de eliminar
+        await loadViaticos()
+        return true
+      } else {
+        throw new Error(response.message || 'Error al eliminar viático')
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Error al eliminar viático'
+      console.error('Error en deleteViatico:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Exportar viáticos como CSV
+   */
+  const exportViaticos = async (status?: string,) => {
+    try {
+      console.log(filters.value)
+      const blob = await ViaticoService.exportViaticos(status, filters.value)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `viaticos_${new Date().toISOString().split('T')[0]}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      error.value = err.message || 'Error al exportar'
+      throw err
+    }
+  }
+
+  /**
+   * Obtener el color según el estado
+   */
+  const getStatusColor = (status: Viatico['status']) => {
+    const colors = {
+      PENDING: 'warning',
+      CONFIRMED: 'success',
+      REJECTED: 'error'
+    }
+    return colors[status] || 'gray'
+  }
+
+  /**
+   * Obtener el label del estado
+   */
+  const getStatusLabel = (status: Viatico['status']) => {
+    const labels = {
+      PENDING: 'Pendiente',
+      CONFIRMED: 'Confirmado',
+      REJECTED: 'Rechazado'
+    }
+    return labels[status] || status
+  }
+
+  const updateFilters = (newFilters: ViaticoFilters) => {
+    filters.value = newFilters
+  }
+
+  /** DataTable emite (clave, valor) por filtro; @update:filters al limpiar todo. */
+  const handleFilterChange = (arg1: string | Record<string, unknown>, arg2?: string) => {
+    if (typeof arg1 === 'string' && arg2 !== undefined) {
+      filters.value = { ...filters.value, [arg1]: arg2 }
+      return
+    }
+    if (arg1 && typeof arg1 === 'object') {
+      filters.value = { ...createDefaultFilters(), ...arg1 } as ViaticoFilters
+    }
+  }
+
+  const handleUpdateFilters = (newFilters: Record<string, unknown>) => {
+    filters.value = { ...createDefaultFilters(), ...(newFilters || {}) } as ViaticoFilters
+  }
+
+  const handleClearFilters = () => {
+    filters.value = createDefaultFilters()
+  }
+
+  return {
+    // State
+    viaticos,
+    currentViatico,
+    loading,
+    error,
+    pagination,
+    headers,
+    filterOptions,
+    filters,
+    updateFilters,
+    handleFilterChange,
+    handleUpdateFilters,
+    handleClearFilters,
+    // Methods
+    loadViaticos,
+    loadPendientes,
+    loadCompletados,
+    loadViaticoById,
+    createViatico,
+    updateViatico,
+    deleteViatico,
+    exportViaticos,
+
+    // Helpers
+    getStatusColor,
+    getStatusLabel
+  }
+}

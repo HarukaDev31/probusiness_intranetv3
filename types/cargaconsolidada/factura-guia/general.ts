@@ -1,5 +1,20 @@
 import type { PaginationInfo } from '~/types/data-table'
-export interface GeneralResponse {  
+
+/** Un comprobante en la lista de factura-guía (contabilidad). La URL del archivo es siempre autofirmada (file_url / comprobante_file_url). */
+export interface ComprobanteListItem {
+    id: number
+    tipo_comprobante: string | null
+    valor_comprobante: number | null
+    tiene_detraccion: boolean
+    detraccion: { monto: number; file_url?: string } | null
+    /** URL absoluta autofirmada del comprobante (no se expone file_path) */
+    comprobante_file_url: string | null
+    /** Misma URL autofirmada; usar esta o comprobante_file_url para abrir el PDF */
+    file_url: string | null
+    file_name: string | null
+}
+
+export interface GeneralResponse {
     data: General[]
     pagination: PaginationInfo
     success: boolean
@@ -54,4 +69,15 @@ export interface General {
     updated_at: string
     name: string
     id_cotizacion: number
+    /** Relación de comprobantes subidos (tipo, valor, detracción, archivo) */
+    comprobantes?: ComprobanteListItem[]
+    total_comprobantes?: number
+    total_detracciones?: number
+    tipo_comprobante?: string | null
+    comprobante_file_url?: string | null
+    detraccion_file_url?: string | null
+    /** Estado persistido en cotización para contabilidad (editable manualmente; triggers lo sincronizan con altas/bajas de formulario). */
+    registrado?: boolean
+    /** Tipo de entrega: "Lima" o "Provincia" según exista formulario de entrega y su tipo (no free-text). Backend: desde tabla/formulario de entrega por id_cotizacion. */
+    tipo_entrega?: string | null
 }

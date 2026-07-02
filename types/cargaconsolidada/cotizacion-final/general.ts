@@ -10,6 +10,8 @@ export interface General {
     volumen_final: number | null
     fob_final: number
     logistica_final: number | null
+    servicios_extra_final?: number | null
+    recargos_descuentos_final?: number | null
     impuestos_final: number
     tarifa_final: number | null
     estado_cotizacion_final: string

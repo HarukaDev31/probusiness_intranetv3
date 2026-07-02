@@ -11,7 +11,7 @@
         </NuxtLink>
       </li>
       
-      <li v-for="(breadcrumb, index) in breadcrumbs" :key="index">
+      <li v-for="breadcrumb in breadcrumbs" :key="breadcrumb.label">
         <div class="flex items-center">
           <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400 mx-2" />
                      <NuxtLink 

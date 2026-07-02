@@ -1,8 +1,31 @@
 import type { HeaderResponse } from "~/types/data-table"
+import type { CotizacionesHeadersResponse } from '~/types/cargaconsolidada/cotizaciones'
 import { BaseService } from "../base/BaseService"
 import type { CotizacionFilters , Cotizacion, CotizacionResponse } from "~/types/cargaconsolidada/cotizaciones"
 export class CotizacionService extends BaseService {
     private static baseUrl = 'api/carga-consolidada/contenedor'
+    static async getDeleteReasons(): Promise<{ success: boolean; data: Array<{ id: number; name: string }> }> {
+        return await this.apiCall<{ success: boolean; data: Array<{ id: number; name: string }> }>(`${this.baseUrl}/cotizaciones/delete-reasons`, {
+            method: 'GET'
+        })
+    }
+    static async createDeleteReason(name: string): Promise<{ success: boolean; data: { id: number; name: string } }> {
+        return await this.apiCall<{ success: boolean; data: { id: number; name: string } }>(`${this.baseUrl}/cotizaciones/delete-reasons`, {
+            method: 'POST',
+            body: { name }
+        })
+    }
+    static async updateDeleteReason(id: number, name: string): Promise<{ success: boolean; data: { id: number; name: string } }> {
+        return await this.apiCall<{ success: boolean; data: { id: number; name: string } }>(`${this.baseUrl}/cotizaciones/delete-reasons/${id}`, {
+            method: 'PUT',
+            body: { name }
+        })
+    }
+    static async deleteDeleteReason(id: number): Promise<{ success: boolean }> {
+        return await this.apiCall<{ success: boolean }>(`${this.baseUrl}/cotizaciones/delete-reasons/${id}`, {
+            method: 'DELETE'
+        })
+    }
             // Obtener cargas disponibles para dropdown
         static async getCargasDisponiblesDropdown(): Promise<any> {
             try {
@@ -28,11 +51,12 @@ export class CotizacionService extends BaseService {
                 throw error
             }
         }
-    static async getCotizaciones(id: number, filters: CotizacionFilters) {
+    static async getCotizaciones(id: number, filters: CotizacionFilters, signal?: AbortSignal) {
         try {
             const response = await this.apiCall<CotizacionResponse>(`${this.baseUrl}/cotizaciones/${id}`, {
                 method: 'GET',
-                params: filters
+                params: filters,
+                ...(signal ? { signal } : {})
             })
             return response
         } catch (error) {
@@ -51,10 +75,11 @@ export class CotizacionService extends BaseService {
             throw error
         }
     }
-    static async deleteCotizacion(id: number): Promise<{ success: boolean }> {
+    static async deleteCotizacion(id: number, deletedReasonId?: number | null): Promise<{ success: boolean }> {
         try {
             const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/cotizaciones/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                body: { deleted_reason_id: deletedReasonId ?? null }
             })
             return response
         } catch (error) {
@@ -112,9 +137,9 @@ export class CotizacionService extends BaseService {
             throw new Error(error)
         }
     }
-    static async getHeaders(id: number): Promise<HeaderResponse> {
+    static async getHeaders(id: number): Promise<CotizacionesHeadersResponse> {
         try {
-            const response = await this.apiCall<HeaderResponse>(`${this.baseUrl}/cotizaciones/${id}/headers`, {
+            const response = await this.apiCall<CotizacionesHeadersResponse>(`${this.baseUrl}/cotizaciones/${id}/headers`, {
                 method: 'GET'
             })
             return response
@@ -124,11 +149,16 @@ export class CotizacionService extends BaseService {
             throw new Error('No se pudo obtener los headers')
         }
     }
-    static async exportCotizaciones(id: number): Promise<Blob> {
+    static async exportCotizaciones(id: number, params: Record<string, string | number> = {}): Promise<Blob> {
         try {
-            // Construir la URL base con los parámetros normales
-            let url = `${this.baseUrl}/cotizaciones/${id}/exportar`
-            // Realizar la llamada a la API para obtener el archivo
+            const queryParams = new URLSearchParams()
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '' && value !== 'todos') {
+                    queryParams.append(key, String(value))
+                }
+            })
+            const qs = queryParams.toString()
+            const url = `${this.baseUrl}/cotizaciones/${id}/exportar${qs ? `?${qs}` : ''}`
             const response = await this.apiCall<Blob>(url, {
                 method: 'GET',
                 responseType: 'blob',

@@ -9,8 +9,19 @@
       empty-state-message="No se encontraron cotizaciones que coincidan con los criterios de búsqueda."
       :show-new-button="isDesktop" new-button-label="Crear Cotización" :on-new-button-click="handleNewButtonClick"
       @update:search-query="handleSearch" @update:primary-search="handleSearch"
-      @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @filter-change="handleFilterChange">
+      @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @filter-change="handleFilterChange"
+      @export="handleExport">
 
+      <template #actions>
+        <UButton
+          label="Gestionar tarifas de calculadora"
+          icon="i-heroicons-calculator"
+          color="neutral"
+          variant="outline"
+          class="h-8 md:h-11 font-normal whitespace-normal text-left max-w-[200px] lg:max-w-none"
+          @click="navigateTo('/cotizaciones/tarifas-calculadora')"
+        />
+      </template>
 
       <template #error-state>
         <ErrorState :message="error || 'Error desconocido'" />
@@ -20,16 +31,21 @@
 </template>
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
-const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora } = useCalculadoraImportacion()
+const { cotizaciones, loading, error, pagination, headers, search, itemsPerPage, totalPages, totalRecords, currentPage, filters, filterOptions, handleSearch, handlePageChange, handleItemsPerPageChange, handleFilterChange, getCotizaciones, estadoCotizaciones, deleteCotizacionCalculadora, duplicateCotizacionCalculadora, changeEstadoCotizacionCalculadora, vincularCotizacionCalculadora, exportCotizacionesList } = useCalculadoraImportacion()
 import type { TableColumn } from '@nuxt/ui'
-import { UButton, USelect } from '#components'
-import MoveCotizacionModal from '~/components/cargaconsolidada/MoveCotizacionModal.vue'
+import { UButton, USelect, UBadge } from '#components'
+import { createLazyView } from '~/utils/lazyView'
+
+const MoveCotizacionModal = createLazyView(() => import('~/components/shared/MoveCotizacionModal/index.vue'))
 import { useModal } from '~/composables/commons/useModal';
 import { useSpinner } from '~/composables/commons/useSpinner';
 import type { FilterConfig } from '~/types/data-table'
 import { useIsDesktop } from '~/composables/useResponsive'
+import { STATUS_BG_CLASSES } from '~/constants/ui'
 const { isDesktop } = useIsDesktop()
+const route = useRoute()
 const { showSuccess, showConfirmation, showError } = useModal()
 const overlay = useOverlay()
 const moveCotizacionModal = overlay.create(MoveCotizacionModal)
@@ -58,10 +74,16 @@ const columns: TableColumn<any>[] = [
       const nombre = row.original?.nombre_cliente || row.original?.nombre || ''
       const telefono = row.original?.whatsapp_cliente || row.original?.whatsapp || ''
       const dni = row.original?.dni_cliente || row.original?.dni || ''
+      const codigo=row.original?.cod_cotizacion || ''
+      const cod_contract=row.original?.cod_contract || ''
+      const estado_cotizador=row.original?.estado_cotizador || ''
       return h('div', { class: 'py-2 w-30 whitespace-normal' }, [
         h('div', { class: 'font-medium' }, nombre),
         h('div', { class: 'text-sm text-gray-500' }, dni),
-        h('div', { class: 'text-sm text-gray-500' }, telefono)
+        h('div', { class: 'text-sm text-gray-500' }, telefono),
+        h('div', { class: 'text-sm text-gray-500' }, codigo),
+        //if estado_cotizador is CONFIRMADO, show the cod_contract
+        estado_cotizador === 'CONFIRMADO' ? h('div', { class: 'text-sm text-gray-500' }, cod_contract) : null
       ])
     }
   },
@@ -148,14 +170,69 @@ const columns: TableColumn<any>[] = [
       ]))
     }
   },
+
+  {
+    accessorKey: 'go_to_cotizacion_contenedor',
+    header: 'Ir a cotización',
+    cell: ({ row }: { row: any }) => {
+      const idCotizacion = row.original?.id_cotizacion
+      const idContenedor = row.original?.id_carga_consolidada_contenedor
+
+      if (!idCotizacion || !idContenedor) {
+        return h(UBadge, { label: '—', color: 'neutral', variant: 'soft', size: 'sm' })
+      }
+
+      return h(UButton, {
+        color: 'primary',
+        size: 'sm',
+        variant: 'ghost',
+        icon: 'i-heroicons-arrow-top-right-on-square',
+        label: '',
+        title: 'Ver cotización en contenedor',
+        onClick: () => {
+          navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${idContenedor}?idCotizacion=${idCotizacion}`)
+        }
+      })
+    }
+  },
+  {
+    accessorKey: 'proveedores_vinculados',
+    header: 'Proveedores vinculados',
+    cell: ({ row }: { row: any }) => {
+      const proveedores = (row.original?.proveedores ?? []) as any[]
+      const tieneProveedorSinVinculo = proveedores.some((p: any) => {
+        const codeSupplierOk = p?.code_supplier != null && String(p.code_supplier).trim().length > 0
+        const idProveedorOk = p?.id_proveedor != null && String(p.id_proveedor).toString().length > 0
+        return !codeSupplierOk || !idProveedorOk
+      })
+
+      if (!tieneProveedorSinVinculo) {
+        return h(UBadge, { label: 'Sí', color: 'success', variant: 'soft', size: 'sm' })
+      }
+
+      const canVincular = !!row.original?.url_cotizacion && !!row.original?.id_carga_consolidada_contenedor
+
+      return h(UButton, {
+        color: 'primary',
+        size: 'sm',
+        variant: 'ghost',
+        icon: 'i-heroicons-link',
+        label: '',
+        title: 'Vincular proveedores (cotización)',
+        disabled: !canVincular,
+        onClick: () => handleVincularCotizacion(row.original.id)
+      })
+    }
+  },
   {
     accessorKey: 'estado',
     header: 'Estado',
     cell: ({ row }: { row: any }) => {
-      //RETURN USelect with options from estadoCotizaciones
+      const estado = row.original.estado
       return h(USelect as any, {
+        class: [STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES], 'min-w-36'],
         items: estadoCotizaciones.value.filter((item: any) => item.showOptions),
-        modelValue: row.original.estado,
+        modelValue: estado,
         'onUpdate:modelValue': (value: string) => {
           handleEstadoChange(row.original.id, value)
         }
@@ -167,25 +244,34 @@ const columns: TableColumn<any>[] = [
     accessorKey: 'acciones',
     header: 'Acciones',
     cell: ({ row }: { row: any }) => {
-      //options delete, edit.duplicate,send
-      return h('div', [
+      const idCotizacion = row.original?.id_cotizacion
+      const proveedores = (row.original?.proveedores ?? []) as any[]
+      const tieneProveedorSinVinculo = proveedores.some((p: any) => {
+        const codeSupplierOk = p?.code_supplier != null && String(p.code_supplier).trim().length > 0
+        const idProveedorOk = p?.id_proveedor != null && String(p.id_proveedor).toString().length > 0
+        return !codeSupplierOk || !idProveedorOk
+      })
+      const canVincular = !!row.original?.url_cotizacion && !!row.original?.id_carga_consolidada_contenedor
+
+      // options delete, edit.duplicate,send
+      const nodes: any[] = [
         h(UButton, {
           color: 'error',
           size: 'sm',
           variant: 'ghost',
           icon: 'i-heroicons-trash',
           label: '',
-          onClick: (event: MouseEvent) => {
+          onClick: (_event: MouseEvent) => {
             handleDelete(row.original.id)
           }
         }),
-        !row.original.id_cotizacion ? h(UButton, {
+        row.original.estado !== 'CONFIRMADO' ? h(UButton, {
           color: 'warning',
           size: 'sm',
           variant: 'ghost',
           icon: 'i-heroicons-pencil',
           label: '',
-          onClick: (event: MouseEvent) => {
+          onClick: (_event: MouseEvent) => {
             handleEdit(row.original.id)
           }
         }) : null,
@@ -195,16 +281,41 @@ const columns: TableColumn<any>[] = [
           variant: 'ghost',
           icon: 'i-heroicons-document-duplicate',
           label: '',
-          onClick: (event: MouseEvent) => {
+          onClick: (_event: MouseEvent) => {
             handleDuplicate(row.original.id)
           }
-        }),
-       
-      ])
+        })
+      ]
+
+      // Documentos solo si la cotización existe y NO hay proveedores sin vincular (code_supplier/id_proveedor)
+      if (idCotizacion && !tieneProveedorSinVinculo) {
+        nodes.push(h(UButton, {
+          color: 'neutral',
+          size: 'sm',
+          variant: 'ghost',
+          icon: 'i-heroicons-folder-open',
+          label: '',
+          title: 'Documentos asociados',
+          onClick: () => {
+            handleDocumentos(idCotizacion, row.original.id)
+          }
+        }))
+      } 
+
+      return h('div', nodes)
     }
   }
 ]
 const handleEstadoChange = (id: string, value: string) => {
+  // Validar que si se quiere cambiar a COTIZADO, debe tener id_carga_consolidada
+  if (value === 'COTIZADO') {
+    const cotizacion = cotizaciones.value.find((c: any) => c.id === Number(id))
+    if (!cotizacion || !cotizacion.id_carga_consolidada_contenedor) {
+      showError('No se puede cambiar a COTIZADO', 'La cotización debe estar asociada a una carga consolidada para poder cambiar su estado a COTIZADO.')
+      return
+    }
+  }
+
   showConfirmation('Cambiar Estado de Cotización', '¿Estás seguro de que deseas cambiar el estado de esta cotización?',
     async () => {
       await withSpinner(async () => {
@@ -251,6 +362,47 @@ const handleDelete = (id: string) => {
 const handleEdit = (id: string) => {
   navigateTo(`/cotizaciones/${id}`)
 }
+const handleDocumentos = (idCotizacion: string | number, idCalculadoraFila: string | number) => {
+  const id = Number(idCotizacion)
+  const idCalc = Number(idCalculadoraFila)
+  if (!id) return
+  // Consume la vista nueva de documentación por cotización (abiertos); idCalculadora para volver al listado filtrado
+  navigateTo({
+    path: `/cargaconsolidada/abiertos/cotizaciones/documentacion/${id}`,
+    query: {
+      backTo: '/cotizaciones',
+      ...(idCalc > 0 ? { idCalculadora: String(idCalc) } : {})
+    }
+  })
+}
+
+const handleVincularCotizacion = (idCalculadora: string | number) => {
+  const id = Number(idCalculadora)
+  if (!id) return
+
+  showConfirmation(
+    'Vincular cotización',
+    '¿Estás seguro de que deseas vincular/crear la cotización en carga consolidada? Se habilitarán los documentos asociados.',
+    async () => {
+      await withSpinner(async () => {
+        try {
+          const result = await vincularCotizacionCalculadora(id)
+          if (result?.success) {
+            showSuccess('Cotización vinculada', 'La cotización ya quedó asociada. Los documentos deberían habilitarse.')
+          } else {
+            showError('Error al vincular', result?.message || 'No se pudo vincular la cotización.')
+          }
+        } catch (error: any) {
+          showError('Error al vincular', error?.message || 'No se pudo vincular la cotización.')
+        }
+      }, 'Vinculando cotización...')
+    },
+    () => {
+      // cancel
+    }
+  )
+}
+
 const handleDuplicate = (id: string) => {
   showConfirmation('Duplicar Cotización', '¿Estás seguro de que deseas duplicar esta cotización?',
     async () => {
@@ -279,8 +431,46 @@ const handleSend = (id: string) => {
     }
   })
 }
-onMounted(() => {
-  getCotizaciones()
+const handleExport = async () => {
+  try {
+    await withSpinner(async () => {
+      const result = await exportCotizacionesList()
+      if (result.success) {
+        showSuccess('Exportado', 'El listado se descargó correctamente.', { duration: 3000 })
+      } else {
+        showError('Error al exportar', result.error ?? 'No se pudo exportar el listado.')
+      }
+    }, 'Exportando...')
+  } catch (e: any) {
+    showError('Error al exportar', e?.message ?? 'No se pudo exportar.')
+  }
+}
+
+function parseIdCalculadoraQuery(q: unknown): number | null {
+  const s = typeof q === 'string' ? q : Array.isArray(q) ? q[0] : ''
+  if (!s || !/^\d+$/.test(String(s))) return null
+  const n = Number(s)
+  return n > 0 ? n : null
+}
+
+watch(
+  () => route.query.idCalculadora,
+  async (q) => {
+    if (route.path !== '/cotizaciones') return
+    const id = parseIdCalculadoraQuery(q)
+    if (id == null) return
+    search.value = String(id)
+    pagination.value.current_page = 1
+    await getCotizaciones({ id_calculadora: id })
+    await navigateTo({ path: '/cotizaciones' }, { replace: true })
+  },
+  { immediate: true }
+)
+
+onMounted(async () => {
+  if (!parseIdCalculadoraQuery(route.query.idCalculadora)) {
+    await getCotizaciones()
+  }
 })
 
 // Configuración de filtros para DataTable
@@ -323,6 +513,30 @@ const filterConfig = computed<FilterConfig[]>(() => [
         label: item.label,
         value: item.value.toString()
       }))
+    ]
+  },
+  {
+    key: 'vendedor',
+    label: 'Vendedor',
+    type: 'select',
+    placeholder: 'Seleccionar vendedor',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      ...(filterOptions.value.vendedores || []).map((item: any) => ({
+        label: item.label ?? item.nombre ?? `Usuario ${item.value}`,
+        value: String(item.value ?? item.id)
+      }))
+    ]
+  },
+  {
+    key: 'proveedores_vinculados',
+    label: 'Vinculación proveedores',
+    type: 'select',
+    placeholder: 'Seleccionar vinculación',
+    options: [
+      { label: 'Todos', value: 'todos' },
+      { label: 'Desvinculadas', value: 'desvinculadas' },
+      { label: 'Vinculadas', value: 'vinculadas' }
     ]
   }
 ])

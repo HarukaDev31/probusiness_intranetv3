@@ -22,24 +22,21 @@ export const useGeneral  = () => {
     const currentPageGeneral = computed(() => paginationGeneral.value.current_page)
     const filtersGeneral = ref<any>({})
     const filterConfigGeneral = ref<any>([
-
         {
-            key: 'estado_cotizacion_final',
-            label: 'Estado de cotización',
-            placeholder: 'Seleccionar estado de cotización',
+            key: 'registrado',
+            label: 'Registrado',
+            placeholder: 'Seleccionar',
             options: [
                 { label: 'Todos', value: 'todos' },
-                { label: 'PENDIENTE', value: 'PENDIENTE' },
-                { label: 'COTIZADO', value: 'COTIZADO' },
-                { label: 'PAGADO', value: 'PAGADO' },
-                { label: 'AJUSTADO', value: 'AJUSTADO' },
-                { label: 'SOBREPAGO', value: 'SOBREPAGO' },
+                { label: 'Sí', value: '1' },
+                { label: 'No', value: '0' },
             ]
         }
     ])
     const headers = ref<any[]>([])
     const carga = ref<string | null>(null)
     const loadingHeaders = ref(false)
+    const route = useRoute()
     const getGeneral = async (id: number) => {
         try {
             loadingGeneral.value = true
@@ -47,6 +44,7 @@ export const useGeneral  = () => {
                 page: currentPageGeneral.value,
                 per_page: itemsPerPageGeneral.value,
                 search: searchGeneral.value,
+                filters: filtersGeneral.value,
             }
             const response = await GeneralService.getGeneral(id, params)
             general.value = response.data
@@ -57,6 +55,9 @@ export const useGeneral  = () => {
             loadingGeneral.value = false
         }
     }
+    /** Obtiene los headers del contenedor (carga, total comprobantes, total detracciones, etc.).
+     * La API GET .../general/{id}/headers devuelve response.data = array de { label, value, icon? }.
+     * Las sumas (Total comprobantes, Total detracciones) las calcula el backend. */
     const getHeaders = async (id: number) => {
         try {
             loadingHeaders.value = true
@@ -149,6 +150,39 @@ export const useGeneral  = () => {
             error.value = err as string
         }
     }
+    const updateRegistrado = async (idCotizacion: number, registrado: boolean) => {
+        try {
+            return await GeneralService.updateRegistrado(idCotizacion, registrado)
+        } catch (err) {
+            error.value = err as string
+            throw err
+        }
+    }
+    const containerId = () => Number(route.params.id)
+    const handleSearchGeneral = async (search: string) => {
+        searchGeneral.value = search
+        paginationGeneral.value.current_page = 1
+        await getGeneral(containerId())
+    }
+    const handlePageChangeGeneral = async (page: number) => {
+        paginationGeneral.value.current_page = page
+        await getGeneral(containerId())
+    }
+    const handleItemsPerPageChangeGeneral = async (itemsPerPage: number) => {
+        itemsPerPageGeneral.value = itemsPerPage
+        paginationGeneral.value.current_page = 1
+        await getGeneral(containerId())
+    }
+    const handleFilterChangeGeneral = async (key: string, value: any) => {
+        filtersGeneral.value = { ...filtersGeneral.value, [key]: value }
+        paginationGeneral.value.current_page = 1
+        await getGeneral(containerId())
+    }
+    const handleClearFiltersGeneral = async () => {
+        filtersGeneral.value = {}
+        paginationGeneral.value.current_page = 1
+        await getGeneral(containerId())
+    }
     return {
         general,
         loadingGeneral,
@@ -170,6 +204,12 @@ export const useGeneral  = () => {
         getHeaders,
         deleteFacturaComercial,
         deleteGuiaRemision,
-        getFacturasComerciales
+        getFacturasComerciales,
+        updateRegistrado,
+        handleSearchGeneral,
+        handlePageChangeGeneral,
+        handleItemsPerPageChangeGeneral,
+        handleFilterChangeGeneral,
+        handleClearFiltersGeneral,
     }
 }   

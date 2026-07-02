@@ -42,26 +42,24 @@ export const useWindowSize = () => {
     isDesktop.value = w >= 1024
   }
 
+  const handleResize = () => {
+    updateSize()
+  }
+
   onMounted(() => {
     if (typeof window === 'undefined') return
-    
     updateSize()
-    
-    // Usar ResizeObserver en lugar de window.resize cuando sea posible
-    // Para window, usamos resize con throttling
-    const handleResize = () => {
-      updateSize()
-    }
-
     window.addEventListener('resize', handleResize, { passive: true })
+  })
 
-    onUnmounted(() => {
+  onUnmounted(() => {
+    if (typeof window !== 'undefined') {
       window.removeEventListener('resize', handleResize)
-      if (rafId) {
-        cancelAnimationFrame(rafId)
-        rafId = null
-      }
-    })
+    }
+    if (rafId) {
+      cancelAnimationFrame(rafId)
+      rafId = null
+    }
   })
 
   return {

@@ -35,6 +35,33 @@ export class PagosService  extends BaseService  {
             throw error
         }
     }
+
+    static async exportContabilidadExcel(
+        idContenedor: number,
+        params?: { search?: string; filters?: Record<string, string> }
+    ): Promise<Blob> {
+        try {
+            const queryParams = new URLSearchParams()
+            if (params?.search) queryParams.append('search', params.search)
+            if (params?.filters) {
+                Object.entries(params.filters).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null && value !== '' && value !== 'todos') {
+                        queryParams.append(key, String(value))
+                    }
+                })
+            }
+            const qs = queryParams.toString()
+            return await this.apiCall<Blob>(
+                `${this.baseUrl}/${idContenedor}/export-excel${qs ? `?${qs}` : ''}`,
+                {
+                    method: 'GET',
+                    responseType: 'blob',
+                    headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+                }
+            )
+        } catch (error) {
+            console.error('Error al exportar pagos de cotización final:', error)
+            throw error
+        }
+    }
 }
-
-

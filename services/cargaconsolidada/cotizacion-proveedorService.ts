@@ -22,18 +22,24 @@ export class CotizacionProveedorService extends BaseService {
         filters: CotizacionProveedorFilters,
         search: string,
         itemsPerPage: number,
-        currentPage: number
+        currentPage: number,
+        sortBy?: string,
+        sortOrder?: 'asc' | 'desc',
+        signal?: AbortSignal
     ): Promise<ProveedoresResponse> {
         try {
             const response = await this.apiCall<ProveedoresResponse>(
                 `${this.baseUrl}/contenedor/${id}`,
                 {
                     method: 'GET',
+                    signal,
                     params: {
                         ...filters,
                         search,
                         itemsPerPage,
-                        currentPage
+                        currentPage,
+                        sort_by: sortBy ?? 'id',
+                        sort_order: sortOrder ?? 'asc',
                     }
                 }
             )

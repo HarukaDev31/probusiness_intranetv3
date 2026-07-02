@@ -6,6 +6,7 @@ export interface Proveedor {
     id: number
     id_cotizacion?: number
     peso: number
+    peso_china?: number
     estados: string
     qty_box: number
     products: string
@@ -15,6 +16,7 @@ export interface Proveedor {
     id_proveedor: number
     code_supplier: string
     qty_box_china: number
+    qty_pallet_china?: number
     supplier_phone: string
     cbm_total_china: number
     arrive_date_china: string

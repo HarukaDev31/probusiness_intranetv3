@@ -1,11 +1,14 @@
 import AuthService from '../services/authService'
 
-export default defineNuxtPlugin(async (nuxtApp) => {
-  const authService = AuthService.getInstance()
-  authService.setNuxtApp(nuxtApp)
-  
-  // Inicializar Echo si hay una sesión existente
-  if (process.client) {
-    await authService.initializeEcho()
+export default defineNuxtPlugin({
+  name: 'auth',
+  dependsOn: ['websocket-events'],
+  async setup(nuxtApp) {
+    const authService = AuthService.getInstance()
+    authService.setNuxtApp(nuxtApp)
+
+    if (process.client) {
+      await authService.initializeEcho()
+    }
   }
 })

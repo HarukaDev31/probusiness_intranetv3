@@ -13,7 +13,8 @@
           </template>
         </PageHeader>
 
-        <!-- Headers: show below title and above search/actions -->
+        <!-- Headers (showHeaders): desactivados temporalmente -->
+        <!--
         <div v-if="showHeaders" class="bg-transparent border-b border-gray-200 dark:border-gray-700 w-full lg:mt-0 block lg:hidden">
           <div class="overflow-visible">
             <div class="flex flex-wrap items-center md:gap-3 justify-center">
@@ -27,6 +28,7 @@
             </div>
           </div>
         </div>
+        -->
 
         <!-- Search and Actions -->
         <div class="flex lg:flex-row items-center lg:items-center gap-1 md:gap-3 w-full lg:w-auto">
@@ -43,130 +45,155 @@
           </div>
 
           <UButton v-if="showExport" :label="translations.export" icon="i-heroicons-arrow-up-tray"
-            class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
+            class="h-8 md:h-11 font-normal bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full lg:w-auto hidden md:flex"
             @click="handleExport" />
             <div class="flex items-center md:gap-2 relative md:w-full lg:w-auto">
-            <div ref="filtersButtonRef" class="w-auto lg:w-auto">
-              <UButton v-if="showFilters"
-                :label="isMobile ? '' : translations.filters"
-                :aria-label="translations.filters"
-                :title="translations.filters"
-                icon="i-heroicons-funnel"
+              <div ref="filtersButtonRef" class="w-auto lg:w-auto">
+                <UButton v-if="showFilters"
+                  :label="isMobile ? '' : translations.filters"
+                  :aria-label="translations.filters"
+                  :title="translations.filters"
+                  icon="i-heroicons-funnel"
 
-                class="h-8 md:h-11 font-normal bg-white text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
-                :class="isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto'"
-                @click="showFiltersPanel = !showFiltersPanel" />
-            </div>
-
-            <!-- Desktop: keep inline absolute panel to preserve original behavior on large screens -->
-            <div v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && !isMobile"
-              ref="filtersPanelRef"
-              class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
-              @click.stop>
-              <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
-                <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {{ filter.label }}
-                  </label>
-                  <!-- Filtro de tipo date -->
-                  <UInput v-if="filter.type === 'date'"
-                    :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
-                    :placeholder="filter.placeholder" class="w-full"  
-                    @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
-                  <!-- Filtro de tipo select -->
-                  <USelect v-else :model-value="(() => {
-                      const value = filtersValue && filtersValue[filter.key]
-                      return value
-                    })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
-                      @update:model-value="(value) => {
-                        handleFilterChange(filter.key, value)
-                      }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
-                </div>
+                  class="h-8 md:h-11 font-normal bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
+                  :class="isMobile ? 'w-10 p-0 ml-0 justify-center gap-0' : 'w-full lg:w-auto'"
+                  @click="showFiltersPanel = !showFiltersPanel" />
               </div>
 
-              <!-- Footer actions for filters (design similar to screenshot) -->
-              <div class="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
-                <div class="flex items-center justify-between">
-                  <!-- Left: prominent clear filters button -->
-                  <UButton
-                    icon="i-heroicons-x-mark"
-                    class="h-8 bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 border-0"
-                    :label="translations.clearFilters"
-                    @click="handleClearFilters"
-                  />
-
-                  <!-- Right: close link-style button -->
-                  <button type="button" class="text-sm text-gray-600 dark:text-gray-300 hover:underline" @click="showFiltersPanel = false">
-                    {{ translations.close }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Mobile: teleport the filters panel to body to avoid clipping; only active when isMobile === true -->
-            <teleport to="body" v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && isMobile">
-              <!-- Overlay: usando utilidades Tailwind para color y backdrop; mantenemos la clase antigua para compatibilidad -->
-              <div class="filters-overlay fixed inset-0 bg-black/40 backdrop-blur-sm z-[990]" @click="showFiltersPanel = false"></div>
-
-              <!-- Panel móvil: utilidades Tailwind para fondo, dark-mode, tamaño y scroll; mantenemos la clase antigua para reglas legacy -->
-              <div ref="filtersPanelRef" class="filters-panel-mobile fixed left-4 right-4 top-[12vh] max-h-[calc(100vh-16vh)] mx-auto z-[1000] bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-lg overflow-y-auto p-3" @click.stop>
-                <!-- Nota: este panel usa utilidades Tailwind (bg / dark:bg / z-index / spacing) para asegurar comportamiento claro/oscuro -->
-                <div class="sticky top-0 bg-transparent pb-2 mb-2 z-10 flex items-center justify-between">
-                  <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ translations.filters }}</div>
-                  <button type="button" class="filters-close bg-transparent border-0 text-lg p-1" @click="showFiltersPanel = false">✕</button>
-                </div>
-
+              <!-- Desktop: keep inline absolute panel to preserve original behavior on large screens -->
+              <div v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && !isMobile"
+                ref="filtersPanelRef"
+                class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
+                @click.stop>
                 <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
                   <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {{ filter.label }}
                     </label>
-                    <UInput v-if="filter.type === 'date'"
-                      :model-value="formatDateForInput(filtersValue && filtersValue[filter.key])" type="date"
-                      :placeholder="filter.placeholder" class="w-full"
-                      @update:model-value="(value) => handleFilterChange(filter.key, value)" @click.stop />
-                    <USelect v-else :model-value="(() => {
-                        const value = filtersValue && filtersValue[filter.key]
-                        return value
-                      })()" :items="filter.options" :placeholder="filter.placeholder" class="w-full"
-                        @update:model-value="(value) => {
-                          handleFilterChange(filter.key, value)
-                        }" @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                    <!-- Filtro de tipo date: UCalendar en popover -->
+                    <UPopover v-if="filter.type === 'date'" :open="undefined">
+                      <UButton
+                        color="neutral"
+                        variant="outline"
+                        icon="i-lucide-calendar"
+                        class="w-full justify-start"
+                        :class="{ 'text-gray-400 dark:text-gray-500': !(filtersValue && filtersValue[filter.key]) }"
+                      >
+                        {{ (filtersValue && filtersValue[filter.key]) ? filterValueToDisplayLabel(filtersValue[filter.key]) : (filter.placeholder || 'Seleccionar fecha') }}
+                      </UButton>
+                      <template #content>
+                        <UCalendar
+                          :model-value="filterValueToCalendarDate(filtersValue && filtersValue[filter.key])"
+                          @update:model-value="(d) => handleFilterChange(filter.key, calendarDateToFilterValue(d))"
+                          class="p-2"
+                        />
+                      </template>
+                    </UPopover>
+                    <!-- Filtro de tipo select: model-value no vacío (fallback primera opción) para cumplir SelectItem -->
+                    <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
+                        @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                        @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
                   </div>
                 </div>
 
+                <!-- Footer actions for filters (design similar to screenshot) -->
                 <div class="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
                   <div class="flex items-center justify-between">
+                    <!-- Left: prominent clear filters button -->
                     <UButton
                       icon="i-heroicons-x-mark"
                       class="h-8 bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 border-0"
                       :label="translations.clearFilters"
                       @click="handleClearFilters"
                     />
+
+                    <!-- Right: close link-style button -->
                     <button type="button" class="text-sm text-gray-600 dark:text-gray-300 hover:underline" @click="showFiltersPanel = false">
                       {{ translations.close }}
                     </button>
                   </div>
                 </div>
               </div>
-            </teleport>
-            <!-- Export Button -->
 
-            <slot name="actions" />
-            <!--Show New Button-->
-            <div class="flex w-full lg:w-auto">
-              <div v-if="showNewButton" class="w-full lg:w-auto">
-                <UButton :label="newButtonLabel || 'Nuevo'" icon="i-heroicons-plus" color="primary"
-                  class="h-11 flex-1 font-normal w-full lg:w-auto" @click="onNewButtonClick" />
+              <!-- Mobile: teleport the filters panel to body to avoid clipping; only active when isMobile === true -->
+              <teleport to="body" v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && isMobile">
+                <!-- Overlay: usando utilidades Tailwind para color y backdrop; mantenemos la clase antigua para compatibilidad -->
+                <div class="filters-overlay fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[990]" @click="showFiltersPanel = false"></div>
+
+                <!-- Panel móvil: utilidades Tailwind para fondo, dark-mode, tamaño y scroll; mantenemos la clase antigua para reglas legacy -->
+                <div ref="filtersPanelRef" class="filters-panel-mobile fixed left-4 right-4 top-[12vh] max-h-[calc(100vh-16vh)] mx-auto z-[1000] bg-gray-100 text-gray-800 dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-lg overflow-y-auto p-3" @click.stop>
+                  <!-- Nota: este panel usa utilidades Tailwind (bg / dark:bg / z-index / spacing) para asegurar comportamiento claro/oscuro -->
+                  <div class="sticky top-0 bg-transparent pb-2 mb-2 z-10 flex items-center justify-between">
+                    <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ translations.filters }}</div>
+                    <button type="button" class="filters-close bg-transparent border-0 text-lg p-1" @click="showFiltersPanel = false">✕</button>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
+                    <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ filter.label }}
+                      </label>
+                      <UPopover v-if="filter.type === 'date'" :open="undefined">
+                        <UButton
+                          color="neutral"
+                          variant="outline"
+                          icon="i-lucide-calendar"
+                          class="w-full justify-start"
+                          :class="{ 'text-gray-400 dark:text-gray-500': !(filtersValue && filtersValue[filter.key]) }"
+                        >
+                          {{ (filtersValue && filtersValue[filter.key]) ? filterValueToDisplayLabel(filtersValue[filter.key]) : (filter.placeholder || 'Seleccionar fecha') }}
+                        </UButton>
+                        <template #content>
+                          <UCalendar
+                            :model-value="filterValueToCalendarDate(filtersValue && filtersValue[filter.key])"
+                            @update:model-value="(d) => handleFilterChange(filter.key, calendarDateToFilterValue(d))"
+                            class="p-2"
+                          />
+                        </template>
+                      </UPopover>
+                      <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
+                          @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                          @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                    </div>
+                  </div>
+
+                  <div class="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
+                    <div class="flex items-center justify-between">
+                      <UButton
+                        icon="i-heroicons-x-mark"
+                        class="h-8 bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 border-0"
+                        :label="translations.clearFilters"
+                        @click="handleClearFilters"
+                      />
+                      <button type="button" class="text-sm text-gray-600 dark:text-gray-300 hover:underline" @click="showFiltersPanel = false">
+                        {{ translations.close }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </teleport>
+              <!-- Export Button -->
+
+              <slot name="actions" />
+              <!--Show New Button-->
+              <div class="flex w-full lg:w-auto">
+                <div v-if="showNewButton && isDesktop" class="hidden md:block w-full">
+                  <UButton :label="newButtonLabel || 'Nuevo'" icon="i-heroicons-plus" color="primary"
+                    class="h-11 flex-1 font-normal w-full lg:w-auto" @click="onNewButtonClick" />
+                </div>
               </div>
-            </div>
           </div>
+        </div>
+        <div v-if="showNewButton && isMobile" class="md:hidden w-full">
+          <UButton :label="newButtonLabel || 'Nuevo'" icon="i-heroicons-plus" color="primary"
+            class="h-8 flex-1 font-normal w-full lg:w-auto" @click="onNewButtonClick" />
+
         </div>
       </div>
     </div>
     </template>
 
-      <!-- Desktop headers (only on lg and up) - keep original placement for PC layout -->
+      <!-- Desktop headers: desactivados temporalmente
       <div v-if="showHeaders" class="hidden lg:block bg-transparent border-b border-gray-200 dark:border-gray-700">
         <div class="px-4 lg:px-6 py-3">
           <div class="flex flex-wrap items-center gap-3">
@@ -180,6 +207,7 @@
           </div>
         </div>
       </div>
+      -->
 
       <!-- Body Top Slot (compact on mobile) -->
       <div class="flex flex-col sm:flex-row justify-center md:justify-between px-0 py-0 md:px-4 sm:py-4 text-xs sm:text-sm gap-2" v-if="showBodyTop">
@@ -187,8 +215,129 @@
       </div>
     </div>
 
-    <!-- Table Section -->
-    <div class="relative overflow-hidden" ref="tableWrapperRef" style="width: 100%;">
+    <!-- Toolbar: Tabla / Kanban (solo módulos que activen `showKanban`) -->
+    <div
+      v-if="showKanban"
+      class="flex justify-end border-b border-gray-200 bg-[#f0f4f9] px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <div class="inline-flex rounded-lg bg-slate-200/90 p-0.5 dark:bg-slate-800">
+        <button
+          type="button"
+          class="rounded-md px-3 py-1.5 text-xs font-medium transition"
+          :class="
+            listViewMode === 'table'
+              ? 'bg-gray-100 text-gray-800 shadow-sm dark:bg-gray-600 dark:text-gray-100'
+              : 'text-gray-500 dark:text-gray-400'
+          "
+          @click="listViewMode = 'table'"
+        >
+          Tabla
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-3 py-1.5 text-xs font-medium transition"
+          :class="
+            listViewMode === 'kanban'
+              ? 'bg-gray-100 text-gray-800 shadow-sm dark:bg-gray-600 dark:text-gray-100'
+              : 'text-gray-500 dark:text-gray-400'
+          "
+          @click="listViewMode = 'kanban'"
+        >
+          Kanban
+        </button>
+      </div>
+    </div>
+
+    <!-- Kanban: buckets precalculados en un solo recorrido O(n) -->
+    <div
+      v-if="showKanban && listViewMode === 'kanban'"
+      ref="tableWrapperRef"
+      class="table-scroll-container relative border-t border-gray-100 dark:border-gray-800"
+      style="height: calc(100vh - 250px); max-height: calc(100vh - 250px); min-height: 280px;"
+    >
+      <div
+        v-if="isTableLoading"
+        class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/75 dark:bg-gray-900/75"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <UIcon name="i-heroicons-arrow-path" class="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
+        <span class="ml-2 text-sm text-gray-700 dark:text-gray-200">{{ translations.loading }}</span>
+      </div>
+      <div class="flex h-full min-h-[260px] gap-3 overflow-x-auto p-4">
+        <div
+          v-for="col in kanbanBuckets.cols"
+          :key="col.key"
+          class="flex w-52 shrink-0 flex-col rounded-xl border border-gray-200 bg-gray-50/90 dark:border-gray-700 dark:bg-gray-900/50"
+        >
+          <div
+            class="flex items-center justify-between border-b border-gray-200 px-2 py-2 dark:border-gray-700"
+          >
+            <span
+              class="text-[11px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300"
+            >
+              {{ col.label }}
+            </span>
+            <span class="text-[10px] font-medium text-gray-400">
+              {{ kanbanBuckets.buckets[col.key]?.length ?? 0 }}
+            </span>
+          </div>
+          <div class="flex max-h-[calc(100vh-320px)] flex-1 flex-col gap-2 overflow-y-auto p-2">
+            <button
+              v-for="(row, ridx) in kanbanBuckets.buckets[col.key]"
+              :key="kanbanRowKey(row as Record<string, unknown>, ridx)"
+              type="button"
+              class="w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-100 p-2.5 text-left transition hover:border-blue-400 hover:shadow-sm dark:border-gray-600 dark:bg-gray-800"
+              @click="onKanbanCardClick(row as Record<string, unknown>)"
+            >
+              <slot name="kanban-card" :row="row" :column="col">
+                <p class="text-[11px] font-medium leading-snug text-gray-800 dark:text-gray-100">
+                  {{ (row as Record<string, unknown>)?.[kanbanTitleField] ?? '—' }}
+                </p>
+              </slot>
+            </button>
+          </div>
+        </div>
+        <div
+          v-if="kanbanBuckets.otros.length"
+          class="flex w-52 shrink-0 flex-col rounded-xl border border-amber-200 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/40"
+        >
+          <div class="flex items-center justify-between border-b border-amber-200 px-2 py-2 dark:border-amber-900">
+            <span class="text-[11px] font-semibold text-amber-900 dark:text-amber-200">Otros</span>
+            <span class="text-[10px] font-medium text-amber-700 dark:text-amber-300">
+              {{ kanbanBuckets.otros.length }}
+            </span>
+          </div>
+          <div class="flex max-h-[calc(100vh-320px)] flex-1 flex-col gap-2 overflow-y-auto p-2">
+            <button
+              v-for="(row, ridx) in kanbanBuckets.otros"
+              :key="kanbanRowKey(row as Record<string, unknown>, ridx)"
+              type="button"
+              class="w-full cursor-pointer rounded-lg border border-amber-200 bg-gray-100 p-2.5 text-left transition hover:border-amber-400 dark:border-amber-900 dark:bg-gray-800"
+              @click="onKanbanCardClick(row as Record<string, unknown>)"
+            >
+              <slot
+                name="kanban-card"
+                :row="row"
+                :column="{ key: '__otros__', label: 'Otros' }"
+              >
+                <p class="text-[11px] font-medium text-gray-800 dark:text-gray-100">
+                  {{ (row as Record<string, unknown>)?.[kanbanTitleField] ?? '—' }}
+                </p>
+              </slot>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Section (sin overflow-hidden en el wrapper para que position:sticky del thead funcione) -->
+    <div
+      v-else
+      class="relative"
+      ref="tableWrapperRef"
+      style="width: 100%;"
+    >
       <!-- Sombra izquierda -->
       <div 
         v-if="showLeftIndicator"
@@ -203,19 +352,26 @@
       <div 
         ref="tableContainerRef"
         class="table-scroll-container"
-        style="max-height: calc(100vh - 250px);"
+        style="height: calc(100vh - 250px); max-height: calc(100vh - 250px); min-height: 280px;"
         @mousemove="onTableMouseMove"
         @mouseleave="onTableMouseLeave"
         @scroll="onTableScroll"
       >
-        <UTable ref="utableRef" :key="tableKey" :data="filteredData" sticky :columns="columns" :loading="loading"
+        <UTable ref="utableRef" :data="filteredData" sticky :columns="columns" :loading="isTableLoading"
           :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
-          :ui="Object.keys(tableMeta).length>0?{th: 'font-normal text-xs lg:text-sm px-2 py-1 md:px-4 md:py-3.5'}:{
+          :ui="Object.keys(tableMeta).length>0?{
+            // Importante: quitar overflow del root interno de UTable.
+            // Si el root tiene overflow-* pero el scroll real ocurre en .table-scroll-container, sticky no se activa.
+            root: 'relative overflow-visible',
+            th: 'sticky top-0 z-30 font-normal text-xs lg:text-sm px-2 py-1 md:px-4 md:py-3.5 bg-[#f0f4f9] dark:bg-gray-900',
+            thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 border-b border-slate-300/50 dark:border-slate-600/50',
+          }:{
+            root: 'relative overflow-visible',
             base: 'min-w-full',
             tbody: 'border-separate border-spacing-y-6',
-            td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
-            th: 'font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5',
-            thead: 'sticky top-0 z-30 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15',
+            td: 'bg-gray-100 dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
+            th: 'sticky top-0 z-30 font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5 bg-[#f0f4f9] dark:bg-gray-900',
+            thead: 'z-20 bg-[#f0f4f9] dark:bg-gray-900 h-10 md:h-15 border-b border-slate-300/50 dark:border-slate-600/50',
             tr: 'border-[#f0f4f9] dark:border-gray-900',
           }"
           >
@@ -244,7 +400,7 @@
         <template #empty>
           <div class="text-center py-8">
             <UIcon name="i-heroicons-inbox" class="mx-auto h-12 w-12 text-gray-400" />
-            <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ translations.emptyTitle }}</h3>
+            <h3 class="mt-2 text-sm font-semibold text-gray-800 dark:text-gray-100">{{ translations.emptyTitle }}</h3>
             <p class="mt-1 text-sm text-gray-500">
               {{ translations.emptyMessage || emptyStateMessage }}
             </p>
@@ -259,8 +415,10 @@
     </div>
 
     <!-- Sticky Bottom Section - Pagination -->
-    <div v-if="showBottomSection"
-      class="md:sticky bottom-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
+    <div
+      v-if="showBottomSection && (!showKanban || listViewMode === 'table')"
+      class="md:sticky bottom-0 z-39 bg-[#f0f4f9] dark:bg-gray-900"
+    >
       <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 gap-4">
         <div class="text-xs lg:text-sm text-gray-700 dark:text-gray-300 text-center lg:text-left w-full lg:w-auto">
           {{ translations.showing }} {{ ((currentPage || 1) - 1) * (itemsPerPage || 100) + 1 }} {{translations.a}} {{ Math.min((currentPage || 1) *
@@ -293,16 +451,30 @@ import { ROLES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 const { hasRole, isCoordinacion,currentRole } = useUserRole()
 const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
-import { formatDateForInput } from '../utils/data-table'
+import { formatDateForInput, formatDateForDisplay } from '../utils/data-table'
+import { parseDate } from '@internationalized/date'
+import type { CalendarDate } from '@internationalized/date'
 import { setContentNarrow } from '../composables/usePageLayout'
 import { navigateTo, useRouter } from '#imports'
 const UButton = resolveComponent('UButton')
+import { useIsDesktop } from '~/composables/useResponsive'
+const { isDesktop } = useIsDesktop()
 
 // Props
-const props = withDefaults(defineProps<DataTableProps>(), DATA_TABLE_DEFAULTS)
+const props = withDefaults(defineProps<DataTableProps>(), {
+  ...DATA_TABLE_DEFAULTS,
+  showKanban: false,
+  kanbanGroupField: 'estadoCodigo',
+  kanbanColumns: () => [],
+  kanbanTitleField: 'titulo',
+  kanbanRowKeyField: 'codigo'
+})
+
+/** Evita ambigüedad con otros `loading` en plantilla; fuerza booleano para UTable */
+const isTableLoading = computed(() => Boolean(props.loading))
 
 // Emits
-const emit = defineEmits(['update:primarySearch'])
+const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change', 'row-click'] )
 
 // Computed writable para v-model:page
 const currentPageModel = computed({
@@ -310,13 +482,7 @@ const currentPageModel = computed({
   set: (value) => onPageChange(value)
 })
 
-// Key to force re-render of the table when pagination changes to avoid stale image elements
-const tableKey = ref(0)
-
-// Re-render table when page or items per page change so images are not briefly reused
 watch(() => props.currentPage, (newPage: number | undefined) => {
-  tableKey.value += 1
-
   // Scroll hacia arriba cuando cambia la página
   scrollToTop()
 
@@ -338,8 +504,6 @@ watch(() => props.currentPage, (newPage: number | undefined) => {
 })
 
 watch(() => props.itemsPerPage, (newLimit: number | undefined) => {
-  tableKey.value += 1
-  
   // Scroll hacia arriba cuando cambia items per page
   scrollToTop()
   
@@ -372,6 +536,72 @@ const {
   filtersValue
 } = useDataTable(props, emit)
 
+/** Tabla vs Kanban (solo si `showKanban`) */
+const listViewMode = ref<'table' | 'kanban'>('table')
+
+/** El bloque DOM de la tabla (y `tableContainerRef`) solo existe cuando esto es true */
+const tableViewActive = computed(() => !props.showKanban || listViewMode.value === 'table')
+
+/**
+ * Kanban: una pasada O(n) sobre `filteredData`.
+ * Lista fija `kanbanColumns` evita recomputar únicos por render y mantiene orden estable.
+ */
+const kanbanBuckets = computed(() => {
+  const cols = props.kanbanColumns ?? []
+  const field = props.kanbanGroupField ?? 'estadoCodigo'
+  const rows = filteredData.value ?? []
+  const buckets: Record<string, unknown[]> = {}
+  const otros: unknown[] = []
+  for (const c of cols) {
+    buckets[c.key] = []
+  }
+  for (const row of rows) {
+    const raw = row?.[field]
+    const k = raw != null ? String(raw) : ''
+    if (Object.prototype.hasOwnProperty.call(buckets, k)) {
+      buckets[k].push(row)
+    } else {
+      otros.push(row)
+    }
+  }
+  return { buckets, otros, cols }
+})
+
+function kanbanRowKey(row: Record<string, unknown>, idx: number) {
+  const f = props.kanbanRowKeyField ?? 'codigo'
+  const v = row?.[f]
+  if (v != null && String(v) !== '') {
+    return String(v)
+  }
+  return `kanban-${idx}`
+}
+
+function onKanbanCardClick(row: Record<string, unknown>) {
+  emit('row-click', row)
+}
+
+// Helpers para filtros de fecha con UCalendar (string <-> CalendarDate)
+function filterValueToCalendarDate (value: string | undefined): CalendarDate | null {
+  if (!value || typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const iso = trimmed.includes('/') ? formatDateForInput(trimmed) : trimmed
+  try {
+    return parseDate(iso) as CalendarDate
+  } catch {
+    return null
+  }
+}
+function calendarDateToFilterValue (d: CalendarDate | import('@internationalized/date').CalendarDateTime | import('@internationalized/date').ZonedDateTime | { start: unknown } | unknown[] | null | undefined): string {
+  if (!d || Array.isArray(d) || typeof (d as { start?: unknown }).start !== 'undefined') return ''
+  const date = d as { year: number; month: number; day: number }
+  return `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
+}
+function filterValueToDisplayLabel (value: string | undefined): string {
+  if (!value || typeof value !== 'string') return ''
+  return value.includes('/') ? value : formatDateForDisplay(value)
+}
+
 const router = useRouter()
 
 // Aplicar clases dinámicas de tableMeta a TD y TH
@@ -398,6 +628,7 @@ const applyTableMetaClasses = () => {
     if (typeof tdClassFn === 'function') {
       table.querySelectorAll('tbody tr').forEach((row, rowIdx) => {
         const rowData = filteredData.value?.[rowIdx]
+        if (!rowData) return
         row.querySelectorAll('td').forEach((td) => {
           const classes = tdClassFn?.({ original: rowData, index: rowIdx })
           if (classes && typeof classes === 'string') {
@@ -411,6 +642,7 @@ const applyTableMetaClasses = () => {
     if (typeof trClassFn === 'function') {
       table.querySelectorAll('tbody tr').forEach((row, rowIdx) => {
         const rowData = filteredData.value?.[rowIdx]
+        if (!rowData) return
         const classes = trClassFn?.({ original: rowData, index: rowIdx })
         if (classes && typeof classes === 'string' && !row.className.includes(classes.split(' ')[0])) {
           row.className = classes + ' ' + row.className
@@ -474,6 +706,8 @@ watch(() => props.searchQueryValue, (v) => {
 // We only clear the search when the route hasn't changed (i.e. likely a tab switch).
 // If the route changed (navigated to detail), we keep the search so it can be restored when returning.
 const _visibilityInterval = ref<number | null>(null)
+const visibilityObserver = ref<MutationObserver | null>(null)
+const visibilityChangeHandler = ref<(() => void) | null>(null)
 const isRootHidden = () => {
   const el = componentRootRef.value
   if (!el) return false
@@ -502,27 +736,29 @@ onMounted(() => {
     }
   }
 
-  let mutationObserver: MutationObserver | null = null
   try {
     if (typeof MutationObserver !== 'undefined' && componentRootRef.value) {
-      // Observe attribute changes on the element and its ancestors so we catch style/class/display changes
-      mutationObserver = new MutationObserver(() => {
+      // Observe only a few ancestors to avoid over-observing the full DOM tree.
+      visibilityObserver.value = new MutationObserver(() => {
         checkAndClear()
       })
 
       let node: HTMLElement | null = componentRootRef.value
-      // observe up the tree until <body>
-      while (node) {
+      let depth = 0
+      // Observe root + a few ancestors where v-show/class toggles usually happen.
+      while (node && depth < 4) {
         try {
-          mutationObserver.observe(node, { attributes: true, attributeFilter: ['style', 'class'] })
+          visibilityObserver.value.observe(node, { attributes: true, attributeFilter: ['style', 'class'] })
         } catch (e) {
           // ignore nodes that can't be observed
         }
         node = node.parentElement
+        depth += 1
       }
 
       // Also listen to visibilitychange in case the document/tab is hidden
-      document.addEventListener('visibilitychange', checkAndClear)
+      visibilityChangeHandler.value = checkAndClear
+      document.addEventListener('visibilitychange', visibilityChangeHandler.value)
     } else {
       // fallback to polling when MutationObserver is not available
       _visibilityInterval.value = window.setInterval(checkAndClear, 250)
@@ -536,24 +772,18 @@ onMounted(() => {
 
   // run an initial check right away
   checkAndClear()
-
-  // store the observer on the interval ref so we can clean it on unmount (we'll close explicitly below)
-  ;(onUnmounted as any)(() => {
-    // noop placeholder to keep single onUnmounted block below; actual cleanup happens in the main onUnmounted
-  })
-  ;(mutationObserver as any)._is_temp = true
 })
 
 onUnmounted(() => {
   // cleanup visibility observer / polling
   try {
-    // try to disconnect any MutationObserver we attached by walking ancestors and disconnecting observers
-    // (we attached observers in onMounted). Safe-guard with try/catch.
-    if (typeof MutationObserver !== 'undefined' && componentRootRef.value) {
-      // There's no direct reference to the MutationObserver here (was local), but observers attached
-      // to nodes will be GC'd when disconnected; best-effort: remove visibilitychange listener and
-      // clear polling interval if set.
-      document.removeEventListener('visibilitychange', () => {})
+    if (visibilityObserver.value) {
+      visibilityObserver.value.disconnect()
+      visibilityObserver.value = null
+    }
+    if (visibilityChangeHandler.value) {
+      document.removeEventListener('visibilitychange', visibilityChangeHandler.value)
+      visibilityChangeHandler.value = null
     }
   } catch (e) {
     // ignore
@@ -657,7 +887,6 @@ const onTableMouseMove = (e: MouseEvent) => {
   
   const scrollableEl = findScrollableElement()
   if (!scrollableEl) {
-    console.log('[AutoScroll] No se encontró elemento scrollable')
     return
   }
   
@@ -683,14 +912,12 @@ const onTableMouseMove = (e: MouseEvent) => {
   
   // Zona izquierda
   if (mouseX < EDGE_ZONE && scrollableEl.scrollLeft > 0) {
-    console.log('[AutoScroll] ✅ Zona IZQUIERDA')
     showLeftIndicator.value = true
     showRightIndicator.value = false
     if (!autoScrollTimer.value) startAutoScroll('left')
   }
   // Zona derecha
   else if (mouseX > containerWidth - EDGE_ZONE && scrollableEl.scrollLeft < maxScroll) {
-    console.log('[AutoScroll] ✅ Zona DERECHA')
     showLeftIndicator.value = false
     showRightIndicator.value = true
     if (!autoScrollTimer.value) startAutoScroll('right')
@@ -743,6 +970,7 @@ const scrollToTop = () => {
   try {
     if (tableContainerRef.value) {
       tableContainerRef.value.scrollTop = 0
+      tableContainerRef.value.scrollLeft = 0
     }
     if (componentRootRef.value) {
       componentRootRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -765,6 +993,11 @@ const updateNarrowness = () => {
       const container = tableContainerRef.value
       if (!container) {
         isTableNarrow.value = false
+        try {
+          setContentNarrow(false)
+        } catch {
+          /* noop */
+        }
         return
       }
       
@@ -794,7 +1027,7 @@ const uiForTable = computed(() => ({
   root: 'relative overflow-visible',
   base: isTableNarrow.value ? 'min-w-[80%]' : 'min-w-full',
   tbody: 'border-separate border-spacing-y-6',
-  td: 'bg-white dark:bg-gray-800 dark:text-white p-2 lg:p-4 text-xs lg:text-sm',
+  td: 'bg-gray-100 dark:bg-gray-800 dark:text-gray-100 p-2 lg:p-4 text-xs lg:text-sm',
   th: 'font-medium text-xs lg:text-sm font-normal px-2 py-1 md:px-4 md:py-3.5',
   // Nuxt UI aplica automáticamente: thead: 'sticky top-0 inset-x-0 bg-default/75 z-[1] backdrop-blur'
   // Make the thead have a thicker bottom border colored like the header background
@@ -802,41 +1035,72 @@ const uiForTable = computed(() => ({
   tr: 'border-[#f0f4f9] dark:border-gray-900',
 }))
 
+// Al pasar a Kanban el nodo `.table-scroll-container` se destruye; el ResizeObserver debe enlazarse de nuevo
+// o `isTableNarrow` / `utable-narrow` no se recalculan y la tabla pierde el centrado.
+let tableResizeObserver: ResizeObserver | null = null
+
+function bindTableResizeObserver() {
+  if (typeof ResizeObserver === 'undefined') {
+    return
+  }
+  tableResizeObserver?.disconnect()
+  tableResizeObserver = null
+  const el = tableContainerRef.value
+  if (!el) {
+    return
+  }
+  tableResizeObserver = new ResizeObserver(() => {
+    updateNarrowness()
+    nextTick(() => updateScrollIndicators())
+    isMobileForScroll.value = window.innerWidth <= 768
+  })
+  tableResizeObserver.observe(el)
+}
+
+function syncTableViewLayout() {
+  nextTick(() => {
+    if (tableViewActive.value) {
+      bindTableResizeObserver()
+      updateNarrowness()
+      if (tableContainerRef.value) {
+        tableContainerRef.value.scrollLeft = 0
+        tableContainerRef.value.scrollTop = 0
+      }
+      nextTick(() => updateScrollIndicators())
+    } else {
+      tableResizeObserver?.disconnect()
+      tableResizeObserver = null
+      isTableNarrow.value = false
+      try {
+        setContentNarrow(false)
+      } catch {
+        /* noop */
+      }
+    }
+  })
+}
+
+watch(tableViewActive, syncTableViewLayout, { flush: 'post' })
+
 
 onMounted(() => {
-  // Inicializar detección de mobile para auto-scroll
   isMobileForScroll.value = window.innerWidth <= 768
-  
-  // Observar cambios de tamaño para actualizar narrowness
-  if (tableContainerRef.value) {
-    const resizeObserver = new ResizeObserver(() => {
-      updateNarrowness()
-      nextTick(() => updateScrollIndicators())
-      // Actualizar detección de mobile
-      isMobileForScroll.value = window.innerWidth <= 768
-    })
-    resizeObserver.observe(tableContainerRef.value)
-
-    // compute initial narrowness and scroll indicators after render
-    nextTick(() => {
-      updateScrollIndicators()
-      updateNarrowness()
-    })
-
-    // keep narrowness updated on window resize too
-    window.addEventListener('resize', updateNarrowness, { passive: true })
-
-    onUnmounted(() => {
-      resizeObserver.disconnect()
-      window.removeEventListener('resize', updateNarrowness)
-    })
-  }
+  window.addEventListener('resize', updateNarrowness, { passive: true })
+  syncTableViewLayout()
+  setTimeout(() => {
+    syncTableViewLayout()
+  }, 350)
 })
 
 onUnmounted(() => {
-  // reset global page narrow state when component unmounts
-  try { setContentNarrow(false) } catch (e) {}
-  // Limpiar auto-scroll
+  tableResizeObserver?.disconnect()
+  tableResizeObserver = null
+  window.removeEventListener('resize', updateNarrowness)
+  try {
+    setContentNarrow(false)
+  } catch (e) {
+    /* noop */
+  }
   stopAutoScroll()
 })
 
@@ -951,7 +1215,7 @@ onUnmounted(() => {
   height: 6px;
 }
 .headers-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.12);
+  background: rgb(148 163 184 / 0.45);
   border-radius: 9999px;
 }
 /* hide native scrollbar for non-webkit while keeping scroll functionality */
@@ -1137,7 +1401,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   .dark .filters-panel-mobile {
     background: #0f1724; /* deep dark to match app dark background */
     color: #e6eef8;
-    border: 1px solid rgba(255,255,255,0.04);
+    border: 1px solid rgb(148 163 184 / 0.12);
     box-shadow: 0 10px 30px rgba(2,6,23,0.6);
   }
 
@@ -1155,7 +1419,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   .dark .filters-panel-mobile .combobox-content {
     background: #0b1220 !important;
     color: #e6eef8 !important;
-    border-color: rgba(255,255,255,0.06) !important;
+    border-color: rgb(148 163 184 / 0.18) !important;
   }
 
   .filters-panel .mt-2 { margin-top: 0.35rem !important; }
@@ -1184,19 +1448,24 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 }
 
 /* Scoped styles can't reach inside child components; use deep selector to target inner table rendered by UTable */
-.utable-narrow ::v-deep table {
+.utable-narrow :deep(table) {
   width: auto !important;
   /* Allow very small tables to keep their natural width; page container enforces minimum instead */
   min-width: 80% !important;
 }
 
-/* Add small vertical spacing between tbody rows to make rows breathe */
-/* Use ::v-deep to reach the actual <table> rendered by UTable */
-.utable-narrow ::v-deep table,
-.min-w-full ::v-deep table {
-  border-collapse: separate !important;
-  /* vertical spacing: 0.5rem (8px) - adjust to taste */
-  border-spacing: 0 0.5rem !important;
+/* Keep sticky header clean; emulate row gaps without border-spacing */
+.utable-narrow :deep(table),
+.min-w-full :deep(table) {
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+}
+
+/* Create vertical space between body rows (without affecting thead sticky) */
+.utable-narrow :deep(tbody tr + tr td),
+.min-w-full :deep(tbody tr + tr td) {
+  border-top: 0.5rem solid transparent !important;
+  background-clip: padding-box;
 }
 
 
@@ -1220,7 +1489,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 .filters-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgb(15 23 42 / 0.45);
   z-index: auto; /* lowered so selects/portals with higher z-index can appear above */
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
@@ -1235,7 +1504,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   max-height: calc(100vh - 16vh);
   margin: 0 auto;
   z-index: auto; /* lowered from 1050 to avoid overlapping select portals */
-  background: #ffffff;
+  background: #f3f4f6;
   border-radius: 0.75rem;
   box-shadow: 0 12px 40px rgba(2,6,23,0.12);
   overflow-y: auto;
@@ -1281,6 +1550,13 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: #9ca3af #e5e7eb;
+}
+
+/* Evitar que wrappers internos (Nuxt UI) creen un scroll-container extra.
+   Si hay un overflow-* interno, sticky header no se activa porque el scroll real ocurre en .table-scroll-container. */
+.table-scroll-container .overflow-x-auto,
+.table-scroll-container .overflow-auto {
+  overflow: visible !important;
 }
 
 /* Forzar que la tabla tenga ancho mínimo para scroll */
@@ -1335,16 +1611,32 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   background: #1f2937;
 }
 
-/* Headers sticky */
+/* Headers sticky - el contenedor tiene height fijo para que el scroll sea interno y el thead se quede fijo */
 .table-scroll-container table thead {
-  position: sticky;
-  top: 0;
+  position: sticky !important;
+  top: 0 !important;
   z-index: 30;
   background: #f0f4f9;
+  box-shadow: 0 1px 0 0 rgb(148 163 184 / 0.25);
+}
+
+.table-scroll-container table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 31;
+  background: #f0f4f9 !important;
 }
 
 .dark .table-scroll-container table thead {
   background: #111827;
+  box-shadow: 0 1px 0 0 rgb(148 163 184 / 0.2);
+}
+
+.dark .table-scroll-container table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 31;
+  background: #111827 !important;
 }
 
 /* Sombras laterales para indicar scroll horizontal */

@@ -33,9 +33,13 @@ export const useEntrega = () => {
     id_contenedor?: number
     id_contenedor_pago?: number | null
     entrega: string | null
+    delivery_servicios?: { id: number; tipo_servicio: string; importe: number }[]
+    total_importe_servicios?: number
+    total_importe_delivery?: number
   }
   const delivery = ref<DeliveryRow[]>([])
   const cargasDisponiblesDelivery = ref<any[]>([])
+  const totalesDelivery = ref<{ label: string; value: string; icon?: string }[]>([])
 
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -231,6 +235,12 @@ export const useEntrega = () => {
           licencia: lima?.driver_license ?? root.driver_license ?? '',
           placa: lima?.driver_plate ?? root.driver_plate ?? '',
           direccion_final: lima?.final_destination_place ?? root.final_destination_place ?? '',
+          distrito_lima_id: (() => {
+            const raw = lima?.final_destination_district ?? root.final_destination_district
+            if (raw === undefined || raw === null || raw === '') return undefined
+            const n = Number(raw)
+            return Number.isFinite(n) && n > 0 ? n : undefined
+          })(),
           distrito: lima?.final_destination_district ?? root.final_destination_district ?? province?.distrito ?? root.distrito ?? '',
           // Provincia
           agency_address_final_delivery: province?.agency_address_final_delivery ?? root.agency_address_final_delivery ?? '',
@@ -366,30 +376,43 @@ export const useEntrega = () => {
         filters: cleanedFilters
       }
       const response = await EntregaService.getDelivery(id, params) as any
-      delivery.value = (response.data as Entrega[]).map((item: any) => ({
-        id_cotizacion: item.id,
-        nombre: item.nombre,
-        telefono: item.telefono,
-        tipo_entrega: item.tipo_entrega ?? null,
-        ciudad: item.ciudad ?? null,
-        documento: item.documento ?? null,
-        razon_social: item.razon_social ?? null,
-        estado: item.estado ?? '',
-        importe: item.importe ?? 0,
-        pagado: item.pagado ?? 0,
-        pagos_details: item.pagos_details ?? [],
-        id_contenedor: item.id_contenedor,
-        id_contenedor_pago: item.id_contenedor_pago ?? null,
-        entrega: item.entrega ?? null,
-        total_importe_delivery: item.total_importe_delivery ?? item.importe ?? 0,
-        tipo_servicio: item.tipo_servicio ?? 'Sin servicio',
-        // Campos de fecha y hora de recojo
-        delivery_date: item.delivery_date ?? null,
-        delivery_start_time: item.delivery_start_time ?? null,
-        delivery_end_time: item.delivery_end_time ?? null,
-        delivery_date_id: item.delivery_date_id ?? null,
-        delivery_range_id: item.delivery_range_id ?? null
-      }))
+      delivery.value = (response.data as Entrega[]).map((item: any) => {
+        let svc = item.delivery_servicios
+        if (typeof svc === 'string') {
+          try {
+            svc = JSON.parse(svc)
+          } catch {
+            svc = []
+          }
+        }
+        if (!Array.isArray(svc)) svc = []
+        return {
+          id_cotizacion: item.id,
+          nombre: item.nombre,
+          telefono: item.telefono,
+          tipo_entrega: item.tipo_entrega ?? null,
+          ciudad: item.ciudad ?? null,
+          documento: item.documento ?? null,
+          razon_social: item.razon_social ?? null,
+          estado: item.estado ?? '',
+          importe: item.importe ?? 0,
+          pagado: item.pagado ?? 0,
+          pagos_details: item.pagos_details ?? [],
+          id_contenedor: item.id_contenedor,
+          id_contenedor_pago: item.id_contenedor_pago ?? null,
+          entrega: item.entrega ?? null,
+          total_importe_delivery: item.total_importe_delivery ?? item.importe ?? 0,
+          total_importe_servicios: item.total_importe_servicios ?? item.importe ?? 0,
+          tipo_servicio: item.tipo_servicio ?? 'Sin servicio',
+          delivery_servicios: svc,
+          // Campos de fecha y hora de recojo
+          delivery_date: item.delivery_date ?? null,
+          delivery_start_time: item.delivery_start_time ?? null,
+          delivery_end_time: item.delivery_end_time ?? null,
+          delivery_date_id: item.delivery_date_id ?? null,
+          delivery_range_id: item.delivery_range_id ?? null
+        }
+      })
       pagination.value = response.pagination
       // Extraer headers si vienen en la respuesta
       if (response.headers && Array.isArray(response.headers)) {
@@ -518,6 +541,31 @@ export const useEntrega = () => {
         loading.value = false
       }
     }, 'Descargando plantillas...')
+  }
+
+  /**
+   * Exportar clientes de entrega a Excel (Nombre de cliente, Dni, WhatsApp, T. cliente, T. entrega, Nombre de la provincia, Origen).
+   */
+  const exportClientesExcel = async (idContenedor?: number) => {
+    return await withSpinner(async () => {
+      const cid = idContenedor ?? contenedorId.value
+      if (!cid) {
+        throw new Error('ID de contenedor no disponible')
+      }
+      const blob = await EntregaService.exportClientesExcel(cid, { search: search.value })
+      const url = window.URL.createObjectURL(new Blob([blob]))
+      const link = document.createElement('a')
+      link.href = url
+      const now = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`
+      link.setAttribute('download', `clientes-entrega-${carga.value ?? cid}-${ts}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      return { success: true }
+    }, 'Exportando Excel...')
   }
 
   const handleSearch = (value: string) => {
@@ -670,13 +718,40 @@ export const useEntrega = () => {
       return { success: false, error: err as string }
     }
   }
-  const sendCobroDeliveryDelivery = async (idCotizacion: number, message: string) => {
+  const sendCobroDeliveryDelivery = async (
+    idCotizacion: number,
+    payload?: string | { message?: string; servicio_ids?: number[] }
+  ) => {
     try {
-      const response = await EntregaService.sendCobroDeliveryDelivery(idCotizacion, message)
+      const response = await EntregaService.sendCobroDeliveryDelivery(idCotizacion, payload)
       return response
     } catch (err) {
       error.value = err as string
       return { success: false, error: err as string }
+    }
+  }
+
+  const addDeliveryServicioLine = async (data: { id_cotizacion: number; tipo_servicio: string; importe: number }) => {
+    try {
+      return await EntregaService.addDeliveryServicioLine(data)
+    } catch (err: any) {
+      return { success: false, error: err?.message || String(err) }
+    }
+  }
+
+  const updateDeliveryServicioLine = async (idLinea: number, data: { tipo_servicio?: string; importe?: number }) => {
+    try {
+      return await EntregaService.updateDeliveryServicioLine(idLinea, data)
+    } catch (err: any) {
+      return { success: false, error: err?.message || String(err) }
+    }
+  }
+
+  const deleteDeliveryServicioLine = async (idLinea: number) => {
+    try {
+      return await EntregaService.deleteDeliveryServicioLine(idLinea)
+    } catch (err: any) {
+      return { success: false, error: err?.message || String(err) }
     }
   }
   const registrarPagoDelivery = async (row: DeliveryRow, data: any) => {
@@ -697,6 +772,14 @@ export const useEntrega = () => {
   const sendMessageForCotizacion = async (id_cotizacion: number) => {
     try {
       const response = await EntregaService.sendMessageForCotizacion(id_cotizacion)
+      return response
+    } catch (error) {
+      error.value = error as string
+    }
+  }
+  const sendMessageForCotizaciones = async (cotizaciones: Array<{ id_cotizacion: number; type_form?: 0 | 1 | null }>) => {
+    try {
+      const response = await EntregaService.sendMessageForCotizaciones(cotizaciones)
       return response
     } catch (error) {
       error.value = error as string
@@ -854,6 +937,7 @@ export const useEntrega = () => {
         if (responseData.cargas_disponibles) {
           cargasDisponiblesDelivery.value = responseData.cargas_disponibles
         }
+        totalesDelivery.value = responseData.headers ?? []
         pagination.value = responseData.pagination || {
           current_page: page,
           last_page: 1,
@@ -908,6 +992,7 @@ export const useEntrega = () => {
     loadingHeaders,
     getHeaders,
     downloadPlantillas,
+    exportClientesExcel,
     // delivery
     getDelivery,
     deliveryFilterConfig,
@@ -922,9 +1007,13 @@ export const useEntrega = () => {
     registrarPagoDelivery,
     deletePagoDelivery,
     sendMessageForCotizacion,
+    sendMessageForCotizaciones,
     sendRecordatorioFormularioDelivery,
     sendCobroCotizacionFinalDelivery,
     sendCobroDeliveryDelivery,
+    addDeliveryServicioLine,
+    updateDeliveryServicioLine,
+    deleteDeliveryServicioLine,
     uploadConformidad,
     updateConformidad,
     deleteConformidad,
@@ -935,6 +1024,7 @@ export const useEntrega = () => {
     fetchDeliveryData,
     updateFiltersDelivery,
     clearFiltersDelivery,
-    cargasDisponiblesDelivery
+    cargasDisponiblesDelivery,
+    totalesDelivery
   }
 }

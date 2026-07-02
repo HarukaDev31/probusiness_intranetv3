@@ -35,6 +35,7 @@
             // Actualizar campos en el nivel raíz de auth_user
             if (updatedUser.photoUrl !== undefined) userData.photoUrl = updatedUser.photoUrl
             if (updatedUser.fullName !== undefined) userData.fullName = updatedUser.fullName
+            if (updatedUser.fullName !== undefined) userData.name = updatedUser.fullName
             if (updatedUser.phone !== undefined) userData.phone = updatedUser.phone
             if (updatedUser.email !== undefined) userData.email = updatedUser.email
             
@@ -42,6 +43,7 @@
             if (userData.raw) {
               if (updatedUser.photoUrl !== undefined) userData.raw.photoUrl = updatedUser.photoUrl
               if (updatedUser.fullName !== undefined) userData.raw.nombres_apellidos = updatedUser.fullName
+              if (updatedUser.fullName !== undefined) userData.raw.nombre = updatedUser.fullName
               if (updatedUser.email !== undefined) userData.raw.email = updatedUser.email
               if (updatedUser.phone !== undefined) userData.raw.phone = updatedUser.phone
               if (updatedUser.dni !== undefined) userData.raw.dni = updatedUser.dni

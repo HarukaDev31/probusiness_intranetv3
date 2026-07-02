@@ -39,11 +39,10 @@
           
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div v-for="month in selectedMonths" :key="month" class="space-y-2">
-              <h5 class="text-sm font-medium text-center">
-                {{ getMonthName(month) }} {{ currentYear }}
-              </h5>
               <UCalendar
                 v-model="selectedDates[month]"
+                :placeholder="getMonthPlaceholder(month)"
+                locale="es"
                 :multiple="true"
                 :max="maxDays"
                 :color="'primary'"
@@ -102,6 +101,19 @@
           </div>
         </div>
 
+        <!-- Nombre de Campaña -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Nombre de Campaña
+          </label>
+          <UInput
+            v-model="noCampana"
+            placeholder="Ej: Marzo 2026"
+            variant="outline"
+            size="sm"
+          />
+        </div>
+
         <!-- Validación -->
         <div v-if="validationError" class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
           <p class="text-sm text-red-600 dark:text-red-400">
@@ -129,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { CalendarDate } from '@internationalized/date'
 
 // Props
@@ -151,15 +163,10 @@ interface CampaignData {
   Fe_Inicio: string
   Fe_Fin: string
   Dias_Seleccionados: string[]
+  No_Campana?: string
 }
 
-// Estado reactivo
-const currentYear = new Date().getFullYear()
-const selectedMonths = ref<string[]>([])
-const selectedDates = ref<Record<string, CalendarDate[]>>({})
-const validationError = ref('')
-
-// Meses disponibles
+// Meses en español (declarados antes para usar en watch)
 const meses = [
   { label: 'Enero', value: 'enero' },
   { label: 'Febrero', value: 'febrero' },
@@ -174,6 +181,24 @@ const meses = [
   { label: 'Noviembre', value: 'noviembre' },
   { label: 'Diciembre', value: 'diciembre' }
 ]
+
+// Estado reactivo
+const currentYear = new Date().getFullYear()
+const selectedMonths = ref<string[]>([])
+const selectedDates = ref<Record<string, CalendarDate[]>>({})
+const validationError = ref('')
+const noCampana = ref('')
+
+// Actualizar nombre con el mes más antiguo (menor índice en el año) seleccionado
+watch(selectedMonths, (months) => {
+  if (months.length > 0) {
+    const earliest = [...months].sort((a, b) => {
+      return meses.findIndex(m => m.value === a) - meses.findIndex(m => m.value === b)
+    })[0]
+    const mesLabel = meses.find(m => m.value === earliest)?.label || earliest
+    noCampana.value = mesLabel + ' ' + currentYear
+  }
+}, { deep: true })
 
 // Computed properties
 const allSelectedDates = computed(() => {
@@ -218,6 +243,11 @@ const getMonthName = (month: string) => {
   return meses.find(m => m.value === month)?.label || month
 }
 
+const getMonthPlaceholder = (month: string): CalendarDate => {
+  const monthIndex = meses.findIndex(m => m.value === month) + 1
+  return new CalendarDate(currentYear, monthIndex, 1)
+}
+
 const handleDateSelection = (month: string, dates: any) => {
   // Convertir a array de CalendarDate si es necesario
   const dateArray = Array.isArray(dates) ? dates : []
@@ -251,13 +281,14 @@ const closeModal = () => {
 
 const handleSave = () => {
   if (!canSave.value) return
-  
+
   const campaignData: CampaignData = {
     Fe_Inicio: fechaInicio.value,
     Fe_Fin: fechaFin.value,
-    Dias_Seleccionados: allSelectedDates.value
+    Dias_Seleccionados: allSelectedDates.value,
+    No_Campana: noCampana.value || undefined
   }
-  
+
   emit('save', campaignData)
 }
 </script>

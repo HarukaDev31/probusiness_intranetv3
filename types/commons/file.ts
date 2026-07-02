@@ -6,4 +6,6 @@ export interface FileItem {
     size: number
     lastModified: number
     file_ext: string
+    /** MIME para reproductor (p. ej. video/mp4 desde inbox). */
+    content_type?: string | null
 }

@@ -3,6 +3,7 @@ import { CalculadoraImportacionService } from '~/services/calculadora-importacio
 import type { Header, PaginationInfo } from "~/types/data-table"
 import type { CotizacionFilters as CotizacionFiltersLegacy } from '~/types/cargaconsolidada/cotizaciones'
 import { CotizacionService } from '~/services/cargaconsolidada/cotizacionService'
+import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 
 export const useCalculadoraImportacion = () => {
   const currentStep = ref(1)
@@ -73,7 +74,7 @@ export const useCalculadoraImportacion = () => {
       limit_inf: 15.1,
       limit_sup: 9999, // 20 o más
       item_base: 20,
-      item_extra: 10, // item_max: 30
+      item_extra: 20, // item_max: 40
       tarifa: 10
     }
   ]
@@ -89,6 +90,12 @@ export const useCalculadoraImportacion = () => {
   const tipoCambio = ref(3.7)
   const selectedVendedor = ref<number | null>(null)
   const selectedContenedor = ref<number | null>(null)
+  const esImo = ref<boolean>(false)
+  const usaYuan = ref<boolean>(false)
+  const tcYuanUsado = ref<number | null>(null)
+  /** Solo lectura: valor con el que se creó la cotización (para mostrar en editar). */
+  const tcYuanUsadoAlCrear = ref<number | null>(null)
+  const tcYuanActual = ref<number | null>(null)
   const estadoCotizaciones = ref<any[]>([
     {
       label: 'Todos',
@@ -106,13 +113,14 @@ export const useCalculadoraImportacion = () => {
     {
       label: 'COTIZADO',
       value: 'COTIZADO',
-      class: 'bg-secondary',
+      class: 'bg-blue-500',
       showOptions: true
     },
     {
       label: 'CONFIRMADO',
       value: 'CONFIRMADO',
-      class: 'bg-success',
+      class: 'bg-green-500',
+      disabled: true,
       showOptions: true
     }
   ])
@@ -137,13 +145,16 @@ export const useCalculadoraImportacion = () => {
     estado: 'todos', // Inicializar con 'todos' para consistencia
     completado: false,
     campania: '', // Agregar filtro de campaña
-    estado_calculadora: '' // Agregar filtro de estado de calculadora
+    proveedores_vinculados: '', // '', 'desvinculadas', 'vinculadas'
+    estado_calculadora: '', // Agregar filtro de estado de calculadora
+    vendedor: ''
   })
 
-  // Agregar opciones de filtro para campaña y estado
+  // Agregar opciones de filtro para campaña, estado y vendedor
   const filterOptions = ref<FilterOptions>({
     contenedores: [],
-    estadoCalculadora: []
+    estadoCalculadora: [],
+    vendedores: []
   })
 
   const tarifasSelect = computed(() => {
@@ -183,60 +194,104 @@ export const useCalculadoraImportacion = () => {
   const calculatedExtraProveedores = computed(() => {
     // Proveedores extra son los que superan MAX_PROVEEDORES
     const extraCount = Math.max(0, proveedores.value.length - MAX_PROVEEDORES)
-    return extraCount * TARIFA_EXTRA_PROVEEDOR
+    return round10(extraCount * (TARIFA_EXTRA_PROVEEDOR || 0 || 0))
   })
 
   const calculatedExtraItems = computed(() => {
-    // Calcular tarifa adicional basada en el CBM TOTAL y el TOTAL de ítems
-    // La tarifa se cobra SOLO por los ítems que exceden el item_base hasta el item_max
-    // Ejemplo: Si item_base=6, item_max=10, y tienes 8 ítems:
-    //   - Los primeros 6 ítems son gratis (item_base)
-    //   - Los ítems 7 y 8 (2 ítems extra) se cobran con la tarifa
+
     const cbmTotal = totalCbm.value
     const itemsTotal = totalItems.value
     const tarifa = findTarifaByCbm(cbmTotal)
-    
+
     if (!tarifa) return 0
-    
+
     const itemMax = tarifa.item_base + tarifa.item_extra
     // Calcular cuántos ítems exceden el item_base
     const itemsExtra = Math.max(0, itemsTotal - tarifa.item_base)
-    
+
     // Limitar a los ítems extra permitidos (hasta item_max)
     // itemsExtraACobrar = cantidad de ítems extra que se cobrarán
     const itemsExtraACobrar = Math.min(itemsExtra, itemMax - tarifa.item_base)
-    
+
     // Multiplicar por la tarifa por ítem extra
-    return itemsExtraACobrar * tarifa.tarifa
+    return round10(itemsExtraACobrar * (tarifa.tarifa || 0))
   })
 
   const proveedores = ref<Proveedor[]>([
 
   ])
-  const selectedTarifa = computed(() => {
-    const tipoCliente = clienteInfo.value.tipoCliente
-    const totalCbmValue = parseFloat(totalCbm.value.toFixed(2))
-    
-    // Filtrar tarifas del tipo de cliente actual
+
+  // Función helper para encontrar tarifa de ítems extra por CBM (comportamiento original)
+  const findTarifaByCbm = (cbm: number) => {
+    if (!cbm || isNaN(cbm) || cbm <= 0) {
+      return TARIFAS_EXTRA_ITEM_PER_CBM[0] // Devolver primera tarifa por defecto
+    }
+
+    const cbmValue = parseFloat(cbm.toFixed(2))
+
+    // 1. Buscar tarifa exacta donde el CBM cae en el rango
+    let tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t =>
+      cbmValue >= t.limit_inf && cbmValue <= t.limit_sup
+    )
+
+    // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
+    if (!tarifa) {
+      const cbmRedondeado = Math.round(cbmValue * 10) / 10
+      tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t =>
+        cbmRedondeado >= t.limit_inf && cbmRedondeado <= t.limit_sup
+      )
+    }
+
+    // 3. Si aún no encuentra, buscar la tarifa más cercana
+    if (!tarifa) {
+      // Buscar el rango más cercano comparando distancias
+      const distancias = TARIFAS_EXTRA_ITEM_PER_CBM.map(t => {
+        const centro = (t.limit_inf + t.limit_sup) / 2
+        return { tarifa: t, distancia: Math.abs(cbmValue - centro) }
+      })
+      distancias.sort((a, b) => a.distancia - b.distancia)
+      tarifa = distancias[0]?.tarifa
+    }
+
+    // 4. Si aún no hay tarifa, usar la última (mayor rango)
+    return tarifa || TARIFAS_EXTRA_ITEM_PER_CBM[TARIFAS_EXTRA_ITEM_PER_CBM.length - 1]
+  }
+
+  // Función helper para encontrar tarifa general por CBM y tipo de cliente
+  const findTarifaByCbmAndTipo = (cbm: number, tipoCliente: string): Tarifa | null => {
+    if (!cbm || isNaN(cbm) || cbm <= 0) {
+      if (tarifas.value.length > 0) {
+        const tarifasDelTipo = tarifas.value.filter(t => t.label === tipoCliente)
+        return tarifasDelTipo[0] || null
+      }
+      return null
+    }
+
+    const cbmValue = parseFloat(cbm.toFixed(2))
+
+    if (tarifas.value.length === 0) {
+      return null
+    }
+
     const tarifasDelTipo = tarifas.value.filter(t => t.label === tipoCliente)
-    
+
     // 1. Buscar tarifa exacta donde el CBM cae en el rango
     let tarifa = tarifasDelTipo.find(t => {
       const limitInferior = parseFloat(t.limit_inf.replace(',', '.'))
       const limitSuperior = parseFloat(t.limit_sup.replace(',', '.'))
-      return totalCbmValue >= limitInferior && totalCbmValue <= limitSuperior
+      return cbmValue >= limitInferior && cbmValue <= limitSuperior
     })
-    
+
     // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
     if (!tarifa) {
-      const cbmRedondeado = Math.round(totalCbmValue * 10) / 10
+      const cbmRedondeado = Math.round(cbmValue * 10) / 10
       tarifa = tarifasDelTipo.find(t => {
         const limitInferior = parseFloat(t.limit_inf.replace(',', '.'))
         const limitSuperior = parseFloat(t.limit_sup.replace(',', '.'))
         return cbmRedondeado >= limitInferior && cbmRedondeado <= limitSuperior
       })
     }
-    
+
     // 3. Si aún no encuentra, buscar la tarifa más cercana del mismo tipo
     if (!tarifa && tarifasDelTipo.length > 0) {
       tarifa = tarifasDelTipo.reduce((closest, current) => {
@@ -244,21 +299,40 @@ export const useCalculadoraImportacion = () => {
         const limitSupCurrent = parseFloat(current.limit_sup.replace(',', '.'))
         const limitInfClosest = parseFloat(closest.limit_inf.replace(',', '.'))
         const limitSupClosest = parseFloat(closest.limit_sup.replace(',', '.'))
-        
-        const distCurrent = Math.min(Math.abs(totalCbmValue - limitInfCurrent), Math.abs(totalCbmValue - limitSupCurrent))
-        const distClosest = Math.min(Math.abs(totalCbmValue - limitInfClosest), Math.abs(totalCbmValue - limitSupClosest))
-        
+
+        const distCurrent = Math.min(Math.abs(cbmValue - limitInfCurrent), Math.abs(cbmValue - limitSupCurrent))
+        const distClosest = Math.min(Math.abs(cbmValue - limitInfClosest), Math.abs(cbmValue - limitSupClosest))
+
         return distCurrent < distClosest ? current : closest
       })
     }
-    
+
     // 4. Fallback: si no hay tarifas del tipo, usar NUEVO
     if (!tarifa) {
       tarifa = tarifas.value.find(t => t.label === 'NUEVO')
     }
-    
-    return tarifa
+
+    return tarifa || null
+  }
+
+  const selectedTarifa = computed(() => {
+    const tipoCliente = clienteInfo.value.tipoCliente
+    const totalCbmValue = totalCbm.value
+
+    // Usar la función helper findTarifaByCbmAndTipo para buscar tarifa general
+    return findTarifaByCbmAndTipo(totalCbmValue, tipoCliente)
   })
+
+  /** TC Yuan global (desde API), usado para cotización en yuanes. */
+  const tcYuanGlobal = ref<number | null>(null)
+  const fetchTcYuanGlobal = async () => {
+    try {
+      const r = await ConsolidadoService.getTcYuanGlobal()
+      tcYuanGlobal.value = r.tc_yuan ?? null
+    } catch (_) {
+      tcYuanGlobal.value = null
+    }
+  }
 
   //NUEVO RECURRENTE PREMIUM SOCIO INACTIVO
   const tipoClientes = ref<any[]>([
@@ -288,7 +362,7 @@ export const useCalculadoraImportacion = () => {
     const proveedoresLength = proveedores.value.length
     const clienteQtyProveedores = clienteInfo.value.qtyProveedores
     const diff = clienteQtyProveedores - proveedoresLength
-    
+
     if (currentStep.value === 1) {
       if (diff > 0) {
         for (let i = 0; i < diff; i++) {
@@ -305,12 +379,11 @@ export const useCalculadoraImportacion = () => {
   }
 
   const handleEndFormulario = async (id?: number) => {
-    //get extra per proveedor and item from proveedores
-    const tarifaTotalExtraProveedor = proveedores.value.reduce((acc, proveedor) => {
-      return acc + proveedor.extraProveedor
-    }, 0)
-    // Usar calculatedExtraItems que calcula basado en CBM total y total de ítems
-    const tarifaTotalExtraItem = calculatedExtraItems.value
+    // Las tarifas siempre se toman del campo modificable
+    // Al inicio, estos campos se inicializan con los valores calculados
+    // Si el usuario modifica esos campos, solo se envía el valor modificado (no la suma)
+    const tarifaTotalExtraProveedor = tarifaExtraProveedorManual.value
+    const tarifaTotalExtraItem = tarifaExtraItemManual.value
     //create saveCotizacionRequest
     let tarifaToSend = selectedTarifa.value
     // Si es MANUAL, usar el valor del input
@@ -321,6 +394,8 @@ export const useCalculadoraImportacion = () => {
       ...(id ? { id } : {}),
       clienteInfo: clienteInfo.value,
       proveedores: proveedores.value.map(proveedor => ({
+        id: proveedor.id,
+        code_supplier: proveedor.code_supplier,
         cbm: proveedor.cbm,
         peso: proveedor.peso,
         qtyCaja: proveedor.qtyCaja,
@@ -330,18 +405,22 @@ export const useCalculadoraImportacion = () => {
           valoracion: producto.valoracion,
           cantidad: producto.cantidad,
           antidumpingCU: producto.antidumpingCU,
-          adValoremP: producto.adValoremP
+          adValoremP: producto.adValoremP,
+          iscP: producto.iscP ?? 0
         }))
       })),
-      tarifaTotalExtraProveedor: tarifaTotalExtraProveedor + tarifaExtraProveedorManual.value,
-      tarifaTotalExtraItem: tarifaTotalExtraItem + tarifaExtraItemManual.value,
+      tarifaTotalExtraProveedor: tarifaTotalExtraProveedor,
+      tarifaTotalExtraItem: tarifaTotalExtraItem,
       tarifaDescuento: tarifaDescuento.value,
       id_usuario: selectedVendedor.value,
       id_carga_consolidada_contenedor: selectedContenedor.value,
       tarifa: tarifaToSend,
       tipo_cambio: tipoCambio.value,
+      es_imo: esImo.value,
+      usa_yuan: usaYuan.value,
+      tc_yuan_usado: tcYuanUsado.value ?? undefined,
     }
-
+    console.log(saveCotizacionRequest)
     const response = await CalculadoraImportacionService.saveCotizacion(saveCotizacionRequest)
     return response
   }
@@ -350,14 +429,27 @@ export const useCalculadoraImportacion = () => {
       case 1:
         handleChangeToStep2()
         break
-      case 2:
-        // No guardar aquí
+      case 2: {
+        // Si usa yuanes, convertir precios de yuan a USD antes de pasar al paso 3
+        // usando la TC seleccionada (tcYuanUsado) y, si no existe, la global como fallback.
+        const tc = tcYuanUsado.value != null ? tcYuanUsado.value : tcYuanGlobal.value
+        if (usaYuan.value && tc != null && Number(tc) > 0) {
+          proveedores.value.forEach(proveedor => {
+            proveedor.productos.forEach((p: any) => {
+              p.precio = round10(Number(p.precio) / Number(tc))
+            })
+          })
+          // Solo inicializar tcYuanUsado si aún no tenía valor
+          if (tcYuanUsado.value == null) {
+            tcYuanUsado.value = Number(tc)
+          }
+        }
         break
+      }
       case 3:
-        // No guardar aquí, solo avanzar de paso
         break
       default:
-
+        break
     }
     if (currentStep.value < totalSteps) {
       currentStep.value++
@@ -365,6 +457,13 @@ export const useCalculadoraImportacion = () => {
   }
 
   const prevStep = () => {
+    if (currentStep.value === 3 && usaYuan.value && tcYuanUsado.value != null && Number(tcYuanUsado.value) > 0) {
+      proveedores.value.forEach(proveedor => {
+        proveedor.productos.forEach((p: any) => {
+          p.precio = round10(Number(p.precio) * Number(tcYuanUsado.value))
+        })
+      })
+    }
     if (currentStep.value > 1) {
       currentStep.value--
       return
@@ -384,7 +483,7 @@ export const useCalculadoraImportacion = () => {
     if (proveedores.value.length >= MAX_PROVEEDORES + MAX_PROVEEDORES_EXTRA) {
       return false
     }
-    
+
     // Validar límite de ítems: un nuevo proveedor siempre agrega al menos 1 ítem
     // Verificar si agregar 1 ítem más excedería el límite
     if (!canAddMoreItems()) {
@@ -408,6 +507,7 @@ export const useCalculadoraImportacion = () => {
           antidumping: 0,
           adValorem: 0,
           adValoremP: 0,
+          iscP: 0,
           igv: 0,
           ipm: 0,
           percepcion: 0,
@@ -436,47 +536,12 @@ export const useCalculadoraImportacion = () => {
       clienteInfo.value.qtyProveedores = proveedores.value.length
       // Renumerar IDs
       proveedores.value.forEach((p, i) => {
-        p.id = (i + 1).toString()
+        p.id = p?.id || (i + 1).toString()
         p.productos.forEach((prod, j) => {
           prod.id = `${p.id}-${j + 1}`
         })
       })
     }
-  }
-  // Función helper para encontrar tarifa por CBM con manejo de casos edge
-  const findTarifaByCbm = (cbm: number) => {
-    if (!cbm || isNaN(cbm) || cbm <= 0) {
-      return TARIFAS_EXTRA_ITEM_PER_CBM[0] // Devolver primera tarifa por defecto
-    }
-    
-    const cbmValue = parseFloat(cbm.toFixed(2))
-    
-    // 1. Buscar tarifa exacta donde el CBM cae en el rango
-    let tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
-      cbmValue >= t.limit_inf && cbmValue <= t.limit_sup
-    )
-    
-    // 2. Si no encuentra, redondear CBM a 1 decimal y buscar de nuevo
-    if (!tarifa) {
-      const cbmRedondeado = Math.round(cbmValue * 10) / 10
-      tarifa = TARIFAS_EXTRA_ITEM_PER_CBM.find(t => 
-        cbmRedondeado >= t.limit_inf && cbmRedondeado <= t.limit_sup
-      )
-    }
-    
-    // 3. Si aún no encuentra, buscar la tarifa más cercana
-    if (!tarifa) {
-      // Buscar el rango más cercano comparando distancias
-      const distancias = TARIFAS_EXTRA_ITEM_PER_CBM.map(t => {
-        const centro = (t.limit_inf + t.limit_sup) / 2
-        return { tarifa: t, distancia: Math.abs(cbmValue - centro) }
-      })
-      distancias.sort((a, b) => a.distancia - b.distancia)
-      tarifa = distancias[0]?.tarifa
-    }
-    
-    // 4. Si aún no hay tarifa, usar la última (mayor rango)
-    return tarifa || TARIFAS_EXTRA_ITEM_PER_CBM[TARIFAS_EXTRA_ITEM_PER_CBM.length - 1]
   }
 
   const getExtraItem = (cbm: number) => {
@@ -507,7 +572,7 @@ export const useCalculadoraImportacion = () => {
     const proveedor = proveedores.value.find(p => p.id === proveedorId)
     if (proveedor) {
       // asegurar que el panel esté abierto al agregar un producto
-      ;(proveedor as any).collapsed = false
+      ; (proveedor as any).collapsed = false
       const newId = `${proveedorId}-${proveedor.productos.length + 1}`
       const cbmTotal = totalCbm.value
       const tarifaExtra = getExtraItem(cbmTotal)
@@ -523,6 +588,7 @@ export const useCalculadoraImportacion = () => {
         antidumping: 0,
         adValorem: 0,
         adValoremP: 0,
+        iscP: 0,
         igv: 0,
         ipm: 0,
         percepcion: 0,
@@ -616,13 +682,20 @@ export const useCalculadoraImportacion = () => {
       return null
     }
   }
-  const getCotizaciones = async () => {
+  /**
+   * Lista cotizaciones calculadora.
+   * @param options.id_calculadora Si se envía, el backend puede filtrar por PK de la fila (p. ej. al volver desde documentación con ?idCalculadora=).
+   */
+  const getCotizaciones = async (options?: { id_calculadora?: number }) => {
     try {
       const params: any = {
         page: pagination.value.current_page,
         per_page: itemsPerPage.value
       }
-      if (search.value.trim()) {
+      const idCalc = options?.id_calculadora
+      if (idCalc != null && idCalc > 0) {
+        params.id_calculadora = idCalc
+      } else if (search.value.trim()) {
         params.search = search.value.trim()
       }
       if (filters.value.fecha_inicio) {
@@ -640,16 +713,24 @@ export const useCalculadoraImportacion = () => {
       if (filters.value.estado_calculadora && filters.value.estado_calculadora !== '' && filters.value.estado_calculadora !== 'todos') {
         params.estado_calculadora = filters.value.estado_calculadora
       }
+      if (filters.value.vendedor && filters.value.vendedor !== '' && filters.value.vendedor !== 'todos') {
+        params.vendedor = filters.value.vendedor
+      }
+
+      if (filters.value.proveedores_vinculados && filters.value.proveedores_vinculados !== 'todos' && filters.value.proveedores_vinculados !== '') {
+        params.proveedores_vinculados = filters.value.proveedores_vinculados
+      }
 
       const response = await CalculadoraImportacionService.getCotizaciones(params)
       cotizaciones.value = response.data
       pagination.value = response.pagination
       headers.value = response.headers
-      
+
       // Actualizar las opciones de filtro si vienen en la respuesta
       if (response.filters) {
         filterOptions.value.contenedores = response.filters.contenedores || []
         filterOptions.value.estadoCalculadora = response.filters.estadoCalculadora || []
+        filterOptions.value.vendedores = response.filters.vendedores || []
       }
     } catch (error) {
       console.error('Error al obtener cotizaciones:', error)
@@ -664,8 +745,10 @@ export const useCalculadoraImportacion = () => {
     pagination.value.current_page = page
     await getCotizaciones()
   }
-  const handleItemsPerPageChange = async (itemsPerPage: number) => {
-    pagination.value.per_page = itemsPerPage
+  const handleItemsPerPageChange = async (newPerPage: number) => {
+    itemsPerPage.value = newPerPage
+    pagination.value.per_page = newPerPage
+    pagination.value.current_page = 1
     await getCotizaciones()
   }
   const handleFilterChange = async (filterType: string, value: string) => {
@@ -680,6 +763,36 @@ export const useCalculadoraImportacion = () => {
     pagination.value.current_page = 1
     await getCotizaciones()
   }
+
+  /** Exporta la lista de cotizaciones (con filtros actuales). El backend devuelve XLSX con estilos. */
+  const exportCotizacionesList = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const params: Record<string, string | number | undefined> = {}
+      if (search.value.trim()) params.search = search.value.trim()
+      if (filters.value.fecha_inicio) params.fecha_inicio = filters.value.fecha_inicio
+      if (filters.value.fecha_fin) params.fecha_fin = filters.value.fecha_fin
+      if (filters.value.estado && filters.value.estado !== 'todos') params.estado = filters.value.estado
+      if (filters.value.campania && filters.value.campania !== '' && filters.value.campania !== 'todas') params.campania = filters.value.campania
+      if (filters.value.estado_calculadora && filters.value.estado_calculadora !== '' && filters.value.estado_calculadora !== 'todos') params.estado_calculadora = filters.value.estado_calculadora
+      if (filters.value.vendedor && filters.value.vendedor !== '' && filters.value.vendedor !== 'todos') params.vendedor = filters.value.vendedor
+      if (filters.value.proveedores_vinculados && filters.value.proveedores_vinculados !== '' && filters.value.proveedores_vinculados !== 'todos') params.proveedores_vinculados = filters.value.proveedores_vinculados
+
+      const blob = await CalculadoraImportacionService.exportListCotizaciones(params)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `cotizaciones_calculadora_${new Date().toISOString().split('T')[0]}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      return { success: true }
+    } catch (err: any) {
+      console.error('Error al exportar cotizaciones:', err)
+      return { success: false, error: err?.message || 'Error al exportar' }
+    }
+  }
+
   const deleteCotizacionCalculadora = async (id: number) => {
     try {
       const response = await CalculadoraImportacionService.deleteCotizacion(id)
@@ -705,6 +818,23 @@ export const useCalculadoraImportacion = () => {
     } catch (error) {
       console.error('Error al cambiar el estado de la cotización:', error)
       throw new Error('No se pudo cambiar el estado de la cotización')
+    }
+  }
+
+  /**
+   * Vincula la cotización en carga consolidada desde una fila de calculadora,
+   * creando la cotización si no existe.
+   */
+  const vincularCotizacionCalculadora = async (id: number) => {
+    try {
+      const response = await CalculadoraImportacionService.vincularCotizacionDesdeCalculadora(id)
+      if (response?.success) {
+        await getCotizaciones()
+      }
+      return response
+    } catch (error) {
+      console.error('Error al vincular la cotización:', error)
+      throw new Error('No se pudo vincular la cotización')
     }
   }
 
@@ -736,20 +866,32 @@ export const useCalculadoraImportacion = () => {
       if (!payload) return null
 
       const cliente = payload.cliente || {}
+      // Determinar tipo de documento primero
+      const tipoDocumento = cliente.tipo_documento || payload.tipo_documento || 'DNI'
+      clienteInfo.value.tipoDocumento = tipoDocumento
+
       clienteInfo.value.nombre = cliente.nombre || payload.nombre_cliente || ''
-      clienteInfo.value.dni = cliente.documento || payload.dni_cliente || ''
-      clienteInfo.value.ruc = cliente.ruc || payload.ruc_cliente || ''
       clienteInfo.value.empresa = cliente.empresa || payload.razon_social || ''
+
+      if (tipoDocumento === 'RUC') {
+        // Cuando es RUC, el backend está enviando el RUC en cliente.documento
+        clienteInfo.value.ruc = cliente.documento || payload.ruc_cliente || ''
+        clienteInfo.value.dni = ''
+      } else {
+        // Caso DNI (u otro): documento se trata como DNI y el RUC, si existe, viene en su propio campo
+        clienteInfo.value.dni = cliente.documento || payload.dni_cliente || ''
+        clienteInfo.value.ruc = cliente.ruc || payload.ruc_cliente || ''
+      }
       clienteInfo.value.correo = cliente.correo || payload.correo_cliente || ''
-      clienteInfo.value.whatsapp = cliente.telefono || payload.whatsapp_cliente || ''
+      clienteInfo.value.whatsapp = payload.whatsapp_cliente ?? cliente.telefono ?? ''
       clienteInfo.value.tipoCliente = payload.tipo_cliente || clienteInfo.value.tipoCliente
       clienteInfo.value.qtyProveedores = Number(payload.qty_proveedores || payload.qtyProveedores || 0)
-      clienteInfo.value.tipoDocumento = cliente.tipo_documento || payload.tipo_documento || 'DNI'
 
       proveedores.value = (payload.proveedores || []).map((p: any, idx: number) => ({
-        id: (idx + 1).toString(),
+        id: p.id || (idx + 1).toString(),
         cbm: Number(p.cbm) || 0,
         peso: Number(p.peso) || 0,
+        code_supplier: p.code_supplier,
         qtyCaja: Number(p.qty_caja || p.qtyCaja || 0),
         productos: (p.productos || []).map((prod: any, j: number) => ({
           id: `${idx + 1}-${j + 1}`,
@@ -759,6 +901,7 @@ export const useCalculadoraImportacion = () => {
           cantidad: Number(prod.cantidad) || 0,
           antidumpingCU: Number(prod.antidumping_cu || prod.antidumpingCU) || 0,
           adValoremP: Number(prod.ad_valorem_p || prod.adValoremP) || 0,
+          iscP: Number(prod.isc_p ?? prod.iscP) || 0,
           showValoracion: !!(prod.valoracion && Number(prod.valoracion) > 0),
           extraItem: 0
         })),
@@ -766,16 +909,33 @@ export const useCalculadoraImportacion = () => {
       }))
 
       tarifaDescuento.value = Number(payload.tarifa_descuento || payload.tarifaDescuento || 0)
-      tarifaExtraProveedorManual.value = Number(payload.tarifa_total_extra_proveedor || payload.tarifaTotalExtraProveedor || 0)
-      tarifaExtraItemManual.value = Number(payload.tarifa_total_extra_item || payload.tarifaTotalExtraItem || 0)
+      // Recalculate based on loaded providers/items instead of using stale stored values
+      tarifaExtraProveedorManual.value = calculatedExtraProveedores.value
+      tarifaExtraItemManual.value = calculatedExtraItems.value
       selectedVendedor.value = payload.id_usuario || payload.vendedor || null
       selectedContenedor.value = payload.id_carga_consolidada_contenedor || payload.id_carga_consolidada_contenedor || null
       // Cargar tipo de cambio, usar 3.7 como valor por defecto si es null o undefined
       // Intentar diferentes nombres posibles del campo (incluyendo "tc")
       const tipoCambioValue = payload.tipo_cambio ?? payload.tipoCambio ?? payload.tipo_de_cambio ?? payload.tipoDeCambio ?? payload.tc ?? payload.TC ?? null
       tipoCambio.value = tipoCambioValue !== null && tipoCambioValue !== undefined && tipoCambioValue !== ''
-        ? Number(tipoCambioValue) 
+        ? Number(tipoCambioValue)
         : 3.7
+      esImo.value = Boolean(payload.es_imo ?? false)
+      usaYuan.value = Boolean(payload.usa_yuan ?? false)
+      tcYuanUsado.value = payload.tc_yuan_usado != null ? Number(payload.tc_yuan_usado) : null
+      tcYuanUsadoAlCrear.value = payload.tc_yuan_usado != null ? Number(payload.tc_yuan_usado) : null
+      const data = response?.data
+      tcYuanActual.value = data?.tc_yuan_actual != null ? Number(data.tc_yuan_actual) : null
+
+      // Si la cotización usó yuanes, los precios en BD están en USD; convertir a yuan para mostrar en paso 2
+      if (usaYuan.value && payload.tc_yuan_usado != null && Number(payload.tc_yuan_usado) > 0) {
+        const tc = Number(payload.tc_yuan_usado)
+        proveedores.value.forEach(proveedor => {
+          proveedor.productos.forEach((p: any) => {
+            p.precio = round10(Number(p.precio) * tc)
+          })
+        })
+      }
 
       return payload
     } catch (error) {
@@ -783,6 +943,8 @@ export const useCalculadoraImportacion = () => {
       throw error
     }
   }
+
+  const round10 = (value: number) => Math.round(value * Math.pow(10, 10)) / Math.pow(10, 10);
 
   return {
     currentStep,
@@ -831,10 +993,12 @@ export const useCalculadoraImportacion = () => {
     handlePageChange,
     handleItemsPerPageChange,
     handleFilterChange,
+    exportCotizacionesList,
     estadoCotizaciones,
     deleteCotizacionCalculadora,
     duplicateCotizacionCalculadora,
     changeEstadoCotizacionCalculadora,
+    vincularCotizacionCalculadora,
     vendedores,
     contenedores,
     tarifaDescuento,
@@ -845,6 +1009,13 @@ export const useCalculadoraImportacion = () => {
     calculatedExtraItems,
     selectedVendedor,
     selectedContenedor,
+    esImo,
+    usaYuan,
+    tcYuanUsado,
+    tcYuanUsadoAlCrear,
+    tcYuanGlobal,
+    fetchTcYuanGlobal,
+    tcYuanActual,
     fetchVendedores,
     fetchContenedores,
     loadCotizacionById,

@@ -1,4 +1,4 @@
-import type { Contenedor, ContenedorPasosResponse, ContenedorResponse } from '../../types/cargaconsolidada/contenedor'
+import type { Contenedor, ContenedorPasosResponse, ContenedorResponse, ValidContainersDocumentacionResponse } from '../../types/cargaconsolidada/contenedor'
 import { BaseService } from '../base/BaseService'
 export interface ConsolidadoParams {
     page?: number
@@ -8,6 +8,10 @@ export interface ConsolidadoParams {
     fecha_fin?: string
     estado_china?: string
     completado?: boolean | false
+    /** Filtrar por estado de documentación (ej. PENDIENTE). */
+    estado_documentacion?: string
+    /** Rol de vista (ej. Coordinación, Documentacion). Si el token es Jefe Importación, el backend usará este rol. */
+    role?: string
 }
 
 export class ConsolidadoService extends BaseService {
@@ -51,8 +55,16 @@ export class ConsolidadoService extends BaseService {
                 cleanParams.estado_china = params.estado_china.trim()
             }
 
-            if (params.completado) {
+            if (params.completado !== undefined && params.completado !== null) {
                 cleanParams.completado = params.completado
+            }
+
+            if (params.estado_documentacion && params.estado_documentacion.trim()) {
+                cleanParams.estado_documentacion = params.estado_documentacion.trim()
+            }
+
+            if (params.role && params.role.trim()) {
+                cleanParams.role = params.role.trim()
             }
 
             const response = await this.apiCall<ContenedorResponse>(`${this.baseUrl}`, {
@@ -79,9 +91,12 @@ export class ConsolidadoService extends BaseService {
         }
     }
 
-    static async getConsolidadoPasos(id: number): Promise<ContenedorPasosResponse> {
+    static async getConsolidadoPasos(id: number, role?: string): Promise<ContenedorPasosResponse> {
         try {
-            const response = await this.apiCall<ContenedorPasosResponse>(`${this.baseUrl}/pasos/${id}`, {
+            const params: Record<string, string> = {}
+            if (role && role.trim()) params.role = role.trim()
+            const qs = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : ''
+            const response = await this.apiCall<ContenedorPasosResponse>(`${this.baseUrl}/pasos/${id}${qs}`, {
                 method: 'GET'
             })
             return response
@@ -102,6 +117,33 @@ export class ConsolidadoService extends BaseService {
             throw error
         }
     }
+
+    /**
+     * Consolidados con documentación no completada (modal crear/editar trámite).
+     * GET api/carga-consolidada/contenedor/valid-containers-documentacion
+     */
+    static async getValidContainersDocumentacion(): Promise<ValidContainersDocumentacionResponse> {
+        const response = await this.apiCall<ValidContainersDocumentacionResponse>(`${this.baseUrl}/valid-containers-documentacion`, {
+            method: 'GET'
+        })
+        return response
+    }
+
+    /** GET TC Yuan global (barra superior vista consolidados). */
+    static async getTcYuanGlobal(): Promise<{ success: boolean; tc_yuan: number | null }> {
+        const response = await this.apiCall<{ success: boolean; tc_yuan: number | null }>(`${this.baseUrl}/tc-yuan-global`, { method: 'GET' })
+        return response
+    }
+
+    /** POST TC Yuan global (guardar desde barra superior). */
+    static async updateTcYuanGlobal(tcYuan: number | null): Promise<{ success: boolean; tc_yuan: number | null }> {
+        const response = await this.apiCall<{ success: boolean; tc_yuan: number | null }>(`${this.baseUrl}/tc-yuan-global`, {
+            method: 'POST',
+            body: { tc_yuan: tcYuan }
+        })
+        return response
+    }
+
     static async getContenedoresDisponibles(): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/cargas-disponibles`, {

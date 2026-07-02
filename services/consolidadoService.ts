@@ -26,8 +26,8 @@ export class ConsolidadoService extends BaseService {
           queryParams.append('estado_pago', filters.estado)
         }
         if (filters.carga) {
-          // Also send as 'campana' for compatibility
-          queryParams.append('campana', filters.carga)
+          // value del filtro es id del contenedor (único por #carga -año)
+          queryParams.append('id_contenedor', filters.carga)
         }
         if (filters.search) queryParams.append('search', filters.search)
         if (filters.page) queryParams.append('page', String(filters.page))
@@ -157,8 +157,7 @@ export class ConsolidadoService extends BaseService {
           queryParams.append('estado_pago', filters.estado)
         }
         if (filters.carga) {
-          queryParams.append('carga', filters.carga)
-          queryParams.append('campana', filters.carga)
+          queryParams.append('id_contenedor', filters.carga)
         }
         if (filters.search) queryParams.append('search', filters.search)
         if ((filters as any).per_page) {

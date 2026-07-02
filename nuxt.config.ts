@@ -1,7 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  // DevTools off por defecto (~1–2s menos al arrancar). Activar: NUXT_DEVTOOLS=true npm run dev
+  devtools: { enabled: process.env.NUXT_DEVTOOLS === 'true' },
   modules: ['@nuxt/ui'],
   typescript: {
     strict: false,
@@ -9,24 +10,58 @@ export default defineNuxtConfig({
     shim: false
   },
   ssr: false,
-  
-  // Optimizaciones de rendimiento
-  experimental: {
-    payloadExtraction: false, // Mejora tiempos de carga inicial
+
+  build: {
+    transpile: ['pdfjs-dist'],
   },
   
-  // Code splitting y optimización de bundles
+  // Optimizaciones de rendimiento y lazy load
+  experimental: {
+    payloadExtraction: false, // Mejora tiempos de carga inicial
+    // Prefetch solo al hacer hover/focus, no al ser visible → carga inicial más rápida
+    defaults: {
+      nuxtLink: {
+        prefetch: true,
+        prefetchOn: { visibility: true, interaction: true },
+      },
+    },
+  },
+  // Carga diferida de rutas: cada página es un chunk que se descarga al navegar
+  routeRules: {
+    '/**': { prerender: false },
+  },
+  
+  // Code splitting y minificación en producción (npm run build)
   vite: {
+    // Menos reinicios del watcher en dev (útil si el repo está en OneDrive)
+    server: {
+      watch: {
+        ignored: ['**/node_modules/**', '**/.git/**', '**/.nuxt/**', '**/.output/**', '**/dist/**'],
+      },
+      // Precalienta layout y vistas frecuentes (menos latencia en la 1ª navegación en dev)
+      warmup: {
+        clientFiles: [
+          './app.vue',
+          './layouts/default.vue',
+          './components/DataTable.vue',
+          './components/cargaconsolidada/entrega/EntregaView/index.vue',
+          './pages/cargaconsolidada/completados/entrega/[id].vue',
+        ],
+      },
+    },
     build: {
+      // Minificación JS (solo aplica en producción)
       minify: 'terser',
       terserOptions: {
         compress: {
-          drop_console: false,
+          drop_console: true,
         },
         format: {
           comments: false,
         },
       },
+      // Minificación CSS (por defecto true en prod; explícito para asegurar)
+      cssMinify: 'esbuild',
       rollupOptions: {
         output: {
           manualChunks: (id) => {
@@ -39,6 +74,9 @@ export default defineNuxtConfig({
               // XLSX
               if (id.includes('xlsx')) {
                 return 'xlsx'
+              }
+              if (id.includes('pdfjs-dist')) {
+                return 'pdfjs'
               }
               // Pusher y Laravel Echo (WebSockets)
               if (id.includes('pusher') || id.includes('laravel-echo')) {
@@ -53,8 +91,16 @@ export default defineNuxtConfig({
       chunkSizeWarningLimit: 1000,
     },
     optimizeDeps: {
-      include: ['vue', 'vue-router', '@nuxt/icon', 'defu'],
-      exclude: ['chart.js', 'xlsx', 'pusher-js'], // Cargar bajo demanda
+      include: [
+        'vue',
+        'vue-router',
+        '@nuxt/icon',
+        'defu',
+        'vuedraggable',
+        'pusher-js',
+        'laravel-echo',
+      ],
+      exclude: ['chart.js', 'xlsx', 'pdfjs-dist'],
     }
   },
   
@@ -69,7 +115,13 @@ export default defineNuxtConfig({
       },
       title: 'ProBusiness - Intranet | Sistema de gestion Interna',
       meta: [
-        // Structured Data
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: 'Sistema de gestión interna de ProBusiness. Administración de clientes, carga consolidada, verificación y operaciones.' },
+        { name: 'theme-color', content: '#ea580c' },
+        { name: 'color-scheme', content: 'light dark' },
+        { name: 'referrer', content: 'strict-origin-when-cross-origin' },
+        { name: 'robots', content: 'noindex, nofollow' },
         { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
@@ -77,16 +129,17 @@ export default defineNuxtConfig({
         { name: 'format-detection', content: 'telephone=no' }
       ],
       link: [
+        // Preconnect para Google Fonts (mejora LCP evitando bloqueo de render)
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        // Fuente Epilogue vía link (no render-blocking vs @import en CSS)
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Epilogue:wght@300;400;500;600;700;800&display=swap' },
         { rel: 'icon', type: 'image/x-icon', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'manifest', href: '/manifest.json' },
-        // Preconnect para recursos externos
-        { rel: 'preconnect', href: 'https://intranet.probusiness.pe' },
-        { rel: 'dns-prefetch', href: 'https://intranet.probusiness.pe' },
       ],
-
     },
   },
   ui: {
@@ -105,11 +158,14 @@ export default defineNuxtConfig({
   
   // Configuración de iconos
   icon: {
-    // Usar iconos locales instalados
-    collections: ['heroicons', 'fa', 'vscode-icons', 'mdi', 'tabler'],
+    // Usar solo colecciones realmente usadas en el app (tabler no se usa)
+    collections: ['heroicons', 'fa', 'vscode-icons', 'mdi'],
     provider: 'iconify',
-    fallbackToApi: true,
-    mode: 'css'
+    // SVG mode: iconos servidos desde el servidor Nuxt local (lee @iconify-json/* instalados)
+    // Funciona con nombres dinámicos (:name="variable") sin peticiones a API externa
+    mode: 'svg',
+    // Sin fallback a Iconify API - todos los iconos se resuelven desde paquetes locales
+    fallbackToApi: false,
   },
  
   // Configuración de variables de entorno
@@ -122,8 +178,8 @@ export default defineNuxtConfig({
       apiBaseUrl: process.env.NUXT_API_BASE_URL || 'http://localhost:8000',
       appName: process.env.NUXT_PUBLIC_APP_NAME || 'Probusiness Intranet',
       appVersion: process.env.NUXT_PUBLIC_APP_VERSION || '2.0.0',
-      pusherAppKey: process.env.NUXT_PUSHER_APP_KEY,
-      pusherAppCluster: process.env.NUXT_PUSHER_APP_CLUSTER,
+      pusherAppKey: process.env.NUXT_PUSHER_APP_KEY?.trim(),
+      pusherAppCluster: process.env.NUXT_PUSHER_APP_CLUSTER?.trim(),
       pusherWsHost: process.env.NUXT_WEBSOCKETS_URL,
       whatsappApiUrl: process.env.NUXT_WHATSAPPV3_URL,
       whatsappApiKey: process.env.NUXT_WHATSAPPV3_API_KEY,

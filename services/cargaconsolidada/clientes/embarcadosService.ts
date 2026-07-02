@@ -1,5 +1,6 @@
 import { BaseService } from "~/services/base/BaseService"
 import type { HeaderResponse } from "~/types/data-table"
+import type { SeguimientoDriveVincularResponse, SeguimientoDriveCorteConfigResponse } from '~/types/cargaconsolidada/seguimiento-drive'
 
 export class EmbarcadosService extends BaseService {
     static baseUrl = 'api/carga-consolidada/contenedor/clientes/embarcados'
@@ -114,6 +115,39 @@ export class EmbarcadosService extends BaseService {
             return response
         } catch (error) {
             console.error('Error deleting excel confirmacion:', error)
+            throw error
+        }
+    }
+
+    static async vincularDriveSeguimiento(idContenedor: number): Promise<SeguimientoDriveVincularResponse> {
+        try {
+            return await this.apiCall(`${this.baseUrl}/${idContenedor}/vincular-drive`, { method: 'POST' })
+        } catch (error) {
+            console.error('Error al vincular Drive seguimiento:', error)
+            throw error
+        }
+    }
+
+    static async getSeguimientoDriveConfig(): Promise<SeguimientoDriveCorteConfigResponse> {
+        try {
+            return await this.apiCall(`${this.baseUrl}/seguimiento-drive/config`)
+        } catch (error) {
+            console.error('Error al obtener config seguimiento Drive:', error)
+            throw error
+        }
+    }
+
+    static async updateSeguimientoDriveConfig(payload: {
+        hora_corte: string
+        timezone?: string
+    }): Promise<SeguimientoDriveCorteConfigResponse> {
+        try {
+            return await this.apiCall(`${this.baseUrl}/seguimiento-drive/config`, {
+                method: 'PUT',
+                body: payload,
+            })
+        } catch (error) {
+            console.error('Error al actualizar config seguimiento Drive:', error)
             throw error
         }
     }

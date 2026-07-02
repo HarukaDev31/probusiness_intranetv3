@@ -30,13 +30,31 @@ export interface Contenedor {
     ajuste_valor: string
     multa: string
     observaciones: string
+    limite_cbm_imo?: number
+    /** TC Yuan vigente del consolidado (Coordinación). */
+    tc_yuan?: number | null
     pais: Pais
+    /** Estado del permiso por tipo (backend puede enviar cuando role=Coordinación/Documentación). */
+    estado_permiso_por_tipo?: Array<{ id_tipo_permiso?: number; nombre_permiso: string; estado: string }>
 }
 export interface ContenedorResponse {
     success: boolean
     data: Contenedor[],
     pagination: PaginationInfo
 }
+
+/** Item del endpoint valid-containers-documentacion (dropdown permisos). */
+export interface ValidContainersDocumentacionItem {
+    id: number
+    carga?: string | number
+}
+
+/** Respuesta GET .../contenedor/valid-containers-documentacion */
+export interface ValidContainersDocumentacionResponse {
+    success?: boolean
+    data: ValidContainersDocumentacionItem[]
+}
+
 export interface ContenedorFilters {
    fecha_inicio?: string
    fecha_fin?: string

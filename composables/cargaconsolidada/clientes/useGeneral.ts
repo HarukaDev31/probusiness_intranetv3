@@ -3,10 +3,12 @@ import { GeneralService, type SolicitarDocumentosRequest, type SolicitarDocument
 import type { Header, PaginationInfo } from '~/types/data-table'
 import { useRoute } from '#app'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { useUserRole } from '~/composables/auth/useUserRole'
 
 const { withSpinner } = useSpinner()
 
 export const useGeneral = () => {
+    const { currentRole } = useUserRole()
     const headers = ref<Header[]>([])
     const carga = ref<string | null>(null)
     const route = useRoute()
@@ -53,7 +55,8 @@ export const useGeneral = () => {
                 filtersGeneral.value,
                 searchGeneral.value,
                 itemsPerPageGeneral.value,
-                currentPageGeneral.value
+                currentPageGeneral.value,
+                currentRole.value
             )
             clientes.value = response.data
             paginationGeneral.value = response.pagination

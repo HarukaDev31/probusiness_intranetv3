@@ -106,6 +106,24 @@ export class  EntregaService extends BaseService {
     }
   }
 
+  /** Exportar clientes de entrega a Excel (blob) */
+  static async exportClientesExcel(idContenedor: number, params?: { search?: string }): Promise<Blob> {
+    try {
+      const queryParams = new URLSearchParams()
+      if (params?.search) queryParams.append('search', params.search)
+      const qs = queryParams.toString()
+      const response = await this.apiCall<Blob>(`${this.baseUrl}/clientes/${idContenedor}/export-excel${qs ? `?${qs}` : ''}`, {
+        method: 'GET',
+        responseType: 'blob',
+        headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al exportar clientes a Excel:', error)
+      throw error
+    }
+  }
+
   static async marcarRegistrado(data: { id_cotizacion: number }): Promise<{ success: boolean }> {
     try {
       const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/marcar-registrado`, {
@@ -350,6 +368,36 @@ export class  EntregaService extends BaseService {
       throw error
     }
   }
+  static async sendMessageForCotizaciones(
+    cotizaciones: Array<{ id_cotizacion: number; type_form?: 0 | 1 | null }>
+  ): Promise<{ success: boolean; data?: any; error?: string; message?: string; queued?: number }> {
+    try {
+      const sanitizedCotizaciones = (cotizaciones || [])
+        .map((item) => {
+          const id = Number(item?.id_cotizacion ?? 0)
+          const raw = item?.type_form
+          const typeForm = raw === 1 || raw === '1' ? 1 : raw === 0 || raw === '0' ? 0 : null
+          return {
+            id_cotizacion: id,
+            type_form: typeForm
+          }
+        })
+        .filter((item) => item.id_cotizacion > 0)
+
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string; message?: string; queued?: number }>(`${this.baseUrl}/delivery/send-message-bulk`, {
+        method: 'POST',
+        body: {
+          cotizaciones: sanitizedCotizaciones,
+          // Compatibilidad temporal si el backend antiguo sigue validando este campo.
+          cotizacion_ids: sanitizedCotizaciones.map((item) => item.id_cotizacion)
+        }
+      })
+      return response
+    } catch (error) {
+      console.error('Error al encolar envío masivo de formularios:', error)
+      throw error
+    }
+  }
   static async sendRecordatorioFormularioDelivery(idCotizacion: number, message: string): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
       const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/recordatorio-formulario/${idCotizacion}`, {
@@ -374,17 +422,54 @@ export class  EntregaService extends BaseService {
       throw error
     }
   }
-  static async sendCobroDeliveryDelivery(idCotizacion: number, message: string): Promise<{ success: boolean; data?: any; error?: string }> {
+  static async sendCobroDeliveryDelivery(
+    idCotizacion: number,
+    payload?: string | { message?: string; servicio_ids?: number[] }
+  ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
+      const body =
+        typeof payload === 'string'
+          ? { message: payload, servicio_ids: undefined }
+          : {
+              message: payload?.message ?? '',
+              servicio_ids: payload?.servicio_ids
+            }
       const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(`${this.baseUrl}/delivery/cobro-delivery/${idCotizacion}`, {
         method: 'POST',
-        body: { message }
+        body
       })
       return response
     } catch (error) {
       console.error('Error al enviar cobro de delivery:', error)
       throw error
     }
+  }
+
+  static async addDeliveryServicioLine(data: {
+    id_cotizacion: number
+    tipo_servicio: string
+    importe: number
+  }): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+    return await this.apiCall(`${this.baseUrl}/delivery/servicio-line`, {
+      method: 'POST',
+      body: data
+    })
+  }
+
+  static async updateDeliveryServicioLine(
+    idLinea: number,
+    data: { tipo_servicio?: string; importe?: number }
+  ): Promise<{ success: boolean; error?: string; message?: string }> {
+    return await this.apiCall(`${this.baseUrl}/delivery/servicio-line/${idLinea}`, {
+      method: 'PUT',
+      body: data
+    })
+  }
+
+  static async deleteDeliveryServicioLine(idLinea: number): Promise<{ success: boolean; error?: string; message?: string }> {
+    return await this.apiCall(`${this.baseUrl}/delivery/servicio-line/${idLinea}`, {
+      method: 'DELETE'
+    })
   }
 
   // --- DETALLE CLIENTE (guardar formulario) ---
@@ -438,6 +523,51 @@ export class  EntregaService extends BaseService {
       throw error
     }
   }
+  // --- FIRMA CARGA ENTREGA ---
+  static async getCargoEntregaPdf(idContenedor: number, idCotizacion: number): Promise<{
+    success: boolean
+    data?: {
+      pdf_url?: string
+      pdf_url_firmado?: string
+      cargo_entrega_pdf_url?: string
+      cargo_entrega_pdf_firmado_url?: string
+      nombre?: string
+      telefono?: string
+    }
+    error?: string
+  }> {
+    try {
+      const response = await this.apiCall<{
+        success: boolean
+        data?: Record<string, any>
+        error?: string
+      }>(`${this.baseUrl}/cargo-entrega-pdf/${idContenedor}/${idCotizacion}`)
+      return response
+    } catch (error) {
+      console.error('Error al obtener PDF de cargo de entrega:', error)
+      throw error
+    }
+  }
+
+  static async signCargoEntrega(payload: {
+    id_contenedor: number
+    id_cotizacion: number
+    nombre: string
+    dni: string
+    signature: string
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.apiCall<{ success: boolean; data?: any; error?: string }>(
+        `${this.baseUrl}/cargo-entrega-firmar`,
+        { method: 'POST', body: payload }
+      )
+      return response
+    } catch (error) {
+      console.error('Error al firmar cargo de entrega:', error)
+      throw error
+    }
+  }
+
   // --- ELIMINAR REGISTRO EN LISTA DE ENTREGAS ---
   static async deleteEntregaRegistro(registroId: number): Promise<{ success: boolean; data?: any; error?: string }> {
     try {

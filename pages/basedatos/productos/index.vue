@@ -26,7 +26,8 @@
   @update:currentPage="onPageChange"
   :prefetchNextPage="prefetchImagesForPage"
   @update:itemsPerPage="onItemsPerPageChange"
-  :showExport="false"
+  :showExport="true"
+  @export="handleExport"
   :showNewButton="false"
         :headers="headers"
       >
@@ -56,7 +57,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, h, resolveComponent } from 'vue'
-import DataTable from '~/components/DataTable.vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const DataTable = createLazyView(() => import('~/components/DataTable.vue'))
 import ImageLazy from '~/components/ImageLazy.vue'
 import { ProductService } from '~/services/productService'
 import type { ProductMapped } from '~/types/product'
@@ -64,8 +67,12 @@ import DynamicModal from '~/components/DynamicModal.vue'
 import ImageModal from '~/components/ImageModal.vue'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import type { ModalData } from '~/composables/commons/useModal'
+import { useModal } from '~/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
 const userRole = useUserRole()
 const UButton = resolveComponent('UButton')
+const { showSuccess, showError } = useModal()
+const { withSpinner } = useSpinner()
 
 // Constante de roles
 const { hasRole, isDocumentacion } = useUserRole()
@@ -93,6 +100,7 @@ const {
   handleSearch,
   exportProducts,
   deleteProduct: deleteProductFromAPI,
+  updateProductImage,
   headers
 } = useProducts()
 
@@ -109,6 +117,10 @@ const localCurrentPage = ref(1)
 const showImageModal = ref(false)
 const selectedImage = ref('')
 const selectedImageTitle = ref('')
+
+// Estado para subida de imagen
+const imageFileInput = ref<HTMLInputElement | null>(null)
+const uploadingImageId = ref<number | null>(null)
 
 //Estado para el modal de mensajes
 const showModal = ref(false)
@@ -147,7 +159,7 @@ const filterConfig = computed(() => [
     placeholder: 'Seleccionar campaña',
     options: [
       { label: 'Todos', value: 'todos', text: 'Todos' },
-      ...filterOptions.value.campanas.map(campana => ({ label: campana, value: campana, text: campana }))
+      ...filterOptions.value.campanas.map(c => ({ label: c.label, value: c.value, text: c.label }))
     ]
   }
 ])
@@ -175,15 +187,37 @@ const tableColumns = computed(() => [
     accessorKey: 'foto',
     cell: ({ row }: any) => {
       const url = row.original.foto
-      if (!url) return 'Sin foto'
-      return h(ImageLazy, {
-        src: url,
-        alt: row.original.nombreComercial,
-        width: 80,
-        height: 80,
-        class: 'w-20 h-20 object-cover rounded cursor-pointer',
-        onClick: () => openImageModal(url, row.original.nombreComercial)
-      })
+      const productId = row.original.id
+      const isUploading = uploadingImageId.value === productId
+
+      const imageEl = url
+        ? h(ImageLazy, {
+            key: url,
+            src: url,
+            alt: row.original.nombreComercial,
+            width: 80,
+            height: 80,
+            class: 'w-20 h-20 object-cover rounded cursor-pointer',
+            onClick: () => openImageModal(url, row.original.nombreComercial)
+          })
+        : h('span', { class: 'text-xs text-gray-400' }, 'Sin foto')
+
+      if (!isDocumentacion.value) return imageEl
+
+      return h('div', { class: 'relative group inline-block' }, [
+        imageEl,
+        isUploading
+          ? h('div', { class: 'absolute inset-0 flex items-center justify-center bg-black/40 rounded' }, [
+              h(resolveComponent('UIcon'), { name: 'i-heroicons-arrow-path', class: 'w-5 h-5 text-white animate-spin' })
+            ])
+          : h('button', {
+              class: 'absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 rounded transition-colors cursor-pointer',
+              title: 'Cambiar imagen',
+              onClick: (e: Event) => { e.stopPropagation(); triggerImageUpload(productId) }
+            }, [
+              h(resolveComponent('UIcon'), { name: 'i-heroicons-camera', class: 'w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity' })
+            ])
+      ])
     }
   },
   { header: 'Nombre comercial', accessorKey: 'nombreComercial' },
@@ -296,6 +330,18 @@ const onFiltersUpdate = (newFilters: Record<string, any>) => {
   applyFilters()
 }
 
+const handleExport = async () => {
+  try {
+    await withSpinner(async () => {
+      const ok = await exportProducts('excel')
+      if (!ok) throw new Error(error.value || 'No se pudo exportar los productos')
+    }, 'Exportando productos…')
+    showSuccess('Exportación lista', 'El archivo se descargó correctamente.')
+  } catch (e: unknown) {
+    showError('Error al exportar', e instanceof Error ? e.message : 'Ocurrió un error al exportar.')
+  }
+}
+
 const formatPrice = (price: number): string => {
   return price.toLocaleString('es-ES', {
     minimumFractionDigits: 2,
@@ -358,6 +404,47 @@ onMounted(async () => {
   // Inicializar página local
   localCurrentPage.value = currentPage.value
 })
+const triggerImageUpload = (productId: number) => {
+  uploadingImageId.value = productId
+  if (!imageFileInput.value) {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/jpeg,image/png,image/webp'
+    input.style.display = 'none'
+    input.addEventListener('change', handleImageUpload)
+    document.body.appendChild(input)
+    imageFileInput.value = input
+  }
+  imageFileInput.value.value = ''
+  imageFileInput.value.click()
+
+  const onCancel = () => {
+    window.removeEventListener('focus', onCancel)
+    setTimeout(() => {
+      if (uploadingImageId.value === productId && !imageFileInput.value?.files?.length) {
+        uploadingImageId.value = null
+      }
+    }, 300)
+  }
+  window.addEventListener('focus', onCancel)
+}
+
+const handleImageUpload = async (e: Event) => {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || !uploadingImageId.value) {
+    uploadingImageId.value = null
+    return
+  }
+
+  const result = await updateProductImage(uploadingImageId.value, file)
+  uploadingImageId.value = null
+
+  if (!result.success) {
+    alert('Error al actualizar la imagen')
+  }
+}
+
 const goToArchivos = () => {
   navigateTo('/basedatos/productos/archivos')
 }

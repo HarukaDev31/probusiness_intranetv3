@@ -23,6 +23,8 @@ export const WS_EVENTS = {
   DOCUMENT_NEW: 'NewDocument',
   DOCUMENT_REQUEST: 'DocumentRequest',
   IMPORTACION_EXCEL_COMPLETED: 'ImportacionExcelCompleted',
+  USUARIO_DATOS_FACTURACION_IMPORT_FINISHED: 'UsuarioDatosFacturacionImportFinished',
+  PLANTILLA_FINAL_BATCH_FINISHED: 'PlantillaFinalBatchFinished',
   TEST_EVENT: 'TestEvent',
   
   // Eventos de Almacén (usados en events/contenedor-almacen.ts)
@@ -38,7 +40,17 @@ export const WS_EVENTS = {
   SYSTEM_MAINTENANCE: 'MaintenanceAlert',
   SYSTEM_UPDATE: 'SystemUpdate',
   USER_ACTIVITY: 'UserActivity',
-  DASHBOARD_UPDATE: 'DashboardUpdate'
+  DASHBOARD_UPDATE: 'DashboardUpdate',
+  //evnetos de administracion
+  REINTEGRO_REQUEST:'ViaticoCreado',
+  // Eventos de Calendario (documentación, coordinación, jefe importaciones)
+  CALENDAR_ACTIVITY_CREATED: 'CalendarActivityCreated',
+  CALENDAR_ACTIVITY_UPDATED: 'CalendarActivityUpdated',
+  CALENDAR_ACTIVITY_DELETED: 'CalendarActivityDeleted',
+  // Soporte TI — canal privado por sala: soporte-ti.chat.{chat_uuid}
+  SOPORTE_TI_MENSAJE_CREADO: 'SoporteTiMensajeCreado',
+  SOPORTE_TI_MENSAJE_ACTUALIZADO: 'SoporteTiMensajeActualizado',
+  SOPORTE_TI_ESTADO_ACTUALIZADO: 'SoporteTiEstadoActualizado'
 } as const
 
 // ============================================

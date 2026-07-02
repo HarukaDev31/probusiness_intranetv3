@@ -15,13 +15,13 @@ export const useGeneral = () => {
         to: 0
     })
     const route = useRoute()
-    const id = route.params.id as number
+    const id = Number(route.params.id)
     const searchGeneral = ref('')
     const itemsPerPageGeneral = ref(100)
     const totalPagesGeneral = computed(() => Math.ceil(paginationGeneral.value.total / itemsPerPageGeneral.value))
     const totalRecordsGeneral = computed(() => paginationGeneral.value.total)
     const currentPageGeneral = computed(() => paginationGeneral.value.current_page)
-    const filtersGeneral = ref<any>()
+    const filtersGeneral = ref<any>({})
     const filterConfigGeneral = ref<any>([
 
         {
@@ -80,22 +80,17 @@ export const useGeneral = () => {
             error.value = err as string
         }
     }
-    const uploadPlantillaFinal = async (data: any) => {
+    const uploadPlantillaFinal = async (data: FormData) => {
         try {
-            const response = await GeneralService.uploadPlantillaFinal(data)
-            //this zip download and return success
-            const blob = new Blob([response], { type: 'application/zip' })
-            const url = window.URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `plantilla_final_${data.idContenedor}.zip`
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-            window.URL.revokeObjectURL(url)
-            return { success: true, data: response }
+            const response: any = await GeneralService.uploadPlantillaFinal(data)
+            return {
+                success: true,
+                message: response?.message || 'Generación encolada. Se notificará cuando finalice.',
+                data: response?.data
+            }
         } catch (err) {
             error.value = err as string
+            return { success: false, error: error.value }
         }
     }
     const uploadCotizacionFinalFile = async (data: any, idCotizacion?: number) => {
@@ -131,6 +126,15 @@ export const useGeneral = () => {
         itemsPerPageGeneral.value = itemsPerPage
         await getGeneral(id)
     }
+    const handleFilterChangeGeneral = async (filterType: string, value: string) => {
+        if (value === 'todos' || value === '') {
+            const { [filterType]: _, ...rest } = filtersGeneral.value
+            filtersGeneral.value = rest
+        } else {
+            filtersGeneral.value = { ...filtersGeneral.value, [filterType]: value }
+        }
+        await getGeneral(id)
+    }
     const handleDownloadCotizacionFinalPDF = async (idCotizacion: number) => {
         try {
             const blob = await GeneralService.downloadCotizacionFinalPDF(idCotizacion)
@@ -163,8 +167,23 @@ export const useGeneral = () => {
         try {
             loadingHeaders.value = true
             const response = await GeneralService.getHeaders(id)
-            headers.value = response.data
+            const data = response.data
+            const headersArray = Array.isArray(data) ? data : Object.values(data ?? {})
+            headers.value = headersArray
             carga.value = response.carga
+            fPuerto.value = response.f_puerto ?? null
+            // Tab Pagos: headers + total diferencia (desde backend) o data_pagos
+            const extra: any[] = []
+            if (response.data_pagos != null) {
+                const raw = response.data_pagos
+                const arr = Array.isArray(raw) ? raw : Object.values(raw)
+                extra.push(...arr.map((h: any) => ({
+                    label: h?.label ?? '',
+                    value: h?.value != null ? String(h.value) : 'N/A',
+                    icon: h?.icon ?? 'heroicons:currency-dollar',
+                })))
+            }
+            headersPagos.value = [...headersArray, ...extra]
             loadingHeaders.value = false
         } catch (err) {
             loadingHeaders.value = false
@@ -172,7 +191,9 @@ export const useGeneral = () => {
         }
     }
     const headers = ref<any[]>([])
+    const headersPagos = ref<any[]>([])
     const carga = ref<string | null>(null)
+    const fPuerto = ref<string | null>(null)
     const loadingHeaders = ref(false)
     return {
         general,
@@ -195,9 +216,12 @@ export const useGeneral = () => {
         downloadPlantillaGeneral,
         handlePageChangeGeneral,
         handleItemsPerPageChangeGeneral,
+        handleFilterChangeGeneral,
         getHeaders,
         headers,
+        headersPagos,
         carga,
+        fPuerto,
         loadingHeaders,
         handleDownloadCotizacionFinalPDF,
         handleDeleteCotizacionFinal

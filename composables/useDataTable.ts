@@ -150,13 +150,9 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
   })
 
   // Keep draft in sync if parent provides new filters (e.g. via programmatic navigation)
-  try {
-    watch(() => props.filtersValue, (v) => {
-      draftFilters.value = v ? { ...(v as Record<string, any>) } : {}
-    })
-  } catch (e) {
-    // ignore in environments where watch may not be available
-  }
+  watch(() => props.filtersValue, (v) => {
+    draftFilters.value = v ? { ...(v as Record<string, any>) } : {}
+  })
 
   return {
     // State

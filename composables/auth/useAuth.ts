@@ -1,5 +1,6 @@
 import type { AuthUser, AuthMenu, LoginCredentials, LoginResponse } from '../../services/authService'
 import AuthService from '../../services/authService'
+import { useMenuPrefetch } from '../navigation/useMenuPrefetch'
 
 export const useAuth = () => {
   const user = ref<AuthUser | null>(null)
@@ -9,6 +10,7 @@ export const useAuth = () => {
   const menu = ref<AuthMenu[]>([])
 
   const authService = AuthService.getInstance()
+  const { prefetchFromMenu } = useMenuPrefetch()
 
   // Initialize auth state
   const initializeAuth = async () => {
@@ -28,6 +30,9 @@ export const useAuth = () => {
         user.value = response.data.user as AuthUser
         isAuthenticated.value = true
         menu.value = authService.getMenu()
+        if (process.client) {
+          void prefetchFromMenu(menu.value)
+        }
         return true
       } else {
         error.value = response.error || 'Error al iniciar sesión'

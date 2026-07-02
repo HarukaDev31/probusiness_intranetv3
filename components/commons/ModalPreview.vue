@@ -1,5 +1,5 @@
 <template>
-    <UModal :is-open="isOpen" @close="$emit('close')" class="sm:max-w-6xl max-h-[85vh]">
+    <UModal :open="isOpen" @update:open="(v: boolean) => !v && $emit('close')" class="sm:max-w-6xl max-h-[85vh]">
         <slot name="trigger" />
         <template #header>
             <div class="flex items-center justify-between">
@@ -65,19 +65,45 @@
                         </div>
                     </div>
 
-                    <!-- Video -->
-                    <div v-else-if="isVideo" class="w-full flex justify-center">
-                        <video 
-                            :src="file?.file_url || ''" 
-                            controls
-                            playsinline
-                            webkit-playsinline="true"
-                            preload="metadata"
-                            class="max-w-full max-h-[45vh] rounded-lg shadow-lg"
-                            crossorigin="anonymous">
-                            <source :src="file?.file_url || ''" :type="getVideoMimeType">
-                            Tu navegador no soporta el elemento de video.
-                        </video>
+                    <!-- Video (sin crossorigin: rompe URLs firmadas S3 sin CORS) -->
+                    <div v-else-if="isVideo" class="w-full space-y-3">
+                        <div v-if="videoPlaybackError" class="flex flex-col items-center gap-3 rounded-lg bg-gray-50 p-6 dark:bg-gray-800">
+                            <UIcon name="i-heroicons-exclamation-triangle" class="size-10 text-warning" />
+                            <p class="text-center text-sm text-muted">
+                                No se pudo reproducir aquí. Abre el archivo en una pestaña nueva o descárgalo.
+                            </p>
+                            <div class="flex flex-wrap justify-center gap-2">
+                                <UButton label="Abrir en pestaña" icon="i-heroicons-arrow-top-right-on-square" @click="openInNewTab" />
+                                <UButton label="Descargar" icon="i-heroicons-arrow-down-tray" variant="outline" @click="downloadFile" />
+                            </div>
+                        </div>
+                        <template v-else>
+                            <video
+                                ref="videoPlayerRef"
+                                :key="file?.file_url || ''"
+                                :src="file?.file_url || ''"
+                                controls
+                                playsinline
+                                preload="auto"
+                                class="mx-auto max-h-[55vh] w-full max-w-full rounded-lg shadow-lg"
+                                @error="onVideoPlaybackError"
+                                @loadedmetadata="applyVideoPlaybackRate"
+                            >
+                                Tu navegador no soporta la reproducción de video.
+                            </video>
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="text-xs font-medium text-muted">Velocidad</span>
+                                <UButton
+                                    v-for="speed in videoSpeedOptions"
+                                    :key="speed"
+                                    size="xs"
+                                    :label="`${speed}x`"
+                                    :color="videoPlaybackRate === speed ? 'primary' : 'neutral'"
+                                    :variant="videoPlaybackRate === speed ? 'solid' : 'outline'"
+                                    @click="setVideoPlaybackRate(speed)"
+                                />
+                            </div>
+                        </template>
                     </div>
 
                     <!-- Documento -->
@@ -108,7 +134,7 @@
                                     <div class="flex space-x-1 p-2 bg-gray-50 dark:bg-gray-800 overflow-x-auto">
                                         <button
                                             v-for="(sheet, index) in excelData.sheets"
-                                            :key="index"
+                                            :key="sheet.name"
                                             @click="activeSheet = index"
                                             :class="[
                                                 'px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap',
@@ -162,7 +188,10 @@
                                 </div>
                             </div>
                         </div>
-                        
+                        <!-- Vista previa de PDF -->
+                        <div v-else-if="isPdfFile" class="w-full">
+                            <iframe :src="file?.file_url || ''" class="w-full h-[45vh] rounded-lg shadow-lg" frameborder="0"></iframe>
+                        </div>
                         <!-- Otros documentos (PDF, DOC, etc.) -->
                         <div v-else class="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <UIcon :name="getDocumentIcon" class="w-24 h-24 text-gray-400 mb-4" />
@@ -222,9 +251,10 @@
 </template>
 
 <script setup lang="ts">
-import type { FileItem } from '../types/commons/file'
-import { useSpinner } from '../composables/commons/useSpinner'
-import { useModal } from '../composables/commons/useModal'
+import type { FileItem } from '~/types/commons/file'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
 const { withSpinner } = useSpinner()
 const { showError } = useModal()
 interface Props {
@@ -250,18 +280,24 @@ const dragOffset = ref({ x: 0, y: 0 })
 const excelData = ref<any>(null)
 const activeSheet = ref(0)
 const isLoadingExcel = ref(false)
+const videoPlayerRef = ref<HTMLVideoElement | null>(null)
+const videoPlaybackError = ref(false)
+const videoSpeedOptions = [1, 1.5, 2] as const
+const videoPlaybackRate = ref<(typeof videoSpeedOptions)[number]>(1)
 
 // Computed properties
 const isImage = computed(() => {
+    if (props.file?.type === 'image') return true
     if (!props.file?.file_name) return false
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension || '')
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'jpeg'].includes(extension || '')
 })
 
 const isVideo = computed(() => {
-    if (!props.file?.file_name) return false
-    const extension = props.file.file_name.split('.').pop()?.toLowerCase()
-    return ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(extension || '')
+    if (!props.file) return false
+    if (props.file.type === 'video') return true
+    const fromExt = (props.file.file_ext || props.file.file_name.split('.').pop() || '').toLowerCase()
+    return ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', 'mkv'].includes(fromExt)
 })
 
 const isDocument = computed(() => {
@@ -275,21 +311,11 @@ const isExcelFile = computed(() => {
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
     return ['xls', 'xlsx', 'xlsm'].includes(extension || '')
 })
-
-const getVideoMimeType = computed(() => {
-    if (!props.file?.file_name) return 'video/mp4'
+const isPdfFile = computed(() => {
+    if (!props.file?.file_name) return false
     const extension = props.file.file_name.split('.').pop()?.toLowerCase()
-    const mimeTypes: Record<string, string> = {
-        'mp4': 'video/mp4',
-        'avi': 'video/avi',
-        'mov': 'video/quicktime',
-        'wmv': 'video/x-ms-wmv',
-        'flv': 'video/x-flv',
-        'webm': 'video/webm'
-    }
-    return mimeTypes[extension || ''] || 'video/mp4'
+    return ['pdf'].includes(extension || '')
 })
-
 const getFileExtension = computed(() => {
     if (!props.file?.file_name) return 'Archivo'
     const extension = props.file.file_name.split('.').pop()?.toUpperCase()
@@ -314,37 +340,92 @@ const getDocumentIcon = computed(() => {
 })
 
 
+function isCrossOriginFileUrl(fileUrl: string) {
+    try {
+        return new URL(fileUrl, window.location.href).origin !== window.location.origin
+    } catch {
+        return true
+    }
+}
+
+function triggerBrowserDownload(fileUrl: string, fileName: string) {
+    const a = document.createElement('a')
+    a.href = fileUrl
+    a.download = fileName || 'archivo'
+    a.rel = 'noopener'
+    a.target = '_blank'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+}
+
 const downloadFile = async () => {
     if (!props.file?.file_url) return
-    
+
+    const fileUrl = props.file.file_url
+    const fileName = props.file.file_name || 'archivo'
+
+    // S3 presigned / CDN: fetch exige CORS en el bucket; enlace directo no.
+    if (isCrossOriginFileUrl(fileUrl)) {
+        triggerBrowserDownload(fileUrl, fileName)
+        return
+    }
+
     try {
         await withSpinner(async () => {
-            const fileUrl = props.file!.file_url!
             const response = await fetch(fileUrl)
-            
+
             if (!response.ok) {
                 throw new Error(`Error al descargar: ${response.status}`)
             }
-            
+
             const blob = await response.blob()
-            const url = window.URL.createObjectURL(blob)
+            const objectUrl = window.URL.createObjectURL(blob)
             const a = document.createElement('a')
-            a.href = url
-            a.download = props.file!.file_name || 'archivo'
+            a.href = objectUrl
+            a.download = fileName
             document.body.appendChild(a)
             a.click()
             document.body.removeChild(a)
-            window.URL.revokeObjectURL(url)
+            window.URL.revokeObjectURL(objectUrl)
         }, 'Descargando archivo...')
-    } catch (error) {
-        showError('Error al descargar archivo', 'Error al descargar archivo')
+    } catch {
+        triggerBrowserDownload(fileUrl, fileName)
     }
 }
 
 const openInNewTab = () => {
-    if (props.file?.file_url) {
-        window.open(props.file.file_url, '_blank')
+    const url = props.file?.file_url?.trim()
+    if (!url || url.includes('[object')) return
+    window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+function onVideoPlaybackError() {
+    videoPlaybackError.value = true
+}
+
+function applyVideoPlaybackRate() {
+    const el = videoPlayerRef.value
+    if (el) {
+        el.playbackRate = videoPlaybackRate.value
     }
+}
+
+function setVideoPlaybackRate(speed: (typeof videoSpeedOptions)[number]) {
+    videoPlaybackRate.value = speed
+    applyVideoPlaybackRate()
+}
+
+function reloadVideoPlayer() {
+    videoPlaybackError.value = false
+    videoPlaybackRate.value = 1
+    nextTick(() => {
+        const el = videoPlayerRef.value
+        if (el) {
+            el.load()
+            el.playbackRate = 1
+        }
+    })
 }
 
 // Excel preview methods
@@ -546,10 +627,14 @@ const handleWheel = (event: WheelEvent) => {
 watch([() => props.isOpen, () => props.file], () => {
     if (props.isOpen) {
         resetImage()
-        // Load Excel file if it's an Excel file
         if (isExcelFile.value) {
             loadExcelFile()
         }
+        if (isVideo.value) {
+            reloadVideoPlayer()
         }
+    } else {
+        videoPlaybackError.value = false
+    }
 })
 </script>

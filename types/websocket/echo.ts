@@ -5,15 +5,24 @@ export interface EchoConfig {
   key?: string
   wsHost?: string
   wsPort?: number
+  wssPort?: number
   forceTLS?: boolean
+  disableStats?: boolean
   cluster?: string
   enabledTransports?: string[]
   authEndpoint?: string
+  bearerToken?: string | null
+  channelAuthorization?: {
+    endpoint: string
+    transport: 'ajax' | 'jsonp'
+    headers?: Record<string, string>
+  }
   auth?: {
     headers: {
       Authorization?: string
       Accept?: string
       'X-CSRF-TOKEN'?: string
+      [key: string]: string | undefined
     }
   }
 }

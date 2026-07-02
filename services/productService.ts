@@ -193,12 +193,13 @@ export class ProductService extends BaseService {
   }): Promise<{ success: boolean; data?: Blob; error?: string }> {
     try {
       const queryParams = new URLSearchParams()
-      queryParams.append('format', params.format)
+      const format = params.format === 'excel' ? 'xlsx' : params.format
+      queryParams.append('format', format)
       
       if (params.search) queryParams.append('search', params.search)
       if (params.filters) {
         Object.entries(params.filters).forEach(([key, value]) => {
-          if (value) queryParams.append(key, value.toString())
+          if (value && value !== 'todos') queryParams.append(key, value.toString())
         })
       }
 
@@ -242,6 +243,23 @@ export class ProductService extends BaseService {
       throw new Error(error?.data?.message || 'Error al eliminar el archivo')
     }
   }
+  static async updateProductImage(id: number, file: File): Promise<{ success: boolean; message: string; data?: { foto: string } }> {
+    try {
+      const formData = new FormData()
+      formData.append('imagen', file)
+
+      const response = await this.apiCall<{ success: boolean; message: string; data?: { foto: string } }>(`${this.baseUrl}/${id}/update-image`, {
+        method: 'POST',
+        body: formData
+      })
+
+      return response
+    } catch (error: any) {
+      console.error('Error en updateProductImage:', error)
+      return { success: false, message: error?.message || 'Error al actualizar la imagen' }
+    }
+  }
+
   static async getExcelsList(): Promise<{
     success: boolean;
     data: {

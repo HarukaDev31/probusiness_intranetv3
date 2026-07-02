@@ -19,6 +19,8 @@ export interface ProductoItem {
   antidumping: number
   adValorem: number
   adValoremP: number
+  /** Porcentaje ISC (base: max(CIF, CIF ajustado) + ad valorem en monto) */
+  iscP: number
   igv: number
   ipm: number
   percepcion: number
@@ -40,6 +42,7 @@ export interface Proveedor {
   productos: ProductoItem[]
   extraProveedor: number
   collapsed?: boolean
+  code_supplier?: string
 }
 
 
@@ -51,6 +54,15 @@ export interface Tarifa {
   tarifa: number
   label: string
   value: string
+  id_tipo_cliente?: number
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+/** Body para PUT api/calculadora-importacion/tarifas/{id} */
+export interface CalculadoraTarifaUpdateBody {
+  value: number
+  type: 'STANDARD' | 'PLAIN'
 }
 export interface ProveedorRequest {
   cbm: number
@@ -65,7 +77,7 @@ export interface ProductoItemRequest {
   cantidad: number
   antidumpingCU: number
   adValoremP: number
- 
+  iscP?: number
 }
 export interface saveCotizacionRequest {
   id?: number
@@ -78,6 +90,9 @@ export interface saveCotizacionRequest {
   id_carga_consolidada_contenedor: number | null
   tarifa: Tarifa
   tipo_cambio: number
+  es_imo?: boolean
+  usa_yuan?: boolean
+  tc_yuan_usado?: number | null
 }
 
 export interface CotizacionFilters {
@@ -86,7 +101,9 @@ export interface CotizacionFilters {
   estado: string
   completado: boolean
   campania: string
+  proveedores_vinculados: string
   estado_calculadora: string
+  vendedor: string
 }
 
 export interface FilterOption {
@@ -98,4 +115,5 @@ export interface FilterOption {
 export interface FilterOptions {
   contenedores: FilterOption[]
   estadoCalculadora: FilterOption[]
+  vendedores: FilterOption[]
 }

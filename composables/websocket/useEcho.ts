@@ -1,16 +1,93 @@
 import Echo from 'laravel-echo'
 import type { Channel, PresenceChannel } from 'pusher-js'
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import type { EchoConfig, WebSocketRole, WebSocketChannel } from '../../types/websocket/echo'
 
 let echoInstance: Echo | null = null
 let isInitializing = false
 let isInitialized = false
 
+/** Mapa compartido entre todas las llamadas a useEcho() (evita re-suscribir o perder canales). */
+const sharedActiveChannels = ref<Map<string, Channel | PresenceChannel>>(new Map())
+
+/** Eventos ya enlazados al socket Pusher (solo una vez por canal+evento). */
+const boundHandlersByChannel = new Map<string, Set<string>>()
+/** Último callback por canal+evento (se actualiza en cada subscribe sin re-bind). */
+const handlerCallbacksByChannel = new Map<string, Map<string, (data: unknown) => void>>()
+
+type PusherConstructor = typeof import('pusher-js').default
+
+/** Resuelve el constructor Pusher con distintas formas de export (CJS/ESM en Vite). */
+async function loadPusherConstructor(): Promise<PusherConstructor> {
+  const mod = await import('pusher-js')
+  const candidate =
+    (mod as { default?: { default?: unknown } }).default?.default ??
+    mod.default ??
+    (mod as { Pusher?: unknown }).Pusher ??
+    mod
+
+  if (typeof candidate !== 'function') {
+    throw new Error('pusher-js no exportó un constructor válido')
+  }
+
+  return candidate as PusherConstructor
+}
+
+function bindChannelHandlers(
+  channelName: string,
+  channelInstance: any,
+  handlers: WebSocketChannel['handlers']
+) {
+  const boundKeys = boundHandlersByChannel.get(channelName) ?? new Set<string>()
+  let channelCallbacks = handlerCallbacksByChannel.get(channelName)
+  if (!channelCallbacks) {
+    channelCallbacks = new Map()
+    handlerCallbacksByChannel.set(channelName, channelCallbacks)
+  }
+
+  handlers.forEach(({ event, callback }) => {
+    const eventKey = event.startsWith('.') ? event : `.${event}`
+    channelCallbacks!.set(eventKey, callback)
+
+    const eventNamePusher = eventKey.slice(1)
+    const eventNameEcho = eventKey
+
+    const onEvent = (data: unknown) => {
+      if (process.dev && eventNamePusher.startsWith('Calendar')) {
+        console.log('[WS] Evento calendario recibido:', eventNamePusher, data)
+      }
+      handlerCallbacksByChannel.get(channelName)?.get(eventKey)?.(data)
+    }
+
+    if (boundKeys.has(eventKey)) return
+    boundKeys.add(eventKey)
+
+    try {
+      if (!channelInstance || typeof channelInstance !== 'object') {
+        return
+      }
+      if (typeof channelInstance.listen === 'function') {
+        channelInstance.listen(eventNameEcho, onEvent)
+      } else {
+        const subscription = channelInstance.subscription
+        if (subscription && typeof subscription.bind === 'function') {
+          subscription.bind(eventNamePusher, onEvent)
+        } else if (typeof channelInstance.bind === 'function') {
+          channelInstance.bind(eventNamePusher, onEvent)
+        }
+      }
+    } catch (err) {
+      console.error('❌ Error registrando evento:', eventKey, err)
+    }
+  })
+
+  boundHandlersByChannel.set(channelName, boundKeys)
+}
+
 export const useEcho = () => {
   const isConnected = ref(false)
   const error = ref<Error | null>(null)
-  const activeChannels = ref<Map<string, Channel | PresenceChannel>>(new Map())
+  const activeChannels = sharedActiveChannels
   const config = useRuntimeConfig()
 
   const initializeEcho = async (echoConfig: EchoConfig) => {
@@ -30,12 +107,9 @@ export const useEcho = () => {
     try {
       if (typeof window !== 'undefined') {
         try {
-          const PusherJs = await import('pusher-js')
-          ;(window as any).Pusher = PusherJs.default
-
-          // Deshabilitar logs de Pusher en producción
-          ;(window as any).Pusher.logToConsole = false
-          
+          const Pusher = await loadPusherConstructor()
+          ;(window as any).Pusher = Pusher
+          Pusher.logToConsole = import.meta.dev
         } catch (error) {
           console.error('❌ Error importando Pusher:', error)
           throw error
@@ -44,16 +118,22 @@ export const useEcho = () => {
       
 
       const finalConfig = {
-        broadcaster: 'pusher',
-        key: config.public.pusherAppKey,
-        cluster: config.public.pusherAppCluster,
         ...echoConfig,
-        enabledTransports: ['ws', 'wss']
-        // No sobrescribir forceTLS, usar el valor del echoConfig
+        broadcaster: 'pusher',
+        key: String(echoConfig.key || config.public.pusherAppKey || '').trim(),
+        cluster: String(echoConfig.cluster || config.public.pusherAppCluster || 'mt1').trim(),
+        enabledTransports: echoConfig.enabledTransports ?? ['ws', 'wss']
       }
-      
-      
-      
+
+      if (process.dev) {
+        console.info('[Echo] Inicializando', {
+          wsHost: finalConfig.wsHost,
+          wsPort: finalConfig.wsPort,
+          authEndpoint: finalConfig.authEndpoint,
+          forceTLS: finalConfig.forceTLS
+        })
+      }
+
       echoInstance = new Echo(finalConfig)
 
       // Agregar listeners globales de Pusher
@@ -135,131 +215,45 @@ export const useEcho = () => {
       throw new Error('Echo instance not initialized')
     }
 
-    // Verificar si ya estamos suscritos a este canal para evitar duplicados
-    if (activeChannels.value.has(channel.name)) {
-      
-      return activeChannels.value.get(channel.name)
+    const existing = activeChannels.value.get(channel.name)
+    if (existing) {
+      bindChannelHandlers(channel.name, existing, channel.handlers)
+      return existing
     }
 
-    
     let channelInstance: any
 
     try {
       switch (channel.type) {
         case 'private':
-          
           channelInstance = echoInstance.private(channel.name)
-          
           break
         case 'presence':
-          
           channelInstance = echoInstance.join(channel.name)
-          
           break
         default:
           throw new Error(`Tipo de canal no soportado: ${channel.type}`)
       }
 
-      // Agregar listeners de estado del canal
       if (channelInstance) {
         try {
-          // Intentar diferentes métodos para los eventos de suscripción
           if (typeof channelInstance.bind === 'function') {
-            channelInstance.bind('pusher:subscription_succeeded', () => {
-              
-            })
-
-            channelInstance.bind('pusher:subscription_error', (err: any) => {
+            channelInstance.bind('pusher:subscription_succeeded', () => {})
+            channelInstance.bind('pusher:subscription_error', (err: unknown) => {
               console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
             })
           } else if (typeof channelInstance.listen === 'function') {
-            channelInstance.listen('pusher:subscription_succeeded', () => {
-              
-            })
-
-            channelInstance.listen('pusher:subscription_error', (err: any) => {
+            channelInstance.listen('pusher:subscription_succeeded', () => {})
+            channelInstance.listen('pusher:subscription_error', (err: unknown) => {
               console.error(`❌ Error en suscripción al canal ${channel.name}:`, err)
             })
-          } else {
-            
           }
         } catch (err) {
           console.warn(`⚠️ Error registrando eventos de suscripción para ${channel.name}:`, err)
         }
       }
 
-      // Registrar los manejadores de eventos para este canal
-      const registeredEvents = new Set()
-      channel.handlers.forEach(({ event, callback }) => {
-        // Evitar registrar el mismo evento múltiples veces
-        const eventKey = `${channel.name}:${event}`
-        if (registeredEvents.has(eventKey)) {
-          
-          return
-        }
-        registeredEvents.add(eventKey)
-        
-        
-        
-        try {
-          // Intentar diferentes métodos para registrar eventos
-          if (channelInstance && typeof channelInstance === 'object') {
-            // Método 1: bind (Pusher) - PRIORITARIO para eventos de Pusher
-            if (typeof channelInstance.bind === 'function') {
-              
-              channelInstance.bind(event, (data: any) => {
-                
-                callback(data)
-              })
-            }
-            // Método 2: Acceder al objeto pusher del canal para usar bind
-            else if (channelInstance.pusher && typeof channelInstance.pusher.bind === 'function') {
-              
-              channelInstance.pusher.bind(event, (data: any) => {
-                
-                callback(data)
-              })
-            }
-            // Método 3: listen (Laravel Echo) - Para eventos de Laravel
-            else if (typeof channelInstance.listen === 'function') {
-              
-              channelInstance.listen(event, (data: any) => {
-                
-                callback(data)
-              })
-            }
-            // Método 4: on (alternativa)
-            else if (typeof channelInstance.on === 'function') {
-              
-              channelInstance.on(event, (data: any) => {
-                
-                callback(data)
-              })
-            }
-            // Método 5: addEventListener (DOM)
-            else if (typeof channelInstance.addEventListener === 'function') {
-              
-              channelInstance.addEventListener(event, (data: any) => {
-                
-                callback(data)
-              })
-            }
-            else {
-              console.warn(`⚠️ El canal no soporta ningún método conocido para el evento: ${event}`)
-              console.warn(`⚠️ Métodos disponibles:`, Object.getOwnPropertyNames(channelInstance))
-              console.warn(`⚠️ Objeto pusher disponible:`, !!channelInstance.pusher)
-              if (channelInstance.pusher) {
-                console.warn(`⚠️ Métodos del objeto pusher:`, Object.getOwnPropertyNames(channelInstance.pusher))
-              }
-            }
-          } else {
-            console.error(`❌ channelInstance no es un objeto válido:`, channelInstance)
-          }
-        } catch (err) {
-          console.error(`❌ Error registrando evento '${event}':`, err)
-        }
-      })
-
+      bindChannelHandlers(channel.name, channelInstance, channel.handlers)
       activeChannels.value.set(channel.name, channelInstance)
       return channelInstance
     } catch (err) {
@@ -283,13 +277,13 @@ export const useEcho = () => {
   }
 
   const unsubscribeFromChannel = (channelName: string) => {
-    
     const channel = activeChannels.value.get(channelName)
     if (channel) {
       try {
         echoInstance?.leave(channelName)
         activeChannels.value.delete(channelName)
-        
+        boundHandlersByChannel.delete(channelName)
+        handlerCallbacksByChannel.delete(channelName)
       } catch (err) {
         console.error(`❌ Error desuscribiendo del canal ${channelName}:`, err)
       }
@@ -312,11 +306,12 @@ export const useEcho = () => {
   }
 
   const resetEcho = () => {
-    
     echoInstance = null
     isInitialized = false
     isInitializing = false
-    activeChannels.value.clear()
+    sharedActiveChannels.value.clear()
+    boundHandlersByChannel.clear()
+    handlerCallbacksByChannel.clear()
     isConnected.value = false
     error.value = null
   }
@@ -339,10 +334,6 @@ export const useEcho = () => {
     return null
   }
 
-  onUnmounted(() => {
-    disconnect()
-  })
-
   return {
     isConnected,
     error,
@@ -359,3 +350,21 @@ export const useEcho = () => {
 }
 
 export const getEchoInstance = () => echoInstance
+
+/**
+ * Actualiza callbacks de un canal ya suscrito (sin volver a llamar echo.private).
+ */
+export function rebindChannelHandlers(
+  channelName: string,
+  handlers: WebSocketChannel['handlers']
+): boolean {
+  if (!echoInstance) return false
+
+  const existing = sharedActiveChannels.value.get(channelName)
+  if (!existing) return false
+
+  // Fuerza re-enlace de listeners (el mapa de callbacks ya se actualiza siempre).
+  boundHandlersByChannel.delete(channelName)
+  bindChannelHandlers(channelName, existing, handlers)
+  return true
+}

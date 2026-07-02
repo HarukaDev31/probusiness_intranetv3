@@ -22,6 +22,9 @@ export const CUSTOM_MENUS_PER_ROLE = {
             'Carga Consolidada':'Abiertos',
             'Completados':'Embarcados',
         },
-      
+        [ROLES.CONTABILIDAD]: {
+            'Carga Consolidada':'Abiertos',
+            'Completados':'Embarcados',
+        },
     }
 }

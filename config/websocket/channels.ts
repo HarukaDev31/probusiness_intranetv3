@@ -10,7 +10,14 @@ import {
 } from './events-config'
 
 // Re-exportar WS_EVENTS y funciones de registro para uso externo
-export { WS_EVENTS, registerRole, subscribeEventsToRole, subscribeEventToRole, registerEventHandler }
+export {
+  WS_EVENTS,
+  registerRole,
+  subscribeEventsToRole,
+  subscribeEventToRole,
+  registerEventHandler,
+  getAllEventHandlers
+}
 
 /**
  * Genera automáticamente la configuración de websocketRoles

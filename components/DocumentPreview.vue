@@ -3,8 +3,8 @@
         <!-- Document preview cards -->
         <div v-if="documents && documents.length > 0" class="flex gap-2 overflow-x-auto">
             <div 
-                v-for="(document, index) in documents" 
-                :key="index"
+                v-for="document in documents"
+                :key="document"
                 class="relative group cursor-pointer flex-shrink-0"
                 @click="openDocumentModal(document, getFileExtension(document))"
             >

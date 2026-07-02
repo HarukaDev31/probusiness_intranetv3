@@ -15,8 +15,13 @@
 </template>
 
 <script setup lang="ts">
-import HorariosAdmin from '~/components/admin/HorariosAdmin.vue'
-import PageHeader from '~/components/PageHeader.vue'
+import { defineAsyncComponent } from 'vue'
+import { createLazyView } from '~/utils/lazyView'
+
+const PageHeader = createLazyView(() => import('~/components/PageHeader.vue'))
+const HorariosAdmin = defineAsyncComponent(
+  () => import('~/components/admin/HorariosAdmin.vue')
+)
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'

@@ -6,6 +6,7 @@ export const useConsolidado = () => {
   // State
   const cargasDisponibles = ref<{ value: string; label: string }[]>([])
   const consolidadoData = ref<ConsolidadoItem[]>([])
+  const headersConsolidado = ref<{ label: string; value: string; icon?: string }[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const pagination = ref<PaginationInfo>({
@@ -62,7 +63,8 @@ export const useConsolidado = () => {
     }
 
     if (filters.value.carga && filters.value.carga !== 'todos') {
-      data = data.filter(item => item.carga === filters.value.carga)
+      // value del filtro es id del contenedor (id_consolidado)
+      data = data.filter(item => String(item.id_consolidado ?? item.carga) === String(filters.value.carga))
     }
 
     return data
@@ -111,12 +113,16 @@ export const useConsolidado = () => {
       const response = await ConsolidadoService.getConsolidadoPagos(filtersWithPagination)
       consolidadoData.value = response.data
       pagination.value = response.pagination
+      headersConsolidado.value = (response as any).headers ?? []
 
-      // Populate cargasDisponibles from response when available (fallback to response.filters.cargas)
+      // Populate cargasDisponibles from response (backend envía label en formato "#carga -año")
       const apiCargas = (response as any)?.cargas_disponibles ?? (response as any)?.filters?.cargas ?? []
       cargasDisponibles.value = [
         { value: 'todos', label: 'Todas las cargas' },
-        ...apiCargas.map((c: any) => ({ value: String(c.carga ?? c.value ?? c.ID), label: `#${String(c.carga ?? c.value ?? c.ID)}` }))
+        ...apiCargas.map((c: any) => ({
+          value: String(c.value ?? c.carga ?? c.ID),
+          label: c.label || `#${String(c.carga ?? c.value ?? c.ID)}`
+        }))
       ]
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Error desconocido'
@@ -129,15 +135,12 @@ export const useConsolidado = () => {
   const updateEstadoPago = async (id: number, estado: string) => {
     try {
       await ConsolidadoService.updateEstadoPago(id, estado)
-      
+
       // Actualizar el estado local
       const item = consolidadoData.value.find(item => item.id === id)
       if (item) {
         item.estado_pago = estado
       }
-
-      //Actualizar el estado y mandar a la api
-      await ConsolidadoService.updateEstadoPago(id, estado)
 
       return { success: true }
     } catch (err) {
@@ -265,6 +268,7 @@ export const useConsolidado = () => {
     totalPaid,
     filteredData,
     itemsPerPage,
+    headersConsolidado,
     // Methods
     fetchConsolidadoData,
     updateEstadoPago,

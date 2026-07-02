@@ -1,0 +1,250 @@
+import { BaseService } from '~/services/base/BaseService'
+import type { WaCopilotoFilter } from '~/types/wa-copiloto'
+
+export class WaCopilotoService extends BaseService {
+  private static baseUrl = 'api/wa-copiloto'
+
+  static async getSession(params: { slug?: string } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/session`, { method: 'GET', params })
+  }
+
+  static async getSessions() {
+    return await this.apiCall<any>(`${this.baseUrl}/sessions`, { method: 'GET' })
+  }
+
+  static async getConversations(params: {
+    search?: string
+    filter?: WaCopilotoFilter
+    per_page?: number
+    page?: number
+    solo_cliente_inbound?: number
+    include_contacts?: number
+    assigned_user_id?: number
+  } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations`, {
+      method: 'GET',
+      params
+    })
+  }
+
+  static async createConversation(payload: {
+    contact_name: string
+    phone: string
+    assigned_user_id?: number | null
+  }) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations`, {
+      method: 'POST',
+      body: {
+        contact_name: payload.contact_name,
+        phone: payload.phone,
+        assigned_user_id: payload.assigned_user_id ?? 0
+      }
+    })
+  }
+
+  static async getMessages(conversationId: number, params: { per_page?: number; page?: number } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/messages`, {
+      method: 'GET',
+      params
+    })
+  }
+
+  static async scheduleMessage(
+    conversationId: number,
+    payload: { message: string; scheduledAt: string }
+  ) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/scheduled-messages`, {
+      method: 'POST',
+      body: {
+        message: payload.message.trim(),
+        scheduled_at: payload.scheduledAt
+      }
+    })
+  }
+
+  static async sendMessage(
+    conversationId: number,
+    payload: {
+      message?: string
+      file?: File
+      mediaKind?: string
+      replyToMetaMessageId?: string | null
+    }
+  ) {
+    const text = payload.message?.trim() || ''
+    const file = payload.file
+    if (file) {
+      const fd = new FormData()
+      if (text) fd.append('message', text)
+      fd.append('file', file)
+      if (payload.mediaKind) fd.append('media_kind', payload.mediaKind)
+      if (payload.replyToMetaMessageId) {
+        fd.append('reply_to_meta_message_id', payload.replyToMetaMessageId)
+      }
+      return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        body: fd
+      })
+    }
+
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: {
+        message: text,
+        reply_to_meta_message_id: payload.replyToMetaMessageId || undefined
+      }
+    })
+  }
+
+  static async sendTemplate(
+    conversationId: number,
+    payload: {
+      template_name: string
+      params: Record<string, string>
+      files?: Record<string, File>
+      /** document | image | video por clave de archivo (p. ej. header_media) */
+      fileKinds?: Record<string, string>
+    }
+  ) {
+    const files = payload.files ?? {}
+    const fileKinds = payload.fileKinds ?? {}
+    const fileKeys = Object.keys(files)
+    if (fileKeys.length === 0) {
+      return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/templates`, {
+        method: 'POST',
+        body: {
+          template_name: payload.template_name,
+          params: payload.params
+        }
+      })
+    }
+
+    const fd = new FormData()
+    fd.append('template_name', payload.template_name)
+    fd.append('params', JSON.stringify(payload.params))
+    for (const key of fileKeys) {
+      const file = files[key]
+      fd.append(key, file)
+      const kind = fileKinds[key]
+      if (key === 'header_media' && kind) {
+        fd.append('header_file_kind', kind)
+      }
+    }
+
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/templates`, {
+      method: 'POST',
+      body: fd
+    })
+  }
+
+  static async assign(conversationId: number, userId: number | null) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/assign`, {
+      method: 'PATCH',
+      body: { user_id: userId ?? 0 }
+    })
+  }
+
+  static async renameContact(conversationId: number, contactName: string) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/contact-name`, {
+      method: 'PATCH',
+      body: { contact_name: contactName.trim() }
+    })
+  }
+
+  static async markRead(conversationId: number) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/read`, {
+      method: 'PATCH'
+    })
+  }
+
+  static async getTemplates(params: { session_slug?: string } = {}) {
+    const query = params.session_slug ? `?session_slug=${encodeURIComponent(params.session_slug)}` : ''
+    return await this.apiCall<any>(`${this.baseUrl}/templates${query}`, { method: 'GET' })
+  }
+
+  static async getAssignableUsers() {
+    return await this.apiCall<any>(`${this.baseUrl}/users/assignable`, { method: 'GET' })
+  }
+
+  static async syncContacts(params: { session_slug?: string } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/contacts/sync`, {
+      method: 'POST',
+      body: params
+    })
+  }
+
+  static async openContactConversation(contactId: number, payload: { assigned_user_id?: number; session_slug?: string } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/contacts/${contactId}/open`, {
+      method: 'POST',
+      body: payload
+    })
+  }
+
+  static async getSuggestionUsages(conversationId: number, params: { limit?: number } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/suggestion-usages`, {
+      method: 'GET',
+      params
+    })
+  }
+
+  static async getPipelineStages() {
+    return await this.apiCall<any>(`${this.baseUrl}/pipeline/stages`, { method: 'GET' })
+  }
+
+  static async createPipelineStage(label: string) {
+    return await this.apiCall<any>(`${this.baseUrl}/pipeline/stages`, {
+      method: 'POST',
+      body: { label }
+    })
+  }
+
+  static async reorderPipelineStages(stageIds: number[]) {
+    return await this.apiCall<any>(`${this.baseUrl}/pipeline/stages/reorder`, {
+      method: 'PATCH',
+      body: { stage_ids: stageIds }
+    })
+  }
+
+  static async getPipelineKanban(params: { assigned_user_id?: number; solo_cliente_inbound?: number } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/pipeline/kanban`, { method: 'GET', params })
+  }
+
+  static async getPipelineKpis(params: { assigned_user_id?: number } = {}) {
+    return await this.apiCall<any>(`${this.baseUrl}/pipeline/kpis`, { method: 'GET', params })
+  }
+
+  static async updatePipelineStage(conversationId: number, stageId: number, note?: string) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/pipeline-stage`, {
+      method: 'PATCH',
+      body: { stage_id: stageId, note }
+    })
+  }
+
+  static async getAssignmentHistory(conversationId: number) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/assignment-history`, {
+      method: 'GET'
+    })
+  }
+
+  static async getPipelineHistory(conversationId: number) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/pipeline-history`, {
+      method: 'GET'
+    })
+  }
+
+  static async recordSuggestionUsage(
+    conversationId: number,
+    payload: {
+      outcome: 'used' | 'modified' | 'ignored'
+      suggested_text: string
+      final_text?: string
+      message_id?: number
+      insight_id?: number
+    }
+  ) {
+    return await this.apiCall<any>(`${this.baseUrl}/conversations/${conversationId}/suggestion-usages`, {
+      method: 'POST',
+      body: payload
+    })
+  }
+}

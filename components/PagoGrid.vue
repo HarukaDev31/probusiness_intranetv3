@@ -97,7 +97,7 @@ const openPagoDetailsModal = (pago: PagosDetails) => {
 .grid-container {
   display: flex;
   flex-direction: row;
-  padding: 1rem;
+  padding: 0rem;
   gap: .5rem;
 }
 

@@ -1,0 +1,85 @@
+import type { WaInboxMessage } from '~/types/whatsapp-inbox'
+
+export function isFailedOutboundTemplate(msg: WaInboxMessage): boolean {
+  if (msg.direction !== 'out' || msg.delivery_status !== 'failed') return false
+  if (!msg.template_name?.trim()) return false
+  return msg.is_template === true || msg.message_type === 'template'
+}
+
+export function normalizeWaInboxTemplateParams(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const out: Record<string, string> = {}
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!key || key.startsWith('_')) continue
+    if (value == null) continue
+    if (typeof value === 'string') out[key] = value
+    else if (typeof value === 'number' || typeof value === 'boolean') out[key] = String(value)
+  }
+  return out
+}
+
+export function isWaInboxReactionNoise(msg: WaInboxMessage): boolean {
+  if (msg.message_type === 'reaction') return true
+  const body = msg.body?.trim() || ''
+  return /^\[reaction\]$/i.test(body)
+}
+
+export const DELIVERY_STATUS_RANK: Record<string, number> = {
+  pending: 0,
+  sent: 1,
+  delivered: 2,
+  read: 3
+}
+
+export function waMessageNumericId(id: unknown): number {
+  const n = Number(id)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
+/** Evita que un WS MessageCreated tardío (pending) pise un StatusUpdated (sent). */
+export function mergeDeliveryStatus(
+  current?: string | null,
+  incoming?: string | null
+): string | null | undefined {
+  if (!incoming) return current
+  if (!current) return incoming
+  if (incoming === 'failed') return 'failed'
+  if (current === 'failed') return current
+  const curRank = DELIVERY_STATUS_RANK[current] ?? -1
+  const incRank = DELIVERY_STATUS_RANK[incoming] ?? -1
+  return incRank >= curRank ? incoming : current
+}
+
+export function mergeWaInboxMessage(prev: WaInboxMessage, incoming: WaInboxMessage): WaInboxMessage {
+  const id = waMessageNumericId(incoming.id)
+  return {
+    ...prev,
+    ...incoming,
+    id,
+    delivery_status:
+      mergeDeliveryStatus(prev.delivery_status, incoming.delivery_status)
+      ?? incoming.delivery_status
+  }
+}
+
+export function sortMessagesChronologically(list: WaInboxMessage[]): WaInboxMessage[] {
+  return [...list].sort((a, b) => {
+    const ta = a.sent_at ? new Date(a.sent_at).getTime() : 0
+    const tb = b.sent_at ? new Date(b.sent_at).getTime() : 0
+    if (ta !== tb) return ta - tb
+    return waMessageNumericId(a.id) - waMessageNumericId(b.id)
+  })
+}
+
+export function mergeMessageLists(...sources: WaInboxMessage[][]): WaInboxMessage[] {
+  const byId = new Map<number, WaInboxMessage>()
+  for (const list of sources) {
+    for (const m of list) {
+      const id = waMessageNumericId(m.id)
+      if (!id) continue
+      const prev = byId.get(id)
+      byId.set(id, prev ? mergeWaInboxMessage(prev, { ...m, id }) : { ...m, id })
+    }
+  }
+  return sortMessagesChronologically(Array.from(byId.values()))
+}

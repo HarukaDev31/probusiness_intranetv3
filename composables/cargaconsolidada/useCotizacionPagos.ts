@@ -1,5 +1,5 @@
 import { CotizacionPagosService } from "~/services/cargaconsolidada/cotizacion-pagosService"
-import type { FilterConfig, PaginationInfo, Header } from "~/types/data-table"
+import type { PaginationInfo, Header } from "~/types/data-table"
 
 export const useCotizacionPagos = () => {
     const cotizacionPagos = ref<any[]>([])
@@ -24,42 +24,52 @@ export const useCotizacionPagos = () => {
         searchPagos.value = searchTerm
         await getCotizacionPagos(Number(idPagos))
     }
-    const filtersPagos = ref<FilterConfig[]>([])
+    const filtersPagos = ref<Record<string, string>>({})
     const headersPagos = ref<Header[]>([])
+    let currentAbortController: AbortController | null = null
+    const latestRequestId = ref(0)
     const getCotizacionPagos = async (id: number) => {
+        if (currentAbortController) {
+            currentAbortController.abort()
+        }
+        currentAbortController = new AbortController()
+        const signal = currentAbortController.signal
+        const requestId = ++latestRequestId.value
+
         loadingPagos.value = true
         error.value = null
         try {
-            // The Pagos section only uses the search parameter — filters are not handled here
-            const params = {
+            const raw = filtersPagos.value || {}
+            const filters: Record<string, string> = {}
+            if (raw.estado_inspeccion && raw.estado_inspeccion !== 'todos') filters.estado_inspeccion = raw.estado_inspeccion
+            if (raw.estado_pago && raw.estado_pago !== 'todos') filters.estado_pago = raw.estado_pago
+            const params: any = {
                 search: searchPagos.value
             }
-            const response = await CotizacionPagosService.getCotizacionesPagos(id, params)
-            cotizacionPagos.value = response.data
-            paginationPagos.value = response.pagination
+            if (Object.keys(filters).length) params.filters = filters
+            const idCotizacionQuery = route.query.idCotizacion
+            if (idCotizacionQuery != null && idCotizacionQuery !== '') params.id_cotizacion = idCotizacionQuery
+            const response = await CotizacionPagosService.getCotizacionesPagos(id, params, signal)
+            if (requestId === latestRequestId.value) {
+                cotizacionPagos.value = response.data ?? []
+                paginationPagos.value = response.pagination
+            }
         } catch (err: any) {
+            if (err?.name === 'AbortError') return
             error.value = err.message || 'Error al obtener las cotizaciones de pagos'
             console.error('Error en getCotizacionPagos:', err)
         } finally {
-            loadingPagos.value = false
+            if (requestId === latestRequestId.value) {
+                loadingPagos.value = false
+            }
         }
     }
     const handleSearch = async (searchTerm: string) => {
         searchPagos.value = searchTerm
         await getCotizacionPagos(Number(idPagos))
     }
-    const handleFilterChange = async (key: string, value: any) => {
-        try {
-            // keep filters as a simple object map for backend consumption
-            // filtersPagos was declared as FilterConfig[] but some usages expect a map-like object
-            // We'll treat it as an any here to avoid type mismatches and send to service
-            const currentFilters: any = filtersPagos.value || {}
-            currentFilters[key] = value
-            filtersPagos.value = currentFilters as any
-        } catch (e) {
-            // defensive
-            filtersPagos.value = { [key]: value } as any
-        }
+    const handleFilterChange = async (key: string, value: string) => {
+        filtersPagos.value = { ...filtersPagos.value, [key]: value }
         await getCotizacionPagos(Number(idPagos))
     }
     const handlePageChange = async (page: number) => {
@@ -71,6 +81,36 @@ export const useCotizacionPagos = () => {
         itemsPerPagePagos.value = itemsPerPage
         await getCotizacionPagos(Number(idPagos))
     }
+
+    const downloadBlob = (blob: Blob, filename: string) => {
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+    }
+
+    const exportContabilidadPagos = async (idContenedor: number) => {
+        const idCotizacionQuery = route.query.idCotizacion
+        const blob = await CotizacionPagosService.exportContabilidadExcel(idContenedor, {
+            search: searchPagos.value,
+            filters: filtersPagos.value,
+            id_cotizacion: idCotizacionQuery != null && idCotizacionQuery !== ''
+                ? String(idCotizacionQuery)
+                : undefined,
+        })
+        downloadBlob(blob, `pagos-inicial-contenedor-${idContenedor}-${new Date().toISOString().split('T')[0]}.xlsx`)
+    }
+
+    onBeforeUnmount(() => {
+        if (currentAbortController) {
+            currentAbortController.abort()
+            currentAbortController = null
+        }
+    })
     
     return {
         cotizacionPagos,
@@ -89,6 +129,7 @@ export const useCotizacionPagos = () => {
         handleSearchPagos,
         handleFilterChange,
         handlePageChange,
-        handleItemsPerPageChange
+        handleItemsPerPageChange,
+        exportContabilidadPagos,
     }
 }

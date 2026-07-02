@@ -8,7 +8,7 @@
           <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
               <UIcon name="i-heroicons-shield-check" class="text-blue-600 mr-3 text-2xl" />
-              Detalle de Regulación Antidumping
+              Detalle de Regulaci?n Antidumping
             </h1>
            
           </div>
@@ -19,13 +19,13 @@
     <!-- Loading State -->
     <div v-if="loading" class="flex justify-center items-center py-12">
       <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-blue-600" />
-      <span class="ml-2 text-gray-600">Cargando regulación...</span>
+      <span class="ml-2 text-gray-600">Cargando regulaci?n...</span>
     </div>
 
     <!-- Error State -->
     <div v-else-if="error" class="text-center py-12">
       <UIcon name="i-heroicons-exclamation-triangle" class="w-12 h-12 text-red-500 mx-auto mb-4" />
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error al cargar la regulación</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error al cargar la regulaci?n</h3>
       <p class="text-gray-600 dark:text-gray-400 mb-4">{{ error }}</p>
       <UButton label="Intentar de nuevo" @click="loadRegulation" />
     </div>
@@ -51,7 +51,7 @@
         <template #header>
           <div class="flex items-center">
             <UIcon name="i-heroicons-photo" class="text-blue-600 mr-2" />
-            <h3 class="text-lg font-semibold">Imágenes ({{ regulation.media.length }})</h3>
+            <h3 class="text-lg font-semibold">Im?genes ({{ regulation.media.length }})</h3>
           </div>
         </template>
         
@@ -86,7 +86,7 @@
           <UIcon name="i-heroicons-information-circle" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Sin contenido adicional</h3>
           <p class="text-gray-600 dark:text-gray-400">
-            Esta regulación no tiene observaciones ni imágenes asociadas.
+            Esta regulaci?n no tiene observaciones ni im?genes asociadas.
           </p>
         </div>
             </UCard>
@@ -171,7 +171,7 @@
         
         <!-- Zoom Instructions -->
         <div class="text-center text-sm text-gray-500 mt-2">
-          <p>Usa la rueda del mouse para hacer zoom • Arrastra para mover la imagen • Botones para controlar zoom</p>
+          <p>Usa la rueda del mouse para hacer zoom | Arrastra para mover la imagen | Botones para controlar zoom</p>
         </div>
       </div>
     </div>
@@ -181,7 +181,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useOverlay } from '#imports'
-import AntidumpingService from '../services/antidumpingService'
+import AntidumpingService from '~/services/antidumpingService'
 
 // Types
 interface AntidumpingMedia {
@@ -259,11 +259,11 @@ const loadRegulation = async () => {
         media: response.data.media || []
       }
     } else {
-      error.value = response.error || 'No se pudo cargar la regulación'
+      error.value = response.error || 'No se pudo cargar la regulaci?n'
     }
   } catch (err) {
     console.error('Error loading regulation:', err)
-    error.value = 'Error al cargar la regulación'
+    error.value = 'Error al cargar la regulaci?n'
   } finally {
     loading.value = false
   }
@@ -363,7 +363,7 @@ const getImageUrl = (ruta: string) => {
 // Load regulation on mount
 onMounted(() => {
   if (isNaN(regulationId)) {
-    error.value = 'ID de regulación inválido'
+    error.value = 'ID de regulaci?n inv?lido'
     loading.value = false
     return
   }

@@ -1,10 +1,18 @@
 <template>
-  <div class="min-h-screen bg-[#f0f4f9] dark:bg-gray-900 flex">
+  <div
+    class="flex bg-[#f0f4f9] dark:bg-gray-900"
+    :class="shellViewportLocked ? 'h-dvh max-h-dvh overflow-hidden' : 'min-h-screen'"
+  >
+  <!-- Skip link para accesibilidad (teclado / lectores de pantalla) -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded focus:outline-none focus:ring-2 focus:ring-primary-800">
+    Saltar al contenido principal
+  </a>
+
   <!-- Sidebar -->
   <SidebarMenu v-model="sidebarVisible" :user="user" :menu-categories="sidebarCategories" @collapsed-change="(v) => sidebarCollapsed = v" />
 
     <!-- Main Content -->
-  <div class="flex-1 flex flex-col transition-all duration-300 w-80" :class="sidebarVisible ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-70') : ''">
+  <div class="flex-1 flex flex-col min-h-0 transition-all duration-300 w-80" :class="sidebarVisible ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-70') : ''">
       <!-- Top Header -->
       <header 
       class="bg-[#f0f4f9] dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 lg:hidden">
@@ -20,22 +28,41 @@
       </header>
 
       <!-- Page Content -->
-      <main ref="mainContentRef" :class="['flex-1 p-3 bg-[#f0f4f9] dark:bg-gray-900']" :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}">
-        <div class="">
+      <main
+        id="main-content"
+        ref="mainContentRef"
+        :class="[
+          'flex flex-1 min-h-0 flex-col bg-[#f0f4f9] p-3 dark:bg-gray-900',
+          shellViewportLocked ? 'overflow-hidden' : ''
+        ]"
+        :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}"
+      >
+        <div v-if="!shellViewportLocked" class="">
           <!-- <Breadcrumbs /> -->
         </div>
-        <slot />
+        <div
+          :class="shellViewportLocked ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : ''"
+        >
+          <slot />
+        </div>
       </main>
     </div>
 
     <!-- Session Expired Modal -->
     <SessionExpiredModal />
 
+    <!-- Popup de actualización de calendario (WebSocket) -->
+    <CalendarUpdatePopup />
+
     <!-- Global Notifications -->
     <GlobalNotifications />
 
     <!-- Modal Container -->
     <ModalContainer />
+
+    <SoporteTiChatNotificacionModal />
+    <SoporteTiNotificacionesPermisoBar />
+    <WaInboxNotificacionesPermisoBar />
 
     <!-- Global Spinner -->
     <GlobalSpinner />
@@ -46,15 +73,25 @@
 import { ref, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import { isContentNarrow, setContentNarrow } from '~/composables/usePageLayout'
 import { useAuth } from '../composables/auth/useAuth'
+import { useMenuPrefetch } from '../composables/navigation/useMenuPrefetch'
 import { useWebSocketNotifications } from '../composables/useWebSocketNotifications'
-import { useWebSocketRole } from '../composables/websocket/useWebSocketRole'
 // Lazy load componentes pesados para mejorar tiempo de carga inicial
 const SidebarMenu = defineAsyncComponent(() => import('../components/SidebarMenu.vue'))
 const Breadcrumbs = defineAsyncComponent(() => import('../components/Breadcrumbs.vue'))
 const SessionExpiredModal = defineAsyncComponent(() => import('../components/SessionExpiredModal.vue'))
+const CalendarUpdatePopup = defineAsyncComponent(() => import('../components/calendar/CalendarUpdatePopup.vue'))
 const GlobalNotifications = defineAsyncComponent(() => import('../components/GlobalNotifications.vue'))
 const ModalContainer = defineAsyncComponent(() => import('../components/ModalContainer.vue'))
 const GlobalSpinner = defineAsyncComponent(() => import('../components/GlobalSpinner.vue'))
+const SoporteTiChatNotificacionModal = defineAsyncComponent(
+  () => import('../components/soporte-ti/SoporteTiChatNotificacionModal.vue')
+)
+const SoporteTiNotificacionesPermisoBar = defineAsyncComponent(
+  () => import('../components/soporte-ti/SoporteTiNotificacionesPermisoBar.vue')
+)
+const WaInboxNotificacionesPermisoBar = defineAsyncComponent(
+  () => import('../components/whatsapp-inbox/WaInboxNotificacionesPermisoBar.vue')
+)
 import type { AuthMenu } from '../services/authService'
 import type { SidebarCategory } from '../types/module'
 
@@ -62,9 +99,15 @@ import type { SidebarCategory } from '../types/module'
 const sidebarVisible = ref(true)
 const sidebarCollapsed = ref(false)
 const mainContentRef = ref<HTMLElement | null>(null)
+const route = useRoute()
+
+const shellViewportLocked = computed(
+  () =>
+    route.path.startsWith('/calendar')
+    || route.path.startsWith('/coordinacion/whatsapp-inbox')
+)
 
 const pageTitle = computed(() => {
-  const route = useRoute()
 
   // Ruta raíz
   if (route.path === '/') return 'Inicio'
@@ -138,6 +181,19 @@ const pageTitle = computed(() => {
     return 'Verificación'
   }
 
+  // Soporte TI
+  if (route.path.includes('/soporte-ti')) {
+    return 'Soporte TI'
+  }
+
+  //Viaticos
+  if (route.path.includes('/viaticos')) {
+    if (route.path.includes('/pendientes')) return 'Viáticos Pendientes'
+    if (route.path.includes('/completados')) return 'Viáticos Completados'
+    if (route.params.id) return 'Detalle de Viático'
+    return 'Viáticos'
+  }
+
   // Login
   if (route.path === '/login') return 'Iniciar Sesión'
 
@@ -157,11 +213,9 @@ const pageTitle = computed(() => {
 })
 
 const { user, logout, initializeAuth, menu } = useAuth()
+const { schedulePrefetchFromStorage } = useMenuPrefetch()
 
-// Inicializar sistema de WebSocket
-useWebSocketRole()
-
-// Inicializar notificaciones de WebSocket
+// Notificaciones modales vía evento window (ligero; no abre sockets extra)
 useWebSocketNotifications()
 
 // Convertir menús del login al formato del sidebar
@@ -169,26 +223,26 @@ const sidebarCategories = computed(() => {
   const backend = menu.value ?? []
 
   // Mapear padres -> módulos (cada padre tiene children: Hijos -> SubHijos)
-  const modules = (backend as any[]).map((p: any) => {
+  // Si show_father == 0: no mostrar el padre como item, pero sí mostrar sus Hijos como items de primer nivel.
+  const modules = (backend as any[]).flatMap((p: any) => {
     const parentId = String(p.ID_Menu ?? p.id ?? '')
     const parentName = p.No_Menu ?? p.Nombre ?? p.name ?? 'Sin nombre'
     const parentIcon = convertIconToHeroicons(p.Txt_Css_Icons)
     const parentRouteRaw = p.No_Menu_Url ?? p.Ruta ?? p.route ?? ''
-    const parentRoute = (parentRouteRaw === '#' || parentRouteRaw === '') ? '' : convertUrlToRoute(parentRouteRaw, p.url_intranet_v2)
+    const parentRoute = ((parentRouteRaw === '#' && (!p.url_intranet_v2 || p.url_intranet_v2 === '/')) || (parentRouteRaw === '' && !p.url_intranet_v2)) ? '' : convertUrlToRoute(parentRouteRaw, p.url_intranet_v2);
 
     const children = (p.Hijos ?? []).map((h: any) => {
       const childId = String(h.ID_Menu ?? h.id ?? '')
       const childName = h.No_Menu ?? h.Nombre ?? h.name ?? 'Sin nombre'
       const childIcon = convertIconToHeroicons(h.Txt_Css_Icons)
       const childRouteRaw = h.No_Menu_Url ?? h.Ruta ?? h.route ?? ''
-      const childRoute = (childRouteRaw === '#' || childRouteRaw === '') ? '' : convertUrlToRoute(childRouteRaw, h.url_intranet_v2)
-
+      const childRoute = ((childRouteRaw === '#' && (!h.url_intranet_v2 || h.url_intranet_v2 === '/')) || (childRouteRaw === '' && !h.url_intranet_v2)) ? '' : convertUrlToRoute(childRouteRaw, h.url_intranet_v2);
       const subChildren = (h.SubHijos ?? []).map((s: any) => {
         const sId = String(s.ID_Menu ?? s.id ?? '')
         const sName = s.No_Menu ?? s.Nombre ?? s.name ?? 'Sin nombre'
         const sIcon = convertIconToHeroicons(s.Txt_Css_Icons)
         const sRouteRaw = s.No_Menu_Url ?? s.Ruta ?? s.route ?? ''
-        const sRoute = (sRouteRaw === '#' || sRouteRaw === '') ? '' : convertUrlToRoute(sRouteRaw, s.url_intranet_v2)
+        const sRoute = ((sRouteRaw === '#' && (!s.url_intranet_v2 || s.url_intranet_v2 === '/')) || (sRouteRaw === '' && !s.url_intranet_v2)) ? '' : convertUrlToRoute(sRouteRaw, s.url_intranet_v2);
         return {
           id: sId,
           name: sName,
@@ -222,8 +276,18 @@ const sidebarCategories = computed(() => {
       }
     })
 
+    // Si el backend indica "no mostrar padre", devolvemos solo los hijos como módulos de primer nivel.
+    if (Number(p.show_father) === 0) {
+      return children.map(c => ({
+        ...c,
+        // Para el sidebar, estos quedan como módulos top-level
+        category: 'Menú',
+        categoryId: 'main',
+      }))
+    }
+
     // Padre como módulo (si no tiene ruta, route = '' => será toggle)
-    return {
+    return [{
       id: parentId,
       name: parentName,
       icon: parentIcon,
@@ -236,8 +300,18 @@ const sidebarCategories = computed(() => {
       notificationCount: 0,
       permissions: ['view'],
       children
-    }
+    }]
   })
+
+  // Para Jefe Importación: poner "Mi Progreso (Importaciones)" en 4.ª posición (índice 3)
+  const miProgresoIndex = modules.findIndex((m: any) =>
+    m.route === '/calendar' || (m.name && m.name.includes('Mi Progreso') && m.name.includes('Importaciones'))
+  )
+  const desiredPosition = 3 // 4to lugar (0-based)
+  if (miProgresoIndex !== -1 && miProgresoIndex !== desiredPosition) {
+    const [item] = modules.splice(miProgresoIndex, 1)
+    modules.splice(desiredPosition, 0, item)
+  }
 
   // Una sola categoría que contiene todos los módulos padre (para que SidebarMenu los muestre como botones)
   return [
@@ -255,6 +329,12 @@ const sidebarCategories = computed(() => {
 
 // Función para convertir iconos de FontAwesome a Heroicons
 const convertIconToHeroicons = (faIcon: string): string => {
+  if (!faIcon) return ''
+  // Pass-through: ya está en formato iconify (heroicons:home, mdi:account, tabler:home, i-heroicons-home)
+  if (faIcon.includes(':') || faIcon.startsWith('i-')) return faIcon
+  // Pass-through: URL de icono personalizado (/storage/..., https://...)
+  if (faIcon.startsWith('/') || faIcon.startsWith('http')) return faIcon
+
   const iconMap: Record<string, string> = {
     'fa fa-home': 'i-heroicons-home',
     'fas fa-boxes': 'solar:box-outline',
@@ -309,10 +389,8 @@ const toggleSidebar = () => {
 }
 
 onMounted(async () => {
-  
   await initializeAuth()
-  
-  
+  schedulePrefetchFromStorage()
 })
 
 onMounted(() => {

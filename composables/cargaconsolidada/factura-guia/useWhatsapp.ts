@@ -46,11 +46,67 @@ export const useWhatsapp = () => {
     }
   }
 
+  const sendComprobantes = async (idCotizacion: number): Promise<SendDocumentResponse> => {
+    try {
+      loading.value = true
+      error.value = null
+      return await WhatsappService.sendComprobantes(idCotizacion)
+    } catch (err: any) {
+      error.value = err?.message || 'Error al enviar comprobantes'
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const sendGuiasContabilidad = async (idCotizacion: number): Promise<SendDocumentResponse> => {
+    try {
+      loading.value = true
+      error.value = null
+      return await WhatsappService.sendGuiasContabilidad(idCotizacion)
+    } catch (err: any) {
+      error.value = err?.message || 'Error al enviar guías'
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const sendDetracciones = async (idCotizacion: number): Promise<SendDocumentResponse> => {
+    try {
+      loading.value = true
+      error.value = null
+      return await WhatsappService.sendDetracciones(idCotizacion)
+    } catch (err: any) {
+      error.value = err?.message || 'Error al enviar detracciones'
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const sendFormularioContabilidad = async (idCotizacion: number): Promise<SendDocumentResponse> => {
+    try {
+      loading.value = true
+      error.value = null
+      return await WhatsappService.sendFormularioContabilidad(idCotizacion)
+    } catch (err: any) {
+      error.value = err?.message || 'Error al enviar formulario'
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading: readonly(loading),
     error: readonly(error),
     sendFactura,
-    sendGuia
+    sendGuia,
+    sendComprobantes,
+    sendGuiasContabilidad,
+    sendDetracciones,
+    sendFormularioContabilidad
   }
 }
 
