@@ -941,6 +941,12 @@ const scrollLeft = ref(0)
 const containerWidth = ref(0)
 
 const updateScrollIndicators = () => {
+  if (isMobileForScroll.value) {
+    showLeftIndicator.value = false
+    showRightIndicator.value = false
+    return
+  }
+
   const container = tableContainerRef.value
   if (!container) {
     showLeftIndicator.value = false
@@ -1547,9 +1553,32 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   overflow-x: auto !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
-  /* Firefox */
-  scrollbar-width: thin;
-  scrollbar-color: #9ca3af #e5e7eb;
+}
+
+/* Móvil: scroll nativo sin barras ni sombras estilo desktop */
+@media (max-width: 767px) {
+  .table-scroll-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .table-scroll-container::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .scroll-shadow {
+    display: none !important;
+  }
+}
+
+/* Desktop: scrollbar personalizada */
+@media (min-width: 768px) {
+  .table-scroll-container {
+    scrollbar-width: thin;
+    scrollbar-color: #9ca3af #e5e7eb;
+  }
 }
 
 /* Evitar que wrappers internos (Nuxt UI) creen un scroll-container extra.
@@ -1564,7 +1593,8 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
   min-width: 800px;
 }
 
-/* Webkit scrollbar (Chrome, Safari, Edge) */
+/* Webkit scrollbar (Chrome, Safari, Edge) — solo desktop */
+@media (min-width: 768px) {
 .table-scroll-container::-webkit-scrollbar {
   width: 10px;
   height: 14px;
@@ -1609,6 +1639,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 
 .dark .table-scroll-container::-webkit-scrollbar-corner {
   background: #1f2937;
+}
 }
 
 /* Headers sticky - el contenedor tiene height fijo para que el scroll sea interno y el thead se quede fijo */
