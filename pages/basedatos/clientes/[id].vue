@@ -105,7 +105,19 @@
 
       <!-- Historial de compras -->
       <div class="flex-1 w-full max-w-3xl mx-auto">
-        <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Historial de compras</h3>
+        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Historial de compras</h3>
+          <UButton
+            v-if="tieneConsolidados"
+            label="Descargar documentos"
+            icon="i-heroicons-arrow-down-tray"
+            color="primary"
+            variant="outline"
+            :loading="descargandoDocumentos"
+            class="w-full sm:w-auto"
+            @click="handleDescargarDocumentos"
+          />
+        </div>
         <div class="overflow-x-auto">
           <DataTable
             title=""
@@ -150,6 +162,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const enviandoInstrucciones = ref(false)
 const copiandoMensajeRecuperacionContrasena = ref(false)
+const descargandoDocumentos = ref(false)
 // Composables
 const { enviarInstruccionesRecuperacionContrasena } = useClientes()
 const { showConfirmation, showSuccess, showError } = useModal()
@@ -171,6 +184,10 @@ const historialComprasPaginado = computed(() => {
   const end = start + itemsPerPageHistorial.value
   return historialComprasOriginal.value.slice(start, end)
 })
+
+const tieneConsolidados = computed(() =>
+  historialComprasOriginal.value.some((item) => item.servicio === 'Consolidado')
+)
 
 // Configuración de columnas para el historial
 const historialColumns: TableColumn<any>[] = [
@@ -194,7 +211,10 @@ const historialColumns: TableColumn<any>[] = [
     cell: ({ row }: { row: any }) => {
       const servicio = row.original.servicio
       const detalle = row.original.detalle
-      return servicio + (row.original.servicio=="Consolidado"?' #':' ') + detalle
+      if (servicio === 'Consolidado') {
+        return `${servicio} ${detalle}`
+      }
+      return `${servicio} ${detalle}`
     }
   },
   {
@@ -310,6 +330,28 @@ const handleCopiarMensajeRecuperacionContrasena = (nombre: string) => {
   //show toast notification
   showSuccess('Éxito', 'Mensaje copiado correctamente')
   setTimeout(() => copiandoMensajeRecuperacionContrasena.value = false,1000)
+}
+
+const handleDescargarDocumentos = async () => {
+  descargandoDocumentos.value = true
+  try {
+    await withSpinner(async () => {
+      const blob = await ClienteService.descargarDocumentos(clienteId)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `documentos_cliente_${clienteId}.zip`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      showSuccess('Listo', 'Documentos descargados correctamente')
+    }, 'Preparando descarga…')
+  } catch (err: any) {
+    showError('Error', err?.message || 'No se pudieron descargar los documentos')
+  } finally {
+    descargandoDocumentos.value = false
+  }
 }
 
 // Initialize

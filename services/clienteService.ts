@@ -207,6 +207,26 @@ export class ClienteService extends BaseService {
   }
 
   /**
+   * Descarga documentos de consolidados del cliente (ZIP).
+   */
+  static async descargarDocumentos(id: number): Promise<Blob> {
+    try {
+      const response = await this.apiCall<Blob>(`${this.baseUrl}/${id}/descargar-documentos`, {
+        method: 'GET',
+        responseType: 'blob',
+        headers: {
+          Accept: 'application/zip'
+        }
+      })
+
+      return response
+    } catch (error: any) {
+      console.error('Error en descargarDocumentos:', error)
+      throw new Error(error?.message || 'Error al descargar documentos del cliente')
+    }
+  }
+
+  /**
    * Exporta clientes a Excel
    */
   static async exportClientes(params: ClientesQueryParams = {}): Promise<Blob> {
