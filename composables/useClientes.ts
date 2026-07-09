@@ -414,6 +414,19 @@ export const useClientes = () => {
     }
   }
 
+  const actualizarContrasenaCliente = async (
+    id: number,
+    payload: { password: string; password_confirmation: string }
+  ) => {
+    try {
+      const response = await ClienteService.actualizarContrasenaCliente(id, payload)
+      return { ok: true as const, message: response.message || 'Contraseña actualizada' }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'No se pudo actualizar la contraseña'
+      return { ok: false as const, error: msg }
+    }
+  }
+
   return {
     // State
     clientes,
@@ -447,6 +460,7 @@ export const useClientes = () => {
     exportClientes,
     getClienteById,
     enviarInstruccionesRecuperacionContrasena,
+    actualizarContrasenaCliente,
     clearError,
     resetFilters,
     handleClearFilters,
