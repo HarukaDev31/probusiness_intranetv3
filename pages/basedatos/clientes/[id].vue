@@ -110,21 +110,49 @@
           <form class="flex flex-col gap-3" @submit.prevent="handleActualizarContrasena">
             <UFormField label="Nueva contraseña" required>
               <UInput
+                :key="mostrarPasswordNueva ? 'pwd-nueva-text' : 'pwd-nueva-hidden'"
                 v-model="formContrasena.password"
-                type="password"
+                :type="mostrarPasswordNueva ? 'text' : 'password'"
                 placeholder="Mínimo 8 caracteres"
                 autocomplete="new-password"
+                :ui="{ trailing: 'pe-1' }"
                 class="w-full"
-              />
+              >
+                <template #trailing>
+                  <UButton
+                    :icon="mostrarPasswordNueva ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                    variant="link"
+                    color="neutral"
+                    size="sm"
+                    type="button"
+                    :aria-label="mostrarPasswordNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                    @click.prevent.stop="() => { mostrarPasswordNueva = !mostrarPasswordNueva }"
+                  />
+                </template>
+              </UInput>
             </UFormField>
             <UFormField label="Confirmar contraseña" required>
               <UInput
+                :key="mostrarPasswordConfirmacion ? 'pwd-conf-text' : 'pwd-conf-hidden'"
                 v-model="formContrasena.password_confirmation"
-                type="password"
+                :type="mostrarPasswordConfirmacion ? 'text' : 'password'"
                 placeholder="Repita la contraseña"
                 autocomplete="new-password"
+                :ui="{ trailing: 'pe-1' }"
                 class="w-full"
-              />
+              >
+                <template #trailing>
+                  <UButton
+                    :icon="mostrarPasswordConfirmacion ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                    variant="link"
+                    color="neutral"
+                    size="sm"
+                    type="button"
+                    :aria-label="mostrarPasswordConfirmacion ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                    @click.prevent.stop="() => { mostrarPasswordConfirmacion = !mostrarPasswordConfirmacion }"
+                  />
+                </template>
+              </UInput>
             </UFormField>
             <UButton
               type="submit"
@@ -200,6 +228,8 @@ const enviandoInstrucciones = ref(false)
 const copiandoMensajeRecuperacionContrasena = ref(false)
 const descargandoDocumentos = ref(false)
 const guardandoContrasena = ref(false)
+const mostrarPasswordNueva = ref(false)
+const mostrarPasswordConfirmacion = ref(false)
 const formContrasena = ref({
   password: '',
   password_confirmation: ''
@@ -430,6 +460,8 @@ const handleActualizarContrasena = async () => {
           }, 'Actualizando contraseña…')
 
           formContrasena.value = { password: '', password_confirmation: '' }
+          mostrarPasswordNueva.value = false
+          mostrarPasswordConfirmacion.value = false
           showSuccess('Contraseña actualizada', 'El cliente ya puede ingresar con la nueva contraseña.')
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : 'No se pudo actualizar la contraseña.'
