@@ -349,5 +349,26 @@ export class ClienteService extends BaseService {
       throw new Error('No se pudieron enviar las instrucciones de recuperación de contraseña')
     }
   }
+
+  /**
+   * Actualiza la contraseña del usuario del portal vinculado al cliente.
+   */
+  static async actualizarContrasenaCliente(
+    id: number,
+    payload: { password: string; password_confirmation: string }
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      return await this.apiCall<{ success: boolean; message?: string }>(`${this.baseUrl}/${id}/contrasena`, {
+        method: 'PATCH',
+        body: payload
+      })
+    } catch (error: any) {
+      const msg =
+        error?.data?.message ||
+        error?.data?.errors?.password?.[0] ||
+        'No se pudo actualizar la contraseña'
+      throw new Error(msg)
+    }
+  }
 }
 

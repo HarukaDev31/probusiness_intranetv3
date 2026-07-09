@@ -98,8 +98,44 @@
           >
             Copiar mensaje de recuperación de contraseña
           </UButton>
+        </div>
 
-
+        <div v-if="cliente?.id_user" class="mt-6 w-full rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+          <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
+            Cambiar contraseña del portal
+          </h3>
+          <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">
+            Asigna una nueva contraseña para el acceso del cliente al portal.
+          </p>
+          <form class="flex flex-col gap-3" @submit.prevent="handleActualizarContrasena">
+            <UFormField label="Nueva contraseña" required>
+              <UInput
+                v-model="formContrasena.password"
+                type="password"
+                placeholder="Mínimo 8 caracteres"
+                autocomplete="new-password"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="Confirmar contraseña" required>
+              <UInput
+                v-model="formContrasena.password_confirmation"
+                type="password"
+                placeholder="Repita la contraseña"
+                autocomplete="new-password"
+                class="w-full"
+              />
+            </UFormField>
+            <UButton
+              type="submit"
+              color="primary"
+              icon="i-heroicons-lock-closed"
+              :loading="guardandoContrasena"
+              class="w-full"
+            >
+              Guardar contraseña
+            </UButton>
+          </form>
         </div>
       </div>
 
@@ -163,8 +199,13 @@ const error = ref<string | null>(null)
 const enviandoInstrucciones = ref(false)
 const copiandoMensajeRecuperacionContrasena = ref(false)
 const descargandoDocumentos = ref(false)
+const guardandoContrasena = ref(false)
+const formContrasena = ref({
+  password: '',
+  password_confirmation: ''
+})
 // Composables
-const { enviarInstruccionesRecuperacionContrasena } = useClientes()
+const { enviarInstruccionesRecuperacionContrasena, actualizarContrasenaCliente } = useClientes()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
 
@@ -351,6 +392,55 @@ const handleDescargarDocumentos = async () => {
     showError('Error', err?.message || 'No se pudieron descargar los documentos')
   } finally {
     descargandoDocumentos.value = false
+  }
+}
+
+const handleActualizarContrasena = async () => {
+  if (!cliente.value?.id) {
+    showError('Error', 'No se pudo obtener la información del cliente.')
+    return
+  }
+
+  const password = formContrasena.value.password.trim()
+  const passwordConfirmation = formContrasena.value.password_confirmation.trim()
+
+  if (password.length < 8) {
+    showError('Contraseña inválida', 'La contraseña debe tener al menos 8 caracteres.')
+    return
+  }
+
+  if (password !== passwordConfirmation) {
+    showError('Contraseña inválida', 'Las contraseñas no coinciden.')
+    return
+  }
+
+  try {
+    await showConfirmation(
+      'Confirmar cambio',
+      '¿Deseas actualizar la contraseña del portal de este cliente?',
+      async () => {
+        guardandoContrasena.value = true
+        try {
+          await withSpinner(async () => {
+            const res = await actualizarContrasenaCliente(cliente.value!.id, {
+              password,
+              password_confirmation: passwordConfirmation
+            })
+            if (!res.ok) throw new Error(res.error)
+          }, 'Actualizando contraseña…')
+
+          formContrasena.value = { password: '', password_confirmation: '' }
+          showSuccess('Contraseña actualizada', 'El cliente ya puede ingresar con la nueva contraseña.')
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : 'No se pudo actualizar la contraseña.'
+          showError('Error al actualizar', msg)
+        } finally {
+          guardandoContrasena.value = false
+        }
+      }
+    )
+  } catch {
+    guardandoContrasena.value = false
   }
 }
 
