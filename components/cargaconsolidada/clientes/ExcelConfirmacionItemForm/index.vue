@@ -48,13 +48,13 @@ const caracteristicasOpen = ref(false)
 </script>
 
 <template>
-  <div class="divide-y divide-gray-100">
+  <div class="divide-y divide-gray-200 dark:divide-gray-700">
     <section class="p-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:items-stretch">
         <div class="w-full h-full flex flex-col" :class="FOTO_MIN_HEIGHT">
           <div
             v-if="hasFoto"
-            class="relative w-full h-full flex-1 flex items-center justify-center rounded-xl overflow-hidden border border-gray-200 bg-gray-50"
+            class="relative w-full h-full flex-1 flex items-center justify-center rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700"
             :class="FOTO_MIN_HEIGHT"
           >
             <img
@@ -65,7 +65,7 @@ const caracteristicasOpen = ref(false)
           </div>
           <div
             v-else
-            class="w-full h-full flex-1 flex items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400"
+            class="w-full h-full flex-1 flex items-center justify-center rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500"
             :class="FOTO_MIN_HEIGHT"
           >
             Sin foto
@@ -138,7 +138,9 @@ const caracteristicasOpen = ref(false)
           <UFormField label="Total USD" class="col-span-2 w-full">
             <div
               class="w-full h-9 flex items-center justify-end px-3 rounded-md border text-sm font-semibold"
-              :class="total > 0 ? 'bg-primary-50 border-primary-200 text-primary-700' : 'bg-gray-50 border-gray-200 text-gray-400'"
+              :class="total > 0
+                ? 'border-primary-200 text-primary-700 dark:border-primary-800 dark:text-primary-300'
+                : 'border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500'"
             >
               ${{ formattedTotal }}
             </div>
@@ -155,7 +157,7 @@ const caracteristicasOpen = ref(false)
         >
           <UIcon name="i-heroicons-adjustments-horizontal" class="size-4 text-primary-600 shrink-0" />
           <div class="min-w-0 flex-1 flex items-center gap-2">
-            <h3 class="text-sm font-medium text-gray-900">Características</h3>
+            <h3 class="text-sm font-medium text-gray-900 dark:text-white">Características</h3>
             <UBadge color="neutral" variant="subtle" size="xs">
               {{ caracteristicasFilled }}/{{ labels.length }}
             </UBadge>
