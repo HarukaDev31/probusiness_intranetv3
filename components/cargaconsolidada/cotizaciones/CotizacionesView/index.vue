@@ -352,12 +352,12 @@ const deleteReasonModalHandlers: DeleteCotizacionReasonModalHandlers = {
     },
     confirmDeleteCotizacion: async (reasonId: number) => {
         if (!deleteTargetCotizacionId.value) {
-            throw new Error('CotizaciÃ³n no encontrada')
+            throw new Error('Cotización no encontrada')
         }
         await withSpinner(async () => {
             const response = await deleteCotizacion(deleteTargetCotizacionId.value as number, reasonId)
             if (response?.success) {
-                showSuccess('CotizaciÃ³n eliminada correctamente', 'La cotizaciÃ³n se ha eliminado correctamente.')
+                showSuccess('Cotización eliminada correctamente', 'La cotizaciÃ³n se ha eliminado correctamente.')
                 showDeleteReasonModal.value = false
                 await getCotizaciones(Number(id))
                 return
@@ -799,7 +799,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         )
                     )
                 ]) : null ,
-                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `CotizaciÃ³n: ${cod_cotizacion}`) : null,
+                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotización: ${cod_cotizacion}`) : null,
                 permisoBlock
             ].filter(Boolean))
         }
@@ -1035,7 +1035,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         )
                     )
                 ]) : null ,
-                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `CotizaciÃ³n: ${cod_cotizacion}`) : null
+                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotización: ${cod_cotizacion}`) : null
             ])
         }
         },
@@ -2805,7 +2805,7 @@ const handleRefresh = async (idCotizacion: number) => {
         showConfirmation('Â¿EstÃ¡s seguro de querer actualizar la cotizaciÃ³n?', 'Esta acciÃ³n no se puede deshacer.', async () => {
             await withSpinner(async () => {
                 await refreshCotizacionFile(idCotizacion)
-                showSuccess('CotizaciÃ³n actualizada correctamente', 'La cotizaciÃ³n se ha actualizado correctamente.')
+                showSuccess('Cotización actualizada correctamente', 'La cotizaciÃ³n se ha actualizado correctamente.')
                 await getCotizaciones(Number(id))
             }, 'Actualizando cotizaciÃ³n...')
         })

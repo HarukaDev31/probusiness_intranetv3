@@ -22,11 +22,14 @@
 import { useModal } from '../composables/commons/useModal'
 const { modals, removeModal } = useModal()
 
-const handleConfirm = (modal: any) => {
-  if (modal.onConfirm) {
-    modal.onConfirm()
+const handleConfirm = async (modal: any) => {
+  try {
+    if (modal.onConfirm) {
+      await modal.onConfirm()
+    }
+  } finally {
+    removeModal(modal.id)
   }
-  removeModal(modal.id)
 }
 const handleCancel = (modal: any) => {
   if (modal.onCancel) {

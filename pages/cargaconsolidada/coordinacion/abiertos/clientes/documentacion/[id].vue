@@ -1,6 +1,6 @@
 <template>
   <ClientesDocumentacionView
-    :role="ROLES.COORDINACION"
+    :role="currentRole || undefined"
     base-path="/cargaconsolidada/coordinacion/abiertos"
     back-base-path="/cargaconsolidada/coordinacion/abiertos"
   />
@@ -10,5 +10,7 @@
 import { createLazyView } from '~/utils/lazyView'
 
 const ClientesDocumentacionView = createLazyView(() => import('~/components/cargaconsolidada/clientes/ClientesDocumentacionView/index.vue'))
-import { ROLES } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
+
+const { currentRole } = useUserRole()
 </script>

@@ -5,8 +5,8 @@ export interface ModalData {
   message: string
   duration?: number
   persistent?: boolean
-  onConfirm?: () => void
-  onCancel?: () => void
+  onConfirm?: () => void | Promise<void>
+  onCancel?: () => void | Promise<void>
 }
 
 // Singleton instance
@@ -67,7 +67,7 @@ function createModalInstance() {
   const showConfirmation = (
     title: string, 
     message: string, 
-    onConfirm?: () => void,
+    onConfirm?: () => void | Promise<void>,
     onCancel?: () => void,
     options?: Partial<ModalData>
   ) => {
