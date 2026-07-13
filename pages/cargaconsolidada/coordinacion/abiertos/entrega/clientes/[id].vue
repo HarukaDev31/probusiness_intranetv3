@@ -1,6 +1,6 @@
 <template>
   <EntregaClientesView
-    :role="ROLES.COORDINACION"
+    :role="currentRole || undefined"
     base-path="/cargaconsolidada/coordinacion/abiertos"
     back-base-path="/cargaconsolidada/coordinacion/abiertos"
   />
@@ -8,9 +8,10 @@
 
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
-import { ROLES } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
 
 const EntregaClientesView = defineAsyncComponent(
   () => import('~/components/cargaconsolidada/entrega/EntregaClientesView/index.vue')
 )
+const { currentRole } = useUserRole()
 </script>

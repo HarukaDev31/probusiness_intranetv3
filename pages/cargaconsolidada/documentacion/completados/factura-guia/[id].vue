@@ -1,6 +1,6 @@
 <template>
   <FacturaGuiaView
-    :role="ROLES.DOCUMENTACION"
+    :role="currentRole || undefined"
     base-path="/cargaconsolidada/documentacion/completados"
     back-base-path="/cargaconsolidada/documentacion/completados"
   />
@@ -10,5 +10,7 @@
 import { createLazyView } from '~/utils/lazyView'
 
 const FacturaGuiaView = createLazyView(() => import('~/components/cargaconsolidada/factura-guia/FacturaGuiaView/index.vue'))
-import { ROLES } from '~/constants/roles'
+import { useUserRole } from '~/composables/auth/useUserRole'
+
+const { currentRole } = useUserRole()
 </script>
