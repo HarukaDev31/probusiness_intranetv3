@@ -205,6 +205,22 @@ const tab = ref<string>(
 )
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
+
+const openExcelConfirmacionPage = (cliente: any) => {
+    const uuid = String(cliente?.uuid || '').trim()
+    if (!uuid) {
+        showError('Sin enlace', 'Este cliente no tiene UUID de confirmación web.')
+        return
+    }
+    navigateTo({
+        path: `${basePath.value}/clientes/excel-confirmacion/${uuid}`,
+        query: {
+            contenedor: String(id),
+            tab: tab.value,
+            cliente: cliente?.nombre || undefined
+        }
+    })
+}
 // F. Max. Documentacion (visible in the UI)
 // default is placeholder '00/00/0000' until backend provides a real value
 const fMaxDocumentacion = ref<string | null>(null)
@@ -801,6 +817,14 @@ const columnsCoordinacion: TableColumn<any>[] = [
                     onClick: () => {
                         handleSendRecordatorioFirma(row.original.id_cotizacion)
                     }
+                }),
+                h(UButton, {
+                    icon: 'i-heroicons-clipboard-document-check',
+                    variant: 'ghost',
+                    color: 'primary',
+                    size: 'xs',
+                    title: 'Ver confirmación web del cliente',
+                    onClick: () => openExcelConfirmacionPage(row.original)
                 }),
                 h(UButton, {
                     icon: 'i-heroicons-eye',
