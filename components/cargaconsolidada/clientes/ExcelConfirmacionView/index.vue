@@ -228,6 +228,16 @@ watch(activeProveedorIndex, () => {
   openProductIds.value = proveedor?.items[0] ? [productKey(proveedor.items[0].id)] : []
 })
 
+const setProductOpen = (id: string, open: boolean) => {
+  if (open) {
+    if (!openProductIds.value.includes(id)) {
+      openProductIds.value = [...openProductIds.value, id]
+    }
+    return
+  }
+  openProductIds.value = openProductIds.value.filter((value) => value !== id)
+}
+
 onMounted(load)
 </script>
 
@@ -255,7 +265,7 @@ onMounted(load)
     <ExcelConfirmacionSkeleton v-if="loading" />
 
     <div v-else-if="data && formState.length" class="space-y-4">
-      <div class="rounded-lg border border-gray-200 bg-white p-1.5">
+      <UCard class="p-1.5">
         <UTabs
           v-model="activeProveedorIndex"
           :items="proveedorTabs"
@@ -264,92 +274,95 @@ onMounted(load)
           class="w-full"
           :content="false"
         />
-      </div>
+      </UCard>
 
       <div v-if="activeProveedor" class="space-y-4">
-        <div class="flex flex-wrap items-center gap-2 justify-between rounded-lg border border-gray-200 bg-white px-3 py-2.5">
-          <UBadge
-            :color="activeProveedor.excel_conf_form_cerrado ? 'error' : 'success'"
-            variant="subtle"
-          >
-            {{ activeProveedor.excel_conf_form_cerrado ? 'Cerrado para el cliente' : 'Abierto para el cliente' }}
-          </UBadge>
-          <div class="flex flex-wrap gap-2">
-            <UButton
-              size="sm"
-              variant="outline"
-              icon="i-heroicons-arrow-down-tray"
-              @click="downloadExcel(activeProveedor)"
+        <UCard>
+          <div class="flex flex-wrap items-center gap-2 justify-between">
+            <UBadge
+              :color="activeProveedor.excel_conf_form_cerrado ? 'error' : 'success'"
+              variant="subtle"
             >
-              Generar Excel
-            </UButton>
-            <UButton
-              size="sm"
-              :color="activeProveedor.excel_conf_form_cerrado ? 'primary' : 'warning'"
-              variant="soft"
-              :icon="activeProveedor.excel_conf_form_cerrado ? 'i-heroicons-lock-open' : 'i-heroicons-lock-closed'"
-              @click="toggleCerrado(activeProveedor)"
-            >
-              {{ activeProveedor.excel_conf_form_cerrado ? 'Reabrir' : 'Cerrar' }}
-            </UButton>
+              {{ activeProveedor.excel_conf_form_cerrado ? 'Cerrado para el cliente' : 'Abierto para el cliente' }}
+            </UBadge>
+            <div class="flex flex-wrap gap-2">
+              <UButton
+                size="sm"
+                variant="outline"
+                icon="i-heroicons-arrow-down-tray"
+                @click="downloadExcel(activeProveedor)"
+              >
+                Generar Excel
+              </UButton>
+              <UButton
+                size="sm"
+                :color="activeProveedor.excel_conf_form_cerrado ? 'primary' : 'warning'"
+                variant="soft"
+                :icon="activeProveedor.excel_conf_form_cerrado ? 'i-heroicons-lock-open' : 'i-heroicons-lock-closed'"
+                @click="toggleCerrado(activeProveedor)"
+              >
+                {{ activeProveedor.excel_conf_form_cerrado ? 'Reabrir' : 'Cerrar' }}
+              </UButton>
+            </div>
           </div>
+        </UCard>
+
+        <div v-if="activeProveedor.items.length" class="space-y-4">
+          <UCard
+            v-for="(accItem, index) in accordionItems"
+            :key="accItem.value"
+            class="overflow-hidden"
+            :ui="{ body: 'p-0 sm:p-0' }"
+          >
+            <UCollapsible
+              :open="openProductIds.includes(accItem.value)"
+              :unmount-on-hide="false"
+              @update:open="setProductOpen(accItem.value, $event)"
+            >
+              <button
+                type="button"
+                class="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50/80 dark:hover:bg-gray-800/50"
+              >
+                <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 text-xs font-bold">
+                  {{ accItem.index + 1 }}
+                </span>
+                <p class="font-medium text-gray-900 dark:text-white truncate text-sm min-w-0 flex-1">
+                  {{ accItem.label }}
+                  <UBadge v-if="accItem.item.isNew" color="success" variant="subtle" size="xs" class="ml-1">
+                    Nuevo
+                  </UBadge>
+                </p>
+                <div class="flex items-center gap-1.5 shrink-0 ms-auto">
+                  <UBadge color="primary" variant="soft" size="xs" class="shrink-0">
+                    {{ accItem.item.tipo_producto }}
+                  </UBadge>
+                  <UIcon
+                    name="i-heroicons-chevron-down"
+                    class="size-4 text-gray-400 transition-transform duration-200"
+                    :class="{ 'rotate-180': openProductIds.includes(accItem.value) }"
+                  />
+                </div>
+              </button>
+              <template #content>
+                <ExcelConfirmacionItemForm
+                  :item="accItem.item"
+                  :labels="accItem.labels"
+                  :readonly="activeProveedor.excel_conf_form_cerrado"
+                  @update:item="updateItem(activeProveedorIndex, index, $event)"
+                />
+              </template>
+            </UCollapsible>
+          </UCard>
         </div>
 
-        <UAccordion
-          v-if="activeProveedor.items.length"
-          v-model="openProductIds"
-          type="multiple"
-          :items="accordionItems"
-          :unmount-on-hide="false"
-          :ui="{
-            item: 'mb-2 border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm',
-            trigger: 'px-3 py-2.5 hover:bg-gray-50/80 gap-2.5',
-            label: 'flex-1 min-w-0'
-          }"
-        >
-          <template #default="{ item: accItem }">
-            <div class="flex items-center gap-2.5 w-full min-w-0">
-              <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 text-xs font-bold">
-                {{ accItem.index + 1 }}
-              </span>
-              <p class="font-medium text-gray-900 truncate text-sm min-w-0">
-                {{ accItem.label }}
-                <UBadge v-if="accItem.item.isNew" color="success" variant="subtle" size="xs" class="ml-1">
-                  Nuevo
-                </UBadge>
-              </p>
-            </div>
-          </template>
-
-          <template #trailing="{ item: accItem, open }">
-            <div class="flex items-center gap-1.5 shrink-0 ms-auto">
-              <UBadge color="primary" variant="soft" size="xs" class="shrink-0">
-                {{ accItem.item.tipo_producto }}
-              </UBadge>
-              <UIcon
-                name="i-heroicons-chevron-down"
-                class="size-4 text-gray-400 transition-transform duration-200"
-                :class="{ 'rotate-180': open }"
-              />
-            </div>
-          </template>
-
-          <template #content="{ item: accItem, index }">
-            <ExcelConfirmacionItemForm
-              :item="accItem.item"
-              :labels="accItem.labels"
-              :readonly="activeProveedor.excel_conf_form_cerrado"
-              @update:item="updateItem(activeProveedorIndex, index, $event)"
-            />
-          </template>
-        </UAccordion>
-
-        <div
+        <UCard
           v-else
-          class="rounded-xl border-2 border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-500"
+          class="border-2 border-dashed"
         >
-          Este proveedor no tiene productos en la confirmación.
-        </div>
+          <p class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+            Este proveedor no tiene productos en la confirmación.
+          </p>
+        </UCard>
       </div>
     </div>
 
