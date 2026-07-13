@@ -279,10 +279,8 @@ export function useSoporteTi() {
   }
 
   let cargarEnCurso: Promise<void> | null = null
-  let ultimosFiltrosListado: SoporteTiListFilters | undefined
 
   async function cargar(filters?: SoporteTiListFilters) {
-    ultimosFiltrosListado = filters
     if (cargarEnCurso) return cargarEnCurso
 
     cargarEnCurso = (async () => {
@@ -311,19 +309,6 @@ export function useSoporteTi() {
     })
 
     return cargarEnCurso
-  }
-
-  /** Asegura el listado en memoria (una sola petición concurrente). */
-  async function asegurarListadoCargado() {
-    if (solicitudes.value.length > 0) {
-      return extraerChatUuidsDesdeSolicitudes(solicitudes.value)
-    }
-    await cargar(ultimosFiltrosListado)
-    return extraerChatUuidsDesdeSolicitudes(solicitudes.value)
-  }
-
-  function extraerChatUuidsDesdeSolicitudes(list: SoporteTiSolicitud[]) {
-    return list.map((s) => s.chatUuid).filter((uuid): uuid is string => Boolean(uuid))
   }
 
   async function actualizarSolicitud(
@@ -627,7 +612,6 @@ export function useSoporteTi() {
     stats,
     error,
     cargar,
-    asegurarListadoCargado,
     actualizarSolicitud,
     actualizarPrioridadSolicitud,
     actualizarComplejidadSolicitud,

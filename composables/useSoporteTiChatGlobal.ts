@@ -61,7 +61,7 @@ export async function sincronizarSalasGlobales(extraUuids: string[] = []) {
         console.warn('[SoporteTI] Echo no disponible; salas en cola pendiente')
       }
 
-      const { handlersSala, asegurarListadoCargado } = await loadSoporteTiDeps()
+      const { handlersSala, solicitudes } = await loadSoporteTiDeps()
 
       if (enRutaDetalleSoporteTi()) {
         const soloDetalle = [...new Set(extraUuids.filter(Boolean))]
@@ -71,7 +71,7 @@ export async function sincronizarSalasGlobales(extraUuids: string[] = []) {
         return
       }
 
-      const desdeEstado = await asegurarListadoCargado()
+      const desdeEstado = extraerChatUuids(solicitudes.value)
       const uuids = [...new Set([...desdeEstado, ...extraUuids])]
 
       if (process.dev) {
@@ -119,9 +119,6 @@ export function attachSoporteTiChatGlobalListeners() {
   const boot = () => void sincronizarSalasGlobales()
 
   window.addEventListener('echo-ready', boot)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') boot()
-  })
   window.addEventListener('soporte-ti-chat-reset', () => limpiarSuscripcionesGlobales())
   window.addEventListener('soporte-ti-suscribir-sala', (ev) => {
     const chatUuid = (ev as CustomEvent<{ chatUuid?: string }>).detail?.chatUuid
