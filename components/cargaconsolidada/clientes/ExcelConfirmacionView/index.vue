@@ -12,9 +12,11 @@ import {
   apiItemToFormState,
   formStateToSaveItem,
   labelsForTipo,
+  type IntranetItemFormState,
   type IntranetProveedorFormState,
   type LabelsPorTipoProducto
 } from '~/utils/cargaconsolidada/excelConfirmacion'
+import { getRequiredCaracteristicaValues } from '~/utils/cargaconsolidada/caracteristicaFields'
 
 const props = defineProps<{
   basePath: string
@@ -56,17 +58,39 @@ const pageSubtitle = computed(() => {
 
 const productKey = (id: number) => String(id)
 
+const isOptionalLabel = (label: string) => {
+  const key = label.replace(/:$/g, '').trim().toLowerCase()
+  return key === 'marca' || key === 'modelo'
+}
+
+const isItemComplete = (item: IntranetItemFormState, itemLabels: string[]) => {
+  const values = [
+    item.nombre_comercial,
+    item.foto_url,
+    item.qty,
+    item.precio_unitario,
+    item.hs_code,
+    item.link_producto,
+    ...getRequiredCaracteristicaValues(itemLabels, item.caracteristicas, isOptionalLabel)
+  ]
+  return values.every((value) => value !== null && value !== undefined && String(value).trim() !== '')
+}
+
 const accordionItems = computed(() => {
   const proveedor = activeProveedor.value
   if (!proveedor) return []
 
-  return proveedor.items.map((item, index) => ({
-    value: productKey(item.id),
-    label: item.nombre_comercial || item.initial_name || `Producto ${index + 1}`,
-    item,
-    index,
-    labels: labelsForTipo(labels.value, item.tipo_producto)
-  }))
+  return proveedor.items.map((item, index) => {
+    const itemLabels = labelsForTipo(labels.value, item.tipo_producto)
+    return {
+      value: productKey(item.id),
+      label: item.initial_name || `Producto ${index + 1}`,
+      item,
+      index,
+      labels: itemLabels,
+      complete: isItemComplete(item, itemLabels)
+    }
+  })
 })
 
 const buildFormState = (payload: ExcelConfirmacionData) => {
@@ -118,13 +142,73 @@ const buildSavePayload = () => ({
   }))
 })
 
+const SM_DEFAULT = 'S/M'
+
+const normalizeCaracteristicaLabel = (label: string) =>
+  label.replace(/:$/g, '').trim().toLowerCase()
+
+const findMissingMarcaModeloMessage = (): string | null => {
+  const lines: string[] = []
+
+  for (const proveedor of formState.value) {
+    for (const item of proveedor.items) {
+      const itemLabels = labelsForTipo(labels.value, item.tipo_producto)
+      const missing: string[] = []
+
+      for (const label of itemLabels) {
+        const key = normalizeCaracteristicaLabel(label)
+        if (key !== 'marca' && key !== 'modelo') continue
+        if (String(item.caracteristicas[label] ?? '').trim() !== '') continue
+        missing.push(key === 'marca' ? 'Marca' : 'Modelo')
+      }
+
+      if (missing.length) {
+        lines.push(
+          `• ${proveedor.code_supplier || 'Proveedor'} · ${item.nombre_comercial || item.initial_name || 'Producto'}: ${missing.join(' y ')}`
+        )
+      }
+    }
+  }
+
+  return lines.length
+    ? `Los siguientes productos no tienen Marca y/o Modelo. Al continuar se llenarán con «S/M»:\n\n${lines.join('\n')}\n\n¿Deseas continuar con el guardado?`
+    : null
+}
+
+const applySmDefaults = () => {
+  formState.value = formState.value.map((proveedor) => ({
+    ...proveedor,
+    items: proveedor.items.map((item) => {
+      const itemLabels = labelsForTipo(labels.value, item.tipo_producto)
+      let changed = false
+      const caracteristicas = { ...item.caracteristicas }
+
+      for (const label of itemLabels) {
+        const key = normalizeCaracteristicaLabel(label)
+        if (key !== 'marca' && key !== 'modelo') continue
+        if (String(caracteristicas[label] ?? '').trim() !== '') continue
+        caracteristicas[label] = SM_DEFAULT
+        changed = true
+      }
+
+      return changed ? { ...item, caracteristicas } : item
+    })
+  }))
+}
+
 const handleSave = () => {
   if (!data.value) return
 
+  const smMessage = findMissingMarcaModeloMessage()
+  const baseMessage = 'Se actualizará la confirmación del cliente con los datos editados. ¿Deseas continuar?'
+
   showConfirmation(
-    'Guardar cambios',
-    'Se actualizará la confirmación del cliente con los datos editados. ¿Deseas continuar?',
-    () => performSave()
+    smMessage ? 'Marca / Modelo incompletos' : 'Guardar cambios',
+    smMessage || baseMessage,
+    async () => {
+      if (smMessage) applySmDefaults()
+      await performSave()
+    }
   )
 }
 
@@ -172,16 +256,13 @@ const toggleCerrado = async (proveedor: ExcelConfirmacionProveedor | IntranetPro
   })
 }
 
-const downloadExcel = async (proveedor: IntranetProveedorFormState) => {
+const downloadExcelFile = async (url: string, fileName: string, spinnerLabel: string) => {
   try {
     await withSpinner(async () => {
-      const config = useRuntimeConfig()
-      const base = String(config.public.apiBaseUrl || '').replace(/\/$/, '')
       const token = localStorage.getItem('auth_token')
-      const response = await fetch(
-        `${base}/api/carga-consolidada/contenedor/clientes/excel-confirmacion/proveedor/${proveedor.id}/export`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-      )
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
       if (!response.ok) {
         const contentType = response.headers.get('content-type') || ''
         if (contentType.includes('application/json')) {
@@ -191,17 +272,35 @@ const downloadExcel = async (proveedor: IntranetProveedorFormState) => {
         throw new Error('No se pudo generar el Excel')
       }
       const blob = await response.blob()
-      const fileName = `excel_confirmacion_${proveedor.code_supplier || proveedor.id}.xlsx`
       const objectUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = objectUrl
       a.download = fileName
       a.click()
       URL.revokeObjectURL(objectUrl)
-    }, 'Generando Excel...')
+    }, spinnerLabel)
   } catch (e: any) {
     showError('Error', e?.message || 'No se pudo generar el Excel')
   }
+}
+
+const downloadExcel = async (proveedor: IntranetProveedorFormState) => {
+  await downloadExcelFile(
+    ExcelConfirmacionCoordinacionService.exportProveedorUrl(proveedor.id),
+    `excel_confirmacion_${proveedor.code_supplier || proveedor.id}.xlsx`,
+    'Generando Excel...'
+  )
+}
+
+const downloadExcelGeneral = async () => {
+  if (!uuid.value) return
+
+  const clientSlug = (pageTitle.value || 'cliente').replace(/[^\w\-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || 'cliente'
+  await downloadExcelFile(
+    ExcelConfirmacionCoordinacionService.exportGeneralUrl(uuid.value),
+    `excel_confirmacion_general_${clientSlug}.xlsx`,
+    'Generando Excel general...'
+  )
 }
 
 const updateItem = (proveedorIndex: number, itemIndex: number, item: IntranetProveedorFormState['items'][number]) => {
@@ -229,13 +328,7 @@ watch(activeProveedorIndex, () => {
 })
 
 const setProductOpen = (id: string, open: boolean) => {
-  if (open) {
-    if (!openProductIds.value.includes(id)) {
-      openProductIds.value = [...openProductIds.value, id]
-    }
-    return
-  }
-  openProductIds.value = openProductIds.value.filter((value) => value !== id)
+  openProductIds.value = open ? [id] : []
 }
 
 onMounted(load)
@@ -247,15 +340,25 @@ onMounted(load)
       :title="loading ? (clienteQueryName || 'Cliente') : pageTitle"
       :subtitle="loading ? 'Cargando confirmación...' : pageSubtitle"
       icon="i-heroicons-clipboard-document-check"
+      :hide-back-button="false"
       @back="goBack"
     >
       <template v-if="!loading" #actions>
-        <UButton
-          color="primary"
-          icon="i-heroicons-check"
-          label="Guardar cambios"
-          @click="handleSave"
-        />
+        <div class="flex flex-wrap gap-2 justify-end">
+          <UButton
+            color="neutral"
+            variant="outline"
+            icon="i-heroicons-arrow-down-tray"
+            label="Excel confirmación general"
+            @click="downloadExcelGeneral"
+          />
+          <UButton
+            color="primary"
+            icon="i-heroicons-check"
+            label="Guardar cambios"
+            @click="handleSave"
+          />
+        </div>
       </template>
       <template v-else #actions>
         <USkeleton class="h-9 w-36 rounded-md" />
@@ -333,6 +436,14 @@ onMounted(load)
                   </UBadge>
                 </p>
                 <div class="flex items-center gap-1.5 shrink-0 ms-auto">
+                  <UBadge
+                    :color="accItem.complete ? 'success' : 'warning'"
+                    variant="subtle"
+                    size="xs"
+                    class="shrink-0"
+                  >
+                    {{ accItem.complete ? 'Listo' : 'Pendiente' }}
+                  </UBadge>
                   <UBadge color="primary" variant="soft" size="xs" class="shrink-0">
                     {{ accItem.item.tipo_producto }}
                   </UBadge>

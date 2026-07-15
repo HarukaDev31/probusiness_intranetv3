@@ -80,4 +80,10 @@ export class ExcelConfirmacionCoordinacionService extends BaseService {
     const base = String(config.public.apiBaseUrl || '').replace(/\/$/, '')
     return `${base}/${this.baseUrl}/proveedor/${idProveedor}/export`
   }
+
+  static exportGeneralUrl(uuid: string): string {
+    const config = useRuntimeConfig()
+    const base = String(config.public.apiBaseUrl || '').replace(/\/$/, '')
+    return `${base}/${this.baseUrl}/${uuid}/export-general`
+  }
 }

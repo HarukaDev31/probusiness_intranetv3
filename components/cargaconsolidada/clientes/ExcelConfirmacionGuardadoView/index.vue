@@ -48,6 +48,7 @@ const volverAClientes = () => {
       :title="pageTitle"
       :subtitle="pageSubtitle"
       icon="i-heroicons-check-circle"
+      :hide-back-button="false"
       @back="volverAClientes"
     />
 
