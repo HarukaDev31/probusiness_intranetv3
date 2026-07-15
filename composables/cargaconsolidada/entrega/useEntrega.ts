@@ -205,7 +205,7 @@ export const useEntrega = () => {
       // Soportar tanto forma antigua (array) como nueva (seccionada)
       const data = (response && 'data' in response) ? (response as any).data : response
 
-      const hasSections = data && (data.meta || data.resumen || data.delivery || data.form_user || data.lima || data.provincia || data.comprobante)
+      const hasSections = data && (data.meta || data.resumen || data.delivery || data.form_user || data.lima || data.province || data.provincia || data.comprobante)
       if (hasSections) {
         const root: any = data
         const meta = root.meta || root.data || root
@@ -213,11 +213,10 @@ export const useEntrega = () => {
         const delivery = root.delivery || root.data?.delivery || null
         const form_user = root.form_user || root.data?.form_user || null
         const lima = root.lima || null
-        const province = root.province || null
-        const comprobante = root.province || root.lima || null
+        const province = root.province || root.provincia || null
+        const comprobante = lima || province || null
         const conformidad = root.conformidad || null
         const type_form = (meta?.type_form ?? root.type_form)
-        const isLima = (type_form === 1 || type_form === '1')
 
         const flat: any = {
           id_cotizacion: meta?.cotizacion_id ?? meta?.id_cotizacion ?? id_cotizacion,
@@ -225,10 +224,11 @@ export const useEntrega = () => {
           type_form: (type_form === '1') ? 1 : (type_form === '0') ? 0 : type_form,
           // Generales
           qty_box_china: resumen?.qty_box_china ?? root.qty_box_china ?? '',
-          peso: resumen?.peso ?? resumen?.cbm_total_china ?? '',
+          peso: resumen?.peso ?? root.peso ?? '',
           documento: lima?.pick_doc ?? province?.r_doc ?? '',
-          import_name: lima?.import_name ?? province.import_name ?? '',
-          productos: lima?.productos ?? province.productos ?? '',
+          // Backend provincia usa typo histórico importer_nmae
+          import_name: lima?.import_name ?? province?.import_name ?? province?.importer_nmae ?? '',
+          productos: lima?.productos ?? province?.productos ?? '',
           isVerified: lima?.isVerified ?? province?.isVerified ?? false,
           // Lima
           nombre_chofer: lima?.drver_name ?? root.driver_name ?? '',
