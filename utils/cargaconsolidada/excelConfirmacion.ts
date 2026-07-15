@@ -1,4 +1,5 @@
 import type { ExcelConfirmacionItem } from '~/services/cargaconsolidada/clientes/excelConfirmacionCoordinacionService'
+import { unitKeysForLabels } from '~/utils/cargaconsolidada/caracteristicaFields'
 
 export type LabelsPorTipoProducto = Record<string, string[]>
 
@@ -40,6 +41,23 @@ const normalizeLabel = (label: string) => label.trim().toLowerCase()
 const isCampoFijo = (label: string) =>
   CAMPOS_FIJOS.some((campo) => normalizeLabel(campo) === normalizeLabel(label))
 
+const LEGACY_CARACTERISTICA_ALIASES: Record<string, string[]> = {
+  'Tamaño (Producto):': ['Tamaño:', 'Tamaño del producto:', 'Tamaño (Metros):'],
+  'Capacidad:': ['Capacidad (ml o kg):'],
+  'Peso Neto (Producto):': ['Peso Neto:', 'Peso'],
+  'Unidad de medida:': ['Pares o Piezas:']
+}
+
+const resolveFromRaw = (raw: Record<string, string>, label: string): string => {
+  const direct = String(raw[label] ?? '').trim()
+  if (direct) return direct
+  for (const alias of LEGACY_CARACTERISTICA_ALIASES[label] || []) {
+    const value = String(raw[alias] ?? '').trim()
+    if (value) return value
+  }
+  return String(raw[label] ?? '')
+}
+
 export const labelsForTipo = (labels: LabelsPorTipoProducto, tipo: string): string[] => {
   const key = (tipo || 'GENERAL').toUpperCase()
   const tipoLabels = labels[key] || labels.GENERAL || []
@@ -52,18 +70,27 @@ export const apiItemToFormState = (
 ): IntranetItemFormState => {
   const raw = { ...(item.caracteristicas || {}) }
   const tipoLabels = labelsForTipo(labels, item.tipo_producto)
-  const caracteristicas = Object.fromEntries(
-    tipoLabels.map((label) => [label, String(raw[label] ?? '')])
-  )
+  const unitKeys = unitKeysForLabels(tipoLabels)
+  const caracteristicas = Object.fromEntries([
+    ...tipoLabels.map((label) => [label, resolveFromRaw(raw, label)]),
+    ...unitKeys.map((key) => [key, String(raw[key] ?? '')])
+  ])
+
+  if (
+    String(raw['Tamaño (Metros):'] ?? '').trim() !== '' &&
+    !String(caracteristicas['Unidad Tamaño:'] ?? '').trim()
+  ) {
+    caracteristicas['Unidad Tamaño:'] = 'metros'
+  }
 
   return {
     id: item.id,
     initial_name: item.initial_name || '',
     tipo_producto: item.tipo_producto || 'GENERAL',
     caracteristicas,
-    qty: item.qty ?? item.initial_qty ?? null,
-    precio_unitario: item.precio_unitario ?? item.initial_price ?? null,
-    nombre_comercial: String(raw[CAMPO_NOMBRE_COMERCIAL] ?? item.initial_name ?? ''),
+    qty: item.qty ?? null,
+    precio_unitario: item.precio_unitario ?? null,
+    nombre_comercial: String(raw[CAMPO_NOMBRE_COMERCIAL] ?? ''),
     foto_url: String(raw[CAMPO_FOTO] ?? ''),
     hs_code: String(raw[CAMPO_HS_CODE] ?? ''),
     link_producto: String(raw[CAMPO_LINK] ?? ''),
@@ -91,3 +118,38 @@ export const calcItemTotal = (item: Pick<IntranetItemFormState, 'qty' | 'precio_
 
 export const formatUsd = (value: number) =>
   value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+export const sanitizeMoneyDraft = (raw: string | number | null | undefined): string => {
+  let cleaned = String(raw ?? '').replace(/[^0-9.]/g, '')
+  const firstDot = cleaned.indexOf('.')
+  if (firstDot === -1) return cleaned
+
+  cleaned =
+    cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '')
+  const [intPart, decPart = ''] = cleaned.split('.')
+  return `${intPart}.${decPart.slice(0, 2)}`
+}
+
+/** Formatea con miles mientras se escribe (ej. 1234.5 → 1,234.5). */
+export const formatMoneyWhileTyping = (raw: string | number | null | undefined): string => {
+  const cleaned = sanitizeMoneyDraft(raw)
+  if (!cleaned) return ''
+  if (cleaned === '.') return '0.'
+
+  const [intRaw, decRaw] = cleaned.split('.')
+  const intNum = Number(intRaw || '0')
+  if (!Number.isFinite(intNum)) return ''
+
+  const intFormatted = intNum.toLocaleString('en-US', { maximumFractionDigits: 0 })
+  if (decRaw !== undefined) return `${intFormatted}.${decRaw}`
+  return intFormatted
+}
+
+export const parseMoneyDraft = (raw: string | number | null | undefined): number | null => {
+  const cleaned = sanitizeMoneyDraft(raw)
+  if (!cleaned || cleaned === '.') return null
+  const value = Number(cleaned)
+  return Number.isFinite(value) ? value : null
+}
+
+export const roundMoney = (value: number): number => Math.round(value * 100) / 100
