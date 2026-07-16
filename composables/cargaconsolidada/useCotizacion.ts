@@ -183,6 +183,9 @@ export const useCotizacion = () => {
             throw error
         }
     }
+    const updateOrigenMarketing = async (id: number, origen_marketing: string | null) => {
+        return await CotizacionService.updateOrigenMarketing(id, origen_marketing)
+    }
     const getHeaders = async (id: number) => {
         loadingHeaders.value = true
         try {
@@ -335,6 +338,7 @@ export const useCotizacion = () => {
         createProspecto,
         updateCotizacion,
         updateEstadoCotizacionCotizador,
+        updateOrigenMarketing,
         getHeaders,
         carga,
         loadingHeaders,
