@@ -153,7 +153,7 @@
           <div class="space-y-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">
               <template v-if="soloVista">Solo puedes ver y descargar las imágenes.</template>
-              <template v-else>Hasta 4 archivos por proveedor. Puedes seleccionar varios a la vez. Los cambios de cada pestaña se conservan al cambiar de proveedor; «Guardar todo» guarda documentos e imágenes de todos los proveedores.</template>
+              <template v-else>Hasta {{ MAX_PROVEEDOR_IMAGENES }} archivos por proveedor. Puedes seleccionar varios a la vez. Los cambios de cada pestaña se conservan al cambiar de proveedor; «Guardar todo» guarda documentos e imágenes de todos los proveedores.</template>
             </p>
             <!-- Ya guardados (no marcados para eliminar) -->
             <div v-for="doc in docsPorProveedorVisibles" :key="doc.id" class="flex items-center gap-2 w-full">
@@ -168,7 +168,7 @@
               />
             </div>
             <!-- Agregar / pendientes de guardar: solo si no es solo lectura -->
-            <div v-if="!soloVista && (totalArchivosProveedor < 4 || pendingProveedorFilesList.length > 0)" class="w-full">
+            <div v-if="!soloVista && (totalArchivosProveedor < MAX_PROVEEDOR_IMAGENES || pendingProveedorFilesList.length > 0)" class="w-full">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Agregar imágenes (múltiple)</label>
               <FileUploader
                 class="w-full"
@@ -192,6 +192,7 @@
 
 <script setup lang="ts">
 import type { CotizacionesDocumentacionViewProps } from './types'
+import { MAX_PROVEEDOR_IMAGENES } from './constants'
 import { onMounted, computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCotizadorDocumentacion } from '~/composables/cargaconsolidada/useCotizadorDocumentacion'
@@ -354,7 +355,7 @@ function agregarPendienteProveedor(filesSelected: File[]) {
   const idProv = proveedorActivo.value.id
   const guardados = docsPorProveedor(idProv).filter((d: { id: number }) => !pendingProveedorDeletes.value.includes(d.id)).length
   const actual = pendingProveedorFiles.value[idProv] ?? []
-  const espacio = 4 - guardados - actual.length
+  const espacio = MAX_PROVEEDOR_IMAGENES - guardados - actual.length
   if (espacio <= 0) return
   const aAgregar = filesSelected.slice(0, espacio)
   const next = [...actual, ...aAgregar]

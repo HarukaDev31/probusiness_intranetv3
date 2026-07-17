@@ -556,6 +556,8 @@ const handleNuevoDocumento = () => {
   simpleUploadFile.open({
     title: 'Nuevo Documento',
     withNameField: true,
+    acceptedTypes: ['.xlsx', '.xls', '.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx', '.zip', '.rar'],
+    maxFileSize: 10 * 1024 * 1024,
     onSave: (data: { file: File, name?: string | null }) => {
       const formData = new FormData()
       formData.append('name', data.name || '')

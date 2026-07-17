@@ -12,9 +12,12 @@
                             <UInput v-model="name" placeholder="Nombre del documento"  class="mb-2 w-full"/>
                         </div>
                         <FileUploader ref="fileUploaderRef" :multiple="false" @file-added="handleFileAdded"
-                            @file-removed="handleFileRemoved" 
+                            @file-removed="handleFileRemoved"
+                            @error="handleUploadError"
                             :show-save-button="false"
                             :show-remove-button="false"
+                            :accepted-types="acceptedTypes"
+                            :max-file-size="maxFileSize"
                             />
                         
                     </div>
@@ -40,16 +43,24 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import FileUploader from '~/components/commons/FileUploader.vue'
+import { useModal } from '~/composables/commons/useModal'
 
 const emit = defineEmits<{
     (e: 'close'): void
     (e: 'save', data: { file: File, name?: string | null }): void
 }>()
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     title: string
     withNameField?: boolean
-}>()
+    acceptedTypes?: string[]
+    maxFileSize?: number
+}>(), {
+    acceptedTypes: () => ['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar'],
+    maxFileSize: 10 * 1024 * 1024,
+})
+
+const { showError } = useModal()
 const selectedFile = ref<File | null>(null)
 const fileUploaderRef = ref<InstanceType<typeof FileUploader> | null>(null)
 const name = ref<string>('')
@@ -65,6 +76,10 @@ const handleFileAdded = (file: File) => {
 
 const handleFileRemoved = () => {
     selectedFile.value = null
+}
+
+const handleUploadError = (message: string) => {
+    showError('Archivo no válido', message)
 }
 
 const handleSave = () => {
