@@ -5,6 +5,7 @@ type PdfJsLegacyModule = typeof import('pdfjs-dist/legacy/build/pdf.min.js')
 let pdfjsLib: PdfJsLegacyModule | null = null
 let initPromise: Promise<PdfJsLegacyModule> | null = null
 
+/** Una sola copia en public/ (postinstall copy-pdf-worker). Evita chunks _nuxt/ duplicados. */
 const PUBLIC_WORKER_PATH = '/pdf.worker.legacy.min.js'
 
 /** iPad/iPhone (Safari y Chrome en iOS comparten WebKit). */
@@ -19,7 +20,8 @@ function resolvePdfLib(mod: PdfJsLegacyModule): PdfJsLegacyModule {
 }
 
 /**
- * workerSrc + worker import primero → fake worker en hilo principal (iOS 16).
+ * workerSrc apunta al worker en public/ (una sola estrategia).
+ * En iOS: priming del fake worker en hilo principal.
  * @see https://github.com/mozilla/pdf.js/issues/10478
  */
 async function configureWorker(mod: PdfJsLegacyModule): Promise<void> {
@@ -29,13 +31,12 @@ async function configureWorker(mod: PdfJsLegacyModule): Promise<void> {
     throw new Error('PDF.js: GlobalWorkerOptions no disponible')
   }
 
-  if (isAppleMobile()) {
-    gwo.workerSrc = `${window.location.origin}${PUBLIC_WORKER_PATH}`
-    return
-  }
+  gwo.workerSrc = `${window.location.origin}${PUBLIC_WORKER_PATH}`
 
-  const workerMod = await import('pdfjs-dist/legacy/build/pdf.worker.min.js?url')
-  gwo.workerSrc = workerMod.default
+  if (isAppleMobile()) {
+    // Priming: globalThis.pdfjsWorker para fake worker (estable en iPadOS 16)
+    await import('pdfjs-dist/legacy/build/pdf.worker.min.js')
+  }
 }
 
 /**
@@ -51,8 +52,6 @@ export function getPdfJsLegacy(): Promise<PdfJsLegacyModule> {
 
   initPromise = (async () => {
     ensurePromiseWithResolversPolyfill()
-    // Priming: globalThis.pdfjsWorker para fake worker (estable en iPadOS 16)
-    await import('pdfjs-dist/legacy/build/pdf.worker.min.js')
     const mod = await import('pdfjs-dist/legacy/build/pdf.min.js')
     await configureWorker(mod)
     pdfjsLib = mod

@@ -1,5 +1,5 @@
 import { useEcho, getEchoInstance } from '../composables/websocket/useEcho'
-import { getAllEventHandlers, getWebsocketRoles } from '../config/websocket/channels'
+import { getAllEventHandlers } from '../config/websocket/channels'
 import { CALENDAR_EVENTS, getUserCalendarChannelName } from '../config/websocket/events/calendar'
 import { syncRoleChannelsFromAuthUser } from '../composables/websocket/syncRoleChannelsFromAuth'
 import { buildEchoClientConfig } from '../utils/websocket-config'
@@ -7,55 +7,35 @@ import { buildEchoClientConfig } from '../utils/websocket-config'
 export default defineNuxtPlugin({
   name: 'websocket',
   dependsOn: ['auth', 'websocket-events'],
-  async setup() {
-  // Solo ejecutar en el cliente
-  if (process.server) return
+  setup(nuxtApp) {
+    if (import.meta.server) return
 
-  // Variable para evitar inicialización múltiple
-  let isInitializing = false
-  let isInitialized = false
+    let isInitializing = false
+    let isInitialized = false
 
-  const { initializeEcho, resetEcho, subscribeToChannel, subscribeToRoleChannels } = useEcho()
+    const { initializeEcho, resetEcho, subscribeToChannel } = useEcho()
 
-  // Función para inicializar websockets cuando el usuario esté autenticado
-  const initializeWebSockets = async () => {
-    
-    
-    // Echo ya inicializado (p. ej. plugin auth): igual sincronizar canales del rol
-    if (isInitializing || isInitialized) {
-      syncRoleChannelsFromAuthUser()
-      return
-    }
+    const initializeWebSockets = async () => {
+      if (isInitializing || isInitialized) {
+        syncRoleChannelsFromAuthUser()
+        return
+      }
 
-    // No hacer reset aquí: provoca cierre y reconexión. Solo se hace reset en logout (storage).
+      const authToken = localStorage.getItem('auth_token')
+      const authUser = localStorage.getItem('auth_user')
 
-    // Verificar si el usuario está autenticado
-    const authToken = localStorage.getItem('auth_token')
-    const authUser = localStorage.getItem('auth_user')
-    
-    
-    if (!authToken || !authUser) {
-      
-      return
-    }
+      if (!authToken || !authUser) return
 
-    isInitializing = true
+      isInitializing = true
 
-    const echoConfig = buildEchoClientConfig(authToken)
-    
-    
+      const echoConfig = buildEchoClientConfig(authToken)
 
-          try {
-        // Inicializar Echo
+      try {
         await initializeEcho(echoConfig)
 
-        // Hacer Echo disponible globalmente
-        if (typeof window !== 'undefined') {
-          const echoInstance = getEchoInstance()
-          if (echoInstance) {
-            ;(window as any).Echo = echoInstance
-            
-          }
+        const echoInstance = getEchoInstance()
+        if (echoInstance) {
+          ;(window as any).Echo = echoInstance
         }
 
         const user = JSON.parse(authUser) as {
@@ -63,9 +43,7 @@ export default defineNuxtPlugin({
           raw?: { ID_Usuario?: number; id?: number; grupo?: { nombre?: string } }
         }
         const userId = user?.id ?? user?.raw?.ID_Usuario ?? user?.raw?.id
-        const role = user?.raw?.grupo?.nombre
 
-        // 1) Canal del usuario (calendario): private-App.Models.Usuario.{id} — siempre que haya userId
         if (userId != null) {
           try {
             const channelName = getUserCalendarChannelName(userId)
@@ -84,68 +62,52 @@ export default defineNuxtPlugin({
           }
         }
 
-        // 2) Canales por rol (Coordinación, Documentación, etc.) desde auth_user, no useUserRole (puede no estar cargado al recargar)
         syncRoleChannelsFromAuthUser()
-
         isInitialized = true
 
-        if (typeof window !== 'undefined') {
-          try {
-            const { waInboxLog } = await import('~/composables/whatsapp-inbox/waInboxWsLog')
-            waInboxLog('plugin.echo-ready')
-          } catch {
-            /* noop */
-          }
-          syncRoleChannelsFromAuthUser()
-          window.dispatchEvent(new CustomEvent('echo-ready'))
-          const { sincronizarSalasGlobales } = await import(
-            '~/composables/useSoporteTiChatGlobal'
-          )
-          await sincronizarSalasGlobales()
+        try {
+          const { waInboxLog } = await import('~/composables/whatsapp-inbox/waInboxWsLog')
+          waInboxLog('plugin.echo-ready')
+        } catch {
+          /* noop */
         }
-        
+        syncRoleChannelsFromAuthUser()
+        window.dispatchEvent(new CustomEvent('echo-ready'))
+        const { sincronizarSalasGlobales } = await import(
+          '~/composables/useSoporteTiChatGlobal'
+        )
+        void sincronizarSalasGlobales()
       } catch (error) {
         console.error('❌ Error inicializando WebSocket:', error)
       } finally {
         isInitializing = false
       }
-  }
-
-  // Diferir WebSocket hasta después del primer paint (no bloquea navegación inicial)
-  const scheduleWebSocketInit = () => {
-    if (typeof requestIdleCallback !== 'undefined') {
-      requestIdleCallback(() => { void initializeWebSockets() }, { timeout: 3000 })
-    } else {
-      setTimeout(() => { void initializeWebSockets() }, 800)
     }
-  }
 
-  scheduleWebSocketInit()
+    // Tras el primer paint: no bloquear montaje de la app
+    nuxtApp.hook('app:mounted', () => {
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(() => { void initializeWebSockets() }, { timeout: 3000 })
+      } else {
+        setTimeout(() => { void initializeWebSockets() }, 300)
+      }
+    })
 
-  // Escuchar cambios en el localStorage para detectar login/logout
-  if (process.client) {
     window.addEventListener('storage', (event) => {
       if (event.key === 'auth_token' || event.key === 'auth_user') {
         const authToken = localStorage.getItem('auth_token')
         const authUser = localStorage.getItem('auth_user')
-        
+
         if (!authToken || !authUser) {
-          // Usuario se deslogueó
-          
           resetEcho()
           isInitialized = false
           isInitializing = false
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('soporte-ti-chat-reset'))
-            delete (window as any).Echo
-          }
+          window.dispatchEvent(new CustomEvent('soporte-ti-chat-reset'))
+          delete (window as any).Echo
         } else {
-          // Usuario se logueó
-          
-          initializeWebSockets()
+          void initializeWebSockets()
         }
       }
     })
-  }
   }
 })

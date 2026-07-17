@@ -3,12 +3,10 @@ import AuthService from '../services/authService'
 export default defineNuxtPlugin({
   name: 'auth',
   dependsOn: ['websocket-events'],
-  async setup(nuxtApp) {
+  setup(nuxtApp) {
     const authService = AuthService.getInstance()
     authService.setNuxtApp(nuxtApp)
-
-    if (process.client) {
-      await authService.initializeEcho()
-    }
+    // Echo/WebSocket se inicializan en websocket.client.ts tras el primer paint
+    // (no await aquí: Nuxt espera los plugins async antes de montar la app).
   }
 })

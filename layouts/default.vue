@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import { isContentNarrow, setContentNarrow } from '~/composables/usePageLayout'
 import { useAuth } from '../composables/auth/useAuth'
 import { useMenuPrefetch } from '../composables/navigation/useMenuPrefetch'
@@ -393,32 +393,12 @@ onMounted(async () => {
   schedulePrefetchFromStorage()
 })
 
-onMounted(() => {
-  // Observe the main content for any DOM changes (slot content updates) so we can reset the
-  // page-level narrow flag and allow components to re-evaluate their layout.
-  let observer: MutationObserver | null = null
-  let timer: number | null = null
-  try {
-    if (typeof MutationObserver !== 'undefined' && mainContentRef.value) {
-      observer = new MutationObserver(() => {
-        // Debounce rapid mutations
-        if (timer) {
-          clearTimeout(timer)
-          timer = null
-        }
-        timer = window.setTimeout(() => {
-          try { setContentNarrow(false) } catch (e) {}
-        }, 50)
-      })
-      observer.observe(mainContentRef.value, { childList: true, subtree: true, attributes: true })
-    }
-  } catch (e) {
-    // ignore
+// Al cambiar de ruta, resetear el flag de layout estrecho (DataTable lo re-evalúa).
+// Evita MutationObserver con subtree/attributes sobre todo el main content (ruido de INP).
+watch(
+  () => route.path,
+  () => {
+    try { setContentNarrow(false) } catch (e) {}
   }
-
-  onUnmounted(() => {
-    try { if (observer) observer.disconnect() } catch (e) {}
-    try { if (timer) { clearTimeout(timer); timer = null } } catch (e) {}
-  })
-})
+)
 </script>

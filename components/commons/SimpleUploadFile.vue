@@ -17,7 +17,8 @@
                             :show-save-button="false"
                             :show-remove-button="false"
                             :accepted-types="acceptedTypes"
-                            :max-file-size="maxFileSize"
+                            :max-file-size="props.maxFileSize"
+                            :custom-message="`Selecciona o arrastra tu archivo aquí (máx. ${Math.round(props.maxFileSize / (1024 * 1024))} MB)`"
                             />
                         
                     </div>
@@ -57,7 +58,7 @@ const props = withDefaults(defineProps<{
     maxFileSize?: number
 }>(), {
     acceptedTypes: () => ['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar'],
-    maxFileSize: 10 * 1024 * 1024,
+    maxFileSize: 30 * 1024 * 1024,
 })
 
 const { showError } = useModal()
