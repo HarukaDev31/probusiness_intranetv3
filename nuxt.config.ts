@@ -62,46 +62,10 @@ export default defineNuxtConfig({
       },
       // Minificación CSS (por defecto true en prod; explícito para asegurar)
       cssMinify: 'esbuild',
-      rollupOptions: {
-        output: {
-          manualChunks: (id) => {
-            // Separar vendor libraries
-            if (id.includes('node_modules')) {
-              // Chart.js y sus dependencias
-              if (id.includes('chart.js') || id.includes('vue-chartjs')) {
-                return 'chart'
-              }
-              // XLSX
-              if (id.includes('xlsx')) {
-                return 'xlsx'
-              }
-              if (id.includes('pdfjs-dist')) {
-                return 'pdfjs'
-              }
-              // Pusher y Laravel Echo (WebSockets)
-              if (id.includes('pusher') || id.includes('laravel-echo')) {
-                return 'websocket'
-              }
-              // Otras dependencias grandes - dejar que Nuxt maneje Vue y UI por defecto
-              return 'vendor'
-            }
-          }
-        }
-      },
+      // Sin manualChunks: Rollup/Vite hacen splitting automático.
+      // El catch-all `vendor` metía en el entry deps de páginas lazy (p. ej. vuedraggable).
       chunkSizeWarningLimit: 1000,
     },
-    optimizeDeps: {
-      include: [
-        'vue',
-        'vue-router',
-        '@nuxt/icon',
-        'defu',
-        'vuedraggable',
-        'pusher-js',
-        'laravel-echo',
-      ],
-      exclude: ['chart.js', 'xlsx', 'pdfjs-dist'],
-    }
   },
   
   // Configuración de CSS
@@ -132,8 +96,8 @@ export default defineNuxtConfig({
         // Preconnect para Google Fonts (mejora LCP evitando bloqueo de render)
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        // Fuente Epilogue vía link (no render-blocking vs @import en CSS)
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Epilogue:wght@300;400;500;600;700;800&display=swap' },
+        // display=optional evita FOUT/CLS de swap; si la fuente no llega a tiempo, se usa fallback
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Epilogue:wght@300;400;500;600;700;800&display=optional' },
         { rel: 'icon', type: 'image/x-icon', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: 'https://intranet.probusiness.pe/assets/img/logos/probusiness.png' },

@@ -10,7 +10,8 @@
           class="image" 
           alt=""
           role="presentation"
-          loading="lazy"
+          fetchpriority="high"
+          decoding="async"
         />
       </div>
       
@@ -42,7 +43,7 @@
                 <label for="txt-usuario" class="sr-only">Correo electrónico</label>
                 <div class="input-group">
                   <span class="input-group-addon" aria-hidden="true">
-                    <i class="fa-solid fa-user fa-lg"></i>
+                    <UIcon name="i-heroicons-user" class="login-field-icon" />
                   </span>
                   <input
                     v-model="email"
@@ -67,7 +68,7 @@
                 <label for="txt-password" class="sr-only">Contraseña</label>
                 <div class="input-group">
                   <span class="input-group-addon" aria-hidden="true">
-                    <i class="fa-solid fa-lock fa-lg"></i>
+                    <UIcon name="i-heroicons-lock-closed" class="login-field-icon" />
                   </span>
                   <input
                     v-model="password"
@@ -89,7 +90,10 @@
                     class="toggle-password"
                     tabindex="0"
                   >
-                    <i :class="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                    <UIcon
+                      :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                      class="login-field-icon"
+                    />
                   </button>
                 </div>
               </div>
@@ -145,60 +149,16 @@ definePageMeta({
   layout: 'auth'
 })
 import { useAuth } from '../composables/auth/useAuth'
-import { useSpinner } from '../composables/commons/useSpinner'
 // Auth composable
 const { login, loading, error } = useAuth()
 
-// Color mode composable
-const colorMode = useColorMode()
-const isDark = computed(() => colorMode.value === 'dark')
-
-// Logo handling: usar URL pública del intranet para el logo oscuro
-const intranetLogoUrl = 'https://intranetback.probusiness.pe/storage/logo_icons/logo_header_white.png'
-const localLogo = '/assets/img/logos/logo_probusiness.webp'
-const logoSrc = computed(() => isDark.value ? intranetLogoUrl : localLogo)
-
-import { onMounted } from 'vue'
+// Logo local (evita CSP bloqueando intranetback.probusiness.pe)
+const logoSrc = '/assets/img/logos/logo_probusiness.webp'
 
 // Login page state
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
-
-// Preload images before showing the UI using the global spinner
-const { withSpinner } = useSpinner()
-
-const preloadImage = (url: string, timeout = 10_000) => {
-  return new Promise<void>((resolve, reject) => {
-    try {
-      const img = new Image()
-      let timer: any = null
-      img.onload = () => {
-        if (timer) clearTimeout(timer)
-        resolve()
-      }
-      img.onerror = (e) => {
-        if (timer) clearTimeout(timer)
-        resolve()
-      }
-      img.src = url
-      timer = setTimeout(() => {
-        resolve()
-      }, timeout)
-    } catch (err) {
-      resolve()
-    }
-  })
-}
-
-onMounted(() => {
-  // preload both background and logo (logoSrc may be external)
-  withSpinner(async () => {
-    const bg = '/assets/img/backgrounds/portada_probusiness.webp'
-    const logo = isDark.value ? intranetLogoUrl : localLogo
-    await Promise.all([preloadImage(bg), preloadImage(logo)])
-  }, 'Cargando...')
-})
 
 // Login handler
 const handleLogin = async () => {
@@ -306,6 +266,16 @@ useHead({
   width: 70%;
   max-width: 250px;
   height: auto;
+}
+
+.dark .img-logo {
+  filter: brightness(0) invert(1);
+}
+
+.login-field-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
 }
 
 .welcome-section {
@@ -597,12 +567,6 @@ useHead({
   .toggle-password { 
     padding: 14px;
   }
-}
-
-/* Font Awesome Icons */
-.fa-solid {
-  font-family: 'Font Awesome 6 Free';
-  font-weight: 900;
 }
 
 /* Spinner for loading state */

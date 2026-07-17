@@ -15,6 +15,8 @@
                             @file-removed="handleFileRemoved" 
                             :show-save-button="false"
                             :show-remove-button="false"
+                            :max-file-size="props.maxFileSize"
+                            :custom-message="`Selecciona o arrastra tu archivo aquí (máx. ${Math.round(props.maxFileSize / (1024 * 1024))} MB)`"
                             />
                         
                     </div>
@@ -46,10 +48,13 @@ const emit = defineEmits<{
     (e: 'save', data: { file: File, name?: string | null }): void
 }>()
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     title: string
     withNameField?: boolean
-}>()
+    maxFileSize?: number
+}>(), {
+    maxFileSize: 30 * 1024 * 1024
+})
 const selectedFile = ref<File | null>(null)
 const fileUploaderRef = ref<InstanceType<typeof FileUploader> | null>(null)
 const name = ref<string>('')

@@ -274,9 +274,14 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Factura Comercial
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false" :disabled="!isCoordinacion"
-                                :custom-message="'Selecciona o arrastra tu archivo aquí'"
-                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.factura_comercial ? [{
+                        <FileUploader
+                            :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
+                            :max-file-size="MAX_UPLOAD_BYTES"
+                            :immediate="false"
+                            :disabled="!isCoordinacion"
+                            :custom-message="'Selecciona o arrastra tu archivo aquí (máx. 30 MB)'"
+                            :show-remove-button="currentRole === ROLES.COORDINACION"
+                            :initial-files="proveedorActivo.factura_comercial ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Factura Comercial',
                                     file_url: proveedorActivo.factura_comercial,
@@ -293,9 +298,14 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Packing List
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
-                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :immediate="false" :disabled="!isCoordinacion"
-                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="proveedorActivo.packing_list ? [{
+                            <FileUploader
+                                :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
+                                :max-file-size="MAX_UPLOAD_BYTES"
+                                :custom-message="'Selecciona o arrastra tu archivo aquí (máx. 30 MB)'"
+                                :immediate="false"
+                                :disabled="!isCoordinacion"
+                                :show-remove-button="currentRole === ROLES.COORDINACION"
+                                :initial-files="proveedorActivo.packing_list ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Packing List',
                                     file_url: proveedorActivo.packing_list,
@@ -311,9 +321,14 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Excel Confirmación
                             </label>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false" :disabled="!isCoordinacion"
+                            <FileUploader
+                                :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
+                                :max-file-size="MAX_UPLOAD_BYTES"
+                                :immediate="false"
+                                :disabled="!isCoordinacion"
                                 :show-remove-button="currentRole === ROLES.COORDINACION"
-                                :custom-message="'Selecciona o arrastra tu archivo aquí'" :initial-files="proveedorActivo.excel_confirmacion ? [{
+                                :custom-message="'Selecciona o arrastra tu archivo aquí (máx. 30 MB)'"
+                                :initial-files="proveedorActivo.excel_confirmacion ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Excel Confirmación',
                                     file_url: proveedorActivo.excel_confirmacion,
@@ -326,8 +341,12 @@
                         </div>
                         <div v-for="file in files.filter(f => f.id_proveedor === proveedorActivo.id)" :key="file.id">
                             <span>{{ file.folder_name||file.file_name }}</span>
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false"
-                                :show-remove-button="currentRole === ROLES.COORDINACION" :initial-files="[{
+                            <FileUploader
+                                :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
+                                :max-file-size="MAX_UPLOAD_BYTES"
+                                :immediate="false"
+                                :show-remove-button="currentRole === ROLES.COORDINACION"
+                                :initial-files="[{
                                     id: file.id,
                                     file_name: file.folder_name||file.file_name,
                                     file_url: file.file_url,
@@ -365,7 +384,10 @@
                         <div v-for="file in filesAlmacenDocumentacion.filter(f => f.id_proveedor === proveedorActivo.id)"
                             :key="file.id">
 
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false"
+                        <FileUploader
+                            :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
+                            :max-file-size="MAX_UPLOAD_BYTES"
+                            :immediate="false"
                                 :show-remove-button="false" :initial-files="[{
                                     id: file.id,
                                     file_name: file.file_name,
@@ -376,7 +398,6 @@
                                     file_ext: file.file_ext
                                 }]" />
                         </div>
-
                     </div>
 
                 </UCard>
@@ -403,7 +424,10 @@
                     <div class="space-y-4">
                         <div v-for="file in filesAlmacenInspection.filter(f => f.id_proveedor === proveedorActivo.id)"
                             :key="file.id">
-                            <FileUploader :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']" :immediate="false"
+                            <FileUploader
+                                :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
+                                :max-file-size="MAX_UPLOAD_BYTES"
+                                :immediate="false"
                                 :show-remove-button="false" :initial-files="[{
                                     id: file.id,
                                     file_name: file.file_name,
@@ -448,6 +472,7 @@
 
 <script setup lang="ts">
 import type { ClientesDocumentacionViewProps } from './types'
+import { MAX_UPLOAD_BYTES } from './constants'
 import { onMounted, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useModal } from '~/composables/commons/useModal'
@@ -794,6 +819,7 @@ const handleNuevoDocumento = () => {
     simpleUploadFile.open({
         title: 'Nuevo Documento',
         withNameField: true,
+        maxFileSize: MAX_UPLOAD_BYTES,
         onSave: (data: { file: File, name?: string | null }) => {
             /**
              * name
