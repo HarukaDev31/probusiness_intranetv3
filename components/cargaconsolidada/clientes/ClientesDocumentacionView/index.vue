@@ -819,6 +819,7 @@ const handleNuevoDocumento = () => {
     simpleUploadFile.open({
         title: 'Nuevo Documento',
         withNameField: true,
+        acceptedTypes: ['.xlsx', '.xls', '.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx', '.zip', '.rar'],
         maxFileSize: MAX_UPLOAD_BYTES,
         onSave: (data: { file: File, name?: string | null }) => {
             /**
