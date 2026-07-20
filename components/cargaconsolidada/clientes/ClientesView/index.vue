@@ -1386,7 +1386,6 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
                     modelValue: p.invoice_status,
                     items: itemsWithClass,
                     class: `w-full ${cls}`,
-                    variant: 'ghost',
                     'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'invoice_status', v) }
                 })
             }))
@@ -1411,7 +1410,6 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
                     modelValue: p.packing_status,
                     items: itemsWithClass,
                     class: `w-full ${cls}`,
-                    variant: 'ghost',
                     'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'packing_status', v) }
                 })
             }))
@@ -1436,7 +1434,6 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
                     modelValue: p.excel_conf_status,
                     items: itemsWithClass,
                     class: `w-full ${cls}`,
-                    variant: 'ghost',
                     'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'excel_conf_status', v) }
                 })
             }))
