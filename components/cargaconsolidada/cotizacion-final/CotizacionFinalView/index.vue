@@ -939,8 +939,8 @@ const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: s
         cobranzaWhatsappModal.idCotizacion = idCotizacion
         cobranzaWhatsappModal.templates = ((result as any).whatsapp_templates || []) as CobranzaWhatsappTemplate[]
         cobranzaWhatsappModal.meta = ((result as any).whatsapp_preview_meta || null) as CobranzaWhatsappPreviewMeta | null
+        // No showSuccess encima: al cerrar el éxito, el click cerraba este modal (overlay).
         cobranzaWhatsappModal.open = true
-        showSuccess('Éxito', 'Estado actualizado. Revisa los mensajes a enviar.')
         return
       }
       showSuccess('Éxito', 'Estado actualizado correctamente')
