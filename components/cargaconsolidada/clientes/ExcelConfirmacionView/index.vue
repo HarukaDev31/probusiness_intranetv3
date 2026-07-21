@@ -71,12 +71,25 @@ const statusSelectClass = (status: string | null | undefined) => {
 }
 
 const excelConfStatusClass = computed(() =>
-  statusSelectClass(activeProveedor.value?.excel_conf_status)
+  statusSelectClass(
+    isCoord2Docs.value
+      ? activeProveedor.value?.excel_conf_status
+      : activeProveedor.value?.excel_conf_status_final
+  )
 )
 
-const excelConfStatusFinalClass = computed(() =>
-  statusSelectClass(activeProveedor.value?.excel_conf_status_final)
+const excelConfStatusField = computed(() =>
+  isCoord2Docs.value ? 'excel_conf_status' : 'excel_conf_status_final'
 )
+
+const excelConfStatusModel = computed(() => {
+  const proveedor = activeProveedor.value
+  if (!proveedor) return 'Pendiente' as ProveedorManualStatus
+  const value = isCoord2Docs.value
+    ? proveedor.excel_conf_status
+    : proveedor.excel_conf_status_final
+  return (value || 'Pendiente') as ProveedorManualStatus
+})
 
 const proveedorTabs = computed(() =>
   formState.value.map((proveedor, index) => ({
@@ -181,11 +194,10 @@ const updateExcelConfStatusField = async (
 }
 
 const updateExcelConfStatus = async (value: string | ProveedorManualStatus) => {
-  await updateExcelConfStatusField('excel_conf_status', value)
-}
-
-const updateExcelConfStatusFinal = async (value: string | ProveedorManualStatus) => {
-  await updateExcelConfStatusField('excel_conf_status_final', value)
+  await updateExcelConfStatusField(
+    isCoord2Docs.value ? 'excel_conf_status' : 'excel_conf_status_final',
+    value
+  )
 }
 
 const load = async () => {
@@ -445,25 +457,12 @@ onMounted(load)
               Excel Conf.
             </span>
             <USelect
-              :key="`excel-conf-${activeProveedor.id}`"
-              :model-value="(activeProveedor.excel_conf_status || 'Pendiente') as ProveedorManualStatus"
+              :key="`excel-conf-${activeProveedor.id}-${excelConfStatusField}`"
+              :model-value="excelConfStatusModel"
               :items="excelConfStatusItems"
               :class="excelConfStatusClass"
-              :disabled="!isCoord2Docs"
               size="sm"
               @update:model-value="(value: string) => updateExcelConfStatus(value)"
-            />
-            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
-              Excel Conf. VB
-            </span>
-            <USelect
-              :key="`excel-conf-vb-${activeProveedor.id}`"
-              :model-value="(activeProveedor.excel_conf_status_final || 'Pendiente') as ProveedorManualStatus"
-              :items="excelConfStatusItems"
-              :class="excelConfStatusFinalClass"
-              :disabled="isCoord2Docs"
-              size="sm"
-              @update:model-value="(value: string) => updateExcelConfStatusFinal(value)"
             />
           </div>
         </div>
