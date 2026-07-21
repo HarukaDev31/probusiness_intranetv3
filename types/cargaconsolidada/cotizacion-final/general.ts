@@ -23,6 +23,16 @@ export interface CobranzaWhatsappTemplate {
     description: string
     selected_by_default: boolean
     has_media: boolean
+    media_label?: string | null
+    order?: number
+    preview?: string
+    preview_type?: string
+}
+
+export interface CobranzaWhatsappPreviewMeta {
+    phone?: string | null
+    cliente?: string | null
+    carga?: string | null
 }
 
 export interface GeneralResponse {
@@ -33,4 +43,5 @@ export interface GeneralResponse {
     requires_whatsapp_selection?: boolean
     id_cotizacion?: number
     whatsapp_templates?: CobranzaWhatsappTemplate[]
+    whatsapp_preview_meta?: CobranzaWhatsappPreviewMeta
 }
