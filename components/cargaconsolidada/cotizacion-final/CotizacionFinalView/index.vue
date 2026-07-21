@@ -82,6 +82,7 @@
       v-model:open="cobranzaWhatsappModal.open"
       :id-cotizacion="cobranzaWhatsappModal.idCotizacion"
       :templates="cobranzaWhatsappModal.templates"
+      :meta="cobranzaWhatsappModal.meta"
       :loading="cobranzaWhatsappModal.loading"
       @confirm="confirmCobranzaWhatsapp"
       @skip="skipCobranzaWhatsapp"
@@ -109,7 +110,7 @@ import { ROLES } from '~/constants/roles'
 import { UTooltip } from '#components'
 import CargosExtraServiciosCell from '~/components/cargaconsolidada/cotizacion-final/CargosExtraServiciosCell/index.vue'
 import CobranzaWhatsappTemplatesModal from '~/components/cargaconsolidada/cotizacion-final/CobranzaWhatsappTemplatesModal/index.vue'
-import type { CobranzaWhatsappTemplate } from '~/types/cargaconsolidada/cotizacion-final/general'
+import type { CobranzaWhatsappTemplate, CobranzaWhatsappPreviewMeta } from '~/types/cargaconsolidada/cotizacion-final/general'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const { currentRole: authCurrentRole } = useUserRole()
@@ -925,6 +926,7 @@ const cobranzaWhatsappModal = reactive({
   open: false,
   idCotizacion: null as number | null,
   templates: [] as CobranzaWhatsappTemplate[],
+  meta: null as CobranzaWhatsappPreviewMeta | null,
   loading: false,
 })
 
@@ -936,8 +938,9 @@ const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: s
       if (estado === 'COBRANDO' && (result as any).requires_whatsapp_selection) {
         cobranzaWhatsappModal.idCotizacion = idCotizacion
         cobranzaWhatsappModal.templates = ((result as any).whatsapp_templates || []) as CobranzaWhatsappTemplate[]
+        cobranzaWhatsappModal.meta = ((result as any).whatsapp_preview_meta || null) as CobranzaWhatsappPreviewMeta | null
         cobranzaWhatsappModal.open = true
-        showSuccess('Éxito', 'Estado actualizado. Selecciona las plantillas a enviar.')
+        showSuccess('Éxito', 'Estado actualizado. Revisa los mensajes a enviar.')
         return
       }
       showSuccess('Éxito', 'Estado actualizado correctamente')
