@@ -3,22 +3,32 @@
     v-model:open="isOpen"
     class="sm:max-w-2xl"
     :dismissible="false"
-    :close="false"
     @update:open="onOpenChange"
   >
-    <template #header>
-      <div>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Enviar WhatsApp — Cobranza
-        </h3>
-        <p class="text-sm text-gray-500 mt-1">
-          Cotización #{{ idCotizacion }}
-          <span v-if="meta?.cliente"> · {{ meta.cliente }}</span>
-          <span v-if="meta?.carga"> · Carga {{ meta.carga }}</span>
-        </p>
-        <p class="text-xs text-gray-400 mt-0.5">
-          Vista previa del texto y del adjunto (PDF/imagen). Todas vienen seleccionadas; desmarca las que no quieras.
-        </p>
+    <template #header="{ close }">
+      <div class="flex items-start justify-between gap-3 w-full">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            Enviar WhatsApp — Cobranza
+          </h3>
+          <p class="text-sm text-gray-500 mt-1">
+            Cotización #{{ idCotizacion }}
+            <span v-if="meta?.cliente"> · {{ meta.cliente }}</span>
+            <span v-if="meta?.carga"> · Carga {{ meta.carga }}</span>
+          </p>
+          <p class="text-xs text-gray-400 mt-0.5">
+            Vista previa del texto y del adjunto (PDF/imagen). Todas vienen seleccionadas; desmarca las que no quieras.
+          </p>
+        </div>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-heroicons-x-mark-20-solid"
+          class="-my-1"
+          aria-label="Cerrar"
+          :disabled="loading"
+          @click="close()"
+        />
       </div>
     </template>
 
