@@ -17,6 +17,7 @@ export interface ExcelConfirmacionProveedor {
   code_supplier: string
   supplier: string | null
   excel_conf_status: string | null
+  excel_conf_status_final?: string | null
   excel_conf_form_cerrado: boolean
   items: ExcelConfirmacionItem[]
 }

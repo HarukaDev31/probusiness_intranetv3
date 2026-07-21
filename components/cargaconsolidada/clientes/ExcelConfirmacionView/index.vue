@@ -3,11 +3,19 @@ import ExcelConfirmacionItemForm from '~/components/cargaconsolidada/clientes/Ex
 import ExcelConfirmacionSkeleton from '~/components/cargaconsolidada/clientes/ExcelConfirmacionSkeleton/index.vue'
 import {
   ExcelConfirmacionCoordinacionService,
-  type ExcelConfirmacionData,
-  type ExcelConfirmacionProveedor
+  type ExcelConfirmacionData
 } from '~/services/cargaconsolidada/clientes/excelConfirmacionCoordinacionService'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotizacionProveedor'
+import { STATUS_BG_CLASSES } from '~/constants/ui'
+import {
+  MANUAL_STATUS_TO_STATUS_BG_KEY,
+  PROVIDER_MANUAL_STATUSES,
+  isCoord2DocsEmail
+} from '~/components/cargaconsolidada/clientes/ClientesView/constants'
+import type { ProveedorManualStatus } from '~/components/cargaconsolidada/clientes/ClientesView/types'
+import { useUserRole } from '~/composables/auth/useUserRole'
 import {
   apiItemToFormState,
   formStateToSaveItem,
@@ -31,6 +39,11 @@ const clienteQueryName = computed(() => String(route.query.cliente || ''))
 
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
+const { updateProveedor } = useCotizacionProveedor()
+const { userEmail, fetchCurrentUser } = useUserRole()
+const isCoord2Docs = computed(() => isCoord2DocsEmail(userEmail.value))
+
+fetchCurrentUser()
 
 const loading = ref(true)
 const data = ref<ExcelConfirmacionData | null>(null)
@@ -41,11 +54,34 @@ const openProductIds = ref<string[]>([])
 
 const activeProveedor = computed(() => formState.value[activeProveedorIndex.value] ?? null)
 
+const excelConfStatusItems = computed(() =>
+  PROVIDER_MANUAL_STATUSES.map((status) => {
+    const key = MANUAL_STATUS_TO_STATUS_BG_KEY[status] ?? status
+    return {
+      label: status,
+      value: status,
+      class: (STATUS_BG_CLASSES as Record<string, string>)[key] ?? ''
+    }
+  })
+)
+
+const statusSelectClass = (status: string | null | undefined) => {
+  const key = MANUAL_STATUS_TO_STATUS_BG_KEY[(status || 'Pendiente') as ProveedorManualStatus] ?? 'WAIT'
+  return `w-36 shrink-0 ${(STATUS_BG_CLASSES as Record<string, string>)[key] ?? ''}`
+}
+
+const excelConfStatusClass = computed(() =>
+  statusSelectClass(activeProveedor.value?.excel_conf_status)
+)
+
+const excelConfStatusFinalClass = computed(() =>
+  statusSelectClass(activeProveedor.value?.excel_conf_status_final)
+)
+
 const proveedorTabs = computed(() =>
   formState.value.map((proveedor, index) => ({
     label: proveedor.code_supplier || `Proveedor ${index + 1}`,
-    value: index,
-    badge: proveedor.excel_conf_form_cerrado ? 'Cerrado' : undefined
+    value: index
   }))
 )
 
@@ -97,9 +133,59 @@ const buildFormState = (payload: ExcelConfirmacionData) => {
   formState.value = payload.proveedores.map((proveedor) => ({
     id: proveedor.id,
     code_supplier: proveedor.code_supplier,
-    excel_conf_form_cerrado: Boolean(proveedor.excel_conf_form_cerrado),
+    excel_conf_status: proveedor.excel_conf_status || 'Pendiente',
+    excel_conf_status_final: proveedor.excel_conf_status_final || 'Pendiente',
+    excel_conf_form_cerrado: Boolean(proveedor.excel_conf_form_cerrado)
+      || proveedor.excel_conf_status === 'Revisado',
     items: proveedor.items.map((item) => apiItemToFormState(item, labels.value))
   }))
+}
+
+const updateExcelConfStatusField = async (
+  field: 'excel_conf_status' | 'excel_conf_status_final',
+  value: string | ProveedorManualStatus
+) => {
+  const next = String(value || '') as ProveedorManualStatus
+  const proveedor = activeProveedor.value
+  if (!proveedor || !next || next === proveedor[field]) return
+  if (!PROVIDER_MANUAL_STATUSES.includes(next)) return
+
+  const previous = proveedor[field]
+  const previousCerrado = proveedor.excel_conf_form_cerrado
+  proveedor[field] = next
+  if (field === 'excel_conf_status') {
+    proveedor.excel_conf_form_cerrado = next === 'Revisado'
+  }
+
+  try {
+    await withSpinner(async () => {
+      const formData = new FormData()
+      formData.append('id', String(proveedor.id))
+      formData.append(field, next)
+      const response = await updateProveedor(formData)
+      if (!response?.success) {
+        throw new Error((response as any)?.message || 'No se pudo actualizar el estado')
+      }
+      if (field === 'excel_conf_status' && next === 'Revisado' && proveedor.excel_conf_status_final !== 'Revisado') {
+        proveedor.excel_conf_status_final = 'Recibido'
+      }
+    }, 'Actualizando estado...')
+    showSuccess('Actualización exitosa', 'El estado de Excel Conf. se guardó correctamente.')
+  } catch (e: any) {
+    proveedor[field] = previous
+    if (field === 'excel_conf_status') {
+      proveedor.excel_conf_form_cerrado = previousCerrado
+    }
+    showError('Error', e?.message || 'No se pudo guardar el estado')
+  }
+}
+
+const updateExcelConfStatus = async (value: string | ProveedorManualStatus) => {
+  await updateExcelConfStatusField('excel_conf_status', value)
+}
+
+const updateExcelConfStatusFinal = async (value: string | ProveedorManualStatus) => {
+  await updateExcelConfStatusField('excel_conf_status_final', value)
 }
 
 const load = async () => {
@@ -237,25 +323,6 @@ const performSave = async () => {
   }
 }
 
-const toggleCerrado = async (proveedor: ExcelConfirmacionProveedor | IntranetProveedorFormState) => {
-  const isCerrado = proveedor.excel_conf_form_cerrado
-  const title = isCerrado ? 'Reabrir formulario' : 'Cerrar formulario'
-  const message = isCerrado
-    ? 'El cliente podrá volver a editar este proveedor.'
-    : 'El cliente ya no podrá editar este proveedor hasta que lo reabras.'
-
-  showConfirmation(title, message, async () => {
-    await withSpinner(async () => {
-      const res = isCerrado
-        ? await ExcelConfirmacionCoordinacionService.reabrirProveedor(proveedor.id)
-        : await ExcelConfirmacionCoordinacionService.cerrarProveedor(proveedor.id)
-      if (!res.success) throw new Error(res.message || 'No se pudo actualizar')
-      showSuccess('Listo', res.message || 'Estado actualizado')
-      await load()
-    }, 'Actualizando...')
-  })
-}
-
 const downloadExcelFile = async (url: string, fileName: string, spinnerLabel: string) => {
   try {
     await withSpinner(async () => {
@@ -282,14 +349,6 @@ const downloadExcelFile = async (url: string, fileName: string, spinnerLabel: st
   } catch (e: any) {
     showError('Error', e?.message || 'No se pudo generar el Excel')
   }
-}
-
-const downloadExcel = async (proveedor: IntranetProveedorFormState) => {
-  await downloadExcelFile(
-    ExcelConfirmacionCoordinacionService.exportProveedorUrl(proveedor.id),
-    `excel_confirmacion_${proveedor.code_supplier || proveedor.id}.xlsx`,
-    'Generando Excel...'
-  )
 }
 
 const downloadExcelGeneral = async () => {
@@ -344,7 +403,7 @@ onMounted(load)
       @back="goBack"
     >
       <template v-if="!loading" #actions>
-        <div class="flex flex-wrap gap-2 justify-end">
+        <div class="flex flex-wrap items-center gap-2 justify-end">
           <UButton
             color="neutral"
             variant="outline"
@@ -368,48 +427,49 @@ onMounted(load)
     <ExcelConfirmacionSkeleton v-if="loading" />
 
     <div v-else-if="data && formState.length" class="space-y-4">
-      <UCard class="p-1.5">
-        <UTabs
-          v-model="activeProveedorIndex"
-          :items="proveedorTabs"
-          variant="pill"
-          color="primary"
-          class="w-full"
-          :content="false"
-        />
+      <UCard class="p-2 sm:p-3">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <UTabs
+            v-model="activeProveedorIndex"
+            :items="proveedorTabs"
+            variant="pill"
+            color="primary"
+            class="min-w-0 flex-1"
+            :content="false"
+          />
+          <div
+            v-if="activeProveedor"
+            class="flex flex-wrap items-center gap-2 shrink-0 lg:border-l lg:border-gray-200 lg:dark:border-gray-700 lg:pl-3"
+          >
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              Excel Conf.
+            </span>
+            <USelect
+              :key="`excel-conf-${activeProveedor.id}`"
+              :model-value="(activeProveedor.excel_conf_status || 'Pendiente') as ProveedorManualStatus"
+              :items="excelConfStatusItems"
+              :class="excelConfStatusClass"
+              :disabled="!isCoord2Docs"
+              size="sm"
+              @update:model-value="(value: string) => updateExcelConfStatus(value)"
+            />
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              Excel Conf. VB
+            </span>
+            <USelect
+              :key="`excel-conf-vb-${activeProveedor.id}`"
+              :model-value="(activeProveedor.excel_conf_status_final || 'Pendiente') as ProveedorManualStatus"
+              :items="excelConfStatusItems"
+              :class="excelConfStatusFinalClass"
+              :disabled="isCoord2Docs"
+              size="sm"
+              @update:model-value="(value: string) => updateExcelConfStatusFinal(value)"
+            />
+          </div>
+        </div>
       </UCard>
 
       <div v-if="activeProveedor" class="space-y-4">
-        <UCard>
-          <div class="flex flex-wrap items-center gap-2 justify-between">
-            <UBadge
-              :color="activeProveedor.excel_conf_form_cerrado ? 'error' : 'success'"
-              variant="subtle"
-            >
-              {{ activeProveedor.excel_conf_form_cerrado ? 'Cerrado para el cliente' : 'Abierto para el cliente' }}
-            </UBadge>
-            <div class="flex flex-wrap gap-2">
-              <UButton
-                size="sm"
-                variant="outline"
-                icon="i-heroicons-arrow-down-tray"
-                @click="downloadExcel(activeProveedor)"
-              >
-                Generar Excel
-              </UButton>
-              <UButton
-                size="sm"
-                :color="activeProveedor.excel_conf_form_cerrado ? 'primary' : 'warning'"
-                variant="soft"
-                :icon="activeProveedor.excel_conf_form_cerrado ? 'i-heroicons-lock-open' : 'i-heroicons-lock-closed'"
-                @click="toggleCerrado(activeProveedor)"
-              >
-                {{ activeProveedor.excel_conf_form_cerrado ? 'Reabrir' : 'Cerrar' }}
-              </UButton>
-            </div>
-          </div>
-        </UCard>
-
         <div v-if="activeProveedor.items.length" class="space-y-4">
           <UCard
             v-for="(accItem, index) in accordionItems"
@@ -458,7 +518,7 @@ onMounted(load)
                 <ExcelConfirmacionItemForm
                   :item="accItem.item"
                   :labels="accItem.labels"
-                  :readonly="activeProveedor.excel_conf_form_cerrado"
+                  :readonly="false"
                   @update:item="updateItem(activeProveedorIndex, index, $event)"
                 />
               </template>

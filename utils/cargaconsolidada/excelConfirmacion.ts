@@ -32,6 +32,8 @@ export interface IntranetItemFormState {
 export interface IntranetProveedorFormState {
   id: number
   code_supplier: string
+  excel_conf_status?: string | null
+  excel_conf_status_final?: string | null
   excel_conf_form_cerrado: boolean
   items: IntranetItemFormState[]
 }

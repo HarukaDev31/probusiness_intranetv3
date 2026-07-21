@@ -156,6 +156,7 @@ import {
     MANUAL_STATUS_TO_STATUS_BG_KEY,
     PROVIDER_MANUAL_STATUSES,
     READ_ONLY_COLUMN_KEYS,
+    isCoord2DocsEmail,
 } from './constants'
 
 function getPermisoEstadoClass(estado: string): string {
@@ -187,7 +188,34 @@ function renderEstadoPermisoPorTipo(list: Array<{ id_tipo_permiso?: number; nomb
 
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
-const { currentRole: authCurrentRole, currentId, isCoordinacion, isCotizador } = useUserRole()
+const { currentRole: authCurrentRole, currentId, isCoordinacion, isCotizador, userEmail, fetchCurrentUser } = useUserRole()
+const isCoord2Docs = computed(() => isCoord2DocsEmail(userEmail.value))
+fetchCurrentUser()
+
+const renderDocStatusSelects = (row: any, field: string, editable: boolean) => {
+    const proveedores = row.original.proveedores || []
+    const statuses = PROVIDER_MANUAL_STATUSES
+    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
+        if (!p[field]) p[field] = 'Pendiente'
+        const itemsWithClass = statuses.map((s: string) => {
+            const key = MANUAL_STATUS_TO_STATUS_BG_KEY[s as keyof typeof MANUAL_STATUS_TO_STATUS_BG_KEY] ?? s
+            const itemCls = (STATUS_BG_CLASSES as any)[key] ?? ''
+            return { label: s, value: s, class: itemCls }
+        })
+        const mapped = MANUAL_STATUS_TO_STATUS_BG_KEY[p[field] as keyof typeof MANUAL_STATUS_TO_STATUS_BG_KEY] || 'Pendiente'
+        const cls = STATUS_BG_CLASSES[mapped as keyof typeof STATUS_BG_CLASSES] ?? ''
+        return h(USelect as any, {
+            modelValue: p[field],
+            items: itemsWithClass,
+            class: `w-full ${cls}`,
+            variant: 'solid',
+            disabled: !editable,
+            'onUpdate:modelValue': editable
+                ? async (v: string) => { await saveProveedorField(p, field, v) }
+                : undefined
+        })
+    }))
+}
 
 const props = withDefaults(defineProps<ClientesViewProps>(), {
   backBasePath: undefined
@@ -819,14 +847,6 @@ const columnsCoordinacion: TableColumn<any>[] = [
                     }
                 }),
                 h(UButton, {
-                    icon: 'i-heroicons-clipboard-document-check',
-                    variant: 'ghost',
-                    color: 'primary',
-                    size: 'xs',
-                    title: 'Ver confirmación web del cliente',
-                    onClick: () => openExcelConfirmacionPage(row.original)
-                }),
-                h(UButton, {
                     icon: 'i-heroicons-eye',
                     variant: 'ghost',
                     size: 'xs',
@@ -1290,26 +1310,35 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
             //button view with more info
-            return h(UButton, {
-                icon: 'iconamoon:menu-burger-horizontal',
-                variant: 'ghost',
-                size: 'xs',
-                'aria-label': 'Acciones del cliente',
-                onClick: () => {
-                    //generar un modal para solicitar el tipo de recordatorio de documento
-                    console.log(row.original)
-                    modalAcciones.open({
-                        show: true,
-                        clienteId: row.original.id,
-                        clienteName: row.original.nombre,
-                        onSelected: (data: any) => {
-                            console.log(data)
-                        },
-                        validateMaxDate: true
-                    })
-                }
-            },
-            )
+            return h('div', { class: 'flex items-center gap-1' }, [
+                h(UButton, {
+                    icon: 'i-heroicons-clipboard-document-check',
+                    variant: 'ghost',
+                    color: 'primary',
+                    size: 'xs',
+                    title: 'Ver confirmación web del cliente',
+                    onClick: () => openExcelConfirmacionPage(row.original)
+                }),
+                h(UButton, {
+                    icon: 'iconamoon:menu-burger-horizontal',
+                    variant: 'ghost',
+                    size: 'xs',
+                    'aria-label': 'Acciones del cliente',
+                    onClick: () => {
+                        //generar un modal para solicitar el tipo de recordatorio de documento
+                        console.log(row.original)
+                        modalAcciones.open({
+                            show: true,
+                            clienteId: row.original.id,
+                            clienteName: row.original.nombre,
+                            onSelected: (data: any) => {
+                                console.log(data)
+                            },
+                            validateMaxDate: true
+                        })
+                    }
+                }),
+            ])
         }
     }
 ])
@@ -1393,78 +1422,32 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
     {
         accessorKey: 'invoice_status',
         header: 'Invoice',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores || []
-            const statuses = PROVIDER_MANUAL_STATUSES
-            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
-                if (!p.invoice_status) p.invoice_status = 'Pendiente'
-                // build items including per-option class
-                const itemsWithClass = statuses.map((s: string) => {
-                    const key = MANUAL_STATUS_TO_STATUS_BG_KEY[s] ?? s
-                    const itemCls = (STATUS_BG_CLASSES as any)[key] ?? ''
-                    return { label: s, value: s, class: itemCls }
-                })
-                const mapped = MANUAL_STATUS_TO_STATUS_BG_KEY[p.invoice_status] || 'Pendiente'
-                const cls = STATUS_BG_CLASSES[mapped as keyof typeof STATUS_BG_CLASSES] ?? ''
-                return h(USelect as any, {
-                    modelValue: p.invoice_status,
-                    items: itemsWithClass,
-                    class: `w-full ${cls}`,
-                    variant: 'ghost',
-                    'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'invoice_status', v) }
-                })
-            }))
-        }
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'invoice_status', isCoord2Docs.value)
+    },
+    {
+        accessorKey: 'invoice_status_final',
+        header: 'Invoice VB',
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'invoice_status_final', !isCoord2Docs.value)
     },
     {
         accessorKey: 'packing_status',
         header: 'Packing list',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores || []
-            const statuses = PROVIDER_MANUAL_STATUSES
-            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
-                if (!p.packing_status) p.packing_status = 'Pendiente'
-                const itemsWithClass = statuses.map((s: string) => {
-                    const key = MANUAL_STATUS_TO_STATUS_BG_KEY[s] ?? s
-                    const itemCls = (STATUS_BG_CLASSES as any)[key] ?? ''
-                    return { label: s, value: s, class: itemCls }
-                })
-                const mapped = MANUAL_STATUS_TO_STATUS_BG_KEY[p.packing_status] || 'Pendiente'
-                const cls = STATUS_BG_CLASSES[mapped as keyof typeof STATUS_BG_CLASSES] ?? ''
-                return h(USelect as any, {
-                    modelValue: p.packing_status,
-                    items: itemsWithClass,
-                    class: `w-full ${cls}`,
-                    variant: 'ghost',
-                    'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'packing_status', v) }
-                })
-            }))
-        }
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'packing_status', isCoord2Docs.value)
+    },
+    {
+        accessorKey: 'packing_status_final',
+        header: 'Packing VB',
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'packing_status_final', !isCoord2Docs.value)
     },
     {
         accessorKey: 'excel_conf_status',
         header: 'Excel Conf.',
-        cell: ({ row }: { row: any }) => {
-            const proveedores = row.original.proveedores || []
-            const statuses = PROVIDER_MANUAL_STATUSES
-            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
-                if (!p.excel_conf_status) p.excel_conf_status = 'Pendiente'
-                const itemsWithClass = statuses.map((s: string) => {
-                    const key = MANUAL_STATUS_TO_STATUS_BG_KEY[s] ?? s
-                    const itemCls = (STATUS_BG_CLASSES as any)[key] ?? ''
-                    return { label: s, value: s, class: itemCls }
-                })
-                const mapped = MANUAL_STATUS_TO_STATUS_BG_KEY[p.excel_conf_status] || 'Pendiente'
-                const cls = STATUS_BG_CLASSES[mapped as keyof typeof STATUS_BG_CLASSES] ?? ''
-                return h(USelect as any, {
-                    modelValue: p.excel_conf_status,
-                    items: itemsWithClass,
-                    class: `w-full ${cls}`,
-                    variant: 'ghost',
-                    'onUpdate:modelValue': async (v: string) => { await saveProveedorField(p, 'excel_conf_status', v) }
-                })
-            }))
-        }
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'excel_conf_status', isCoord2Docs.value)
+    },
+    {
+        accessorKey: 'excel_conf_status_final',
+        header: 'Excel Conf. VB',
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'excel_conf_status_final', !isCoord2Docs.value)
     },
 
     {
@@ -1473,6 +1456,14 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             // Render both actions: menu (modal) and eye (navigate)
             return h('div', { class: 'flex items-center gap-1' }, [
+                h(UButton, {
+                    icon: 'i-heroicons-clipboard-document-check',
+                    variant: 'ghost',
+                    color: 'primary',
+                    size: 'xs',
+                    title: 'Ver confirmación web del cliente',
+                    onClick: () => openExcelConfirmacionPage(row.original)
+                }),
                 h(UButton, {
                     icon: 'iconamoon:menu-burger-horizontal',
                     variant: 'ghost',
