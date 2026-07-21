@@ -17,8 +17,20 @@ export interface General {
     estado_cotizacion_final: string
     id_cotizacion: number
 }
+export interface CobranzaWhatsappTemplate {
+    key: string
+    label: string
+    description: string
+    selected_by_default: boolean
+    has_media: boolean
+}
+
 export interface GeneralResponse {
     success: boolean
-    data: General[]
-    pagination: PaginationInfo
+    message?: string
+    data?: General[] | Record<string, unknown>
+    pagination?: PaginationInfo
+    requires_whatsapp_selection?: boolean
+    id_cotizacion?: number
+    whatsapp_templates?: CobranzaWhatsappTemplate[]
 }

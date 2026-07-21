@@ -35,6 +35,19 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+
+    static async sendCobranzaWhatsApp(idCotizacion: number, templates: string[]): Promise<GeneralResponse> {
+        try {
+            const response = await this.apiCall<GeneralResponse>(`${this.baseUrl}/send-cobranza-whatsapp`, {
+                method: 'POST',
+                body: { idCotizacion, templates }
+            })
+            return response
+        } catch (error) {
+            console.error('Error al enviar WhatsApp de cobranza:', error)
+            throw error
+        }
+    }
     static async uploadPlantillaFinal(data: any): Promise<GeneralResponse> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/upload-plantilla-final`, {
