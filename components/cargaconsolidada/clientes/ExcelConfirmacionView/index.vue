@@ -142,6 +142,13 @@ const accordionItems = computed(() => {
   })
 })
 
+const productosResumen = computed(() => {
+  const items = accordionItems.value
+  if (!items.length) return null
+  const listos = items.filter((i) => i.complete).length
+  return { listos, total: items.length }
+})
+
 const buildFormState = (payload: ExcelConfirmacionData) => {
   formState.value = payload.proveedores.map((proveedor) => ({
     id: proveedor.id,
@@ -420,13 +427,13 @@ onMounted(load)
             color="neutral"
             variant="outline"
             icon="i-heroicons-arrow-down-tray"
-            label="Excel confirmación general"
+            label="Descargar Excel"
             @click="downloadExcelGeneral"
           />
           <UButton
             color="primary"
             icon="i-heroicons-check"
-            label="Guardar cambios"
+            label="Guardar"
             @click="handleSave"
           />
         </div>
@@ -438,43 +445,57 @@ onMounted(load)
 
     <ExcelConfirmacionSkeleton v-if="loading" />
 
-    <div v-else-if="data && formState.length" class="space-y-4">
-      <UCard class="p-2 sm:p-3">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <UTabs
-            v-model="activeProveedorIndex"
-            :items="proveedorTabs"
-            variant="pill"
-            color="primary"
-            class="min-w-0 flex-1"
-            :content="false"
-          />
-          <div
-            v-if="activeProveedor"
-            class="flex flex-wrap items-center gap-2 shrink-0 lg:border-l lg:border-gray-200 lg:dark:border-gray-700 lg:pl-3"
-          >
-            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
-              Excel Conf.
-            </span>
-            <USelect
-              :key="`excel-conf-${activeProveedor.id}-${excelConfStatusField}`"
-              :model-value="excelConfStatusModel"
-              :items="excelConfStatusItems"
-              :class="excelConfStatusClass"
+    <div v-else-if="data && formState.length" class="mt-4 mx-auto w-full max-w-5xl space-y-4">
+      <!-- Toolbar proveedor -->
+      <div class="rounded-xl border border-default bg-default px-3 py-3 sm:px-4 shadow-sm">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0 flex-1">
+            <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
+              Proveedor
+            </p>
+            <UTabs
+              v-model="activeProveedorIndex"
+              :items="proveedorTabs"
+              variant="pill"
+              color="primary"
               size="sm"
-              @update:model-value="(value: string) => updateExcelConfStatus(value)"
+              class="min-w-0"
+              :content="false"
+              :ui="{ list: 'flex-wrap gap-1' }"
             />
           </div>
+          <div
+            v-if="activeProveedor"
+            class="flex flex-wrap items-center gap-2 sm:border-s sm:border-default sm:ps-4"
+          >
+            <UBadge
+              v-if="productosResumen"
+              color="neutral"
+              variant="subtle"
+              size="sm"
+              :label="`${productosResumen.listos}/${productosResumen.total} listos`"
+            />
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-muted whitespace-nowrap">Estado</span>
+              <USelect
+                :key="`excel-conf-${activeProveedor.id}-${excelConfStatusField}`"
+                :model-value="excelConfStatusModel"
+                :items="excelConfStatusItems"
+                :class="excelConfStatusClass"
+                size="sm"
+                @update:model-value="(value: string) => updateExcelConfStatus(value)"
+              />
+            </div>
+          </div>
         </div>
-      </UCard>
+      </div>
 
-      <div v-if="activeProveedor" class="space-y-4">
-        <div v-if="activeProveedor.items.length" class="space-y-4">
-          <UCard
+      <div v-if="activeProveedor" class="space-y-3">
+        <div v-if="activeProveedor.items.length" class="space-y-3">
+          <div
             v-for="(accItem, index) in accordionItems"
             :key="accItem.value"
-            class="overflow-hidden"
-            :ui="{ body: 'p-0 sm:p-0' }"
+            class="overflow-hidden rounded-xl border border-default bg-default shadow-sm"
           >
             <UCollapsible
               :open="openProductIds.includes(accItem.value)"
@@ -483,32 +504,44 @@ onMounted(load)
             >
               <button
                 type="button"
-                class="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50/80 dark:hover:bg-gray-800/50"
+                class="flex w-full cursor-pointer items-center gap-3 px-3 py-3 text-left transition-colors duration-200 hover:bg-elevated/60 sm:px-4"
               >
-                <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 text-xs font-bold">
+                <span
+                  class="flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold"
+                  :class="accItem.complete
+                    ? 'bg-success/15 text-success'
+                    : 'bg-warning/15 text-warning'"
+                >
                   {{ accItem.index + 1 }}
                 </span>
-                <p class="font-medium text-gray-900 dark:text-white truncate text-sm min-w-0 flex-1">
-                  {{ accItem.label }}
-                  <UBadge v-if="accItem.item.isNew" color="success" variant="subtle" size="xs" class="ml-1">
-                    Nuevo
-                  </UBadge>
-                </p>
-                <div class="flex items-center gap-1.5 shrink-0 ms-auto">
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold text-highlighted">
+                    {{ accItem.label }}
+                    <UBadge
+                      v-if="accItem.item.isNew"
+                      color="success"
+                      variant="subtle"
+                      size="xs"
+                      class="ms-1.5 align-middle"
+                    >
+                      Nuevo
+                    </UBadge>
+                  </p>
+                  <p class="mt-0.5 truncate text-[11px] text-muted">
+                    {{ accItem.item.tipo_producto }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
                   <UBadge
                     :color="accItem.complete ? 'success' : 'warning'"
                     variant="subtle"
                     size="xs"
-                    class="shrink-0"
                   >
                     {{ accItem.complete ? 'Listo' : 'Pendiente' }}
                   </UBadge>
-                  <UBadge color="primary" variant="soft" size="xs" class="shrink-0">
-                    {{ accItem.item.tipo_producto }}
-                  </UBadge>
                   <UIcon
                     name="i-heroicons-chevron-down"
-                    class="size-4 text-gray-400 transition-transform duration-200"
+                    class="size-4 text-muted transition-transform duration-200"
                     :class="{ 'rotate-180': openProductIds.includes(accItem.value) }"
                   />
                 </div>
@@ -522,17 +555,18 @@ onMounted(load)
                 />
               </template>
             </UCollapsible>
-          </UCard>
+          </div>
         </div>
 
-        <UCard
+        <div
           v-else
-          class="border-2 border-dashed"
+          class="rounded-xl border border-dashed border-default bg-elevated/30 px-6 py-12 text-center"
         >
-          <p class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+          <UIcon name="i-heroicons-cube" class="mx-auto size-8 text-muted opacity-50" />
+          <p class="mt-2 text-sm text-muted">
             Este proveedor no tiene productos en la confirmación.
           </p>
-        </UCard>
+        </div>
       </div>
     </div>
 

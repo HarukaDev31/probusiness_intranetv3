@@ -109,41 +109,48 @@ const onPrecioBlur = () => {
 </script>
 
 <template>
-  <div class="divide-y divide-gray-200 dark:divide-gray-700">
-    <section class="p-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:items-start">
-        <div class="w-full min-w-0">
+  <div class="border-t border-default">
+    <!-- Datos principales: foto compacta + campos -->
+    <section class="p-4 sm:p-5">
+      <div class="flex flex-col lg:flex-row gap-4 lg:gap-5">
+        <!-- Media -->
+        <div class="w-full lg:w-44 xl:w-48 shrink-0 space-y-2">
           <div
             v-if="hasFoto"
-            class="relative w-full flex items-center justify-center rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 max-h-64"
+            class="relative aspect-square w-full overflow-hidden rounded-lg border border-default bg-elevated/40"
           >
             <img
               :src="localItem.foto_url"
               alt="Producto"
-              class="max-w-full max-h-64 w-auto h-auto object-contain"
+              class="size-full object-contain p-2"
             >
           </div>
           <div
             v-else
-            class="w-full min-h-44 max-h-64 flex items-center justify-center rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500"
+            class="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-default bg-elevated/30 text-muted"
           >
-            Sin foto
+            <UIcon name="i-heroicons-photo" class="size-8 opacity-40" />
+            <span class="text-[11px] font-medium">Sin foto</span>
           </div>
-          <UFormField label="URL foto / imagen" class="mt-3 w-full">
+          <UFormField label="URL de imagen" size="sm" class="w-full">
             <UInput
               class="w-full"
+              size="sm"
               :disabled="readonly"
               :model-value="localItem.foto_url"
               placeholder="https://..."
+              icon="i-heroicons-link"
               @update:model-value="updateField('foto_url', $event)"
             />
           </UFormField>
         </div>
 
-        <div class="min-w-0 self-start grid grid-cols-2 gap-x-3 gap-y-3 content-start">
-          <UFormField label="Nombre comercial" required class="col-span-2 w-full">
+        <!-- Campos -->
+        <div class="min-w-0 flex-1 space-y-3">
+          <UFormField label="Nombre comercial" required size="sm" class="w-full">
             <UInput
               class="w-full"
+              size="sm"
               :disabled="readonly"
               :model-value="localItem.nombre_comercial"
               placeholder="Nombre del producto"
@@ -151,99 +158,107 @@ const onPrecioBlur = () => {
             />
           </UFormField>
 
-          <UFormField label="HS Code" class="w-full min-w-0">
-            <UInput
-              class="w-full"
-              :disabled="readonly"
-              :model-value="localItem.hs_code"
-              placeholder="6403.99.00"
-              @update:model-value="updateField('hs_code', $event)"
-            />
-          </UFormField>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <UFormField label="HS Code" size="sm" class="w-full min-w-0">
+              <UInput
+                class="w-full"
+                size="sm"
+                :disabled="readonly"
+                :model-value="localItem.hs_code"
+                placeholder="6403.99.00"
+                @update:model-value="updateField('hs_code', $event)"
+              />
+            </UFormField>
 
-          <UFormField label="Link del producto" class="w-full min-w-0">
-            <UInput
-              class="w-full"
-              :disabled="readonly"
-              :model-value="localItem.link_producto"
-              type="url"
-              placeholder="https://..."
-              @update:model-value="updateField('link_producto', $event)"
-            />
-          </UFormField>
+            <UFormField label="Link del producto" size="sm" class="w-full min-w-0">
+              <UInput
+                class="w-full"
+                size="sm"
+                :disabled="readonly"
+                :model-value="localItem.link_producto"
+                type="url"
+                placeholder="https://..."
+                @update:model-value="updateField('link_producto', $event)"
+              />
+            </UFormField>
 
-          <UFormField label="Cantidad" required class="w-full min-w-0">
-            <UInput
-              v-model.number="localItem.qty"
-              class="w-full"
-              :disabled="readonly"
-              type="number"
-              min="0"
-              step="1"
-            />
-          </UFormField>
+            <UFormField label="Cantidad" required size="sm" class="w-full min-w-0">
+              <UInput
+                v-model.number="localItem.qty"
+                class="w-full"
+                size="sm"
+                :disabled="readonly"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </UFormField>
 
-          <UFormField label="Precio EXW" required class="w-full min-w-0">
-            <UInput
-              class="w-full"
-              :disabled="readonly"
-              :model-value="precioDisplay"
-              type="text"
-              inputmode="decimal"
-              placeholder="0.00"
-              @focus="onPrecioFocus"
-              @blur="onPrecioBlur"
-              @update:model-value="onPrecioInput"
-            >
-              <template #leading>
-                <span class="text-gray-500">$</span>
-              </template>
-            </UInput>
-          </UFormField>
+            <UFormField label="Precio EXW" required size="sm" class="w-full min-w-0">
+              <UInput
+                class="w-full"
+                size="sm"
+                :disabled="readonly"
+                :model-value="precioDisplay"
+                type="text"
+                inputmode="decimal"
+                placeholder="0.00"
+                @focus="onPrecioFocus"
+                @blur="onPrecioBlur"
+                @update:model-value="onPrecioInput"
+              >
+                <template #leading>
+                  <span class="text-muted text-sm">$</span>
+                </template>
+              </UInput>
+            </UFormField>
+          </div>
 
-          <UFormField label="Total USD" class="col-span-2 w-full">
-            <div
-              class="w-full h-9 flex items-center justify-end px-3 rounded-md border text-sm font-semibold"
-              :class="total > 0
-                ? 'border-primary-200 text-primary-700 dark:border-primary-800 dark:text-primary-300'
-                : 'border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500'"
-            >
-              ${{ formattedTotal }}
-            </div>
-          </UFormField>
+          <div
+            class="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5"
+            :class="total > 0
+              ? 'bg-primary/10 text-primary'
+              : 'bg-elevated text-muted'"
+          >
+            <span class="text-xs font-medium uppercase tracking-wide opacity-80">Total USD</span>
+            <span class="text-base font-semibold tabular-nums">${{ formattedTotal }}</span>
+          </div>
         </div>
       </div>
     </section>
 
-    <section v-if="visibleLabels.length" class="px-4 pb-4">
+    <!-- Características -->
+    <section
+      v-if="visibleLabels.length"
+      class="border-t border-default bg-elevated/40 px-4 py-3 sm:px-5"
+    >
       <UCollapsible v-model:open="caracteristicasOpen" :unmount-on-hide="false">
         <button
           type="button"
-          class="flex w-full items-center gap-2.5 py-2.5 text-left"
+          class="flex w-full cursor-pointer items-center gap-2 py-1 text-left transition-colors duration-200 hover:opacity-90"
         >
-          <UIcon name="i-heroicons-adjustments-horizontal" class="size-4 text-primary-600 shrink-0" />
-          <div class="min-w-0 flex-1 flex items-center gap-2">
-            <h3 class="text-sm font-medium text-gray-900 dark:text-white">Características</h3>
-            <UBadge
-              :color="caracteristicasCompletas ? 'success' : 'warning'"
-              variant="subtle"
-              size="xs"
-            >
-              {{ caracteristicasCompletas ? 'Listo' : 'Pendiente' }}
-            </UBadge>
-          </div>
+          <UIcon name="i-heroicons-adjustments-horizontal" class="size-4 text-primary shrink-0" />
+          <span class="text-sm font-semibold text-highlighted">Características</span>
+          <UBadge
+            :color="caracteristicasCompletas ? 'success' : 'warning'"
+            variant="subtle"
+            size="xs"
+          >
+            {{ caracteristicasCompletas ? 'Listo' : 'Pendiente' }}
+          </UBadge>
           <UIcon
             name="i-heroicons-chevron-down"
-            class="size-4 text-gray-400 shrink-0 transition-transform duration-200"
+            class="ms-auto size-4 text-muted shrink-0 transition-transform duration-200"
             :class="{ 'rotate-180': caracteristicasOpen }"
           />
         </button>
         <template #content>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 pb-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-2.5 pt-3 pb-1">
             <UFormField
               v-for="label in visibleLabels"
               :key="label"
               :label="getCaracteristicaFieldConfig(label).displayLabel"
+              size="sm"
               class="w-full min-w-0"
             >
               <div
@@ -259,11 +274,11 @@ const onPrecioBlur = () => {
                   @update:model-value="updateCaracteristica(label, $event)"
                 />
                 <USelect
-                  class="w-[7.5rem] shrink-0"
+                  class="w-[7rem] shrink-0"
                   :disabled="readonly"
                   :model-value="localItem.caracteristicas[getCaracteristicaFieldConfig(label).unitKey!] || undefined"
                   :items="selectOptions(getCaracteristicaFieldConfig(label).options || [])"
-                  placeholder="Medida"
+                  placeholder="Und."
                   size="sm"
                   @update:model-value="updateCaracteristica(getCaracteristicaFieldConfig(label).unitKey!, String($event ?? ''))"
                 />
