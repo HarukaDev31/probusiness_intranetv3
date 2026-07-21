@@ -1422,32 +1422,29 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
     {
         accessorKey: 'invoice_status',
         header: 'Invoice',
-        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'invoice_status', isCoord2Docs.value)
-    },
-    {
-        accessorKey: 'invoice_status_final',
-        header: 'Invoice VB',
-        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'invoice_status_final', !isCoord2Docs.value)
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(
+            row,
+            isCoord2Docs.value ? 'invoice_status' : 'invoice_status_final',
+            true
+        )
     },
     {
         accessorKey: 'packing_status',
         header: 'Packing list',
-        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'packing_status', isCoord2Docs.value)
-    },
-    {
-        accessorKey: 'packing_status_final',
-        header: 'Packing VB',
-        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'packing_status_final', !isCoord2Docs.value)
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(
+            row,
+            isCoord2Docs.value ? 'packing_status' : 'packing_status_final',
+            true
+        )
     },
     {
         accessorKey: 'excel_conf_status',
         header: 'Excel Conf.',
-        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'excel_conf_status', isCoord2Docs.value)
-    },
-    {
-        accessorKey: 'excel_conf_status_final',
-        header: 'Excel Conf. VB',
-        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'excel_conf_status_final', !isCoord2Docs.value)
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(
+            row,
+            isCoord2Docs.value ? 'excel_conf_status' : 'excel_conf_status_final',
+            true
+        )
     },
 
     {
