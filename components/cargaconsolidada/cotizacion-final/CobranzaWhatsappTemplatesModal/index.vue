@@ -1,5 +1,11 @@
 <template>
-  <UModal v-model:open="isOpen" class="sm:max-w-xl" @update:open="onOpenChange">
+  <UModal
+    v-model:open="isOpen"
+    class="sm:max-w-xl"
+    :dismissible="false"
+    :close="false"
+    @update:open="onOpenChange"
+  >
     <template #header>
       <div>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
