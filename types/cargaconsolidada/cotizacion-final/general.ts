@@ -24,6 +24,9 @@ export interface CobranzaWhatsappTemplate {
     selected_by_default: boolean
     has_media: boolean
     media_label?: string | null
+    media_type?: 'pdf' | 'image' | string | null
+    media_url?: string | null
+    id_cotizacion?: number
     order?: number
     preview?: string
     preview_type?: string
