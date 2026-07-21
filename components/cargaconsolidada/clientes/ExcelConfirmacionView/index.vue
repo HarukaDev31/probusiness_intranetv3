@@ -40,8 +40,8 @@ const clienteQueryName = computed(() => String(route.query.cliente || ''))
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const { updateProveedor } = useCotizacionProveedor()
-const { userEmail, fetchCurrentUser } = useUserRole()
-const isCoord2Docs = computed(() => isCoord2DocsEmail(userEmail.value))
+const { userEmail, fetchCurrentUser, getUserData } = useUserRole()
+const isCoord2Docs = computed(() => isCoord2DocsEmail(getUserData() || userEmail.value))
 
 fetchCurrentUser()
 
