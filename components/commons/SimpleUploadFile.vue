@@ -58,7 +58,7 @@ const props = withDefaults(defineProps<{
     maxFileSize?: number
 }>(), {
     acceptedTypes: () => ['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar'],
-    maxFileSize: 30 * 1024 * 1024,
+    maxFileSize: 100 * 1024 * 1024,
 })
 
 const { showError } = useModal()
