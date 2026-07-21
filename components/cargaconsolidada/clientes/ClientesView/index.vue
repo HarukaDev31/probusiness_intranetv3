@@ -188,8 +188,8 @@ function renderEstadoPermisoPorTipo(list: Array<{ id_tipo_permiso?: number; nomb
 
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
-const { currentRole: authCurrentRole, currentId, isCoordinacion, isCotizador, userEmail, fetchCurrentUser } = useUserRole()
-const isCoord2Docs = computed(() => isCoord2DocsEmail(userEmail.value))
+const { currentRole: authCurrentRole, currentId, isCoordinacion, isCotizador, userEmail, fetchCurrentUser, getUserData } = useUserRole()
+const isCoord2Docs = computed(() => isCoord2DocsEmail(getUserData() || userEmail.value))
 fetchCurrentUser()
 
 const renderDocStatusSelects = (row: any, field: string, editable: boolean) => {
@@ -1677,9 +1677,17 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
     if (!proveedor) return
     const previous = proveedor[field]
     if (previous === value) return
+    const finalField = field.endsWith('_final')
+        ? null
+        : (field === 'invoice_status' || field === 'packing_status' || field === 'excel_conf_status'
+            ? `${field}_final`
+            : null)
+    const previousFinal = finalField ? proveedor[finalField] : undefined
     try {
-        // optimistic
         proveedor[field] = value
+        if (finalField && value === 'Revisado' && proveedor[finalField] !== 'Revisado') {
+            proveedor[finalField] = 'Recibido'
+        }
         await withSpinner(async () => {
             const formData = new FormData()
             formData.append('id', proveedor.id)
@@ -1693,8 +1701,10 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
             }
         }, 'Guardando estado...')
     } catch (err: any) {
-        // revert
         proveedor[field] = previous
+        if (finalField && previousFinal !== undefined) {
+            proveedor[finalField] = previousFinal
+        }
         console.error('Error guardando estado proveedor:', err)
         showError('Error', err?.message || 'No se pudo guardar el estado del proveedor')
     }

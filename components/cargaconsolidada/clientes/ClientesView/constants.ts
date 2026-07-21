@@ -17,6 +17,30 @@ export const MANUAL_STATUS_TO_STATUS_BG_KEY: Record<ProveedorManualStatus, strin
 
 export const READ_ONLY_COLUMN_KEYS = new Set(['acciones', 'action', 'actions'])
 
-export function isCoord2DocsEmail(email: string | null | undefined): boolean {
-  return String(email || '').trim().toLowerCase() === COORD2_DOCS_EMAIL
+/** Extrae posibles emails/usuarios del auth_user (puede estar en email, Txt_Email o No_Usuario). */
+export function collectUserLoginEmails(user: unknown): string[] {
+  if (!user || typeof user !== 'object') return []
+  const u = user as Record<string, unknown>
+  const raw = (u.raw && typeof u.raw === 'object' ? u.raw : {}) as Record<string, unknown>
+  const candidates = [
+    u.email,
+    raw.email,
+    raw.Txt_Email,
+    raw.No_Usuario,
+    raw.txt_email,
+    raw.no_usuario,
+  ]
+  return candidates
+    .map((v) => String(v || '').trim().toLowerCase())
+    .filter((v) => v !== '')
+}
+
+export function isCoord2DocsEmail(emailOrUser: string | null | undefined | unknown): boolean {
+  if (emailOrUser && typeof emailOrUser === 'object') {
+    return collectUserLoginEmails(emailOrUser).some(
+      (e) => e === COORD2_DOCS_EMAIL || e.startsWith('coordinacion2@')
+    )
+  }
+  const email = String(emailOrUser || '').trim().toLowerCase()
+  return email === COORD2_DOCS_EMAIL || email.startsWith('coordinacion2@')
 }

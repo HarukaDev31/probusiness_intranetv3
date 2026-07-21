@@ -84,7 +84,10 @@ const currentId = computed(() => {
 
   // Computed para obtener el email del usuario
   const userEmail = computed(() => {
-    return userData.value?.email || ''
+    const top = String(userData.value?.email || '').trim()
+    if (top) return top
+    const raw = userData.value?.raw as Record<string, unknown> | undefined
+    return String(raw?.Txt_Email || raw?.No_Usuario || raw?.email || '').trim()
   })
 
   // Computed para obtener la empresa del usuario
