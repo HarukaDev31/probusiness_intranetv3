@@ -78,12 +78,20 @@
     </DataTable>
 
     <!-- CreatePagoModal -->
+    <CobranzaWhatsappTemplatesModal
+      v-model:open="cobranzaWhatsappModal.open"
+      :id-cotizacion="cobranzaWhatsappModal.idCotizacion"
+      :templates="cobranzaWhatsappModal.templates"
+      :loading="cobranzaWhatsappModal.loading"
+      @confirm="confirmCobranzaWhatsapp"
+      @skip="skipCobranzaWhatsapp"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { CotizacionFinalViewProps } from './types'
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useGeneral } from '~/composables/cargaconsolidada/cotizacion-final/useGeneral'
 import { usePagos } from '~/composables/cargaconsolidada/cotizacion-final/usePagos'
 import { useCargosExtra } from '~/composables/cargaconsolidada/cotizacion-final/useCargosExtra'
@@ -100,6 +108,8 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import { ROLES } from '~/constants/roles'
 import { UTooltip } from '#components'
 import CargosExtraServiciosCell from '~/components/cargaconsolidada/cotizacion-final/CargosExtraServiciosCell/index.vue'
+import CobranzaWhatsappTemplatesModal from '~/components/cargaconsolidada/cotizacion-final/CobranzaWhatsappTemplatesModal/index.vue'
+import type { CobranzaWhatsappTemplate } from '~/types/cargaconsolidada/cotizacion-final/general'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const { currentRole: authCurrentRole } = useUserRole()
@@ -107,7 +117,7 @@ const props = withDefaults(defineProps<CotizacionFinalViewProps>(), { backBasePa
 const currentRole = computed(() => props.role || authCurrentRole.value)
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
-const { general, loadingGeneral, updateEstadoCotizacionFinal, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, headersPagos, carga, fPuerto, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
+const { general, loadingGeneral, updateEstadoCotizacionFinal, sendCobranzaWhatsApp, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, headersPagos, carga, fPuerto, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
 const { pagos, loadingPagos, getPagos, currentPagePagos, totalPagesPagos, totalRecordsPagos, itemsPerPagePagos, searchPagos, filterConfigPagos, handleSearchPagos, handlePageChangePagos, handleItemsPerPageChangePagos, handleFilterChangePagos, exportContabilidadPagos } = usePagos()
 const { cargosExtra, loadingCargosExtra, getCargosExtra, currentPageCargosExtra, totalPagesCargosExtra, totalRecordsCargosExtra, itemsPerPageCargosExtra, searchCargosExtra, handleSearchCargosExtra, handlePageChangeCargosExtra, handleItemsPerPageChangeCargosExtra } = useCargosExtra()
 import { usePagos as usePagosClientes } from '~/composables/cargaconsolidada/clientes/usePagos'
@@ -911,18 +921,53 @@ const deleteCotizacionFinal = async (idCotizacion: number) => {
   )
 }
 // Navigation
+const cobranzaWhatsappModal = reactive({
+  open: false,
+  idCotizacion: null as number | null,
+  templates: [] as CobranzaWhatsappTemplate[],
+  loading: false,
+})
+
 const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: string) => {
   withSpinner(async () => {
     const result = await updateEstadoCotizacionFinal(idCotizacion, estado)
     if (result && (result as any).success) {
-
       await getGeneral(Number(id))
+      if (estado === 'COBRANDO' && (result as any).requires_whatsapp_selection) {
+        cobranzaWhatsappModal.idCotizacion = idCotizacion
+        cobranzaWhatsappModal.templates = ((result as any).whatsapp_templates || []) as CobranzaWhatsappTemplate[]
+        cobranzaWhatsappModal.open = true
+        showSuccess('Éxito', 'Estado actualizado. Selecciona las plantillas a enviar.')
+        return
+      }
       showSuccess('Éxito', 'Estado actualizado correctamente')
     } else {
       showError('Error', 'Error al actualizar el estado')
     }
   })
 }
+
+const confirmCobranzaWhatsapp = async (templates: string[]) => {
+  if (!cobranzaWhatsappModal.idCotizacion) return
+  cobranzaWhatsappModal.loading = true
+  try {
+    const result = await sendCobranzaWhatsApp(cobranzaWhatsappModal.idCotizacion, templates)
+    if (result && (result as any).success) {
+      showSuccess('Éxito', (result as any).message || 'WhatsApp encolado')
+      cobranzaWhatsappModal.open = false
+    } else {
+      showError('Error', (result as any)?.message || 'No se pudo enviar WhatsApp')
+    }
+  } finally {
+    cobranzaWhatsappModal.loading = false
+  }
+}
+
+const skipCobranzaWhatsapp = () => {
+  cobranzaWhatsappModal.open = false
+  showSuccess('Listo', 'Estado guardado sin enviar WhatsApp')
+}
+
 const goBack = () => {
   navigateTo(`${backBasePath.value}/pasos/${id}`)
 }

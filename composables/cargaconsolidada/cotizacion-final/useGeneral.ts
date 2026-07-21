@@ -72,6 +72,15 @@ export const useGeneral = () => {
             error.value = err as string
         }
     }
+    const sendCobranzaWhatsApp = async (idCotizacion: number, templates: string[]) => {
+        try {
+            const response = await GeneralService.sendCobranzaWhatsApp(idCotizacion, templates)
+            return response
+        } catch (err) {
+            error.value = err as string
+            return { success: false, message: String(err) }
+        }
+    }
     const uploadFacturaComercial = async (data: any) => {
         try {
             const response = await GeneralService.uploadFacturaComercial(data)
@@ -209,6 +218,7 @@ export const useGeneral = () => {
         getGeneral,
         totalRecordsGeneral,
         updateEstadoCotizacionFinal,
+        sendCobranzaWhatsApp,
         uploadFacturaComercial,
         uploadPlantillaFinal,
         uploadCotizacionFinalFile,
