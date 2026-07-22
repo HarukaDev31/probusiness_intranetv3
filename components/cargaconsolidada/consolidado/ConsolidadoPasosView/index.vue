@@ -88,7 +88,9 @@ const pasosMap = computed(() => ({
   'COTIZACION': (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
     ? `${props.basePath}/cotizaciones/${id}?tab=pagos`
     : `${props.basePath}/cotizaciones/${id}?tab=prospectos`,
-  'CLIENTES': `${props.basePath}/clientes/${id}`,
+  'CLIENTES': currentRole.value === ROLES.FINANZAS
+    ? `${props.basePath}/clientes/${id}?tab=general`
+    : `${props.basePath}/clientes/${id}`,
   'DOCUMENTACION': `${props.basePath}/documentacion/${id}`,
   'COTIZACION FINAL': (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
     ? `${props.basePath}/cotizacion-final/${id}?tab=pagos`

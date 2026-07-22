@@ -12,7 +12,7 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
+                :previous-page-url="canGoBackToPasos ? `${backBasePath}/pasos/${id}` : `${basePath}`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
@@ -35,7 +35,7 @@
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true" :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="canGoBackToPasos ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados"
@@ -84,7 +84,7 @@
                 :show-secondary-search="false" :show-filters="false" :filters-value="filtersVariacion"
                 :show-export="false" :show-body-top="true" :hide-back-button="false" :show-pagination="false"
                 @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="canGoBackToPasos ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
@@ -108,7 +108,7 @@
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersPagos" :show-export="false" :hide-back-button="false" :show-body-top="true"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="canGoBackToPasos ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchPagos" @page-change="handlePagePagosChange"
                 @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos">
@@ -194,6 +194,16 @@ const props = withDefaults(defineProps<ClientesViewProps>(), {
 })
 
 const currentRole = computed(() => props.role || authCurrentRole.value)
+const isFinanzas = computed(() => currentRole.value === ROLES.FINANZAS)
+const canGoBackToPasos = computed(() =>
+    currentRole.value === ROLES.COORDINACION
+    || currentRole.value === ROLES.DOCUMENTACION
+    || currentRole.value === ROLES.JEFE_IMPORTACIONES
+    || currentRole.value === ROLES.ADMINISTRACION
+    || currentRole.value === ROLES.CONTABILIDAD
+    || currentRole.value === ROLES.FINANZAS
+    || currentId.value == ID_JEFEVENTAS
+)
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const route = useRoute()
@@ -201,7 +211,11 @@ const id = route.params.id
 const initialTabFromRoute = typeof route.query.tab === 'string' ? route.query.tab : ''
 const tab = ref<string>(
     initialTabFromRoute
-        || (isCoordinacion.value || currentRole.value === ROLES.JEFE_IMPORTACIONES || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
+        || (
+            isFinanzas.value
+                ? 'general'
+                : (isCoordinacion.value || currentRole.value === ROLES.JEFE_IMPORTACIONES || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
+        )
 )
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
@@ -766,7 +780,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
                 //color status based on estado_cliente
                 class: [STATUS_BG_CLASSES[row.original.estado_cliente as keyof typeof STATUS_BG_CLASSES], 'w-full'],
                 modelValue: row.original.estado_cliente,
-                disabled: currentRole.value === ROLES.JEFE_MARKETING,
+                disabled: currentRole.value === ROLES.JEFE_MARKETING || isFinanzas.value,
                 items: [
                     { label: 'Reservado', value: 'RESERVADO' },
                     { label: 'No Reservado', value: 'NO RESERVADO' },
@@ -931,6 +945,7 @@ const toReadOnlyColumns = (columns: TableColumn<any>[]) => {
 
 const getColumnsGeneral = () => {
     if (currentRole.value === ROLES.JEFE_MARKETING) return columnsDocumentacion
+    if (isFinanzas.value) return toReadOnlyColumns(columnsCoordinacion)
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
             return columnsDocumentacion
@@ -1685,7 +1700,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
     }
 }
 const configureTabsForRole = () => {
-    if (currentRole.value === ROLES.DOCUMENTACION) {
+    if (currentRole.value === ROLES.DOCUMENTACION || isFinanzas.value) {
         tabs.value = [{ label: 'Documentacion', value: 'general' }]
     } else if (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES || currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) {
         tabs.value = [

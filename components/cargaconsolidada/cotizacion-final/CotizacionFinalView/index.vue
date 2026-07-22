@@ -116,6 +116,8 @@ const { withSpinner } = useSpinner()
 const { currentRole: authCurrentRole } = useUserRole()
 const props = withDefaults(defineProps<CotizacionFinalViewProps>(), { backBasePath: undefined })
 const currentRole = computed(() => props.role || authCurrentRole.value)
+const isFinanzas = computed(() => currentRole.value === ROLES.FINANZAS)
+const isFinanzasReadOnly = computed(() => isFinanzas.value)
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const { general, loadingGeneral, updateEstadoCotizacionFinal, sendCobranzaWhatsApp, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, headersPagos, carga, fPuerto, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
@@ -148,7 +150,10 @@ const handleExportPagosContabilidad = async () => {
 
 // Tab configuration: para CONTABILIDAD primero Pagos luego General
 const canViewCargosExtra = computed(() =>
-  currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
+  currentRole.value === ROLES.COORDINACION
+  || currentRole.value === ROLES.CONTABILIDAD
+  || currentRole.value === ROLES.ADMINISTRACION
+  || isFinanzas.value
 )
 const tabs = computed(() => {
   if ((currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
@@ -364,7 +369,9 @@ const generalColumns = ref<TableColumn<any>[]>([
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
         class: [className],
         modelValue: initialValue,
+        disabled: isFinanzasReadOnly.value,
         'onUpdate:modelValue': async (value: any) => {
+          if (isFinanzasReadOnly.value) return
           if (value && value !== initialValue) {
             await handleUpdateEstadoCotizacionFinal(row.original.id_cotizacion, value)
           }
@@ -383,7 +390,7 @@ const generalColumns = ref<TableColumn<any>[]>([
           class: 'flex flex-row gap-2'
         }, [
           // Send reminder button
-          h(UButton, {
+          !isFinanzasReadOnly.value ? h(UButton, {
             icon: 'material-symbols:send-outline',
             color: 'primary',
             variant: 'ghost',
@@ -412,7 +419,7 @@ const generalColumns = ref<TableColumn<any>[]>([
                 }
               )
             }
-          }),
+          }) : null,
           h(UButton, {
             icon: 'vscode-icons:file-type-excel',
             color: 'primary',
@@ -429,7 +436,7 @@ const generalColumns = ref<TableColumn<any>[]>([
               handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)
             }
           }),
-          (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) ? h(UButton, {
+          (!isFinanzasReadOnly.value && currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) ? h(UButton, {
             icon: 'i-heroicons-trash',
             color: 'error',
             variant: 'ghost',
@@ -439,6 +446,8 @@ const generalColumns = ref<TableColumn<any>[]>([
           }) : null
         ])
 
+      } else if (isFinanzasReadOnly.value) {
+        return '—'
       } else {
         return h(UButton, {
           icon: 'i-heroicons-arrow-up-tray',
@@ -600,7 +609,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
     header: 'Acciones',
     cell: ({ row }: { row: any }) => {
       return h('div', { class: 'flex flex-row gap-2' }, [
-        h(UTooltip, {
+        !isFinanzasReadOnly.value ? h(UTooltip, {
           text: 'Enviar recordatorio de pago',
           placement: 'top'
         }, {
@@ -634,7 +643,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
             )
           }
           }
-          )}),
+          )}) : null,
         //ADD ICON ARROW WITH TOOLTIP VER EN VERIFICACION QUE REDIRIGA A ver verificacion?idCotizacion=row.original.id_cotizacion
         h(UTooltip, {
           text: 'Ver en Verificación',
@@ -650,12 +659,13 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
             }
           })
         })
-      ])
+      ].filter(Boolean))
     }
   }
 ])
 const getPagosColumns = (): TableColumn<any>[] => {
   const isContabilidad = (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
+  const readOnlyPagos = isFinanzasReadOnly.value
   const base: TableColumn<any>[] = [
     { accessorKey: 'nro', header: 'N°', cell: ({ row }: { row: any }) => row.index + 1 },
     {
@@ -769,7 +779,9 @@ const getPagosColumns = (): TableColumn<any>[] => {
       let MAX_PAYMENTS = 4
       const pagos = JSON.parse(row.original.pagos || '[]')
       const hayDeuda = row.original.total_logistica_impuestos > row.original.total_pagos
-      if (hayDeuda) {
+      if (readOnlyPagos) {
+        MAX_PAYMENTS = pagos.length
+      } else if (hayDeuda) {
         // Con deuda: mostrar un slot vacío más para poder registrar otro pago
         MAX_PAYMENTS = Math.max(MAX_PAYMENTS, pagos.length + 1)
       } else if (pagos.length >= MAX_PAYMENTS) {
@@ -782,8 +794,9 @@ const getPagosColumns = (): TableColumn<any>[] => {
             pagoDetails: pagos,
             clienteNombre: row.original.nombre,
             currency: 'USD',
-            showDelete: true,
+            showDelete: !readOnlyPagos,
             onSave: (data: any) => {
+              if (readOnlyPagos) return
               const formData = new FormData()
               for (const key in data) {
                 if (data[key] !== undefined && data[key] !== null) formData.append(key, data[key])
@@ -803,6 +816,7 @@ const getPagosColumns = (): TableColumn<any>[] => {
               }, 'registrarPagoFinal')
             },
             onDelete: (pagoId: number) => {
+              if (readOnlyPagos) return
               showConfirmation(
                 'Confirmar eliminación',
                 '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
@@ -830,7 +844,11 @@ const getPagosColumns = (): TableColumn<any>[] => {
   return base
 }
 const getCargosExtraColumns = (): TableColumn<any>[] => {
-  const editable = currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
+  const editable = !isFinanzasReadOnly.value && (
+    currentRole.value === ROLES.COORDINACION
+    || currentRole.value === ROLES.CONTABILIDAD
+    || currentRole.value === ROLES.ADMINISTRACION
+  )
   const toNumber = (value: any, digits = 2) => Number(Number(value ?? 0).toFixed(digits))
   return [
     { accessorKey: 'nro', header: 'N', cell: ({ row }: { row: any }) => row.index + 1 },

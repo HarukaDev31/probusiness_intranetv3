@@ -14,6 +14,7 @@ export const ROLES = {
     CONTABILIDAD: 'Contabilidad',
     SOPORTE: 'Soporte',
     PM: 'PM',
+    FINANZAS: 'Finanzas',
 } as const
 export const ID_JEFEVENTAS = 28791
 export const COTIZADORES_WITH_PRIVILEGES = [28911]

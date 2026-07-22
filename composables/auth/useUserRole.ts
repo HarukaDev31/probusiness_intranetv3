@@ -144,6 +144,9 @@ const currentId = computed(() => {
   const isDocumentacion = computed(() => {
     return hasRole(ROLES.DOCUMENTACION)
   })
+  const isFinanzas = computed(() => {
+    return hasRole(ROLES.FINANZAS)
+  })
   const isContenedorAlmacen = computed(() => {
     return hasRole(ROLES.CONTENEDOR_ALMACEN)
   })
@@ -171,6 +174,7 @@ const currentId = computed(() => {
     isCoordinacion,
     isCotizador,
     isDocumentacion,
+    isFinanzas,
     isContenedorAlmacen,
     isContenedorConsolidado,
 
