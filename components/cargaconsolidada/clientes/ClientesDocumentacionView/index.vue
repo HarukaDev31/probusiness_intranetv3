@@ -3,14 +3,69 @@
         <PageHeader :hide-back-button="false"
             @back="navigateTo(`${backBasePath}/clientes/${cliente?.id_contenedor}`)">
             <template #back-extra>
-                <!--button save placed next to the back button-->
-                <UButton label="Guardar cambios" color="primary" variant="solid" icon="i-heroicons-arrow-down-tray"
-                    size="sm" @click="handleSaveChanges" v-if="isCoordinacion" />
+                <UButton
+                    v-if="isCoordinacion && sectionTab === 'documentacion'"
+                    label="Guardar cambios"
+                    color="primary"
+                    variant="solid"
+                    icon="i-heroicons-check"
+                    size="sm"
+                    @click="handleSaveChanges"
+                />
+                <div
+                    v-else-if="sectionTab === 'excel-confirmacion' && clienteUuid"
+                    class="flex flex-wrap items-center gap-2"
+                >
+                    <UButton
+                        color="neutral"
+                        variant="outline"
+                        icon="i-heroicons-arrow-down-tray"
+                        label="Descargar Excel"
+                        size="sm"
+                        @click="excelConfirmacionRef?.downloadExcelGeneral()"
+                    />
+                    <UButton
+                        color="primary"
+                        variant="solid"
+                        icon="i-heroicons-check"
+                        label="Guardar"
+                        size="sm"
+                        @click="excelConfirmacionRef?.handleSave()"
+                    />
+                </div>
             </template>
             <template #actions>
-                <!--button save-->
-                <UButton label="Guardar cambios" color="primary" variant="solid" icon="i-heroicons-arrow-down-tray" class="hidden md:flex"
-                    size="sm" @click="handleSaveChanges" v-if="isCoordinacion" />
+                <UButton
+                    v-if="isCoordinacion && sectionTab === 'documentacion'"
+                    label="Guardar cambios"
+                    color="primary"
+                    variant="solid"
+                    icon="i-heroicons-check"
+                    class="hidden md:flex"
+                    size="sm"
+                    @click="handleSaveChanges"
+                />
+                <div
+                    v-else-if="sectionTab === 'excel-confirmacion' && clienteUuid"
+                    class="hidden md:flex flex-wrap items-center gap-2"
+                >
+                    <UButton
+                        color="neutral"
+                        variant="outline"
+                        icon="i-heroicons-arrow-down-tray"
+                        label="Descargar Excel"
+                        size="sm"
+                        @click="excelConfirmacionRef?.downloadExcelGeneral()"
+                    />
+                    <UButton
+                        color="primary"
+                        variant="solid"
+                        icon="i-heroicons-check"
+                        label="Guardar"
+                        size="sm"
+                        @click="excelConfirmacionRef?.handleSave()"
+                    />
+                </div>
             </template>
         </PageHeader>
 
@@ -179,25 +234,52 @@
         <!-- Main content -->
         <div v-else-if="hasData" class="md:mt-6">
             <div class="md:mb-6 mb-3 border-gray-200 rounded-lg p-3 md:p-6 border-b-2 border-gray-200">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <div class="group inline-flex items-center">
-                            <span class="font-semibold">{{ cliente?.nombre }}</span>
-                            <button
-                                v-if="cliente && isDocumentacion"
-                                @click="copyName"
-                                class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-gray-400 hover:text-gray-600"
-                                aria-label="Copiar nombre"
-                                title="Copiar nombre">
-                                <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4 hover:text-gray-600 dark:hover:text-gray-300" />
-                            </button>
-                            <span v-if="copied" class="ml-2 text-sm text-green-400">Copiado</span>
-                        </div>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                    <UTabs
+                        v-model="sectionTab"
+                        :items="sectionTabs"
+                        size="md"
+                        variant="pill"
+                        color="neutral"
+                        class="shrink-0 inline-flex"
+                        :content="false"
+                        @update:model-value="handleSectionTabChange"
+                    />
+                    <div class="group inline-flex items-center min-w-0">
+                        <span class="font-semibold truncate">{{ cliente?.nombre }}</span>
+                        <button
+                            v-if="cliente && isDocumentacion"
+                            @click="copyName"
+                            class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-gray-400 hover:text-gray-600 shrink-0"
+                            aria-label="Copiar nombre"
+                            title="Copiar nombre">
+                            <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4 hover:text-gray-600 dark:hover:text-gray-300" />
+                        </button>
+                        <span v-if="copied" class="ml-2 text-sm text-green-400 shrink-0">Copiado</span>
                     </div>
-
-
                 </div>
             </div>
+
+            <ExcelConfirmacionView
+                v-if="sectionTab === 'excel-confirmacion' && clienteUuid"
+                ref="excelConfirmacionRef"
+                :base-path="basePath"
+                :back-base-path="backBasePath"
+                :uuid="clienteUuid"
+                :contenedor-id="cliente?.id_contenedor"
+                :cliente-nombre="cliente?.nombre"
+                embedded
+            />
+            <UAlert
+                v-else-if="sectionTab === 'excel-confirmacion'"
+                color="warning"
+                variant="soft"
+                title="Sin enlace de confirmación"
+                description="Este cliente aún no tiene UUID para el formulario de Excel de confirmación."
+                class="mt-2"
+            />
+
+            <template v-else>
             <!-- Tabs de proveedores -->
             <div v-if="hasProveedores" class="md:mb-6 mb-3">
                 <div :class="tabs.length >= 5 ? '-mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto whitespace-nowrap' : ''">
@@ -464,6 +546,7 @@
                     </UCard>
                 </div>
             </div>
+            </template>
 
 
         </div>
@@ -473,7 +556,7 @@
 <script setup lang="ts">
 import type { ClientesDocumentacionViewProps } from './types'
 import { MAX_UPLOAD_BYTES } from './constants'
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -485,12 +568,14 @@ import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
 import { CUSTOMIZED_ICONS_URL } from '~/constants/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import DocumentacionExpedienteObservacionesPanel from '~/components/cargaconsolidada/clientes/DocumentacionExpedienteObservacionesPanel/index.vue'
+import ExcelConfirmacionView from '~/components/cargaconsolidada/clientes/ExcelConfirmacionView/index.vue'
 const { currentRole: authCurrentRole, currentId } = useUserRole()
 const props = withDefaults(defineProps<ClientesDocumentacionViewProps>(), {
     role: undefined,
     backBasePath: undefined
 })
 const currentRole = computed(() => props.role || authCurrentRole.value)
+const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const isCoordinacion = computed(() => currentRole.value === ROLES.COORDINACION)
 import SimpleUploadFile from '~/components/commons/SimpleUploadFile.vue'
@@ -590,6 +675,44 @@ const hasUnsavedChanges = computed(() => {
 // Route
 const route = useRoute()
 const clienteId = Number(route.params.id)
+
+const sectionTabs = [
+    { label: 'Documentación', value: 'documentacion' },
+    { label: 'Excel confirmación', value: 'excel-confirmacion' }
+] as const
+
+type SectionTab = 'documentacion' | 'excel-confirmacion'
+
+const sectionFromQuery = (): SectionTab => {
+    const raw = String(route.query.section || '').trim().toLowerCase()
+    return raw === 'excel-confirmacion' ? 'excel-confirmacion' : 'documentacion'
+}
+
+const sectionTab = ref<SectionTab>(sectionFromQuery())
+
+const excelConfirmacionRef = ref<{
+    handleSave: () => void
+    downloadExcelGeneral: () => void | Promise<void>
+} | null>(null)
+
+const clienteUuid = computed(() => String((cliente.value as any)?.uuid || '').trim())
+
+const handleSectionTabChange = (value: string | number) => {
+    const next: SectionTab = value === 'excel-confirmacion' ? 'excel-confirmacion' : 'documentacion'
+    sectionTab.value = next
+    navigateTo({
+        path: route.path,
+        query: {
+            ...route.query,
+            section: next
+        },
+        replace: true
+    })
+}
+
+watch(() => route.query.section, () => {
+    sectionTab.value = sectionFromQuery()
+})
 
 // Manejadores de tabs
 const handleTabChange = async (tabId: string) => {

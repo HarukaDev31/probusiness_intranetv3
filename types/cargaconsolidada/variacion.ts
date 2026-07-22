@@ -1,4 +1,5 @@
 export interface VariacionCliente {
+  uuid?: string | null
   id: string
   id_cliente: string
   id_contenedor: string
