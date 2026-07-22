@@ -70,6 +70,44 @@ const updateCaracteristica = (label: string, value: string) => {
 
 const hasFoto = computed(() => String(localItem.value.foto_url || '').trim() !== '')
 const caracteristicasOpen = ref(true)
+const fotoFile = computed(() => localItem.value.foto_file)
+
+const revokeIfBlob = (url: string) => {
+  if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+}
+
+const onFotoChange = (files: File | File[] | null | undefined) => {
+  if (props.readonly) return
+  const file = Array.isArray(files) ? files[0] : files
+  const prevUrl = String(localItem.value.foto_url || '')
+  if (!file) {
+    revokeIfBlob(prevUrl)
+    localItem.value = { ...localItem.value, foto_file: null, foto_url: '' }
+    return
+  }
+  revokeIfBlob(prevUrl)
+  localItem.value = {
+    ...localItem.value,
+    foto_file: file,
+    foto_url: URL.createObjectURL(file)
+  }
+}
+
+const clearFoto = () => {
+  if (props.readonly) return
+  revokeIfBlob(String(localItem.value.foto_url || ''))
+  localItem.value = { ...localItem.value, foto_file: null, foto_url: '' }
+}
+
+const onFotoUrlInput = (value: string) => {
+  if (props.readonly) return
+  revokeIfBlob(String(localItem.value.foto_url || ''))
+  localItem.value = {
+    ...localItem.value,
+    foto_file: null,
+    foto_url: value
+  }
+}
 
 const precioFocused = ref(false)
 const precioDraft = ref('')
@@ -117,14 +155,38 @@ const onPrecioBlur = () => {
         <div class="w-full lg:w-44 xl:w-48 shrink-0 space-y-2">
           <div
             v-if="hasFoto"
-            class="relative aspect-square w-full overflow-hidden rounded-lg border border-default bg-elevated/40"
+            class="relative aspect-square w-full overflow-hidden rounded-lg border border-default bg-elevated/40 group"
           >
             <img
               :src="localItem.foto_url"
               alt="Producto"
               class="size-full object-contain p-2"
             >
+            <button
+              v-if="!readonly"
+              type="button"
+              class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+              title="Quitar foto"
+              @click="clearFoto"
+            >
+              <UIcon name="i-heroicons-trash" class="size-5 text-white" />
+            </button>
           </div>
+          <UFileUpload
+            v-else-if="!readonly"
+            :model-value="fotoFile"
+            accept="image/*"
+            label="Subir foto"
+            description="JPG, PNG"
+            icon="i-heroicons-camera"
+            class="w-full"
+            :ui="{
+              root: 'w-full',
+              base: 'w-full aspect-square min-h-36 items-center justify-center',
+              wrapper: 'flex flex-col items-center justify-center text-center px-2'
+            }"
+            @update:model-value="onFotoChange"
+          />
           <div
             v-else
             class="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-default bg-elevated/30 text-muted"
@@ -132,15 +194,19 @@ const onPrecioBlur = () => {
             <UIcon name="i-heroicons-photo" class="size-8 opacity-40" />
             <span class="text-[11px] font-medium">Sin foto</span>
           </div>
-          <UFormField label="URL de imagen" size="sm" class="w-full">
+          <UFormField
+            v-if="!readonly"
+            label="O pegar URL"
+            size="sm"
+            class="w-full"
+          >
             <UInput
               class="w-full"
               size="sm"
-              :disabled="readonly"
-              :model-value="localItem.foto_url"
+              :model-value="hasFoto && !String(localItem.foto_url).startsWith('blob:') ? localItem.foto_url : ''"
               placeholder="https://..."
               icon="i-heroicons-link"
-              @update:model-value="updateField('foto_url', $event)"
+              @update:model-value="onFotoUrlInput"
             />
           </UFormField>
         </div>

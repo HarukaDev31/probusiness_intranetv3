@@ -55,10 +55,10 @@ export class ExcelConfirmacionCoordinacionService extends BaseService {
     return this.apiCall(`${this.baseUrl}/${uuid}`)
   }
 
-  static async save(uuid: string, payload: ExcelConfirmacionSavePayload): Promise<{ success: boolean; message?: string }> {
+  static async save(uuid: string, formData: FormData): Promise<{ success: boolean; message?: string }> {
     return this.apiCall(`${this.baseUrl}/${uuid}`, {
-      method: 'PUT',
-      body: payload
+      method: 'POST',
+      body: formData
     })
   }
 

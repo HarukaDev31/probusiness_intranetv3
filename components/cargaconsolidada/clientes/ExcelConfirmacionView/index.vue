@@ -18,7 +18,7 @@ import type { ProveedorManualStatus } from '~/components/cargaconsolidada/client
 import { useUserRole } from '~/composables/auth/useUserRole'
 import {
   apiItemToFormState,
-  formStateToSaveItem,
+  buildExcelConfirmacionSaveFormData,
   labelsForTipo,
   type IntranetItemFormState,
   type IntranetProveedorFormState,
@@ -26,16 +26,31 @@ import {
 } from '~/utils/cargaconsolidada/excelConfirmacion'
 import { getRequiredCaracteristicaValues } from '~/utils/cargaconsolidada/caracteristicaFields'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   basePath: string
   backBasePath: string
-}>()
+  /** UUID de la cotización; si no se pasa, se toma de la ruta */
+  uuid?: string
+  /** Contenedor para volver atrás; si no se pasa, se toma del query */
+  contenedorId?: string | number
+  /** Nombre del cliente (fallback mientras carga) */
+  clienteNombre?: string
+  /** Embebido dentro de documentación: sin PageHeader propio */
+  embedded?: boolean
+}>(), {
+  uuid: undefined,
+  contenedorId: undefined,
+  clienteNombre: undefined,
+  embedded: false
+})
 
 const route = useRoute()
-const uuid = computed(() => String(route.params.uuid || ''))
-const contenedorId = computed(() => String(route.query.contenedor || ''))
+const uuid = computed(() => String(props.uuid || route.params.uuid || '').trim())
+const contenedorId = computed(() => String(props.contenedorId ?? route.query.contenedor ?? '').trim())
 const tabQuery = computed(() => String(route.query.tab || 'general'))
-const clienteQueryName = computed(() => String(route.query.cliente || ''))
+const clienteQueryName = computed(() =>
+  String(props.clienteNombre || route.query.cliente || '').trim()
+)
 
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
@@ -49,10 +64,18 @@ const loading = ref(true)
 const data = ref<ExcelConfirmacionData | null>(null)
 const labels = ref<LabelsPorTipoProducto>({})
 const formState = ref<IntranetProveedorFormState[]>([])
-const activeProveedorIndex = ref(0)
+const activeProveedorTab = ref('')
 const openProductIds = ref<string[]>([])
 
-const activeProveedor = computed(() => formState.value[activeProveedorIndex.value] ?? null)
+const activeProveedorIndex = computed(() =>
+  formState.value.findIndex((p) => String(p.id) === activeProveedorTab.value)
+)
+
+const activeProveedor = computed(() => {
+  const idx = activeProveedorIndex.value
+  if (idx >= 0) return formState.value[idx]
+  return formState.value[0] ?? null
+})
 
 const excelConfStatusItems = computed(() =>
   PROVIDER_MANUAL_STATUSES.map((status) => {
@@ -94,7 +117,7 @@ const excelConfStatusModel = computed(() => {
 const proveedorTabs = computed(() =>
   formState.value.map((proveedor, index) => ({
     label: proveedor.code_supplier || `Proveedor ${index + 1}`,
-    value: index
+    value: String(proveedor.id)
   }))
 )
 
@@ -159,6 +182,7 @@ const buildFormState = (payload: ExcelConfirmacionData) => {
       || proveedor.excel_conf_status === 'Revisado',
     items: proveedor.items.map((item) => apiItemToFormState(item, labels.value))
   }))
+  activeProveedorTab.value = formState.value[0] ? String(formState.value[0].id) : ''
 }
 
 const updateExcelConfStatusField = async (
@@ -231,7 +255,7 @@ const load = async () => {
     data.value = dataRes.data
     buildFormState(dataRes.data)
 
-    const first = formState.value[activeProveedorIndex.value]?.items[0]
+    const first = activeProveedor.value?.items[0]
     openProductIds.value = first ? [productKey(first.id)] : []
   } catch (e: any) {
     showError('Error', e?.message || 'No se pudo cargar')
@@ -240,12 +264,7 @@ const load = async () => {
   }
 }
 
-const buildSavePayload = () => ({
-  proveedores: formState.value.map((proveedor) => ({
-    id: proveedor.id,
-    items: proveedor.items.map(formStateToSaveItem)
-  }))
-})
+const buildSavePayload = () => buildExcelConfirmacionSaveFormData(formState.value)
 
 const SM_DEFAULT = 'S/M'
 
@@ -325,6 +344,12 @@ const performSave = async () => {
       const res = await ExcelConfirmacionCoordinacionService.save(uuid.value, buildSavePayload())
       if (!res.success) throw new Error(res.message || 'No se pudo guardar')
 
+      if (props.embedded) {
+        showSuccess('Guardado', res.message || 'La confirmación se actualizó correctamente.')
+        await load()
+        return
+      }
+
       await navigateTo({
         path: `${props.basePath}/clientes/excel-confirmacion/${uuid.value}/guardado`,
         query: {
@@ -400,8 +425,8 @@ const goBack = () => {
   navigateTo(`${props.backBasePath}/clientes`)
 }
 
-watch(activeProveedorIndex, () => {
-  const proveedor = formState.value[activeProveedorIndex.value]
+watch(activeProveedorTab, () => {
+  const proveedor = activeProveedor.value
   openProductIds.value = proveedor?.items[0] ? [productKey(proveedor.items[0].id)] : []
 })
 
@@ -410,11 +435,21 @@ const setProductOpen = (id: string, open: boolean) => {
 }
 
 onMounted(load)
+watch(uuid, (next, prev) => {
+  if (next && next !== prev) void load()
+})
+
+defineExpose({
+  handleSave,
+  downloadExcelGeneral,
+  loading
+})
 </script>
 
 <template>
-  <div class="md:p-6 pb-24">
+  <div :class="embedded ? 'pb-8' : 'md:p-6 pb-24'">
     <PageHeader
+      v-if="!embedded"
       :title="loading ? (clienteQueryName || 'Cliente') : pageTitle"
       :subtitle="loading ? 'Cargando confirmación...' : pageSubtitle"
       icon="i-heroicons-clipboard-document-check"
@@ -445,28 +480,41 @@ onMounted(load)
 
     <ExcelConfirmacionSkeleton v-if="loading" />
 
-    <div v-else-if="data && formState.length" class="mt-4 mx-auto w-full max-w-5xl space-y-4">
-      <!-- Toolbar proveedor -->
-      <div class="rounded-xl border border-default bg-default px-3 py-3 sm:px-4 shadow-sm">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="min-w-0 flex-1">
-            <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
-              Proveedor
-            </p>
+    <div v-else-if="data && formState.length" :class="embedded ? 'mt-2 space-y-4' : 'mt-4 mx-auto w-full max-w-5xl space-y-4'">
+      <!-- Tabs de proveedores (mismo markup que Documentación) -->
+      <div class="md:mb-6 mb-3">
+        <div
+          class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4"
+        >
+          <div
+            :class="proveedorTabs.length >= 5 ? '-mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto whitespace-nowrap' : ''"
+          >
             <UTabs
-              v-model="activeProveedorIndex"
+              v-model="activeProveedorTab"
               :items="proveedorTabs"
+              size="md"
               variant="pill"
-              color="primary"
-              size="sm"
-              class="min-w-0"
+              color="neutral"
               :content="false"
-              :ui="{ list: 'flex-wrap gap-1' }"
-            />
+              :class="[
+                {
+                  'md:w-200': proveedorTabs.length >= 3,
+                  'w-50': proveedorTabs.length < 3,
+                  'md:w-300': proveedorTabs.length >= 5
+                },
+                'inline-flex'
+              ]"
+            >
+              <template #default="{ item }">
+                <div class="inline-flex items-center group">
+                  <span>{{ item.label }}</span>
+                </div>
+              </template>
+            </UTabs>
           </div>
           <div
             v-if="activeProveedor"
-            class="flex flex-wrap items-center gap-2 sm:border-s sm:border-default sm:ps-4"
+            class="flex flex-wrap items-center gap-2 lg:shrink-0"
           >
             <UBadge
               v-if="productosResumen"
@@ -551,7 +599,7 @@ onMounted(load)
                   :item="accItem.item"
                   :labels="accItem.labels"
                   :readonly="false"
-                  @update:item="updateItem(activeProveedorIndex, index, $event)"
+                  @update:item="updateItem(activeProveedorIndex >= 0 ? activeProveedorIndex : 0, index, $event)"
                 />
               </template>
             </UCollapsible>
@@ -571,7 +619,7 @@ onMounted(load)
     </div>
 
     <UAlert
-      v-else
+      v-else-if="!loading"
       color="warning"
       variant="soft"
       title="Sin datos"

@@ -235,14 +235,15 @@ const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
 
 const openExcelConfirmacionPage = (cliente: any) => {
-    const uuid = String(cliente?.uuid || '').trim()
-    if (!uuid) {
-        showError('Sin enlace', 'Este cliente no tiene UUID de confirmación web.')
+    const cotizacionId = cliente?.id_cotizacion ?? cliente?.id
+    if (!cotizacionId) {
+        showError('Sin enlace', 'No se encontró la cotización del cliente.')
         return
     }
     navigateTo({
-        path: `${basePath.value}/clientes/excel-confirmacion/${uuid}`,
+        path: `${basePath.value}/clientes/documentacion/${cotizacionId}`,
         query: {
+            section: 'excel-confirmacion',
             contenedor: String(id),
             tab: tab.value,
             cliente: cliente?.nombre || undefined

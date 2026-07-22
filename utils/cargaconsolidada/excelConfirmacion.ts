@@ -23,7 +23,10 @@ export interface IntranetItemFormState {
   qty: number | null
   precio_unitario: number | null
   nombre_comercial: string
+  /** URL de preview (storage/object URL). Nunca base64 persistido. */
   foto_url: string
+  /** Archivo nuevo pendiente de subir en el mismo guardado. */
+  foto_file: File | null
   hs_code: string
   link_producto: string
   isNew: boolean
@@ -94,10 +97,19 @@ export const apiItemToFormState = (
     precio_unitario: item.precio_unitario ?? null,
     nombre_comercial: String(raw[CAMPO_NOMBRE_COMERCIAL] ?? ''),
     foto_url: String(raw[CAMPO_FOTO] ?? ''),
+    foto_file: null,
     hs_code: String(raw[CAMPO_HS_CODE] ?? ''),
     link_producto: String(raw[CAMPO_LINK] ?? ''),
     isNew: Boolean(item.is_new)
   }
+}
+
+/** Valor de FOTO/IMAGEN para el JSON del guardado (nunca base64 ni file). */
+const fotoUrlForSave = (item: IntranetItemFormState): string => {
+  if (item.foto_file) return ''
+  const url = String(item.foto_url || '').trim()
+  if (!url || url.startsWith('data:') || url.startsWith('blob:')) return ''
+  return url
 }
 
 export const formStateToSaveItem = (item: IntranetItemFormState) => ({
@@ -107,13 +119,39 @@ export const formStateToSaveItem = (item: IntranetItemFormState) => ({
   caracteristicas: {
     ...item.caracteristicas,
     [CAMPO_NOMBRE_COMERCIAL]: item.nombre_comercial,
-    [CAMPO_FOTO]: item.foto_url,
+    [CAMPO_FOTO]: fotoUrlForSave(item),
     [CAMPO_HS_CODE]: item.hs_code,
     [CAMPO_LINK]: item.link_producto
   },
   qty: item.qty,
   precio_unitario: item.precio_unitario
 })
+
+/** FormData del mismo endpoint: JSON + files fotos[proveedorId][itemId]. */
+export const buildExcelConfirmacionSaveFormData = (
+  proveedores: IntranetProveedorFormState[]
+): FormData => {
+  const formData = new FormData()
+  formData.append(
+    'proveedores',
+    JSON.stringify(
+      proveedores.map((proveedor) => ({
+        id: proveedor.id,
+        items: proveedor.items.map(formStateToSaveItem)
+      }))
+    )
+  )
+
+  for (const proveedor of proveedores) {
+    for (const item of proveedor.items) {
+      if (item.foto_file) {
+        formData.append(`fotos[${proveedor.id}][${item.id}]`, item.foto_file)
+      }
+    }
+  }
+
+  return formData
+}
 
 export const calcItemTotal = (item: Pick<IntranetItemFormState, 'qty' | 'precio_unitario'>) =>
   (Number(item.qty) || 0) * (Number(item.precio_unitario) || 0)
