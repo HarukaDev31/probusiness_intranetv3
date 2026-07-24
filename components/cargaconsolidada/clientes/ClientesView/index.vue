@@ -1312,14 +1312,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             //button view with more info
             return h('div', { class: 'flex items-center gap-1' }, [
-                h(UButton, {
-                    icon: 'i-heroicons-clipboard-document-check',
-                    variant: 'ghost',
-                    color: 'primary',
-                    size: 'xs',
-                    title: 'Ver confirmación web del cliente',
-                    onClick: () => openExcelConfirmacionPage(row.original)
-                }),
+                
                 h(UButton, {
                     icon: 'iconamoon:menu-burger-horizontal',
                     variant: 'ghost',
@@ -1454,14 +1447,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         cell: ({ row }: { row: any }) => {
             // Render both actions: menu (modal) and eye (navigate)
             return h('div', { class: 'flex items-center gap-1' }, [
-                h(UButton, {
-                    icon: 'i-heroicons-clipboard-document-check',
-                    variant: 'ghost',
-                    color: 'primary',
-                    size: 'xs',
-                    title: 'Ver confirmación web del cliente',
-                    onClick: () => openExcelConfirmacionPage(row.original)
-                }),
+                
                 h(UButton, {
                     icon: 'iconamoon:menu-burger-horizontal',
                     variant: 'ghost',
