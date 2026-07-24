@@ -299,8 +299,35 @@ const generateFileName = (url: string): string => {
     }
 }
 
+const isCrossOriginFileUrl = (fileUrl: string): boolean => {
+    try {
+        return new URL(fileUrl, window.location.href).origin !== window.location.origin
+    } catch {
+        return true
+    }
+}
+
+const triggerBrowserDownload = (fileUrl: string, fileName: string) => {
+    const a = document.createElement('a')
+    a.href = fileUrl
+    a.download = fileName || 'archivo'
+    a.rel = 'noopener'
+    a.target = '_blank'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+}
+
 const downloadFileExisting = async (file_url: string | null) => {
     if (!file_url) return
+
+    const fileName = generateFileName(file_url)
+
+    // CDN / S3 / otro origen: fetch exige CORS; enlace directo no.
+    if (isCrossOriginFileUrl(file_url)) {
+        triggerBrowserDownload(file_url, fileName)
+        return
+    }
 
     try {
         await withSpinner(async () => {
@@ -311,13 +338,14 @@ const downloadFileExisting = async (file_url: string | null) => {
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
-            a.download = generateFileName(file_url)
+            a.download = fileName
             document.body.appendChild(a)
             a.click()
             document.body.removeChild(a)
             window.URL.revokeObjectURL(url)
         }, 'Descargando archivo...')
     } catch (error) {
+        triggerBrowserDownload(file_url, fileName)
         emit('error', 'Error al descargar archivo')
     }
 }
