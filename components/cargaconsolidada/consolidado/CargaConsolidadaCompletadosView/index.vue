@@ -21,17 +21,13 @@
       </UButton>
     </div>
 
-    <WhatsappNumbersStatus
-      :instances="[{ instanceName: 'COORDINATION', key: 'Coordinación' }, { instanceName: 'SELLS', key: 'Ventas' }]"
-      :auto-refresh="true"
-      :refresh-interval="30000"
-      :compact="true"
-    />
+   
 
-    <div v-if="isDesktop || role === ROLES.DOCUMENTACION || role === ROLES.JEFE_IMPORTACIONES">
+    <div v-if="isDesktop || role === ROLES.DOCUMENTACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.FINANZAS">
       <DataTable
         title="Carga Consolidada Completada"
-        :show-pagination="false"
+        :show-pagination="true"
+        :fill-viewport="false"
         icon=""
         :show-title="true"
         :data="consolidadoData"
@@ -43,7 +39,7 @@
         :items-per-page="itemsPerPage"
         :search-query-value="search"
         :show-secondary-search="false"
-        :show-filters="false"
+        :show-filters="true"
         :filter-config="filterConfig"
         :filters-value="filters"
         :show-export="true"
@@ -66,7 +62,7 @@
     </div>
 
     <!-- Mobile list view -->
-    <div v-if="role !== ROLES.DOCUMENTACION" class="md:hidden mt-4">
+    <div v-if="role !== ROLES.DOCUMENTACION && role !== ROLES.FINANZAS" class="md:hidden mt-4">
       <div class="flex flex-col gap-3">
         <template v-for="(row, idx) in consolidadoData" :key="row.id || idx">
           <button
@@ -137,6 +133,7 @@ import {
   DEFAULT_BASE_PATH,
   ESTADO_LABEL_MAP_ALMACEN,
   ESTADO_LABEL_MAP_DEFAULT,
+  FINANZAS_STATUS_OPTIONS,
   GINO_USER_ID,
 } from './constants'
 
@@ -151,6 +148,7 @@ const { showSuccess, showConfirmation, showError } = useModal()
 
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
+const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
 
 const {
   consolidadoData,
@@ -161,6 +159,7 @@ const {
   totalRecords,
   currentPage,
   filters,
+  anioOptions,
   getConsolidadoData,
   handleSearch,
   handlePageChange,
@@ -168,6 +167,7 @@ const {
   handleFilterChange,
   createConsolidado,
   deleteConsolidado,
+  updateEstadoFinanzas,
 } = useConsolidado(toRef(props, 'role'))
 
 const overlay = useOverlay()
@@ -232,8 +232,13 @@ const UBadge = resolveComponent('UBadge')
 
 const filterConfig = computed<FilterConfig[]>(() => {
   const baseConfig: FilterConfig[] = [
-    { label: 'Fecha Inicio', key: 'fecha_inicio', type: 'date', placeholder: 'Selecciona una fecha', options: [] },
-    { label: 'Fecha Fin', key: 'fecha_fin', type: 'date', placeholder: 'Selecciona una fecha', options: [] },
+    {
+      label: 'Año',
+      key: 'anio',
+      type: 'select',
+      options: anioOptions.value,
+      placeholder: 'Selecciona un año',
+    },
   ]
   if (isAlmacen.value) {
     baseConfig.push({
@@ -242,6 +247,16 @@ const filterConfig = computed<FilterConfig[]>(() => {
       type: 'select',
       options: [
         ...ALMACEN_STATUS_OPTIONS,
+      ],
+      placeholder: 'Selecciona un estado',
+    })
+  } else if (isFinanzas.value) {
+    baseConfig.push({
+      label: 'Estado',
+      key: 'estado_finanzas',
+      type: 'select',
+      options: [
+        ...FINANZAS_STATUS_OPTIONS,
       ],
       placeholder: 'Selecciona un estado',
     })
@@ -343,28 +358,34 @@ const columns: TableColumn<any>[] = [
     id: 'actions',
     header: 'Acciones',
     cell: ({ row }) => {
-      return h('div', { class: 'flex space-x-2' }, isCoordinacion.value
-        ? [
-            h(UButton, {
-              size: 'xs',
-              icon: 'i-heroicons-eye',
-              color: 'info',
-              variant: 'ghost',
-              onClick: () => handleViewSteps(row.original.id),
-            }),
-            h(UButton, {
-              size: 'xs',
-              icon: 'i-heroicons-pencil',
-              color: 'warning',
-              variant: 'ghost',
-              onClick: () => {
-                currentConsolidado.value = row.original.id
-                modal.open({
-                  id: row.original.id,
-                  onSubmit: (data: any) => handleCreateConsolidado(data),
-                })
-              },
-            }),
+      const canDelete = String(row.original.estado_china || '').toUpperCase() === 'PENDIENTE'
+      const actions = [
+        h(UButton, {
+          size: 'xs',
+          icon: 'i-heroicons-eye',
+          color: 'info',
+          variant: 'ghost',
+          onClick: () => handleViewSteps(row.original.id),
+        }),
+      ]
+      if (isCoordinacion.value) {
+        actions.push(
+          h(UButton, {
+            size: 'xs',
+            icon: 'i-heroicons-pencil',
+            color: 'warning',
+            variant: 'ghost',
+            onClick: () => {
+              currentConsolidado.value = row.original.id
+              modal.open({
+                id: row.original.id,
+                onSubmit: (data: any) => handleCreateConsolidado(data),
+              })
+            },
+          }),
+        )
+        if (canDelete) {
+          actions.push(
             h(UButton, {
               size: 'xs',
               icon: 'i-heroicons-trash',
@@ -372,16 +393,76 @@ const columns: TableColumn<any>[] = [
               variant: 'ghost',
               onClick: () => handleDeleteCarga(row.original.id),
             }),
-          ]
-        : [
-            h(UButton, {
-              size: 'xs',
-              icon: 'i-heroicons-eye',
-              color: 'info',
-              variant: 'ghost',
-              onClick: () => handleViewSteps(row.original.id),
-            }),
-          ])
+          )
+        }
+      }
+      return h('div', { class: 'flex space-x-2' }, actions)
+    },
+  },
+]
+
+const finanzasColumns: TableColumn<any>[] = [
+  { accessorKey: 'carga', header: 'Carga', cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}` },
+  { accessorKey: 'mes', header: 'Mes', cell: ({ row }) => row.getValue('mes') },
+  { accessorKey: 'anio', header: 'Año', cell: ({ row }) => row.getValue('anio') },
+  { accessorKey: 'pais', header: 'País', cell: ({ row }) => row.original.pais?.No_Pais || 'N/A' },
+  { accessorKey: 'f_cierre', header: 'F. Cierre', cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre')) },
+  { accessorKey: 'empresa', header: 'Empresa', cell: ({ row }) => row.getValue('empresa') },
+  {
+    accessorKey: 'estado_finanzas',
+    header: 'Estado',
+    cell: ({ row }) => {
+      const estado = (row.original.estado_finanzas || 'PENDIENTE') as string
+      const color = getColorByEstado(estado)
+      return h(USelect as any, {
+        modelValue: estado,
+        variant: 'subtle',
+        color,
+        class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES],
+        items: [
+          ...FINANZAS_STATUS_OPTIONS.filter((o) => o.value !== 'todos'),
+        ],
+        'onUpdate:modelValue': async (value: any) => {
+          const previous = row.original.estado_finanzas || 'PENDIENTE'
+          row.original.estado_finanzas = value
+          try {
+            await withSpinner(async () => {
+              const response = await updateEstadoFinanzas({
+                id: row.original.id,
+                estado_finanzas: value,
+              })
+              if (!response?.success) {
+                throw new Error(response?.message || 'No se pudo actualizar el estado de finanzas.')
+              }
+            }, 'Actualizando estado…')
+            showSuccess('Estado actualizado', 'El estado de finanzas se actualizó correctamente.')
+            await getConsolidadoData()
+          } catch (error: any) {
+            row.original.estado_finanzas = previous
+            showError(
+              'Error al actualizar',
+              error?.data?.message || error?.message || 'No se pudo actualizar el estado de finanzas.',
+            )
+          }
+        },
+      })
+    },
+  },
+  { accessorKey: 'cbm_total_peru', header: 'CBM Perú', cell: ({ row }) => formatNumber(row.getValue('cbm_total_peru'), 2) },
+  { accessorKey: 'cbm_total_china', header: 'CBM China', cell: ({ row }) => formatNumber(row.getValue('cbm_total_china'), 2) },
+  {
+    id: 'actions',
+    header: 'Acciones',
+    cell: ({ row }) => {
+      return h('div', { class: 'flex space-x-2' }, [
+        h(UButton, {
+          size: 'xs',
+          icon: 'i-heroicons-eye',
+          color: 'info',
+          variant: 'ghost',
+          onClick: () => handleViewSteps(row.original.id),
+        }),
+      ])
     },
   },
 ]
@@ -513,6 +594,8 @@ const getColumns = () => {
       return documentacionColumns
     case ROLES.CONTENEDOR_ALMACEN:
       return almacenColumns
+    case ROLES.FINANZAS:
+      return finanzasColumns
     default:
       return columns
   }
@@ -550,14 +633,22 @@ const handleDeleteCarga = async (id: number) => {
     showConfirmation('¿Estás seguro de querer eliminar esta carga consolidada?', 'Esta acción no se puede deshacer.', async () => {
       await withSpinner(async () => {
         const response = await deleteConsolidado(id)
-        if (response.success) {
+        if (response?.success) {
           showSuccess('Carga consolidada eliminada correctamente', 'La carga consolidada se ha eliminado correctamente.')
+          await getConsolidadoData()
+        } else {
+          showError(
+            'No se pudo eliminar',
+            (response as any)?.message || 'Solo se puede eliminar un consolidado en estado PENDIENTE.',
+          )
         }
-        await getConsolidadoData()
       }, 'Eliminando carga consolidada~.')
     })
-  } catch (error) {
-    showError(error as string)
+  } catch (error: any) {
+    showError(
+      'Error al eliminar',
+      error?.data?.message || error?.message || (error as string),
+    )
   }
 }
 

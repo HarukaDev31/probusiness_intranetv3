@@ -13,6 +13,12 @@ function extraerChatUuids(list: SoporteTiSolicitud[]): string[] {
   return list.map((s) => s.chatUuid).filter((uuid): uuid is string => Boolean(uuid))
 }
 
+/** Cualquier ruta bajo /soporte-ti (listado, detalle, config). */
+function enRutaSoporteTi(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.location.pathname.includes('/soporte-ti')
+}
+
 /** En detalle no hace falta el listado completo ni suscribir todas las salas al entrar. */
 function enRutaDetalleSoporteTi(): boolean {
   if (typeof window === 'undefined') return false
@@ -48,7 +54,10 @@ function suscribirSalasConHandlers(
   flushPendingRooms()
 }
 
-/** Sincroniza suscripciones WS a salas del usuario (listado o solo extras en detalle). */
+/**
+ * Sincroniza suscripciones WS a salas.
+ * No hace GET /api/soporte-ti/solicitudes fuera de rutas /soporte-ti.
+ */
 export async function sincronizarSalasGlobales(extraUuids: string[] = []) {
   if (typeof window === 'undefined') return
   if (!localStorage.getItem('auth_token')) return
@@ -61,18 +70,29 @@ export async function sincronizarSalasGlobales(extraUuids: string[] = []) {
         console.warn('[SoporteTI] Echo no disponible; salas en cola pendiente')
       }
 
-      const { handlersSala, asegurarListadoCargado } = await loadSoporteTiDeps()
+      const { handlersSala, asegurarListadoCargado, solicitudes } = await loadSoporteTiDeps()
+      const extras = [...new Set(extraUuids.filter(Boolean))]
 
-      if (enRutaDetalleSoporteTi()) {
-        const soloDetalle = [...new Set(extraUuids.filter(Boolean))]
-        if (soloDetalle.length) {
-          suscribirSalasConHandlers(soloDetalle, handlersSala)
+      // Fuera de Soporte TI: solo salas explícitas, sin listar solicitudes.
+      if (!enRutaSoporteTi()) {
+        if (extras.length) {
+          suscribirSalasConHandlers(extras, handlersSala)
         }
         return
       }
 
-      const desdeEstado = await asegurarListadoCargado()
-      const uuids = [...new Set([...desdeEstado, ...extraUuids])]
+      if (enRutaDetalleSoporteTi()) {
+        if (extras.length) {
+          suscribirSalasConHandlers(extras, handlersSala)
+        }
+        return
+      }
+
+      const desdeEstado =
+        solicitudes.value.length > 0
+          ? solicitudes.value.map((s) => s.chatUuid).filter(Boolean)
+          : await asegurarListadoCargado()
+      const uuids = [...new Set([...desdeEstado, ...extras])]
 
       if (process.dev) {
         console.log('[SoporteTI] Sincronizando salas globales:', uuids.length, uuids)
@@ -116,12 +136,13 @@ export function attachSoporteTiChatGlobalListeners() {
   if (typeof window === 'undefined' || listenersAttached) return
   listenersAttached = true
 
-  const boot = () => void sincronizarSalasGlobales()
+  const boot = () => {
+    if (!enRutaSoporteTi()) return
+    void sincronizarSalasGlobales()
+  }
 
   window.addEventListener('echo-ready', boot)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') boot()
-  })
+  // Sin visibilitychange: no re-pedir /solicitudes al cambiar de pestaña.
   window.addEventListener('soporte-ti-chat-reset', () => limpiarSuscripcionesGlobales())
   window.addEventListener('soporte-ti-suscribir-sala', (ev) => {
     const chatUuid = (ev as CustomEvent<{ chatUuid?: string }>).detail?.chatUuid
@@ -137,6 +158,7 @@ export function watchSoporteTiSolicitudesParaSalas() {
     stopWatchSolicitudes = watch(
       () => solicitudes.value.map((s) => s.chatUuid).filter(Boolean).join('|'),
       () => {
+        if (!enRutaSoporteTi()) return
         if (enRutaDetalleSoporteTi()) return
         suscribirSalasConHandlers(extraerChatUuids(solicitudes.value), handlersSala)
       }

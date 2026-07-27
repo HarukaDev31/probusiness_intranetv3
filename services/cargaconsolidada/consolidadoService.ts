@@ -4,9 +4,11 @@ export interface ConsolidadoParams {
     page?: number
     limit?: number
     search?: string
-    fecha_inicio?: string
-    fecha_fin?: string
     estado_china?: string
+    /** Año de f_inicio del consolidado. */
+    anio?: string
+    /** Estado finanzas del consolidado. */
+    estado_finanzas?: string
     completado?: boolean | false
     /** Filtrar por estado de documentación (ej. PENDIENTE). */
     estado_documentacion?: string
@@ -43,16 +45,16 @@ export class ConsolidadoService extends BaseService {
                 cleanParams.search = params.search.trim()
             }
 
-            if (params.fecha_inicio) {
-                cleanParams.fecha_inicio = params.fecha_inicio
-            }
-
-            if (params.fecha_fin) {
-                cleanParams.fecha_fin = params.fecha_fin
-            }
-
             if (params.estado_china && params.estado_china.trim() && params.estado_china !== 'todos') {
                 cleanParams.estado_china = params.estado_china.trim()
+            }
+
+            if (params.anio && params.anio.trim() && params.anio !== 'todos') {
+                cleanParams.anio = params.anio.trim()
+            }
+
+            if (params.estado_finanzas && params.estado_finanzas.trim() && params.estado_finanzas !== 'todos') {
+                cleanParams.estado_finanzas = params.estado_finanzas.trim()
             }
 
             if (params.completado !== undefined && params.completado !== null) {
@@ -211,6 +213,23 @@ export class ConsolidadoService extends BaseService {
             throw error
         }
     }
+
+    static async updateEstadoFinanzas(data: { id: number; estado_finanzas: string }): Promise<{
+        success: boolean
+        message?: string
+        data?: { id: number; estado_finanzas: string }
+    }> {
+        try {
+            return await this.apiCall(`${this.baseUrl}/estado-finanzas`, {
+                method: 'POST',
+                body: data,
+            })
+        } catch (error) {
+            console.error('Error en ConsolidadoService.updateEstadoFinanzas:', error)
+            throw error
+        }
+    }
+
     static async uploadPackingList(data: any): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/packing-list`, {

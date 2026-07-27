@@ -15,6 +15,8 @@ export interface Contenedor {
     factura_general_url: string
     estado_china: string
     estado_documentacion: string
+    /** Estado del flujo Finanzas (PENDIENTE | COMPLETADO). */
+    estado_finanzas?: string
     tipo_carga: string  
     naviera: string
     tipo_contenedor: string
@@ -41,6 +43,9 @@ export interface ContenedorResponse {
     success: boolean
     data: Contenedor[],
     pagination: PaginationInfo
+    filters?: {
+        anios?: number[]
+    }
 }
 
 /** Item del endpoint valid-containers-documentacion (dropdown permisos). */
@@ -56,9 +61,11 @@ export interface ValidContainersDocumentacionResponse {
 }
 
 export interface ContenedorFilters {
-   fecha_inicio?: string
-   fecha_fin?: string
    estado_china?: string
+   /** Año de f_inicio del consolidado (`todos` = sin filtro). */
+   anio?: string
+   /** Estado finanzas (`todos` = sin filtro). */
+   estado_finanzas?: string
    search?: string
    completado?: boolean|false
 }

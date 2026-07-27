@@ -10,22 +10,25 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
     const pagination = ref<PaginationInfo>({
         current_page: 1,
         last_page: 1,
-        per_page: 10,
+        per_page: 20,
         total: 0,
         from: 0,
         to: 0
     })
     const search = ref('')
-    const itemsPerPage = ref(100)
-    const totalPages = computed(() => Math.ceil(pagination.value.total / itemsPerPage.value))
+    const itemsPerPage = ref(20)
+    const totalPages = computed(() => pagination.value.last_page || Math.ceil(pagination.value.total / itemsPerPage.value) || 1)
     const totalRecords = computed(() => pagination.value.total)
     const currentPage = computed(() => pagination.value.current_page)
     const filters = ref<ContenedorFilters>({
-        fecha_inicio: '',
-        fecha_fin: '',
-        estado_china: 'todos', // Inicializar con 'todos' para consistencia
+        estado_china: 'todos',
+        anio: 'todos',
+        estado_finanzas: 'todos',
         completado: false
     })
+    const anioOptions = ref<{ label: string; value: string }[]>([
+        { label: 'Todos', value: 'todos' },
+    ])
     const pasos=ref<ContenedorPasos[]>([])
     const validContainers=ref<any[]>([])
     const getConsolidadoData = async (roleOverride?: string) => {
@@ -45,14 +48,14 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             }
 
             // Agregar filtros si existen
-            if (filters.value.fecha_inicio) {
-                params.fecha_inicio = filters.value.fecha_inicio
-            }
-            if (filters.value.fecha_fin) {
-                params.fecha_fin = filters.value.fecha_fin
-            }
             if (filters.value.estado_china) {
                 params.estado_china = filters.value.estado_china
+            }
+            if (filters.value.anio && filters.value.anio !== 'todos') {
+                params.anio = filters.value.anio
+            }
+            if (filters.value.estado_finanzas && filters.value.estado_finanzas !== 'todos') {
+                params.estado_finanzas = filters.value.estado_finanzas
             }
             if (filters.value.completado) {
                 params.completado = filters.value.completado
@@ -61,6 +64,15 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             const response = await ConsolidadoService.getConsolidadoData(params)
             consolidadoData.value = response.data
             pagination.value = response.pagination
+
+            const anios = response.filters?.anios ?? []
+            anioOptions.value = [
+                { label: 'Todos', value: 'todos' },
+                ...anios.map((year) => ({
+                    label: String(year),
+                    value: String(year),
+                })),
+            ]
         } catch (err: any) {
             error.value = err?.message || 'Error al cargar los datos'
             console.error('Error en getConsolidadoData:', err)
@@ -91,7 +103,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         
         
         if (value === 'todos') {
-            if (filterKey === 'estado_china') {
+            if (filterKey === 'estado_china' || filterKey === 'anio' || filterKey === 'estado_finanzas') {
                 filters.value[filterKey] = 'todos'
             } else {
                 delete filters.value[filterKey]
@@ -108,9 +120,9 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
 
     const clearFilters = () => {
         filters.value = {
-            fecha_inicio: '',
-            fecha_fin: '',
-            estado_china: 'todos'
+            estado_china: 'todos',
+            anio: 'todos',
+            estado_finanzas: 'todos'
         }
         pagination.value.current_page = 1
         getConsolidadoData()
@@ -120,9 +132,9 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
     if (typeof window !== 'undefined') {
         const globalClearHandler = () => {
             filters.value = {
-                fecha_inicio: '',
-                fecha_fin: '',
-                estado_china: 'todos'
+                estado_china: 'todos',
+                anio: 'todos',
+                estado_finanzas: 'todos'
             }
             pagination.value.current_page = 1
             getConsolidadoData()
@@ -199,6 +211,16 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             console.error('Error en updateEstadoDocumentacion:', error)
         }
     }
+
+    const updateEstadoFinanzas = async (data: { id: number; estado_finanzas: string }) => {
+        try {
+            return await ConsolidadoService.updateEstadoFinanzas(data)
+        } catch (error) {
+            console.error('Error en updateEstadoFinanzas:', error)
+            throw error
+        }
+    }
+
     return {
         consolidadoData,
         loading,
@@ -210,6 +232,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         totalRecords,
         currentPage,
         filters,
+        anioOptions,
         getConsolidadoData,
         handleSearch,
         handlePageChange,
@@ -226,6 +249,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         getConsolidadoById,
         deleteConsolidado,
         updateEstadoDocumentacion,
+        updateEstadoFinanzas,
         getContenedoresDisponibles
     }
 }
