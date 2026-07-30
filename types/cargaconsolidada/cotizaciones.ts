@@ -14,6 +14,8 @@ export interface Cotizacion {
     estado: string
     estado_cliente: string
     estado_cotizador: string
+    tipo_cliente?: string | null
+    origen_marketing?: string | null
     monto: string
     monto_final: string | null
     volumen: string

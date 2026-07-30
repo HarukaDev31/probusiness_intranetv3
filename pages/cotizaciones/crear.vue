@@ -1168,6 +1168,18 @@
               <USelect v-model="selectedContenedor" :items="contenedores" placeholder="Seleccionar"
                 class="w-full max-w-md" />
             </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2">
+                Origen marketing:
+              </label>
+              <USelect
+                v-model="origenMarketing"
+                :items="ORIGEN_MARKETING_OPTIONS"
+                placeholder="Seleccione origen"
+                class="w-full max-w-md"
+              />
+            </div>
           </div>
         </div>
       </UCard>
@@ -1205,6 +1217,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 import type { Proveedor, Tarifa, ProductoItem } from '~/types/calculadora-importacion'
+import { ORIGEN_MARKETING_OPTIONS } from '~/types/calculadora-importacion'
 import { useSpinner } from '@/composables/commons/useSpinner'
 import { useModal } from '@/composables/commons/useModal'
 import { formatCurrency } from '~/utils/formatters'
@@ -1269,6 +1282,22 @@ const displayWhatsapp = computed(() => {
   return clienteInfo.value.whatsapp || ''
 })
 
+/** Ref local: USelect interactúa mal con computed get/set anidado en clienteInfo */
+const origenMarketing = ref<string | undefined>(undefined)
+watch(
+  () => clienteInfo.value.origen_marketing,
+  (value) => {
+    origenMarketing.value = value || undefined
+  },
+  { immediate: true }
+)
+watch(origenMarketing, (value) => {
+  const next = value || null
+  if ((clienteInfo.value.origen_marketing ?? null) !== next) {
+    clienteInfo.value.origen_marketing = next
+  }
+})
+
 // Local input state for Whatsapp (para mantener solo input sin autocompletar automáticamente)
 const whatsappInput = ref<string>('')
 const showSuggestions = ref<boolean>(false)
@@ -1318,7 +1347,8 @@ const startNewCotizacion = () => {
     tipoCliente: 'NUEVO',
     tipoDocumento: 'DNI',
     empresa: '',
-    ruc: ''
+    ruc: '',
+    origen_marketing: null,
   }
 
   proveedores.value = []

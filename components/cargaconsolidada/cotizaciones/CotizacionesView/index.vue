@@ -2926,7 +2926,7 @@ const toReadOnlyColumns = (columns: TableColumn<any>[]) => {
     })
 }
 const toMarketingProspectosColumns = (columns: TableColumn<any>[]) => {
-    return columns.map((column: any) => {
+    const mapped = columns.map((column: any) => {
         const key = String(column?.accessorKey ?? column?.id ?? '').toLowerCase()
         if (!READ_ONLY_COLUMN_KEYS.has(key)) return column
         return {
@@ -2938,7 +2938,7 @@ const toMarketingProspectosColumns = (columns: TableColumn<any>[]) => {
                     variant: 'ghost',
                     size: 'xs',
                     color: 'primary',
-                    title: 'DocumentaciÃ³n',
+                    title: 'Documentación',
                     onClick: () => {
                         navigateTo(`${basePath.value}/cotizaciones/documentacion/${row.original.id}`)
                     }
@@ -2946,6 +2946,28 @@ const toMarketingProspectosColumns = (columns: TableColumn<any>[]) => {
             ])
         }
     })
+
+    const origenMarketingColumn: TableColumn<any> = {
+        accessorKey: 'origen_marketing',
+        header: 'Origen marketing',
+        cell: ({ row }: { row: any }) => {
+            const value = row.original.origen_marketing
+            return h('span', { class: 'text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap' }, value || '—')
+        }
+    }
+
+    const result: TableColumn<any>[] = []
+    let inserted = false
+    for (const column of mapped) {
+        result.push(column)
+        const key = String((column as any)?.accessorKey ?? (column as any)?.id ?? '').toLowerCase()
+        if (!inserted && (key === 'estado_cliente' || key === 'tipo_cliente')) {
+            result.push(origenMarketingColumn)
+            inserted = true
+        }
+    }
+    if (!inserted) result.push(origenMarketingColumn)
+    return result
 }
 const getProespectosColumns = () => {
     if (currentRole.value === ROLES.JEFE_MARKETING) return toMarketingProspectosColumns(prospectosCoordinacionColumns.value)
