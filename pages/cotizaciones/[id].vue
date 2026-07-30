@@ -1148,6 +1148,18 @@
               <USelect v-model="selectedContenedor" :items="contenedores" placeholder="Seleccionar"
                 class="w-full max-w-md" />
             </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2">
+                Origen marketing:
+              </label>
+              <USelect
+                v-model="origenMarketing"
+                :items="ORIGEN_MARKETING_OPTIONS"
+                placeholder="Seleccione origen"
+                class="w-full max-w-md"
+              />
+            </div>
           </div>
         </div>
       </UCard>
@@ -1187,6 +1199,7 @@ import { useRoute } from 'vue-router'
 import { navigateTo } from '#imports'
 import { useCalculadoraImportacion } from '~/composables/useCalculadoraImportacion'
 import type { Proveedor, Tarifa, ProductoItem } from '~/types/calculadora-importacion'
+import { ORIGEN_MARKETING_OPTIONS } from '~/types/calculadora-importacion'
 import { useSpinner } from '@/composables/commons/useSpinner'
 import { useModal } from '@/composables/commons/useModal'
 import { formatCurrency } from '~/utils/formatters'
@@ -1251,6 +1264,22 @@ const {
   getMaxItemsByTotalCbm,
   canAddMoreItems
 } = useCalculadoraImportacion()
+
+/** Ref local: USelect interactúa mal con computed get/set anidado en clienteInfo */
+const origenMarketing = ref<string | undefined>(undefined)
+watch(
+  () => clienteInfo.value.origen_marketing,
+  (value) => {
+    origenMarketing.value = value || undefined
+  },
+  { immediate: true }
+)
+watch(origenMarketing, (value) => {
+  const next = value || null
+  if ((clienteInfo.value.origen_marketing ?? null) !== next) {
+    clienteInfo.value.origen_marketing = next
+  }
+})
 
 function usarTcYuanAlCrear () {
   if (tcYuanUsadoAlCrear.value != null) tcYuanUsado.value = tcYuanUsadoAlCrear.value

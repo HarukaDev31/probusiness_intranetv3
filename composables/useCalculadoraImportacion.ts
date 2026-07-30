@@ -174,7 +174,8 @@ export const useCalculadoraImportacion = () => {
     tipoCliente: 'NUEVO',
     tipoDocumento: 'DNI',
     empresa: '',
-    ruc: ''
+    ruc: '',
+    origen_marketing: null,
   })
   //computed totalItems
   const totalItems = computed(() => {
@@ -886,6 +887,7 @@ export const useCalculadoraImportacion = () => {
       clienteInfo.value.whatsapp = payload.whatsapp_cliente ?? cliente.telefono ?? ''
       clienteInfo.value.tipoCliente = payload.tipo_cliente || clienteInfo.value.tipoCliente
       clienteInfo.value.qtyProveedores = Number(payload.qty_proveedores || payload.qtyProveedores || 0)
+      clienteInfo.value.origen_marketing = payload.origen_marketing ?? null
 
       proveedores.value = (payload.proveedores || []).map((p: any, idx: number) => ({
         id: p.id || (idx + 1).toString(),

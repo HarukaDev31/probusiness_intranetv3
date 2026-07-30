@@ -245,7 +245,6 @@ const { cotizaciones,
     deleteCotizacionFile,
     sendRecordatorioFirmaContrato,
     updateEstadoCotizacionCotizador,
-    updateOrigenMarketing,
     loading: loadingCotizaciones,
     error: errorCotizaciones,
     pagination: paginationCotizaciones,
@@ -2837,21 +2836,6 @@ const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string
     }
 }
 
-const handleUpdateOrigenMarketing = async (idCotizacion: number, origen: string | null) => {
-    try {
-        await withSpinner(async () => {
-            const response = await updateOrigenMarketing(idCotizacion, origen)
-            if (response?.success) {
-                showSuccess('Origen actualizado', 'El origen de marketing se guardó correctamente.')
-                await getCotizaciones(Number(id))
-            } else {
-                showError('Error', response?.message || 'No se pudo guardar el origen de marketing')
-            }
-        }, 'Guardando origen marketing...')
-    } catch (error: any) {
-        showError('Error', error?.message || 'No se pudo guardar el origen de marketing')
-    }
-}
 const handleUpdateProveedorEstado = async (idProveedor: number, estado: string, idCotizacion: number) => {
     try {
         await withSpinner(async () => {
@@ -2943,35 +2927,12 @@ const toReadOnlyColumns = (columns: TableColumn<any>[]) => {
     })
 }
 
-const ORIGEN_MARKETING_OPTIONS = [
-    { label: 'Seleccione origen', value: '' },
-    { label: 'Facebook', value: 'Facebook' },
-    { label: 'Instagram', value: 'Instagram' },
-    { label: 'Tiktok', value: 'Tiktok' },
-    { label: 'Landing CC', value: 'Landing CC' },
-    { label: 'Landing CI', value: 'Landing CI' },
-    { label: 'Pagina web CC', value: 'Pagina web CC' },
-    { label: 'Pagina web CI', value: 'Pagina web CI' },
-]
-
 const origenMarketingColumn = (): TableColumn<any> => ({
     accessorKey: 'origen_marketing',
     header: 'Origen marketing',
     cell: ({ row }: { row: any }) => {
-        const current = row.original.origen_marketing ?? ''
-        return h(USelect as any, {
-            items: ORIGEN_MARKETING_OPTIONS,
-            placeholder: 'Seleccione origen',
-            modelValue: current,
-            class: 'min-w-40',
-            'onUpdate:modelValue': (value: any) => {
-                const next = !value ? null : String(value)
-                const prev = row.original.origen_marketing ?? null
-                if (next !== prev) {
-                    handleUpdateOrigenMarketing(row.original.id, next)
-                }
-            }
-        })
+        const value = row.original.origen_marketing
+        return h('span', { class: 'text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap' }, value || '—')
     }
 })
 
@@ -2988,7 +2949,7 @@ const toMarketingProspectosColumns = (columns: TableColumn<any>[]) => {
                     variant: 'ghost',
                     size: 'xs',
                     color: 'primary',
-                    title: 'DocumentaciÃ³n',
+                    title: 'Documentación',
                     onClick: () => {
                         navigateTo(`${basePath.value}/cotizaciones/documentacion/${row.original.id}`)
                     }
@@ -2998,13 +2959,16 @@ const toMarketingProspectosColumns = (columns: TableColumn<any>[]) => {
     })
 
     const result: TableColumn<any>[] = []
+    let inserted = false
     for (const column of mapped) {
         result.push(column)
         const key = String((column as any)?.accessorKey ?? (column as any)?.id ?? '').toLowerCase()
-        if (key === 'estado_cliente' || key === 'tipo_cliente') {
+        if (!inserted && (key === 'estado_cliente' || key === 'tipo_cliente')) {
             result.push(origenMarketingColumn())
+            inserted = true
         }
     }
+    if (!inserted) result.push(origenMarketingColumn())
     return result
 }
 const getProespectosColumns = () => {

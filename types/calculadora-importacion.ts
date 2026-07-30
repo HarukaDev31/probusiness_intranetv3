@@ -8,7 +8,21 @@ export interface ClienteInfo {
   tipoDocumento?: string
   empresa?: string
   ruc?: string
+  /** Nullable: filas antiguas no lo tienen */
+  origen_marketing?: string | null
 }
+
+/** Mismos valores que la columna Origen marketing (carga consolidada / Jefe Marketing). */
+export const ORIGEN_MARKETING_OPTIONS = [
+  'Facebook',
+  'Instagram',
+  'Tiktok',
+  'Landing CC',
+  'Landing CI',
+  'Pagina web CC',
+  'Pagina web CI',
+]
+
 
 export interface ProductoItem {
   id: string
