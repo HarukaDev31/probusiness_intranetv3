@@ -199,18 +199,25 @@ export class ConsolidadoService extends BaseService {
         }
     }
 
-    /** Duplica el contenedor como parte B (sin cotizaciones/proveedores). */
-    static async partirConsolidado(id: number): Promise<{
+    /** Parte el contenedor en N subconsolidados (2–10). Sin cotizaciones/proveedores. */
+    static async partirConsolidado(id: number, cantidad: number): Promise<{
         success: boolean
         message?: string
-        data?: { original: { id: number; carga: string; parte: string }; nuevo: { id: number; carga: string; parte: string } }
+        data?: {
+            original: { id: number; carga: string; parte: string }
+            contenedores: Array<{ id: number; carga: string; parte: string }>
+        }
     }> {
         const response = await this.apiCall<{
             success: boolean
             message?: string
-            data?: { original: { id: number; carga: string; parte: string }; nuevo: { id: number; carga: string; parte: string } }
+            data?: {
+                original: { id: number; carga: string; parte: string }
+                contenedores: Array<{ id: number; carga: string; parte: string }>
+            }
         }>(`${this.baseUrl}/${id}/partir`, {
-            method: 'POST'
+            method: 'POST',
+            body: { cantidad }
         })
         return response
     }

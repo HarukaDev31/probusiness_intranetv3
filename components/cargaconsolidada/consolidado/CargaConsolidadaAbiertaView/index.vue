@@ -130,6 +130,7 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import CreateConsolidadoModal from '~/components/cargaconsolidada/consolidado/CreateConsolidadoModal/index.vue'
+import PartirConsolidadoModal from '~/components/cargaconsolidada/consolidado/PartirConsolidadoModal/index.vue'
 import { USelect } from '#components'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 import type { CargaConsolidadaAbiertaProps, ConsolidadoFormData } from './types'
@@ -175,6 +176,7 @@ const {
 
 const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
+const partirModal = overlay.create(PartirConsolidadoModal)
 const currentConsolidado = ref<number | null>(null)
 
 const tcYuanGlobal = ref<string | number>('')
@@ -510,40 +512,46 @@ const handleViewSteps = (id: number) => {
 
 const handleDeleteCarga = async (id: number) => {
   try {
-    showConfirmation('¿Estás seguro de querer eliminar esta carga consolidada?', 'Esta acción no se puede deshacer.', async () => {
-      await withSpinner(async () => {
-        const response = await deleteConsolidado(id)
-        if (response.success) {
-          showSuccess('Carga consolidada eliminada correctamente', 'La carga consolidada se ha eliminado correctamente.')
-        }
-        await getConsolidadoData()
-      }, 'Eliminando carga consolidada~.')
-    })
+    showConfirmation(
+      '¿Eliminar esta carga consolidada?',
+      'Se dará de baja el contenedor. Si queda un solo subconsolidado del grupo, vuelve a la normalidad.',
+      async () => {
+        await withSpinner(async () => {
+          const response = await deleteConsolidado(id)
+          if (response?.success) {
+            showSuccess('Carga consolidada eliminada', 'El contenedor se dio de baja correctamente.')
+          }
+          await getConsolidadoData()
+        }, 'Eliminando carga consolidada…')
+      }
+    )
   } catch (error) {
     showError('Error al eliminar carga consolidada', error as string)
   }
 }
 
 const handlePartirConsolidado = (id: number) => {
-  showConfirmation(
-    '¿Partir este consolidado?',
-    'Se creará una copia A y B del contenedor. No se copian cotizaciones ni proveedores.',
-    async () => {
+  partirModal.open({
+    id,
+    onConfirm: async ({ cantidad }: { id: number; cantidad: number }) => {
       try {
         await withSpinner(async () => {
-          const response = await partirConsolidado(id)
+          const response = await partirConsolidado(id, cantidad)
           if (!response?.success) {
             throw new Error(response?.message || 'No se pudo partir el consolidado')
           }
         }, 'Partiendo consolidado…')
-        showSuccess('Consolidado partido', 'Quedó separado en A y B. Ya puedes ver ambos en la lista.')
+        showSuccess(
+          'Consolidado partido',
+          `Se crearon ${cantidad} subconsolidados (A–${String.fromCharCode(64 + cantidad)}).`
+        )
         await getConsolidadoData()
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : 'No se pudo partir el consolidado.'
         showError('Error al partir consolidado', msg)
       }
-    }
-  )
+    },
+  })
 }
 
 const exportClientes = async () => {
