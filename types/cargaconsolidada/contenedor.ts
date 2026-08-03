@@ -5,6 +5,8 @@ export interface Contenedor {
     mes: string
     id_pais: number
     carga: string
+    /** Parte del consolidado partido: A | B. Null = no partido. */
+    parte?: string | null
     f_puerto: string
     f_entrega: string
     empresa: string

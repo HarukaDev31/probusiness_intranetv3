@@ -169,6 +169,7 @@ const {
   handleFilterChange,
   createConsolidado,
   deleteConsolidado,
+  partirConsolidado,
   updateEstadoDocumentacion,
 } = useConsolidado(toRef(props, 'role'))
 
@@ -350,47 +351,69 @@ const columns: TableColumn<any>[] = [
     id: 'actions',
     header: 'Acciones',
     cell: ({ row }) => {
-      return h('div', { class: 'flex space-x-2' }, isCoordinacion.value
-        ? [
-            h(UButton, {
-              size: 'xs',
-              icon: 'i-heroicons-eye',
-              color: 'info',
-              variant: 'ghost',
-              onClick: () => handleViewSteps(row.original.id),
-            }),
-            h(UButton, {
-              size: 'xs',
-              icon: 'i-heroicons-pencil',
-              color: 'warning',
-              variant: 'ghost',
-              onClick: () => {
-                currentConsolidado.value = row.original.id
-                modal.open({
-                  id: row.original.id,
-                  onSubmit: (data: any) => {
-                    handleCreateConsolidado(data)
-                  },
-                })
+      const original = row.original as { id: number; estado_china?: string; parte?: string | null }
+      const puedePartir =
+        original.estado_china === 'PENDIENTE' && !original.parte
+
+      const coordinacionActions = [
+        h(UButton, {
+          size: 'xs',
+          icon: 'i-heroicons-eye',
+          color: 'info',
+          variant: 'ghost',
+          onClick: () => handleViewSteps(original.id),
+        }),
+        h(UButton, {
+          size: 'xs',
+          icon: 'i-heroicons-pencil',
+          color: 'warning',
+          variant: 'ghost',
+          onClick: () => {
+            currentConsolidado.value = original.id
+            modal.open({
+              id: original.id,
+              onSubmit: (data: any) => {
+                handleCreateConsolidado(data)
               },
-            }),
-            h(UButton, {
-              size: 'xs',
-              icon: 'i-heroicons-trash',
-              color: 'error',
-              variant: 'ghost',
-              onClick: () => handleDeleteCarga(row.original.id),
-            }),
-          ]
-        : [
-            h(UButton, {
-              size: 'xs',
-              icon: 'i-heroicons-eye',
-              color: 'info',
-              variant: 'ghost',
-              onClick: () => handleViewSteps(row.original.id),
-            }),
-          ])
+            })
+          },
+        }),
+        ...(puedePartir
+          ? [
+              h(UButton, {
+                size: 'xs',
+                icon: 'i-heroicons-document-duplicate',
+                color: 'primary',
+                variant: 'ghost',
+                title: 'Partir consolidado',
+                onClick: () => handlePartirConsolidado(original.id),
+              }),
+            ]
+          : []),
+        h(UButton, {
+          size: 'xs',
+          icon: 'i-heroicons-trash',
+          color: 'error',
+          variant: 'ghost',
+          onClick: () => handleDeleteCarga(original.id),
+        }),
+      ]
+
+      return h(
+        'div',
+        { class: 'flex space-x-2' },
+        isCoordinacion.value
+          ? coordinacionActions
+          : [
+              h(UButton, {
+                size: 'xs',
+                icon: 'i-heroicons-eye',
+                color: 'info',
+                variant: 'ghost',
+                onClick: () => handleViewSteps(original.id),
+              }),
+            ]
+      )
     },
   },
 ]
@@ -499,6 +522,28 @@ const handleDeleteCarga = async (id: number) => {
   } catch (error) {
     showError('Error al eliminar carga consolidada', error as string)
   }
+}
+
+const handlePartirConsolidado = (id: number) => {
+  showConfirmation(
+    '¿Partir este consolidado?',
+    'Se creará una copia A y B del contenedor. No se copian cotizaciones ni proveedores.',
+    async () => {
+      try {
+        await withSpinner(async () => {
+          const response = await partirConsolidado(id)
+          if (!response?.success) {
+            throw new Error(response?.message || 'No se pudo partir el consolidado')
+          }
+        }, 'Partiendo consolidado…')
+        showSuccess('Consolidado partido', 'Quedó separado en A y B. Ya puedes ver ambos en la lista.')
+        await getConsolidadoData()
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : 'No se pudo partir el consolidado.'
+        showError('Error al partir consolidado', msg)
+      }
+    }
+  )
 }
 
 const exportClientes = async () => {
