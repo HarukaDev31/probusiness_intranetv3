@@ -1151,7 +1151,7 @@
 
             <div>
               <label class="block text-sm font-medium mb-2">
-                Origen marketing:
+                Origen marketing: <span class="text-red-500">*</span>
               </label>
               <USelect
                 v-model="origenMarketing"
@@ -1184,6 +1184,7 @@
         <UButton v-else @click="saveCotizacion()" color="primary" size="lg" icon="i-heroicons-arrow-right"
           :label="'Finalizar'" :disabled="!selectedVendedor ||
             !selectedContenedor ||
+            !origenMarketing ||
             (selectedTarifa && selectedTarifa.label === 'MANUAL' && (!selectedTarifa.tarifa || selectedTarifa.tarifa <= 0))
             ">
           Finalizar
@@ -1299,6 +1300,10 @@ const saveCotizacion = async () => {
   }
   if (!selectedContenedor) {
     showError('Debes seleccionar un consolidado', 'error')
+    return
+  }
+  if (!origenMarketing.value) {
+    showError('Debes seleccionar el origen de marketing', 'error')
     return
   }
   try {
