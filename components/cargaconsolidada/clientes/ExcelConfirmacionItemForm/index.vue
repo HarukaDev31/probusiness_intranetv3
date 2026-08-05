@@ -13,6 +13,8 @@ import {
   selectOptions,
   visibleCaracteristicaLabels
 } from '~/utils/cargaconsolidada/caracteristicaFields'
+import { fetchImageBlobCors } from '~/utils/cargaconsolidada/fotoCors'
+import ImageModal from '~/components/ImageModal.vue'
 
 const props = defineProps<{
   item: IntranetItemFormState
@@ -23,6 +25,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:item': [IntranetItemFormState]
 }>()
+
+const toast = useToast()
 
 const localItem = computed({
   get: () => props.item,
@@ -71,6 +75,8 @@ const updateCaracteristica = (label: string, value: string) => {
 const hasFoto = computed(() => String(localItem.value.foto_url || '').trim() !== '')
 const caracteristicasOpen = ref(true)
 const fotoFile = computed(() => localItem.value.foto_file)
+const previewOpen = ref(false)
+const copyingFoto = ref(false)
 
 const revokeIfBlob = (url: string) => {
   if (url.startsWith('blob:')) URL.revokeObjectURL(url)
@@ -95,8 +101,63 @@ const onFotoChange = (files: File | File[] | null | undefined) => {
 
 const clearFoto = () => {
   if (props.readonly) return
+  previewOpen.value = false
   revokeIfBlob(String(localItem.value.foto_url || ''))
   localItem.value = { ...localItem.value, foto_file: null, foto_url: '' }
+}
+
+const openFotoPreview = () => {
+  if (!hasFoto.value) return
+  previewOpen.value = true
+}
+
+const blobToPng = async (blob: Blob): Promise<Blob> => {
+  if (blob.type === 'image/png') return blob
+  const bitmap = await createImageBitmap(blob)
+  const canvas = document.createElement('canvas')
+  canvas.width = bitmap.width
+  canvas.height = bitmap.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('No se pudo crear el canvas')
+  ctx.drawImage(bitmap, 0, 0)
+  bitmap.close()
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (result) => (result ? resolve(result) : reject(new Error('No se pudo convertir a PNG'))),
+      'image/png'
+    )
+  })
+}
+
+const copyFoto = async () => {
+  const url = String(localItem.value.foto_url || '')
+  if (!url || copyingFoto.value) return
+
+  copyingFoto.value = true
+  try {
+    const source = localItem.value.foto_file ?? (await fetchImageBlobCors(url))
+    const png = await blobToPng(source)
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+    toast.add({ title: 'Imagen copiada', color: 'success' })
+  } catch (error) {
+    console.error('[copyFoto]', error)
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.add({
+        title: 'Enlace copiado',
+        description: 'El CDN no permite copiar la imagen (falta CORS). Se copió la URL.',
+        color: 'warning'
+      })
+    } catch {
+      toast.add({
+        title: 'No se pudo copiar la imagen',
+        description: 'El CDN no envía Access-Control-Allow-Origin',
+        color: 'error'
+      })
+    }
+  } finally {
+    copyingFoto.value = false
+  }
 }
 
 const onFotoUrlInput = (value: string) => {
@@ -162,15 +223,39 @@ const onPrecioBlur = () => {
               alt="Producto"
               class="size-full object-contain p-2"
             >
-            <button
-              v-if="!readonly"
-              type="button"
-              class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
-              title="Quitar foto"
-              @click="clearFoto"
+            <div
+              class="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
             >
-              <UIcon name="i-heroicons-trash" class="size-5 text-white" />
-            </button>
+              <button
+                type="button"
+                class="flex size-9 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30"
+                title="Ampliar"
+                aria-label="Ampliar imagen"
+                @click="openFotoPreview"
+              >
+                <UIcon name="i-heroicons-magnifying-glass-plus" class="size-5" />
+              </button>
+              <button
+                type="button"
+                class="flex size-9 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30 disabled:opacity-50"
+                title="Copiar imagen"
+                aria-label="Copiar imagen"
+                :disabled="copyingFoto"
+                @click="copyFoto"
+              >
+                <UIcon name="i-heroicons-clipboard-document" class="size-5" />
+              </button>
+              <button
+                v-if="!readonly"
+                type="button"
+                class="flex size-9 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30"
+                title="Quitar foto"
+                aria-label="Quitar foto"
+                @click="clearFoto"
+              >
+                <UIcon name="i-heroicons-trash" class="size-5" />
+              </button>
+            </div>
           </div>
           <UFileUpload
             v-else-if="!readonly"
@@ -194,6 +279,12 @@ const onPrecioBlur = () => {
             <UIcon name="i-heroicons-photo" class="size-8 opacity-40" />
             <span class="text-[11px] font-medium">Sin foto</span>
           </div>
+          <ImageModal
+            :isOpen="previewOpen"
+            :imageUrl="String(localItem.foto_url || '')"
+            altText="Producto"
+            @close="previewOpen = false"
+          />
           <UFormField
             v-if="!readonly"
             label="O pegar URL"
