@@ -78,6 +78,20 @@ const fotoFile = computed(() => localItem.value.foto_file)
 const previewOpen = ref(false)
 const copyingFoto = ref(false)
 
+/** No mostrar rutas de storage/CDN en el input de pegar URL (el link del producto es otro campo). */
+const fotoUrlPasteDisplay = computed(() => {
+  const url = String(localItem.value.foto_url || '').trim()
+  if (!url || url.startsWith('blob:') || url.startsWith('data:')) return ''
+  if (
+    url.includes('cdn.probusiness.pe') ||
+    url.includes('/excel-confirmacion/fotos/') ||
+    url.includes('/files/excel-confirmacion/')
+  ) {
+    return ''
+  }
+  return url
+})
+
 const revokeIfBlob = (url: string) => {
   if (url.startsWith('blob:')) URL.revokeObjectURL(url)
 }
@@ -141,20 +155,11 @@ const copyFoto = async () => {
     toast.add({ title: 'Imagen copiada', color: 'success' })
   } catch (error) {
     console.error('[copyFoto]', error)
-    try {
-      await navigator.clipboard.writeText(url)
-      toast.add({
-        title: 'Enlace copiado',
-        description: 'El CDN no permite copiar la imagen (falta CORS). Se copió la URL.',
-        color: 'warning'
-      })
-    } catch {
-      toast.add({
-        title: 'No se pudo copiar la imagen',
-        description: 'El CDN no envía Access-Control-Allow-Origin',
-        color: 'error'
-      })
-    }
+    toast.add({
+      title: 'No se pudo copiar la imagen',
+      description: 'Intenta de nuevo o descarga la foto manualmente',
+      color: 'error'
+    })
   } finally {
     copyingFoto.value = false
   }
@@ -287,16 +292,16 @@ const onPrecioBlur = () => {
           />
           <UFormField
             v-if="!readonly"
-            label="O pegar URL"
+            label="O pegar URL de imagen"
             size="sm"
             class="w-full"
           >
             <UInput
               class="w-full"
               size="sm"
-              :model-value="hasFoto && !String(localItem.foto_url).startsWith('blob:') ? localItem.foto_url : ''"
-              placeholder="https://..."
-              icon="i-heroicons-link"
+              :model-value="fotoUrlPasteDisplay"
+              placeholder="https://... (solo si pegas una imagen externa)"
+              icon="i-heroicons-photo"
               @update:model-value="onFotoUrlInput"
             />
           </UFormField>

@@ -6,9 +6,8 @@ export const withCacheBust = (url: string): string => {
 }
 
 /**
- * Descarga bytes de la imagen para copiar al portapapeles.
- * Nota: URLs remotas (cdn.probusiness.pe) requieren Access-Control-Allow-Origin en el CDN.
- * Las fotos locales (blob/File) no tienen ese problema.
+ * Descarga la imagen con fetch (mismo enfoque que excel_confirmacion).
+ * Sin crossorigin en el <img>: el CDN carga normal; el fetch usa cache-bust + no-store.
  */
 export const fetchImageBlobCors = async (url: string): Promise<Blob> => {
   const normalized = String(url || '').trim()
