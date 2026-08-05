@@ -5,6 +5,10 @@ export interface Contenedor {
     mes: string
     id_pais: number
     carga: string
+    /** Parte del consolidado partido: A | B | … | J. Null = no partido. */
+    parte?: string | null
+    /** Id del consolidado original (parte A). Null = normal. */
+    id_contenedor_origen?: number | null
     f_puerto: string
     f_entrega: string
     empresa: string

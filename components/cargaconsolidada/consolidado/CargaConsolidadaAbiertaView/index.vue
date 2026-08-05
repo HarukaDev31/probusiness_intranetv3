@@ -139,6 +139,7 @@ import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import CreateConsolidadoModal from '~/components/cargaconsolidada/consolidado/CreateConsolidadoModal/index.vue'
+import PartirConsolidadoModal from '~/components/cargaconsolidada/consolidado/PartirConsolidadoModal/index.vue'
 import { USelect } from '#components'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 import type { CargaConsolidadaAbiertaProps, ConsolidadoFormData } from './types'
@@ -182,12 +183,14 @@ const {
   handleFilterChange,
   createConsolidado,
   deleteConsolidado,
+  partirConsolidado,
   updateEstadoDocumentacion,
   updateEstadoFinanzas,
 } = useConsolidado(toRef(props, 'role'))
 
 const overlay = useOverlay()
 const modal = overlay.create(CreateConsolidadoModal)
+const partirModal = overlay.create(PartirConsolidadoModal)
 const currentConsolidado = ref<number | null>(null)
 
 const tcYuanGlobal = ref<string | number>('')
@@ -379,14 +382,16 @@ const columns: TableColumn<any>[] = [
     id: 'actions',
     header: 'Acciones',
     cell: ({ row }) => {
-      const canDelete = String(row.original.estado_china || '').toUpperCase() === 'PENDIENTE'
+      const original = row.original as { id: number; estado_china?: string; parte?: string | null }
+      const canDelete = String(original.estado_china || '').toUpperCase() === 'PENDIENTE'
+      const puedePartir = canDelete && !original.parte
       const actions = [
         h(UButton, {
           size: 'xs',
           icon: 'i-heroicons-eye',
           color: 'info',
           variant: 'ghost',
-          onClick: () => handleViewSteps(row.original.id),
+          onClick: () => handleViewSteps(original.id),
         }),
       ]
       if (isCoordinacion.value) {
@@ -397,9 +402,9 @@ const columns: TableColumn<any>[] = [
             color: 'warning',
             variant: 'ghost',
             onClick: () => {
-              currentConsolidado.value = row.original.id
+              currentConsolidado.value = original.id
               modal.open({
-                id: row.original.id,
+                id: original.id,
                 onSubmit: (data: any) => {
                   handleCreateConsolidado(data)
                 },
@@ -407,6 +412,18 @@ const columns: TableColumn<any>[] = [
             },
           }),
         )
+        if (puedePartir) {
+          actions.push(
+            h(UButton, {
+              size: 'xs',
+              icon: 'i-heroicons-document-duplicate',
+              color: 'primary',
+              variant: 'ghost',
+              title: 'Partir consolidado',
+              onClick: () => handlePartirConsolidado(original.id),
+            }),
+          )
+        }
         if (canDelete) {
           actions.push(
             h(UButton, {
@@ -414,7 +431,7 @@ const columns: TableColumn<any>[] = [
               icon: 'i-heroicons-trash',
               color: 'error',
               variant: 'ghost',
-              onClick: () => handleDeleteCarga(row.original.id),
+              onClick: () => handleDeleteCarga(original.id),
             }),
           )
         }
@@ -596,7 +613,7 @@ const handleDeleteCarga = async (id: number) => {
             (response as any)?.message || 'Solo se puede eliminar un consolidado en estado PENDIENTE.',
           )
         }
-      }, 'Eliminando carga consolidada~.')
+      }, 'Eliminando carga consolidada…')
     })
   } catch (error: any) {
     showError(
@@ -604,6 +621,30 @@ const handleDeleteCarga = async (id: number) => {
       error?.data?.message || error?.message || (error as string),
     )
   }
+}
+
+const handlePartirConsolidado = (id: number) => {
+  partirModal.open({
+    id,
+    onConfirm: async ({ cantidad }: { id: number; cantidad: number }) => {
+      try {
+        await withSpinner(async () => {
+          const response = await partirConsolidado(id, cantidad)
+          if (!response?.success) {
+            throw new Error(response?.message || 'No se pudo partir el consolidado')
+          }
+        }, 'Partiendo consolidado…')
+        showSuccess(
+          'Consolidado partido',
+          `Se crearon ${cantidad} subconsolidados (A–${String.fromCharCode(64 + cantidad)}).`
+        )
+        await getConsolidadoData()
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : 'No se pudo partir el consolidado.'
+        showError('Error al partir consolidado', msg)
+      }
+    },
+  })
 }
 
 const exportClientes = async () => {

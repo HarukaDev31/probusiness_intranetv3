@@ -203,6 +203,10 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             console.error('Error en deleteConsolidado:', error)
         }
     }
+    const partirConsolidado = async (id: number, cantidad: number) => {
+        const response = await ConsolidadoService.partirConsolidado(id, cantidad)
+        return response
+    }
     const updateEstadoDocumentacion = async (data: any) => {
         try {
             const response = await ConsolidadoService.updateEstadoDocumentacion(data)
@@ -248,6 +252,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         createConsolidado,
         getConsolidadoById,
         deleteConsolidado,
+        partirConsolidado,
         updateEstadoDocumentacion,
         updateEstadoFinanzas,
         getContenedoresDisponibles
