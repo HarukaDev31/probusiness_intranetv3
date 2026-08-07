@@ -17,6 +17,7 @@ export const ORIGEN_MARKETING_OPTIONS = [
   'Facebook',
   'Instagram',
   'Tiktok',
+  'WhatsApp',
   'Landing CC',
   'Landing CI',
   'Pagina web CC',
