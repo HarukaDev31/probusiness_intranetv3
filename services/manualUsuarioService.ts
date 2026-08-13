@@ -145,6 +145,23 @@ export class ManualUsuarioService extends BaseService {
     return res.data
   }
 
+  static async adminCopyPage(
+    id: number,
+    payload: {
+      role_slug: string
+      titulo?: string
+      modulo_key?: string
+      descripcion?: string | null
+      publicado?: boolean
+    }
+  ): Promise<ManualPage> {
+    const res = await this.apiCall<ManualUsuarioApiResponse<ManualPage>>(`${this.adminUrl}/pages/${id}/copy`, {
+      method: 'POST',
+      body: payload,
+    })
+    return res.data
+  }
+
   static async adminUpdatePage(id: number, payload: Record<string, unknown>): Promise<ManualPage> {
     const res = await this.apiCall<ManualUsuarioApiResponse<ManualPage>>(`${this.adminUrl}/pages/${id}`, {
       method: 'PUT',

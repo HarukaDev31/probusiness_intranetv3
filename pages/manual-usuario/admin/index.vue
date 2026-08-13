@@ -89,6 +89,14 @@
               </td>
               <td class="px-2 py-2">
                 <div class="flex justify-end gap-1">
+                  <UButton
+                    size="xs"
+                    variant="soft"
+                    color="neutral"
+                    icon="i-heroicons-document-duplicate"
+                    title="Copiar a otro rol"
+                    @click="openCopy(p)"
+                  />
                   <UButton size="xs" variant="soft" icon="i-heroicons-pencil-square" :to="`/manual-usuario/admin/${p.id}`" />
                   <UButton
                     size="xs"
@@ -143,6 +151,57 @@
         </UCard>
       </template>
     </UModal>
+
+    <UModal v-model:open="copyOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h2 class="text-base font-semibold">Copiar página a otro rol</h2>
+          </template>
+          <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+            Se crea una copia independiente (nuevos registros). Luego puedes quitar o agregar bloques en el destino.
+          </p>
+          <div class="space-y-3">
+            <div>
+              <label class="mb-1 block text-xs font-medium">Origen</label>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">
+                {{ copySource?.titulo }}
+                <span class="ml-1 font-normal text-gray-500">({{ copySource?.role_slug }})</span>
+              </p>
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium">Rol destino</label>
+              <USelect v-model="copyForm.role_slug" :items="roleItems" placeholder="Seleccionar rol" class="w-full" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium">Título (opcional)</label>
+              <UInput v-model="copyForm.titulo" class="w-full" placeholder="Igual que el origen" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium">Clave módulo (opcional)</label>
+              <UInput v-model="copyForm.modulo_key" class="w-full" placeholder="Se ajusta sola si ya existe en el destino" />
+            </div>
+            <div class="flex items-center gap-2">
+              <UCheckbox v-model="copyForm.publicado" />
+              <span class="text-sm">Publicar al copiar (si no, queda borrador)</span>
+            </div>
+          </div>
+          <template #footer>
+            <div class="flex justify-end gap-2">
+              <UButton variant="ghost" color="neutral" @click="copyOpen = false">Cancelar</UButton>
+              <UButton
+                color="primary"
+                icon="i-heroicons-document-duplicate"
+                :loading="copying"
+                @click="submitCopy"
+              >
+                Copiar
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -169,6 +228,9 @@ const meta = ref<ManualAdminMeta | null>(null)
 const filterRole = ref<string | undefined>(undefined)
 const createOpen = ref(false)
 const deletingId = ref<number | null>(null)
+const copyOpen = ref(false)
+const copying = ref(false)
+const copySource = ref<ManualAdminPageSummary | null>(null)
 
 const form = reactive({
   role_slug: '',
@@ -176,6 +238,13 @@ const form = reactive({
   modulo_key: '',
   descripcion: '',
   publicado: true,
+})
+
+const copyForm = reactive({
+  role_slug: '',
+  titulo: '',
+  modulo_key: '',
+  publicado: false,
 })
 
 const roleItems = computed(() =>
@@ -234,6 +303,43 @@ const createPage = async () => {
     toast.add({ title: 'Error al crear', description: e?.message, color: 'error' })
   } finally {
     saving.value = false
+  }
+}
+
+const openCopy = (p: ManualAdminPageSummary) => {
+  copySource.value = p
+  const other = (meta.value?.roles || []).find((r) => r.slug !== p.role_slug)
+  copyForm.role_slug = other?.slug || p.role_slug
+  copyForm.titulo = p.titulo
+  copyForm.modulo_key = p.modulo_key
+  copyForm.publicado = false
+  copyOpen.value = true
+}
+
+const submitCopy = async () => {
+  if (!copySource.value?.id || !copyForm.role_slug) {
+    toast.add({ title: 'Elige el rol destino', color: 'warning' })
+    return
+  }
+  copying.value = true
+  try {
+    const page = await ManualUsuarioService.adminCopyPage(copySource.value.id, {
+      role_slug: copyForm.role_slug,
+      titulo: copyForm.titulo || undefined,
+      modulo_key: copyForm.modulo_key || undefined,
+      publicado: copyForm.publicado,
+    })
+    copyOpen.value = false
+    toast.add({
+      title: 'Página copiada',
+      description: `Nueva página #${page.id} en ${page.role_slug}`,
+      color: 'success',
+    })
+    await router.push(`/manual-usuario/admin/${page.id}`)
+  } catch (e: any) {
+    toast.add({ title: 'No se pudo copiar', description: e?.message, color: 'error' })
+  } finally {
+    copying.value = false
   }
 }
 
