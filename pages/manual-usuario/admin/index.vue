@@ -1,0 +1,263 @@
+<template>
+  <div class="mx-auto max-w-6xl space-y-4 p-4 pb-16 md:p-6 md:pb-20">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white md:text-2xl">
+          Mantenedor del manual
+        </h1>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          CRUD de páginas y bloques. Solo root. Orden de bloques con drag & drop.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <UButton variant="outline" color="neutral" icon="i-heroicons-book-open" to="/manual-usuario">
+          Ver manual
+        </UButton>
+        <UButton icon="i-heroicons-plus" color="primary" @click="openCreate">
+          Nueva página
+        </UButton>
+      </div>
+    </div>
+
+    <UAlert v-if="error" color="error" variant="soft" :title="error" />
+
+    <UCard>
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div class="w-full max-w-xs">
+          <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Rol</label>
+          <USkeleton v-if="loadingMeta" class="h-9 w-full rounded-md" />
+          <USelect
+            v-else
+            v-model="filterRole"
+            :items="roleItems"
+            placeholder="Todos los roles"
+            class="w-full"
+            @update:model-value="onFilterRole"
+          />
+        </div>
+        <UButton variant="soft" color="neutral" :loading="loading" icon="i-heroicons-arrow-path" @click="loadPages">
+          Actualizar
+        </UButton>
+      </div>
+
+      <div v-if="loading" class="space-y-3 py-2">
+        <div v-for="i in 6" :key="i" class="grid grid-cols-7 gap-2">
+          <USkeleton class="h-8 w-full rounded-md" />
+          <USkeleton class="col-span-2 h-8 w-full rounded-md" />
+          <USkeleton class="h-8 w-full rounded-md" />
+          <USkeleton class="h-8 w-full rounded-md" />
+          <USkeleton class="h-8 w-full rounded-md" />
+          <USkeleton class="h-8 w-full rounded-md" />
+        </div>
+      </div>
+      <div v-else-if="!pages.length" class="py-10 text-center text-sm text-gray-500">
+        No hay páginas CMS para este filtro.
+      </div>
+      <div v-else class="overflow-x-auto">
+        <table class="min-w-full text-left text-sm">
+          <thead class="border-b border-gray-200 text-xs uppercase text-gray-500 dark:border-gray-700">
+            <tr>
+              <th class="px-2 py-2">Orden</th>
+              <th class="px-2 py-2">Título</th>
+              <th class="px-2 py-2">Rol</th>
+              <th class="px-2 py-2">Módulo</th>
+              <th class="px-2 py-2">Bloques</th>
+              <th class="px-2 py-2">Estado</th>
+              <th class="px-2 py-2 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="p in pages"
+              :key="p.id"
+              class="border-b border-gray-100 dark:border-gray-800"
+            >
+              <td class="px-2 py-2">{{ p.orden }}</td>
+              <td class="px-2 py-2 font-medium text-gray-900 dark:text-white">{{ p.titulo }}</td>
+              <td class="px-2 py-2">{{ p.role_slug }}</td>
+              <td class="px-2 py-2 font-mono text-xs">{{ p.modulo_key }}</td>
+              <td class="px-2 py-2">{{ p.bloques_count }}</td>
+              <td class="px-2 py-2">
+                <span
+                  class="rounded px-1.5 py-0.5 text-[11px] font-semibold"
+                  :class="p.publicado
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'"
+                >
+                  {{ p.publicado ? 'Publicado' : 'Borrador' }}
+                </span>
+              </td>
+              <td class="px-2 py-2">
+                <div class="flex justify-end gap-1">
+                  <UButton size="xs" variant="soft" icon="i-heroicons-pencil-square" :to="`/manual-usuario/admin/${p.id}`" />
+                  <UButton
+                    size="xs"
+                    color="error"
+                    variant="ghost"
+                    icon="i-heroicons-trash"
+                    :loading="deletingId === p.id"
+                    @click="confirmDelete(p)"
+                  />
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </UCard>
+
+    <UModal v-model:open="createOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h2 class="text-base font-semibold">Nueva página</h2>
+          </template>
+          <div class="space-y-3">
+            <div>
+              <label class="mb-1 block text-xs font-medium">Rol</label>
+              <USelect v-model="form.role_slug" :items="roleItems" placeholder="Seleccionar rol" class="w-full" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium">Título</label>
+              <UInput v-model="form.titulo" class="w-full" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium">Clave módulo</label>
+              <UInput v-model="form.modulo_key" placeholder="cargaconsolidada/abiertos" class="w-full" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium">Descripción</label>
+              <UTextarea v-model="form.descripcion" :rows="2" class="w-full" />
+            </div>
+            <div class="flex items-center gap-2">
+              <UCheckbox v-model="form.publicado" />
+              <span class="text-sm">Publicado</span>
+            </div>
+          </div>
+          <template #footer>
+            <div class="flex justify-end gap-2">
+              <UButton variant="ghost" color="neutral" @click="createOpen = false">Cancelar</UButton>
+              <UButton color="primary" :loading="saving" @click="createPage">Crear</UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
+    </UModal>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ManualUsuarioService } from '~/services/manualUsuarioService'
+import type { ManualAdminMeta, ManualAdminPageSummary } from '~/types/manualUsuario'
+
+definePageMeta({
+  name: 'manual-usuario-admin',
+  layout: 'default',
+})
+
+useHead({ title: 'Mantenedor manual' })
+
+const toast = useToast()
+const router = useRouter()
+
+const loading = ref(true)
+const loadingMeta = ref(true)
+const saving = ref(false)
+const error = ref<string | null>(null)
+const pages = ref<ManualAdminPageSummary[]>([])
+const meta = ref<ManualAdminMeta | null>(null)
+const filterRole = ref<string | undefined>(undefined)
+const createOpen = ref(false)
+const deletingId = ref<number | null>(null)
+
+const form = reactive({
+  role_slug: '',
+  titulo: '',
+  modulo_key: '',
+  descripcion: '',
+  publicado: true,
+})
+
+const roleItems = computed(() =>
+  (meta.value?.roles || []).map((r) => ({ label: r.nombre, value: r.slug }))
+)
+
+const onFilterRole = async () => {
+  await loadPages()
+}
+
+const loadMeta = async () => {
+  loadingMeta.value = true
+  try {
+    meta.value = await ManualUsuarioService.adminMeta()
+  } finally {
+    loadingMeta.value = false
+  }
+}
+
+const loadPages = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    pages.value = await ManualUsuarioService.adminListPages({
+      role_slug: filterRole.value || undefined,
+    })
+  } catch (e: any) {
+    error.value = e?.message || 'No se pudieron cargar las páginas'
+    pages.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+const openCreate = () => {
+  form.role_slug = filterRole.value || meta.value?.roles?.[0]?.slug || ''
+  form.titulo = ''
+  form.modulo_key = ''
+  form.descripcion = ''
+  form.publicado = true
+  createOpen.value = true
+}
+
+const createPage = async () => {
+  if (!form.role_slug || !form.titulo || !form.modulo_key) {
+    toast.add({ title: 'Completa rol, título y módulo', color: 'warning' })
+    return
+  }
+  saving.value = true
+  try {
+    const page = await ManualUsuarioService.adminCreatePage({ ...form })
+    createOpen.value = false
+    toast.add({ title: 'Página creada', color: 'success' })
+    await router.push(`/manual-usuario/admin/${page.id}`)
+  } catch (e: any) {
+    toast.add({ title: 'Error al crear', description: e?.message, color: 'error' })
+  } finally {
+    saving.value = false
+  }
+}
+
+const confirmDelete = async (p: ManualAdminPageSummary) => {
+  if (!confirm(`¿Eliminar la página "${p.titulo}" y todos sus bloques?`)) return
+  deletingId.value = p.id
+  try {
+    await ManualUsuarioService.adminDeletePage(p.id)
+    toast.add({ title: 'Página eliminada', color: 'success' })
+    await loadPages()
+  } catch (e: any) {
+    toast.add({ title: 'No se pudo eliminar', description: e?.message, color: 'error' })
+  } finally {
+    deletingId.value = null
+  }
+}
+
+onMounted(async () => {
+  try {
+    await loadMeta()
+    await loadPages()
+  } catch (e: any) {
+    error.value = e?.message || 'Sin permiso (solo root) o error de API'
+    loading.value = false
+  }
+})
+</script>

@@ -105,6 +105,8 @@ const shellViewportLocked = computed(
   () =>
     route.path.startsWith('/calendar')
     || route.path.startsWith('/coordinacion/whatsapp-inbox')
+    // Solo el lector del manual; el mantenedor /admin necesita scroll normal
+    || (route.path.startsWith('/manual-usuario') && !route.path.startsWith('/manual-usuario/admin'))
 )
 
 const pageTitle = computed(() => {
@@ -359,6 +361,7 @@ const convertIconToHeroicons = (faIcon: string): string => {
     'fa fa-chart-line': 'i-heroicons-chart-bar-square',
     'fa fa-newspaper': 'i-heroicons-newspaper',
     'fa fa-calculator': 'i-heroicons-calculator',
+    'fa fa-book': 'i-heroicons-book-open',
   }
 
   return iconMap[faIcon] || ''
