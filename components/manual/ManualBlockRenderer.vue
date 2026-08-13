@@ -272,6 +272,7 @@
 </template>
 
 <script setup lang="ts">
+import { h, resolveComponent } from 'vue'
 import type { ManualBlock } from '~/types/manualUsuario'
 import type { FilterConfig } from '~/types/data-table'
 import { ManualUsuarioService } from '~/services/manualUsuarioService'
@@ -362,14 +363,110 @@ const tableColumns = computed(() => {
   const cols = snap.value.columns || []
   return cols.map((c: any, i: number) => {
     if (typeof c === 'string') {
-      return { accessorKey: `c${i}`, header: c }
+      return {
+        accessorKey: `c${i}`,
+        header: c,
+        cell: ({ row }: { row: any }) => h('span', { class: 'whitespace-pre-line text-sm' }, String(row.original?.[`c${i}`] ?? '')),
+      }
     }
+    const accessorKey = String(c?.accessorKey ?? c?.key ?? `c${i}`)
+    const header = String(c?.header ?? c?.label ?? accessorKey)
     return {
-      accessorKey: String(c?.accessorKey ?? c?.key ?? `c${i}`),
-      header: String(c?.header ?? c?.label ?? c?.accessorKey ?? `Col ${i + 1}`),
+      accessorKey,
+      header,
+      cell: ({ row }: { row: any }) => renderManualCell(c, row.original || row),
     }
   })
 })
+
+function formatManualMoney(value: unknown, currency = 'PEN'): string {
+  const n = Number(value)
+  if (Number.isNaN(n)) return String(value ?? '')
+  const prefix = String(currency).toUpperCase() === 'USD' ? 'US$ ' : 'S/ '
+  return prefix + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function computePagoEstado(row: Record<string, any>): string {
+  const importe = Number(row.Ss_Total ?? 0)
+  const pagos = Number(row.total_pagos ?? 0)
+  if (pagos > importe) return 'sobrepago'
+  if (pagos < importe && pagos !== 0) return 'adelanto'
+  if (pagos === importe && importe !== 0) return 'pagado'
+  return 'pendiente'
+}
+
+function renderManualCell(col: any, row: Record<string, any>) {
+  const type = String(col?.type || 'text')
+  const key = String(col?.accessorKey ?? '')
+  const valueKey = String(col?.value_key || key)
+  const readonly = Boolean(col?.readonly)
+  const USelect = resolveComponent('USelect')
+  const UButton = resolveComponent('UButton')
+  const UInput = resolveComponent('UInput')
+
+  if (type === 'select') {
+    const options = Array.isArray(col.options) ? col.options : []
+    let model = row[valueKey] ?? row[key]
+    if (col.compute === 'pago_estado') {
+      model = computePagoEstado(row)
+    }
+    return h(USelect as any, {
+      modelValue: model,
+      items: options.map((o: any) => ({ label: String(o.label ?? o.value ?? ''), value: o.value })),
+      disabled: readonly || options.length === 0,
+      size: 'sm',
+      class: 'w-full min-w-[8rem]',
+    })
+  }
+
+  if (type === 'input') {
+    return h(UInput as any, {
+      modelValue: row[valueKey] ?? row[key] ?? '',
+      size: 'sm',
+      disabled: readonly,
+      class: 'w-full min-w-[6rem]',
+    })
+  }
+
+  if (type === 'buttons') {
+    const buttons = Array.isArray(col.buttons) ? col.buttons : []
+    return h(
+      'div',
+      { class: 'flex flex-wrap items-center gap-1' },
+      buttons.map((b: any, bi: number) =>
+        h(UButton as any, {
+          key: bi,
+          size: 'xs',
+          icon: b.icon || undefined,
+          label: b.label || undefined,
+          color: b.color || 'primary',
+          variant: b.variant || 'outline',
+        })
+      )
+    )
+  }
+
+  if (type === 'currency') {
+    const raw = row[valueKey] ?? row[key] ?? row.Ss_Total ?? ''
+    // Si ya viene formateado (S/ …) mostrarlo tal cual
+    if (typeof raw === 'string' && /^(S\/|US\$)/.test(raw)) {
+      return h('span', { class: 'tabular-nums text-sm' }, raw)
+    }
+    return h('span', { class: 'tabular-nums text-sm' }, formatManualMoney(raw, col.currency || 'PEN'))
+  }
+
+  if (type === 'multiline') {
+    let text = String(row[key] ?? '')
+    if (!text && Array.isArray(col.fields)) {
+      text = col.fields.map((f: string) => row[f]).filter(Boolean).join('\n')
+    }
+    text = text.replace(/ · /g, '\n')
+    return h('div', { class: 'whitespace-pre-line text-sm leading-snug' }, text)
+  }
+
+  const text = String(row[key] ?? '').replace(/ · /g, '\n')
+  return h('span', { class: 'whitespace-pre-line text-sm' }, text)
+}
 
 const tableData = computed(() => {
   const rows = snap.value.rows || []
