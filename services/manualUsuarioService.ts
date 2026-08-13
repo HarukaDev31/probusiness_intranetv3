@@ -38,24 +38,48 @@ export class ManualUsuarioService extends BaseService {
   }
 
   static async downloadMyPdf(): Promise<Blob> {
-    return this.apiCall<Blob>(`${this.baseUrl}/me/pdf`, {
-      method: 'GET',
-      responseType: 'blob',
-    })
+    return this.downloadPdfBlob(`${this.baseUrl}/me/pdf`)
   }
 
   static async downloadRolePdf(slug: string): Promise<Blob> {
-    return this.apiCall<Blob>(`${this.baseUrl}/roles/${encodeURIComponent(slug)}/pdf`, {
-      method: 'GET',
-      responseType: 'blob',
-    })
+    return this.downloadPdfBlob(`${this.baseUrl}/roles/${encodeURIComponent(slug)}/pdf`)
   }
 
   static async downloadGlobalPdf(): Promise<Blob> {
-    return this.apiCall<Blob>(`${this.baseUrl}/pdf`, {
+    return this.downloadPdfBlob(`${this.baseUrl}/pdf`)
+  }
+
+  /** Descarga PDF binario y valida que no sea un JSON de error. */
+  private static async downloadPdfBlob(endpoint: string): Promise<Blob> {
+    const raw = await this.apiCall<Blob | ArrayBuffer | Uint8Array>(endpoint, {
       method: 'GET',
       responseType: 'blob',
+      headers: {
+        Accept: 'application/pdf',
+      },
     })
+
+    const blob = raw instanceof Blob
+      ? raw
+      : new Blob([raw as BlobPart], { type: 'application/pdf' })
+
+    const headBuf = await blob.slice(0, 5).arrayBuffer()
+    const head = String.fromCharCode(...new Uint8Array(headBuf))
+    if (head.startsWith('%PDF')) {
+      return blob.type === 'application/pdf'
+        ? blob
+        : new Blob([blob], { type: 'application/pdf' })
+    }
+
+    // Posible error JSON con responseType blob
+    const text = await blob.text()
+    try {
+      const parsed = JSON.parse(text)
+      throw new Error(parsed?.message || parsed?.error || 'No se pudo generar el PDF')
+    } catch (e: any) {
+      if (e?.message && !String(e.message).includes('JSON')) throw e
+      throw new Error('La respuesta del servidor no es un PDF válido')
+    }
   }
 
   /** Descarga un asset o media del manual con JWT. */

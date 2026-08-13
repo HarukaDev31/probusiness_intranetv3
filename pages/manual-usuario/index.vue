@@ -312,7 +312,10 @@ const onRoleChange = async (slug: string | undefined) => {
 }
 
 const triggerBlobDownload = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob)
+  const file = blob.type === 'application/pdf'
+    ? blob
+    : new Blob([blob], { type: 'application/pdf' })
+  const url = URL.createObjectURL(file)
   const link = document.createElement('a')
   link.href = url
   link.download = filename
