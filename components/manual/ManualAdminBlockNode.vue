@@ -61,8 +61,14 @@
           <UInput v-model="draft[block.id].clave" placeholder="modulo/ruta" class="w-full font-mono text-sm" />
         </div>
         <div v-else>
-          <label class="mb-1 block text-xs font-medium">Subtítulo (opcional)</label>
-          <UInput v-model="draft[block.id].subtitulo" class="w-full" placeholder="Texto bajo el título del bloque" />
+          <label class="mb-1 block text-xs font-medium">
+            {{ block.tipo === 'media' ? 'Subtítulo (detalle, se muestra grande bajo el título)' : 'Subtítulo (opcional)' }}
+          </label>
+          <UInput
+            v-model="draft[block.id].subtitulo"
+            class="w-full"
+            :placeholder="block.tipo === 'media' ? 'Qué muestra esta captura…' : 'Texto bajo el título del bloque'"
+          />
         </div>
       </div>
 

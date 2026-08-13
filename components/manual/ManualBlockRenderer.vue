@@ -68,7 +68,12 @@
       <div v-if="block.titulo" class="text-sm font-semibold text-gray-900 dark:text-white">
         {{ block.titulo }}
       </div>
-      <p v-if="payload.subtitulo" class="text-xs text-gray-500 dark:text-gray-400">
+      <p
+        v-if="payload.subtitulo"
+        :class="tipo === 'media'
+          ? 'text-base font-medium leading-snug text-gray-800 dark:text-gray-100'
+          : 'text-xs text-gray-500 dark:text-gray-400'"
+      >
         {{ payload.subtitulo }}
       </p>
 
@@ -195,9 +200,6 @@
           :filters-value="tableFiltersValue"
           empty-state-message="Sin filas de ejemplo"
         />
-        <p v-if="payload.source?.api_hint" class="mt-2 text-[11px] text-gray-400">
-          Origen: {{ payload.source.component || payload.source.page_path }} · {{ payload.source.api_hint }}
-        </p>
       </div>
 
       <!-- modal -->
