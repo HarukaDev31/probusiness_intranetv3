@@ -56,10 +56,16 @@
         <div>
           <h2 class="text-base font-semibold text-gray-900 dark:text-white">Bloques</h2>
           <p class="text-xs text-gray-500">
-            Cada bloque es un grupo (título + clave/ruta). Arrastra el icono ☰ para reordenar.
+            Cada bloque es un grupo (título + clave/ruta). Arrastra ☰ para reordenar · clic en el título o ⌄ para colapsar.
           </p>
         </div>
         <div class="flex flex-wrap items-end gap-2">
+          <UButton size="sm" variant="outline" color="neutral" icon="i-heroicons-chevron-up-down" @click="collapseAllBlocks">
+            Colapsar todo
+          </UButton>
+          <UButton size="sm" variant="outline" color="neutral" icon="i-heroicons-arrows-pointing-out" @click="expandAllBlocks">
+            Expandir todo
+          </UButton>
           <div class="w-44">
             <label class="mb-1 block text-xs font-medium">Título</label>
             <UInput v-model="newGrupoTitulo" placeholder="Ej. Abiertos" class="w-full" />
@@ -136,6 +142,21 @@ const newGrupoClave = ref('')
 const draft = reactive<Record<number, any>>({})
 const rootBlocks = ref<ManualBlock[]>([])
 const reordering = ref(false)
+
+const collapseBus = reactive<{ token: number; collapsed: boolean | null }>({
+  token: 0,
+  collapsed: null,
+})
+provide('manualCollapseBus', collapseBus)
+
+const collapseAllBlocks = () => {
+  collapseBus.collapsed = true
+  collapseBus.token += 1
+}
+const expandAllBlocks = () => {
+  collapseBus.collapsed = false
+  collapseBus.token += 1
+}
 
 const { withSpinner } = useSpinner()
 

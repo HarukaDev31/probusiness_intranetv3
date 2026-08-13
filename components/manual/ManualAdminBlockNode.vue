@@ -11,28 +11,46 @@
           >
             <UIcon name="i-heroicons-bars-3" class="h-5 w-5" />
           </button>
-          <div class="min-w-0">
+          <button
+            type="button"
+            class="mt-0.5 shrink-0 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+            :title="collapsed ? 'Expandir' : 'Colapsar'"
+            :aria-expanded="!collapsed"
+            :aria-label="collapsed ? 'Expandir bloque' : 'Colapsar bloque'"
+            @click="collapsed = !collapsed"
+          >
+            <UIcon
+              :name="collapsed ? 'i-heroicons-chevron-right' : 'i-heroicons-chevron-down'"
+              class="h-5 w-5"
+            />
+          </button>
+          <button
+            type="button"
+            class="min-w-0 flex-1 rounded text-left hover:bg-gray-50 dark:hover:bg-gray-800/60 -m-1 p-1"
+            @click="collapsed = !collapsed"
+          >
             <p class="text-xs uppercase text-gray-500">
               {{ containerKindLabel }}
               · {{ block.tipo }}
               <span v-if="depth > 0" class="normal-case text-gray-400"> · nivel {{ depth }}</span>
+              <span v-if="collapsed && childCount" class="normal-case text-gray-400"> · {{ childCount }} hijos</span>
             </p>
-            <p class="text-sm font-semibold">
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">
               {{ draft[block.id]?.titulo || '(sin título)' }}
               <span v-if="isGrupo && draft[block.id]?.clave" class="ml-2 font-mono text-xs font-normal text-gray-500">
                 {{ draft[block.id].clave }}
               </span>
             </p>
-          </div>
+          </button>
         </div>
-        <div class="flex flex-wrap gap-1">
+        <div class="flex flex-wrap gap-1" @click.stop>
           <UButton size="xs" color="primary" variant="soft" :loading="savingBlockId === block.id" @click="emit('save', block.id)">Guardar</UButton>
           <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" :loading="deletingBlockId === block.id" @click="emit('remove', block.id)" />
         </div>
       </div>
     </template>
 
-    <div v-if="draft[block.id]" class="space-y-3">
+    <div v-if="draft[block.id] && !collapsed" class="space-y-3">
       <div class="grid gap-3 sm:grid-cols-2">
         <div>
           <label class="mb-1 block text-xs font-medium">Título</label>
@@ -322,6 +340,22 @@ const containerKindLabel = computed(() => {
   if (isTimeline.value) return 'Línea de tiempo'
   return 'Widget'
 })
+/** Widgets/subbloques empiezan colapsados; grupos raíz abiertos. */
+const collapsed = ref(props.depth > 0)
+const childCount = computed(() => (props.block.children || []).length)
+
+type CollapseBus = { token: number; collapsed: boolean | null }
+const collapseBus = inject<CollapseBus | null>('manualCollapseBus', null)
+if (collapseBus) {
+  watch(
+    () => collapseBus.token,
+    () => {
+      if (collapseBus.collapsed === true) collapsed.value = true
+      if (collapseBus.collapsed === false) collapsed.value = false
+    }
+  )
+}
+
 const localChildren = ref<ManualBlock[]>([])
 const importBusy = computed(() => props.importingBlockId === props.block.id)
 
