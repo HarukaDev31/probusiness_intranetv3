@@ -7,13 +7,22 @@
       class="scroll-mt-4 space-y-4"
     >
       <div>
-        <div v-if="block.titulo" class="text-base font-semibold text-gray-900 dark:text-white">
+        <a
+          v-if="block.titulo && grupoTitleLink"
+          :href="grupoTitleLink.href"
+          :target="grupoTitleLink.external ? '_blank' : undefined"
+          :rel="grupoTitleLink.external ? 'noopener noreferrer' : undefined"
+          class="text-base font-semibold text-primary-600 hover:underline dark:text-primary-300"
+        >
+          {{ block.titulo }}
+        </a>
+        <div v-else-if="block.titulo" class="text-base font-semibold text-gray-900 dark:text-white">
           {{ block.titulo }}
         </div>
-        <p v-if="block.clave" class="mt-0.5 font-mono text-xs text-gray-500 dark:text-gray-400">
+        <p v-if="block.clave && !grupoTitleLink" class="mt-0.5 font-mono text-xs text-gray-500 dark:text-gray-400">
           {{ block.clave }}
         </p>
-        <p v-if="payload.subtitulo" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        <p v-if="payload.subtitulo && !isRouteLike(String(payload.subtitulo))" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
           {{ payload.subtitulo }}
         </p>
       </div>
@@ -28,10 +37,22 @@
 
     <!-- Timeline: pasos horizontales -->
     <div v-else-if="tipo === 'timeline'" class="space-y-3">
-      <div v-if="block.titulo" class="text-sm font-semibold text-gray-900 dark:text-white">
+      <a
+        v-if="block.titulo && widgetTitleLink"
+        :href="widgetTitleLink.href"
+        :target="widgetTitleLink.external ? '_blank' : undefined"
+        :rel="widgetTitleLink.external ? 'noopener noreferrer' : undefined"
+        class="text-sm font-semibold text-primary-600 hover:underline dark:text-primary-300"
+      >
+        {{ block.titulo }}
+      </a>
+      <div v-else-if="block.titulo" class="text-sm font-semibold text-gray-900 dark:text-white">
         {{ block.titulo }}
       </div>
-      <p v-if="payload.subtitulo" class="text-xs text-gray-500 dark:text-gray-400">
+      <p
+        v-if="payload.subtitulo && !widgetTitleLink"
+        class="text-xs text-gray-500 dark:text-gray-400"
+      >
         {{ payload.subtitulo }}
       </p>
       <div
@@ -65,11 +86,20 @@
     </div>
 
     <template v-else>
-      <div v-if="block.titulo" class="text-sm font-semibold text-gray-900 dark:text-white">
+      <a
+        v-if="block.titulo && widgetTitleLink"
+        :href="widgetTitleLink.href"
+        :target="widgetTitleLink.external ? '_blank' : undefined"
+        :rel="widgetTitleLink.external ? 'noopener noreferrer' : undefined"
+        class="text-sm font-semibold text-primary-600 hover:underline dark:text-primary-300"
+      >
+        {{ block.titulo }}
+      </a>
+      <div v-else-if="block.titulo" class="text-sm font-semibold text-gray-900 dark:text-white">
         {{ block.titulo }}
       </div>
       <p
-        v-if="payload.subtitulo"
+        v-if="payload.subtitulo && !widgetTitleLink"
         :class="tipo === 'media'
           ? 'text-base font-medium leading-snug text-gray-800 dark:text-gray-100'
           : 'text-xs text-gray-500 dark:text-gray-400'"
@@ -297,6 +327,30 @@ const emit = defineEmits<{
 const payload = computed(() => props.block.payload || {})
 const snap = computed(() => (payload.value.snapshot || {}) as Record<string, any>)
 const tipo = computed(() => String(props.block.tipo || ''))
+
+/** Detecta URL absoluta o ruta tipo /curso?tab=… / modulo/ruta */
+function isRouteLike(raw: unknown): boolean {
+  const t = String(raw ?? '').trim()
+  if (!t || /\s/.test(t)) return false
+  if (/^https?:\/\//i.test(t)) return true
+  if (t.startsWith('/') && t.length > 1) return true
+  // ruta relativa con / o ? (p. ej. curso?tab=alumnos, pages/curso/index)
+  if (/^[a-z0-9][\w\-./?=&%#]*$/i.test(t) && (t.includes('/') || t.includes('?'))) return true
+  return false
+}
+
+function parseManualRoute(raw: unknown): { href: string; external: boolean } | null {
+  const t = String(raw ?? '').trim()
+  if (!isRouteLike(t)) return null
+  if (/^https?:\/\//i.test(t)) {
+    return { href: t, external: true }
+  }
+  const path = t.startsWith('/') ? t : `/${t}`
+  return { href: path, external: false }
+}
+
+const grupoTitleLink = computed(() => parseManualRoute(props.block.clave))
+const widgetTitleLink = computed(() => parseManualRoute(payload.value.subtitulo))
 
 const sortedChildren = computed(() =>
   [...(props.block.children || [])].sort((a, b) => a.orden - b.orden || a.id - b.id)
