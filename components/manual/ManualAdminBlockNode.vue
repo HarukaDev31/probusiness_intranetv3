@@ -44,7 +44,7 @@
         </div>
         <div v-else>
           <label class="mb-1 block text-xs font-medium">Subtítulo (opcional)</label>
-          <UInput v-model="draft[block.id].payload.subtitulo" class="w-full" />
+          <UInput v-model="draft[block.id].subtitulo" class="w-full" placeholder="Texto bajo el título del bloque" />
         </div>
       </div>
 

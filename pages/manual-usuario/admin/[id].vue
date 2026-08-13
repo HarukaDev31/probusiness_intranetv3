@@ -185,6 +185,7 @@ const hydrateDraft = (block: ManualBlock) => {
   draft[block.id] = {
     titulo: block.titulo || '',
     clave: block.clave || '',
+    subtitulo: payload.subtitulo ?? '',
     payload,
     snapshotJson: JSON.stringify(payload.snapshot || {}, null, 2),
   }
@@ -194,6 +195,8 @@ const hydrateDraft = (block: ManualBlock) => {
 const buildPayload = (block: ManualBlock) => {
   const d = draft[block.id]
   const payload = JSON.parse(JSON.stringify(d.payload || {}))
+  const sub = String(d.subtitulo ?? '').trim()
+  payload.subtitulo = sub !== '' ? sub : null
   if (['tabla', 'filtros', 'toolbar', 'modal'].includes(block.tipo)) {
     try {
       payload.snapshot = JSON.parse(d.snapshotJson || '{}')
@@ -359,9 +362,19 @@ const onUpload = async (blockId: number, file: File) => {
       role_slug: pageRoleSlug.value || undefined,
     })
     if (!draft[blockId]) return
+    if (!draft[blockId].payload) draft[blockId].payload = {}
+    if (!draft[blockId].payload.snapshot) draft[blockId].payload.snapshot = {}
     draft[blockId].payload.snapshot.media_id = media.id
     draft[blockId].payload.snapshot.url = media.url
-    toast.add({ title: 'Imagen subida', color: 'success' })
+    draft[blockId].payload.snapshot.alt = media.alt || draft[blockId].payload.snapshot.alt || ''
+    const block = findBlock(blockId)
+    if (!block) return
+    await ManualUsuarioService.adminUpdateBlock(blockId, {
+      titulo: draft[blockId].titulo,
+      payload: buildPayload(block),
+    })
+    await reloadPage()
+    toast.add({ title: 'Imagen subida y guardada', color: 'success' })
   } catch (e: any) {
     toast.add({ title: 'Error upload', description: e?.message, color: 'error' })
   }
