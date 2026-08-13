@@ -234,16 +234,21 @@
 
       <!-- media -->
       <div v-else-if="tipo === 'media'" class="space-y-2">
-        <img
-          v-if="resolvedMediaSrc"
-          :src="resolvedMediaSrc"
-          :alt="snap.alt || 'Captura'"
-          class="w-full rounded-lg border border-gray-200 dark:border-gray-600"
-        >
-        <div v-else class="overflow-hidden rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
-          <img src="/assets/img/manual/captura-pendiente.svg" alt="Captura pendiente" class="w-full">
+        <div class="flex justify-center">
+          <img
+            v-if="resolvedMediaSrc"
+            :src="resolvedMediaSrc"
+            :alt="snap.alt || 'Captura'"
+            class="max-h-64 w-auto max-w-full rounded-lg border border-gray-200 object-contain dark:border-gray-600 sm:max-h-72"
+          >
+          <div
+            v-else
+            class="flex max-h-40 w-full max-w-md items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 dark:border-gray-600"
+          >
+            <img src="/assets/img/manual/captura-pendiente.svg" alt="Captura pendiente" class="max-h-32 w-auto object-contain opacity-70">
+          </div>
         </div>
-        <p v-if="snap.caption" class="text-xs text-gray-500">{{ snap.caption }}</p>
+        <p v-if="snap.caption" class="text-center text-xs text-gray-500">{{ snap.caption }}</p>
       </div>
 
       <!-- embed -->
