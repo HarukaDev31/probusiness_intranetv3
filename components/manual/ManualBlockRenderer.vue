@@ -511,6 +511,40 @@ function renderManualCell(col: any, row: Record<string, any>) {
     )
   }
 
+  if (type === 'pago_grid') {
+    const slots = Math.max(1, Number(col.slots || 4))
+    const currency = String(col.currency || 'PEN')
+    const detailsRaw = row.pagos_details ?? row[valueKey] ?? row[key] ?? []
+    const details = Array.isArray(detailsRaw) ? detailsRaw : []
+    const cells: any[] = []
+    for (const p of details.slice(0, slots)) {
+      const monto = p?.monto ?? p?.Ss_Total ?? ''
+      cells.push(
+        h(
+          'div',
+          {
+            class: 'flex min-w-[4.5rem] items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-xs font-medium tabular-nums text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200',
+            title: 'Detalle del adelanto',
+          },
+          formatManualMoney(monto, currency)
+        )
+      )
+    }
+    for (let i = details.length; i < slots; i++) {
+      cells.push(
+        h(
+          'div',
+          {
+            class: 'flex min-w-[4.5rem] items-center justify-center rounded-md border border-dashed border-gray-300 bg-white px-2 py-1.5 text-gray-500 dark:border-gray-600 dark:bg-gray-900/40',
+            title: String(col.modal_hint || 'Registrar Pago'),
+          },
+          [h(resolveComponent('UIcon') as any, { name: 'i-heroicons-plus', class: 'h-4 w-4' })]
+        )
+      )
+    }
+    return h('div', { class: 'flex flex-wrap gap-1.5' }, cells)
+  }
+
   if (type === 'currency') {
     const raw = row[valueKey] ?? row[key] ?? row.Ss_Total ?? ''
     // Si ya viene formateado (S/ …) mostrarlo tal cual
