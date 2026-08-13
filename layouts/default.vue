@@ -42,7 +42,8 @@
         id="main-content"
         ref="mainContentRef"
         :class="[
-          'flex flex-1 min-h-0 flex-col bg-[#f0f4f9] p-3 dark:bg-gray-900',
+          'flex flex-1 min-h-0 flex-col bg-[#f0f4f9] dark:bg-gray-900',
+          hideMainSidebar ? 'p-0' : 'p-3',
           shellViewportLocked ? 'overflow-hidden' : ''
         ]"
         :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}"

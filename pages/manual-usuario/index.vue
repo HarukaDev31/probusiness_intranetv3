@@ -1,5 +1,5 @@
 <template>
-  <div class="manual-shell flex min-h-0 flex-1 gap-0 md:gap-4 -m-3 md:m-0 md:min-h-[calc(100dvh-1.5rem)]">
+  <div class="manual-shell flex min-h-0 flex-1 gap-0 md:min-h-[calc(100dvh)]">
     <!-- Sidebar interno del manual -->
     <aside
       class="manual-toc hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 md:flex lg:w-72"
@@ -28,26 +28,79 @@
       </div>
 
       <nav class="flex-1 overflow-y-auto px-2 py-3" aria-label="Secciones del manual">
-        <button
-          v-for="(sec, idx) in sections"
-          :key="sec.key"
-          type="button"
-          class="mb-1 flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-sm transition"
-          :class="activeChapterId === sec.key
-            ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
-            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700/60'"
-          @click="scrollToChapter(sec.key)"
-        >
-          <span
-            class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-            :class="activeChapterId === sec.key
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-100'"
+        <div v-for="(sec, idx) in toc" :key="sec.key" class="mb-1">
+          <button
+            type="button"
+            class="flex w-full items-start gap-1 rounded-lg px-2 py-2 text-left text-sm transition"
+            :class="isActiveNav(sec.key)
+              ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
+              : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700/60'"
+            @click="onTocParentClick(sec)"
           >
-            {{ idx + 1 }}
-          </span>
-          <span class="leading-snug">{{ sec.title }}</span>
-        </button>
+            <span
+              v-if="sec.children?.length"
+              class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center text-gray-400"
+              @click.stop="toggleTocExpand(sec.key)"
+            >
+              <UIcon
+                :name="isTocExpanded(sec.key) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
+                class="h-4 w-4"
+              />
+            </span>
+            <span
+              v-else
+              class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+              :class="isActiveNav(sec.key)
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-100'"
+            >
+              {{ idx + 1 }}
+            </span>
+            <span class="min-w-0 flex-1 leading-snug">
+              <span
+                v-if="sec.children?.length"
+                class="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold align-middle"
+                :class="isActiveNav(sec.key)
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-100'"
+              >{{ idx + 1 }}</span>
+              {{ sec.title }}
+            </span>
+          </button>
+
+          <div v-if="sec.children?.length && isTocExpanded(sec.key)" class="ml-4 mt-0.5 space-y-0.5 border-l border-gray-200 pl-2 dark:border-gray-600">
+            <template v-for="child in sec.children" :key="child.key">
+              <button
+                type="button"
+                class="flex w-full items-start gap-1.5 rounded-md px-2 py-1.5 text-left text-sm transition"
+                :class="isActiveNav(child.key)
+                  ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
+                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/60'"
+                @click="scrollToChapter(child.key)"
+              >
+                <span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-60" />
+                <span class="leading-snug">{{ child.title }}</span>
+              </button>
+              <div
+                v-if="child.children?.length"
+                class="ml-3 space-y-0.5 border-l border-gray-100 pl-2 dark:border-gray-700"
+              >
+                <button
+                  v-for="grand in child.children"
+                  :key="grand.key"
+                  type="button"
+                  class="flex w-full items-start gap-1.5 rounded-md px-2 py-1 text-left text-xs transition"
+                  :class="isActiveNav(grand.key)
+                    ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
+                    : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700/60'"
+                  @click="scrollToChapter(grand.key)"
+                >
+                  <span class="leading-snug">{{ grand.title }}</span>
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
       </nav>
 
       <div class="space-y-2 border-t border-gray-200 p-3 dark:border-gray-700">
@@ -130,21 +183,32 @@
         </div>
 
         <!-- TOC móvil -->
-        <div v-if="mobileTocOpen" class="mt-3 max-h-48 overflow-y-auto rounded-lg border border-gray-200 p-2 md:hidden dark:border-gray-600">
-          <button
-            v-for="(sec, idx) in sections"
-            :key="`m-${sec.key}`"
-            type="button"
-            class="mb-1 flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-gray-700 dark:text-gray-200"
-            @click="scrollToChapter(sec.key); mobileTocOpen = false"
-          >
-            <span class="text-xs font-bold text-primary-600">{{ idx + 1 }}.</span>
-            {{ sec.title }}
-          </button>
+        <div v-if="mobileTocOpen" class="mt-3 max-h-56 overflow-y-auto rounded-lg border border-gray-200 p-2 md:hidden dark:border-gray-600">
+          <div v-for="(sec, idx) in toc" :key="`m-${sec.key}`" class="mb-1">
+            <button
+              type="button"
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm font-medium text-gray-800 dark:text-gray-100"
+              @click="scrollToChapter(sec.key); if (!sec.children?.length) mobileTocOpen = false"
+            >
+              <span class="text-xs font-bold text-primary-600">{{ idx + 1 }}.</span>
+              {{ sec.title }}
+            </button>
+            <div v-if="sec.children?.length" class="ml-4 space-y-0.5">
+              <button
+                v-for="child in sec.children"
+                :key="`m-${child.key}`"
+                type="button"
+                class="block w-full rounded px-2 py-1 text-left text-sm text-gray-600 dark:text-gray-300"
+                @click="scrollToChapter(child.key); mobileTocOpen = false"
+              >
+                {{ child.title }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div ref="scrollRoot" class="flex-1 overflow-y-auto px-4 py-5 md:px-8">
+      <div ref="scrollRoot" class="flex-1 overflow-y-auto px-3 py-4 md:px-5 md:py-5">
         <div v-if="loading" class="space-y-4">
           <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700" />
         </div>
@@ -159,7 +223,7 @@
           </UButton>
         </div>
 
-        <div v-else-if="manual" class="mx-auto max-w-3xl space-y-6 pb-16">
+        <div v-else-if="manual" class="w-full max-w-none space-y-6 pb-16">
           <article
             v-for="(sec, idx) in sections"
             :id="`cap-${sec.key}`"
@@ -203,6 +267,7 @@ import type {
   ManualUsuarioContext,
   ManualUsuarioManualData,
   ManualPage,
+  ManualBlock,
 } from '~/types/manualUsuario'
 import ManualBlockRenderer from '~/components/manual/ManualBlockRenderer.vue'
 
@@ -228,12 +293,19 @@ const downloadingGlobal = ref(false)
 const activeChapterId = ref<string | null>(null)
 const mobileTocOpen = ref(false)
 const scrollRoot = ref<HTMLElement | null>(null)
+const tocExpanded = reactive<Record<string, boolean>>({})
 
 type ManualSection = {
   key: string
   title: string
   description?: string | null
   page: ManualPage
+}
+
+type TocNode = {
+  key: string
+  title: string
+  children?: TocNode[]
 }
 
 const roleSelectItems = computed(() =>
@@ -258,6 +330,70 @@ const sections = computed<ManualSection[]>(() => {
   }))
 })
 
+const blockToTocNode = (block: ManualBlock): TocNode | null => {
+  if (block.tipo !== 'grupo') return null
+  const title = (block.titulo || block.clave || '').trim()
+  if (!title) return null
+  const children = (block.children || [])
+    .map(blockToTocNode)
+    .filter((n): n is TocNode => !!n)
+  return {
+    key: `b-${block.id}`,
+    title,
+    children: children.length ? children : undefined,
+  }
+}
+
+const toc = computed<TocNode[]>(() =>
+  sections.value.map((sec) => {
+    const children = (sec.page.blocks || [])
+      .map(blockToTocNode)
+      .filter((n): n is TocNode => !!n)
+    return {
+      key: sec.key,
+      title: sec.title,
+      children: children.length ? children : undefined,
+    }
+  })
+)
+
+watch(
+  toc,
+  (items) => {
+    for (const item of items) {
+      if (item.children?.length && tocExpanded[item.key] === undefined) {
+        tocExpanded[item.key] = true
+      }
+    }
+  },
+  { immediate: true }
+)
+
+const isTocExpanded = (key: string) => tocExpanded[key] !== false
+const toggleTocExpand = (key: string) => {
+  tocExpanded[key] = !isTocExpanded(key)
+}
+
+const isActiveNav = (key: string) => {
+  const active = activeChapterId.value
+  if (!active) return false
+  if (active === key) return true
+  // página activa si el bloque activo es hijo
+  if (key.startsWith('p-')) {
+    const sec = toc.value.find((t) => t.key === key)
+    const walk = (nodes?: TocNode[]): boolean => {
+      if (!nodes) return false
+      for (const n of nodes) {
+        if (n.key === active) return true
+        if (walk(n.children)) return true
+      }
+      return false
+    }
+    return walk(sec?.children)
+  }
+  return false
+}
+
 const goHome = () => navigateTo('/')
 
 const scrollToChapter = (id: string) => {
@@ -265,6 +401,13 @@ const scrollToChapter = (id: string) => {
   const el = document.getElementById(`cap-${id}`)
   if (!el) return
   el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+const onTocParentClick = (sec: TocNode) => {
+  if (sec.children?.length && !isTocExpanded(sec.key)) {
+    tocExpanded[sec.key] = true
+  }
+  scrollToChapter(sec.key)
 }
 
 const loadManualForSlug = async (slug?: string | null) => {
@@ -377,13 +520,20 @@ const setupObserver = () => {
     },
     { root: scrollRoot.value, rootMargin: '-20% 0px -55% 0px', threshold: [0.1, 0.4, 0.7] }
   )
-  for (const sec of sections.value) {
-    const el = document.getElementById(`cap-${sec.key}`)
-    if (el) observer.observe(el)
+  const observeKey = (key: string) => {
+    const el = document.getElementById(`cap-${key}`)
+    if (el) observer?.observe(el)
+  }
+  for (const sec of toc.value) {
+    observeKey(sec.key)
+    for (const child of sec.children || []) {
+      observeKey(child.key)
+      for (const grand of child.children || []) observeKey(grand.key)
+    }
   }
 }
 
-watch(sections, async () => {
+watch(toc, async () => {
   await nextTick()
   setupObserver()
 })

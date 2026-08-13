@@ -1,7 +1,11 @@
 <template>
   <div class="space-y-3">
     <!-- Grupo: título + clave; hijos recursivos (vertical) -->
-    <div v-if="tipo === 'grupo'" class="space-y-4">
+    <div
+      v-if="tipo === 'grupo'"
+      :id="`cap-b-${block.id}`"
+      class="scroll-mt-4 space-y-4"
+    >
       <div>
         <div v-if="block.titulo" class="text-base font-semibold text-gray-900 dark:text-white">
           {{ block.titulo }}
