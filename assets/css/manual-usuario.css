@@ -1,4 +1,4 @@
-/* Tokens 1:1 con propuesta_manual_probusiness_1.html */
+/* Tokens de marca (naranja / navy). Fondos blanco/negro: UCard + tema. */
 .manual-propuesta {
   --mu-navy: #1f2a44;
   --mu-navy-soft: #33415c;
@@ -7,13 +7,8 @@
   --mu-amber: #9a5b00;
   --mu-amber-bg: #fdf3e3;
   --mu-gray: #6b7280;
-  --mu-gray-light: #f2f3f5;
   --mu-border: #e5e7eb;
   --mu-green: #1b7a4b;
-  --mu-page-bg: #fafafa;
-  --mu-card-bg: #ffffff;
-  background: var(--mu-page-bg);
-  color: #1a1a1a;
 }
 
 .manual-propuesta ::selection {
@@ -24,28 +19,23 @@
 .mu-sidebar {
   width: 280px;
   flex: 0 0 280px;
-  background: #fff;
-  border-right: 1px solid var(--mu-border);
 }
 .mu-brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 20px 18px;
-  border-bottom: 1px solid var(--mu-border);
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--ui-border, var(--mu-border));
   margin-bottom: 14px;
 }
-.mu-brand-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--mu-orange);
+.mu-brand-logo {
+  height: 32px;
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
 }
-.mu-brand-name {
-  font-weight: 700;
-  color: var(--mu-navy);
-  font-size: 15px;
-  letter-spacing: 0.2px;
+.dark .mu-brand-logo {
+  filter: invert(1) hue-rotate(180deg);
 }
 .mu-eyebrow {
   font-size: 11px;
@@ -63,16 +53,18 @@
   padding: 9px 12px;
   border-radius: 8px;
   font-size: 13.5px;
-  color: var(--mu-navy-soft);
   margin-bottom: 2px;
 }
 .mu-nav-item:hover {
-  background: var(--mu-gray-light);
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 .mu-nav-item.is-active {
   background: var(--mu-orange-soft);
   color: var(--mu-orange);
   font-weight: 600;
+}
+.dark .mu-nav-item.is-active {
+  background: color-mix(in srgb, var(--mu-orange) 18%, transparent);
 }
 .mu-nav-num {
   width: 20px;
@@ -91,131 +83,60 @@
 .mu-nav-item:not(.is-active) .mu-nav-num {
   background: var(--mu-navy);
 }
+.dark .mu-nav-item:not(.is-active) .mu-nav-num {
+  background: var(--mu-orange);
+}
 .mu-sub {
   padding: 4px 12px 4px 42px;
   font-size: 12.8px;
-  color: var(--mu-gray);
   border-radius: 8px;
 }
-.mu-sub:hover {
-  color: var(--mu-orange);
-}
-.mu-sub.is-active {
-  color: var(--mu-orange);
-  font-weight: 600;
-  background: var(--mu-orange-soft);
-}
-.mu-sub-leaf {
-  padding: 3px 12px 3px 54px;
-  font-size: 12px;
-  color: var(--mu-gray);
-  border-radius: 8px;
-}
-.mu-sub-leaf:hover {
-  color: var(--mu-orange);
-}
-.mu-sub-leaf.is-active {
-  color: var(--mu-orange);
-  font-weight: 600;
-  background: var(--mu-orange-soft);
-}
-.mu-sub-leaf-2 {
-  padding: 3px 12px 3px 68px;
-  font-size: 11.5px;
-  color: var(--mu-gray);
-  border-radius: 8px;
-}
+.mu-sub:hover,
+.mu-sub-leaf:hover,
 .mu-sub-leaf-2:hover {
   color: var(--mu-orange);
 }
+.mu-sub.is-active,
+.mu-sub-leaf.is-active,
 .mu-sub-leaf-2.is-active {
   color: var(--mu-orange);
   font-weight: 600;
   background: var(--mu-orange-soft);
 }
+.dark .mu-sub.is-active,
+.dark .mu-sub-leaf.is-active,
+.dark .mu-sub-leaf-2.is-active {
+  background: color-mix(in srgb, var(--mu-orange) 18%, transparent);
+}
+.mu-sub-leaf {
+  padding: 3px 12px 3px 54px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+.mu-sub-leaf-2 {
+  padding: 3px 12px 3px 68px;
+  font-size: 11.5px;
+  border-radius: 8px;
+}
 
-/* Topbar + search */
+/* Topbar */
 .mu-topbar {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid var(--mu-border);
   padding: 14px 36px;
 }
 .mu-topbar h1 {
   font-size: 16px;
   margin: 0;
-  color: var(--mu-navy);
   font-weight: 700;
 }
 .mu-meta {
   font-size: 12px;
-  color: var(--mu-gray);
 }
 .mu-search-wrap {
   width: 320px;
   max-width: 40vw;
 }
-.mu-search {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 38px;
-}
-.mu-search input {
-  box-sizing: border-box;
-  width: 100%;
-  height: 38px;
-  margin: 0;
-  line-height: 38px;
-  padding: 0 14px 0 36px;
-  border-radius: 19px;
-  border: 1px solid var(--mu-border);
-  background: var(--mu-gray-light);
-  font-size: 13px;
-  outline: none;
-  color: var(--mu-navy);
-  vertical-align: middle;
-  appearance: none;
-  -webkit-appearance: none;
-}
-.mu-search input::-webkit-search-decoration,
-.mu-search input::-webkit-search-cancel-button,
-.mu-search input::-webkit-search-results-button,
-.mu-search input::-webkit-search-results-decoration {
-  -webkit-appearance: none;
-  appearance: none;
-  display: none;
-}
-.mu-search input:focus {
-  border-color: var(--mu-orange);
-  background: #fff;
-}
-.mu-search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 0;
-  pointer-events: none;
-  opacity: 0.5;
-  color: var(--mu-gray);
-}
-.mu-search-icon svg,
-.mu-search-icon :deep(svg) {
-  display: block;
-  width: 14px;
-  height: 14px;
-}
 .mu-search-status {
   font-size: 11px;
-  color: var(--mu-gray);
   margin-top: 4px;
   padding-left: 4px;
   min-height: 14px;
@@ -243,30 +164,16 @@
 }
 .mu-section-title {
   font-size: 26px;
-  color: var(--mu-navy);
   margin: 0 0 18px;
   border-bottom: 3px solid var(--mu-orange);
   padding-bottom: 12px;
   font-weight: 700;
 }
 .mu-page-desc {
-  color: var(--mu-gray);
   font-size: 13.5px;
   margin: -8px 0 22px;
 }
 
-/* Artículo (mock card) */
-.mu-article {
-  border: 1px solid var(--mu-border);
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-.mu-article-head {
-  padding: 18px 22px;
-  border-bottom: 1px solid var(--mu-border);
-}
 .mu-breadcrumb {
   display: flex;
   flex-wrap: wrap;
@@ -284,7 +191,6 @@
 .mu-breadcrumb .mu-crumb-link:hover {
   text-decoration: underline;
 }
-.mu-article-head h3,
 .mu-article-title {
   margin: 0 0 8px;
   font-size: 20px;
@@ -294,17 +200,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-.mu-tag {
-  display: inline-block;
-  font-size: 11px;
-  background: var(--mu-gray-light);
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-weight: 600;
-}
-.mu-article-body {
-  padding: 20px 22px;
 }
 
 /* QA */
@@ -322,23 +217,16 @@
   white-space: pre-wrap;
 }
 
-/* Pasos */
-.mu-steps {
-  background: var(--mu-gray-light);
-  border-radius: 10px;
-  padding: 16px 18px;
-  margin-bottom: 14px;
-}
-.mu-steps h4 {
+.mu-steps-title {
   margin: 0 0 10px;
   font-size: 14.5px;
   font-weight: 700;
 }
-.mu-steps ol {
+.mu-steps-list {
   margin: 0;
   padding-left: 22px;
 }
-.mu-steps li {
+.mu-steps-list li {
   margin-bottom: 12px;
   font-size: 14px;
   line-height: 1.55;
@@ -346,25 +234,17 @@
 
 /* Acordeón */
 .mu-acc {
-  border: 1px solid var(--mu-border);
-  border-radius: 8px;
-  margin-bottom: 10px;
   overflow: hidden;
-  background: #fff;
 }
 .mu-acc > summary {
   cursor: pointer;
   padding: 11px 16px;
   font-weight: 600;
   font-size: 13.5px;
-  background: #fff;
   list-style: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-.dark .manual-propuesta .mu-acc > summary {
-  background: transparent;
 }
 .mu-acc > summary::-webkit-details-marker {
   display: none;
@@ -431,7 +311,7 @@
 .mu-doc-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 14px 0 8px;
+  margin: 0;
   font-size: 13.3px;
 }
 .mu-doc-table th {
@@ -443,15 +323,15 @@
 }
 .mu-doc-table td {
   padding: 9px 12px;
-  border-bottom: 1px solid var(--mu-border);
+  border-bottom: 1px solid var(--ui-border, var(--mu-border));
   vertical-align: top;
 }
 .mu-doc-table tr:nth-child(even) td {
-  background: var(--mu-gray-light);
+  background: color-mix(in srgb, currentColor 5%, transparent);
 }
 .mu-placeholder {
   font-style: italic;
-  color: var(--mu-gray);
+  opacity: 0.7;
 }
 
 .mu-grupo-title {
@@ -468,10 +348,9 @@
 
 .mu-footer {
   text-align: center;
-  color: var(--mu-gray);
   font-size: 12px;
   padding: 30px 20px;
-  border-top: 1px solid var(--mu-border);
+  border-top: 1px solid var(--ui-border, var(--mu-border));
 }
 
 @media (max-width: 768px) {
@@ -481,8 +360,7 @@
   .mu-topbar {
     padding: 12px 16px;
   }
-  .mu-search-wrap,
-  .mu-search {
+  .mu-search-wrap {
     width: 100%;
     max-width: none;
   }

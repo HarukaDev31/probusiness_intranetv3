@@ -1,15 +1,15 @@
 <template>
   <div class="space-y-3">
     <!-- Grupo artículo (plantilla propuesta) -->
-    <article
+    <UCard
       v-if="tipo === 'grupo' && isArticulo"
       :id="`cap-b-${block.id}`"
-      class="mu-article scroll-mt-4"
+      class="scroll-mt-4"
     >
-      <div class="mu-article-head">
-        <nav v-if="articleCrumbs.length" class="mu-breadcrumb text-gray-500 dark:text-gray-400" aria-label="Ruta">
+      <template #header>
+        <nav v-if="articleCrumbs.length" class="mu-breadcrumb text-muted" aria-label="Ruta">
           <template v-for="(crumb, i) in articleCrumbs" :key="`${crumb.label}-${i}`">
-            <span v-if="i > 0" class="sep text-gray-400 dark:text-gray-500" aria-hidden="true">→</span>
+            <span v-if="i > 0" class="sep text-muted" aria-hidden="true">→</span>
             <a
               v-if="crumb.anchorKey && !crumb.current"
               :href="crumbAnchorHref(crumb.anchorKey)"
@@ -27,40 +27,41 @@
             </NuxtLink>
             <span
               v-else
-              class="font-semibold text-gray-900 dark:text-white"
+              class="font-semibold text-highlighted"
               :aria-current="crumb.current ? 'page' : undefined"
             >{{ crumb.label }}</span>
           </template>
         </nav>
-        <h3 class="mu-article-title text-gray-900 dark:text-white">{{ block.titulo }}</h3>
+        <h3 class="mu-article-title text-highlighted">{{ block.titulo }}</h3>
         <div v-if="articleTags.length" class="mu-tags">
-          <span v-for="tag in articleTags" :key="tag" class="mu-tag text-gray-600 dark:text-gray-300">{{ tag }}</span>
+          <UBadge v-for="tag in articleTags" :key="tag" color="neutral" variant="subtle" size="sm">{{ tag }}</UBadge>
         </div>
-      </div>
-      <div class="mu-article-body">
-        <ManualBlockRenderer
-          v-for="child in sortedChildren"
-          :key="child.id"
-          :block="child"
-        />
-      </div>
-    </article>
+      </template>
+      <ManualBlockRenderer
+        v-for="child in sortedChildren"
+        :key="child.id"
+        :block="child"
+      />
+    </UCard>
 
     <!-- Grupo colapsable (acordeón) -->
-    <details
+    <UCard
       v-else-if="tipo === 'grupo' && isColapsable"
       :id="`cap-b-${block.id}`"
-      class="mu-acc scroll-mt-4"
+      class="scroll-mt-4"
+      :ui="{ body: 'p-0 sm:p-0' }"
     >
-      <summary class="text-gray-900 dark:text-white">{{ block.titulo || 'Sección' }}</summary>
-      <div class="mu-acc-body text-sm leading-relaxed text-gray-900 dark:text-gray-100">
-        <ManualBlockRenderer
-          v-for="child in sortedChildren"
-          :key="child.id"
-          :block="child"
-        />
-      </div>
-    </details>
+      <details class="mu-acc">
+        <summary class="text-highlighted">{{ block.titulo || 'Sección' }}</summary>
+        <div class="mu-acc-body text-sm leading-relaxed text-default">
+          <ManualBlockRenderer
+            v-for="child in sortedChildren"
+            :key="child.id"
+            :block="child"
+          />
+        </div>
+      </details>
+    </UCard>
 
     <!-- Grupo: título + clave; hijos recursivos (vertical) -->
     <div
@@ -131,9 +132,9 @@
                 {{ child.titulo || child.tipo }}
               </span>
             </div>
-            <div class="flex-1 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900/40">
+            <UCard class="flex-1" :ui="{ body: 'p-2 sm:p-2' }">
               <ManualBlockRenderer :block="{ ...child, titulo: '' }" />
-            </div>
+            </UCard>
           </div>
           <div
             v-if="Number(ci) < sortedChildren.length - 1"
@@ -265,7 +266,7 @@
       </UCard>
 
       <!-- filtros -->
-      <div v-else-if="tipo === 'filtros'" class="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-900/40">
+      <UCard v-else-if="tipo === 'filtros'" :ui="{ body: 'p-3 sm:p-3' }">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div v-for="(field, i) in (snap.fields || [])" :key="i">
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">{{ field.label }}</label>
@@ -278,7 +279,7 @@
             <UInput v-else v-model="filterLocalValues[field.key || field.label || i]" class="w-full" />
           </div>
         </div>
-      </div>
+      </UCard>
 
       <!-- tabs = UTabs real (mismo estilo pill) -->
       <div v-else-if="tipo === 'tabs'" class="space-y-2">
@@ -293,7 +294,7 @@
       </div>
 
       <!-- tabla documental (campos / errores) -->
-      <div v-else-if="tipo === 'tabla' && isDocTable" class="overflow-x-auto text-gray-900 dark:text-gray-100">
+      <UCard v-else-if="tipo === 'tabla' && isDocTable" :ui="{ body: 'overflow-x-auto p-0 sm:p-0' }">
         <table class="mu-doc-table">
           <thead>
             <tr>
@@ -310,7 +311,7 @@
             </tr>
           </tbody>
         </table>
-      </div>
+      </UCard>
 
       <!-- tabla = DataTable real (mismos estilos) -->
       <div v-else-if="tipo === 'tabla'" class="manual-datatable-embed">
@@ -334,14 +335,16 @@
       </div>
 
       <!-- modal -->
-      <div v-else-if="tipo === 'modal'" class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-900/40">
-        <div class="mb-3 flex items-center justify-between border-b border-gray-100 pb-2 dark:border-gray-700">
-          <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ snap.title || block.titulo || 'Modal' }}</p>
-          <span class="text-gray-400">×</span>
-        </div>
+      <UCard v-else-if="tipo === 'modal'">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-highlighted">{{ snap.title || block.titulo || 'Modal' }}</p>
+            <span class="text-muted">×</span>
+          </div>
+        </template>
         <div class="grid gap-3 sm:grid-cols-2">
           <div v-for="(field, i) in (snap.fields || [])" :key="i">
-            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">{{ field.label }}</label>
+            <label class="mb-1 block text-xs font-medium text-muted">{{ field.label }}</label>
             <USelect
               v-if="field.type === 'select' || (field.options || []).length"
               :model-value="field.value"
@@ -351,19 +354,21 @@
             <UInput v-else :model-value="field.value" class="w-full" disabled />
           </div>
         </div>
-        <div class="mt-4 flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
-          <UButton
-            v-for="(action, ai) in (snap.actions || ['Cancelar', 'Guardar'])"
-            :key="ai"
-            size="sm"
-            :color="ai === (snap.actions || []).length - 1 ? 'primary' : 'neutral'"
-            :variant="ai === (snap.actions || []).length - 1 ? 'solid' : 'ghost'"
-            class="pointer-events-none"
-          >
-            {{ action }}
-          </UButton>
-        </div>
-      </div>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton
+              v-for="(action, ai) in (snap.actions || ['Cancelar', 'Guardar'])"
+              :key="ai"
+              size="sm"
+              :color="ai === (snap.actions || []).length - 1 ? 'primary' : 'neutral'"
+              :variant="ai === (snap.actions || []).length - 1 ? 'solid' : 'ghost'"
+              class="pointer-events-none"
+            >
+              {{ action }}
+            </UButton>
+          </div>
+        </template>
+      </UCard>
 
       <!-- media -->
       <div v-else-if="tipo === 'media'" class="space-y-2">
@@ -372,49 +377,49 @@
             v-if="resolvedMediaSrc"
             :src="resolvedMediaSrc"
             :alt="snap.alt || 'Captura'"
-            class="max-h-64 w-auto max-w-full rounded-lg border border-gray-200 object-contain dark:border-gray-600 sm:max-h-72"
+            class="max-h-64 w-auto max-w-full rounded-lg border border-default object-contain sm:max-h-72"
           >
-          <div
+          <UCard
             v-else
-            class="flex w-full max-w-lg flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-6 py-8 dark:border-gray-600 dark:bg-gray-900/40"
+            variant="subtle"
+            class="w-full max-w-lg"
+            :ui="{ body: 'flex flex-col items-center justify-center gap-2 px-6 py-8 sm:px-6 sm:py-8' }"
           >
             <img src="/assets/img/manual/captura-pendiente.svg" alt="Plantilla de captura" class="max-h-36 w-auto object-contain">
-            <p v-if="snap.caption" class="text-center text-sm font-medium leading-snug text-gray-700 dark:text-gray-200">
+            <p v-if="snap.caption" class="text-center text-sm font-medium leading-snug text-highlighted">
               {{ snap.caption }}
             </p>
-            <p class="text-center text-xs text-gray-500 dark:text-gray-400">
+            <p class="text-center text-xs text-muted">
               En el mantenedor, sustituye esta plantilla por la captura real.
             </p>
-          </div>
+          </UCard>
         </div>
-        <p v-if="snap.caption && resolvedMediaSrc" class="text-center text-xs text-gray-500">{{ snap.caption }}</p>
+        <p v-if="snap.caption && resolvedMediaSrc" class="text-center text-xs text-muted">{{ snap.caption }}</p>
       </div>
 
       <!-- embed -->
-      <div v-else-if="tipo === 'embed'" class="space-y-2">
-        <div :class="['overflow-hidden rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-900/40', embedScopeClass]">
+      <UCard v-else-if="tipo === 'embed'" class="space-y-2">
+        <div :class="['overflow-hidden p-3', embedScopeClass]">
           <div v-html="snap.html || ''" />
         </div>
-      </div>
+      </UCard>
 
       <!-- flow = pasos numerados (plantilla) -->
-      <div v-else-if="tipo === 'flow'" class="mu-steps text-gray-900 dark:text-gray-100">
-        <h4 v-if="block.titulo" class="text-primary-600 dark:text-primary-400">{{ block.titulo }}</h4>
-        <p v-if="snap.hint" class="mb-3 text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ snap.hint }}</p>
-        <ol class="text-sm text-gray-900 dark:text-gray-100">
+      <UCard v-else-if="tipo === 'flow'" variant="subtle">
+        <h4 v-if="block.titulo" class="mu-steps-title text-primary-600 dark:text-primary-400">{{ block.titulo }}</h4>
+        <p v-if="snap.hint" class="mb-3 text-sm leading-relaxed text-default">{{ snap.hint }}</p>
+        <ol class="mu-steps-list text-sm text-default">
           <li v-for="(step, si) in (snap.steps || [])" :key="si">
             <b v-if="step.title" class="block">{{ step.title }}</b>
             <span v-if="step.body" :class="step.title ? 'mt-0.5 block leading-relaxed' : ''">{{ step.body }}</span>
-            <div v-if="flowMediaAt(si)" class="mt-3">
-              <ManualBlockRenderer :block="{ ...flowMediaAt(si), titulo: '' }" />
+            <div v-if="flowMediaAt(Number(si))" class="mt-3">
+              <ManualBlockRenderer :block="{ ...flowMediaAt(Number(si)), titulo: '' }" />
             </div>
           </li>
         </ol>
-      </div>
+      </UCard>
 
-      <div v-else class="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
-        Bloque no soportado: {{ tipo }}
-      </div>
+      <UAlert v-else color="warning" variant="soft" :title="`Bloque no soportado: ${tipo}`" />
     </div>
   </div>
 </template>
@@ -752,7 +757,7 @@ function renderManualCell(col: any, row: Record<string, any>) {
         h(
           'div',
           {
-            class: 'flex min-w-[4.5rem] items-center justify-center rounded-md border border-dashed border-gray-300 bg-white px-2 py-1.5 text-gray-500 dark:border-gray-600 dark:bg-gray-900/40',
+            class: 'flex min-w-[4.5rem] items-center justify-center rounded-md border border-dashed border-default px-2 py-1.5 text-muted',
             title: String(col.modal_hint || 'Registrar Pago'),
           },
           [h(resolveComponent('UIcon') as any, { name: 'i-heroicons-plus', class: 'h-4 w-4' })]

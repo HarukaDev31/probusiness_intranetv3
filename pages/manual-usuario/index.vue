@@ -1,12 +1,20 @@
 <template>
-  <div class="manual-propuesta manual-shell flex min-h-0 flex-1 gap-0 md:min-h-[calc(100dvh)]">
-    <aside class="mu-sidebar hidden shrink-0 flex-col md:flex">
+  <div class="manual-propuesta manual-shell flex min-h-0 flex-1 gap-3 p-0 md:min-h-[calc(100dvh)] md:gap-0 md:p-0">
+    <UCard
+      class="mu-sidebar hidden min-h-0 shrink-0 flex-col overflow-hidden md:flex"
+      :ui="{ root: 'rounded-none shadow-none ring-0 divide-y-0', body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0' }"
+    >
       <button type="button" class="mu-brand w-full text-left" @click="goHome">
-        <span class="mu-brand-dot" />
-        <span class="mu-brand-name">probusiness</span>
+        <img
+          :src="logoSrc"
+          alt="probusiness"
+          class="mu-brand-logo"
+          width="180"
+          height="40"
+        >
       </button>
       <div class="mu-eyebrow">Manual de Usuario</div>
-      <p class="truncate px-5 pb-3 text-[13px] font-semibold" style="color: var(--mu-navy)">
+      <p class="truncate px-5 pb-3 text-[13px] font-semibold text-highlighted">
         {{ activeRoleLabel || 'Mi rol' }}
       </p>
 
@@ -59,7 +67,7 @@
         </div>
       </nav>
 
-      <div class="space-y-2 border-t p-3" style="border-color: var(--mu-border)">
+      <div class="space-y-2 border-t border-default p-3">
         <UButton
           block
           size="sm"
@@ -94,22 +102,26 @@
           Volver al inicio
         </UButton>
       </div>
-    </aside>
+    </UCard>
 
     <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
-      <div class="mu-topbar shrink-0">
+      <UCard
+        class="shrink-0"
+        :ui="{ root: 'rounded-none shadow-none ring-0', body: 'p-0 sm:p-0' }"
+      >
+        <div class="mu-topbar">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div class="min-w-0">
             <div class="mb-2 flex items-center gap-2 md:hidden">
-              <button type="button" class="rounded-lg border p-1.5" style="border-color: var(--mu-border)" @click="goHome">
-                <img :src="logoSrc" alt="Inicio" class="h-7 w-auto">
+              <button type="button" class="rounded-lg border border-default p-1.5" @click="goHome">
+                <img :src="logoSrc" alt="Inicio" class="mu-brand-logo h-7 w-auto">
               </button>
               <UButton size="xs" variant="soft" icon="i-heroicons-list-bullet" @click="toggleMobileToc">
                 Secciones
               </UButton>
             </div>
-            <h1>{{ context?.title || 'Manual de usuario' }}</h1>
-            <div class="mu-meta">
+            <h1 class="text-highlighted">{{ context?.title || 'Manual de usuario' }}</h1>
+            <div class="mu-meta text-muted">
               {{ context?.description || 'Guía por rol, paso a paso.' }}
               <span v-if="activeRoleLabel"> · Rol: {{ activeRoleLabel }}</span>
             </div>
@@ -117,21 +129,18 @@
 
           <div class="flex w-full flex-col gap-2 lg:w-auto lg:items-end">
             <div class="mu-search-wrap">
-              <div class="mu-search">
-                <span class="mu-search-icon" aria-hidden="true">
-                  <UIcon name="i-heroicons-magnifying-glass" class="h-3.5 w-3.5" />
-                </span>
-                <input
-                  v-model="searchQuery"
-                  type="search"
-                  autocomplete="off"
-                  placeholder="Buscar (ej. 'filtros', 'alumno', 'pago')..."
-                >
-              </div>
-              <div class="mu-search-status">{{ searchStatus }}</div>
+              <UInput
+                v-model="searchQuery"
+                icon="i-heroicons-magnifying-glass"
+                type="search"
+                autocomplete="off"
+                placeholder="Buscar (ej. 'filtros', 'alumno', 'pago')..."
+                class="w-full"
+              />
+              <div class="mu-search-status text-muted">{{ searchStatus }}</div>
             </div>
             <div v-if="context?.is_root" class="flex w-full max-w-xs flex-col gap-2">
-              <label class="mb-1 block text-xs font-medium" style="color: var(--mu-navy-soft)">Ver manual de</label>
+              <label class="mb-1 block text-xs font-medium text-muted">Ver manual de</label>
               <USelect
                 v-model="selectedSlug"
                 :items="roleSelectItems"
@@ -152,22 +161,21 @@
           </div>
         </div>
 
-        <div v-if="mobileTocOpen" class="mt-3 max-h-56 overflow-y-auto rounded-lg border p-2 md:hidden" style="border-color: var(--mu-border)">
+        <UCard v-if="mobileTocOpen" class="m-3 md:hidden" :ui="{ body: 'max-h-56 overflow-y-auto p-2 sm:p-2' }">
           <div v-for="(sec, idx) in toc" :key="`m-${sec.key}`" class="mb-1">
             <button
               type="button"
-              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm font-medium"
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm font-medium text-highlighted hover:bg-elevated"
               @click="scrollToChapter(sec.key); if (!sec.children?.length) mobileTocOpen = false"
             >
-              <span class="text-xs font-bold" style="color: var(--mu-orange)">{{ idx + 1 }}.</span>
+              <span class="text-xs font-bold text-primary-600 dark:text-primary-400">{{ idx + 1 }}.</span>
               {{ sec.title }}
             </button>
             <div v-if="sec.children?.length" class="ml-4 space-y-0.5">
               <div v-for="child in sec.children" :key="`m-${child.key}`">
                 <button
                   type="button"
-                  class="block w-full rounded px-2 py-1 text-left text-sm"
-                  style="color: var(--mu-gray)"
+                  class="block w-full rounded px-2 py-1 text-left text-sm text-muted hover:bg-elevated"
                   @click="scrollToChapter(child.key); mobileTocOpen = false"
                 >
                   {{ child.title }}
@@ -176,8 +184,7 @@
                   <div v-for="grand in child.children" :key="`m-${grand.key}`">
                     <button
                       type="button"
-                      class="block w-full rounded px-2 py-1 text-left text-xs"
-                      style="color: var(--mu-gray)"
+                      class="block w-full rounded px-2 py-1 text-left text-xs text-muted hover:bg-elevated"
                       @click="scrollToChapter(grand.key); mobileTocOpen = false"
                     >
                       {{ grand.title }}
@@ -186,8 +193,7 @@
                       v-for="leaf in grand.children || []"
                       :key="`m-${leaf.key}`"
                       type="button"
-                      class="block w-full rounded px-2 py-0.5 text-left text-[11px]"
-                      style="color: var(--mu-gray)"
+                      class="block w-full rounded px-2 py-0.5 text-left text-[11px] text-muted hover:bg-elevated"
                       @click="scrollToChapter(leaf.key); mobileTocOpen = false"
                     >
                       {{ leaf.title }}
@@ -197,24 +203,24 @@
               </div>
             </div>
           </div>
+        </UCard>
         </div>
-      </div>
+      </UCard>
 
       <div ref="scrollRoot" class="flex-1 overflow-y-auto">
         <div class="mu-content">
           <div v-if="loading" class="space-y-4">
-            <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-xl bg-gray-200" />
+            <UCard v-for="i in 4" :key="i">
+              <USkeleton class="h-28 w-full" />
+            </UCard>
           </div>
 
-          <div
-            v-else-if="error"
-            class="rounded-lg border border-red-200 bg-red-50 p-4"
-          >
-            <p class="text-red-800">{{ error }}</p>
+          <UCard v-else-if="error">
+            <UAlert color="error" variant="soft" :title="error" />
             <UButton variant="outline" color="error" size="sm" class="mt-3" @click="initialize">
               Reintentar
             </UButton>
-          </div>
+          </UCard>
 
           <div v-else-if="visibleSections.length" class="space-y-16 pb-8">
             <article
@@ -225,8 +231,8 @@
             >
               <template v-if="!isArticuloPage(sec)">
                 <div class="mu-section-tag">Sección {{ idx + 1 }}</div>
-                <h2 class="mu-section-title">{{ sec.title }}</h2>
-                <p v-if="sec.description" class="mu-page-desc">{{ sec.description }}</p>
+                <h2 class="mu-section-title text-highlighted">{{ sec.title }}</h2>
+                <p v-if="sec.description" class="mu-page-desc text-muted">{{ sec.description }}</p>
               </template>
 
               <div v-if="sec.page" class="space-y-4">
@@ -239,15 +245,15 @@
             </article>
           </div>
 
-          <div v-else-if="searchQuery.trim() && manual" class="py-16 text-center" style="color: var(--mu-gray)">
-            No se encontraron coincidencias. Borra la búsqueda para ver todo el contenido.
-          </div>
+          <UCard v-else-if="searchQuery.trim() && manual" class="py-8 text-center">
+            <p class="text-muted">No se encontraron coincidencias. Borra la búsqueda para ver todo el contenido.</p>
+          </UCard>
 
-          <div v-else class="py-12 text-center" style="color: var(--mu-gray)">
-            No hay contenido de manual disponible para tu rol.
-          </div>
+          <UCard v-else class="py-8 text-center">
+            <p class="text-muted">No hay contenido de manual disponible para tu rol.</p>
+          </UCard>
         </div>
-        <footer class="mu-footer">Probusiness · Manual de Usuario</footer>
+        <footer class="mu-footer text-muted">Probusiness · Manual de Usuario</footer>
       </div>
     </div>
   </div>
