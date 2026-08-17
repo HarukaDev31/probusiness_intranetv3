@@ -72,8 +72,32 @@
         </div>
       </div>
 
+      <div v-if="isGrupo" class="grid gap-3 sm:grid-cols-2 rounded-lg border border-gray-100 p-3 dark:border-gray-700">
+        <div>
+          <label class="mb-1 block text-xs font-medium">Presentación</label>
+          <USelect
+            v-model="draft[block.id].payload.snapshot.variant"
+            :items="[{ label: 'Sección', value: 'seccion' }, { label: 'Artículo (plantilla)', value: 'articulo' }]"
+            class="w-full"
+          />
+        </div>
+        <div class="flex items-end pb-1">
+          <UCheckbox v-model="draft[block.id].payload.snapshot.colapsable" label="Colapsable (acordeón)" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="mb-1 block text-xs font-medium">Etiquetas (separadas por coma)</label>
+          <UInput
+            :model-value="grupoTagsText"
+            placeholder="Rol: Comercial, Módulo: Pedidos de Curso"
+            class="w-full"
+            @update:model-value="setGrupoTags"
+          />
+        </div>
+      </div>
+
       <template v-if="!isGrupo">
-        <div v-if="block.tipo === 'texto'">
+        <div v-if="block.tipo === 'texto'" class="space-y-2">
+          <UCheckbox v-model="draft[block.id].payload.snapshot.qa" label="Pregunta / respuesta (plantilla)" />
           <label class="mb-1 block text-xs font-medium">Cuerpo</label>
           <UTextarea v-model="draft[block.id].payload.snapshot.body" :rows="4" class="w-full" />
         </div>
@@ -81,7 +105,13 @@
         <div v-else-if="block.tipo === 'callout'" class="grid gap-3 sm:grid-cols-2">
           <USelect
             v-model="draft[block.id].payload.snapshot.tone"
-            :items="[{ label: 'Info', value: 'info' }, { label: 'Warning', value: 'warning' }, { label: 'Danger', value: 'danger' }]"
+            :items="[
+              { label: 'Info', value: 'info' },
+              { label: 'Nota', value: 'note' },
+              { label: 'Warning', value: 'warning' },
+              { label: 'Danger', value: 'danger' },
+              { label: 'Resultado', value: 'success' },
+            ]"
             class="w-full"
           />
           <UInput v-model="draft[block.id].payload.snapshot.title" placeholder="Título callout" class="w-full" />
@@ -176,6 +206,12 @@
         </div>
 
         <div v-else-if="['tabla', 'filtros', 'toolbar', 'modal'].includes(block.tipo)" class="space-y-2">
+          <UCheckbox
+            v-if="block.tipo === 'tabla'"
+            :model-value="draft[block.id].payload.snapshot.variant === 'doc'"
+            label="Tabla documental (campos / errores, sin DataTable)"
+            @update:model-value="setDocTable"
+          />
           <p v-if="draft[block.id].payload.source" class="text-xs text-gray-500">
             Snapshot de {{ draft[block.id].payload.source.page_key }} / {{ draft[block.id].payload.source.widget_key }}
           </p>
@@ -198,11 +234,28 @@
       </template>
 
       <div v-if="isContainer" class="space-y-3 border-t border-gray-100 pt-3 dark:border-gray-800">
-        <p class="text-xs font-semibold uppercase text-gray-500">
-          {{ isTimeline ? 'Pasos del flujo (izquierda → derecha)' : 'Subbloques' }}
-        </p>
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-xs font-semibold uppercase text-gray-500">
+            {{ isTimeline ? 'Pasos del flujo (izquierda → derecha)' : 'Subbloques' }}
+          </p>
+          <UButton size="sm" icon="i-heroicons-plus" :loading="addingChild" @click="doAddChild">Agregar</UButton>
+        </div>
 
         <div class="flex flex-wrap items-end gap-2 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+          <div v-if="isArticuloGrupo" class="w-full border-b border-gray-200 pb-3 dark:border-gray-700">
+            <label class="mb-1 block text-xs font-medium">Subsección plantilla</label>
+            <USelectMenu
+              v-model="selectedPlantillaSeccion"
+              :items="plantillaSeccionItems"
+              value-key="value"
+              placeholder="Agregar subsección de la plantilla…"
+              searchable
+              searchable-placeholder="Buscar…"
+              class="w-full max-w-md"
+              :disabled="addingTemplateSection"
+              @update:model-value="doAddTemplateSection"
+            />
+          </div>
           <div class="w-40">
             <label class="mb-1 block text-xs font-medium">Tipo</label>
             <USelect v-model="childTipo" :items="childTipoItems" class="w-full" />
@@ -219,7 +272,6 @@
             <label class="mb-1 block text-xs font-medium">Título</label>
             <UInput v-model="childTitulo" placeholder="Línea de tiempo" class="w-full" />
           </div>
-          <UButton size="sm" icon="i-heroicons-plus" :loading="addingChild" @click="doAddChild">Agregar</UButton>
         </div>
 
         <div class="grid gap-2 rounded-lg border border-dashed border-gray-300 p-3 dark:border-gray-600 sm:grid-cols-3">
@@ -316,6 +368,8 @@ import FileUploader from '~/components/commons/FileUploader.vue'
 import ManualBlockRenderer from '~/components/manual/ManualBlockRenderer.vue'
 import type { FileItem } from '~/types/commons/file'
 import type { ManualAdminMeta, ManualBlock } from '~/types/manualUsuario'
+import type { ManualPlantillaSeccionKey } from '~/composables/manual-usuario/useManualPlantilla'
+import { MANUAL_PLANTILLA_SECCIONES } from '~/composables/manual-usuario/useManualPlantilla'
 
 const props = defineProps<{
   block: ManualBlock
@@ -335,10 +389,14 @@ const emit = defineEmits<{
   'add-child': [parentId: number, payload: { tipo: string; titulo?: string; clave?: string }]
   'import-widget': [parentId: number, pageKey: string, widgetKey: string]
   upload: [blockId: number, file: File]
+  'add-template-section': [parentId: number, key: ManualPlantillaSeccionKey]
 }>()
 
 const toast = useToast()
 const isGrupo = computed(() => props.block.tipo === 'grupo')
+const isArticuloGrupo = computed(() =>
+  isGrupo.value && String(props.draft[props.block.id]?.payload?.snapshot?.variant || '') === 'articulo'
+)
 const isTimeline = computed(() => props.block.tipo === 'timeline')
 const isContainer = computed(() => isGrupo.value || isTimeline.value)
 const containerKindLabel = computed(() => {
@@ -346,6 +404,33 @@ const containerKindLabel = computed(() => {
   if (isTimeline.value) return 'Línea de tiempo'
   return 'Widget'
 })
+
+const grupoTagsText = computed(() => {
+  const tags = props.draft[props.block.id]?.payload?.snapshot?.tags
+  return Array.isArray(tags) ? tags.join(', ') : String(tags || '')
+})
+const setGrupoTags = (value: string) => {
+  const d = props.draft[props.block.id]
+  if (!d?.payload) return
+  if (!d.payload.snapshot) d.payload.snapshot = {}
+  d.payload.snapshot.tags = String(value || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+const syncTablaSnapshotJson = () => {
+  const d = props.draft[props.block.id]
+  if (!d) return
+  d.snapshotJson = JSON.stringify(d.payload?.snapshot || {}, null, 2)
+}
+const setDocTable = (value: boolean | string | number) => {
+  const d = props.draft[props.block.id]
+  if (!d?.payload) return
+  if (!d.payload.snapshot) d.payload.snapshot = {}
+  if (value) d.payload.snapshot.variant = 'doc'
+  else delete d.payload.snapshot.variant
+  syncTablaSnapshotJson()
+}
 /** Widgets/subbloques empiezan colapsados; grupos raíz abiertos. */
 const collapsed = ref(props.depth > 0)
 const childCount = computed(() => (props.block.children || []).length)
@@ -377,6 +462,13 @@ const childTipo = ref('texto')
 const childTitulo = ref('')
 const childClave = ref('')
 const addingChild = ref(false)
+const addingTemplateSection = ref(false)
+const selectedPlantillaSeccion = ref<ManualPlantillaSeccionKey | undefined>(undefined)
+const plantillaSeccionItems = MANUAL_PLANTILLA_SECCIONES.map((s) => ({
+  label: s.label,
+  value: s.key,
+  description: s.description,
+}))
 const importPageKey = ref<string | undefined>()
 const importWidgetKey = ref<string | undefined>()
 
@@ -483,6 +575,17 @@ const doAddChild = () => {
     }
   } finally {
     addingChild.value = false
+  }
+}
+
+const doAddTemplateSection = (key: ManualPlantillaSeccionKey | undefined) => {
+  if (!key) return
+  selectedPlantillaSeccion.value = undefined
+  addingTemplateSection.value = true
+  try {
+    emit('add-template-section', props.block.id, key)
+  } finally {
+    addingTemplateSection.value = false
   }
 }
 

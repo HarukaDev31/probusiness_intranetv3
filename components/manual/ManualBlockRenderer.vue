@@ -1,8 +1,70 @@
 <template>
   <div class="space-y-3">
+    <!-- Grupo artículo (plantilla propuesta) -->
+    <article
+      v-if="tipo === 'grupo' && isArticulo"
+      :id="`cap-b-${block.id}`"
+      class="mu-article scroll-mt-4"
+    >
+      <div class="mu-article-head">
+        <nav v-if="articleCrumbs.length" class="mu-breadcrumb text-gray-500 dark:text-gray-400" aria-label="Ruta">
+          <template v-for="(crumb, i) in articleCrumbs" :key="`${crumb.label}-${i}`">
+            <span v-if="i > 0" class="sep text-gray-400 dark:text-gray-500" aria-hidden="true">→</span>
+            <a
+              v-if="crumb.anchorKey && !crumb.current"
+              :href="crumbAnchorHref(crumb.anchorKey)"
+              class="mu-crumb-link font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+              @click="onManualCrumbClick(crumb, $event)"
+            >
+              {{ crumb.label }}
+            </a>
+            <NuxtLink
+              v-else-if="crumb.to && !crumb.current"
+              :to="crumb.to"
+              class="mu-crumb-link font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+            >
+              {{ crumb.label }}
+            </NuxtLink>
+            <span
+              v-else
+              class="font-semibold text-gray-900 dark:text-white"
+              :aria-current="crumb.current ? 'page' : undefined"
+            >{{ crumb.label }}</span>
+          </template>
+        </nav>
+        <h3 class="mu-article-title text-gray-900 dark:text-white">{{ block.titulo }}</h3>
+        <div v-if="articleTags.length" class="mu-tags">
+          <span v-for="tag in articleTags" :key="tag" class="mu-tag text-gray-600 dark:text-gray-300">{{ tag }}</span>
+        </div>
+      </div>
+      <div class="mu-article-body">
+        <ManualBlockRenderer
+          v-for="child in sortedChildren"
+          :key="child.id"
+          :block="child"
+        />
+      </div>
+    </article>
+
+    <!-- Grupo colapsable (acordeón) -->
+    <details
+      v-else-if="tipo === 'grupo' && isColapsable"
+      :id="`cap-b-${block.id}`"
+      class="mu-acc scroll-mt-4"
+    >
+      <summary class="text-gray-900 dark:text-white">{{ block.titulo || 'Sección' }}</summary>
+      <div class="mu-acc-body text-sm leading-relaxed text-gray-900 dark:text-gray-100">
+        <ManualBlockRenderer
+          v-for="child in sortedChildren"
+          :key="child.id"
+          :block="child"
+        />
+      </div>
+    </details>
+
     <!-- Grupo: título + clave; hijos recursivos (vertical) -->
     <div
-      v-if="tipo === 'grupo'"
+      v-else-if="tipo === 'grupo'"
       :id="`cap-b-${block.id}`"
       class="scroll-mt-4 space-y-4"
     >
@@ -12,11 +74,11 @@
           :href="grupoTitleLink.href"
           :target="grupoTitleLink.external ? '_blank' : undefined"
           :rel="grupoTitleLink.external ? 'noopener noreferrer' : undefined"
-          class="text-base font-semibold text-primary-600 hover:underline dark:text-primary-300"
+          class="mu-grupo-title text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
         >
           {{ block.titulo }}
         </a>
-        <div v-else-if="block.titulo" class="text-base font-semibold text-gray-900 dark:text-white">
+        <div v-else-if="block.titulo" class="mu-grupo-title text-gray-900 dark:text-white">
           {{ block.titulo }}
         </div>
         <p v-if="block.clave && !grupoTitleLink" class="mt-0.5 font-mono text-xs text-gray-500 dark:text-gray-400">
@@ -26,7 +88,7 @@
           {{ payload.subtitulo }}
         </p>
       </div>
-      <div v-if="(block.children || []).length" class="space-y-4 border-l border-gray-200 pl-3 dark:border-gray-700 sm:pl-4">
+      <div v-if="(block.children || []).length" class="space-y-4">
         <ManualBlockRenderer
           v-for="child in sortedChildren"
           :key="child.id"
@@ -87,7 +149,7 @@
 
     <template v-else>
       <a
-        v-if="block.titulo && widgetTitleLink"
+        v-if="block.titulo && widgetTitleLink && !hideWidgetTitle"
         :href="widgetTitleLink.href"
         :target="widgetTitleLink.external ? '_blank' : undefined"
         :rel="widgetTitleLink.external ? 'noopener noreferrer' : undefined"
@@ -95,7 +157,7 @@
       >
         {{ block.titulo }}
       </a>
-      <div v-else-if="block.titulo" class="text-sm font-semibold text-gray-900 dark:text-white">
+      <div v-else-if="block.titulo && !hideWidgetTitle" class="text-sm font-semibold text-gray-900 dark:text-white">
         {{ block.titulo }}
       </div>
       <p
@@ -107,15 +169,34 @@
         {{ payload.subtitulo }}
       </p>
 
+      <!-- texto QA (plantilla ¿Qué es? / ¿Para qué sirve?) -->
+      <div v-if="tipo === 'texto' && isQa" class="mu-qa">
+        <div v-if="block.titulo" class="mu-q text-gray-500 dark:text-gray-400">{{ block.titulo }}</div>
+        <div
+          class="mu-a text-sm leading-relaxed text-gray-900 dark:text-gray-100"
+          :class="{ 'mu-placeholder': isPlaceholderText(snap.body) }"
+        >{{ snap.body }}</div>
+      </div>
+
       <!-- texto -->
-      <div v-if="tipo === 'texto'" class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
+      <div
+        v-else-if="tipo === 'texto'"
+        class="mu-a text-sm leading-relaxed whitespace-pre-wrap text-gray-900 dark:text-gray-100"
+        :class="{ 'mu-placeholder': isPlaceholderText(snap.body) }"
+      >
+        {{ snap.body }}
+      </div>
+
+      <!-- resultado esperado -->
+      <div v-else-if="tipo === 'callout' && isResultCallout" class="mu-result">
+        <b>{{ snap.title || 'Resultado esperado:' }}</b>
         {{ snap.body }}
       </div>
 
       <!-- callout -->
       <div
         v-else-if="tipo === 'callout'"
-        class="rounded-xl border px-3 py-3 text-sm"
+        class="mu-callout"
         :class="calloutClass"
       >
         <p v-if="snap.title" class="mb-1 font-semibold">{{ snap.title }}</p>
@@ -211,6 +292,26 @@
         <p v-if="activeTabContent" class="text-sm text-gray-700 dark:text-gray-300">{{ activeTabContent }}</p>
       </div>
 
+      <!-- tabla documental (campos / errores) -->
+      <div v-else-if="tipo === 'tabla' && isDocTable" class="overflow-x-auto text-gray-900 dark:text-gray-100">
+        <table class="mu-doc-table">
+          <thead>
+            <tr>
+              <th v-for="(col, ci) in docTableHeaders" :key="ci">{{ col }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, ri) in docTableRows" :key="ri">
+              <td
+                v-for="(cell, ci) in row"
+                :key="ci"
+                :class="{ 'mu-placeholder': isPlaceholderText(cell) }"
+              >{{ cell }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <!-- tabla = DataTable real (mismos estilos) -->
       <div v-else-if="tipo === 'tabla'" class="manual-datatable-embed">
         <DataTable
@@ -290,17 +391,13 @@
         </div>
       </div>
 
-      <!-- flow -->
-      <div v-else-if="tipo === 'flow'" class="relative pl-2">
-        <p v-if="snap.hint" class="mb-3 text-xs text-gray-500">{{ snap.hint }}</p>
-        <div class="absolute bottom-2 left-[19px] top-2 w-px bg-gray-200 dark:bg-gray-600" />
-        <ol class="space-y-4">
-          <li v-for="(step, si) in (snap.steps || [])" :key="si" class="relative pl-10">
-            <span class="absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary-200 bg-white text-xs font-bold text-primary-700 dark:border-primary-700 dark:bg-gray-800 dark:text-primary-200">
-              {{ stepNumber(si) }}
-            </span>
-            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ step.title }}</p>
-            <p class="mt-1 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{{ step.body }}</p>
+      <!-- flow = pasos numerados (plantilla) -->
+      <div v-else-if="tipo === 'flow'" class="mu-steps text-gray-900 dark:text-gray-100">
+        <h4 v-if="block.titulo" class="text-primary-600 dark:text-primary-400">{{ block.titulo }}</h4>
+        <p v-if="snap.hint" class="mb-2 text-xs text-gray-500 dark:text-gray-400">{{ snap.hint }}</p>
+        <ol class="text-sm text-gray-900 dark:text-gray-100">
+          <li v-for="(step, si) in (snap.steps || [])" :key="si">
+            <b v-if="step.title">{{ step.title }}{{ step.body ? ' — ' : '' }}</b>{{ step.body }}
           </li>
         </ol>
       </div>
@@ -316,13 +413,19 @@
 import { h, resolveComponent } from 'vue'
 import type { ManualBlock } from '~/types/manualUsuario'
 import type { FilterConfig } from '~/types/data-table'
-import { ManualUsuarioService } from '~/services/manualUsuarioService'
 import DataTable from '~/components/DataTable.vue'
+import {
+  MANUAL_NAV_KEY,
+  type ManualNavCrumb,
+} from '~/composables/manual-usuario/useManualNav'
 
 const props = defineProps<{ block: ManualBlock }>()
 const emit = defineEmits<{
   'update:active': [value: string]
 }>()
+
+const { fetchAsset } = useManualUsuario()
+const manualNav = inject(MANUAL_NAV_KEY, computed(() => null))
 
 const payload = computed(() => props.block.payload || {})
 const snap = computed(() => (payload.value.snapshot || {}) as Record<string, any>)
@@ -349,8 +452,107 @@ function parseManualRoute(raw: unknown): { href: string; external: boolean } | n
   return { href: path, external: false }
 }
 
-const grupoTitleLink = computed(() => parseManualRoute(props.block.clave))
+const grupoTitleLink = computed(() => {
+  if (isArticulo.value) return null
+  return parseManualRoute(props.block.clave)
+})
 const widgetTitleLink = computed(() => parseManualRoute(payload.value.subtitulo))
+
+const isArticulo = computed(() => tipo.value === 'grupo' && String(snap.value.variant || '') === 'articulo')
+const isColapsable = computed(() => tipo.value === 'grupo' && Boolean(snap.value.colapsable))
+const isQa = computed(() => tipo.value === 'texto' && Boolean(snap.value.qa))
+const isResultCallout = computed(() => {
+  if (tipo.value !== 'callout') return false
+  const tone = String(snap.value.tone || '')
+  return tone === 'success' || tone === 'result'
+})
+const isDocTable = computed(() => {
+  if (tipo.value !== 'tabla') return false
+  const variant = String(snap.value.variant || '')
+  return variant === 'doc' || Boolean(snap.value.simple)
+})
+const hideWidgetTitle = computed(() => isQa.value || isResultCallout.value || tipo.value === 'flow')
+
+const articleTags = computed(() => {
+  const tags = snap.value.tags
+  return Array.isArray(tags) ? tags.map((t: unknown) => String(t)).filter(Boolean) : []
+})
+const articleCrumbs = computed((): Array<ManualNavCrumb & { to?: string }> => {
+  const breadcrumb = String(snap.value.breadcrumb || '').trim()
+
+  if (manualNav.value) {
+    return manualNav.value.resolveCrumbs(breadcrumb, props.block.id)
+  }
+
+  if (!breadcrumb) return []
+
+  const labels = breadcrumb
+    .split(/\s*→\s*/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  const clave = parseManualRoute(props.block.clave)
+  const screenPath = clave && !clave.external ? clave.href : null
+  const modulePath = screenPath ? String(screenPath).split('?')[0] : null
+
+  return labels.map((label, i) => {
+    const last = i === labels.length - 1
+    const secondLast = i === labels.length - 2
+    let to: string | undefined
+    if (i === 0 && /^inicio$/i.test(label)) {
+      to = '/'
+    } else if (last && screenPath) {
+      to = screenPath
+    } else if (secondLast && modulePath && modulePath !== '/') {
+      to = modulePath
+    } else if (i === 1) {
+      to = '/manual-usuario'
+    }
+    return { label, to, current: last }
+  })
+})
+
+function crumbAnchorHref(anchorKey: string) {
+  return anchorKey === '__top__' ? '#' : `#cap-${anchorKey}`
+}
+
+function onManualCrumbClick(crumb: ManualNavCrumb, event: MouseEvent) {
+  if (!manualNav.value || !crumb.anchorKey) return
+  event.preventDefault()
+  if (crumb.anchorKey === '__top__') {
+    manualNav.value.scrollToTop()
+    return
+  }
+  manualNav.value.scrollTo(crumb.anchorKey)
+}
+
+function isPlaceholderText(value: unknown): boolean {
+  return /pendiente de definir/i.test(String(value || ''))
+}
+
+const docTableHeaders = computed(() => {
+  const cols = snap.value.columns || []
+  return cols.map((c: any, i: number) => {
+    if (typeof c === 'string') return c
+    return String(c?.header ?? c?.label ?? c?.accessorKey ?? `Col ${i + 1}`)
+  })
+})
+const docTableRows = computed(() => {
+  const rows = snap.value.rows || []
+  const headers = docTableHeaders.value
+  return rows.map((row: any) => {
+    if (Array.isArray(row)) return row.map((c) => String(c ?? ''))
+    if (row && typeof row === 'object') {
+      const cols = snap.value.columns || []
+      return headers.map((_h: string, i: number) => {
+        const col = cols[i]
+        const key = typeof col === 'string' ? `c${i}` : String(col?.accessorKey ?? col?.key ?? `c${i}`)
+        return String(row[key] ?? row[_h] ?? '')
+      })
+    }
+    return [String(row ?? '')]
+  })
+})
 
 const sortedChildren = computed(() =>
   [...(props.block.children || [])].sort((a, b) => a.orden - b.orden || a.id - b.id)
@@ -405,15 +607,12 @@ function onActiveTabChange(value: string | number) {
   emit('update:active', next)
 }
 
-function stepNumber(si: string | number): number {
-  return Number(si) + 1
-}
-
 const calloutClass = computed(() => {
   const tone = snap.value.tone || 'info'
-  if (tone === 'warning') return 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100'
-  if (tone === 'danger') return 'border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-900/20 dark:text-red-100'
-  return 'border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-100'
+  if (tone === 'warning') return 'is-warning'
+  if (tone === 'danger') return 'is-danger'
+  if (tone === 'note') return 'is-note'
+  return 'is-info'
 })
 
 const columnLabels = computed(() => {
@@ -635,7 +834,7 @@ const loadMedia = async () => {
     return
   }
   try {
-    const blob = await ManualUsuarioService.fetchAsset(url)
+    const blob = await fetchAsset(url)
     mediaObjectUrl = URL.createObjectURL(blob)
     resolvedMediaSrc.value = mediaObjectUrl
   } catch {
