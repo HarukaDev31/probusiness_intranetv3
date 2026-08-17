@@ -1,6 +1,12 @@
 import type { InjectionKey, ComputedRef } from 'vue'
 import type { ManualBlock, ManualUsuarioManualData } from '~/types/manualUsuario'
 
+export type ManualTocNode = {
+  key: string
+  title: string
+  children?: ManualTocNode[]
+}
+
 export type ManualNavCrumb = {
   label: string
   anchorKey?: string
@@ -103,6 +109,116 @@ function findAnchor(label: string, entries: NavEntry[], reservedKeys: Set<string
   return partial?.key
 }
 
+export function manualNavGroupLabel(moduloKey: string): string {
+  const k = String(moduloKey || '').trim().replace(/^\/+/, '')
+  if (k.startsWith('curso/') || k === 'curso') return 'Pedidos de Curso'
+  if (
+    k === 'basedatos/productos'
+    || k === 'basedatos/regulaciones'
+    || k === 'basedatos/permisos'
+    || k === 'basedatos/boletin-quimico'
+  ) {
+    return 'Aduanas'
+  }
+  if (k.startsWith('cargaconsolidada/coordinacion')) return 'Coordinación'
+  if (k.startsWith('cargaconsolidada/documentacion')) return 'Documentación'
+  if (k.startsWith('cargaconsolidada/')) return 'Carga consolidada'
+  if (k.startsWith('landing/')) return 'Landing'
+  if (k === 'viaticos' || k.startsWith('viaticos/')) return 'Viáticos'
+  if (k.startsWith('panel-acceso/')) return 'Panel de acceso'
+  if (k.startsWith('agente-compra')) return 'Agente de compra'
+  return ''
+}
+
+export function manualLeafTitle(page: ManualUsuarioManualData['pages'][number]): string {
+  const articulo = (page.blocks || []).find(
+    (b) => b.tipo === 'grupo' && String(b.payload?.snapshot?.variant || '') === 'articulo'
+  )
+  const fromArticulo = String(articulo?.titulo || '').trim()
+  if (fromArticulo) return fromArticulo
+  const titulo = String(page.titulo || '').trim()
+  const parts = titulo.split(/\s*[—–]\s*/).map((p) => p.trim()).filter(Boolean)
+  return parts.length > 1 ? parts[parts.length - 1] : titulo
+}
+
+function cleanTocTitle(raw: string): string {
+  return String(raw || '').replace(/^Pasos\s*[—–-]?\s*/i, '').trim()
+}
+
+function innerTocFromBlock(block: ManualBlock): ManualTocNode[] {
+  const groups: ManualTocNode[] = []
+  const flows: ManualTocNode[] = []
+  for (const child of block.children || []) {
+    if (child.tipo === 'flow') {
+      const title = cleanTocTitle(String(child.titulo || ''))
+      if (title) flows.push({ key: `b-${child.id}`, title })
+      continue
+    }
+    if (child.tipo !== 'grupo') continue
+    if (child.payload?.snapshot?.colapsable) continue
+    const title = String(child.titulo || child.clave || '').trim()
+    if (!title) continue
+    const nested = innerTocFromBlock(child)
+    groups.push({
+      key: `b-${child.id}`,
+      title,
+      children: nested.length ? nested : undefined,
+    })
+  }
+  // Un artículo: los flujos son las hojas del menú (p. ej. pasos de carga).
+  return groups.length ? groups : flows
+}
+
+export function buildGroupedManualToc(
+  pages: ManualUsuarioManualData['pages']
+): ManualTocNode[] {
+  const sorted = [...(pages || [])].sort((a, b) => a.orden - b.orden || a.id - b.id)
+  type Bucket = { label: string; pages: typeof sorted }
+  const buckets: Bucket[] = []
+  const indexByLabel = new Map<string, number>()
+
+  for (const page of sorted) {
+    const label = manualNavGroupLabel(String(page.modulo_key || ''))
+    if (!label) {
+      buckets.push({ label: '', pages: [page] })
+      continue
+    }
+    const existing = indexByLabel.get(label)
+    if (existing === undefined) {
+      indexByLabel.set(label, buckets.length)
+      buckets.push({ label, pages: [page] })
+    } else {
+      buckets[existing].pages.push(page)
+    }
+  }
+
+  const pageNode = (page: typeof sorted[number]): ManualTocNode => {
+    const articulo = (page.blocks || []).find(
+      (b) => b.tipo === 'grupo' && String(b.payload?.snapshot?.variant || '') === 'articulo'
+    )
+    const inner = articulo ? innerTocFromBlock(articulo) : []
+    return {
+      key: `p-${page.id}`,
+      title: manualLeafTitle(page),
+      children: inner.length ? inner : undefined,
+    }
+  }
+
+  const toc: ManualTocNode[] = []
+  for (const bucket of buckets) {
+    if (!bucket.label) {
+      toc.push(pageNode(bucket.pages[0]))
+      continue
+    }
+    toc.push({
+      key: `g-${normalizeManualNavLabel(bucket.label).replace(/\s+/g, '-')}`,
+      title: bucket.label,
+      children: bucket.pages.map(pageNode),
+    })
+  }
+  return toc
+}
+
 function isTocGrupo(block: ManualBlock): boolean {
   if (block.tipo !== 'grupo') return false
   return !block.payload?.snapshot?.colapsable
@@ -163,9 +279,13 @@ export function crumbsFromManualTree(
   }
 
   if (hit) {
-    const pageTitle = String(hit.page.titulo || '').trim()
-    if (pageTitle) {
-      pushUniqueCrumb(crumbs, { label: pageTitle, anchorKey: `p-${hit.page.id}` })
+    const group = manualNavGroupLabel(String(hit.page.modulo_key || ''))
+    const leaf = manualLeafTitle(hit.page)
+    if (group) {
+      pushUniqueCrumb(crumbs, { label: group, anchorKey: `p-${hit.page.id}` })
+    }
+    if (leaf) {
+      pushUniqueCrumb(crumbs, { label: leaf, anchorKey: `p-${hit.page.id}` })
     }
     hit.trail.forEach((block, i) => {
       const label = String(block.titulo || block.clave || '').trim()

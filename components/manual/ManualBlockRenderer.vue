@@ -147,7 +147,7 @@
       <p v-else class="text-xs text-gray-400">Agrega widgets como pasos del flujo.</p>
     </div>
 
-    <template v-else>
+    <div v-else :id="`cap-b-${block.id}`" class="scroll-mt-4 space-y-2">
       <a
         v-if="block.titulo && widgetTitleLink && !hideWidgetTitle"
         :href="widgetTitleLink.href"
@@ -376,12 +376,18 @@
           >
           <div
             v-else
-            class="flex max-h-40 w-full max-w-md items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 dark:border-gray-600"
+            class="flex w-full max-w-lg flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-6 py-8 dark:border-gray-600 dark:bg-gray-900/40"
           >
-            <img src="/assets/img/manual/captura-pendiente.svg" alt="Captura pendiente" class="max-h-32 w-auto object-contain opacity-70">
+            <img src="/assets/img/manual/captura-pendiente.svg" alt="Plantilla de captura" class="max-h-36 w-auto object-contain">
+            <p v-if="snap.caption" class="text-center text-sm font-medium leading-snug text-gray-700 dark:text-gray-200">
+              {{ snap.caption }}
+            </p>
+            <p class="text-center text-xs text-gray-500 dark:text-gray-400">
+              En el mantenedor, sustituye esta plantilla por la captura real.
+            </p>
           </div>
         </div>
-        <p v-if="snap.caption" class="text-center text-xs text-gray-500">{{ snap.caption }}</p>
+        <p v-if="snap.caption && resolvedMediaSrc" class="text-center text-xs text-gray-500">{{ snap.caption }}</p>
       </div>
 
       <!-- embed -->
@@ -394,10 +400,14 @@
       <!-- flow = pasos numerados (plantilla) -->
       <div v-else-if="tipo === 'flow'" class="mu-steps text-gray-900 dark:text-gray-100">
         <h4 v-if="block.titulo" class="text-primary-600 dark:text-primary-400">{{ block.titulo }}</h4>
-        <p v-if="snap.hint" class="mb-2 text-xs text-gray-500 dark:text-gray-400">{{ snap.hint }}</p>
+        <p v-if="snap.hint" class="mb-3 text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ snap.hint }}</p>
         <ol class="text-sm text-gray-900 dark:text-gray-100">
           <li v-for="(step, si) in (snap.steps || [])" :key="si">
-            <b v-if="step.title">{{ step.title }}{{ step.body ? ' — ' : '' }}</b>{{ step.body }}
+            <b v-if="step.title" class="block">{{ step.title }}</b>
+            <span v-if="step.body" :class="step.title ? 'mt-0.5 block leading-relaxed' : ''">{{ step.body }}</span>
+            <div v-if="flowMediaAt(si)" class="mt-3">
+              <ManualBlockRenderer :block="{ ...flowMediaAt(si), titulo: '' }" />
+            </div>
           </li>
         </ol>
       </div>
@@ -405,7 +415,7 @@
       <div v-else class="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
         Bloque no soportado: {{ tipo }}
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -557,6 +567,14 @@ const docTableRows = computed(() => {
 const sortedChildren = computed(() =>
   [...(props.block.children || [])].sort((a, b) => a.orden - b.orden || a.id - b.id)
 )
+
+const flowMediaChildren = computed(() =>
+  sortedChildren.value.filter((child) => String(child.tipo || '') === 'media')
+)
+
+function flowMediaAt(index: number) {
+  return flowMediaChildren.value[Number(index)] || null
+}
 
 const activeTab = ref<string>(snap.value.active || snap.value.tabs?.[0]?.key || '')
 const filterLocalValues = reactive<Record<string, any>>({})

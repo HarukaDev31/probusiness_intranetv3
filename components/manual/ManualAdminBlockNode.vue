@@ -398,10 +398,11 @@ const isArticuloGrupo = computed(() =>
   isGrupo.value && String(props.draft[props.block.id]?.payload?.snapshot?.variant || '') === 'articulo'
 )
 const isTimeline = computed(() => props.block.tipo === 'timeline')
-const isContainer = computed(() => isGrupo.value || isTimeline.value)
+const isContainer = computed(() => isGrupo.value || isTimeline.value || props.block.tipo === 'flow')
 const containerKindLabel = computed(() => {
   if (isGrupo.value) return props.depth === 0 ? 'Bloque' : 'Subgrupo'
   if (isTimeline.value) return 'Línea de tiempo'
+  if (props.block.tipo === 'flow') return 'Pasos (fotos por acción)'
   return 'Widget'
 })
 

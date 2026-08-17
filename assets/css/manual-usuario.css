@@ -105,6 +105,34 @@
   font-weight: 600;
   background: var(--mu-orange-soft);
 }
+.mu-sub-leaf {
+  padding: 3px 12px 3px 54px;
+  font-size: 12px;
+  color: var(--mu-gray);
+  border-radius: 8px;
+}
+.mu-sub-leaf:hover {
+  color: var(--mu-orange);
+}
+.mu-sub-leaf.is-active {
+  color: var(--mu-orange);
+  font-weight: 600;
+  background: var(--mu-orange-soft);
+}
+.mu-sub-leaf-2 {
+  padding: 3px 12px 3px 68px;
+  font-size: 11.5px;
+  color: var(--mu-gray);
+  border-radius: 8px;
+}
+.mu-sub-leaf-2:hover {
+  color: var(--mu-orange);
+}
+.mu-sub-leaf-2.is-active {
+  color: var(--mu-orange);
+  font-weight: 600;
+  background: var(--mu-orange-soft);
+}
 
 /* Topbar + search */
 .mu-topbar {
@@ -123,20 +151,41 @@
   font-size: 12px;
   color: var(--mu-gray);
 }
-.mu-search {
-  position: relative;
+.mu-search-wrap {
   width: 320px;
   max-width: 40vw;
 }
-.mu-search input {
+.mu-search {
+  position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
-  padding: 9px 14px 9px 34px;
-  border-radius: 20px;
+  height: 38px;
+}
+.mu-search input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 38px;
+  margin: 0;
+  line-height: 38px;
+  padding: 0 14px 0 36px;
+  border-radius: 19px;
   border: 1px solid var(--mu-border);
   background: var(--mu-gray-light);
   font-size: 13px;
   outline: none;
   color: var(--mu-navy);
+  vertical-align: middle;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.mu-search input::-webkit-search-decoration,
+.mu-search input::-webkit-search-cancel-button,
+.mu-search input::-webkit-search-results-button,
+.mu-search input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
 }
 .mu-search input:focus {
   border-color: var(--mu-orange);
@@ -144,10 +193,25 @@
 }
 .mu-search-icon {
   position: absolute;
-  left: 11px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  pointer-events: none;
   opacity: 0.5;
+  color: var(--mu-gray);
+}
+.mu-search-icon svg,
+.mu-search-icon :deep(svg) {
+  display: block;
+  width: 14px;
+  height: 14px;
 }
 .mu-search-status {
   font-size: 11px;
@@ -275,8 +339,9 @@
   padding-left: 22px;
 }
 .mu-steps li {
-  margin-bottom: 7px;
+  margin-bottom: 12px;
   font-size: 14px;
+  line-height: 1.55;
 }
 
 /* Acordeón */
@@ -416,6 +481,7 @@
   .mu-topbar {
     padding: 12px 16px;
   }
+  .mu-search-wrap,
   .mu-search {
     width: 100%;
     max-width: none;

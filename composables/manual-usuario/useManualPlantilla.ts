@@ -34,7 +34,7 @@ export const MANUAL_PLANTILLA_SECCIONES: ManualPlantillaSeccionDef[] = [
   { key: 'cuando', label: '¿Cuándo utilizarlo?', description: 'Momento o disparador de uso.' },
   { key: 'pasos_consultar', label: 'Pasos — Consultar / filtrar', description: 'Procedimiento para buscar o acotar registros.' },
   { key: 'pasos_seguimiento', label: 'Pasos — Dar seguimiento', description: 'Procedimiento sobre un registro concreto.' },
-  { key: 'campos', label: 'Campos (acordeón + tabla)', description: 'Tabla Campo · Origen · Ejemplo.' },
+  { key: 'campos', label: 'Campos (acordeón + tabla)', description: 'Tabla Campo · Cómo se completa · Ejemplo. Si es lista desplegable, indícalo.' },
   { key: 'consideraciones', label: 'Consideraciones (acordeón)', description: 'Casos particulares y advertencias.' },
   { key: 'errores', label: 'Errores frecuentes (acordeón)', description: 'Tabla Situación · Causa · Solución + aviso.' },
   { key: 'ejemplo_practico', label: 'Ejemplo práctico', description: 'Caso resuelto con datos ficticios.' },
@@ -83,6 +83,17 @@ function payloadQa(titulo: string, body: string) {
   }
 }
 
+function payloadMediaPlantilla(caption: string) {
+  return {
+    subtitulo: 'Plantilla: reemplázala en el mantenedor con la captura real.',
+    snapshot: {
+      caption,
+      alt: 'Plantilla de captura',
+      media_id: null,
+    },
+  }
+}
+
 function payloadFlow(titulo: string, steps: string[]) {
   return {
     subtitulo: null,
@@ -122,28 +133,42 @@ export function buildPlantillaSeccionBlocks(
       return [{ tipo: 'texto', titulo: d.titulo, payload: payloadQa(d.titulo, d.body) }]
     }
     case 'pasos_consultar':
-      return [{
-        tipo: 'flow',
-        titulo: 'Pasos — Consultar y filtrar',
-        payload: payloadFlow('Pasos — Consultar y filtrar', [
-          'Ingresa al módulo y abre la pestaña correspondiente.',
-          'Revisa la tabla; los registros más recientes suelen aparecer primero.',
-          'Usa “Buscar” si necesitas un registro específico.',
-          'Abre “Filtros” y elige de las listas desplegables.',
-          'Aplica los filtros para actualizar la tabla.',
-        ]),
-      }]
+      return [
+        {
+          tipo: 'flow',
+          titulo: 'Consultar y filtrar',
+          payload: payloadFlow('Consultar y filtrar', [
+            'Ingresa al módulo y abre la pestaña correspondiente.',
+            'Revisa la tabla; los registros más recientes suelen aparecer primero.',
+            'Usa “Buscar” si necesitas un registro específico.',
+            'Abre “Filtros” y elige de las listas desplegables.',
+            'Aplica los filtros para actualizar la tabla.',
+          ]),
+        },
+        {
+          tipo: 'media',
+          titulo: 'Captura',
+          payload: payloadMediaPlantilla('Captura: Consultar y filtrar'),
+        },
+      ]
     case 'pasos_seguimiento':
-      return [{
-        tipo: 'flow',
-        titulo: 'Pasos — Dar seguimiento',
-        payload: payloadFlow('Pasos — Dar seguimiento', [
-          'Ubica el registro en la tabla.',
-          'Usa “Ver” para revisar el detalle completo.',
-          'Actualiza los campos editables y presiona “Guardar” si corresponde.',
-          'Usa las acciones disponibles (Mensaje, Eliminar, etc.) según el caso.',
-        ]),
-      }]
+      return [
+        {
+          tipo: 'flow',
+          titulo: 'Dar seguimiento',
+          payload: payloadFlow('Dar seguimiento', [
+            'Ubica el registro en la tabla.',
+            'Usa “Ver” para revisar el detalle completo.',
+            'Actualiza los campos editables y presiona “Guardar” si corresponde.',
+            'Usa las acciones disponibles (Mensaje, Eliminar, etc.) según el caso.',
+          ]),
+        },
+        {
+          tipo: 'media',
+          titulo: 'Captura',
+          payload: payloadMediaPlantilla('Captura: Dar seguimiento'),
+        },
+      ]
     case 'campos':
       return [
         {
@@ -156,9 +181,9 @@ export function buildPlantillaSeccionBlocks(
           tipo: 'tabla',
           titulo: null,
           payload: payloadTablaDoc(
-            ['Campo', 'Origen', 'Ejemplo'],
+            ['Campo', 'Cómo se completa', 'Ejemplo'],
             [
-              ['Campo de ejemplo', 'Quién lo completa', 'Valor ficticio'],
+              ['Campo de ejemplo', 'Lista desplegable / caja de texto / solo lectura. Si se guarda al elegir, dilo.', 'Valor ficticio'],
               ['pendiente de definir', 'pendiente de definir', 'pendiente de definir'],
             ]
           ),

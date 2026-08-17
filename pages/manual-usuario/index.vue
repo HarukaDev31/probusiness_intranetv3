@@ -32,17 +32,27 @@
               >
                 ↳ {{ child.title }}
               </button>
-              <div v-if="child.children?.length" class="ml-2">
-                <button
-                  v-for="grand in child.children"
-                  :key="grand.key"
-                  type="button"
-                  class="mu-sub flex w-full text-left"
-                  :class="{ 'is-active': isActiveNav(grand.key) }"
-                  @click="scrollToChapter(grand.key)"
-                >
-                  {{ grand.title }}
-                </button>
+              <div v-if="child.children?.length" class="ml-0">
+                <div v-for="grand in child.children" :key="grand.key">
+                  <button
+                    type="button"
+                    class="mu-sub-leaf flex w-full text-left"
+                    :class="{ 'is-active': isActiveNav(grand.key) }"
+                    @click="scrollToChapter(grand.key)"
+                  >
+                    {{ grand.title }}
+                  </button>
+                  <button
+                    v-for="leaf in grand.children || []"
+                    :key="leaf.key"
+                    type="button"
+                    class="mu-sub-leaf-2 flex w-full text-left"
+                    :class="{ 'is-active': isActiveNav(leaf.key) }"
+                    @click="scrollToChapter(leaf.key)"
+                  >
+                    {{ leaf.title }}
+                  </button>
+                </div>
               </div>
             </template>
           </div>
@@ -106,13 +116,18 @@
           </div>
 
           <div class="flex w-full flex-col gap-2 lg:w-auto lg:items-end">
-            <div class="mu-search">
-              <UIcon name="i-heroicons-magnifying-glass" class="mu-search-icon h-3.5 w-3.5" />
-              <input
-                v-model="searchQuery"
-                type="search"
-                placeholder="Buscar (ej. 'filtros', 'alumno', 'pago')..."
-              >
+            <div class="mu-search-wrap">
+              <div class="mu-search">
+                <span class="mu-search-icon" aria-hidden="true">
+                  <UIcon name="i-heroicons-magnifying-glass" class="h-3.5 w-3.5" />
+                </span>
+                <input
+                  v-model="searchQuery"
+                  type="search"
+                  autocomplete="off"
+                  placeholder="Buscar (ej. 'filtros', 'alumno', 'pago')..."
+                >
+              </div>
               <div class="mu-search-status">{{ searchStatus }}</div>
             </div>
             <div v-if="context?.is_root" class="flex w-full max-w-xs flex-col gap-2">
@@ -148,16 +163,38 @@
               {{ sec.title }}
             </button>
             <div v-if="sec.children?.length" class="ml-4 space-y-0.5">
-              <button
-                v-for="child in sec.children"
-                :key="`m-${child.key}`"
-                type="button"
-                class="block w-full rounded px-2 py-1 text-left text-sm"
-                style="color: var(--mu-gray)"
-                @click="scrollToChapter(child.key); mobileTocOpen = false"
-              >
-                {{ child.title }}
-              </button>
+              <div v-for="child in sec.children" :key="`m-${child.key}`">
+                <button
+                  type="button"
+                  class="block w-full rounded px-2 py-1 text-left text-sm"
+                  style="color: var(--mu-gray)"
+                  @click="scrollToChapter(child.key); mobileTocOpen = false"
+                >
+                  {{ child.title }}
+                </button>
+                <div v-if="child.children?.length" class="ml-3 space-y-0.5">
+                  <div v-for="grand in child.children" :key="`m-${grand.key}`">
+                    <button
+                      type="button"
+                      class="block w-full rounded px-2 py-1 text-left text-xs"
+                      style="color: var(--mu-gray)"
+                      @click="scrollToChapter(grand.key); mobileTocOpen = false"
+                    >
+                      {{ grand.title }}
+                    </button>
+                    <button
+                      v-for="leaf in grand.children || []"
+                      :key="`m-${leaf.key}`"
+                      type="button"
+                      class="block w-full rounded px-2 py-0.5 text-left text-[11px]"
+                      style="color: var(--mu-gray)"
+                      @click="scrollToChapter(leaf.key); mobileTocOpen = false"
+                    >
+                      {{ leaf.title }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -228,6 +265,8 @@ import ManualBlockRenderer from '~/components/manual/ManualBlockRenderer.vue'
 import {
   MANUAL_NAV_KEY,
   createManualNavContext,
+  buildGroupedManualToc,
+  type ManualTocNode,
 } from '~/composables/manual-usuario/useManualNav'
 
 definePageMeta({
@@ -270,11 +309,7 @@ type ManualSection = {
   page: ManualPage
 }
 
-type TocNode = {
-  key: string
-  title: string
-  children?: TocNode[]
-}
+type TocNode = ManualTocNode
 
 const roleSelectItems = computed(() =>
   (context.value?.roles || []).map((r) => ({
@@ -297,34 +332,6 @@ const sections = computed<ManualSection[]>(() => {
     page: p,
   }))
 })
-
-const blockToTocNode = (block: ManualBlock): TocNode | null => {
-  if (block.tipo !== 'grupo') return null
-  if (block.payload?.snapshot?.colapsable) return null
-  const title = (block.titulo || block.clave || '').trim()
-  if (!title) return null
-  const children = (block.children || [])
-    .map(blockToTocNode)
-    .filter((n): n is TocNode => !!n)
-  return {
-    key: `b-${block.id}`,
-    title,
-    children: children.length ? children : undefined,
-  }
-}
-
-const toc = computed<TocNode[]>(() =>
-  sections.value.map((sec) => {
-    const children = (sec.page.blocks || [])
-      .map(blockToTocNode)
-      .filter((n): n is TocNode => !!n)
-    return {
-      key: sec.key,
-      title: sec.title,
-      children: children.length ? children : undefined,
-    }
-  })
-)
 
 const isArticuloPage = (sec: ManualSection) => {
   const first = sec.page?.blocks?.[0]
@@ -353,6 +360,10 @@ const visibleSections = computed(() => {
   })
 })
 
+const toc = computed<TocNode[]>(() =>
+  buildGroupedManualToc(visibleSections.value.map((sec) => sec.page))
+)
+
 const searchStatus = computed(() => {
   const q = searchQuery.value.trim()
   if (!q || !manual.value) return ''
@@ -376,23 +387,29 @@ const toggleTocExpand = (key: string) => {
   tocExpanded[key] = !isTocExpanded(key)
 }
 
+const findTocNode = (nodes: TocNode[] | undefined, key: string): TocNode | null => {
+  if (!nodes) return null
+  for (const n of nodes) {
+    if (n.key === key) return n
+    const hit = findTocNode(n.children, key)
+    if (hit) return hit
+  }
+  return null
+}
+
 const isActiveNav = (key: string) => {
   const active = activeChapterId.value
   if (!active) return false
   if (active === key) return true
-  if (key.startsWith('p-')) {
-    const sec = toc.value.find((t) => t.key === key)
-    const walk = (nodes?: TocNode[]): boolean => {
-      if (!nodes) return false
-      for (const n of nodes) {
-        if (n.key === active) return true
-        if (walk(n.children)) return true
-      }
-      return false
+  const node = findTocNode(toc.value, key)
+  const containsActive = (n?: TocNode | null): boolean => {
+    if (!n?.children) return false
+    for (const c of n.children) {
+      if (c.key === active || containsActive(c)) return true
     }
-    return walk(sec?.children)
+    return false
   }
-  return false
+  return containsActive(node)
 }
 
 const goHome = () => {
@@ -422,8 +439,12 @@ const manualNav = computed(() => {
 provide(MANUAL_NAV_KEY, manualNav)
 
 const onTocParentClick = (sec: TocNode) => {
-  if (sec.children?.length && !isTocExpanded(sec.key)) {
+  if (sec.children?.length) {
     tocExpanded[sec.key] = true
+    if (sec.key.startsWith('g-')) {
+      scrollToChapter(sec.children[0].key)
+      return
+    }
   }
   scrollToChapter(sec.key)
 }
@@ -542,13 +563,14 @@ const setupObserver = () => {
     const el = document.getElementById(`cap-${key}`)
     if (el) observer?.observe(el)
   }
-  for (const sec of toc.value) {
-    observeKey(sec.key)
-    for (const child of sec.children || []) {
-      observeKey(child.key)
-      for (const grand of child.children || []) observeKey(grand.key)
+  const observeTree = (nodes?: TocNode[]) => {
+    if (!nodes) return
+    for (const n of nodes) {
+      observeKey(n.key)
+      observeTree(n.children)
     }
   }
+  observeTree(toc.value)
 }
 
 watch(toc, async () => {
