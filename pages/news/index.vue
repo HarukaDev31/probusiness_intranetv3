@@ -40,6 +40,7 @@
       <div
         v-for="item in news"
         :key="item.id"
+        data-manual-capture="news-card"
         class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow overflow-hidden"
       >
         <div class="p-6">
