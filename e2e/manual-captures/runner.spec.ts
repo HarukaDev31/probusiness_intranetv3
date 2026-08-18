@@ -86,6 +86,41 @@ test.describe('runner de capturas', () => {
     expect(shot.target).toEqual({ css: '[data-manual-capture="news-card"]' })
   })
 
+  test('aplica override de boletín consultar y cotización paso 1', () => {
+    const manifest = normalizeManifest({
+      version: 1,
+      roles: [{
+        slug: 'cotizador',
+        screens: [
+          {
+            id: 'basedatos-boletin-quimico',
+            url: '/basedatos/boletin-quimico',
+            shots: [{
+              id: 'basedatos-boletin-quimico__consultar__paso-01-buscar-el-boletin',
+              type: 'page',
+              intent: { title: 'Buscar el boletín', hint: 'Recorta la tabla' },
+            }],
+          },
+          {
+            id: 'cotizaciones',
+            url: '/cotizaciones',
+            shots: [{
+              id: 'cotizaciones__crear-o-editar-con-el-asistente__paso-01-paso-1-informacion-del-cliente',
+              type: 'page',
+              intent: { title: 'Paso 1', hint: 'Recorta el paso 1' },
+            }],
+          },
+        ],
+      }],
+    })
+    const boletin = manifest.roles[0].screens[0].shots[0]
+    const cotizacion = manifest.roles[0].screens[1].shots[0]
+    expect(boletin.target).toEqual({ manualCapture: 'data-table' })
+    expect(boletin.targetText).toEqual(['Boletín Químico'])
+    expect(cotizacion.type).toBe('destino')
+    expect(cotizacion.targetText).toEqual(['Información del Cliente', 'tipo de cliente'])
+  })
+
   test('aplica override de clientes buscar-y-filtrar', () => {
     const manifest = normalizeManifest({
       version: 1,

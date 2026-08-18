@@ -261,6 +261,51 @@ const overrides: Record<string, CaptureOverride> = {
     minWidth: 640,
     minHeight: 280,
   },
+  'basedatos-boletin-quimico__consultar__paso-01-buscar-el-boletin': {
+    type: 'seccion',
+    target: { manualCapture: 'data-table' },
+    targetText: ['Boletín Químico'],
+    padding: 12,
+    minWidth: 640,
+    minHeight: 280,
+  },
+  'basedatos-boletin-quimico__crear-nuevo__paso-01-carga-cliente-e-items': {
+    type: 'modal',
+    actions: [
+      { type: 'click', target: { role: 'button', name: 'Nuevo', exact: true } },
+      { type: 'wait', target: { role: 'dialog' }, state: 'visible', timeout: 15_000 },
+      { type: 'wait', ms: 2_500 },
+    ],
+    target: { role: 'dialog' },
+    targetText: ['Nuevo Boletín Químico', 'Consolidado'],
+    padding: 12,
+    minWidth: 420,
+    minHeight: 240,
+  },
+  'cotizaciones__crear-o-editar-con-el-asistente__paso-01-paso-1-informacion-del-cliente': {
+    type: 'destino',
+    actions: [
+      { type: 'click', target: { role: 'button', name: 'Crear Cotización', exact: true } },
+      { type: 'wait', target: { text: 'Información del Cliente' }, state: 'visible', timeout: 20_000 },
+    ],
+    target: { role: 'main' },
+    targetText: ['Información del Cliente', 'tipo de cliente'],
+    padding: 16,
+    minWidth: 640,
+    minHeight: 360,
+  },
+  'cotizaciones__trabajar-desde-el-listado__paso-01-buscar-filtrar-y-exportar': {
+    type: 'seccion',
+    actions: [
+      { type: 'click', target: { role: 'button', name: 'Filtros', exact: true } },
+      { type: 'wait', target: '.filters-panel', state: 'visible', timeout: 10_000 },
+    ],
+    target: { manualCapture: 'data-table' },
+    targetText: ['Cotizaciones', 'Filtros', 'Exportar'],
+    padding: 12,
+    minWidth: 640,
+    minHeight: 280,
+  },
 }
 
 export function captureOverride(captureKey: string): CaptureOverride | undefined {
