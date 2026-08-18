@@ -16,6 +16,7 @@ import {
   wsShowError,
   WS_NOTIFICATION_KEYS,
 } from '~/composables/notifications/preferences'
+import { handleFacturaComercialBatchFinished } from '~/composables/cargaconsolidada/documentacion/facturaComercialBatchRealtime'
 
 /**
  * Configuración de eventos para el rol Coordinación
@@ -87,6 +88,8 @@ export const registerCoordinacionEvents = () => {
     }
   })
 
+  registerEventHandler(WS_EVENTS.FACTURA_COMERCIAL_BATCH_FINISHED, handleFacturaComercialBatchFinished)
+
   subscribeEventsToRole(
     'Coordinación',
     `${'Coordinacion'}-notifications`,
@@ -97,7 +100,8 @@ export const registerCoordinacionEvents = () => {
       WS_EVENTS.COTIZACION_CHANGE_CONTAINER,
       WS_EVENTS.COTIZACION_CHINA_RECEIVED,
       WS_EVENTS.COTIZACION_CHINA_INSPECTIONED,
-      WS_EVENTS.PLANTILLA_FINAL_BATCH_FINISHED
+      WS_EVENTS.PLANTILLA_FINAL_BATCH_FINISHED,
+      WS_EVENTS.FACTURA_COMERCIAL_BATCH_FINISHED
     ],
     'private'
   )

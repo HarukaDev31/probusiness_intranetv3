@@ -5,6 +5,7 @@ import {
 } from '~/config/websocket/channels'
 import { ROLES } from '~/constants/roles'
 import { wsShowSuccess, WS_NOTIFICATION_KEYS } from '~/composables/notifications/preferences'
+import { handleFacturaComercialBatchFinished } from '~/composables/cargaconsolidada/documentacion/facturaComercialBatchRealtime'
 
 /**
  * Configuración de eventos para el rol Documentacion
@@ -38,6 +39,8 @@ export const registerDocumentacionEvents = () => {
     wsShowSuccess(WS_NOTIFICATION_KEYS.IMPORTACION_EXCEL, 'Evento de Prueba', 'WebSocket funcionando correctamente')
   })
 
+  registerEventHandler(WS_EVENTS.FACTURA_COMERCIAL_BATCH_FINISHED, handleFacturaComercialBatchFinished)
+
   subscribeEventsToRole(
     ROLES.DOCUMENTACION,
     `${ROLES.DOCUMENTACION}-notifications`,
@@ -46,7 +49,8 @@ export const registerDocumentacionEvents = () => {
       WS_EVENTS.DOCUMENT_STATUS_CHANGE,
       WS_EVENTS.DOCUMENT_REQUEST,
       WS_EVENTS.IMPORTACION_EXCEL_COMPLETED,
-      WS_EVENTS.TEST_EVENT
+      WS_EVENTS.TEST_EVENT,
+      WS_EVENTS.FACTURA_COMERCIAL_BATCH_FINISHED
     ],
     'private'
   )

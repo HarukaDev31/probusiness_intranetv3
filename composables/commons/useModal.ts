@@ -5,6 +5,8 @@ export interface ModalData {
   message: string
   duration?: number
   persistent?: boolean
+  confirmLabel?: string
+  cancelLabel?: string
   onConfirm?: () => void | Promise<void>
   onCancel?: () => void | Promise<void>
 }

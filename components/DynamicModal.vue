@@ -64,14 +64,14 @@
                 @click="$emit('cancel')"
                 class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               >
-                Cancelar
+                {{ modal.cancelLabel || 'Cancelar' }}
               </button>
               <button
                 @click="$emit('confirm')"
                 class="rounded-lg px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                 :class="buttonClasses"
               >
-                Confirmar
+                {{ modal.confirmLabel || 'Confirmar' }}
               </button>
             </template>
             

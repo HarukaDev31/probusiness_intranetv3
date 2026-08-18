@@ -4,7 +4,9 @@
       <PageHeader :title="''" :subtitle="''" :icon="''" :hide-back-button="false" @back="goBack" />
       <div class="hidden md:flex items-center gap-3 flex-row flex-wrap w-full md:justify-end" v-if="role === ROLES.COORDINACION || role === ROLES.DOCUMENTACION || role === ROLES.JEFE_IMPORTACIONES">
         <UButton v-if="role === ROLES.COORDINACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.DOCUMENTACION" label="Factura General" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
-          :loading="downloadingFactura" @click="handleDownloadFactura" class="whitespace-nowrap" />
+          :loading="enqueueing" @click="handleGenerateFactura" class="whitespace-nowrap" />
+        <UButton v-if="role === ROLES.COORDINACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.DOCUMENTACION" label="Ver facturas generales" variant="soft" icon="i-heroicons-queue-list" color="primary" size="sm"
+          @click="goFacturasGenerales" class="whitespace-nowrap" />
         <UButton v-if="role === ROLES.COORDINACION" label="Descargar plantillas" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
           @click="handleDownloadAll" class="whitespace-nowrap" />
         <UButton v-if="role === ROLES.DOCUMENTACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.COORDINACION" label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning" size="sm"
@@ -99,6 +101,7 @@ import { onMounted } from 'vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useDocumentacion } from '~/composables/cargaconsolidada/useDocumentacion'
+import { useFacturasGenerales } from '~/composables/cargaconsolidada/documentacion/useFacturasGenerales'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import CreateDocumentModal from '~/components/CreateDocumentModal.vue'
 import { ROLES } from '~/constants/roles'
@@ -108,7 +111,6 @@ const props = withDefaults(
   {}
 )
 
-const downloadingFactura = ref(false)
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const {
@@ -119,12 +121,12 @@ const {
   getFolders,
   isFolderLoading,
   uploadFileDocumentation,
-  downloadFacturaComercial,
   deleteFileDocumentation,
   downloadAllFiles,
   createNewFolder,
   downloadAllFilesAdministracion,
 } = useDocumentacion()
+const { enqueueing, enqueueGeneration } = useFacturasGenerales()
 
 const route = useRoute()
 const contenedorId = route.params.id as string
@@ -231,26 +233,29 @@ const handleNuevoDocumento = () => {
   })
 }
 
-const handleDownloadFactura = async () => {
+const handleGenerateFactura = async () => {
   if (!contenedorId) {
     showError('Error', 'ID de contenedor no válido')
     return
   }
-  downloadingFactura.value = true
   try {
-    await withSpinner(async () => {
-      const response = await downloadFacturaComercial(contenedorId)
-      if (response.success) {
-        showSuccess('Éxito', 'Factura comercial descargada correctamente')
-      } else {
-        showError('Error', 'Error al descargar la factura comercial')
-      }
-    }, 'Descargando factura comercial...')
+    const result = await enqueueGeneration(Number(contenedorId))
+    if (result?.success) {
+      showSuccess('Generación en curso', result.message || 'Se notificará cuando la factura general esté lista.')
+    } else {
+      showError('Error', result?.message || 'No se pudo encolar la generación')
+    }
   } catch (err: any) {
-    showError('Error', err.message || 'Error al descargar la factura comercial')
-  } finally {
-    downloadingFactura.value = false
+    showError('Error', err?.data?.message || err?.message || 'No se pudo encolar la generación')
   }
+}
+
+const goFacturasGenerales = () => {
+  if (!contenedorId) {
+    showError('Error', 'ID de contenedor no válido')
+    return
+  }
+  void navigateTo(`${props.basePath}/facturas-generales/${contenedorId}`)
 }
 
 const goBack = () => {

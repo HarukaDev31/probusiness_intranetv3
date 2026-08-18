@@ -89,6 +89,12 @@ export const WS_NOTIFICATION_TYPES: WsNotificationType[] = [
     'Cuando termina la generación masiva de plantillas finales.'
   ),
   modalOnly(
+    WS_NOTIFICATION_KEYS.FACTURA_COMERCIAL_LOTE,
+    'Factura general generada',
+    'Documentación',
+    'Cuando termina la generación en segundo plano de la factura general.'
+  ),
+  modalOnly(
     WS_NOTIFICATION_KEYS.SEGUIMIENTO_DRIVE,
     'Excel de seguimiento en Drive',
     'Carga consolidada',
