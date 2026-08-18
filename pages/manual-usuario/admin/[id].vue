@@ -244,6 +244,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { useManualPlantilla } from '~/composables/manual-usuario/useManualPlantilla'
 import { useManualCapturas } from '~/composables/manual-usuario/useManualCapturas'
+import { nombreCapturaDesdeSnapshot } from '~/utils/manualCapturaNombre'
 
 definePageMeta({ name: 'manual-usuario-admin-edit', layout: 'default' })
 useHead({ title: 'Editar página manual' })
@@ -383,12 +384,11 @@ const hydrateDraft = (block: ManualBlock) => {
   if (block.tipo === 'media') {
     if (payload.snapshot.nombre == null) payload.snapshot.nombre = ''
     if (!String(payload.snapshot.nombre).trim()) {
-      const key = String(payload.snapshot?.capture_alias_of || payload.snapshot?.capture_key || '').trim()
-      const mediaId = Number(payload.snapshot?.media_id || 0)
-      const item = catalog.value.find((entry) =>
-        (key && entry.capture_key === key) || (mediaId > 0 && Number(entry.media_id) === mediaId)
+      payload.snapshot.nombre = nombreCapturaDesdeSnapshot(
+        { ...payload.snapshot, nombre: '' },
+        block.titulo,
+        page.value?.titulo,
       )
-      if (item?.nombre) payload.snapshot.nombre = item.nombre
     }
   }
   draft[block.id] = {

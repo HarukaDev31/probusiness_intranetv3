@@ -140,7 +140,7 @@
               :placeholder="derivedCaptureNombre || 'Ej. Noticias — tarjetas y detalle'"
             />
             <p class="mt-1 text-xs text-gray-500">
-              Se ve en el catálogo y en todas las hojas que comparten esta imagen.
+              Nombre de esta captura (módulo + flujo + paso). No se copia a otros pasos.
             </p>
           </div>
           <div
@@ -177,7 +177,7 @@
                 @update:model-value="onCatalogSelect"
               />
               <p class="mt-1 text-xs text-gray-500">
-                Al elegirla se coloca en todas las hojas con la misma clave.
+                Al elegirla se aplica a las hojas con la misma captura (mismo módulo, flujo y paso).
               </p>
             </div>
             <label class="mb-1 block text-xs font-medium">Subir o reemplazar</label>
@@ -425,6 +425,7 @@ import type { ManualAdminMeta, ManualBlock, ManualCapturaCatalogItem } from '~/t
 import type { ManualPlantillaSeccionKey } from '~/composables/manual-usuario/useManualPlantilla'
 import { MANUAL_PLANTILLA_SECCIONES } from '~/composables/manual-usuario/useManualPlantilla'
 import { esTargetEdicionTexto, imagenDesdePortapapeles } from '~/utils/clipboardImage'
+import { nombreCapturaDesdeSnapshot } from '~/utils/manualCapturaNombre'
 
 const props = defineProps<{
   block: ManualBlock
@@ -697,18 +698,22 @@ const onMediaUploadError = (message: string) => {
 
 const currentCaptureKey = computed(() => {
   const snap = props.draft[props.block.id]?.payload?.snapshot
-  return String(snap?.capture_alias_of || snap?.capture_key || '').trim()
+  return String(snap?.capture_key || '').trim()
 })
 
 const currentCatalogItem = computed(() => {
   const key = currentCaptureKey.value
-  const mediaId = Number(props.draft[props.block.id]?.payload?.snapshot?.media_id || 0)
-  return (props.catalog || []).find((entry) =>
-    (key && entry.capture_key === key) || (mediaId > 0 && Number(entry.media_id) === mediaId)
-  ) || null
+  if (!key) return null
+  return (props.catalog || []).find((entry) => entry.capture_key === key) || null
 })
 
-const derivedCaptureNombre = computed(() => String(currentCatalogItem.value?.nombre || '').trim())
+const derivedCaptureNombre = computed(() => {
+  const snap = props.draft[props.block.id]?.payload?.snapshot
+  return nombreCapturaDesdeSnapshot(
+    { ...snap, nombre: '' },
+    props.block.titulo,
+  )
+})
 
 const currentCaptureNombre = computed(() => {
   const fromSnap = String(props.draft[props.block.id]?.payload?.snapshot?.nombre || '').trim()
