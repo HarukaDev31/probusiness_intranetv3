@@ -134,12 +134,14 @@
             :deleting-block-id="deletingBlockId"
             :importing-block-id="importingBlockId"
             :role-slug="pageRoleSlug"
+            :catalog="catalog"
             @save="saveBlock"
             @remove="removeBlock"
             @reorder="reorderByIds"
             @add-child="addChild"
             @import-widget="importWidgetUnder"
             @upload="onUpload"
+            @assign-captura="onAssignCaptura"
             @add-template-section="onAddTemplateSectionFromNode"
           />
         </template>
@@ -238,7 +240,9 @@ import {
   type ManualPlantillaSeccionKey,
 } from '~/composables/manual-usuario/useManualPlantilla'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
 import { useManualPlantilla } from '~/composables/manual-usuario/useManualPlantilla'
+import { useManualCapturas } from '~/composables/manual-usuario/useManualCapturas'
 
 definePageMeta({ name: 'manual-usuario-admin-edit', layout: 'default' })
 useHead({ title: 'Editar página manual' })
@@ -291,6 +295,8 @@ const expandAllBlocks = () => {
 }
 
 const { withSpinner } = useSpinner()
+const { showSuccess, showError } = useModal()
+const { catalog, loadCatalog, assignCaptura } = useManualCapturas()
 const {
   applying: applyingPlantilla,
   applyPlantillaCompleta,
@@ -417,6 +423,11 @@ const load = async () => {
     pageForm.publicado = page.value.publicado !== false
     walkBlocks(page.value.blocks || [], hydrateDraft)
     syncRootBlocks()
+    try {
+      await loadCatalog()
+    } catch {
+      catalog.value = []
+    }
   } catch (e: any) {
     error.value = e?.message || 'No se pudo cargar la página'
     page.value = null
@@ -565,9 +576,30 @@ const onUpload = async (blockId: number, file: File) => {
       payload: buildPayload(block),
     })
     await reloadPage()
+    await loadCatalog()
     toast.add({ title: 'Imagen subida y guardada', color: 'success' })
   } catch (e: any) {
     toast.add({ title: 'Error upload', description: e?.message, color: 'error' })
+  }
+}
+
+const onAssignCaptura = async (blockId: number, payload: { media_id?: number | null; capture_key?: string | null }) => {
+  try {
+    const result = await withSpinner(async () => {
+      const assigned = await assignCaptura(blockId, payload)
+      await reloadPage()
+      await loadCatalog()
+      return assigned
+    }, 'Aplicando imagen…')
+    const extra = Math.max(0, (result.updated || 1) - 1)
+    showSuccess(
+      'Imagen aplicada',
+      extra > 0
+        ? `Se actualizó también en ${extra} hoja${extra === 1 ? '' : 's'} con la misma clave.`
+        : 'La imagen quedó en esta hoja.'
+    )
+  } catch (e: any) {
+    showError('No se pudo aplicar', e?.message || 'Inténtalo de nuevo.')
   }
 }
 

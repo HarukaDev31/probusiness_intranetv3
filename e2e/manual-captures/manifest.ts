@@ -172,11 +172,13 @@ export function normalizeManifest(value: unknown): CaptureManifest {
                 output?: string
                 hint?: string
                 step?: { title?: string }
+                aliasOf?: string | null
               }
             }).manual
             const override = captureOverride(shot.id)
             return {
               ...shot,
+              enabled: shot.enabled === false || Boolean(manual?.aliasOf) ? false : shot.enabled,
               output: shot.output ?? (manual?.output ? validateOutput(manual.output, shot.id) : undefined),
               intent: shot.intent ?? {
                 title: manual?.step?.title,
@@ -200,6 +202,7 @@ export function normalizeManifest(value: unknown): CaptureManifest {
 
   const screens = screenRegistry(backend)
   const roles = new Map<string, CaptureRole>()
+  const seenIdentities = new Set<string>()
   backend.captures.forEach((entry, index) => {
     if (!entry || typeof entry !== 'object') throw new Error(`captures[${index}] debe ser un objeto`)
     if (entry.enabled === false) return
@@ -208,6 +211,14 @@ export function normalizeManifest(value: unknown): CaptureManifest {
     }
     const screen = canonicalScreen(entry, screens, index)
     const shot = canonicalShot(entry, index)
+    const identity = (typeof entry.alias_of === 'string' && entry.alias_of.trim())
+      ? entry.alias_of
+      : entry.capture_key
+    if (identity && (entry.alias_of || seenIdentities.has(identity))) {
+      shot.enabled = false
+    } else if (identity) {
+      seenIdentities.add(identity)
+    }
     for (const roleSlug of entry.roles) {
       assertId(roleSlug, `captures[${index}].roles`)
       let role = roles.get(roleSlug)
@@ -223,6 +234,7 @@ export function normalizeManifest(value: unknown): CaptureManifest {
         throw new Error(`URL conflictiva para screen "${screen.sourceId}" del rol ${roleSlug}`)
       }
       if (roleScreen.shots.some(item => item.id === shot.id)) {
+        if (shot.enabled === false) continue
         throw new Error(`capture_key duplicada para ${roleSlug}/${screen.sourceId}: ${shot.id}`)
       }
       roleScreen.shots.push({ ...shot })

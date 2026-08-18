@@ -114,6 +114,54 @@
       </div>
     </UCard>
 
+    <UCard>
+      <template #header>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Imágenes del manual</h2>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Una clave, una foto. Si la pantalla se repite en varios roles, se comparte sola.
+            </p>
+          </div>
+          <UButton variant="soft" color="neutral" :loading="loadingCatalog" icon="i-heroicons-arrow-path" @click="loadCatalog">
+            Actualizar
+          </UButton>
+        </div>
+      </template>
+      <div v-if="loadingCatalog" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <USkeleton v-for="i in 6" :key="i" class="h-28 w-full rounded-lg" />
+      </div>
+      <div v-else-if="!catalog.length" class="py-8 text-center text-sm text-gray-500">
+        Aún no hay imágenes. Súbelas en cada hoja; las de la misma pantalla se reúnen aquí.
+      </div>
+      <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          v-for="item in catalog"
+          :key="String(item.id)"
+          class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+        >
+          <div class="flex h-28 items-center justify-center bg-gray-50 dark:bg-gray-900">
+            <img
+              v-if="item.url"
+              :src="item.url"
+              :alt="item.alt || item.capture_key || 'Imagen del manual'"
+              class="h-full w-full object-contain"
+            >
+            <span v-else class="text-xs text-gray-400">Sin archivo</span>
+          </div>
+          <div class="space-y-1 p-2">
+            <p class="truncate font-mono text-xs text-gray-800 dark:text-gray-200">
+              {{ item.capture_key || `imagen-${item.media_id || item.id}` }}
+            </p>
+            <p class="text-xs text-gray-500">
+              {{ item.usage === 1 ? '1 hoja' : `${item.usage} hojas` }}
+              <span v-if="item.roles.length"> · {{ item.roles.length }} roles</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </UCard>
+
     <UModal v-model:open="createOpen">
       <template #content>
         <UCard>
@@ -208,6 +256,7 @@
 <script setup lang="ts">
 import { ManualUsuarioService } from '~/services/manualUsuarioService'
 import type { ManualAdminMeta, ManualAdminPageSummary } from '~/types/manualUsuario'
+import { useManualCapturas } from '~/composables/manual-usuario/useManualCapturas'
 
 definePageMeta({
   name: 'manual-usuario-admin',
@@ -218,6 +267,7 @@ useHead({ title: 'Mantenedor manual' })
 
 const toast = useToast()
 const router = useRouter()
+const { catalog, loading: loadingCatalog, loadCatalog } = useManualCapturas()
 
 const loading = ref(true)
 const loadingMeta = ref(true)
@@ -360,7 +410,7 @@ const confirmDelete = async (p: ManualAdminPageSummary) => {
 onMounted(async () => {
   try {
     await loadMeta()
-    await loadPages()
+    await Promise.all([loadPages(), loadCatalog()])
   } catch (e: any) {
     error.value = e?.message || 'Sin permiso (solo root) o error de API'
     loading.value = false

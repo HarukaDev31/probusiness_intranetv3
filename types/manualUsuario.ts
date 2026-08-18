@@ -147,6 +147,19 @@ export interface ManualMediaItem {
   created_at?: string | null
 }
 
+export interface ManualCapturaCatalogItem {
+  id: number | string
+  capture_key: string | null
+  media_id: number | null
+  url: string | null
+  alt?: string | null
+  usage: number
+  roles: string[]
+  pages: Array<{ id: number; titulo: string; role_slug: string }>
+  block_ids: number[]
+  label: string
+}
+
 export interface ManualUsuarioApiResponse<T> {
   status: string
   message?: string

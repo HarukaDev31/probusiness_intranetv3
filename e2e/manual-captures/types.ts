@@ -89,6 +89,7 @@ export interface BackendCaptureEntry {
   pii_allow?: string[]
   expected_hash?: string | Record<string, string>
   enabled?: boolean
+  alias_of?: string | null
 }
 
 export interface BackendCaptureManifest {

@@ -132,7 +132,27 @@
 
         <div v-else-if="block.tipo === 'media'" class="space-y-2">
           <UInput v-model="draft[block.id].payload.snapshot.caption" placeholder="Caption" class="w-full" />
-          <label class="mb-1 block text-xs font-medium">Imagen</label>
+          <div>
+            <label class="mb-1 block text-xs font-medium">Imagen compartida</label>
+            <p v-if="currentCaptureKey" class="mb-1 text-xs text-gray-500">
+              Clave: <span class="font-mono">{{ currentCaptureKey }}</span>
+              <span v-if="currentCaptureUsage > 1"> · {{ currentCaptureUsage }} hojas</span>
+            </p>
+            <USelectMenu
+              :model-value="selectedCatalogMediaId"
+              :items="catalogSelectItems"
+              value-key="value"
+              placeholder="Elegir una imagen del catálogo…"
+              searchable
+              searchable-placeholder="Buscar por clave…"
+              class="w-full"
+              @update:model-value="onCatalogSelect"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              Al elegirla se coloca en todas las hojas con la misma clave.
+            </p>
+          </div>
+          <label class="mb-1 block text-xs font-medium">Subir o reemplazar</label>
           <FileUploader
             :key="`media-${block.id}-${draft[block.id].payload.snapshot.media_id || 0}`"
             :multiple="false"
@@ -340,12 +360,15 @@
               :deleting-block-id="deletingBlockId"
               :importing-block-id="importingBlockId"
               :role-slug="roleSlug"
+              :catalog="catalog"
               @save="(id) => emit('save', id)"
               @remove="(id) => emit('remove', id)"
               @reorder="(ids) => emit('reorder', ids)"
               @add-child="(pid, p) => emit('add-child', pid, p)"
               @import-widget="(pid, pk, wk) => emit('import-widget', pid, pk, wk)"
               @upload="(id, f) => emit('upload', id, f)"
+              @assign-captura="(id, payload) => emit('assign-captura', id, payload)"
+              @add-template-section="(pid, key) => emit('add-template-section', pid, key)"
             />
           </template>
         </draggable>
@@ -367,7 +390,7 @@ import draggable from 'vuedraggable'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import ManualBlockRenderer from '~/components/manual/ManualBlockRenderer.vue'
 import type { FileItem } from '~/types/commons/file'
-import type { ManualAdminMeta, ManualBlock } from '~/types/manualUsuario'
+import type { ManualAdminMeta, ManualBlock, ManualCapturaCatalogItem } from '~/types/manualUsuario'
 import type { ManualPlantillaSeccionKey } from '~/composables/manual-usuario/useManualPlantilla'
 import { MANUAL_PLANTILLA_SECCIONES } from '~/composables/manual-usuario/useManualPlantilla'
 
@@ -380,6 +403,7 @@ const props = defineProps<{
   deletingBlockId: number | null
   importingBlockId?: number | null
   roleSlug: string
+  catalog?: ManualCapturaCatalogItem[]
 }>()
 
 const emit = defineEmits<{
@@ -390,6 +414,7 @@ const emit = defineEmits<{
   'import-widget': [parentId: number, pageKey: string, widgetKey: string]
   upload: [blockId: number, file: File]
   'add-template-section': [parentId: number, key: ManualPlantillaSeccionKey]
+  'assign-captura': [blockId: number, payload: { media_id?: number | null; capture_key?: string | null }]
 }>()
 
 const toast = useToast()
@@ -624,6 +649,38 @@ const onMediaFileRemoved = () => {
 
 const onMediaUploadError = (message: string) => {
   toast.add({ title: 'Archivo no válido', description: message, color: 'error' })
+}
+
+const currentCaptureKey = computed(() => {
+  const snap = props.draft[props.block.id]?.payload?.snapshot
+  return String(snap?.capture_alias_of || snap?.capture_key || '').trim()
+})
+
+const currentCaptureUsage = computed(() => {
+  const key = currentCaptureKey.value
+  if (!key) return 0
+  const item = (props.catalog || []).find((entry) => entry.capture_key === key)
+  return item?.usage || 0
+})
+
+const catalogSelectItems = computed(() =>
+  (props.catalog || [])
+    .filter((item) => item.media_id)
+    .map((item) => ({
+      label: item.label,
+      value: Number(item.media_id),
+    }))
+)
+
+const selectedCatalogMediaId = computed(() => {
+  const id = Number(props.draft[props.block.id]?.payload?.snapshot?.media_id || 0)
+  return id > 0 ? id : undefined
+})
+
+const onCatalogSelect = (selected: number | { value?: number } | undefined) => {
+  const mediaId = typeof selected === 'number' ? selected : Number(selected?.value || 0)
+  if (!mediaId) return
+  emit('assign-captura', props.block.id, { media_id: mediaId })
 }
 </script>
 

@@ -8,6 +8,7 @@ import type {
   ManualPage,
   ManualBlock,
   ManualMediaItem,
+  ManualCapturaCatalogItem,
 } from '~/types/manualUsuario'
 
 export class ManualUsuarioService extends BaseService {
@@ -235,5 +236,24 @@ export class ManualUsuarioService extends BaseService {
 
   static async adminDeleteMedia(id: number): Promise<void> {
     await this.apiCall(`${this.adminUrl}/media/${id}`, { method: 'DELETE' })
+  }
+
+  static async adminListCapturas(): Promise<ManualCapturaCatalogItem[]> {
+    const res = await this.apiCall<ManualUsuarioApiResponse<ManualCapturaCatalogItem[]>>(
+      `${this.adminUrl}/capturas`,
+      { method: 'GET' }
+    )
+    return res.data
+  }
+
+  static async adminAssignCaptura(
+    blockId: number,
+    payload: { media_id?: number | null; capture_key?: string | null }
+  ): Promise<{ block: ManualBlock; updated: number }> {
+    const res = await this.apiCall<ManualUsuarioApiResponse<{ block: ManualBlock; updated: number }>>(
+      `${this.adminUrl}/bloques/${blockId}/asignar-captura`,
+      { method: 'POST', body: payload }
+    )
+    return res.data
   }
 }

@@ -42,6 +42,39 @@ test.describe('runner de capturas', () => {
     expect(shot.output).toBe('comercial__pedidos__editar.png')
   })
 
+  test('no captura de nuevo una capture_key ya vista u alias', () => {
+    const manifest = normalizeManifest({
+      schema_version: 1,
+      screens: { news: '/news' },
+      captures: [
+        {
+          capture_key: 'news__leer-avisos__paso-01-tarjetas-y-detalle',
+          roles: ['comercial'],
+          screen: 'news',
+          output: 'news__leer-avisos__paso-01-tarjetas-y-detalle.png',
+        },
+        {
+          capture_key: 'news__leer-avisos__paso-01-tarjetas-y-detalle',
+          roles: ['administracion'],
+          screen: 'news',
+          output: 'news__leer-avisos__paso-01-tarjetas-y-detalle.png',
+        },
+        {
+          capture_key: 'almacen-news-paso-01',
+          alias_of: 'news__leer-avisos__paso-01-tarjetas-y-detalle',
+          roles: ['almacen-china'],
+          screen: 'news',
+          output: 'news__leer-avisos__paso-01-tarjetas-y-detalle.png',
+        },
+      ],
+    })
+    const enabled = manifest.roles.flatMap(role => role.screens.flatMap(screen =>
+      screen.shots.filter(shot => shot.enabled !== false)
+    ))
+    expect(enabled).toHaveLength(1)
+    expect(enabled[0].id).toBe('news__leer-avisos__paso-01-tarjetas-y-detalle')
+  })
+
   test('prioriza URL de captura e infiere intenciones conservadoras', () => {
     const manifest = normalizeManifest({
       schema_version: 1,
