@@ -1,11 +1,11 @@
 <template>
-  <div ref="componentRootRef" class="">
+  <div ref="componentRootRef" class="" data-manual-capture="data-table">
 
     <!-- Sticky Top Section -->
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
   <slot name="filters" />
   <template v-if="!$slots.filters">
-    <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 ">
+    <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 " data-manual-capture="data-table-toolbar">
       <div class="w-full lg:w-full flex flex-col md:flex-row items-start md:items-center md:justify-between gap-1 md:gap-3 items-center">
         <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
           <template v-if="$slots['back-extra']" #back-extra>
@@ -350,6 +350,7 @@
       ></div>
       
       <div 
+        data-manual-capture="data-table-grid"
         ref="tableContainerRef"
         class="table-scroll-container"
         :style="tableScrollStyle"

@@ -1,8 +1,71 @@
 <template>
   <div class="space-y-3">
+    <!-- Grupo artículo (plantilla propuesta) -->
+    <UCard
+      v-if="tipo === 'grupo' && isArticulo"
+      :id="`cap-b-${block.id}`"
+      class="scroll-mt-4"
+    >
+      <template #header>
+        <nav v-if="articleCrumbs.length" class="mu-breadcrumb text-muted" aria-label="Ruta">
+          <template v-for="(crumb, i) in articleCrumbs" :key="`${crumb.label}-${i}`">
+            <span v-if="i > 0" class="sep text-muted" aria-hidden="true">→</span>
+            <a
+              v-if="crumb.anchorKey && !crumb.current"
+              :href="crumbAnchorHref(crumb.anchorKey)"
+              class="mu-crumb-link font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+              @click="onManualCrumbClick(crumb, $event)"
+            >
+              {{ crumb.label }}
+            </a>
+            <NuxtLink
+              v-else-if="crumb.to && !crumb.current"
+              :to="crumb.to"
+              class="mu-crumb-link font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+            >
+              {{ crumb.label }}
+            </NuxtLink>
+            <span
+              v-else
+              class="font-semibold text-highlighted"
+              :aria-current="crumb.current ? 'page' : undefined"
+            >{{ crumb.label }}</span>
+          </template>
+        </nav>
+        <h3 class="mu-article-title text-highlighted">{{ block.titulo }}</h3>
+        <div v-if="articleTags.length" class="mu-tags">
+          <UBadge v-for="tag in articleTags" :key="tag" color="neutral" variant="subtle" size="sm">{{ tag }}</UBadge>
+        </div>
+      </template>
+      <ManualBlockRenderer
+        v-for="child in sortedChildren"
+        :key="child.id"
+        :block="child"
+      />
+    </UCard>
+
+    <!-- Grupo colapsable (acordeón) -->
+    <UCard
+      v-else-if="tipo === 'grupo' && isColapsable"
+      :id="`cap-b-${block.id}`"
+      class="scroll-mt-4"
+      :ui="{ body: 'p-0 sm:p-0' }"
+    >
+      <details class="mu-acc">
+        <summary class="text-highlighted">{{ block.titulo || 'Sección' }}</summary>
+        <div class="mu-acc-body text-sm leading-relaxed text-default">
+          <ManualBlockRenderer
+            v-for="child in sortedChildren"
+            :key="child.id"
+            :block="child"
+          />
+        </div>
+      </details>
+    </UCard>
+
     <!-- Grupo: título + clave; hijos recursivos (vertical) -->
     <div
-      v-if="tipo === 'grupo'"
+      v-else-if="tipo === 'grupo'"
       :id="`cap-b-${block.id}`"
       class="scroll-mt-4 space-y-4"
     >
@@ -12,11 +75,11 @@
           :href="grupoTitleLink.href"
           :target="grupoTitleLink.external ? '_blank' : undefined"
           :rel="grupoTitleLink.external ? 'noopener noreferrer' : undefined"
-          class="text-base font-semibold text-primary-600 hover:underline dark:text-primary-300"
+          class="mu-grupo-title text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
         >
           {{ block.titulo }}
         </a>
-        <div v-else-if="block.titulo" class="text-base font-semibold text-gray-900 dark:text-white">
+        <div v-else-if="block.titulo" class="mu-grupo-title text-gray-900 dark:text-white">
           {{ block.titulo }}
         </div>
         <p v-if="block.clave && !grupoTitleLink" class="mt-0.5 font-mono text-xs text-gray-500 dark:text-gray-400">
@@ -26,7 +89,7 @@
           {{ payload.subtitulo }}
         </p>
       </div>
-      <div v-if="(block.children || []).length" class="space-y-4 border-l border-gray-200 pl-3 dark:border-gray-700 sm:pl-4">
+      <div v-if="(block.children || []).length" class="space-y-4">
         <ManualBlockRenderer
           v-for="child in sortedChildren"
           :key="child.id"
@@ -69,9 +132,9 @@
                 {{ child.titulo || child.tipo }}
               </span>
             </div>
-            <div class="flex-1 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900/40">
+            <UCard class="flex-1" :ui="{ body: 'p-2 sm:p-2' }">
               <ManualBlockRenderer :block="{ ...child, titulo: '' }" />
-            </div>
+            </UCard>
           </div>
           <div
             v-if="Number(ci) < sortedChildren.length - 1"
@@ -85,9 +148,9 @@
       <p v-else class="text-xs text-gray-400">Agrega widgets como pasos del flujo.</p>
     </div>
 
-    <template v-else>
+    <div v-else :id="`cap-b-${block.id}`" class="scroll-mt-4 space-y-2">
       <a
-        v-if="block.titulo && widgetTitleLink"
+        v-if="block.titulo && widgetTitleLink && !hideWidgetTitle"
         :href="widgetTitleLink.href"
         :target="widgetTitleLink.external ? '_blank' : undefined"
         :rel="widgetTitleLink.external ? 'noopener noreferrer' : undefined"
@@ -95,7 +158,7 @@
       >
         {{ block.titulo }}
       </a>
-      <div v-else-if="block.titulo" class="text-sm font-semibold text-gray-900 dark:text-white">
+      <div v-else-if="block.titulo && !hideWidgetTitle" class="text-sm font-semibold text-gray-900 dark:text-white">
         {{ block.titulo }}
       </div>
       <p
@@ -107,15 +170,34 @@
         {{ payload.subtitulo }}
       </p>
 
+      <!-- texto QA (plantilla ¿Qué es? / ¿Para qué sirve?) -->
+      <div v-if="tipo === 'texto' && isQa" class="mu-qa">
+        <div v-if="block.titulo" class="mu-q text-gray-500 dark:text-gray-400">{{ block.titulo }}</div>
+        <div
+          class="mu-a text-sm leading-relaxed text-gray-900 dark:text-gray-100"
+          :class="{ 'mu-placeholder': isPlaceholderText(snap.body) }"
+        >{{ snap.body }}</div>
+      </div>
+
       <!-- texto -->
-      <div v-if="tipo === 'texto'" class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
+      <div
+        v-else-if="tipo === 'texto'"
+        class="mu-a text-sm leading-relaxed whitespace-pre-wrap text-gray-900 dark:text-gray-100"
+        :class="{ 'mu-placeholder': isPlaceholderText(snap.body) }"
+      >
+        {{ snap.body }}
+      </div>
+
+      <!-- resultado esperado -->
+      <div v-else-if="tipo === 'callout' && isResultCallout" class="mu-result">
+        <b>{{ snap.title || 'Resultado esperado:' }}</b>
         {{ snap.body }}
       </div>
 
       <!-- callout -->
       <div
         v-else-if="tipo === 'callout'"
-        class="rounded-xl border px-3 py-3 text-sm"
+        class="mu-callout"
         :class="calloutClass"
       >
         <p v-if="snap.title" class="mb-1 font-semibold">{{ snap.title }}</p>
@@ -184,7 +266,7 @@
       </UCard>
 
       <!-- filtros -->
-      <div v-else-if="tipo === 'filtros'" class="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-900/40">
+      <UCard v-else-if="tipo === 'filtros'" :ui="{ body: 'p-3 sm:p-3' }">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div v-for="(field, i) in (snap.fields || [])" :key="i">
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">{{ field.label }}</label>
@@ -197,7 +279,7 @@
             <UInput v-else v-model="filterLocalValues[field.key || field.label || i]" class="w-full" />
           </div>
         </div>
-      </div>
+      </UCard>
 
       <!-- tabs = UTabs real (mismo estilo pill) -->
       <div v-else-if="tipo === 'tabs'" class="space-y-2">
@@ -210,6 +292,26 @@
         />
         <p v-if="activeTabContent" class="text-sm text-gray-700 dark:text-gray-300">{{ activeTabContent }}</p>
       </div>
+
+      <!-- tabla documental (campos / errores) -->
+      <UCard v-else-if="tipo === 'tabla' && isDocTable" :ui="{ body: 'overflow-x-auto p-0 sm:p-0' }">
+        <table class="mu-doc-table">
+          <thead>
+            <tr>
+              <th v-for="(col, ci) in docTableHeaders" :key="ci">{{ col }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, ri) in docTableRows" :key="ri">
+              <td
+                v-for="(cell, ci) in row"
+                :key="ci"
+                :class="{ 'mu-placeholder': isPlaceholderText(cell) }"
+              >{{ cell }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </UCard>
 
       <!-- tabla = DataTable real (mismos estilos) -->
       <div v-else-if="tipo === 'tabla'" class="manual-datatable-embed">
@@ -233,14 +335,16 @@
       </div>
 
       <!-- modal -->
-      <div v-else-if="tipo === 'modal'" class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-900/40">
-        <div class="mb-3 flex items-center justify-between border-b border-gray-100 pb-2 dark:border-gray-700">
-          <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ snap.title || block.titulo || 'Modal' }}</p>
-          <span class="text-gray-400">×</span>
-        </div>
+      <UCard v-else-if="tipo === 'modal'">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-highlighted">{{ snap.title || block.titulo || 'Modal' }}</p>
+            <span class="text-muted">×</span>
+          </div>
+        </template>
         <div class="grid gap-3 sm:grid-cols-2">
           <div v-for="(field, i) in (snap.fields || [])" :key="i">
-            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">{{ field.label }}</label>
+            <label class="mb-1 block text-xs font-medium text-muted">{{ field.label }}</label>
             <USelect
               v-if="field.type === 'select' || (field.options || []).length"
               :model-value="field.value"
@@ -250,19 +354,21 @@
             <UInput v-else :model-value="field.value" class="w-full" disabled />
           </div>
         </div>
-        <div class="mt-4 flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
-          <UButton
-            v-for="(action, ai) in (snap.actions || ['Cancelar', 'Guardar'])"
-            :key="ai"
-            size="sm"
-            :color="ai === (snap.actions || []).length - 1 ? 'primary' : 'neutral'"
-            :variant="ai === (snap.actions || []).length - 1 ? 'solid' : 'ghost'"
-            class="pointer-events-none"
-          >
-            {{ action }}
-          </UButton>
-        </div>
-      </div>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton
+              v-for="(action, ai) in (snap.actions || ['Cancelar', 'Guardar'])"
+              :key="ai"
+              size="sm"
+              :color="ai === (snap.actions || []).length - 1 ? 'primary' : 'neutral'"
+              :variant="ai === (snap.actions || []).length - 1 ? 'solid' : 'ghost'"
+              class="pointer-events-none"
+            >
+              {{ action }}
+            </UButton>
+          </div>
+        </template>
+      </UCard>
 
       <!-- media -->
       <div v-else-if="tipo === 'media'" class="space-y-2">
@@ -270,45 +376,51 @@
           <img
             v-if="resolvedMediaSrc"
             :src="resolvedMediaSrc"
-            :alt="snap.alt || 'Captura'"
-            class="max-h-64 w-auto max-w-full rounded-lg border border-gray-200 object-contain dark:border-gray-600 sm:max-h-72"
+            :alt="snap.nombre || snap.alt || 'Captura'"
+            class="max-h-64 w-auto max-w-full rounded-lg border border-default object-contain sm:max-h-72"
           >
-          <div
+          <UCard
             v-else
-            class="flex max-h-40 w-full max-w-md items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 dark:border-gray-600"
+            variant="subtle"
+            class="w-full max-w-lg"
+            :ui="{ body: 'flex flex-col items-center justify-center gap-2 px-6 py-8 sm:px-6 sm:py-8' }"
           >
-            <img src="/assets/img/manual/captura-pendiente.svg" alt="Captura pendiente" class="max-h-32 w-auto object-contain opacity-70">
-          </div>
+            <img src="/assets/img/manual/captura-pendiente.svg" alt="Plantilla de captura" class="max-h-36 w-auto object-contain">
+            <p v-if="snap.caption" class="text-center text-sm font-medium leading-snug text-highlighted">
+              {{ snap.caption }}
+            </p>
+            <p class="text-center text-xs text-muted">
+              En el mantenedor, sustituye esta plantilla por la captura real.
+            </p>
+          </UCard>
         </div>
-        <p v-if="snap.caption" class="text-center text-xs text-gray-500">{{ snap.caption }}</p>
+        <p v-if="snap.caption && resolvedMediaSrc" class="text-center text-xs text-muted">{{ snap.caption }}</p>
       </div>
 
       <!-- embed -->
-      <div v-else-if="tipo === 'embed'" class="space-y-2">
-        <div :class="['overflow-hidden rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-900/40', embedScopeClass]">
+      <UCard v-else-if="tipo === 'embed'" class="space-y-2">
+        <div :class="['overflow-hidden p-3', embedScopeClass]">
           <div v-html="snap.html || ''" />
         </div>
-      </div>
+      </UCard>
 
-      <!-- flow -->
-      <div v-else-if="tipo === 'flow'" class="relative pl-2">
-        <p v-if="snap.hint" class="mb-3 text-xs text-gray-500">{{ snap.hint }}</p>
-        <div class="absolute bottom-2 left-[19px] top-2 w-px bg-gray-200 dark:bg-gray-600" />
-        <ol class="space-y-4">
-          <li v-for="(step, si) in (snap.steps || [])" :key="si" class="relative pl-10">
-            <span class="absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary-200 bg-white text-xs font-bold text-primary-700 dark:border-primary-700 dark:bg-gray-800 dark:text-primary-200">
-              {{ stepNumber(si) }}
-            </span>
-            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ step.title }}</p>
-            <p class="mt-1 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{{ step.body }}</p>
+      <!-- flow = pasos numerados (plantilla) -->
+      <UCard v-else-if="tipo === 'flow'" variant="subtle">
+        <h4 v-if="block.titulo" class="mu-steps-title text-primary-600 dark:text-primary-400">{{ block.titulo }}</h4>
+        <p v-if="snap.hint" class="mb-3 text-sm leading-relaxed text-default">{{ snap.hint }}</p>
+        <ol class="mu-steps-list text-sm text-default">
+          <li v-for="(step, si) in (snap.steps || [])" :key="si">
+            <b v-if="step.title" class="block">{{ step.title }}</b>
+            <span v-if="step.body" :class="step.title ? 'mt-0.5 block leading-relaxed' : ''">{{ step.body }}</span>
+            <div v-if="flowMediaAt(Number(si))" class="mt-3">
+              <ManualBlockRenderer :block="{ ...flowMediaAt(Number(si)), titulo: '' }" />
+            </div>
           </li>
         </ol>
-      </div>
+      </UCard>
 
-      <div v-else class="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
-        Bloque no soportado: {{ tipo }}
-      </div>
-    </template>
+      <UAlert v-else color="warning" variant="soft" :title="`Bloque no soportado: ${tipo}`" />
+    </div>
   </div>
 </template>
 
@@ -316,13 +428,19 @@
 import { h, resolveComponent } from 'vue'
 import type { ManualBlock } from '~/types/manualUsuario'
 import type { FilterConfig } from '~/types/data-table'
-import { ManualUsuarioService } from '~/services/manualUsuarioService'
 import DataTable from '~/components/DataTable.vue'
+import {
+  MANUAL_NAV_KEY,
+  type ManualNavCrumb,
+} from '~/composables/manual-usuario/useManualNav'
 
 const props = defineProps<{ block: ManualBlock }>()
 const emit = defineEmits<{
   'update:active': [value: string]
 }>()
+
+const { fetchAsset } = useManualUsuario()
+const manualNav = inject(MANUAL_NAV_KEY, computed(() => null))
 
 const payload = computed(() => props.block.payload || {})
 const snap = computed(() => (payload.value.snapshot || {}) as Record<string, any>)
@@ -349,12 +467,119 @@ function parseManualRoute(raw: unknown): { href: string; external: boolean } | n
   return { href: path, external: false }
 }
 
-const grupoTitleLink = computed(() => parseManualRoute(props.block.clave))
+const grupoTitleLink = computed(() => {
+  if (isArticulo.value) return null
+  return parseManualRoute(props.block.clave)
+})
 const widgetTitleLink = computed(() => parseManualRoute(payload.value.subtitulo))
+
+const isArticulo = computed(() => tipo.value === 'grupo' && String(snap.value.variant || '') === 'articulo')
+const isColapsable = computed(() => tipo.value === 'grupo' && Boolean(snap.value.colapsable))
+const isQa = computed(() => tipo.value === 'texto' && Boolean(snap.value.qa))
+const isResultCallout = computed(() => {
+  if (tipo.value !== 'callout') return false
+  const tone = String(snap.value.tone || '')
+  return tone === 'success' || tone === 'result'
+})
+const isDocTable = computed(() => {
+  if (tipo.value !== 'tabla') return false
+  const variant = String(snap.value.variant || '')
+  return variant === 'doc' || Boolean(snap.value.simple)
+})
+const hideWidgetTitle = computed(() => isQa.value || isResultCallout.value || tipo.value === 'flow')
+
+const articleTags = computed(() => {
+  const tags = snap.value.tags
+  return Array.isArray(tags) ? tags.map((t: unknown) => String(t)).filter(Boolean) : []
+})
+const articleCrumbs = computed((): Array<ManualNavCrumb & { to?: string }> => {
+  const breadcrumb = String(snap.value.breadcrumb || '').trim()
+
+  if (manualNav.value) {
+    return manualNav.value.resolveCrumbs(breadcrumb, props.block.id)
+  }
+
+  if (!breadcrumb) return []
+
+  const labels = breadcrumb
+    .split(/\s*→\s*/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  const clave = parseManualRoute(props.block.clave)
+  const screenPath = clave && !clave.external ? clave.href : null
+  const modulePath = screenPath ? String(screenPath).split('?')[0] : null
+
+  return labels.map((label, i) => {
+    const last = i === labels.length - 1
+    const secondLast = i === labels.length - 2
+    let to: string | undefined
+    if (i === 0 && /^inicio$/i.test(label)) {
+      to = '/'
+    } else if (last && screenPath) {
+      to = screenPath
+    } else if (secondLast && modulePath && modulePath !== '/') {
+      to = modulePath
+    } else if (i === 1) {
+      to = '/manual-usuario'
+    }
+    return { label, to, current: last }
+  })
+})
+
+function crumbAnchorHref(anchorKey: string) {
+  return anchorKey === '__top__' ? '#' : `#cap-${anchorKey}`
+}
+
+function onManualCrumbClick(crumb: ManualNavCrumb, event: MouseEvent) {
+  if (!manualNav.value || !crumb.anchorKey) return
+  event.preventDefault()
+  if (crumb.anchorKey === '__top__') {
+    manualNav.value.scrollToTop()
+    return
+  }
+  manualNav.value.scrollTo(crumb.anchorKey)
+}
+
+function isPlaceholderText(value: unknown): boolean {
+  return /pendiente de definir/i.test(String(value || ''))
+}
+
+const docTableHeaders = computed(() => {
+  const cols = snap.value.columns || []
+  return cols.map((c: any, i: number) => {
+    if (typeof c === 'string') return c
+    return String(c?.header ?? c?.label ?? c?.accessorKey ?? `Col ${i + 1}`)
+  })
+})
+const docTableRows = computed(() => {
+  const rows = snap.value.rows || []
+  const headers = docTableHeaders.value
+  return rows.map((row: any) => {
+    if (Array.isArray(row)) return row.map((c) => String(c ?? ''))
+    if (row && typeof row === 'object') {
+      const cols = snap.value.columns || []
+      return headers.map((_h: string, i: number) => {
+        const col = cols[i]
+        const key = typeof col === 'string' ? `c${i}` : String(col?.accessorKey ?? col?.key ?? `c${i}`)
+        return String(row[key] ?? row[_h] ?? '')
+      })
+    }
+    return [String(row ?? '')]
+  })
+})
 
 const sortedChildren = computed(() =>
   [...(props.block.children || [])].sort((a, b) => a.orden - b.orden || a.id - b.id)
 )
+
+const flowMediaChildren = computed(() =>
+  sortedChildren.value.filter((child) => String(child.tipo || '') === 'media')
+)
+
+function flowMediaAt(index: number) {
+  return flowMediaChildren.value[Number(index)] || null
+}
 
 const activeTab = ref<string>(snap.value.active || snap.value.tabs?.[0]?.key || '')
 const filterLocalValues = reactive<Record<string, any>>({})
@@ -405,15 +630,12 @@ function onActiveTabChange(value: string | number) {
   emit('update:active', next)
 }
 
-function stepNumber(si: string | number): number {
-  return Number(si) + 1
-}
-
 const calloutClass = computed(() => {
   const tone = snap.value.tone || 'info'
-  if (tone === 'warning') return 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100'
-  if (tone === 'danger') return 'border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-900/20 dark:text-red-100'
-  return 'border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-100'
+  if (tone === 'warning') return 'is-warning'
+  if (tone === 'danger') return 'is-danger'
+  if (tone === 'note') return 'is-note'
+  return 'is-info'
 })
 
 const columnLabels = computed(() => {
@@ -535,7 +757,7 @@ function renderManualCell(col: any, row: Record<string, any>) {
         h(
           'div',
           {
-            class: 'flex min-w-[4.5rem] items-center justify-center rounded-md border border-dashed border-gray-300 bg-white px-2 py-1.5 text-gray-500 dark:border-gray-600 dark:bg-gray-900/40',
+            class: 'flex min-w-[4.5rem] items-center justify-center rounded-md border border-dashed border-default px-2 py-1.5 text-muted',
             title: String(col.modal_hint || 'Registrar Pago'),
           },
           [h(resolveComponent('UIcon') as any, { name: 'i-heroicons-plus', class: 'h-4 w-4' })]
@@ -635,7 +857,7 @@ const loadMedia = async () => {
     return
   }
   try {
-    const blob = await ManualUsuarioService.fetchAsset(url)
+    const blob = await fetchAsset(url)
     mediaObjectUrl = URL.createObjectURL(blob)
     resolvedMediaSrc.value = mediaObjectUrl
   } catch {

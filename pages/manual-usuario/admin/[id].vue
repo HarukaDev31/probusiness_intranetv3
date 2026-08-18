@@ -66,9 +66,33 @@
           <h2 class="text-base font-semibold text-gray-900 dark:text-white">Bloques</h2>
           <p class="text-xs text-gray-500">
             Cada bloque es un grupo (título + clave/ruta). Arrastra ☰ para reordenar · clic en el título o ⌄ para colapsar.
+            <span v-if="!articuloRootId" class="block mt-1 text-amber-700 dark:text-amber-400">
+              Genera la plantilla completa para habilitar «Agregar subsección».
+            </span>
           </p>
         </div>
         <div class="flex flex-wrap items-end gap-2">
+          <UButton
+            size="sm"
+            variant="soft"
+            color="primary"
+            icon="i-heroicons-document-text"
+            :loading="applyingPlantilla"
+            @click="openPlantillaModal"
+          >
+            Generar plantilla completa
+          </UButton>
+          <USelectMenu
+            v-model="selectedPlantillaSeccion"
+            :items="plantillaSeccionItems"
+            value-key="value"
+            placeholder="Agregar subsección…"
+            searchable
+            searchable-placeholder="Buscar sección…"
+            class="w-56"
+            :disabled="!articuloRootId || applyingPlantilla"
+            @update:model-value="onAddPlantillaSeccion"
+          />
           <UButton size="sm" variant="outline" color="neutral" icon="i-heroicons-chevron-up-down" @click="collapseAllBlocks">
             Colapsar todo
           </UButton>
@@ -110,12 +134,16 @@
             :deleting-block-id="deletingBlockId"
             :importing-block-id="importingBlockId"
             :role-slug="pageRoleSlug"
+            :catalog="catalog"
             @save="saveBlock"
             @remove="removeBlock"
             @reorder="reorderByIds"
             @add-child="addChild"
             @import-widget="importWidgetUnder"
             @upload="onUpload"
+            @assign-captura="onAssignCaptura"
+            @update-captura="onUpdateCaptura"
+            @add-template-section="onAddTemplateSectionFromNode"
           />
         </template>
       </draggable>
@@ -159,6 +187,46 @@
         </UCard>
       </template>
     </UModal>
+
+    <UModal v-model:open="plantillaOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h2 class="text-base font-semibold">Generar plantilla completa</h2>
+          </template>
+          <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+            Crea un artículo con todas las subsecciones estándar (preguntas, pasos, acordeones, resultado). Puedes editar el texto después.
+          </p>
+          <div class="space-y-3">
+            <div>
+              <label class="mb-1 block text-xs font-medium">Título del artículo</label>
+              <UInput v-model="plantillaForm.articuloTitulo" class="w-full" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium">Clave / ruta (enlace)</label>
+              <UInput v-model="plantillaForm.articuloClave" placeholder="/curso?tab=alumnos" class="w-full font-mono text-sm" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium">Etiquetas (separadas por coma)</label>
+              <UInput v-model="plantillaTagsText" placeholder="Rol: Comercial, Módulo: Pedidos de Curso" class="w-full" />
+            </div>
+          </div>
+          <template #footer>
+            <div class="flex justify-end gap-2">
+              <UButton variant="ghost" color="neutral" @click="plantillaOpen = false">Cancelar</UButton>
+              <UButton
+                color="primary"
+                icon="i-heroicons-document-text"
+                :loading="applyingPlantilla"
+                @click="submitPlantillaCompleta"
+              >
+                Generar hoja
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -166,8 +234,17 @@
 import draggable from 'vuedraggable'
 import { ManualUsuarioService } from '~/services/manualUsuarioService'
 import ManualAdminBlockNode from '~/components/manual/ManualAdminBlockNode.vue'
-import type { ManualAdminMeta, ManualBlock, ManualPage } from '~/types/manualUsuario' 
+import type { ManualAdminMeta, ManualBlock, ManualPage } from '~/types/manualUsuario'
+import {
+  MANUAL_PLANTILLA_SECCIONES,
+  defaultPlantillaConfig,
+  type ManualPlantillaSeccionKey,
+} from '~/composables/manual-usuario/useManualPlantilla'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
+import { useManualPlantilla } from '~/composables/manual-usuario/useManualPlantilla'
+import { useManualCapturas } from '~/composables/manual-usuario/useManualCapturas'
+import { nombreCapturaDesdeSnapshot } from '~/utils/manualCapturaNombre'
 
 definePageMeta({ name: 'manual-usuario-admin-edit', layout: 'default' })
 useHead({ title: 'Editar página manual' })
@@ -220,6 +297,46 @@ const expandAllBlocks = () => {
 }
 
 const { withSpinner } = useSpinner()
+const { showSuccess, showError } = useModal()
+const { catalog, loadCatalog, assignCaptura, updateCaptura } = useManualCapturas()
+const {
+  applying: applyingPlantilla,
+  applyPlantillaCompleta,
+  applySeccion,
+} = useManualPlantilla()
+
+const plantillaOpen = ref(false)
+const selectedPlantillaSeccion = ref<ManualPlantillaSeccionKey | undefined>(undefined)
+const plantillaForm = reactive({
+  articuloTitulo: '',
+  articuloClave: '',
+  tags: [] as string[],
+})
+const plantillaTagsText = computed({
+  get: () => plantillaForm.tags.join(', '),
+  set: (v: string) => {
+    plantillaForm.tags = String(v || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  },
+})
+
+const plantillaSeccionItems = computed(() =>
+  MANUAL_PLANTILLA_SECCIONES.map((s) => ({
+    label: s.label,
+    value: s.key,
+    description: s.description,
+  }))
+)
+
+const isArticuloBlock = (block: ManualBlock) =>
+  block.tipo === 'grupo' && String(block.payload?.snapshot?.variant || '') === 'articulo'
+
+const articuloRootId = computed(() => {
+  const root = (page.value?.blocks || []).find(isArticuloBlock)
+  return root?.id ?? null
+})
 
 const pageForm = reactive({
   titulo: '',
@@ -264,6 +381,16 @@ const hydrateDraft = (block: ManualBlock) => {
       payload.snapshot.active = tabs[0].key
     }
   }
+  if (block.tipo === 'media') {
+    if (payload.snapshot.nombre == null) payload.snapshot.nombre = ''
+    if (!String(payload.snapshot.nombre).trim()) {
+      payload.snapshot.nombre = nombreCapturaDesdeSnapshot(
+        { ...payload.snapshot, nombre: '' },
+        block.titulo,
+        page.value?.titulo,
+      )
+    }
+  }
   draft[block.id] = {
     titulo: block.titulo || '',
     clave: block.clave || '',
@@ -301,6 +428,11 @@ const load = async () => {
   error.value = null
   try {
     meta.value = await ManualUsuarioService.adminMeta()
+    try {
+      await loadCatalog()
+    } catch {
+      catalog.value = []
+    }
     page.value = await ManualUsuarioService.adminGetPage(pageId.value)
     pageForm.titulo = page.value.titulo
     pageForm.modulo_key = page.value.modulo_key
@@ -395,11 +527,26 @@ const saveBlock = async (id: number) => {
     if (block.tipo === 'grupo') {
       body.clave = draft[id].clave
     }
-    await ManualUsuarioService.adminUpdateBlock(id, body)
-    await reloadPage()
-    toast.add({ title: 'Guardado', color: 'success' })
+    await withSpinner(async () => {
+      await ManualUsuarioService.adminUpdateBlock(id, body)
+      if (block.tipo === 'media') {
+        const snap = draft[id]?.payload?.snapshot || {}
+const nombre = String(snap.nombre || '').trim()
+        if (nombre) {
+          await updateCaptura({
+            block_id: id,
+            media_id: snap.media_id || undefined,
+            capture_key: snap.capture_alias_of || snap.capture_key || undefined,
+            nombre,
+            role_slug: pageRoleSlug.value || undefined,
+          })
+        }
+      }
+      await reloadPage()
+    }, 'Guardando…')
+    showSuccess('Guardado', block.tipo === 'media' ? 'El nombre se aplicó a las hojas que comparten esta imagen.' : 'Bloque actualizado.')
   } catch (e: any) {
-    toast.add({ title: 'Error', description: e?.message, color: 'error' })
+    showError('No se pudo guardar', e?.message || 'Inténtalo de nuevo.')
   } finally {
     savingBlockId.value = null
   }
@@ -439,26 +586,54 @@ const onRootReorder = async () => {
 }
 
 const onUpload = async (blockId: number, file: File) => {
+  await onUpdateCaptura(blockId, { file })
+}
+
+const onUpdateCaptura = async (blockId: number, payload: { nombre?: string | null; file?: File | null }) => {
+  const snap = draft[blockId]?.payload?.snapshot || {}
   try {
-    const media = await ManualUsuarioService.adminUploadMedia(file, {
-      role_slug: pageRoleSlug.value || undefined,
-    })
-    if (!draft[blockId]) return
-    if (!draft[blockId].payload) draft[blockId].payload = {}
-    if (!draft[blockId].payload.snapshot) draft[blockId].payload.snapshot = {}
-    draft[blockId].payload.snapshot.media_id = media.id
-    draft[blockId].payload.snapshot.url = media.url
-    draft[blockId].payload.snapshot.alt = media.alt || draft[blockId].payload.snapshot.alt || ''
-    const block = findBlock(blockId)
-    if (!block) return
-    await ManualUsuarioService.adminUpdateBlock(blockId, {
-      titulo: draft[blockId].titulo,
-      payload: buildPayload(block),
-    })
-    await reloadPage()
-    toast.add({ title: 'Imagen subida y guardada', color: 'success' })
+    const result = await withSpinner(async () => {
+      const updated = await updateCaptura({
+        block_id: blockId,
+        media_id: snap.media_id || undefined,
+        capture_key: snap.capture_alias_of || snap.capture_key || undefined,
+        nombre: payload.nombre ?? (String(snap.nombre || '').trim() || undefined),
+        file: payload.file || undefined,
+        role_slug: pageRoleSlug.value || undefined,
+      })
+      await reloadPage()
+      await loadCatalog()
+      return updated
+    }, payload.file ? 'Reemplazando imagen…' : 'Guardando imagen…')
+    const extra = Math.max(0, (result.updated || 1) - 1)
+    showSuccess(
+      'Imagen actualizada',
+      extra > 0
+        ? `Se actualizó también en ${extra} hoja${extra === 1 ? '' : 's'} con la misma clave.`
+        : 'La imagen quedó guardada.'
+    )
   } catch (e: any) {
-    toast.add({ title: 'Error upload', description: e?.message, color: 'error' })
+    showError('No se pudo actualizar', e?.message || 'Inténtalo de nuevo.')
+  }
+}
+
+const onAssignCaptura = async (blockId: number, payload: { media_id?: number | null; capture_key?: string | null }) => {
+  try {
+    const result = await withSpinner(async () => {
+      const assigned = await assignCaptura(blockId, payload)
+      await reloadPage()
+      await loadCatalog()
+      return assigned
+    }, 'Aplicando imagen…')
+    const extra = Math.max(0, (result.updated || 1) - 1)
+    showSuccess(
+      'Imagen aplicada',
+      extra > 0
+        ? `Se actualizó también en ${extra} hoja${extra === 1 ? '' : 's'} con la misma clave.`
+        : 'La imagen quedó en esta hoja.'
+    )
+  } catch (e: any) {
+    showError('No se pudo aplicar', e?.message || 'Inténtalo de nuevo.')
   }
 }
 
@@ -470,6 +645,71 @@ const openCopy = () => {
   copyForm.modulo_key = pageForm.modulo_key || page.value.modulo_key
   copyForm.publicado = false
   copyOpen.value = true
+}
+
+const openPlantillaModal = () => {
+  if (!page.value) return
+  const defaults = defaultPlantillaConfig({
+    titulo: pageForm.titulo || page.value.titulo,
+    modulo_key: pageForm.modulo_key || page.value.modulo_key,
+    role_slug: pageRoleSlug.value,
+  })
+  plantillaForm.articuloTitulo = defaults.articuloTitulo
+  plantillaForm.articuloClave = defaults.articuloClave
+  plantillaForm.tags = [...defaults.tags]
+  plantillaOpen.value = true
+}
+
+const submitPlantillaCompleta = async () => {
+  if (!plantillaForm.articuloTitulo.trim() || !plantillaForm.articuloClave.trim()) {
+    toast.add({ title: 'Título y clave del artículo son obligatorios', color: 'warning' })
+    return
+  }
+  if (articuloRootId.value && !confirm('Ya hay un artículo plantilla. ¿Generar otro bloque raíz adicional?')) {
+    return
+  }
+  try {
+    await withSpinner(async () => {
+      await applyPlantillaCompleta(pageId.value, {
+        articuloTitulo: plantillaForm.articuloTitulo.trim(),
+        articuloClave: plantillaForm.articuloClave.trim(),
+        tags: plantillaForm.tags,
+      })
+      await reloadPage()
+    }, 'Generando plantilla…')
+    plantillaOpen.value = false
+    toast.add({ title: 'Plantilla generada', color: 'success' })
+  } catch (e: any) {
+    toast.add({ title: 'Error al generar plantilla', description: e?.message, color: 'error' })
+  }
+}
+
+const onAddPlantillaSeccion = async (key: ManualPlantillaSeccionKey | undefined) => {
+  if (!key || !articuloRootId.value) return
+  selectedPlantillaSeccion.value = undefined
+  try {
+    await withSpinner(async () => {
+      await applySeccion(pageId.value, articuloRootId.value!, key)
+      await reloadPage()
+    }, 'Agregando subsección…')
+    const label = MANUAL_PLANTILLA_SECCIONES.find((s) => s.key === key)?.label || key
+    toast.add({ title: `Subsección agregada: ${label}`, color: 'success' })
+  } catch (e: any) {
+    toast.add({ title: 'Error al agregar subsección', description: e?.message, color: 'error' })
+  }
+}
+
+const onAddTemplateSectionFromNode = async (parentId: number, key: ManualPlantillaSeccionKey) => {
+  try {
+    await withSpinner(async () => {
+      await applySeccion(pageId.value, parentId, key)
+      await reloadPage()
+    }, 'Agregando subsección…')
+    const label = MANUAL_PLANTILLA_SECCIONES.find((s) => s.key === key)?.label || key
+    toast.add({ title: `Subsección agregada: ${label}`, color: 'success' })
+  } catch (e: any) {
+    toast.add({ title: 'Error al agregar subsección', description: e?.message, color: 'error' })
+  }
 }
 
 const submitCopy = async () => {

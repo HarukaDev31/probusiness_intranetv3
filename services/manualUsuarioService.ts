@@ -8,6 +8,9 @@ import type {
   ManualPage,
   ManualBlock,
   ManualMediaItem,
+  ManualCapturaCatalogItem,
+  ManualCapturaUpdatePayload,
+  ManualCapturaUpdateResult,
 } from '~/types/manualUsuario'
 
 export class ManualUsuarioService extends BaseService {
@@ -235,5 +238,44 @@ export class ManualUsuarioService extends BaseService {
 
   static async adminDeleteMedia(id: number): Promise<void> {
     await this.apiCall(`${this.adminUrl}/media/${id}`, { method: 'DELETE' })
+  }
+
+  static async adminListCapturas(): Promise<ManualCapturaCatalogItem[]> {
+    const res = await this.apiCall<ManualUsuarioApiResponse<ManualCapturaCatalogItem[]>>(
+      `${this.adminUrl}/capturas`,
+      { method: 'GET' }
+    )
+    return res.data
+  }
+
+  static async adminAssignCaptura(
+    blockId: number,
+    payload: { media_id?: number | null; capture_key?: string | null }
+  ): Promise<{ block: ManualBlock; updated: number }> {
+    const res = await this.apiCall<ManualUsuarioApiResponse<{ block: ManualBlock; updated: number }>>(
+      `${this.adminUrl}/bloques/${blockId}/asignar-captura`,
+      { method: 'POST', body: payload }
+    )
+    return res.data
+  }
+
+  static async adminUpdateCaptura(payload: ManualCapturaUpdatePayload): Promise<ManualCapturaUpdateResult> {
+    const fd = new FormData()
+    if (payload.media_id) fd.append('media_id', String(payload.media_id))
+    if (payload.capture_key) fd.append('capture_key', payload.capture_key)
+    if (payload.block_id) fd.append('block_id', String(payload.block_id))
+    if (payload.nombre != null) fd.append('nombre', payload.nombre)
+    if (payload.role_slug) fd.append('role_slug', payload.role_slug)
+    if (payload.file) fd.append('file', payload.file)
+
+    const endpoint = payload.media_id
+      ? `${this.adminUrl}/media/${payload.media_id}`
+      : `${this.adminUrl}/capturas/update`
+
+    const res = await this.apiCall<ManualUsuarioApiResponse<ManualCapturaUpdateResult>>(endpoint, {
+      method: 'POST',
+      body: fd,
+    })
+    return res.data
   }
 }

@@ -1,109 +1,73 @@
 <template>
-  <div class="manual-shell flex min-h-0 flex-1 gap-0 md:min-h-[calc(100dvh)]">
-    <!-- Sidebar interno del manual -->
-    <aside
-      class="manual-toc hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 md:flex lg:w-72"
+  <div class="manual-propuesta manual-shell flex min-h-0 flex-1 gap-3 p-0 md:min-h-[calc(100dvh)] md:gap-0 md:p-0">
+    <UCard
+      class="mu-sidebar hidden min-h-0 shrink-0 flex-col overflow-hidden md:flex"
+      :ui="{ root: 'rounded-none shadow-none ring-0 divide-y-0', body: 'flex min-h-0 flex-1 flex-col p-0 sm:p-0' }"
     >
-      <button
-        type="button"
-        class="flex items-center justify-center gap-2 border-b border-gray-200 px-4 py-4 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
-        @click="goHome"
-      >
+      <button type="button" class="mu-brand w-full text-left" @click="goHome">
         <img
           :src="logoSrc"
-          alt="Probusiness"
-          class="h-10 w-auto object-contain"
-          width="140"
+          alt="probusiness"
+          class="mu-brand-logo"
+          width="180"
           height="40"
         >
       </button>
+      <div class="mu-eyebrow">Manual de Usuario</div>
+      <p class="truncate px-5 pb-3 text-[13px] font-semibold text-highlighted">
+        {{ activeRoleLabel || 'Mi rol' }}
+      </p>
 
-      <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-        <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-          Manual
-        </p>
-        <p class="mt-1 truncate text-sm font-semibold text-gray-900 dark:text-white">
-          {{ activeRoleLabel || 'Mi rol' }}
-        </p>
-      </div>
-
-      <nav class="flex-1 overflow-y-auto px-2 py-3" aria-label="Secciones del manual">
-        <div v-for="(sec, idx) in toc" :key="sec.key" class="mb-1">
+      <nav class="flex-1 overflow-y-auto px-2.5 pb-4" aria-label="Secciones del manual">
+        <div v-for="(sec, idx) in toc" :key="sec.key" class="mb-0.5">
           <button
             type="button"
-            class="flex w-full items-start gap-1 rounded-lg px-2 py-2 text-left text-sm transition"
-            :class="isActiveNav(sec.key)
-              ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
-              : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700/60'"
+            class="mu-nav-item w-full text-left"
+            :class="{ 'is-active': isActiveNav(sec.key) }"
             @click="onTocParentClick(sec)"
           >
-            <span
-              v-if="sec.children?.length"
-              class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center text-gray-400"
-              @click.stop="toggleTocExpand(sec.key)"
-            >
-              <UIcon
-                :name="isTocExpanded(sec.key) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
-                class="h-4 w-4"
-              />
-            </span>
-            <span
-              v-else
-              class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-              :class="isActiveNav(sec.key)
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-100'"
-            >
-              {{ idx + 1 }}
-            </span>
-            <span class="min-w-0 flex-1 leading-snug">
-              <span
-                v-if="sec.children?.length"
-                class="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold align-middle"
-                :class="isActiveNav(sec.key)
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-100'"
-              >{{ idx + 1 }}</span>
-              {{ sec.title }}
-            </span>
+            <span class="mu-nav-num">{{ idx + 1 }}</span>
+            <span class="min-w-0 flex-1 leading-snug">{{ sec.title }}</span>
           </button>
 
-          <div v-if="sec.children?.length && isTocExpanded(sec.key)" class="ml-4 mt-0.5 space-y-0.5 border-l border-gray-200 pl-2 dark:border-gray-600">
+          <div v-if="sec.children?.length && isTocExpanded(sec.key)">
             <template v-for="child in sec.children" :key="child.key">
               <button
                 type="button"
-                class="flex w-full items-start gap-1.5 rounded-md px-2 py-1.5 text-left text-sm transition"
-                :class="isActiveNav(child.key)
-                  ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
-                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/60'"
+                class="mu-sub flex w-full text-left"
+                :class="{ 'is-active': isActiveNav(child.key) }"
                 @click="scrollToChapter(child.key)"
               >
-                <span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-60" />
-                <span class="leading-snug">{{ child.title }}</span>
+                ↳ {{ child.title }}
               </button>
-              <div
-                v-if="child.children?.length"
-                class="ml-3 space-y-0.5 border-l border-gray-100 pl-2 dark:border-gray-700"
-              >
-                <button
-                  v-for="grand in child.children"
-                  :key="grand.key"
-                  type="button"
-                  class="flex w-full items-start gap-1.5 rounded-md px-2 py-1 text-left text-xs transition"
-                  :class="isActiveNav(grand.key)
-                    ? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
-                    : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700/60'"
-                  @click="scrollToChapter(grand.key)"
-                >
-                  <span class="leading-snug">{{ grand.title }}</span>
-                </button>
+              <div v-if="child.children?.length" class="ml-0">
+                <div v-for="grand in child.children" :key="grand.key">
+                  <button
+                    type="button"
+                    class="mu-sub-leaf flex w-full text-left"
+                    :class="{ 'is-active': isActiveNav(grand.key) }"
+                    @click="scrollToChapter(grand.key)"
+                  >
+                    {{ grand.title }}
+                  </button>
+                  <button
+                    v-for="leaf in grand.children || []"
+                    :key="leaf.key"
+                    type="button"
+                    class="mu-sub-leaf-2 flex w-full text-left"
+                    :class="{ 'is-active': isActiveNav(leaf.key) }"
+                    @click="scrollToChapter(leaf.key)"
+                  >
+                    {{ leaf.title }}
+                  </button>
+                </div>
               </div>
             </template>
           </div>
         </div>
       </nav>
 
-      <div class="space-y-2 border-t border-gray-200 p-3 dark:border-gray-700">
+      <div class="space-y-2 border-t border-default p-3">
         <UButton
           block
           size="sm"
@@ -138,108 +102,137 @@
           Volver al inicio
         </UButton>
       </div>
-    </aside>
+    </UCard>
 
-    <!-- Contenido -->
     <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
-      <div class="shrink-0 border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800 md:px-6">
+      <UCard
+        class="shrink-0"
+        :ui="{ root: 'rounded-none shadow-none ring-0', body: 'p-0 sm:p-0' }"
+      >
+        <div class="mu-topbar">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div class="min-w-0">
             <div class="mb-2 flex items-center gap-2 md:hidden">
-              <button type="button" class="rounded-lg border border-gray-200 p-1.5 dark:border-gray-600" @click="goHome">
-                <img :src="logoSrc" alt="Inicio" class="h-7 w-auto">
+              <button type="button" class="rounded-lg border border-default p-1.5" @click="goHome">
+                <img :src="logoSrc" alt="Inicio" class="mu-brand-logo h-7 w-auto">
               </button>
-              <UButton size="xs" variant="soft" icon="i-heroicons-list-bullet" @click="mobileTocOpen = !mobileTocOpen">
+              <UButton size="xs" variant="soft" icon="i-heroicons-list-bullet" @click="toggleMobileToc">
                 Secciones
               </UButton>
             </div>
-            <h1 class="truncate text-xl font-bold text-gray-900 dark:text-white md:text-2xl">
-              {{ context?.title || 'Manual de usuario' }}
-            </h1>
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <h1 class="text-highlighted">{{ context?.title || 'Manual de usuario' }}</h1>
+            <div class="mu-meta text-muted">
               {{ context?.description || 'Guía por rol, paso a paso.' }}
-            </p>
+              <span v-if="activeRoleLabel"> · Rol: {{ activeRoleLabel }}</span>
+            </div>
           </div>
 
-          <div v-if="context?.is_root" class="flex w-full max-w-xs flex-col gap-2">
-            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Ver manual de</label>
-            <USelect
-              v-model="selectedSlug"
-              :items="roleSelectItems"
-              placeholder="Seleccionar rol"
-              class="w-full"
-              @update:model-value="onRoleChange"
-            />
-            <UButton
-              size="sm"
-              variant="soft"
-              color="neutral"
-              icon="i-heroicons-wrench-screwdriver"
-              to="/manual-usuario/admin"
-            >
-              Mantenedor CMS
-            </UButton>
-          </div>
-        </div>
-
-        <!-- TOC móvil -->
-        <div v-if="mobileTocOpen" class="mt-3 max-h-56 overflow-y-auto rounded-lg border border-gray-200 p-2 md:hidden dark:border-gray-600">
-          <div v-for="(sec, idx) in toc" :key="`m-${sec.key}`" class="mb-1">
-            <button
-              type="button"
-              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm font-medium text-gray-800 dark:text-gray-100"
-              @click="scrollToChapter(sec.key); if (!sec.children?.length) mobileTocOpen = false"
-            >
-              <span class="text-xs font-bold text-primary-600">{{ idx + 1 }}.</span>
-              {{ sec.title }}
-            </button>
-            <div v-if="sec.children?.length" class="ml-4 space-y-0.5">
-              <button
-                v-for="child in sec.children"
-                :key="`m-${child.key}`"
-                type="button"
-                class="block w-full rounded px-2 py-1 text-left text-sm text-gray-600 dark:text-gray-300"
-                @click="scrollToChapter(child.key); mobileTocOpen = false"
+          <div class="flex w-full flex-col gap-2 lg:w-auto lg:items-end">
+            <div class="mu-search-wrap">
+              <UInput
+                v-model="searchQuery"
+                icon="i-heroicons-magnifying-glass"
+                type="search"
+                autocomplete="off"
+                placeholder="Buscar (ej. 'filtros', 'alumno', 'pago')..."
+                class="w-full"
+              />
+              <div class="mu-search-status text-muted">{{ searchStatus }}</div>
+            </div>
+            <div v-if="context?.is_root" class="flex w-full max-w-xs flex-col gap-2">
+              <label class="mb-1 block text-xs font-medium text-muted">Ver manual de</label>
+              <USelect
+                v-model="selectedSlug"
+                :items="roleSelectItems"
+                placeholder="Seleccionar rol"
+                class="w-full"
+                @update:model-value="onRoleChange"
+              />
+              <UButton
+                size="sm"
+                variant="soft"
+                color="neutral"
+                icon="i-heroicons-wrench-screwdriver"
+                to="/manual-usuario/admin"
               >
-                {{ child.title }}
-              </button>
+                Mantenedor CMS
+              </UButton>
             </div>
           </div>
         </div>
-      </div>
 
-      <div ref="scrollRoot" class="flex-1 overflow-y-auto px-3 py-4 md:px-5 md:py-5">
-        <div v-if="loading" class="space-y-4">
-          <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700" />
-        </div>
-
-        <div
-          v-else-if="error"
-          class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20"
-        >
-          <p class="text-red-800 dark:text-red-200">{{ error }}</p>
-          <UButton variant="outline" color="error" size="sm" class="mt-3" @click="initialize">
-            Reintentar
-          </UButton>
-        </div>
-
-        <div v-else-if="manual" class="w-full max-w-none space-y-6 pb-16">
-          <article
-            v-for="(sec, idx) in sections"
-            :id="`cap-${sec.key}`"
-            :key="sec.key"
-            class="scroll-mt-4"
-          >
-            <UCard>
-              <template #header>
-                <div>
-                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    {{ sec.title }}
-                  </h2>
-                  <p v-if="sec.description" class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {{ sec.description }}
-                  </p>
+        <UCard v-if="mobileTocOpen" class="m-3 md:hidden" :ui="{ body: 'max-h-56 overflow-y-auto p-2 sm:p-2' }">
+          <div v-for="(sec, idx) in toc" :key="`m-${sec.key}`" class="mb-1">
+            <button
+              type="button"
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm font-medium text-highlighted hover:bg-elevated"
+              @click="scrollToChapter(sec.key); if (!sec.children?.length) mobileTocOpen = false"
+            >
+              <span class="text-xs font-bold text-primary-600 dark:text-primary-400">{{ idx + 1 }}.</span>
+              {{ sec.title }}
+            </button>
+            <div v-if="sec.children?.length" class="ml-4 space-y-0.5">
+              <div v-for="child in sec.children" :key="`m-${child.key}`">
+                <button
+                  type="button"
+                  class="block w-full rounded px-2 py-1 text-left text-sm text-muted hover:bg-elevated"
+                  @click="scrollToChapter(child.key); mobileTocOpen = false"
+                >
+                  {{ child.title }}
+                </button>
+                <div v-if="child.children?.length" class="ml-3 space-y-0.5">
+                  <div v-for="grand in child.children" :key="`m-${grand.key}`">
+                    <button
+                      type="button"
+                      class="block w-full rounded px-2 py-1 text-left text-xs text-muted hover:bg-elevated"
+                      @click="scrollToChapter(grand.key); mobileTocOpen = false"
+                    >
+                      {{ grand.title }}
+                    </button>
+                    <button
+                      v-for="leaf in grand.children || []"
+                      :key="`m-${leaf.key}`"
+                      type="button"
+                      class="block w-full rounded px-2 py-0.5 text-left text-[11px] text-muted hover:bg-elevated"
+                      @click="scrollToChapter(leaf.key); mobileTocOpen = false"
+                    >
+                      {{ leaf.title }}
+                    </button>
+                  </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </UCard>
+        </div>
+      </UCard>
+
+      <div ref="scrollRoot" class="flex-1 overflow-y-auto">
+        <div class="mu-content">
+          <div v-if="loading" class="space-y-4">
+            <UCard v-for="i in 4" :key="i">
+              <USkeleton class="h-28 w-full" />
+            </UCard>
+          </div>
+
+          <UCard v-else-if="error">
+            <UAlert color="error" variant="soft" :title="error" />
+            <UButton variant="outline" color="error" size="sm" class="mt-3" @click="initialize">
+              Reintentar
+            </UButton>
+          </UCard>
+
+          <div v-else-if="visibleSections.length" class="space-y-16 pb-8">
+            <article
+              v-for="(sec, idx) in visibleSections"
+              :id="`cap-${sec.key}`"
+              :key="sec.key"
+              class="scroll-mt-24"
+            >
+              <template v-if="!isArticuloPage(sec)">
+                <div class="mu-section-tag">Sección {{ idx + 1 }}</div>
+                <h2 class="mu-section-title text-highlighted">{{ sec.title }}</h2>
+                <p v-if="sec.description" class="mu-page-desc text-muted">{{ sec.description }}</p>
               </template>
 
               <div v-if="sec.page" class="space-y-4">
@@ -249,20 +242,25 @@
                   :block="block"
                 />
               </div>
-            </UCard>
-          </article>
-        </div>
+            </article>
+          </div>
 
-        <div v-else class="py-12 text-center text-gray-500 dark:text-gray-400">
-          No hay contenido de manual disponible para tu rol.
+          <UCard v-else-if="searchQuery.trim() && manual" class="py-8 text-center">
+            <p class="text-muted">No se encontraron coincidencias. Borra la búsqueda para ver todo el contenido.</p>
+          </UCard>
+
+          <UCard v-else class="py-8 text-center">
+            <p class="text-muted">No hay contenido de manual disponible para tu rol.</p>
+          </UCard>
         </div>
+        <footer class="mu-footer text-muted">Probusiness · Manual de Usuario</footer>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ManualUsuarioService } from '~/services/manualUsuarioService'
+import '~/assets/css/manual-usuario.css'
 import type {
   ManualUsuarioContext,
   ManualUsuarioManualData,
@@ -270,6 +268,12 @@ import type {
   ManualBlock,
 } from '~/types/manualUsuario'
 import ManualBlockRenderer from '~/components/manual/ManualBlockRenderer.vue'
+import {
+  MANUAL_NAV_KEY,
+  createManualNavContext,
+  buildGroupedManualToc,
+  type ManualTocNode,
+} from '~/composables/manual-usuario/useManualNav'
 
 definePageMeta({
   name: 'manual-usuario',
@@ -281,6 +285,14 @@ useHead({
 })
 
 const toast = useToast()
+const {
+  getContext,
+  getMyManual,
+  getRoleManual,
+  downloadMyPdf,
+  downloadRolePdf,
+  downloadGlobalPdf,
+} = useManualUsuario()
 const logoSrc = '/assets/img/logos/logo_probusiness.webp'
 
 const loading = ref(true)
@@ -294,6 +306,7 @@ const activeChapterId = ref<string | null>(null)
 const mobileTocOpen = ref(false)
 const scrollRoot = ref<HTMLElement | null>(null)
 const tocExpanded = reactive<Record<string, boolean>>({})
+const searchQuery = ref('')
 
 type ManualSection = {
   key: string
@@ -302,11 +315,7 @@ type ManualSection = {
   page: ManualPage
 }
 
-type TocNode = {
-  key: string
-  title: string
-  children?: TocNode[]
-}
+type TocNode = ManualTocNode
 
 const roleSelectItems = computed(() =>
   (context.value?.roles || []).map((r) => ({
@@ -330,32 +339,42 @@ const sections = computed<ManualSection[]>(() => {
   }))
 })
 
-const blockToTocNode = (block: ManualBlock): TocNode | null => {
-  if (block.tipo !== 'grupo') return null
-  const title = (block.titulo || block.clave || '').trim()
-  if (!title) return null
-  const children = (block.children || [])
-    .map(blockToTocNode)
-    .filter((n): n is TocNode => !!n)
-  return {
-    key: `b-${block.id}`,
-    title,
-    children: children.length ? children : undefined,
-  }
+const isArticuloPage = (sec: ManualSection) => {
+  const first = sec.page?.blocks?.[0]
+  return first?.tipo === 'grupo' && String(first?.payload?.snapshot?.variant || '') === 'articulo'
 }
 
-const toc = computed<TocNode[]>(() =>
-  sections.value.map((sec) => {
-    const children = (sec.page.blocks || [])
-      .map(blockToTocNode)
-      .filter((n): n is TocNode => !!n)
-    return {
-      key: sec.key,
-      title: sec.title,
-      children: children.length ? children : undefined,
-    }
+const blockSearchText = (block: ManualBlock): string => {
+  const parts: string[] = [
+    String(block.titulo || ''),
+    String(block.clave || ''),
+    String(block.payload?.subtitulo || ''),
+    JSON.stringify(block.payload?.snapshot || {}),
+  ]
+  for (const child of block.children || []) {
+    parts.push(blockSearchText(child))
+  }
+  return parts.join(' ')
+}
+
+const visibleSections = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return sections.value
+  return sections.value.filter((sec) => {
+    const hay = `${sec.title} ${sec.description || ''} ${(sec.page.blocks || []).map(blockSearchText).join(' ')}`
+    return hay.toLowerCase().includes(q)
   })
+})
+
+const toc = computed<TocNode[]>(() =>
+  buildGroupedManualToc(visibleSections.value.map((sec) => sec.page))
 )
+
+const searchStatus = computed(() => {
+  const q = searchQuery.value.trim()
+  if (!q || !manual.value) return ''
+  return `${visibleSections.value.length} sección${visibleSections.value.length === 1 ? '' : 'es'} con coincidencias`
+})
 
 watch(
   toc,
@@ -374,27 +393,37 @@ const toggleTocExpand = (key: string) => {
   tocExpanded[key] = !isTocExpanded(key)
 }
 
+const findTocNode = (nodes: TocNode[] | undefined, key: string): TocNode | null => {
+  if (!nodes) return null
+  for (const n of nodes) {
+    if (n.key === key) return n
+    const hit = findTocNode(n.children, key)
+    if (hit) return hit
+  }
+  return null
+}
+
 const isActiveNav = (key: string) => {
   const active = activeChapterId.value
   if (!active) return false
   if (active === key) return true
-  // página activa si el bloque activo es hijo
-  if (key.startsWith('p-')) {
-    const sec = toc.value.find((t) => t.key === key)
-    const walk = (nodes?: TocNode[]): boolean => {
-      if (!nodes) return false
-      for (const n of nodes) {
-        if (n.key === active) return true
-        if (walk(n.children)) return true
-      }
-      return false
+  const node = findTocNode(toc.value, key)
+  const containsActive = (n?: TocNode | null): boolean => {
+    if (!n?.children) return false
+    for (const c of n.children) {
+      if (c.key === active || containsActive(c)) return true
     }
-    return walk(sec?.children)
+    return false
   }
-  return false
+  return containsActive(node)
 }
 
-const goHome = () => navigateTo('/')
+const goHome = () => {
+  void navigateTo('/')
+}
+const toggleMobileToc = () => {
+  mobileTocOpen.value = !mobileTocOpen.value
+}
 
 const scrollToChapter = (id: string) => {
   activeChapterId.value = id
@@ -403,20 +432,36 @@ const scrollToChapter = (id: string) => {
   el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+const scrollToManualTop = () => {
+  scrollRoot.value?.scrollTo({ top: 0, behavior: 'smooth' })
+  activeChapterId.value = sections.value[0]?.key ?? null
+}
+
+const manualNav = computed(() => {
+  if (!manual.value) return null
+  return createManualNavContext(manual.value, scrollToChapter, scrollToManualTop)
+})
+
+provide(MANUAL_NAV_KEY, manualNav)
+
 const onTocParentClick = (sec: TocNode) => {
-  if (sec.children?.length && !isTocExpanded(sec.key)) {
+  if (sec.children?.length) {
     tocExpanded[sec.key] = true
+    if (sec.key.startsWith('g-')) {
+      scrollToChapter(sec.children[0].key)
+      return
+    }
   }
   scrollToChapter(sec.key)
 }
 
 const loadManualForSlug = async (slug?: string | null) => {
   if (!slug) {
-    manual.value = await ManualUsuarioService.getMyManual()
+    manual.value = await getMyManual()
   } else if (context.value?.my_role?.slug === slug && !context.value.is_root) {
-    manual.value = await ManualUsuarioService.getMyManual()
+    manual.value = await getMyManual()
   } else {
-    manual.value = await ManualUsuarioService.getRoleManual(slug)
+    manual.value = await getRoleManual(slug)
   }
   if (sections.value[0]) activeChapterId.value = sections.value[0].key
 }
@@ -425,7 +470,7 @@ const initialize = async () => {
   loading.value = true
   error.value = null
   try {
-    context.value = await ManualUsuarioService.getContext()
+    context.value = await getContext()
     if (context.value.is_root) {
       selectedSlug.value = context.value.my_role?.slug || context.value.roles[0]?.slug
       await loadManualForSlug(selectedSlug.value)
@@ -473,8 +518,8 @@ const downloadRole = async () => {
   try {
     const slug = manual.value?.role?.slug || selectedSlug.value
     const blob = slug && context.value?.is_root
-      ? await ManualUsuarioService.downloadRolePdf(slug)
-      : await ManualUsuarioService.downloadMyPdf()
+      ? await downloadRolePdf(slug)
+      : await downloadMyPdf()
     triggerBlobDownload(blob, `manual-${slug || 'rol'}-${new Date().toISOString().slice(0, 10)}.pdf`)
     toast.add({ title: 'PDF descargado', color: 'success' })
   } catch (e: any) {
@@ -491,7 +536,7 @@ const downloadRole = async () => {
 const downloadGlobal = async () => {
   downloadingGlobal.value = true
   try {
-    const blob = await ManualUsuarioService.downloadGlobalPdf()
+    const blob = await downloadGlobalPdf()
     triggerBlobDownload(blob, `manual-global-${new Date().toISOString().slice(0, 10)}.pdf`)
     toast.add({ title: 'PDF global descargado', color: 'success' })
   } catch (e: any) {
@@ -524,13 +569,14 @@ const setupObserver = () => {
     const el = document.getElementById(`cap-${key}`)
     if (el) observer?.observe(el)
   }
-  for (const sec of toc.value) {
-    observeKey(sec.key)
-    for (const child of sec.children || []) {
-      observeKey(child.key)
-      for (const grand of child.children || []) observeKey(grand.key)
+  const observeTree = (nodes?: TocNode[]) => {
+    if (!nodes) return
+    for (const n of nodes) {
+      observeKey(n.key)
+      observeTree(n.children)
     }
   }
+  observeTree(toc.value)
 }
 
 watch(toc, async () => {
