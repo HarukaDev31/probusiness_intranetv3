@@ -294,6 +294,18 @@ const overrides: Record<string, CaptureOverride> = {
     minWidth: 640,
     minHeight: 360,
   },
+  'soporte-ti__crear-una-solicitud__paso-01-nueva-solicitud': {
+    type: 'modal',
+    actions: [
+      { type: 'click', target: { role: 'button', name: 'Nueva solicitud', exact: true } },
+      { type: 'wait', target: { role: 'dialog' }, state: 'visible', timeout: 15_000 },
+    ],
+    target: { role: 'dialog' },
+    targetText: ['Nueva solicitud'],
+    padding: 12,
+    minWidth: 420,
+    minHeight: 360,
+  },
   'cotizaciones__trabajar-desde-el-listado__paso-01-buscar-filtrar-y-exportar': {
     type: 'seccion',
     actions: [
