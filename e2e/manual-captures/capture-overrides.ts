@@ -241,6 +241,26 @@ const overrides: Record<string, CaptureOverride> = {
     minWidth: 640,
     minHeight: 280,
   },
+  'curso-alumnos__consultar-y-filtrar-alumnos__paso-01-entrar-al-listado': {
+    type: 'seccion',
+    actions: [
+      { type: 'click', target: { role: 'button', name: 'Filtros', exact: true } },
+      { type: 'wait', target: '.filters-panel', state: 'visible', timeout: 10_000 },
+    ],
+    target: { manualCapture: 'data-table' },
+    targetText: ['Filtros'],
+    padding: 12,
+    minWidth: 640,
+    minHeight: 280,
+  },
+  'curso-campanas__consultar-campanas__paso-01-abrir-el-listado': {
+    type: 'seccion',
+    target: { manualCapture: 'data-table' },
+    targetText: ['Campaña'],
+    padding: 12,
+    minWidth: 640,
+    minHeight: 280,
+  },
 }
 
 export function captureOverride(captureKey: string): CaptureOverride | undefined {
