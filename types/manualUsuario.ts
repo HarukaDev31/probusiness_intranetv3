@@ -140,6 +140,7 @@ export interface ManualAdminPageSummary {
 export interface ManualMediaItem {
   id: number
   path: string
+  nombre?: string | null
   alt?: string | null
   mime?: string | null
   uploaded_by?: number | null
@@ -153,11 +154,27 @@ export interface ManualCapturaCatalogItem {
   media_id: number | null
   url: string | null
   alt?: string | null
+  nombre: string
   usage: number
   roles: string[]
   pages: Array<{ id: number; titulo: string; role_slug: string }>
   block_ids: number[]
   label: string
+}
+
+export interface ManualCapturaUpdatePayload {
+  media_id?: number | null
+  capture_key?: string | null
+  block_id?: number | null
+  nombre?: string | null
+  file?: File | null
+  role_slug?: string | null
+}
+
+export interface ManualCapturaUpdateResult {
+  item: ManualCapturaCatalogItem | null
+  media: ManualMediaItem | null
+  updated: number
 }
 
 export interface ManualUsuarioApiResponse<T> {

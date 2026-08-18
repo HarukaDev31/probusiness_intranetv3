@@ -376,7 +376,7 @@
           <img
             v-if="resolvedMediaSrc"
             :src="resolvedMediaSrc"
-            :alt="snap.alt || 'Captura'"
+            :alt="snap.nombre || snap.alt || 'Captura'"
             class="max-h-64 w-auto max-w-full rounded-lg border border-default object-contain sm:max-h-72"
           >
           <UCard

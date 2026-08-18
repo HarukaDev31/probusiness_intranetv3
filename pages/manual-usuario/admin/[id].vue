@@ -142,6 +142,7 @@
             @import-widget="importWidgetUnder"
             @upload="onUpload"
             @assign-captura="onAssignCaptura"
+            @update-captura="onUpdateCaptura"
             @add-template-section="onAddTemplateSectionFromNode"
           />
         </template>
@@ -296,7 +297,7 @@ const expandAllBlocks = () => {
 
 const { withSpinner } = useSpinner()
 const { showSuccess, showError } = useModal()
-const { catalog, loadCatalog, assignCaptura } = useManualCapturas()
+const { catalog, loadCatalog, assignCaptura, updateCaptura } = useManualCapturas()
 const {
   applying: applyingPlantilla,
   applyPlantillaCompleta,
@@ -379,6 +380,17 @@ const hydrateDraft = (block: ManualBlock) => {
       payload.snapshot.active = tabs[0].key
     }
   }
+  if (block.tipo === 'media') {
+    if (payload.snapshot.nombre == null) payload.snapshot.nombre = ''
+    if (!String(payload.snapshot.nombre).trim()) {
+      const key = String(payload.snapshot?.capture_alias_of || payload.snapshot?.capture_key || '').trim()
+      const mediaId = Number(payload.snapshot?.media_id || 0)
+      const item = catalog.value.find((entry) =>
+        (key && entry.capture_key === key) || (mediaId > 0 && Number(entry.media_id) === mediaId)
+      )
+      if (item?.nombre) payload.snapshot.nombre = item.nombre
+    }
+  }
   draft[block.id] = {
     titulo: block.titulo || '',
     clave: block.clave || '',
@@ -416,6 +428,11 @@ const load = async () => {
   error.value = null
   try {
     meta.value = await ManualUsuarioService.adminMeta()
+    try {
+      await loadCatalog()
+    } catch {
+      catalog.value = []
+    }
     page.value = await ManualUsuarioService.adminGetPage(pageId.value)
     pageForm.titulo = page.value.titulo
     pageForm.modulo_key = page.value.modulo_key
@@ -423,11 +440,6 @@ const load = async () => {
     pageForm.publicado = page.value.publicado !== false
     walkBlocks(page.value.blocks || [], hydrateDraft)
     syncRootBlocks()
-    try {
-      await loadCatalog()
-    } catch {
-      catalog.value = []
-    }
   } catch (e: any) {
     error.value = e?.message || 'No se pudo cargar la página'
     page.value = null
@@ -515,11 +527,26 @@ const saveBlock = async (id: number) => {
     if (block.tipo === 'grupo') {
       body.clave = draft[id].clave
     }
-    await ManualUsuarioService.adminUpdateBlock(id, body)
-    await reloadPage()
-    toast.add({ title: 'Guardado', color: 'success' })
+    await withSpinner(async () => {
+      await ManualUsuarioService.adminUpdateBlock(id, body)
+      if (block.tipo === 'media') {
+        const snap = draft[id]?.payload?.snapshot || {}
+const nombre = String(snap.nombre || '').trim()
+        if (nombre) {
+          await updateCaptura({
+            block_id: id,
+            media_id: snap.media_id || undefined,
+            capture_key: snap.capture_alias_of || snap.capture_key || undefined,
+            nombre,
+            role_slug: pageRoleSlug.value || undefined,
+          })
+        }
+      }
+      await reloadPage()
+    }, 'Guardando…')
+    showSuccess('Guardado', block.tipo === 'media' ? 'El nombre se aplicó a las hojas que comparten esta imagen.' : 'Bloque actualizado.')
   } catch (e: any) {
-    toast.add({ title: 'Error', description: e?.message, color: 'error' })
+    showError('No se pudo guardar', e?.message || 'Inténtalo de nuevo.')
   } finally {
     savingBlockId.value = null
   }
@@ -559,27 +586,34 @@ const onRootReorder = async () => {
 }
 
 const onUpload = async (blockId: number, file: File) => {
+  await onUpdateCaptura(blockId, { file })
+}
+
+const onUpdateCaptura = async (blockId: number, payload: { nombre?: string | null; file?: File | null }) => {
+  const snap = draft[blockId]?.payload?.snapshot || {}
   try {
-    const media = await ManualUsuarioService.adminUploadMedia(file, {
-      role_slug: pageRoleSlug.value || undefined,
-    })
-    if (!draft[blockId]) return
-    if (!draft[blockId].payload) draft[blockId].payload = {}
-    if (!draft[blockId].payload.snapshot) draft[blockId].payload.snapshot = {}
-    draft[blockId].payload.snapshot.media_id = media.id
-    draft[blockId].payload.snapshot.url = media.url
-    draft[blockId].payload.snapshot.alt = media.alt || draft[blockId].payload.snapshot.alt || ''
-    const block = findBlock(blockId)
-    if (!block) return
-    await ManualUsuarioService.adminUpdateBlock(blockId, {
-      titulo: draft[blockId].titulo,
-      payload: buildPayload(block),
-    })
-    await reloadPage()
-    await loadCatalog()
-    toast.add({ title: 'Imagen subida y guardada', color: 'success' })
+    const result = await withSpinner(async () => {
+      const updated = await updateCaptura({
+        block_id: blockId,
+        media_id: snap.media_id || undefined,
+        capture_key: snap.capture_alias_of || snap.capture_key || undefined,
+        nombre: payload.nombre ?? (String(snap.nombre || '').trim() || undefined),
+        file: payload.file || undefined,
+        role_slug: pageRoleSlug.value || undefined,
+      })
+      await reloadPage()
+      await loadCatalog()
+      return updated
+    }, payload.file ? 'Reemplazando imagen…' : 'Guardando imagen…')
+    const extra = Math.max(0, (result.updated || 1) - 1)
+    showSuccess(
+      'Imagen actualizada',
+      extra > 0
+        ? `Se actualizó también en ${extra} hoja${extra === 1 ? '' : 's'} con la misma clave.`
+        : 'La imagen quedó guardada.'
+    )
   } catch (e: any) {
-    toast.add({ title: 'Error upload', description: e?.message, color: 'error' })
+    showError('No se pudo actualizar', e?.message || 'Inténtalo de nuevo.')
   }
 }
 

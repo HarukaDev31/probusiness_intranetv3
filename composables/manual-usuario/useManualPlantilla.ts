@@ -90,6 +90,7 @@ function payloadMediaPlantilla(caption: string) {
       caption,
       alt: 'Plantilla de captura',
       media_id: null,
+      nombre: '',
     },
   }
 }

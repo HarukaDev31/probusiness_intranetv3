@@ -133,10 +133,32 @@
         <div v-else-if="block.tipo === 'media'" class="space-y-2">
           <UInput v-model="draft[block.id].payload.snapshot.caption" placeholder="Caption" class="w-full" />
           <div>
+            <label class="mb-1 block text-xs font-medium">Nombre</label>
+            <UInput
+              v-model="draft[block.id].payload.snapshot.nombre"
+              class="w-full"
+              :placeholder="derivedCaptureNombre || 'Ej. Noticias — tarjetas y detalle'"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              Se ve en el catálogo y en todas las hojas que comparten esta imagen.
+            </p>
+          </div>
+          <div v-if="draft[block.id].payload.snapshot.url" class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex h-36 items-center justify-center bg-gray-50 dark:bg-gray-900">
+              <img
+                :src="draft[block.id].payload.snapshot.url"
+                :alt="currentCaptureNombre || 'Vista previa'"
+                class="h-full w-full object-contain"
+              >
+            </div>
+            <p class="truncate px-2 py-1.5 text-xs font-medium text-gray-800 dark:text-gray-200">
+              {{ currentCaptureNombre }}
+            </p>
+          </div>
+          <div>
             <label class="mb-1 block text-xs font-medium">Imagen compartida</label>
-            <p v-if="currentCaptureKey" class="mb-1 text-xs text-gray-500">
-              Clave: <span class="font-mono">{{ currentCaptureKey }}</span>
-              <span v-if="currentCaptureUsage > 1"> · {{ currentCaptureUsage }} hojas</span>
+            <p v-if="currentCaptureUsage > 1" class="mb-1 text-xs text-gray-500">
+              {{ currentCaptureUsage }} hojas usan esta imagen
             </p>
             <USelectMenu
               :model-value="selectedCatalogMediaId"
@@ -144,7 +166,7 @@
               value-key="value"
               placeholder="Elegir una imagen del catálogo…"
               searchable
-              searchable-placeholder="Buscar por clave…"
+              searchable-placeholder="Buscar por nombre…"
               class="w-full"
               @update:model-value="onCatalogSelect"
             />
@@ -159,10 +181,10 @@
             :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp']"
             :max-file-size="10 * 1024 * 1024"
             :model-files="[]"
-            :initial-files="mediaInitialFiles"
+            :initial-files="[]"
             :show-save-button="false"
             :show-remove-button="true"
-            custom-message="Arrastra una imagen aquí o haz clic en «Subir»"
+            custom-message="Arrastra una imagen aquí o haz clic en «Subir» para reemplazar"
             @file-added="onMediaFileAdded"
             @file-removed="onMediaFileRemoved"
             @error="onMediaUploadError"
@@ -368,6 +390,7 @@
               @import-widget="(pid, pk, wk) => emit('import-widget', pid, pk, wk)"
               @upload="(id, f) => emit('upload', id, f)"
               @assign-captura="(id, payload) => emit('assign-captura', id, payload)"
+              @update-captura="(id, payload) => emit('update-captura', id, payload)"
               @add-template-section="(pid, key) => emit('add-template-section', pid, key)"
             />
           </template>
@@ -389,7 +412,6 @@
 import draggable from 'vuedraggable'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import ManualBlockRenderer from '~/components/manual/ManualBlockRenderer.vue'
-import type { FileItem } from '~/types/commons/file'
 import type { ManualAdminMeta, ManualBlock, ManualCapturaCatalogItem } from '~/types/manualUsuario'
 import type { ManualPlantillaSeccionKey } from '~/composables/manual-usuario/useManualPlantilla'
 import { MANUAL_PLANTILLA_SECCIONES } from '~/composables/manual-usuario/useManualPlantilla'
@@ -415,6 +437,7 @@ const emit = defineEmits<{
   upload: [blockId: number, file: File]
   'add-template-section': [parentId: number, key: ManualPlantillaSeccionKey]
   'assign-captura': [blockId: number, payload: { media_id?: number | null; capture_key?: string | null }]
+  'update-captura': [blockId: number, payload: { nombre?: string | null; file?: File | null }]
 }>()
 
 const toast = useToast()
@@ -620,24 +643,12 @@ const doImport = () => {
   emit('import-widget', props.block.id, importPageKey.value, importWidgetKey.value)
 }
 
-const mediaInitialFiles = computed((): FileItem[] => {
-  const snap = props.draft[props.block.id]?.payload?.snapshot
-  if (!snap?.media_id) return []
-  const url = String(snap.url || '')
-  const ext = (url.split('.').pop() || 'png').split('?')[0].toLowerCase()
-  return [{
-    id: Number(snap.media_id),
-    file_name: String(snap.alt || snap.caption || `imagen-${snap.media_id}.${ext}`),
-    file_url: url || null,
-    type: 'image',
-    size: 0,
-    lastModified: 0,
-    file_ext: ext,
-  }]
-})
-
 const onMediaFileAdded = (file: File) => {
-  emit('upload', props.block.id, file)
+  const snap = props.draft[props.block.id]?.payload?.snapshot || {}
+  emit('update-captura', props.block.id, {
+    nombre: String(snap.nombre || '').trim() || null,
+    file,
+  })
 }
 
 const onMediaFileRemoved = () => {
@@ -656,18 +667,28 @@ const currentCaptureKey = computed(() => {
   return String(snap?.capture_alias_of || snap?.capture_key || '').trim()
 })
 
-const currentCaptureUsage = computed(() => {
+const currentCatalogItem = computed(() => {
   const key = currentCaptureKey.value
-  if (!key) return 0
-  const item = (props.catalog || []).find((entry) => entry.capture_key === key)
-  return item?.usage || 0
+  const mediaId = Number(props.draft[props.block.id]?.payload?.snapshot?.media_id || 0)
+  return (props.catalog || []).find((entry) =>
+    (key && entry.capture_key === key) || (mediaId > 0 && Number(entry.media_id) === mediaId)
+  ) || null
 })
+
+const derivedCaptureNombre = computed(() => String(currentCatalogItem.value?.nombre || '').trim())
+
+const currentCaptureNombre = computed(() => {
+  const fromSnap = String(props.draft[props.block.id]?.payload?.snapshot?.nombre || '').trim()
+  return fromSnap || derivedCaptureNombre.value || 'Imagen del manual'
+})
+
+const currentCaptureUsage = computed(() => currentCatalogItem.value?.usage || 0)
 
 const catalogSelectItems = computed(() =>
   (props.catalog || [])
     .filter((item) => item.media_id)
     .map((item) => ({
-      label: item.label,
+      label: item.label || item.nombre,
       value: Number(item.media_id),
     }))
 )
