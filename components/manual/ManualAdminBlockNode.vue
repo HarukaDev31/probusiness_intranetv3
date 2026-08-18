@@ -143,52 +143,61 @@
               Se ve en el catálogo y en todas las hojas que comparten esta imagen.
             </p>
           </div>
-          <div v-if="draft[block.id].payload.snapshot.url" class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-            <div class="flex h-36 items-center justify-center bg-gray-50 dark:bg-gray-900">
-              <img
-                :src="draft[block.id].payload.snapshot.url"
-                :alt="currentCaptureNombre || 'Vista previa'"
-                class="h-full w-full object-contain"
-              >
+          <div
+            class="space-y-2 rounded-lg outline-none"
+            tabindex="0"
+            @mousedown.capture="onMediaReplaceMouseDown"
+            @paste="onMediaPaste"
+          >
+            <div v-if="draft[block.id].payload.snapshot.url" class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+              <div class="flex h-36 items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <img
+                  :src="draft[block.id].payload.snapshot.url"
+                  :alt="currentCaptureNombre || 'Vista previa'"
+                  class="h-full w-full object-contain"
+                >
+              </div>
+              <p class="truncate px-2 py-1.5 text-xs font-medium text-gray-800 dark:text-gray-200">
+                {{ currentCaptureNombre }}
+              </p>
             </div>
-            <p class="truncate px-2 py-1.5 text-xs font-medium text-gray-800 dark:text-gray-200">
-              {{ currentCaptureNombre }}
-            </p>
-          </div>
-          <div>
-            <label class="mb-1 block text-xs font-medium">Imagen compartida</label>
-            <p v-if="currentCaptureUsage > 1" class="mb-1 text-xs text-gray-500">
-              {{ currentCaptureUsage }} hojas usan esta imagen
-            </p>
-            <USelectMenu
-              :model-value="selectedCatalogMediaId"
-              :items="catalogSelectItems"
-              value-key="value"
-              placeholder="Elegir una imagen del catálogo…"
-              searchable
-              searchable-placeholder="Buscar por nombre…"
-              class="w-full"
-              @update:model-value="onCatalogSelect"
+            <div>
+              <label class="mb-1 block text-xs font-medium">Imagen compartida</label>
+              <p v-if="currentCaptureUsage > 1" class="mb-1 text-xs text-gray-500">
+                {{ currentCaptureUsage }} hojas usan esta imagen
+              </p>
+              <USelectMenu
+                :model-value="selectedCatalogMediaId"
+                :items="catalogSelectItems"
+                value-key="value"
+                placeholder="Elegir una imagen del catálogo…"
+                searchable
+                searchable-placeholder="Buscar por nombre…"
+                class="w-full"
+                @update:model-value="onCatalogSelect"
+              />
+              <p class="mt-1 text-xs text-gray-500">
+                Al elegirla se coloca en todas las hojas con la misma clave.
+              </p>
+            </div>
+            <label class="mb-1 block text-xs font-medium">Subir o reemplazar</label>
+            <p class="text-xs text-gray-500">Pega con Ctrl+V</p>
+            <FileUploader
+              ref="mediaUploaderRef"
+              :key="`media-${block.id}-${draft[block.id].payload.snapshot.media_id || 0}`"
+              :multiple="false"
+              :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp']"
+              :max-file-size="10 * 1024 * 1024"
+              :model-files="[]"
+              :initial-files="[]"
+              :show-save-button="false"
+              :show-remove-button="true"
+              custom-message="Arrastra una imagen aquí o haz clic en «Subir» para reemplazar"
+              @file-added="onMediaFileAdded"
+              @file-removed="onMediaFileRemoved"
+              @error="onMediaUploadError"
             />
-            <p class="mt-1 text-xs text-gray-500">
-              Al elegirla se coloca en todas las hojas con la misma clave.
-            </p>
           </div>
-          <label class="mb-1 block text-xs font-medium">Subir o reemplazar</label>
-          <FileUploader
-            :key="`media-${block.id}-${draft[block.id].payload.snapshot.media_id || 0}`"
-            :multiple="false"
-            :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp']"
-            :max-file-size="10 * 1024 * 1024"
-            :model-files="[]"
-            :initial-files="[]"
-            :show-save-button="false"
-            :show-remove-button="true"
-            custom-message="Arrastra una imagen aquí o haz clic en «Subir» para reemplazar"
-            @file-added="onMediaFileAdded"
-            @file-removed="onMediaFileRemoved"
-            @error="onMediaUploadError"
-          />
         </div>
 
         <div v-else-if="block.tipo === 'tabs'" class="space-y-3">
@@ -415,6 +424,7 @@ import ManualBlockRenderer from '~/components/manual/ManualBlockRenderer.vue'
 import type { ManualAdminMeta, ManualBlock, ManualCapturaCatalogItem } from '~/types/manualUsuario'
 import type { ManualPlantillaSeccionKey } from '~/composables/manual-usuario/useManualPlantilla'
 import { MANUAL_PLANTILLA_SECCIONES } from '~/composables/manual-usuario/useManualPlantilla'
+import { esTargetEdicionTexto, imagenDesdePortapapeles } from '~/utils/clipboardImage'
 
 const props = defineProps<{
   block: ManualBlock
@@ -649,6 +659,29 @@ const onMediaFileAdded = (file: File) => {
     nombre: String(snap.nombre || '').trim() || null,
     file,
   })
+}
+
+const mediaUploaderRef = ref<{ addFiles: (files: File[]) => void } | null>(null)
+
+const onMediaReplaceMouseDown = (e: MouseEvent) => {
+  if (!(e.target instanceof HTMLElement)) return
+  if (e.target.closest('button, input, textarea, select, a, [role="combobox"], [contenteditable="true"]')) return
+  const zone = e.currentTarget as HTMLElement
+  zone.focus()
+}
+
+const onMediaPaste = (e: ClipboardEvent) => {
+  if (e.defaultPrevented) return
+  if (esTargetEdicionTexto(e.target)) return
+  const file = imagenDesdePortapapeles(e)
+  if (!file) return
+  e.preventDefault()
+  e.stopPropagation()
+  if (mediaUploaderRef.value?.addFiles) {
+    mediaUploaderRef.value.addFiles([file])
+    return
+  }
+  onMediaFileAdded(file)
 }
 
 const onMediaFileRemoved = () => {

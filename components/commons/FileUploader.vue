@@ -269,6 +269,11 @@ const removeSelectedFile = (index: number) => {
 }
 
 const MIME_TO_EXT: Record<string, string[]> = {
+    'image/png': ['.png'],
+    'image/jpeg': ['.jpg', '.jpeg'],
+    'image/jpg': ['.jpg', '.jpeg'],
+    'image/webp': ['.webp'],
+    'image/gif': ['.gif'],
     'image/heic': ['.heic', '.heif'],
     'image/heif': ['.heif', '.heic'],
     'image/dng': ['.dng'],

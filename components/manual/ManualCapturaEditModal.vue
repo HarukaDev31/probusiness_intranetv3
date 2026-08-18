@@ -5,8 +5,11 @@
         <template #header>
           <h2 class="text-base font-semibold">Editar imagen</h2>
         </template>
-        <div class="space-y-3">
-          <div class="flex h-40 items-center justify-center overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-900">
+        <div class="space-y-3" @paste="onClipboardPaste">
+          <div
+            class="flex h-40 items-center justify-center overflow-hidden rounded-lg bg-gray-50 outline-none dark:bg-gray-900"
+            tabindex="0"
+          >
             <img
               v-if="previewSrc"
               :src="previewSrc"
@@ -25,7 +28,9 @@
           </div>
           <div>
             <label class="mb-1 block text-xs font-medium">Reemplazar archivo</label>
+            <p class="mb-1 text-xs text-gray-500">Pega con Ctrl+V</p>
             <FileUploader
+              ref="uploaderRef"
               :key="uploaderKey"
               :multiple="false"
               :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp']"
@@ -43,7 +48,7 @@
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton variant="ghost" color="neutral" @click="open = false">Cancelar</UButton>
+            <UButton variant="ghost" color="neutral" @click="closeModal">Cancelar</UButton>
             <UButton color="primary" icon="i-heroicons-check" :loading="saving" @click="emitSave">
               Guardar
             </UButton>
@@ -57,6 +62,7 @@
 <script setup lang="ts">
 import FileUploader from '~/components/commons/FileUploader.vue'
 import type { ManualCapturaCatalogItem } from '~/types/manualUsuario'
+import { esTargetEdicionTexto, imagenDesdePortapapeles } from '~/utils/clipboardImage'
 
 const props = defineProps<{
   item: ManualCapturaCatalogItem | null
@@ -74,6 +80,7 @@ const nombre = ref('')
 const pendingFile = ref<File | null>(null)
 const previewOverride = ref<string | null>(null)
 const uploaderKey = ref(0)
+const uploaderRef = ref<{ addFiles: (files: File[]) => void } | null>(null)
 
 const previewSrc = computed(() => previewOverride.value || props.item?.url || '')
 
@@ -87,19 +94,42 @@ const resetFromItem = () => {
   uploaderKey.value += 1
 }
 
-watch(open, (isOpen) => {
-  if (isOpen) resetFromItem()
-})
-
-watch(() => props.item?.id, () => {
-  if (open.value) resetFromItem()
-})
-
 const onFileAdded = (file: File) => {
   pendingFile.value = file
   if (previewOverride.value) URL.revokeObjectURL(previewOverride.value)
   previewOverride.value = URL.createObjectURL(file)
 }
+
+const applyPastedImage = (file: File) => {
+  if (uploaderRef.value?.addFiles) {
+    uploaderRef.value.addFiles([file])
+    return
+  }
+  onFileAdded(file)
+}
+
+const onClipboardPaste = (e: ClipboardEvent) => {
+  if (!open.value || e.defaultPrevented) return
+  if (esTargetEdicionTexto(e.target)) return
+  const file = imagenDesdePortapapeles(e)
+  if (!file) return
+  e.preventDefault()
+  e.stopPropagation()
+  applyPastedImage(file)
+}
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    resetFromItem()
+    window.addEventListener('paste', onClipboardPaste)
+    return
+  }
+  window.removeEventListener('paste', onClipboardPaste)
+})
+
+watch(() => props.item?.id, () => {
+  if (open.value) resetFromItem()
+})
 
 const onFileRemoved = () => {
   pendingFile.value = null
@@ -122,7 +152,12 @@ const emitSave = () => {
   emit('save', { nombre: nextNombre, file: pendingFile.value })
 }
 
+const closeModal = () => {
+  open.value = false
+}
+
 onBeforeUnmount(() => {
+  window.removeEventListener('paste', onClipboardPaste)
   if (previewOverride.value) URL.revokeObjectURL(previewOverride.value)
 })
 </script>
