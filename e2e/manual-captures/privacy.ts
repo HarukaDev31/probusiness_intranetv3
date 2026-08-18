@@ -48,6 +48,17 @@ export async function sanitizeSensitiveData(page: Page): Promise<void> {
       }
     }
 
+    const labeledField = /^(dni|ruc|whatsapp|tel[eé]fono|celular|correo|email|documento)\s*:?\s*$/i
+    for (const node of document.querySelectorAll('div, span, dt, th, label, p')) {
+      if (node.children.length > 0) continue
+      if (!labeledField.test((node.textContent ?? '').trim())) continue
+      const value = node.nextElementSibling
+      if (value && value.children.length === 0) {
+        const label = node.textContent ?? ''
+        value.textContent = headerMask(label)
+      }
+    }
+
     for (const card of document.querySelectorAll('[data-manual-capture="news-card"]')) {
       for (const node of card.querySelectorAll('span, p, div')) {
         if (node.children.length > 0) continue

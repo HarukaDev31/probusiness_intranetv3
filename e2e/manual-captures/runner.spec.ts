@@ -86,6 +86,27 @@ test.describe('runner de capturas', () => {
     expect(shot.target).toEqual({ css: '[data-manual-capture="news-card"]' })
   })
 
+  test('aplica override de clientes buscar-y-filtrar', () => {
+    const manifest = normalizeManifest({
+      version: 1,
+      roles: [{
+        slug: 'administracion',
+        screens: [{
+          id: 'basedatos-clientes',
+          url: '/basedatos/clientes',
+          shots: [{
+            id: 'basedatos-clientes__buscar-y-filtrar__paso-01-encontrar-a-alguien',
+            type: 'page',
+            intent: { title: 'Encontrar a alguien', hint: 'Recorta buscador' },
+          }],
+        }],
+      }],
+    })
+    const shot = manifest.roles[0].screens[0].shots[0]
+    expect(shot.targetText).toEqual(['Base de datos de clientes', 'Filtros', 'Servicio'])
+    expect(shot.target).toEqual({ manualCapture: 'data-table' })
+  })
+
   test('rechaza recortes diminutos y admite secciones amplias', () => {
     expect(() => assertCaptureSize(
       { id: 'news-card', type: 'seccion' },
@@ -117,6 +138,7 @@ test.describe('runner de capturas', () => {
       fill: async (value: string) => { calls.push(`fill:${value}`) },
       selectOption: async (value: string | string[]) => { calls.push(`select:${String(value)}`) },
       waitFor: async ({ state }: { state: string }) => { calls.push(`wait:${state}`) },
+      first() { return this },
     }
     const page = {
       locator: () => locator,

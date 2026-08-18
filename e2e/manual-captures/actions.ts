@@ -19,7 +19,7 @@ export async function runActions(page: Page, actions: CaptureAction[] = []): Pro
     if (action.type === 'wait') {
       if (action.ms != null) await page.waitForTimeout(action.ms)
       if (action.target) {
-        await resolveLocator(page, action.target).waitFor({
+        await resolveLocator(page, action.target).first().waitFor({
           state: action.state ?? 'visible',
           timeout: action.timeout,
         })
@@ -27,7 +27,7 @@ export async function runActions(page: Page, actions: CaptureAction[] = []): Pro
       continue
     }
 
-    const locator = resolveLocator(page, action.target)
+    const locator = resolveLocator(page, action.target).first()
     if (action.type === 'click') {
       await locator.click({ timeout: action.timeout })
     } else if (action.type === 'fill') {
