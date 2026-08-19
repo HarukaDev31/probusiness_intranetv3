@@ -44,8 +44,8 @@ export interface ReminderPagoPreview {
     phone?: string | null
     carga?: string | null
     message: string
-    has_pdf: boolean
-    pdf_url?: string | null
+    has_excel: boolean
+    excel_url?: string | null
 }
 
 export interface ReminderPagoPreviewResponse {

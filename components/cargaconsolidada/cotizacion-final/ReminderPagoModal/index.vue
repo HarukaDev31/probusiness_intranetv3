@@ -13,7 +13,7 @@
             Recordatorio de pago
           </h3>
           <p class="text-sm text-gray-500 mt-1">
-            Revisa el PDF y el mensaje. Recién se envía al confirmar.
+            Revisa el Excel y el mensaje. Recién se envía al confirmar.
           </p>
           <p v-if="preview" class="text-xs text-gray-400 mt-0.5">
             <span v-if="preview.cliente">{{ preview.cliente }}</span>
@@ -61,35 +61,34 @@
         <div class="min-w-0">
           <p class="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1">
             <UIcon name="i-heroicons-paper-clip" class="w-3.5 h-3.5" />
-            PDF cotización final
+            Cotización final
           </p>
           <div class="relative h-80 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden">
-            <div v-if="pdfLoading" class="absolute inset-0 p-3 space-y-2 z-10">
+            <div v-if="!excelEmbedSrc && !previewError && !preview" class="absolute inset-0 p-3 z-10">
               <USkeleton class="h-full w-full rounded-md" />
             </div>
             <iframe
-              v-if="pdfSrc"
-              :key="pdfSrc"
-              :src="pdfSrc"
+              v-if="excelEmbedSrc"
+              :key="excelEmbedSrc"
+              :src="excelEmbedSrc"
               class="w-full h-full bg-white"
-              title="Vista previa PDF cotización final"
-              @load="pdfLoading = false"
+              title="Vista previa de cotización final"
             />
             <p
-              v-else-if="!pdfLoading && (pdfError || (preview && !pdfSrc))"
+              v-else-if="preview && !excelUrl"
               class="absolute inset-0 flex items-center justify-center text-xs text-gray-500 italic px-4 text-center"
             >
-              {{ pdfError || 'Esta cotización no tiene PDF de cotización final.' }}
+              Esta cotización no tiene Excel de cotización final.
             </p>
           </div>
-          <div v-if="pdfSrc" class="flex justify-end mt-1">
+          <div v-if="excelUrl" class="flex justify-end mt-1">
             <UButton
               size="xs"
               color="neutral"
               variant="ghost"
-              label="Abrir PDF"
+              label="Abrir"
               icon="i-heroicons-arrow-top-right-on-square"
-              @click="openPdf"
+              @click="openExcel"
             />
           </div>
         </div>
@@ -131,9 +130,12 @@ const { previewReminderPago } = useReminderPago()
 
 const preview = ref<ReminderPagoPreview | null>(null)
 const previewError = ref<string | null>(null)
-const pdfSrc = ref<string | null>(null)
-const pdfLoading = ref(false)
-const pdfError = ref<string | null>(null)
+const excelUrl = ref<string | null>(null)
+
+const excelEmbedSrc = computed(() => {
+  if (!excelUrl.value) return null
+  return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(excelUrl.value)}`
+})
 
 const isOpen = computed({
   get: () => props.open,
@@ -143,9 +145,7 @@ const isOpen = computed({
 const reset = () => {
   preview.value = null
   previewError.value = null
-  pdfSrc.value = null
-  pdfLoading.value = false
-  pdfError.value = null
+  excelUrl.value = null
 }
 
 const loadPreview = async () => {
@@ -156,31 +156,23 @@ const loadPreview = async () => {
 
   preview.value = null
   previewError.value = null
-  pdfSrc.value = null
-  pdfError.value = null
-  pdfLoading.value = true
+  excelUrl.value = null
 
   try {
     const res = await previewReminderPago(props.idCotizacion)
     if (!res.success || !res.data) {
       previewError.value = res.message || 'No se pudo armar la vista previa'
-      pdfLoading.value = false
       return
     }
     preview.value = res.data
-    if (res.data.pdf_url) {
-      pdfSrc.value = res.data.pdf_url
-    } else {
-      pdfLoading.value = false
-    }
+    excelUrl.value = res.data.excel_url || null
   } catch (e: unknown) {
     previewError.value = e instanceof Error ? e.message : 'No se pudo armar la vista previa'
-    pdfLoading.value = false
   }
 }
 
-const openPdf = () => {
-  if (pdfSrc.value) window.open(pdfSrc.value, '_blank', 'noopener,noreferrer')
+const openExcel = () => {
+  if (excelUrl.value) window.open(excelUrl.value, '_blank', 'noopener,noreferrer')
 }
 
 const onOpenChange = (v: boolean) => {
