@@ -174,7 +174,7 @@
       <div v-if="tipo === 'texto' && isQa" class="mu-qa">
         <div v-if="block.titulo" class="mu-q text-gray-500 dark:text-gray-400">{{ block.titulo }}</div>
         <div
-          class="mu-a text-sm leading-relaxed text-gray-900 dark:text-gray-100"
+          class="mu-a whitespace-pre-line text-sm leading-relaxed text-gray-900 dark:text-gray-100"
           :class="{ 'mu-placeholder': isPlaceholderText(snap.body) }"
         >{{ snap.body }}</div>
       </div>
@@ -189,7 +189,7 @@
       </div>
 
       <!-- resultado esperado -->
-      <div v-else-if="tipo === 'callout' && isResultCallout" class="mu-result">
+      <div v-else-if="tipo === 'callout' && isResultCallout" class="mu-result whitespace-pre-line">
         <b>{{ snap.title || 'Resultado esperado:' }}</b>
         {{ snap.body }}
       </div>
@@ -407,11 +407,15 @@
       <!-- flow = pasos numerados (plantilla) -->
       <UCard v-else-if="tipo === 'flow'" variant="subtle">
         <h4 v-if="block.titulo" class="mu-steps-title text-primary-600 dark:text-primary-400">{{ block.titulo }}</h4>
-        <p v-if="snap.hint" class="mb-3 text-sm leading-relaxed text-default">{{ snap.hint }}</p>
+        <p v-if="snap.hint" class="mb-3 whitespace-pre-line text-sm leading-relaxed text-default">{{ snap.hint }}</p>
         <ol class="mu-steps-list text-sm text-default">
           <li v-for="(step, si) in (snap.steps || [])" :key="si">
             <b v-if="step.title" class="block">{{ step.title }}</b>
-            <span v-if="step.body" :class="step.title ? 'mt-0.5 block leading-relaxed' : ''">{{ step.body }}</span>
+            <span
+              v-if="step.body"
+              class="whitespace-pre-line"
+              :class="step.title ? 'mt-0.5 block leading-relaxed' : ''"
+            >{{ step.body }}</span>
             <div v-if="flowMediaAt(Number(si))" class="mt-3">
               <ManualBlockRenderer :block="{ ...flowMediaAt(Number(si)), titulo: '' }" />
             </div>
