@@ -280,7 +280,7 @@
           class="rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40"
         >
           <p class="mb-2 text-xs font-semibold uppercase text-gray-500">Vista previa</p>
-          <ManualBlockRenderer :block="previewFromDraft" />
+          <ManualBlockRenderer :block="previewFromDraft" variant="admin" />
         </div>
       </template>
 
@@ -410,7 +410,7 @@
           class="rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40"
         >
           <p class="mb-2 text-xs font-semibold uppercase text-gray-500">Vista previa del flujo</p>
-          <ManualBlockRenderer :block="timelinePreviewBlock" />
+          <ManualBlockRenderer :block="timelinePreviewBlock" variant="admin" />
         </div>
       </div>
     </div>

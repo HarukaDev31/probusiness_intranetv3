@@ -41,6 +41,7 @@
         v-for="child in sortedChildren"
         :key="child.id"
         :block="child"
+        :variant="variant"
       />
     </UCard>
 
@@ -58,6 +59,7 @@
             v-for="child in sortedChildren"
             :key="child.id"
             :block="child"
+            :variant="variant"
           />
         </div>
       </details>
@@ -94,6 +96,7 @@
           v-for="child in sortedChildren"
           :key="child.id"
           :block="child"
+          :variant="variant"
         />
       </div>
     </div>
@@ -133,7 +136,7 @@
               </span>
             </div>
             <UCard class="flex-1" :ui="{ body: 'p-2 sm:p-2' }">
-              <ManualBlockRenderer :block="{ ...child, titulo: '' }" />
+              <ManualBlockRenderer :block="{ ...child, titulo: '' }" :variant="variant" />
             </UCard>
           </div>
           <div
@@ -150,7 +153,7 @@
 
     <div v-else :id="`cap-b-${block.id}`" class="scroll-mt-4 space-y-2">
       <a
-        v-if="block.titulo && widgetTitleLink && !hideWidgetTitle"
+        v-if="block.titulo && widgetTitleLink && !hideWidgetTitle && !hideMediaMaintainerMeta"
         :href="widgetTitleLink.href"
         :target="widgetTitleLink.external ? '_blank' : undefined"
         :rel="widgetTitleLink.external ? 'noopener noreferrer' : undefined"
@@ -158,11 +161,11 @@
       >
         {{ block.titulo }}
       </a>
-      <div v-else-if="block.titulo && !hideWidgetTitle" class="text-sm font-semibold text-gray-900 dark:text-white">
+      <div v-else-if="block.titulo && !hideWidgetTitle && !hideMediaMaintainerMeta" class="text-sm font-semibold text-gray-900 dark:text-white">
         {{ block.titulo }}
       </div>
       <p
-        v-if="payload.subtitulo && !widgetTitleLink"
+        v-if="payload.subtitulo && !widgetTitleLink && !hideMediaMaintainerMeta"
         :class="tipo === 'media'
           ? 'text-base font-medium leading-snug text-gray-800 dark:text-gray-100'
           : 'text-xs text-gray-500 dark:text-gray-400'"
@@ -386,15 +389,17 @@
             :ui="{ body: 'flex flex-col items-center justify-center gap-2 px-6 py-8 sm:px-6 sm:py-8' }"
           >
             <img src="/assets/img/manual/captura-pendiente.svg" alt="Plantilla de captura" class="max-h-36 w-auto object-contain">
-            <p v-if="snap.caption" class="text-center text-sm font-medium leading-snug text-highlighted">
-              {{ snap.caption }}
-            </p>
-            <p class="text-center text-xs text-muted">
-              En el mantenedor, sustituye esta plantilla por la captura real.
-            </p>
+            <template v-if="isAdminView">
+              <p v-if="snap.caption" class="text-center text-sm font-medium leading-snug text-highlighted">
+                {{ snap.caption }}
+              </p>
+              <p class="text-center text-xs text-muted">
+                En el mantenedor, sustituye esta plantilla por la captura real.
+              </p>
+            </template>
           </UCard>
         </div>
-        <p v-if="snap.caption && resolvedMediaSrc" class="text-center text-xs text-muted">{{ snap.caption }}</p>
+        <p v-if="isAdminView && snap.caption && resolvedMediaSrc" class="text-center text-xs text-muted">{{ snap.caption }}</p>
       </div>
 
       <!-- embed -->
@@ -417,7 +422,7 @@
               :class="step.title ? 'mt-0.5 block leading-relaxed' : ''"
             >{{ step.body }}</span>
             <div v-if="flowMediaAt(Number(si))" class="mt-3">
-              <ManualBlockRenderer :block="{ ...flowMediaAt(Number(si)), titulo: '' }" />
+              <ManualBlockRenderer :block="{ ...flowMediaAt(Number(si)), titulo: '' }" :variant="variant" />
             </div>
           </li>
         </ol>
@@ -438,7 +443,15 @@ import {
   type ManualNavCrumb,
 } from '~/composables/manual-usuario/useManualNav'
 
-const props = defineProps<{ block: ManualBlock }>()
+const props = withDefaults(defineProps<{
+  block: ManualBlock
+  /** reader = manual público; admin = mantenedor (muestra hints de captura) */
+  variant?: 'reader' | 'admin'
+}>(), {
+  variant: 'reader',
+})
+
+const isAdminView = computed(() => props.variant === 'admin')
 const emit = defineEmits<{
   'update:active': [value: string]
 }>()
@@ -491,6 +504,7 @@ const isDocTable = computed(() => {
   return variant === 'doc' || Boolean(snap.value.simple)
 })
 const hideWidgetTitle = computed(() => isQa.value || isResultCallout.value || tipo.value === 'flow')
+const hideMediaMaintainerMeta = computed(() => tipo.value === 'media' && !isAdminView.value)
 
 const articleTags = computed(() => {
   const tags = snap.value.tags
