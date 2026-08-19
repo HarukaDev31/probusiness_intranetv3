@@ -108,6 +108,12 @@ export const WS_NOTIFICATION_TYPES: WsNotificationType[] = [
     'Contabilidad',
     'Cuando termina una importación de datos de facturación.'
   ),
+  modalOnly(
+    WS_NOTIFICATION_KEYS.REMINDER_PAGO,
+    'Recordatorio de pago',
+    'Contabilidad',
+    'Cuando termina el envío del recordatorio de pago al cliente.'
+  ),
 
   // — Almacén —
   modalOnly(WS_NOTIFICATION_KEYS.ALMACEN_STOCK, 'Actualización de stock', 'Almacén'),

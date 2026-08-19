@@ -86,7 +86,7 @@ const confirmReminderPago = async () => {
         await withSpinner(async () => {
             const res = await sendReminderPago(reminderPagoModal.idCotizacion as number)
             if (res && res.success) {
-                showSuccess('Recordatorio enviado', res.message || 'El recordatorio de pago se encoló correctamente')
+                showSuccess('Recordatorio en camino', res.message || 'Se está enviando al cliente por WhatsApp.')
                 reminderPagoModal.open = false
             } else {
                 showError('Error', res?.message || 'No se pudo enviar el recordatorio')
