@@ -36,3 +36,19 @@ export interface CotizacionResponse {
     data: Cotizacion[]
     pagination: PaginationInfo
 }
+
+export interface ReminderInicialPreview {
+    id_cotizacion: number
+    cliente?: string | null
+    phone?: string | null
+    carga?: string | null
+    message: string
+    has_excel: boolean
+    excel_url?: string | null
+}
+
+export interface ReminderInicialPreviewResponse {
+    success: boolean
+    message?: string
+    data?: ReminderInicialPreview
+}

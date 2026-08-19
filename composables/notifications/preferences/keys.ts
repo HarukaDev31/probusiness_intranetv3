@@ -30,6 +30,7 @@ export const WS_NOTIFICATION_KEYS = {
   // Contabilidad
   FACTURACION_IMPORTACION: 'facturacion.importacion.finalizada',
   REMINDER_PAGO: 'contabilidad.reminder.pago.enviado',
+  REMINDER_INICIAL: 'contabilidad.reminder.inicial.enviado',
 
   // Almacén
   ALMACEN_STOCK: 'almacen.stock.actualizado',

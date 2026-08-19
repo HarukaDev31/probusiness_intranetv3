@@ -25,6 +25,7 @@ export const WS_EVENTS = {
   IMPORTACION_EXCEL_COMPLETED: 'ImportacionExcelCompleted',
   USUARIO_DATOS_FACTURACION_IMPORT_FINISHED: 'UsuarioDatosFacturacionImportFinished',
   REMINDER_PAGO_WHATSAPP_FINISHED: 'ReminderPagoWhatsAppFinished',
+  REMINDER_INICIAL_WHATSAPP_FINISHED: 'ReminderInicialWhatsAppFinished',
   PLANTILLA_FINAL_BATCH_FINISHED: 'PlantillaFinalBatchFinished',
   FACTURA_COMERCIAL_BATCH_FINISHED: 'FacturaComercialBatchFinished',
   TEST_EVENT: 'TestEvent',

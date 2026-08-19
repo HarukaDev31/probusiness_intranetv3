@@ -114,6 +114,12 @@ export const WS_NOTIFICATION_TYPES: WsNotificationType[] = [
     'Contabilidad',
     'Cuando termina el envío del recordatorio de pago al cliente.'
   ),
+  modalOnly(
+    WS_NOTIFICATION_KEYS.REMINDER_INICIAL,
+    'Recordatorio de inicial',
+    'Contabilidad',
+    'Cuando termina el envío del recordatorio de cotización inicial al cliente.'
+  ),
 
   // — Almacén —
   modalOnly(WS_NOTIFICATION_KEYS.ALMACEN_STOCK, 'Actualización de stock', 'Almacén'),
