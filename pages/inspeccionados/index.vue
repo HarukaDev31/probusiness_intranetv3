@@ -25,6 +25,12 @@
     >
       
     </DataTable>
+    <ReminderPagoModal
+      v-model:open="reminderPagoModal.open"
+      :id-cotizacion="reminderPagoModal.idCotizacion"
+      :loading="reminderPagoModal.loading"
+      @confirm="confirmReminderPago"
+    />
 </template>
 
 <script setup lang="ts">
@@ -35,6 +41,8 @@ import { useInspeccionados } from '~/composables/cargaconsolidada/useInspecciona
 import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
+import { useReminderPago } from '~/composables/cargaconsolidada/cotizacion-final/useReminderPago'
+import ReminderPagoModal from '~/components/cargaconsolidada/cotizacion-final/ReminderPagoModal/index.vue'
 import { formatCurrency } from '~/utils/formatters'
 import { STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 import { createLazyView } from '~/utils/lazyView'
@@ -57,8 +65,40 @@ const {
 
 const { registrarPago, deletePago } = usePagos()
 const { withSpinner } = useSpinner()
-const { showSuccess, showError, showConfirmation } = useModal()
-const nuxtApp = useNuxtApp()
+const { showSuccess, showError } = useModal()
+const { sendReminderPago } = useReminderPago()
+
+const reminderPagoModal = reactive({
+    open: false,
+    idCotizacion: null as number | null,
+    loading: false,
+})
+
+const openReminderPago = (item: any) => {
+    reminderPagoModal.idCotizacion = item.id_cotizacion
+    reminderPagoModal.open = true
+}
+
+const confirmReminderPago = async () => {
+    if (!reminderPagoModal.idCotizacion) return
+    reminderPagoModal.loading = true
+    try {
+        await withSpinner(async () => {
+            const res = await sendReminderPago(reminderPagoModal.idCotizacion as number)
+            if (res && res.success) {
+                showSuccess('Recordatorio enviado', res.message || 'El recordatorio de pago se encoló correctamente')
+                reminderPagoModal.open = false
+            } else {
+                showError('Error', res?.message || 'No se pudo enviar el recordatorio')
+            }
+        }, 'Enviando recordatorio…')
+    } catch (err) {
+        console.error('Error send reminder:', err)
+        showError('Error', 'Error al enviar recordatorio')
+    } finally {
+        reminderPagoModal.loading = false
+    }
+}
 
 const INSPECCION_CLASSES: Record<string, string> = {
     Completado:    'bg-sky-400   text-white dark:bg-sky-400   dark:text-white',
@@ -107,29 +147,6 @@ const filterConfig = ref([
     },
 ])
 
-const sendReminderPago = (item: any) => {
-    showConfirmation(
-        'Confirmar envío',
-        '¿Está seguro de enviar un recordatorio de pago a este cliente?',
-        async () => {
-            try {
-                await withSpinner(async () => {
-                    const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${item.id_cotizacion}/send-reminder-pago`
-                    const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
-                    if (res && (res as any).success) {
-                        showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
-                    } else {
-                        showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
-                    }
-                }, 'Enviando recordatorio...')
-            } catch (err) {
-                console.error('Error send reminder:', err)
-                showError('Error', 'Error al enviar recordatorio')
-            }
-        }
-    )
-}
-
 const getColumns = (): TableColumn<any>[] => [
     {
         accessorKey: 'index',
@@ -176,7 +193,7 @@ const getColumns = (): TableColumn<any>[] => [
                         color:   'primary',
                         variant: 'ghost',
                         size:    'sm',
-                        onClick: () => sendReminderPago(item),
+                        onClick: () => openReminderPago(item),
                     }),
                 }),
                 h(UTooltip, { text: 'Ver cotizaciones del contenedor' }, {

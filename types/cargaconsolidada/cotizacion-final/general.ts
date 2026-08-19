@@ -38,6 +38,21 @@ export interface CobranzaWhatsappPreviewMeta {
     carga?: string | null
 }
 
+export interface ReminderPagoPreview {
+    id_cotizacion: number
+    cliente?: string | null
+    phone?: string | null
+    carga?: string | null
+    message: string
+    has_pdf: boolean
+}
+
+export interface ReminderPagoPreviewResponse {
+    success: boolean
+    message?: string
+    data?: ReminderPagoPreview
+}
+
 export interface GeneralResponse {
     success: boolean
     message?: string

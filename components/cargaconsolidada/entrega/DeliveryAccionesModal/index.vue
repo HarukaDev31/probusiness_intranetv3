@@ -45,6 +45,12 @@
       </div>
     </template>
   </UModal>
+  <ReminderPagoModal
+    v-model:open="reminderPagoModal.open"
+    :id-cotizacion="reminderPagoModal.idCotizacion"
+    :loading="reminderPagoModal.loading"
+    @confirm="confirmReminderPago"
+  />
 </template>
 
 <script setup lang="ts">
@@ -53,6 +59,8 @@ import { ref, computed } from 'vue'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
 import { useEntrega } from '~/composables/cargaconsolidada/entrega/useEntrega'
+import { useReminderPago } from '~/composables/cargaconsolidada/cotizacion-final/useReminderPago'
+import ReminderPagoModal from '~/components/cargaconsolidada/cotizacion-final/ReminderPagoModal/index.vue'
 import { USelect, UButton } from '#components'
 
 const { withSpinner } = useSpinner()
@@ -79,6 +87,12 @@ const isOpen = computed({
 
 const loading = ref<string | null>(null)
 const selectedAction = ref<string | null>(null)
+const { sendReminderPago } = useReminderPago()
+const reminderPagoModal = reactive({
+  open: false,
+  idCotizacion: null as number | null,
+  loading: false,
+})
 
 const actionOptions = [
   { 
@@ -100,31 +114,24 @@ const actionOptions = [
 
 const handleSend = async () => {
   if (!selectedAction.value) return
-  
+
+  if (selectedAction.value === 'cobro_cotizacion_final') {
+    reminderPagoModal.idCotizacion = props.idCotizacion
+    reminderPagoModal.open = true
+    return
+  }
+
   loading.value = selectedAction.value
-  
+
   await withSpinner(async () => {
     try {
       let response = null
       let message = ''
-      
-      switch(selectedAction.value) {
+
+      switch (selectedAction.value) {
         case 'recordatorio_formulario':
           message = props.messageRecordatorioFormulario || 'Mensaje de recordatorio de formulario'
-          response = await  sendMessageForCotizacion(props.idCotizacion)
-          break
-        case 'cobro_cotizacion_final':
-          message = props.messageCobroCotizacionFinal || 'Mensaje de cobro de cotización final'
-          await withSpinner(async () => {
-                      const nuxtApp = useNuxtApp()
-                      const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${props.idCotizacion}/send-reminder-pago`
-                      const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
-                      if (res.success) {  
-                        response = res
-                      } else {
-                        showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
-                      }
-                    }, 'Enviando recordatorio...')
+          response = await sendMessageForCotizacion(props.idCotizacion)
           break
         case 'cobro_delivery':
           message = props.messageCobroDelivery || 'Mensaje de cobro de delivery'
@@ -146,6 +153,29 @@ const handleSend = async () => {
       loading.value = null
     }
   }, 'Enviando mensaje...')
+}
+
+const confirmReminderPago = async () => {
+  if (!reminderPagoModal.idCotizacion) return
+  reminderPagoModal.loading = true
+  try {
+    await withSpinner(async () => {
+      const res = await sendReminderPago(reminderPagoModal.idCotizacion as number)
+      if (res && res.success) {
+        showSuccess('Recordatorio enviado', res.message || 'El recordatorio de pago se encoló correctamente')
+        reminderPagoModal.open = false
+        selectedAction.value = null
+        emit('success')
+        emit('close')
+      } else {
+        showError('Error', res?.message || 'No se pudo enviar el recordatorio')
+      }
+    }, 'Enviando recordatorio…')
+  } catch (error: any) {
+    showError('Error', error?.message || 'No se pudo enviar el recordatorio')
+  } finally {
+    reminderPagoModal.loading = false
+  }
 }
 </script>
 
