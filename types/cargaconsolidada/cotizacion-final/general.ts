@@ -45,6 +45,7 @@ export interface ReminderPagoPreview {
     carga?: string | null
     message: string
     has_pdf: boolean
+    pdf_url?: string | null
 }
 
 export interface ReminderPagoPreviewResponse {

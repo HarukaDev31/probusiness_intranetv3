@@ -10,14 +10,9 @@ export const useReminderPago = () => {
     return GeneralService.sendReminderPago(idCotizacion)
   }
 
-  const downloadCotizacionFinalPdfBlob = async (idCotizacion: number) => {
-    return GeneralService.downloadCotizacionFinalPDF(idCotizacion)
-  }
-
   return {
     previewReminderPago,
     sendReminderPago,
-    downloadCotizacionFinalPdfBlob,
   }
 }
 
