@@ -58,7 +58,7 @@
           <div class="mb-8">
             <h3 class="text-xl font-semibold mb-4">Escoge el tipo de cliente:</h3>
             <div class="flex gap-4">
-              <button @click="clienteInfo.tipoDocumento = 'DNI'" :class="[
+              <button type="button" @click="setTipoDocumento('DNI')" :class="[
                 'px-8 py-3 rounded-full font-semibold transition-all',
                 clienteInfo.tipoDocumento === 'DNI'
                   ? 'bg-orange-500 text-white shadow-lg'
@@ -66,7 +66,7 @@
               ]">
                 DNI
               </button>
-              <button @click="clienteInfo.tipoDocumento = 'RUC'" :class="[
+              <button type="button" @click="setTipoDocumento('RUC')" :class="[
                 'px-8 py-3 rounded-full font-semibold transition-all',
                 clienteInfo.tipoDocumento === 'RUC'
                   ? 'bg-orange-500 text-white shadow-lg'
@@ -1303,7 +1303,8 @@ const {
   esImo,
   usaYuan,
   tcYuanGlobal,
-  fetchTcYuanGlobal
+  fetchTcYuanGlobal,
+  setTipoDocumento
 } = useCalculadoraImportacion()
 
 // `useCalculadoraImportacion` moved up; ya está declarado más arriba
@@ -1601,10 +1602,16 @@ const handlePrevStep = () => {
 const onClienteSelected = (cliente: any) => {
   if (cliente && typeof cliente === 'object') {
     clienteInfo.value.nombre = cliente.nombre || ''
-    clienteInfo.value.dni = cliente.documento || ''
-    clienteInfo.value.correo = cliente.correo || ''
     clienteInfo.value.empresa = cliente.razon_social || cliente.empresa || ''
-    clienteInfo.value.ruc = cliente.ruc || ''
+    clienteInfo.value.correo = cliente.correo || ''
+
+    if (clienteInfo.value.tipoDocumento === 'RUC') {
+      clienteInfo.value.ruc = cliente.documento || cliente.ruc || ''
+      clienteInfo.value.dni = ''
+    } else {
+      clienteInfo.value.dni = cliente.documento || ''
+      clienteInfo.value.ruc = cliente.ruc || ''
+    }
 
     // Guardar el whatsapp como string
     const whatsappValue = cliente.whatsapp || cliente.celular || cliente.label || ''

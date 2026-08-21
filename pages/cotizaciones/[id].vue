@@ -58,7 +58,7 @@
           <div class="mb-8">
             <h3 class="text-xl font-semibold mb-4">Escoge el tipo de cliente:</h3>
             <div class="flex gap-4">
-              <button @click="clienteInfo.tipoDocumento = 'DNI'" :class="[
+              <button type="button" @click="setTipoDocumento('DNI')" :class="[
                 'px-8 py-3 rounded-full font-semibold transition-all',
                 clienteInfo.tipoDocumento === 'DNI'
                   ? 'bg-orange-500 text-white shadow-lg'
@@ -66,7 +66,7 @@
               ]">
                 DNI
               </button>
-              <button @click="clienteInfo.tipoDocumento = 'RUC'" :class="[
+              <button type="button" @click="setTipoDocumento('RUC')" :class="[
                 'px-8 py-3 rounded-full font-semibold transition-all',
                 clienteInfo.tipoDocumento === 'RUC'
                   ? 'bg-orange-500 text-white shadow-lg'
@@ -1293,7 +1293,8 @@ const {
   tcYuanGlobal,
   fetchTcYuanGlobal,
   getMaxItemsByTotalCbm,
-  canAddMoreItems
+  canAddMoreItems,
+  setTipoDocumento
 } = useCalculadoraImportacion()
 
 /** Ref local: USelect interactúa mal con computed get/set anidado en clienteInfo */

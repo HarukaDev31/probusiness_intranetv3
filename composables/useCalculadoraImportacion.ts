@@ -382,6 +382,10 @@ export const useCalculadoraImportacion = () => {
 
   }
 
+  const setTipoDocumento = (tipo: 'DNI' | 'RUC') => {
+    clienteInfo.value.tipoDocumento = tipo
+  }
+
   const handleEndFormulario = async (id?: number) => {
     // Las tarifas siempre se toman del campo modificable
     // Al inicio, estos campos se inicializan con los valores calculados
@@ -394,9 +398,26 @@ export const useCalculadoraImportacion = () => {
     if (tarifaToSend && tarifaToSend.label === 'MANUAL') {
       tarifaToSend = { ...tarifaToSend, tarifa: Number(tarifaToSend.tarifa) }
     }
+    // Objeto plano (no Proxy) y tipoDocumento explícito: evita perder RUC al serializar.
+    const ci = clienteInfo.value
+    const tipoDocumento = String(ci.tipoDocumento || 'DNI').toUpperCase() === 'RUC' ? 'RUC' : 'DNI'
     const saveCotizacionRequest: saveCotizacionRequest = {
       ...(id ? { id } : {}),
-      clienteInfo: clienteInfo.value,
+      clienteInfo: {
+        nombre: ci.nombre || '',
+        dni: ci.dni || '',
+        whatsapp: ci.whatsapp,
+        correo: ci.correo || '',
+        qtyProveedores: Number(ci.qtyProveedores) || 0,
+        tipoCliente: ci.tipoCliente || 'NUEVO',
+        tipoDocumento,
+        empresa: ci.empresa || '',
+        ruc: ci.ruc || '',
+        domicilioFiscal: ci.domicilioFiscal || '',
+        coordinadorOperativoNombre: ci.coordinadorOperativoNombre || '',
+        coordinadorOperativoDni: ci.coordinadorOperativoDni || '',
+        origen_marketing: ci.origen_marketing ?? null,
+      },
       proveedores: proveedores.value.map(proveedor => ({
         id: proveedor.id,
         code_supplier: proveedor.code_supplier,
@@ -875,8 +896,9 @@ export const useCalculadoraImportacion = () => {
       if (!payload) return null
 
       const cliente = payload.cliente || {}
-      // Determinar tipo de documento primero
-      const tipoDocumento = cliente.tipo_documento || payload.tipo_documento || 'DNI'
+      // Fuente de verdad: fila calculadora_importacion (no el cliente relacionado)
+      const tipoRaw = payload.tipo_documento || payload.tipoDocumento || cliente.tipo_documento || 'DNI'
+      const tipoDocumento = String(tipoRaw).toUpperCase() === 'RUC' ? 'RUC' : 'DNI'
       clienteInfo.value.tipoDocumento = tipoDocumento
 
       clienteInfo.value.nombre = cliente.nombre || payload.nombre_cliente || ''
@@ -988,6 +1010,7 @@ export const useCalculadoraImportacion = () => {
     TARIFA_EXTRA_PROVEEDOR,
     TARIFAS_EXTRA_ITEM_PER_CBM,
     handleEndFormulario,
+    setTipoDocumento,
     handleChangeToStep2,
     getCotizaciones,
     cotizaciones,
