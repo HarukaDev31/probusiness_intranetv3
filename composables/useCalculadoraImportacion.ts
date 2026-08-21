@@ -175,6 +175,9 @@ export const useCalculadoraImportacion = () => {
     tipoDocumento: 'DNI',
     empresa: '',
     ruc: '',
+    domicilioFiscal: '',
+    coordinadorOperativoNombre: '',
+    coordinadorOperativoDni: '',
     origen_marketing: null,
   })
   //computed totalItems
@@ -633,7 +636,12 @@ export const useCalculadoraImportacion = () => {
         if (clienteInfo.value.tipoDocumento === 'DNI') {
           return clienteInfo.value.nombre.trim() !== ''
         } else if (clienteInfo.value.tipoDocumento === 'RUC') {
-          return clienteInfo.value.empresa.trim() !== ''
+          return (
+            clienteInfo.value.empresa.trim() !== '' &&
+            (clienteInfo.value.domicilioFiscal || '').trim() !== '' &&
+            (clienteInfo.value.coordinadorOperativoNombre || '').trim() !== '' &&
+            (clienteInfo.value.coordinadorOperativoDni || '').trim() !== ''
+          )
         }
         return false
       case 2:
@@ -888,6 +896,9 @@ export const useCalculadoraImportacion = () => {
       clienteInfo.value.tipoCliente = payload.tipo_cliente || clienteInfo.value.tipoCliente
       clienteInfo.value.qtyProveedores = Number(payload.qty_proveedores || payload.qtyProveedores || 0)
       clienteInfo.value.origen_marketing = payload.origen_marketing ?? null
+      clienteInfo.value.domicilioFiscal = payload.domicilio_fiscal || cliente.domicilio_fiscal || ''
+      clienteInfo.value.coordinadorOperativoNombre = payload.coordinador_operativo_nombre || ''
+      clienteInfo.value.coordinadorOperativoDni = payload.coordinador_operativo_dni || ''
 
       proveedores.value = (payload.proveedores || []).map((p: any, idx: number) => ({
         id: p.id || (idx + 1).toString(),

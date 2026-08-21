@@ -166,6 +166,36 @@
                   @blur="() => { if (!clienteInfo.qtyProveedores || clienteInfo.qtyProveedores < 1) clienteInfo.qtyProveedores = 1 }" />
               </UFormField>
             </div>
+
+            <div>
+              <UFormField name="domicilioFiscal">
+                <template #label>
+                  Domicilio fiscal: <span class="text-red-500">*</span>
+                </template>
+                <UInput class="w-full" v-model="clienteInfo.domicilioFiscal" type="text"
+                  placeholder="Av. Canadá 222 - San Luis" required />
+              </UFormField>
+            </div>
+
+            <div>
+              <UFormField name="coordinadorOperativoNombre">
+                <template #label>
+                  Coordinador operativo (nombre): <span class="text-red-500">*</span>
+                </template>
+                <UInput class="w-full" v-model="clienteInfo.coordinadorOperativoNombre" type="text"
+                  placeholder="Nombre y apellidos" required />
+              </UFormField>
+            </div>
+
+            <div>
+              <UFormField name="coordinadorOperativoDni">
+                <template #label>
+                  Coordinador operativo (DNI): <span class="text-red-500">*</span>
+                </template>
+                <UInput class="w-full" v-model="clienteInfo.coordinadorOperativoDni" type="text"
+                  placeholder="75002588" required />
+              </UFormField>
+            </div>
           </div>
         </div>
 
