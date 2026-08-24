@@ -64,8 +64,20 @@ export const useCursos = () => {
             label: 'Tipo de curso',
             placeholder: 'Seleccionar tipo de curso',
             options: [
+                { label: 'Todos', value: '' },
                 { label: 'Virtual', value: "0" },
                 { label: 'En vivo', value: "1" }
+            ]
+        },
+        {
+            key: 'estado_usuario',
+            label: 'Estado de Usuario',
+            placeholder: 'Seleccionar estado de usuario',
+            options: [
+                { label: 'Todos', value: '' },
+                { label: 'Pendiente', value: 'pendiente' },
+                { label: 'Creado', value: 'creado' },
+                { label: 'Constancia', value: 'constancia' }
             ]
         },
     ])
@@ -125,6 +137,9 @@ export const useCursos = () => {
     const handleFilterChange = async (key: string, value: any) => {
         // Si el value es un objeto con propiedad value, extrae el value
         let realValue = (typeof value === 'object' && value !== null && 'value' in value) ? value.value : value
+        if (realValue === 'todos' || realValue === undefined || realValue === null) {
+            realValue = ''
+        }
         // Normalizar filtros de tipo fecha a YYYY-MM-DD si vienen como Date o string
         if (key === 'fecha_inicio' || key === 'fecha_fin') {
             try {

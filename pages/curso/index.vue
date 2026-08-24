@@ -11,7 +11,7 @@
         <DataTable title="" icon="" :data="cursosData" :columns="getAlumnosColumns()" :loading="loading" :current-page="currentPage"
             v-if="activeTab === 'alumnos'" :total-pages="totalPages" :total-records="totalRecords"
             :items-per-page="itemsPerPage" :search-query-value="searchQuery" :show-primary-search="true"
-            :primary-search-label="'Buscar por'" :primary-search-placeholder="'Buscar...'" :show-filters="true"
+            :primary-search-label="'Buscar por'" :primary-search-placeholder="'Buscar por nombre, DNI, celular o correo'" :show-filters="true"
             :filter-config="filterConfig" :filters-value="filters" :show-export="!isJefeMarketing"
             empty-state-message="No se encontraron clientes que coincidan con los criterios de búsqueda."
             @update:primarySearch="handleSearch" @page-change="handlePageChange"
