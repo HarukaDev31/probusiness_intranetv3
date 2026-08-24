@@ -66,7 +66,9 @@
             <div class="font-medium text-gray-500 dark:text-gray-400">WhatsApp:</div>
               <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.telefono }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">Correo:</div>
-              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full" :title="cliente?.correo">{{ cliente?.correo }}</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full" :title="cliente?.correo">{{ cliente?.correo || '—' }}</div>
+            <div class="font-medium text-gray-500 dark:text-gray-400">Correo plataforma:</div>
+              <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full" :title="cliente?.correo_plataforma || ''">{{ cliente?.correo_plataforma || '—' }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">Empresa:</div>
               <div class="text-gray-900 dark:text-gray-100 break-words whitespace-normal max-w-full">{{ cliente?.empresa }}</div>
             <div class="font-medium text-gray-500 dark:text-gray-400">RUC:</div>
@@ -106,6 +108,9 @@
           </h3>
           <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">
             Asigna una nueva contraseña para el acceso del cliente al portal.
+            <span v-if="cliente?.correo_plataforma" class="mt-1 block font-medium text-gray-700 dark:text-gray-300">
+              Cuenta: {{ cliente.correo_plataforma }}
+            </span>
           </p>
           <form class="flex flex-col gap-3" @submit.prevent="handleActualizarContrasena">
             <UFormField label="Nueva contraseña" required>

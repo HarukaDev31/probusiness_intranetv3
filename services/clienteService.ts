@@ -6,6 +6,8 @@ export interface Cliente {
   nombre: string
   documento: string | null
   correo: string
+  /** Email de la cuenta en el portal (tabla users), resuelto con UserLookupHelper */
+  correo_plataforma?: string | null
   telefono: string
   fecha: string
   empresa: string
