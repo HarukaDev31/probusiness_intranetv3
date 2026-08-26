@@ -1,5 +1,9 @@
 import { BaseService } from "~/services/base/BaseService"
-import type { saveCotizacionRequest } from "~/types/calculadora-importacion"
+import type {
+    CalculadoraTarifaUpdateBody,
+    CalculadoraTarifaUpdateResponse,
+    saveCotizacionRequest
+} from "~/types/calculadora-importacion"
 export class CalculadoraImportacionService extends BaseService {
     private static baseUrl = 'api/calculadora-importacion'
     //get clientes by whatsapp
@@ -27,36 +31,22 @@ export class CalculadoraImportacionService extends BaseService {
         }
     }
 
-    /** Actualiza una sola tarifa por id (monto y tipo PLAIN|STANDARD). */
+    /**
+     * Versiona una tarifa: cierra la vigente y crea una nueva fila.
+     * La respuesta trae el nuevo `id` (usar ese en siguientes calculadoras).
+     */
     static async updateTarifa(
         id: number,
-        body: { value: number; type: 'PLAIN' | 'STANDARD' }
-    ): Promise<{
-        success: boolean
-        message?: string
-        data?: {
-            id: number
-            tarifa: number
-            type: string
-            created_at?: string | null
-            updated_at?: string | null
-        }
-    }> {
+        body: CalculadoraTarifaUpdateBody
+    ): Promise<CalculadoraTarifaUpdateResponse> {
         try {
-            const response = await this.apiCall<{
-                success: boolean
-                message?: string
-                data?: {
-                    id: number
-                    tarifa: number
-                    type: string
-                    created_at?: string | null
-                    updated_at?: string | null
+            const response = await this.apiCall<CalculadoraTarifaUpdateResponse>(
+                `${this.baseUrl}/tarifas/${id}`,
+                {
+                    method: 'PUT',
+                    body
                 }
-            }>(`${this.baseUrl}/tarifas/${id}`, {
-                method: 'PUT',
-                body
-            })
+            )
             return response
         } catch (error) {
             console.error('Error al actualizar tarifa:', error)

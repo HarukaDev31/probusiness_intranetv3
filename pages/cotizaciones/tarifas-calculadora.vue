@@ -6,7 +6,7 @@
           Tarifas de calculadora de importación
         </h1>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xl">
-          Puedes cambiar el monto (USD), el tipo PLAIN o STANDARD y guardar cada fila por separado. Los rangos de CBM no se editan aquí.
+          Al guardar se crea una nueva versión vigente (la anterior queda con fecha de fin). Los rangos de CBM no se editan aquí.
         </p>
       </div>
       <div class="flex flex-wrap gap-2 shrink-0">
@@ -31,8 +31,8 @@
                 <th class="text-left py-3 px-3 font-medium text-gray-600 dark:text-gray-300">CBM hasta</th>
                 <th class="text-left py-3 px-3 font-medium text-gray-600 dark:text-gray-300">Tipo</th>
                 <th class="text-left py-3 px-3 font-medium text-gray-600 dark:text-gray-300">Tarifa (USD)</th>
-                <th class="text-left py-3 px-3 font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">Creado</th>
-                <th class="text-left py-3 px-3 font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">Actualizado</th>
+                <th class="text-left py-3 px-3 font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">Vigente desde</th>
+                <th class="text-left py-3 px-3 font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">Vigente hasta</th>
                 <th class="text-right py-3 px-3 font-medium text-gray-600 dark:text-gray-300 w-28">Acción</th>
               </tr>
             </thead>
@@ -61,10 +61,10 @@
                   <UInput v-model="row.tarifa" type="number" step="0.01" min="0" class="w-28" />
                 </td>
                 <td class="py-2 px-3 align-middle text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
-                  {{ formatTs(row.created_at) }}
+                  {{ formatTs(row.vigente_desde) }}
                 </td>
                 <td class="py-2 px-3 align-middle text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
-                  {{ formatTs(row.updated_at) }}
+                  {{ row.vigente_hasta ? formatTs(row.vigente_hasta) : 'Vigente' }}
                 </td>
                 <td class="py-2 px-3 align-middle text-right">
                   <UButton
@@ -100,8 +100,8 @@ interface EditableRow {
   limit_sup: string
   tarifa: string
   type: 'STANDARD' | 'PLAIN'
-  created_at: string | null
-  updated_at: string | null
+  vigente_desde: string | null
+  vigente_hasta: string | null
 }
 
 const { showSuccess, showError } = useModal()
@@ -122,6 +122,19 @@ const formatTs = (iso: string | null) => {
   if (Number.isNaN(d.getTime())) return '—'
   return d.toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' })
 }
+
+const mapTarifaRow = (t: any): EditableRow => ({
+  id: Number(t.id),
+  label: String(t.label ?? ''),
+  limit_inf: String(t.limit_inf ?? ''),
+  limit_sup: String(t.limit_sup ?? ''),
+  tarifa: String(t.tarifa ?? ''),
+  type: (t.type === 'PLAIN' ? 'PLAIN' : 'STANDARD') as 'STANDARD' | 'PLAIN',
+  vigente_desde: t.vigente_desde != null
+    ? String(t.vigente_desde)
+    : (t.created_at != null ? String(t.created_at) : null),
+  vigente_hasta: t.vigente_hasta != null ? String(t.vigente_hasta) : null
+})
 
 const grouped = computed(() => {
   const map = new Map<string, EditableRow[]>()
@@ -147,16 +160,7 @@ const load = async () => {
       showError('Error', 'No se pudieron cargar las tarifas.')
       return
     }
-    rows.value = res.data.map((t: any) => ({
-      id: Number(t.id),
-      label: String(t.label ?? ''),
-      limit_inf: String(t.limit_inf ?? ''),
-      limit_sup: String(t.limit_sup ?? ''),
-      tarifa: String(t.tarifa ?? ''),
-      type: (t.type === 'PLAIN' ? 'PLAIN' : 'STANDARD') as 'STANDARD' | 'PLAIN',
-      created_at: t.created_at != null ? String(t.created_at) : null,
-      updated_at: t.updated_at != null ? String(t.updated_at) : null
-    }))
+    rows.value = res.data.map(mapTarifaRow)
   } catch {
     rows.value = []
     showError('Error', 'No se pudieron cargar las tarifas.')
@@ -172,18 +176,22 @@ const saveRow = async (row: EditableRow) => {
     return
   }
 
-  savingIds.value = new Set(savingIds.value).add(row.id)
+  const previousId = row.id
+  savingIds.value = new Set(savingIds.value).add(previousId)
   try {
-    const result = await CalculadoraImportacionService.updateTarifa(row.id, {
+    const result = await CalculadoraImportacionService.updateTarifa(previousId, {
       value,
       type: row.type
     })
     if (result?.success && result.data) {
-      row.tarifa = String(result.data.tarifa)
-      row.type = result.data.type === 'PLAIN' ? 'PLAIN' : 'STANDARD'
-      if (result.data.created_at != null) row.created_at = String(result.data.created_at)
-      if (result.data.updated_at != null) row.updated_at = String(result.data.updated_at)
-      showSuccess('Guardado', 'Tarifa actualizada.')
+      // Backend versiona: la respuesta trae el nuevo id vigente
+      const mapped = mapTarifaRow(result.data)
+      row.id = mapped.id
+      row.tarifa = mapped.tarifa
+      row.type = mapped.type
+      row.vigente_desde = mapped.vigente_desde
+      row.vigente_hasta = mapped.vigente_hasta
+      showSuccess('Guardado', 'Nueva versión de tarifa vigente.')
     } else {
       showError('Error', result?.message || 'No se pudo guardar la tarifa.')
     }
@@ -192,7 +200,7 @@ const saveRow = async (row: EditableRow) => {
     showError('Error', msg)
   } finally {
     const next = new Set(savingIds.value)
-    next.delete(row.id)
+    next.delete(previousId)
     savingIds.value = next
   }
 }

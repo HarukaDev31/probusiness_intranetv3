@@ -385,12 +385,30 @@ export const useCalculadoraImportacion = () => {
     // Si el usuario modifica esos campos, solo se envía el valor modificado (no la suma)
     const tarifaTotalExtraProveedor = tarifaExtraProveedorManual.value
     const tarifaTotalExtraItem = tarifaExtraItemManual.value
-    //create saveCotizacionRequest
+    // Snapshot de tarifa vigente (incluye id para que el backend no re-consulte solo por CBM)
     let tarifaToSend = selectedTarifa.value
-    // Si es MANUAL, usar el valor del input
     if (tarifaToSend && tarifaToSend.label === 'MANUAL') {
       tarifaToSend = { ...tarifaToSend, tarifa: Number(tarifaToSend.tarifa) }
     }
+    if (!tarifaToSend?.id) {
+      console.warn('Calculadora: tarifa sin id; el backend resolverá por tipo/CBM vigente')
+    }
+    const tarifaPayload: Tarifa | null = tarifaToSend
+      ? {
+          id: Number(tarifaToSend.id),
+          limit_inf: String(tarifaToSend.limit_inf ?? ''),
+          limit_sup: String(tarifaToSend.limit_sup ?? ''),
+          type: tarifaToSend.type === 'PLAIN' ? 'PLAIN' : 'STANDARD',
+          tarifa: Number(tarifaToSend.tarifa) || 0,
+          label: String(tarifaToSend.label ?? ''),
+          value: String(tarifaToSend.value ?? tarifaToSend.label ?? ''),
+          id_tipo_cliente: tarifaToSend.id_tipo_cliente,
+          vigente_desde: tarifaToSend.vigente_desde ?? tarifaToSend.created_at ?? null,
+          vigente_hasta: tarifaToSend.vigente_hasta ?? null,
+          created_at: tarifaToSend.created_at ?? null,
+          updated_at: tarifaToSend.updated_at ?? null,
+        }
+      : null
     const saveCotizacionRequest: saveCotizacionRequest = {
       ...(id ? { id } : {}),
       clienteInfo: clienteInfo.value,
@@ -415,7 +433,7 @@ export const useCalculadoraImportacion = () => {
       tarifaDescuento: tarifaDescuento.value,
       id_usuario: selectedVendedor.value,
       id_carga_consolidada_contenedor: selectedContenedor.value,
-      tarifa: tarifaToSend,
+      tarifa: tarifaPayload as Tarifa,
       tipo_cambio: tipoCambio.value,
       es_imo: esImo.value,
       usa_yuan: usaYuan.value,

@@ -70,6 +70,9 @@ export interface Tarifa {
   label: string
   value: string
   id_tipo_cliente?: number
+  /** Vigencia de la versión (backend versiona con vigente_hasta) */
+  vigente_desde?: string | null
+  vigente_hasta?: string | null
   created_at?: string | null
   updated_at?: string | null
 }
@@ -78,6 +81,15 @@ export interface Tarifa {
 export interface CalculadoraTarifaUpdateBody {
   value: number
   type: 'STANDARD' | 'PLAIN'
+}
+
+/** Respuesta de PUT tarifas (nueva fila vigente) */
+export interface CalculadoraTarifaUpdateResponse {
+  success: boolean
+  message?: string
+  data?: Tarifa & {
+    tarifa_anterior_id?: number
+  }
 }
 export interface ProveedorRequest {
   cbm: number
