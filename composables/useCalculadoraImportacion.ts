@@ -719,13 +719,12 @@ export const useCalculadoraImportacion = () => {
       return null
     }
   }
-  const getTarifas = async () => {
+  const getTarifas = async (calculadoraId?: number) => {
     try {
-      const response = await CalculadoraImportacionService.getTarifas()
+      const response = await CalculadoraImportacionService.getTarifas(calculadoraId)
       tarifas.value = response.data
     } catch (error) {
       console.error('Error al obtener tarifas:', error)
-      // No lanzar para evitar que onMounted falle; usar lista vacía como fallback
       tarifas.value = []
       return null
     }
@@ -989,6 +988,9 @@ export const useCalculadoraImportacion = () => {
           })
         })
       }
+
+      // Tarifas de la generación vigente al crear/vincular (no las actuales)
+      await getTarifas(Number(payload.id || id))
 
       return payload
     } catch (error) {
