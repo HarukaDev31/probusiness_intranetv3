@@ -21,9 +21,12 @@ export class CalculadoraImportacionService extends BaseService {
         }
     }
     //get clientes by dni
-    static async getTarifas(): Promise<any> {
+    static async getTarifas(calculadoraId?: number): Promise<any> {
         try {
-            const response = await this.apiCall<any>(`${this.baseUrl}/tarifas`)
+            const query = calculadoraId && calculadoraId > 0
+                ? `?calculadora_id=${calculadoraId}`
+                : ''
+            const response = await this.apiCall<any>(`${this.baseUrl}/tarifas${query}`)
             return response
         } catch (error) {
             console.error('Error al obtener tarifas:', error)

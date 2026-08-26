@@ -2134,9 +2134,7 @@ const cotizacionId = Number(Array.isArray(rawId) ? rawId[0] : (rawId ?? 0))
 
 onMounted(async () => {
   await getClientesByWhatsapp('')
-  await getTarifas()
   await fetchTcYuanGlobal()
-  // Si hay un id, cargar la cotización desde el composable
   if (cotizacionId) {
     try {
       await withSpinner(async () => {
@@ -2149,6 +2147,8 @@ onMounted(async () => {
     } catch (err) {
       showError('Error al cargar la cotización', 'error')
     }
+  } else {
+    await getTarifas()
   }
   // Si el composable cargó el whatsapp pero no hay cliente seleccionado,
   // intentar encontrar el objeto correspondiente en `clientes` para
