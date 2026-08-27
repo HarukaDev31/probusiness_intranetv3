@@ -11,6 +11,8 @@ export const WS_EVENTS = {
   COTIZACION_CHINA_CONTACTED: 'CotizacionChinaContacted',
   COTIZACION_CHINA_RECEIVED: 'CotizacionChinaReceived',
   COTIZACION_CHINA_INSPECTIONED: 'CotizacionChinaInspected',
+  // Cliente actualizó / completó Excel de confirmación
+  EXCEL_CONFIRMACION_CLIENTE_ACTUALIZADO: 'ExcelConfirmacionClienteActualizado',
   //Evento que se envia cuando rolean un carga
   COTIZACION_CHANGE_CONTAINER: 'CotizacionChangeContainer',
   // Eventos de Contenedor (usados en events/contenedor-consolidado.ts)

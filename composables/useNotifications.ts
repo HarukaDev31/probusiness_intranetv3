@@ -1,47 +1,46 @@
-import { ref, computed, watch } from 'vue'
-import type { 
-  Notification, 
-  NotificationFilters, 
-  NotificationCreateData,
+import { ref, computed, readonly } from 'vue'
+import type {
+  Notification,
+  NotificationFilters,
   LegacyNotification
 } from '~/types/notification'
 import { NotificationService } from '~/services/notificationService'
 
+// Singleton: el badge del sidebar y la página de notificaciones comparten el mismo conteo.
+const notifications = ref<Notification[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
+const unreadCount = ref(0)
+const totalCount = ref(0)
+const readCount = ref(0)
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalItems = ref(0)
+const itemsPerPage = ref(15)
+const filters = ref<NotificationFilters>({
+  per_page: 15,
+  page: 1,
+  no_leidas: true
+})
+
+let fetchUnreadInFlight: Promise<number> | null = null
+
 export const useNotifications = () => {
-  // Estado reactivo
-  const notifications = ref<Notification[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-  const unreadCount = ref(0)
-  const totalCount = ref(0)
-  const readCount = ref(0)
-
-  // Paginación
-  const currentPage = ref(1)
-  const totalPages = ref(1)
-  const totalItems = ref(0)
-  const itemsPerPage = ref(15)
-
-  // Filtros
-  const filters = ref<NotificationFilters>({
-    per_page: 15,
-    page: 1,
-    no_leidas: true // Por defecto mostrar solo no leídas
-  })
-
-  // Computed properties
   const hasNotifications = computed(() => notifications.value.length > 0)
   const hasUnreadNotifications = computed(() => unreadCount.value > 0)
-  
-  const unreadNotifications = computed(() => 
+
+  const unreadNotifications = computed(() =>
     notifications.value.filter(n => !n.estado_usuario.leida)
   )
 
-  const readNotifications = computed(() => 
+  const readNotifications = computed(() =>
     notifications.value.filter(n => n.estado_usuario.leida)
   )
 
-  // Método para cambiar de página
+  const setUnreadCount = (count: number) => {
+    unreadCount.value = Math.max(0, Number(count) || 0)
+  }
+
   const changePage = async (newPage: number) => {
     if (newPage !== currentPage.value && newPage >= 1 && newPage <= totalPages.value) {
       currentPage.value = newPage
@@ -50,14 +49,12 @@ export const useNotifications = () => {
     }
   }
 
-  // Métodos principales
   const fetchNotifications = async (newFilters?: Partial<NotificationFilters>) => {
     try {
       loading.value = true
       error.value = null
 
       if (newFilters) {
-        // Si newFilters tiene no_leidas explícitamente como undefined, eliminarlo
         const updatedFilters = { ...filters.value, ...newFilters }
         if ('no_leidas' in newFilters && newFilters.no_leidas === undefined) {
           delete updatedFilters.no_leidas
@@ -73,16 +70,11 @@ export const useNotifications = () => {
       totalItems.value = response.data.total
       itemsPerPage.value = response.data.per_page
 
-      // Actualizar conteos desde la respuesta del API - SIEMPRE usar los conteos del API
       if (response.conteos) {
         totalCount.value = Number(response.conteos.total) || 0
         unreadCount.value = Number(response.conteos.no_leidas) || 0
         readCount.value = Number(response.conteos.leidas) || 0
-      } else {
-        console.error('ERROR: No se encontraron conteos en la respuesta del API')
-        // Si no vienen conteos, mantener los valores actuales (no calcular)
       }
-
     } catch (err: any) {
       error.value = err.message || 'Error al cargar notificaciones'
       console.error('Error fetching notifications:', err)
@@ -91,27 +83,39 @@ export const useNotifications = () => {
     }
   }
 
-  const fetchUnreadCount = async () => {
-    // Ya no es necesario llamar a este endpoint ya que los conteos vienen en fetchNotifications
-    // Se mantiene por compatibilidad pero no hace nada
-    try {
-      // Los conteos ya se actualizan en fetchNotifications desde response.data.conteos
-    } catch (err: any) {
-      console.error('Error fetching unread count:', err)
+  const fetchUnreadCount = async (): Promise<number> => {
+    if (fetchUnreadInFlight) {
+      return fetchUnreadInFlight
     }
+
+    fetchUnreadInFlight = (async () => {
+      try {
+        const count = await NotificationService.getUnreadCount()
+        unreadCount.value = Number(count) || 0
+        return unreadCount.value
+      } catch (err: any) {
+        console.error('Error fetching unread count:', err)
+        return unreadCount.value
+      } finally {
+        fetchUnreadInFlight = null
+      }
+    })()
+
+    return fetchUnreadInFlight
   }
 
   const markAsRead = async (id: number) => {
     try {
       await NotificationService.markAsRead(id)
 
-      // Actualizar estado local y conteos sin necesidad de refetch
       const notification = notifications.value.find(n => n.id === id)
       if (notification && !notification.estado_usuario.leida) {
         notification.estado_usuario.leida = true
         notification.estado_usuario.fecha_lectura = new Date().toISOString()
         unreadCount.value = Math.max(0, unreadCount.value - 1)
         readCount.value = readCount.value + 1
+      } else {
+        await fetchUnreadCount()
       }
     } catch (err: any) {
       error.value = err.message || 'Error al marcar como leída'
@@ -122,15 +126,12 @@ export const useNotifications = () => {
   const markAllAsRead = async () => {
     loading.value = true
     try {
-      // Verificar si hay notificaciones no leídas
       if (unreadCount.value === 0) {
         loading.value = false
         return
       }
 
-      // Obtener todas las notificaciones no leídas
-      // Usamos un per_page alto para obtener todas en una sola llamada
-      const maxPerPage = 10000 // Número alto para obtener todas
+      const maxPerPage = 10000
       const allUnreadResponse = await NotificationService.getNotifications({
         no_leidas: true,
         per_page: Math.max(maxPerPage, unreadCount.value),
@@ -144,24 +145,19 @@ export const useNotifications = () => {
         return
       }
 
-      // Si hay más páginas de notificaciones no leídas, obtenerlas todas
       if (allUnreadResponse.data.last_page > 1) {
-        const additionalPages = []
         for (let page = 2; page <= allUnreadResponse.data.last_page; page++) {
           const pageResponse = await NotificationService.getNotifications({
             no_leidas: true,
             per_page: maxPerPage,
             page: page
           })
-          additionalPages.push(...pageResponse.data.data.map(n => n.id))
+          allUnreadIds.push(...pageResponse.data.data.map(n => n.id))
         }
-        allUnreadIds.push(...additionalPages)
       }
 
-      // Marcar todas como leídas en el backend
       await NotificationService.markMultipleAsRead(allUnreadIds)
-      
-      // Actualizar estado local de las notificaciones visibles
+
       notifications.value.forEach(notification => {
         if (!notification.estado_usuario.leida) {
           notification.estado_usuario.leida = true
@@ -169,7 +165,6 @@ export const useNotifications = () => {
         }
       })
 
-      // Actualizar conteos localmente sin refetch
       readCount.value = readCount.value + unreadCount.value
       unreadCount.value = 0
     } catch (err: any) {
@@ -183,8 +178,7 @@ export const useNotifications = () => {
   const handleNotificationClick = async (notification: Notification) => {
     try {
       await NotificationService.handleNotificationClick(notification)
-      
-      // Actualizar estado local si no estaba leída
+
       if (!notification.estado_usuario.leida) {
         notification.estado_usuario.leida = true
         notification.estado_usuario.fecha_lectura = new Date().toISOString()
@@ -201,11 +195,11 @@ export const useNotifications = () => {
       const index = notifications.value.findIndex(n => n.id === id)
       if (index > -1) {
         const notification = notifications.value[index]
-        
+
         if (!notification.estado_usuario.leida) {
           unreadCount.value = Math.max(0, unreadCount.value - 1)
         }
-        
+
         notifications.value.splice(index, 1)
         totalItems.value = Math.max(0, totalItems.value - 1)
       }
@@ -215,25 +209,22 @@ export const useNotifications = () => {
     }
   }
 
-  // Métodos de utilidad
-  const getTypeColor = (tipo: Notification['tipo']) => 
+  const getTypeColor = (tipo: Notification['tipo']) =>
     NotificationService.getTypeColor(tipo)
 
-  const getTypeIcon = (tipo: Notification['tipo']) => 
+  const getTypeIcon = (tipo: Notification['tipo']) =>
     NotificationService.getTypeIcon(tipo)
 
-  const formatDate = (dateString: string) => 
+  const formatDate = (dateString: string) =>
     NotificationService.formatDate(dateString)
 
-  // Compatibilidad con formato legacy
-  const toLegacyFormat = (notification: Notification): LegacyNotification => 
+  const toLegacyFormat = (notification: Notification): LegacyNotification =>
     NotificationService.toLegacyFormat(notification)
 
-  const legacyNotifications = computed(() => 
+  const legacyNotifications = computed(() =>
     notifications.value.map(toLegacyFormat)
   )
 
-  // Inicialización
   const initialize = async () => {
     await Promise.all([
       fetchNotifications(),
@@ -242,30 +233,24 @@ export const useNotifications = () => {
   }
 
   return {
-    // Estado
     notifications: readonly(notifications),
     loading: readonly(loading),
     error: readonly(error),
     unreadCount: readonly(unreadCount),
     totalCount: readonly(totalCount),
     readCount: readonly(readCount),
-    
-    // Paginación
     currentPage,
     totalPages: readonly(totalPages),
     totalItems: readonly(totalItems),
     itemsPerPage: readonly(itemsPerPage),
-    
-    // Computed
     hasNotifications,
     hasUnreadNotifications,
     unreadNotifications,
     readNotifications,
     legacyNotifications,
-    
-    // Métodos
     fetchNotifications,
     fetchUnreadCount,
+    setUnreadCount,
     markAsRead,
     markAllAsRead,
     handleNotificationClick,

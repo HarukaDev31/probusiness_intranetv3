@@ -189,9 +189,9 @@
                 :class="collapsed ? 'justify-center' : 'justify-start'">
                 <template #default>
                   <span v-if="!collapsed">Notificaciones</span>
-                  <UBadge v-if="!collapsed && unreadCount > 0"
+                  <UBadge v-if="showNotificationsBadge"
                     :label="unreadCount > 99 ? '99+' : unreadCount.toString()" color="error" variant="solid" size="xs"
-                    class="ml-auto" />
+                    :class="collapsed ? '' : 'ml-auto'" />
                 </template>
               </UButton>
             </div>
@@ -296,14 +296,22 @@ const {
   fetchUnreadCount
 } = useNotifications()
 
+/** Nu_Notificacion del grupo: si está apagado, no mostramos badge ni pedimos conteo. */
+const notificationsEnabledForRole = computed(() => {
+  const flag = userData.value?.raw?.grupo?.notificacion
+  return flag === undefined || flag === null || Number(flag) === 1
+})
+
+const showNotificationsBadge = computed(() =>
+  notificationsEnabledForRole.value && Number(unreadCount.value) > 0
+)
+
 const { prefetchRoute } = useMenuPrefetch()
 
 // Refs para cleanup en onUnmounted (registrado de forma síncrona en setup)
-const notificationIntervalRef = ref<ReturnType<typeof setInterval> | null>(null)
 const cleanupListenersRef = ref<(() => void) | null>(null)
 onUnmounted(() => {
   cleanupListenersRef.value?.()
-  if (notificationIntervalRef.value) clearInterval(notificationIntervalRef.value)
 })
 
 // Dark mode
@@ -517,17 +525,10 @@ onMounted(async () => {
     }
   }
 
-  // Cargar contador de notificaciones no leídas
-  await fetchUnreadCount()
-
-  // Actualizar contador cada 5 minutos
-  notificationIntervalRef.value = setInterval(async () => {
-    try {
-      await fetchUnreadCount()
-    } catch (error) {
-      console.error('Error actualizando contador de notificaciones:', error)
-    }
-  }, 1000 * 60 * 5) // 5 minutos
+  // Conteos: login + WS (sin polling). Solo si el cargo tiene notificaciones activas.
+  if (notificationsEnabledForRole.value) {
+    await fetchUnreadCount()
+  }
 
   // Expandir ruta activa inicial
   const current = useRoute().path

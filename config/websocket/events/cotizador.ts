@@ -5,12 +5,22 @@ import {
 } from '~/config/websocket/channels'
 import { ROLES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import { useNotifications } from '~/composables/useNotifications'
 import { wsShowSuccess, WS_NOTIFICATION_KEYS } from '~/composables/notifications/preferences'
 
 const { currentId } = useUserRole()
 
 function esUsuarioQueDisparo(data: { usuario_id?: number | string }): boolean {
   return data?.usuario_id != null && data.usuario_id == currentId.value
+}
+
+function refreshUnreadBadge() {
+  try {
+    const { fetchUnreadCount } = useNotifications()
+    void fetchUnreadCount()
+  } catch (e) {
+    console.error('Error refrescando conteo de notificaciones:', e)
+  }
 }
 
 /**
@@ -36,6 +46,7 @@ export const registerCotizadorEvents = () => {
       'Contacto con China',
       data.message || 'Se ha contactado con China para la cotización.'
     )
+    refreshUnreadBadge()
   })
 
   registerEventHandler(WS_EVENTS.COTIZACION_CHANGE_CONTAINER, (data) => {
@@ -54,6 +65,7 @@ export const registerCotizadorEvents = () => {
       'Cotización Recibida',
       data.message || 'Se ha recibido la cotización.'
     )
+    refreshUnreadBadge()
   })
 
   registerEventHandler(WS_EVENTS.COTIZACION_CHINA_INSPECTIONED, (data) => {
@@ -63,6 +75,7 @@ export const registerCotizadorEvents = () => {
       'Cotización Inspectada',
       data.message || 'Se ha inspeccionado la cotización.'
     )
+    refreshUnreadBadge()
   })
 
   subscribeEventsToRole(
