@@ -36,11 +36,14 @@
                 </template>
                 <span v-else class="text-sm font-normal text-muted">—</span>
               </p>
-              <p v-if="contadorActivo && contadorPausado" class="text-[10px] font-medium text-muted">
-                Pausado
+              <p v-if="contadorActivo && contadorPausado" class="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                Pausado (Desplegado)
               </p>
               <p v-else-if="contadorActivo && contadorVencidoUi" class="text-[10px] font-medium text-error">
                 Plazo vencido
+              </p>
+              <p v-else-if="contadorActivo" class="text-[10px] font-medium text-muted">
+                En curso
               </p>
             </div>
           </div>
