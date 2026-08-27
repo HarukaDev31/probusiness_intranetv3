@@ -109,6 +109,8 @@
           @reject="rechazarMaqueta"
         />
 
+        <SoporteTiAsignacionCard :ticket="ticket" />
+
         <UCard v-if="ticket.gestion.esStaff && (ticket.gestion.puedeComplejidadPm || ticket.gestion.puedeComplejidadAnalista || ticket.gestion.puedeComplejidad || ticket.gestion.puedeEstado)">
           <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
             {{ tituloGestionStaff }}
@@ -186,6 +188,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { SoporteTiRol } from '~/constants/soporteTi'
+import { CODE } from '~/constants/soporteTiEstados'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
 import { useSoporteTi } from '~/composables/useSoporteTi'
 import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
@@ -201,6 +204,7 @@ import SoporteTiSlaBar from '~/components/soporte-ti/SoporteTiSlaBar.vue'
 import SoporteTiMaquetaPreview from '~/components/soporte-ti/SoporteTiMaquetaPreview.vue'
 import SoporteTiDetailChatSection from '~/components/soporte-ti/SoporteTiDetailChatSection.vue'
 import SoporteTiModalMaquetaPm from '~/components/soporte-ti/SoporteTiModalMaquetaPm.vue'
+import SoporteTiAsignacionCard from '~/components/soporte-ti/SoporteTiAsignacionCard.vue'
 
 type BadgeColor = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'
 
@@ -208,12 +212,12 @@ const props = defineProps<{ ticket: SoporteTiSolicitud }>()
 
 const {
   rolActivo,
-  actualizarSolicitud,
-  agregarMensajeSistema,
-  etiquetaAhora
+  update,
+  addSystemMessage,
+  nowLabel
 } = useSoporteTi()
 
-const { cambiarEstado, pasarEnMaqueta } = useSoporteTiAcciones()
+const { setState, submitMockup } = useSoporteTiAcciones()
 const { showError } = useModal()
 const { withSpinner } = useSpinner()
 
@@ -250,22 +254,13 @@ const tituloGestionStaff = computed(() => {
   return 'Gestión'
 })
 
-const MAPA_ACCION_ESTADO_CODIGO: Record<string, string> = {
-  en_maqueta: 'en_maqueta',
-  en_progreso: 'en_progreso',
-  hecho: 'hecho',
-  desplegado: 'desplegado',
-  operativo: 'operativo',
-  observado: 'observado'
-}
-
 type AccionKey =
-  | 'en_maqueta'
-  | 'en_progreso'
-  | 'hecho'
-  | 'desplegado'
-  | 'operativo'
-  | 'observado'
+  | typeof CODE.MOCKUP
+  | typeof CODE.IN_PROGRESS
+  | typeof CODE.DONE
+  | typeof CODE.DEPLOYED
+  | typeof CODE.OPERATIVE
+  | typeof CODE.OBSERVED
 
 type AccionDef = {
   key: AccionKey
@@ -289,9 +284,9 @@ const acciones = computed((): AccionDef[] => {
     return []
   }
   const a: AccionDef[] = []
-  if (rol === 'PM' && t.tipo === 'A' && t.estadoCodigo === 'pendiente') {
+  if (rol === 'PM' && t.tipo === 'A' && t.estadoCodigo === CODE.PENDING) {
     a.push({
-      key: 'en_maqueta',
+      key: CODE.MOCKUP,
       label: 'Pasar a En maqueta',
       color: 'neutral',
       variant: 'outline'
@@ -299,33 +294,33 @@ const acciones = computed((): AccionDef[] => {
   }
   if (rol === 'Analista') {
     if (t.tipo === 'B') {
-      if (t.estadoCodigo === 'pendiente' && t.gestion.puedeEnProgreso) {
+      if (t.estadoCodigo === CODE.PENDING && t.gestion.puedeEnProgreso) {
         a.push({
-          key: 'en_progreso',
+          key: CODE.IN_PROGRESS,
           label: 'Tomar — En progreso',
           color: 'primary',
           variant: 'solid'
         })
       }
-      if (t.estadoCodigo === 'en_progreso') {
+      if (t.estadoCodigo === CODE.IN_PROGRESS) {
         a.push({
-          key: 'hecho',
+          key: CODE.DONE,
           label: 'Marcar Hecho',
           color: 'success',
           variant: 'outline'
         })
       }
-      if (t.estadoCodigo === 'hecho') {
+      if (t.estadoCodigo === CODE.DONE) {
         a.push({
-          key: 'desplegado',
+          key: CODE.DEPLOYED,
           label: 'Marcar Desplegado',
           color: 'warning',
           variant: 'outline'
         })
       }
-      if (t.estadoCodigo === 'observado' && t.gestion.puedeEnProgreso) {
+      if (t.estadoCodigo === CODE.OBSERVED && t.gestion.puedeEnProgreso) {
         a.push({
-          key: 'en_progreso',
+          key: CODE.IN_PROGRESS,
           label: 'Retomar En progreso',
           color: 'primary',
           variant: 'solid'
@@ -333,25 +328,25 @@ const acciones = computed((): AccionDef[] => {
       }
     }
     if (t.tipo === 'A') {
-      if (t.estadoCodigo === 'en_maqueta' && t.gestion.puedeEnProgreso) {
+      if (t.estadoCodigo === CODE.MOCKUP && t.gestion.puedeEnProgreso) {
         a.push({
-          key: 'en_progreso',
+          key: CODE.IN_PROGRESS,
           label: 'Pasar a En progreso',
           color: 'primary',
           variant: 'solid'
         })
       }
-      if (t.estadoCodigo === 'en_progreso') {
+      if (t.estadoCodigo === CODE.IN_PROGRESS) {
         a.push({
-          key: 'desplegado',
+          key: CODE.DEPLOYED,
           label: 'Marcar Desplegado',
           color: 'warning',
           variant: 'outline'
         })
       }
-      if (t.estadoCodigo === 'observado' && t.gestion.puedeEnProgreso) {
+      if (t.estadoCodigo === CODE.OBSERVED && t.gestion.puedeEnProgreso) {
         a.push({
-          key: 'en_progreso',
+          key: CODE.IN_PROGRESS,
           label: 'Retomar En progreso',
           color: 'primary',
           variant: 'solid'
@@ -364,7 +359,7 @@ const acciones = computed((): AccionDef[] => {
 
 async function onCambioEstadoCreador(val: unknown) {
   const codigo = typeof val === 'string' ? val : String(val ?? '')
-  await cambiarEstado(props.ticket, codigo)
+  await setState(props.ticket, codigo)
 }
 
 function abrirModalMaqueta(cambiarEstado: boolean) {
@@ -373,26 +368,26 @@ function abrirModalMaqueta(cambiarEstado: boolean) {
 }
 
 async function ejecutarAccion(key: AccionKey) {
-  if (key === 'en_maqueta') {
+  if (key === CODE.MOCKUP) {
     abrirModalMaqueta(true)
     return
   }
 
   const t = props.ticket
-  const codigo = MAPA_ACCION_ESTADO_CODIGO[key] ?? t.estadoCodigo
+  const codigo = key
   let faseIndex = t.faseIndex || 0
-  if (t.tipo === 'A' && key === 'en_progreso' && faseIndex < 2) {
+  if (t.tipo === 'A' && key === CODE.IN_PROGRESS && faseIndex < 2) {
     faseIndex = 2
   }
   try {
     await withSpinner(async () => {
-      const ok = await cambiarEstado(t, codigo, { rolEtiqueta: rolActivo.value })
+      const ok = await setState(t, codigo, { rolEtiqueta: rolActivo.value })
       if (!ok) throw new Error('No se pudo actualizar el estado')
       if (faseIndex !== t.faseIndex) {
-        const resProg = await actualizarSolicitud({
+        const resProg = await update({
           ...t,
           faseIndex,
-          ultimaActualizacion: etiquetaAhora()
+          ultimaActualizacion: nowLabel()
         })
         if (resProg.ok === false) throw new Error(resProg.error)
       }
@@ -406,7 +401,7 @@ async function ejecutarAccion(key: AccionKey) {
 async function onConfirmarMaqueta(payload: { archivos: File[]; mensaje: string }) {
   enviandoMaqueta.value = true
   try {
-    const ok = await pasarEnMaqueta(props.ticket, payload.archivos, {
+    const ok = await submitMockup(props.ticket, payload.archivos, {
       mensaje: payload.mensaje,
       cambiarEstado: modalMaquetaCambiarEstado.value
     })
@@ -419,12 +414,12 @@ async function onConfirmarMaqueta(payload: { archivos: File[]; mensaje: string }
 function aprobarMaqueta() {
   const t = props.ticket
   if (!t.maqueta) return
-  void actualizarSolicitud({
+  void update({
     ...t,
     maqueta: { ...t.maqueta, aprobada: true },
-    ultimaActualizacion: etiquetaAhora()
+    ultimaActualizacion: nowLabel()
   })
-  agregarMensajeSistema(
+  addSystemMessage(
     t.chatUuid,
     t.codigo,
     'Maqueta aprobada por el solicitante. El Analista puede avanzar a En progreso.'
@@ -433,11 +428,11 @@ function aprobarMaqueta() {
 
 function rechazarMaqueta() {
   const t = props.ticket
-  void actualizarSolicitud({
+  void update({
     ...t,
     maqueta: null,
-    ultimaActualizacion: etiquetaAhora()
+    ultimaActualizacion: nowLabel()
   })
-  agregarMensajeSistema(t.chatUuid, t.codigo, 'Maqueta rechazada. PM debe subir nueva versión.')
+  addSystemMessage(t.chatUuid, t.codigo, 'Maqueta rechazada. PM debe subir nueva versión.')
 }
 </script>

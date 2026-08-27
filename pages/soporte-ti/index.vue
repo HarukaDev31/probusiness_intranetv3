@@ -92,8 +92,8 @@ definePageMeta({
 })
 
 const { fetchCurrentUser } = useUserRole()
-const { cambiarComplejidad, cambiarEstado } = useSoporteTiAcciones()
-const { actualizarPrioridadSolicitud } = useSoporteTi()
+const { setComplexity, setState } = useSoporteTiAcciones()
+const { updatePriority } = useSoporteTi()
 
 const {
   rolActivo,
@@ -101,7 +101,7 @@ const {
   stats,
   error,
   cargar,
-  crearSolicitud,
+  create,
 } = useSoporteTi()
 
 const loading = ref(false)
@@ -130,26 +130,64 @@ function onEvidenciaModalOpen(open: boolean) {
 
 const q = ref('')
 const filtroTipo = ref<'todos' | 'A' | 'B'>('todos')
-const filtersDraft = computed(() => ({ tipo: filtroTipo.value }))
+const filtroEstado = ref<string>('todos')
+const filtroSoloMias = ref(false)
+const filtersDraft = computed(() => ({
+  tipo: filtroTipo.value,
+  estado: filtroEstado.value,
+  solo_mias: filtroSoloMias.value ? '1' : '0'
+}))
 
-const filterConfig: FilterConfig[] = [
-  {
-    key: 'tipo',
-    label: 'Tipo',
-    placeholder: 'Tipo',
-    options: [
-      { label: 'Todos', value: 'todos' },
-      { label: 'Tipo A', value: 'A' },
-      { label: 'Tipo B', value: 'B' }
-    ]
+const filterConfig = computed<FilterConfig[]>(() => {
+  const base: FilterConfig[] = [
+    {
+      key: 'tipo',
+      label: 'Tipo',
+      placeholder: 'Tipo',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Tipo A', value: 'A' },
+        { label: 'Tipo B', value: 'B' }
+      ]
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      placeholder: 'Estado',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        ...SOPORTE_TI_KANBAN_BOARD.map((c) => ({
+          label: c.label,
+          value: c.key
+        }))
+      ]
+    }
+  ]
+  if (rolActivo.value !== 'Solicitante') {
+    base.push({
+      key: 'solo_mias',
+      label: 'Asignación',
+      placeholder: 'Asignación',
+      options: [
+        { label: 'Todas', value: '0' },
+        { label: 'Mis asignadas', value: '1' }
+      ]
+    })
   }
-]
+  return base
+})
 
 function onFilterChange(key: string, value: string) {
   if (key === 'tipo' && (value === 'todos' || value === 'A' || value === 'B')) {
     filtroTipo.value = value
-    void cargarLista(filtrosLista())
   }
+  if (key === 'estado') {
+    filtroEstado.value = value || 'todos'
+  }
+  if (key === 'solo_mias') {
+    filtroSoloMias.value = value === '1'
+  }
+  void cargarLista(filtrosLista())
 }
 
 /** Filas con campos derivados para columnas simples (`accessorKey` + `header`). */
@@ -173,7 +211,9 @@ const filasTabla = computed<SoporteTiTablaFila[]>(() =>
 function filtrosLista(): SoporteTiListFilters {
   return {
     q: q.value.trim() || undefined,
-    tipo: filtroTipo.value
+    tipo: filtroTipo.value,
+    estadoCodigo: filtroEstado.value,
+    soloMias: filtroSoloMias.value || undefined
   }
 }
 
@@ -209,7 +249,7 @@ async function onCambioPrioridadTabla(t: SoporteTiSolicitud, val: unknown) {
   if (!prioridadOk(n) || t.prioridad === n) return
   try {
     await withSpinner(async () => {
-      const res = await actualizarPrioridadSolicitud(t, n)
+      const res = await updatePriority(t, n)
       if (res.ok === false) throw new Error(res.error)
     }, 'Actualizando prioridad…')
     showSuccess(
@@ -229,12 +269,12 @@ async function onCambioComplejidadTabla(
 ) {
   const raw = typeof val === 'string' ? val : String(val ?? '')
   if (!complejidadOk(raw)) return
-  await cambiarComplejidad(t, raw, { rol })
+  await setComplexity(t, raw, { rol })
 }
 
 async function onCambioEstadoTabla(t: SoporteTiSolicitud, val: unknown) {
   const codigo = typeof val === 'string' ? val : String(val ?? '')
-  await cambiarEstado(t, codigo, { rolEtiqueta: t.gestion.esStaff ? 'analista' : undefined })
+  await setState(t, codigo, { rolEtiqueta: t.gestion.esStaff ? 'analista' : undefined })
 }
 
 function celdaEstadoTicket(t: SoporteTiSolicitud) {
@@ -550,7 +590,7 @@ async function onCreada(payload: SoporteTiCreatePayload) {
   creandoSolicitud.value = true
   try {
     const nueva = await withSpinner(
-      () => crearSolicitud(payload),
+      () => create(payload),
       'Creando solicitud…'
     )
     showSuccess('Solicitud creada', `Se creó el ticket ${nueva.codigo}.`)

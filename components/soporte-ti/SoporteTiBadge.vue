@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { estadoPorNombre } from '~/constants/soporteTiEstados'
+import { byName } from '~/constants/soporteTiEstados'
 import {
   clasesBadgeComplejidad,
   clasesBadgeEstado,
@@ -36,7 +36,7 @@ const clase = computed(() => {
   if (props.prioridad != null) return clasesBadgePrioridad(props.prioridad)
   if (props.complejidad != null) return clasesBadgeComplejidad(props.complejidad)
   if (props.etiqueta) {
-    const est = estadoPorNombre(props.etiqueta)
+    const est = byName(props.etiqueta)
     if (est) return clasesBadgeEstado(est.codigo)
     return clasesBadgeComplejidad(props.etiqueta)
   }

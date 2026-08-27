@@ -27,7 +27,7 @@
               <p v-if="info.mensaje.texto" class="whitespace-pre-wrap text-[13px]">{{ info.mensaje.texto }}</p>
               <p v-else class="text-[12px] italic opacity-80">Adjunto</p>
               <p class="mt-1 flex items-center justify-end gap-1 text-[10px] text-inverted/70">
-                {{ info.entregado_en_fmt }}
+                {{ info.entregadoEnFmt }}
                 <SoporteTiChatEstadoEnvio
                   v-if="info.mensaje.estadoEnvio"
                   :estado="info.mensaje.estadoEnvio"
@@ -46,18 +46,18 @@
               Leído por
             </div>
 
-            <p v-if="!info.leido_por.length" class="py-6 text-center text-sm text-muted">
+            <p v-if="!info.leidoPor.length" class="py-6 text-center text-sm text-muted">
               Aún nadie ha leído este mensaje.
             </p>
 
             <ul v-else class="divide-y divide-default">
               <li
-                v-for="row in info.leido_por"
-                :key="row.usuario_id"
+                v-for="row in info.leidoPor"
+                :key="row.usuarioId"
                 class="flex items-center gap-3 py-3"
               >
                 <SoporteTiChatAvatar
-                  :src="row.avatar_url"
+                  :src="row.avatarUrl"
                   :iniciales="row.iniciales"
                   color="#64748b"
                   :alt="row.nombre"
@@ -65,7 +65,7 @@
                 />
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-sm font-medium text-highlighted">~ {{ row.nombre }}</p>
-                  <p class="text-xs text-muted">{{ row.leido_en_fmt }}</p>
+                  <p class="text-xs text-muted">{{ row.leidoEnFmt }}</p>
                 </div>
                 <p v-if="row.telefono" class="shrink-0 text-xs text-muted tabular-nums">
                   {{ row.telefono }}
@@ -74,10 +74,10 @@
             </ul>
 
             <p
-              v-if="info.destinatarios_count > info.lecturas_count"
+              v-if="info.destinatariosCount > info.lecturasCount"
               class="mt-4 text-center text-xs text-muted"
             >
-              {{ info.lecturas_count }} de {{ info.destinatarios_count }} participantes han leído el mensaje.
+              {{ info.lecturasCount }} de {{ info.destinatariosCount }} participantes han leído el mensaje.
             </p>
           </div>
         </div>
@@ -90,7 +90,6 @@
 import { ref, watch } from 'vue'
 import { SoporteTiService } from '~/services/soporteTiService'
 import type { SoporteTiMensajeInfoLectura } from '~/types/soporteTi'
-import { mapMensajeApiToUi } from '~/utils/soporteTiMappers'
 import SoporteTiChatEstadoEnvio from '~/components/soporte-ti/SoporteTiChatEstadoEnvio.vue'
 import SoporteTiChatAvatar from '~/components/soporte-ti/SoporteTiChatAvatar.vue'
 
@@ -112,10 +111,7 @@ async function cargar() {
   try {
     const res = await SoporteTiService.infoMensaje(props.chatUuid, props.mensajeId)
     if (!res.success || !res.data) throw new Error(res.message || 'No se pudo cargar')
-    info.value = {
-      ...res.data,
-      mensaje: mapMensajeApiToUi(res.data.mensaje)
-    }
+    info.value = res.data
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Error al cargar'
     info.value = null

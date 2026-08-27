@@ -8,7 +8,7 @@ import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
 
 const props = defineProps<{ ticket: SoporteTiSolicitud }>()
 
-const { cambiarComplejidad, cambiarEstado } = useSoporteTiAcciones()
+const { setComplexity, setState } = useSoporteTiAcciones()
 
 const g = computed(() => props.ticket.gestion)
 const itemsEstado = computed(() =>
@@ -50,13 +50,13 @@ const gridCols = computed(() => {
 
 function onCambioEstado(val: unknown) {
   const codigo = typeof val === 'string' ? val : String(val ?? '')
-  void cambiarEstado(props.ticket, codigo, { rolEtiqueta: 'analista' })
+  void setState(props.ticket, codigo, { rolEtiqueta: 'analista' })
 }
 
 function onCambioComplejidad(val: unknown, rol: 'pm' | 'analista' | 'legacy') {
   const raw = typeof val === 'string' ? val : String(val ?? '')
   if (!complejidadOk(raw)) return
-  void cambiarComplejidad(props.ticket, raw, { rol })
+  void setComplexity(props.ticket, raw, { rol })
 }
 </script>
 

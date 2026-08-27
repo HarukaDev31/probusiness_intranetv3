@@ -2,32 +2,33 @@ import type { SoporteTiSolicitud } from '~/types/soporteTi'
 import { useSoporteTi } from '~/composables/useSoporteTi'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { CODE } from '~/constants/soporteTiEstados'
 import { marcarEstadoCambiadoPorMi } from '~/utils/soporteTiWsEstadoSkip'
 
 export function useSoporteTiAcciones() {
   const {
-    actualizarComplejidadSolicitud,
-    actualizarEstadoSolicitud,
-    agregarMensajeSistema,
-    subirMaqueta,
-    enviarChat
+    updateComplexity,
+    updateState,
+    addSystemMessage,
+    uploadMockup,
+    sendChat
   } = useSoporteTi()
   const { showError, showSuccess } = useModal()
   const { withSpinner } = useSpinner()
 
-  function complejidadActual(t: SoporteTiSolicitud, rol?: 'pm' | 'analista' | 'legacy') {
+  function currentComplexity(t: SoporteTiSolicitud, rol?: 'pm' | 'analista' | 'legacy') {
     const g = t.gestion
     if (t.tipo === 'A' && rol === 'pm') return g.complejidadPmValor
     if (t.tipo === 'A' && rol === 'analista') return g.complejidadAnalistaValor
     return g.complejidadValor ?? t.criticidad
   }
 
-  async function cambiarComplejidad(
+  async function setComplexity(
     t: SoporteTiSolicitud,
     criticidad: string,
     opts?: { mensajeExito?: string; rol?: 'pm' | 'analista' | 'legacy' }
   ): Promise<boolean> {
-    if (complejidadActual(t, opts?.rol) === criticidad) return true
+    if (currentComplexity(t, opts?.rol) === criticidad) return true
     const rol = opts?.rol
     const etiquetaRol =
       t.tipo === 'A' && rol === 'pm'
@@ -37,10 +38,10 @@ export function useSoporteTiAcciones() {
           : 'Complejidad'
     try {
       await withSpinner(async () => {
-        const res = await actualizarComplejidadSolicitud(t, criticidad, rol)
+        const res = await updateComplexity(t, criticidad, rol)
         if (res.ok === false) throw new Error(res.error)
       }, 'Actualizando complejidad…')
-      agregarMensajeSistema(
+      addSystemMessage(
         t.chatUuid,
         t.codigo,
         `${etiquetaRol} actualizada a «${criticidad}».`
@@ -57,7 +58,7 @@ export function useSoporteTiAcciones() {
     }
   }
 
-  async function cambiarEstado(
+  async function setState(
     t: SoporteTiSolicitud,
     codigo: string,
     opts?: { rolEtiqueta?: string }
@@ -66,7 +67,7 @@ export function useSoporteTiAcciones() {
     try {
       let estadoLabel = codigo
       await withSpinner(async () => {
-        const res = await actualizarEstadoSolicitud(t, codigo)
+        const res = await updateState(t, codigo)
         if (res.ok === false) throw new Error(res.error)
         estadoLabel = res.solicitud.estado
       }, 'Actualizando estado…')
@@ -80,7 +81,7 @@ export function useSoporteTiAcciones() {
     }
   }
 
-  async function pasarEnMaqueta(
+  async function submitMockup(
     t: SoporteTiSolicitud,
     archivos: File[],
     opts?: { mensaje?: string; cambiarEstado?: boolean }
@@ -90,19 +91,19 @@ export function useSoporteTiAcciones() {
       return false
     }
 
-    const cambiarEstadoFlag = opts?.cambiarEstado ?? t.estadoCodigo === 'pendiente'
+    const cambiarEstadoFlag = opts?.cambiarEstado ?? t.estadoCodigo === CODE.PENDING
     const mensajePm = opts?.mensaje?.trim() || 'He subido la maqueta para revisión.'
 
     try {
       await withSpinner(async () => {
-        const sub = await subirMaqueta(t, archivos[0], mensajePm)
+        const sub = await uploadMockup(t, archivos[0], mensajePm)
         if (sub.ok === false) throw new Error(sub.error)
 
-        if (cambiarEstadoFlag && t.estadoCodigo === 'pendiente') {
-          const res = await actualizarEstadoSolicitud(t, 'en_maqueta')
+        if (cambiarEstadoFlag && t.estadoCodigo === CODE.PENDING) {
+          const res = await updateState(t, CODE.MOCKUP)
           if (res.ok === false) throw new Error(res.error)
           marcarEstadoCambiadoPorMi(t.chatUuid)
-          agregarMensajeSistema(
+          addSystemMessage(
             t.chatUuid,
             t.codigo,
             'El ticket pasó a «En maqueta». Pendiente de aprobación del solicitante.'
@@ -110,7 +111,7 @@ export function useSoporteTiAcciones() {
         }
 
         if (archivos.length > 1) {
-          await enviarChat(t.chatUuid, {
+          await sendChat(t.chatUuid, {
             texto: 'Archivos adicionales de la maqueta.',
             imagenes: archivos.slice(1)
           })
@@ -131,5 +132,5 @@ export function useSoporteTiAcciones() {
     }
   }
 
-  return { cambiarComplejidad, cambiarEstado, pasarEnMaqueta }
+  return { setComplexity, setState, submitMockup }
 }
