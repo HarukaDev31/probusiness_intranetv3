@@ -1,12 +1,6 @@
 <template>
   <div class="flex min-h-0 w-full max-w-full flex-1 flex-col">
     <div v-if="esVistaSolicitante" class="flex min-h-0 flex-1 flex-col">
-      <UCard v-if="mostrarBarraSla" class="mb-3 shrink-0">
-        <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          Avance SLA
-        </p>
-        <SoporteTiSlaBar :sla="ticket.slaHoras" :transcurridas="ticket.horasTranscurridas" />
-      </UCard>
       <SoporteTiCreadorConfirmacionEstado
         v-if="mostrarConfirmacionCreador"
         class="mb-3 shrink-0"
@@ -224,11 +218,13 @@ const mostrarTermino = computed(() => !esValorPendiente(props.ticket.gestion.ter
 const mostrarTiempoEstimado = computed(() => {
   const g = props.ticket.gestion
   if (!g.slaEtiqueta) return false
-  return g.esCreador || (g.esStaff && g.verSla)
+  // Solo staff ve horas SLA; el creador/solicitante solo ve el contador en el chat.
+  return Boolean(g.esStaff && g.verSla)
 })
 
 const mostrarBarraSla = computed(
   () =>
+    Boolean(props.ticket.gestion.esStaff) &&
     props.ticket.slaHoras > 0 &&
     (props.ticket.gestion.verSla || props.ticket.gestion.contadorActivo)
 )
