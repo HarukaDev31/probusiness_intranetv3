@@ -231,11 +231,11 @@
 
           <template v-for="m in mensajes" :key="m.id">
             <div v-if="m.esSistema" class="w-full shrink-0 py-0.5">
-              <UCard variant="subtle" color="warning" class="w-full" :ui="{ body: 'p-0 sm:p-0' }">
+              <UCard variant="subtle" color="neutral" class="w-full" :ui="{ body: 'p-0 sm:p-0' }">
                 <div class="flex flex-col items-center gap-2 px-4 py-3 text-center sm:px-5">
-                  <UIcon name="i-heroicons-information-circle" class="size-5 text-warning" />
+                  <UIcon name="i-heroicons-information-circle" class="size-5 text-muted" />
                   <p
-                    class="w-full text-[11px] leading-relaxed whitespace-pre-wrap break-words text-default"
+                    class="w-full text-[11px] leading-relaxed whitespace-pre-wrap break-words text-muted"
                   >
                     {{ m.texto }}
                   </p>
@@ -289,11 +289,11 @@
 
                   <UCard
                   :color="m.esPropio ? 'primary' : 'neutral'"
-                  :variant="m.esPropio ? 'solid' : 'soft'"
+                  variant="subtle"
                   class="min-w-0 flex-1 overflow-hidden shadow-sm"
                   :class="
                     m.esPropio
-                      ? 'rounded-2xl rounded-tr-md text-inverted'
+                      ? 'rounded-2xl rounded-tr-md ring-1 ring-primary/25'
                       : 'rounded-2xl rounded-tl-md'
                   "
                   :ui="{ body: 'p-0 sm:p-0' }"
@@ -301,20 +301,17 @@
                   <div
                     v-if="m.replyTo"
                     class="border-b border-default px-2 py-2"
-                    :class="m.esPropio ? 'border-inverted/20' : ''"
                   >
                     <SoporteTiChatReplyPreview
                       :remitente="m.replyTo.remitente"
                       :texto="m.replyTo.texto"
                       :imagen-url="m.replyTo.imagenUrl"
-                      :inverted="m.esPropio"
                     />
                   </div>
 
                   <p
                     v-if="m.texto"
-                    class="whitespace-pre-wrap px-3 py-2 text-[12px] leading-relaxed"
-                    :class="m.esPropio ? '' : 'text-default'"
+                    class="whitespace-pre-wrap px-3 py-2 text-[12px] leading-relaxed text-default"
                   >
                     {{ m.texto }}
                   </p>
@@ -326,7 +323,6 @@
                       :url="img.url"
                       :nombre="img.nombre"
                       :tamano="img.tamano"
-                      :inverted="m.esPropio"
                       @abrir="abrirPreview"
                     />
                     <div
@@ -369,7 +365,6 @@
                     <SoporteTiChatAdjuntoMensaje
                       :url="urlAdjuntoArchivo(m)"
                       :nombre="m.archivoNombre"
-                      :inverted="m.esPropio"
                       forzar-documento
                       @abrir="abrirPreview"
                     />
@@ -413,16 +408,12 @@
                     class="flex items-center justify-end gap-1 px-3 pb-2 pt-0.5"
                     :class="m.texto || m.imagenes?.length || m.archivoNombre ? '' : 'pt-2'"
                   >
-                    <span
-                      class="text-[10px] tabular-nums"
-                      :class="m.esPropio ? 'text-inverted/70' : 'text-muted'"
-                    >
+                    <span class="text-[10px] tabular-nums text-muted">
                       {{ m.marcaTiempo }}
                     </span>
                     <SoporteTiChatEstadoEnvio
                       v-if="m.esPropio && m.estadoEnvio"
                       :estado="m.estadoEnvio"
-                      :inverted="m.esPropio"
                     />
                   </div>
                 </UCard>
