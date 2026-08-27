@@ -248,3 +248,7 @@ export interface SoporteTiWsEstadoPayload {
   ultima_actualizacion?: string
   titulo?: string
 }
+
+export interface SoporteTiWsSolicitudCreadaPayload {
+  solicitud: SoporteTiSolicitudApi
+}

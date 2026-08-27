@@ -1,13 +1,22 @@
 import { watch, type WatchStopHandle } from 'vue'
 import { useSoporteTiChatRoom } from '~/composables/useSoporteTiChatRoom'
-import { getEchoInstance } from '~/composables/websocket/useEcho'
+import { getEchoInstance, useEcho } from '~/composables/websocket/useEcho'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
 import type { SoporteTiChatRoomHandlers } from '~/composables/useSoporteTiChatRoom'
+import type { SoporteTiWsSolicitudCreadaPayload } from '~/services/soporteTi/apiTypes'
+import { SoporteTiService } from '~/services/soporteTiService'
+import {
+  SOPORTE_TI_STAFF_CHANNEL,
+  SOPORTE_TI_WS_EVENTS
+} from '~/constants/soporteTi'
+import { ROLES } from '~/constants/roles'
+import { notifySoporteTiChatEvent } from '~/utils/soporteTiChatNotify'
 
 const salasGlobalesSuscritas = new Set<string>()
 let sincronizando: Promise<void> | null = null
 let listenersAttached = false
 let stopWatchSolicitudes: WatchStopHandle | null = null
+let staffChannelAttached = false
 
 function extraerChatUuids(list: SoporteTiSolicitud[]): string[] {
   return list.map((s) => s.chatUuid).filter((uuid): uuid is string => Boolean(uuid))
@@ -24,6 +33,18 @@ function enRutaDetalleSoporteTi(): boolean {
   if (typeof window === 'undefined') return false
   const path = window.location.pathname.replace(/\/+$/, '')
   return /^\/soporte-ti\/[^/]+$/.test(path) && path !== '/soporte-ti'
+}
+
+function parsePayload<T>(data: unknown): T | null {
+  if (!data) return null
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data) as T
+    } catch {
+      return null
+    }
+  }
+  return data as T
 }
 
 export async function waitForEchoReady(timeoutMs = 20000): Promise<boolean> {
@@ -69,6 +90,8 @@ export async function sincronizarSalasGlobales(extraUuids: string[] = []) {
       if (!echoOk) {
         console.warn('[SoporteTI] Echo no disponible; salas en cola pendiente')
       }
+
+      void suscribirCanalStaff()
 
       const { handlersSala, asegurarListadoCargado, solicitudes } = await loadSoporteTiDeps()
       const extras = [...new Set(extraUuids.filter(Boolean))]
@@ -117,16 +140,69 @@ export function suscribirSalaNuevaGlobal(chatUuid: string) {
   })()
 }
 
+/** Canal staff: nueva solicitud → listado + suscripción a sala + aviso. */
+export async function suscribirCanalStaff() {
+  if (typeof window === 'undefined') return
+  if (staffChannelAttached) return
+  if (!localStorage.getItem('auth_token')) return
+
+  const { useUserRole } = await import('~/composables/auth/useUserRole')
+  const { hasRole } = useUserRole()
+  if (!hasRole(ROLES.PM) && !hasRole(ROLES.SOPORTE)) return
+
+  const echoOk = await waitForEchoReady()
+  if (!echoOk || !getEchoInstance()) return
+
+  const { subscribeToChannel } = useEcho()
+  const { applyRemoteSolicitudCreada } = await loadSoporteTiDeps()
+
+  subscribeToChannel({
+    name: SOPORTE_TI_STAFF_CHANNEL,
+    type: 'private',
+    handlers: [
+      {
+        event: SOPORTE_TI_WS_EVENTS.SOLICITUD_CREADA,
+        callback: (raw: unknown) => {
+          const p = parsePayload<SoporteTiWsSolicitudCreadaPayload>(raw)
+          if (!p?.solicitud) return
+          const ui = SoporteTiService.adaptWsSolicitudCreada(p)
+          if (!ui) return
+          applyRemoteSolicitudCreada(ui)
+          notifySoporteTiChatEvent(
+            ui.chatUuid,
+            ui.codigo,
+            `Nueva solicitud — ${ui.codigo}`,
+            ui.titulo || 'Se creó una solicitud de Soporte TI',
+            'mensaje'
+          )
+        }
+      }
+    ]
+  })
+  staffChannelAttached = true
+  if (process.dev) {
+    console.log('[SoporteTI] Suscrito a canal staff', SOPORTE_TI_STAFF_CHANNEL)
+  }
+}
+
 export function limpiarSuscripcionesGlobales() {
   salasGlobalesSuscritas.clear()
+  staffChannelAttached = false
   const { desuscribirTodas } = useSoporteTiChatRoom()
   desuscribirTodas()
+  try {
+    const { unsubscribeFromChannel } = useEcho()
+    unsubscribeFromChannel(SOPORTE_TI_STAFF_CHANNEL)
+  } catch {
+    /* ignore */
+  }
 }
 
 export function useSoporteTiChatGlobal() {
   return {
     sincronizarSalasGlobales,
     suscribirSalaNueva: suscribirSalaNuevaGlobal,
+    suscribirCanalStaff,
     limpiarSuscripcionesGlobales
   }
 }
@@ -137,6 +213,7 @@ export function attachSoporteTiChatGlobalListeners() {
   listenersAttached = true
 
   const boot = () => {
+    void suscribirCanalStaff()
     if (!enRutaSoporteTi()) return
     void sincronizarSalasGlobales()
   }
@@ -148,6 +225,9 @@ export function attachSoporteTiChatGlobalListeners() {
     const chatUuid = (ev as CustomEvent<{ chatUuid?: string }>).detail?.chatUuid
     if (chatUuid) suscribirSalaNuevaGlobal(chatUuid)
   })
+
+  // Si Echo ya está listo (plugin websocket montó antes).
+  if (getEchoInstance()) boot()
 }
 
 /** Watch del listado en memoria (requiere contexto Vue). */
