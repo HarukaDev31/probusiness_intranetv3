@@ -382,7 +382,7 @@ export function useSoporteTi() {
     t: SoporteTiSolicitud,
     criticidad: string,
     rol?: 'pm' | 'analista' | 'legacy'
-  ): Promise<{ ok: true } | { ok: false; error: string }> {
+  ): Promise<{ ok: true; slaHoras: number } | { ok: false; error: string }> {
     if (t.backendId == null) {
       return { ok: false, error: 'La solicitud no tiene identificador en el servidor' }
     }
@@ -420,7 +420,8 @@ export function useSoporteTi() {
       if (res.data) {
         merge(res.data)
       }
-      return { ok: true }
+      const slaHoras = res.data?.slaHoras ?? 0
+      return { ok: true, slaHoras }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Error al guardar'
       if (antes != null) {
@@ -474,7 +475,6 @@ export function useSoporteTi() {
   }
 
   async function create(payload: SoporteTiCreatePayload) {
-    const sla = payload.tipo === 'A' ? 72 : 8
     const res = await SoporteTiService.store(payload)
     if (!res.success || !res.data) throw new Error(res.message || 'No se pudo crear')
     const nueva = res.data
@@ -484,11 +484,7 @@ export function useSoporteTi() {
         new CustomEvent('soporte-ti-suscribir-sala', { detail: { chatUuid: nueva.chatUuid } })
       )
     }
-    const msgCreado =
-      payload.tipo === 'A'
-        ? `Ticket ${nueva.codigo} creado.`
-        : `Ticket ${nueva.codigo} creado. SLA: ${sla}h.`
-    addSystemMessage(nueva.chatUuid, nueva.codigo, msgCreado)
+    addSystemMessage(nueva.chatUuid, nueva.codigo, `Ticket ${nueva.codigo} creado.`)
     return nueva
   }
 

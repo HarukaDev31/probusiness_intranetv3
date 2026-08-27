@@ -12,8 +12,6 @@
         panel-class="min-h-[280px] flex-1"
         :chat-uuid="ticket.chatUuid"
         :codigo-ticket="ticket.codigo"
-        :estado-codigo="ticket.estadoCodigo"
-        :estado-nombre="ticket.estado"
         :contador-activo="ticket.gestion.contadorActivo"
         :contador-pausado="ticket.gestion.contadorPausado"
         :contador-fin="ticket.gestion.contadorFin"
@@ -32,19 +30,13 @@
           panel-class="min-h-[280px] flex-1"
           :chat-uuid="ticket.chatUuid"
           :codigo-ticket="ticket.codigo"
-          :estado-codigo="ticket.estadoCodigo"
-          :estado-nombre="ticket.estado"
-          :prioridad="ticket.prioridad"
-          :complejidad-pm="ticket.complejidadPm"
-          :complejidad-analista="ticket.tipo === 'A' ? ticket.complejidadAnalista : ticket.criticidad"
-          :tipo-solicitud="ticket.tipo"
-          mostrar-meta-staff
           :contador-activo="ticket.gestion.contadorActivo"
           :contador-pausado="ticket.gestion.contadorPausado"
           :contador-fin="ticket.gestion.contadorFin"
           :contador-restante-segundos="ticket.gestion.contadorRestanteSegundos"
           :contador-vencido="ticket.gestion.contadorVencido"
           :termino-maximo="ticket.gestion.terminoEstimado"
+          :ver-sla="ticket.gestion.verSla"
           :mostrar-fases-cabecera="ticket.tipo === 'A'"
           :fase-index="ticket.faseIndex ?? 0"
         />
@@ -66,31 +58,19 @@
             >
               {{ ticket.criticidad }}
             </UBadge>
-            <span class="ml-2 flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
-              <UIcon name="i-heroicons-calendar-days" class="size-3" />
-              {{ ticket.fechaRegistro }}
-            </span>
-            <span class="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
-              <UIcon name="i-heroicons-clock" class="size-3" />
-              Últ: {{ ticket.ultimaActualizacion }}
-            </span>
           </div>
           <dl class="grid grid-cols-2 gap-3">
-            <div>
-              <dt class="mb-0.5 text-[10px] text-muted">Código</dt>
-              <dd class="font-mono text-xs font-medium text-highlighted">{{ ticket.codigo }}</dd>
-            </div>
             <div>
               <dt class="mb-0.5 text-[10px] text-muted">Área</dt>
               <dd class="text-xs font-medium text-highlighted">{{ ticket.area }}</dd>
             </div>
-            <div class="col-span-2">
+            <div>
               <dt class="mb-0.5 text-[10px] text-muted">Solicitante</dt>
               <dd class="text-xs font-medium text-highlighted">{{ ticket.solicitante }}</dd>
             </div>
             <div v-if="mostrarTiempoEstimado">
               <dt class="mb-0.5 text-[10px] text-muted">
-                {{ ticket.gestion.tiempoEstimadoRango ? 'Tiempo estimado (aprox.)' : 'Tiempo estimado' }}
+                {{ ticket.gestion.tiempoEstimadoRango ? 'Tiempo estimado (aprox.)' : 'SLA' }}
               </dt>
               <dd class="text-xs font-medium text-highlighted">{{ ticket.gestion.slaEtiqueta }}</dd>
             </div>
@@ -257,7 +237,7 @@ const mostrarTermino = computed(() => !esValorPendiente(props.ticket.gestion.ter
 const mostrarTiempoEstimado = computed(() => {
   const g = props.ticket.gestion
   if (!g.slaEtiqueta) return false
-  return g.esCreador || (g.esStaff && props.ticket.tipo === 'A' && g.verSla)
+  return g.esCreador || (g.esStaff && g.verSla)
 })
 
 const mostrarBarraSla = computed(

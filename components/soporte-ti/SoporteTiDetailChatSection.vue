@@ -16,15 +16,9 @@
     :contador-restante-segundos="contadorRestanteSegundos"
     :contador-vencido="contadorVencido"
     :termino-maximo="terminoMaximo"
+    :ver-sla="verSla"
     :mostrar-fases-cabecera="mostrarFasesCabecera"
     :fase-index="faseIndex"
-    :estado-codigo="estadoCodigo"
-    :estado-nombre="estadoNombre"
-    :prioridad="prioridad"
-    :complejidad-pm="complejidadPm"
-    :complejidad-analista="complejidadAnalista"
-    :tipo-solicitud="tipoSolicitud"
-    :mostrar-meta-staff="mostrarMetaStaff"
     @send="(payload) => void sendChat(chatUuid, payload)"
     @load-older="void cargarMensajesAnteriores(chatUuid)"
   />
@@ -49,15 +43,9 @@ const props = withDefaults(
     contadorRestanteSegundos?: number | null
     contadorVencido?: boolean
     terminoMaximo?: string | null
+    verSla?: boolean
     mostrarFasesCabecera?: boolean
     faseIndex?: number
-    estadoCodigo?: string
-    estadoNombre?: string
-    prioridad?: number | null
-    complejidadPm?: string | null
-    complejidadAnalista?: string | null
-    tipoSolicitud?: 'A' | 'B'
-    mostrarMetaStaff?: boolean
   }>(),
   {
     modoSolicitante: false,
@@ -69,15 +57,9 @@ const props = withDefaults(
     contadorRestanteSegundos: null,
     contadorVencido: false,
     terminoMaximo: null,
+    verSla: false,
     mostrarFasesCabecera: false,
-    faseIndex: 0,
-    estadoCodigo: '',
-    estadoNombre: '',
-    prioridad: null,
-    complejidadPm: null,
-    complejidadAnalista: null,
-    tipoSolicitud: 'B',
-    mostrarMetaStaff: false
+    faseIndex: 0
   }
 )
 

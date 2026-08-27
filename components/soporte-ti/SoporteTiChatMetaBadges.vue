@@ -4,16 +4,16 @@
     <SoporteTiBadge
       v-if="mostrarPrioridad && prioridad != null"
       :prioridad="prioridad"
-      :etiqueta="etiquetaPrioridad(prioridad)"
+      :etiqueta="`Prioridad: ${etiquetaPrioridad(prioridad)}`"
     />
     <SoporteTiBadge
-      v-if="complejidadPm"
-      :complejidad="complejidadPm"
+      v-if="mostrarComplejidad && pmOk"
+      :complejidad="complejidadPm!"
       :etiqueta="`PM: ${complejidadPm}`"
     />
     <SoporteTiBadge
-      v-if="complejidadAnalista"
-      :complejidad="complejidadAnalista"
+      v-if="mostrarComplejidad && analistaOk"
+      :complejidad="complejidadAnalista!"
       :etiqueta="etiquetaComplejidadAnalista"
     />
   </div>
@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { etiquetaPrioridad } from '~/constants/soporteTiPrioridad'
+import { complejidadOk } from '~/utils/soporteTiComplejidad'
 import SoporteTiBadge from '~/components/soporte-ti/SoporteTiBadge.vue'
 
 const props = withDefaults(
@@ -46,6 +47,12 @@ const props = withDefaults(
 )
 
 const mostrar = computed(() => Boolean(props.estadoCodigo))
+
+const pmOk = computed(
+  () => props.tipo === 'A' && complejidadOk(props.complejidadPm)
+)
+
+const analistaOk = computed(() => complejidadOk(props.complejidadAnalista))
 
 const etiquetaComplejidadAnalista = computed(() => {
   const c = props.complejidadAnalista?.trim()

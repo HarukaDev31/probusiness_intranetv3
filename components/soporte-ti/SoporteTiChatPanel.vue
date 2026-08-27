@@ -15,18 +15,6 @@
             <div class="min-w-0">
               <p class="text-[10px] font-medium uppercase tracking-wide text-muted">Código</p>
               <p class="truncate font-mono text-sm font-semibold text-highlighted">{{ codigoTicket }}</p>
-              <SoporteTiChatMetaBadges
-                v-if="estadoCodigo"
-                class="mt-1.5"
-                :estado-codigo="estadoCodigo"
-                :estado-nombre="estadoNombre"
-                :prioridad="prioridad"
-                :complejidad-pm="complejidadPm"
-                :complejidad-analista="complejidadAnalista"
-                :tipo="tipoSolicitud"
-                :mostrar-prioridad="mostrarMetaStaff"
-                :mostrar-complejidad="mostrarMetaStaff"
-              />
             </div>
           </div>
         </UCard>
@@ -78,19 +66,6 @@
           </UCard>
           <div class="min-w-0 flex-1">
             <p class="text-sm font-semibold text-highlighted">Conversación</p>
-            <p class="truncate font-mono text-[11px] text-muted">{{ codigoTicket }}</p>
-            <SoporteTiChatMetaBadges
-              v-if="estadoCodigo"
-              class="mt-2"
-              :estado-codigo="estadoCodigo"
-              :estado-nombre="estadoNombre"
-              :prioridad="prioridad"
-              :complejidad-pm="complejidadPm"
-              :complejidad-analista="complejidadAnalista"
-              :tipo="tipoSolicitud"
-              mostrar-prioridad
-              mostrar-complejidad
-            />
           </div>
           <UBadge v-if="mensajes.length" color="neutral" variant="soft" size="sm">
             {{ mensajes.length }}
@@ -566,7 +541,6 @@ import SoporteTiChatAdjuntoMensaje from '~/components/soporte-ti/SoporteTiChatAd
 import SoporteTiChatMensajeInfoModal from '~/components/soporte-ti/SoporteTiChatMensajeInfoModal.vue'
 import SoporteTiChatPanelSkeleton from '~/components/soporte-ti/SoporteTiChatPanelSkeleton.vue'
 import SoporteTiFasesProyectoBar from '~/components/soporte-ti/SoporteTiFasesProyectoBar.vue'
-import SoporteTiChatMetaBadges from '~/components/soporte-ti/SoporteTiChatMetaBadges.vue'
 import SoporteTiChatAvatar from '~/components/soporte-ti/SoporteTiChatAvatar.vue'
 import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import { SOPORTE_TI_CHAT_ACCEPT_DOCUMENTOS } from '~/constants/soporteTiChat'
@@ -593,13 +567,8 @@ const props = withDefaults(
     contadorRestanteSegundos?: number | null
     contadorVencido?: boolean
     terminoMaximo?: string | null
-    estadoCodigo?: string
-    estadoNombre?: string
-    prioridad?: number | null
-    complejidadPm?: string | null
-    complejidadAnalista?: string | null
-    tipoSolicitud?: 'A' | 'B'
-    mostrarMetaStaff?: boolean
+    /** Staff: cabecera SLA solo si ya hay complejidad / ver_sla. */
+    verSla?: boolean
   }>(),
   {
     hasMoreOlder: false,
@@ -615,13 +584,7 @@ const props = withDefaults(
     contadorRestanteSegundos: null,
     contadorVencido: false,
     terminoMaximo: null,
-    estadoCodigo: '',
-    estadoNombre: '',
-    prioridad: null,
-    complejidadPm: null,
-    complejidadAnalista: null,
-    tipoSolicitud: 'B',
-    mostrarMetaStaff: false
+    verSla: false
   }
 )
 
@@ -643,10 +606,10 @@ const alturaClase = computed(() =>
     : 'h-[min(32rem,calc(100dvh-11rem))] min-h-[260px]'
 )
 
-/** Misma cabecera SLA (código, tiempo restante, término) que ve el solicitante. */
+/** Cabecera SLA: solicitante/staff solo con contador activo o término ya definido (complejidad). */
 const mostrarCabeceraSla = computed(() => {
-  if (props.modoSolicitante) return true
   if (props.contadorActivo) return true
+  if (!props.modoSolicitante && !props.verSla) return false
   const t = (props.terminoMaximo ?? '').trim()
   return Boolean(t && t !== '—' && t !== 'Por definir')
 })
