@@ -38,14 +38,17 @@ export function useSoporteTiAcciones() {
           ? 'Complejidad analista'
           : 'Complejidad'
     try {
+      let slaHoras = 0
       await withSpinner(async () => {
         const res = await updateComplexity(t, criticidad, rol)
         if (res.ok === false) throw new Error(res.error)
+        slaHoras = res.slaHoras
       }, 'Actualizando complejidad…')
+      const slaTxt = slaHoras > 0 ? ` SLA: ${slaHoras}h.` : ''
       addSystemMessage(
         t.chatUuid,
         t.codigo,
-        `${etiquetaRol} actualizada a «${criticidad}».`
+        `${etiquetaRol} actualizada a «${criticidad}».${slaTxt}`
       )
       showSuccess(
         `${etiquetaRol} actualizada`,
