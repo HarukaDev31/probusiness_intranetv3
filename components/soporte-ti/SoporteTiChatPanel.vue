@@ -7,7 +7,8 @@
     <template #header>
       <div
         v-if="mostrarCabeceraSla"
-        class="grid gap-2 border-b border-default px-3 py-3 sm:grid-cols-3 sm:gap-3 sm:px-4"
+        class="grid gap-2 border-b border-default px-3 py-3 sm:gap-3 sm:px-4"
+        :class="mostrarConfirmacionCreador ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'"
       >
         <UCard variant="subtle" :ui="{ body: 'p-2.5 sm:p-2.5' }">
           <div class="flex items-start gap-2">
@@ -55,6 +56,21 @@
               <p class="text-[10px] font-medium uppercase tracking-wide text-muted">Término máximo</p>
               <p class="mt-0.5 text-sm font-semibold text-highlighted">{{ terminoMaximo || '—' }}</p>
             </div>
+          </div>
+        </UCard>
+        <UCard
+          v-if="mostrarConfirmacionCreador && ticketConfirmacion"
+          variant="subtle"
+          :ui="{ body: 'p-2.5 sm:p-2.5' }"
+        >
+          <div class="flex items-start gap-2">
+            <UIcon name="i-heroicons-check-badge" class="mt-0.5 size-4 shrink-0 text-muted" />
+            <SoporteTiCreadorConfirmacionEstado
+              compact
+              class="min-w-0 flex-1"
+              :ticket="ticketConfirmacion"
+              @change="emit('cambio-estado', $event)"
+            />
           </div>
         </UCard>
       </div>
@@ -544,10 +560,12 @@ import SoporteTiChatAdjuntoMensaje from '~/components/soporte-ti/SoporteTiChatAd
 import SoporteTiChatMensajeInfoModal from '~/components/soporte-ti/SoporteTiChatMensajeInfoModal.vue'
 import SoporteTiChatPanelSkeleton from '~/components/soporte-ti/SoporteTiChatPanelSkeleton.vue'
 import SoporteTiFasesProyectoBar from '~/components/soporte-ti/SoporteTiFasesProyectoBar.vue'
+import SoporteTiCreadorConfirmacionEstado from '~/components/soporte-ti/SoporteTiCreadorConfirmacionEstado.vue'
 import SoporteTiChatAvatar from '~/components/soporte-ti/SoporteTiChatAvatar.vue'
 import ChatMessagesScroll from '~/components/chat/ChatMessagesScroll.vue'
 import { SOPORTE_TI_CHAT_ACCEPT_DOCUMENTOS } from '~/constants/soporteTiChat'
 import { archivosDesdePortapapeles, esImagenAdjunto } from '~/utils/soporteTiChatAdjunto'
+import type { SoporteTiSolicitud } from '~/types/soporteTi'
 
 const overlay = useOverlay()
 const modalPreview = overlay.create(ModalPreview)
@@ -572,6 +590,9 @@ const props = withDefaults(
     terminoMaximo?: string | null
     /** Staff: cabecera SLA solo si ya hay complejidad / ver_sla. */
     verSla?: boolean
+    /** Creador: select Operativo/Observado junto a indicadores. */
+    mostrarConfirmacionCreador?: boolean
+    ticketConfirmacion?: SoporteTiSolicitud | null
   }>(),
   {
     hasMoreOlder: false,
@@ -587,13 +608,16 @@ const props = withDefaults(
     contadorRestanteSegundos: null,
     contadorVencido: false,
     terminoMaximo: null,
-    verSla: false
+    verSla: false,
+    mostrarConfirmacionCreador: false,
+    ticketConfirmacion: null
   }
 )
 
 const emit = defineEmits<{
   send: [payload: SoporteTiEnviarMensajePayload]
   'load-older': []
+  'cambio-estado': [val: unknown]
 }>()
 
 const cardUi = {
@@ -609,8 +633,9 @@ const alturaClase = computed(() =>
     : 'h-[min(32rem,calc(100dvh-11rem))] min-h-[260px]'
 )
 
-/** Cabecera SLA: solicitante/staff solo con contador activo o término ya definido (complejidad). */
+/** Cabecera: contador activo, término (staff) o confirmación del creador. */
 const mostrarCabeceraSla = computed(() => {
+  if (props.mostrarConfirmacionCreador) return true
   if (props.contadorActivo) return true
   if (!props.modoSolicitante && !props.verSla) return false
   const t = (props.terminoMaximo ?? '').trim()

@@ -19,8 +19,11 @@
     :ver-sla="verSla"
     :mostrar-fases-cabecera="mostrarFasesCabecera"
     :fase-index="faseIndex"
+    :mostrar-confirmacion-creador="mostrarConfirmacionCreador"
+    :ticket-confirmacion="ticketConfirmacion"
     @send="(payload) => void sendChat(chatUuid, payload)"
     @load-older="void cargarMensajesAnteriores(chatUuid)"
+    @cambio-estado="emit('cambio-estado', $event)"
   />
 </template>
 
@@ -29,6 +32,7 @@ import { computed, onUnmounted, watch } from 'vue'
 import { useSoporteTi } from '~/composables/useSoporteTi'
 import { useSoporteTiChatRoom } from '~/composables/useSoporteTiChatRoom'
 import SoporteTiChatPanel from '~/components/soporte-ti/SoporteTiChatPanel.vue'
+import type { SoporteTiSolicitud } from '~/types/soporteTi'
 
 const props = withDefaults(
   defineProps<{
@@ -46,6 +50,8 @@ const props = withDefaults(
     verSla?: boolean
     mostrarFasesCabecera?: boolean
     faseIndex?: number
+    mostrarConfirmacionCreador?: boolean
+    ticketConfirmacion?: SoporteTiSolicitud | null
   }>(),
   {
     modoSolicitante: false,
@@ -59,9 +65,15 @@ const props = withDefaults(
     terminoMaximo: null,
     verSla: false,
     mostrarFasesCabecera: false,
-    faseIndex: 0
+    faseIndex: 0,
+    mostrarConfirmacionCreador: false,
+    ticketConfirmacion: null
   }
 )
+
+const emit = defineEmits<{
+  'cambio-estado': [val: unknown]
+}>()
 
 const {
   sendChat,
