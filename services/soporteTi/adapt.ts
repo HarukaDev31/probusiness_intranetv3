@@ -92,6 +92,7 @@ function mapGestion(g: SoporteTiGestionApi): SoporteTiGestion {
     puedeComplejidadAnalista: g.puede_complejidad_analista ?? false,
     puedeAsignacion: g.puede_asignacion ?? false,
     puedeEstado: g.puede_estado,
+    puedeEliminar: g.puede_eliminar ?? false,
     estados: g.estados.map((e) => ({
       id: e.id,
       codigo: e.codigo,

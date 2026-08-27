@@ -494,6 +494,24 @@ export function useSoporteTi() {
     return nueva
   }
 
+  async function remove(
+    t: SoporteTiSolicitud
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (t.backendId == null) {
+      return { ok: false, error: 'La solicitud no tiene identificador en el servidor' }
+    }
+    try {
+      const res = await SoporteTiService.destroy(t.backendId)
+      if (!res.success) throw new Error(res.message || 'No se pudo eliminar')
+      solicitudes.value = solicitudes.value.filter((s) => s.chatUuid !== t.chatUuid)
+      if (t.chatUuid) resetSala(t.chatUuid)
+      return { ok: true }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al eliminar'
+      return { ok: false, error: msg }
+    }
+  }
+
   async function uploadMockup(
     t: SoporteTiSolicitud,
     archivo: File,
@@ -603,6 +621,7 @@ export function useSoporteTi() {
     updateAssignment,
     updateState,
     create,
+    remove,
     uploadMockup,
     sendChat,
     addSystemMessage,

@@ -1,5 +1,14 @@
 <template>
-  <UModal :open="abierto" @update:open="onUpdateOpen">
+  <UModal
+    :open="abierto"
+    :ui="{
+      content: 'max-h-[90dvh] overflow-hidden flex flex-col',
+      body: 'min-h-0 flex-1 overflow-y-auto',
+      header: 'shrink-0',
+      footer: 'shrink-0'
+    }"
+    @update:open="onUpdateOpen"
+  >
     <template #header>
       <div class="flex w-full items-center justify-between">
         <h2 class="text-base font-semibold text-highlighted">Nueva solicitud</h2>
@@ -15,7 +24,7 @@
     </template>
     <template #body>
       <div
-        class="max-h-[70vh] space-y-4 overflow-y-auto px-1 transition-opacity"
+        class="space-y-4 px-1 transition-opacity"
         :class="loading ? 'pointer-events-none opacity-60' : ''"
       >
         <p class="text-[10px] font-semibold uppercase tracking-wider text-muted">Tipo de solicitud</p>

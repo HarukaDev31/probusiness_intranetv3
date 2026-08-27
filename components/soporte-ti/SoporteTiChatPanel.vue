@@ -639,7 +639,7 @@ const cardUi = {
 
 const alturaClase = computed(() =>
   props.fullHeight
-    ? 'h-full min-h-0 flex-1'
+    ? 'h-full min-h-[280px] flex-1'
     : 'h-[min(32rem,calc(100dvh-11rem))] min-h-[260px]'
 )
 

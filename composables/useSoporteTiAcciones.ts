@@ -11,9 +11,10 @@ export function useSoporteTiAcciones() {
     updateState,
     addSystemMessage,
     uploadMockup,
-    sendChat
+    sendChat,
+    remove
   } = useSoporteTi()
-  const { showError, showSuccess } = useModal()
+  const { showError, showSuccess, showConfirmation } = useModal()
   const { withSpinner } = useSpinner()
 
   function currentComplexity(t: SoporteTiSolicitud, rol?: 'pm' | 'analista' | 'legacy') {
@@ -132,5 +133,30 @@ export function useSoporteTiAcciones() {
     }
   }
 
-  return { setComplexity, setState, submitMockup }
+  function removeRequest(t: SoporteTiSolicitud): Promise<boolean> {
+    return new Promise((resolve) => {
+      showConfirmation(
+        'Eliminar solicitud',
+        `¿Eliminar ${t.codigo}? Podrás recuperarla solo desde soporte técnico (borrado lógico).`,
+        async () => {
+          try {
+            await withSpinner(async () => {
+              const res = await remove(t)
+              if (res.ok === false) throw new Error(res.error)
+            }, 'Eliminando…')
+            showSuccess('Solicitud eliminada', `Se eliminó ${t.codigo}.`)
+            resolve(true)
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : 'No se pudo eliminar.'
+            showError('Error al eliminar', msg)
+            resolve(false)
+          }
+        },
+        () => resolve(false),
+        { confirmLabel: 'Eliminar' }
+      )
+    })
+  }
+
+  return { setComplexity, setState, submitMockup, removeRequest }
 }
