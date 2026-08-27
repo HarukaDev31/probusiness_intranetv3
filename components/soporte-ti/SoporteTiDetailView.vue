@@ -1,6 +1,14 @@
 <template>
   <div class="flex min-h-0 w-full max-w-full flex-1 flex-col">
     <div v-if="esVistaSolicitante" class="flex min-h-0 flex-1 flex-col">
+      <SoporteTiMaquetaPreview
+        v-if="mostrarMaquetaCreador"
+        class="mb-3 shrink-0"
+        :maqueta="ticket.maqueta!"
+        rol="Solicitante"
+        @approve="void onAprobarMaqueta()"
+        @reject="void onRechazarMaqueta()"
+      />
       <SoporteTiDetailChatSection
         modo-solicitante
         panel-class="min-h-[280px] flex-1"
@@ -79,11 +87,11 @@
         </UCard>
 
         <SoporteTiMaquetaPreview
-          v-if="ticket.tipo === 'A' && ticket.maqueta && rolActivo !== 'PM'"
+          v-if="ticket.tipo === 'A' && ticket.maqueta"
           :maqueta="ticket.maqueta"
           :rol="rolActivo"
-          @approve="aprobarMaqueta"
-          @reject="rechazarMaqueta"
+          @approve="void onAprobarMaqueta()"
+          @reject="void onRechazarMaqueta()"
         />
 
         <SoporteTiAsignacionCard :ticket="ticket" />
@@ -180,23 +188,30 @@ const props = defineProps<{ ticket: SoporteTiSolicitud }>()
 const {
   rolActivo,
   update,
-  addSystemMessage,
   nowLabel
 } = useSoporteTi()
 
 const { setState, submitMockup, removeRequest } = useSoporteTiAcciones()
-const { showError } = useModal()
+const { showError, showSuccess } = useModal()
 const { withSpinner } = useSpinner()
 
 const modalMaquetaAbierto = ref(false)
 const modalMaquetaCambiarEstado = ref(true)
 const enviandoMaqueta = ref(false)
 const eliminando = ref(false)
+const procesandoMaqueta = ref(false)
 
 const esVistaSolicitante = computed(() => rolActivo.value === 'Solicitante')
 
 const mostrarConfirmacionCreador = computed(
   () => Boolean(props.ticket.gestion.esCreador && props.ticket.gestion.puedeEstado)
+)
+
+const mostrarMaquetaCreador = computed(
+  () =>
+    props.ticket.tipo === 'A' &&
+    Boolean(props.ticket.maqueta) &&
+    props.ticket.estadoCodigo === CODE.MOCKUP
 )
 
 const puedeBorrar = computed(
@@ -389,29 +404,48 @@ async function onConfirmarMaqueta(payload: { archivos: File[]; mensaje: string }
   }
 }
 
-function aprobarMaqueta() {
+async function onAprobarMaqueta() {
   const t = props.ticket
-  if (!t.maqueta) return
-  void update({
-    ...t,
-    maqueta: { ...t.maqueta, aprobada: true },
-    ultimaActualizacion: nowLabel()
-  })
-  addSystemMessage(
-    t.chatUuid,
-    t.codigo,
-    'Maqueta aprobada por el solicitante. El Analista puede avanzar a En progreso.'
-  )
+  if (!t.maqueta || procesandoMaqueta.value) return
+  procesandoMaqueta.value = true
+  try {
+    await withSpinner(async () => {
+      const res = await update({
+        ...t,
+        maqueta: { ...t.maqueta!, aprobada: true },
+        ultimaActualizacion: nowLabel()
+      })
+      if (res.ok === false) throw new Error(res.error)
+    }, 'Aprobando maqueta…')
+    showSuccess('Maqueta aprobada', 'Soporte ya puede pasar el ticket a En progreso.')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'No se pudo aprobar la maqueta.'
+    showError('Error al aprobar maqueta', msg)
+  } finally {
+    procesandoMaqueta.value = false
+  }
 }
 
-function rechazarMaqueta() {
+async function onRechazarMaqueta() {
   const t = props.ticket
-  void update({
-    ...t,
-    maqueta: null,
-    ultimaActualizacion: nowLabel()
-  })
-  addSystemMessage(t.chatUuid, t.codigo, 'Maqueta rechazada. PM debe subir nueva versión.')
+  if (procesandoMaqueta.value) return
+  procesandoMaqueta.value = true
+  try {
+    await withSpinner(async () => {
+      const res = await update({
+        ...t,
+        maqueta: null,
+        ultimaActualizacion: nowLabel()
+      })
+      if (res.ok === false) throw new Error(res.error)
+    }, 'Rechazando maqueta…')
+    showSuccess('Maqueta rechazada', 'El PM debe subir una nueva versión.')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'No se pudo rechazar la maqueta.'
+    showError('Error al rechazar maqueta', msg)
+  } finally {
+    procesandoMaqueta.value = false
+  }
 }
 
 async function onEliminar() {
