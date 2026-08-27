@@ -70,6 +70,8 @@ export interface SoporteTiMensaje {
   avatarUrl?: string | null
   texto: string
   esSistema: boolean
+  /** Mensaje de entrega de maqueta (tipo A): permite aprobar/rechazar en el chat. */
+  esMaqueta?: boolean
   marcaTiempo: string
   esPropio?: boolean
   archivoNombre?: string | null

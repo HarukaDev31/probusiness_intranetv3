@@ -329,6 +329,40 @@
                       :inverted="m.esPropio"
                       @abrir="abrirPreview"
                     />
+                    <div
+                      v-if="esMensajeMaquetaPendiente(m)"
+                      class="flex flex-wrap items-center gap-2 pt-1"
+                      @click.stop
+                      @pointerdown.stop
+                    >
+                      <UButton
+                        size="xs"
+                        color="error"
+                        variant="soft"
+                        icon="i-heroicons-x-mark"
+                        :loading="procesandoMaquetaChat"
+                        @click="emit('rechazar-maqueta')"
+                      >
+                        Rechazar
+                      </UButton>
+                      <UButton
+                        size="xs"
+                        color="success"
+                        variant="soft"
+                        icon="i-heroicons-check"
+                        :loading="procesandoMaquetaChat"
+                        @click="emit('aprobar-maqueta')"
+                      >
+                        Aprobar maqueta
+                      </UButton>
+                    </div>
+                    <p
+                      v-else-if="esMensajeMaqueta(m) && maquetaAprobada"
+                      class="flex items-center gap-1 text-[11px] font-medium text-green-600 dark:text-green-400"
+                    >
+                      <UIcon name="i-heroicons-check-circle" class="size-3.5" />
+                      Maqueta aprobada
+                    </p>
                   </div>
 
                   <div v-else-if="m.archivoNombre" class="px-2 pb-1 pt-0">
@@ -339,6 +373,40 @@
                       forzar-documento
                       @abrir="abrirPreview"
                     />
+                    <div
+                      v-if="esMensajeMaquetaPendiente(m)"
+                      class="mt-2 flex flex-wrap items-center gap-2"
+                      @click.stop
+                      @pointerdown.stop
+                    >
+                      <UButton
+                        size="xs"
+                        color="error"
+                        variant="soft"
+                        icon="i-heroicons-x-mark"
+                        :loading="procesandoMaquetaChat"
+                        @click="emit('rechazar-maqueta')"
+                      >
+                        Rechazar
+                      </UButton>
+                      <UButton
+                        size="xs"
+                        color="success"
+                        variant="soft"
+                        icon="i-heroicons-check"
+                        :loading="procesandoMaquetaChat"
+                        @click="emit('aprobar-maqueta')"
+                      >
+                        Aprobar maqueta
+                      </UButton>
+                    </div>
+                    <p
+                      v-else-if="esMensajeMaqueta(m) && maquetaAprobada"
+                      class="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-green-600 dark:text-green-400"
+                    >
+                      <UIcon name="i-heroicons-check-circle" class="size-3.5" />
+                      Maqueta aprobada
+                    </p>
                   </div>
 
                   <div
@@ -593,6 +661,11 @@ const props = withDefaults(
     /** Creador: select Operativo/Observado junto a indicadores. */
     mostrarConfirmacionCreador?: boolean
     ticketConfirmacion?: SoporteTiSolicitud | null
+    /** Creador: aprobar/rechazar maqueta desde el mensaje del chat. */
+    puedeAprobarMaqueta?: boolean
+    maquetaAprobada?: boolean
+    maquetaNombre?: string | null
+    procesandoMaquetaChat?: boolean
   }>(),
   {
     hasMoreOlder: false,
@@ -610,7 +683,11 @@ const props = withDefaults(
     terminoMaximo: null,
     verSla: false,
     mostrarConfirmacionCreador: false,
-    ticketConfirmacion: null
+    ticketConfirmacion: null,
+    puedeAprobarMaqueta: false,
+    maquetaAprobada: false,
+    maquetaNombre: null,
+    procesandoMaquetaChat: false
   }
 )
 
@@ -618,6 +695,8 @@ const emit = defineEmits<{
   send: [payload: SoporteTiEnviarMensajePayload]
   'load-older': []
   'cambio-estado': [val: unknown]
+  'aprobar-maqueta': []
+  'rechazar-maqueta': []
 }>()
 
 const cardUi = {
@@ -662,6 +741,17 @@ const etiquetaContadorMostrar = computed(() => {
   if (contadorVencidoUi.value) return '00:00:00'
   return etiquetaContador.value
 })
+
+function esMensajeMaqueta(m: SoporteTiMensaje): boolean {
+  if (m.esMaqueta) return true
+  const nombre = (props.maquetaNombre ?? '').trim()
+  if (!nombre || !m.archivoNombre) return false
+  return m.archivoNombre.trim() === nombre
+}
+
+function esMensajeMaquetaPendiente(m: SoporteTiMensaje): boolean {
+  return props.puedeAprobarMaqueta && esMensajeMaqueta(m)
+}
 
 const texto = ref('')
 const messagesScrollRef = ref<InstanceType<typeof ChatMessagesScroll> | null>(null)
