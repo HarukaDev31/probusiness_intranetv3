@@ -6,7 +6,21 @@
       icon="i-heroicons-ticket"
       :hide-back-button="false"
       @back="volver"
-    />
+    >
+      <template v-if="puedeEliminar" #actions>
+        <UButton
+          color="error"
+          variant="outline"
+          size="sm"
+          icon="i-heroicons-trash"
+          :loading="eliminando"
+          class="shrink-0"
+          @click="onEliminar"
+        >
+          Eliminar solicitud
+        </UButton>
+      </template>
+    </PageHeader>
 
     <UCard v-if="error" color="warning" variant="subtle">
       <p class="text-sm">{{ error }}</p>
@@ -39,6 +53,7 @@ import { createLazyView } from '~/utils/lazyView'
 const PageHeader = createLazyView(() => import('~/components/PageHeader.vue'))
 import SoporteTiDetailPageSkeleton from '~/components/soporte-ti/SoporteTiDetailPageSkeleton.vue'
 import { useSoporteTi } from '~/composables/useSoporteTi'
+import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
 import { sincronizarSalasGlobales } from '~/composables/useSoporteTiChatGlobal'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
 
@@ -53,11 +68,17 @@ const paramId = computed(() => {
 })
 
 const { error, resolveForRoute, rolActivo, solicitudPorParamRuta } = useSoporteTi()
+const { removeRequest } = useSoporteTiAcciones()
 
 const esSolicitante = computed(() => rolActivo.value === 'Solicitante')
 
 const cargandoTicket = ref(true)
 const ticket = ref<SoporteTiSolicitud | null>(null)
+const eliminando = ref(false)
+
+const puedeEliminar = computed(() =>
+  Boolean(ticket.value?.gestion?.puedeEliminar || ticket.value?.gestion?.esCreador)
+)
 
 const headerTitle = computed(() => {
   if (cargandoTicket.value) return 'Soporte TI'
@@ -112,6 +133,17 @@ watch(paramId, async () => {
 
 function volver() {
   void navigateTo('/soporte-ti')
+}
+
+async function onEliminar() {
+  if (!ticket.value || !puedeEliminar.value || eliminando.value) return
+  eliminando.value = true
+  try {
+    const ok = await removeRequest(ticket.value)
+    if (ok) await navigateTo('/soporte-ti')
+  } finally {
+    eliminando.value = false
+  }
 }
 
 onMounted(async () => {

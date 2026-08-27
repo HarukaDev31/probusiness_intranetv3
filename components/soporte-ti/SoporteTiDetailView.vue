@@ -1,21 +1,6 @@
 <template>
   <div class="flex min-h-0 w-full max-w-full flex-1 flex-col">
     <div v-if="esVistaSolicitante" class="flex min-h-0 flex-1 flex-col">
-      <div
-        v-if="ticket.gestion.puedeEliminar"
-        class="mb-3 flex shrink-0 justify-end"
-      >
-        <UButton
-          color="error"
-          variant="outline"
-          size="sm"
-          icon="i-heroicons-trash"
-          :loading="eliminando"
-          @click="onEliminar"
-        >
-          Eliminar solicitud
-        </UButton>
-      </div>
       <UCard v-if="mostrarBarraSla" class="mb-3 shrink-0">
         <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
           Avance SLA
@@ -172,7 +157,7 @@
           </div>
         </UCard>
 
-        <UCard v-if="acciones.length || ticket.gestion.puedeEliminar">
+        <UCard v-if="acciones.length || puedeBorrar">
           <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Acciones</p>
           <div class="flex flex-col gap-2">
             <UButton
@@ -187,7 +172,7 @@
               {{ a.label }}
             </UButton>
             <UButton
-              v-if="ticket.gestion.puedeEliminar"
+              v-if="puedeBorrar"
               block
               size="sm"
               color="error"
@@ -255,6 +240,10 @@ const enviandoMaqueta = ref(false)
 const eliminando = ref(false)
 
 const esVistaSolicitante = computed(() => rolActivo.value === 'Solicitante')
+
+const puedeBorrar = computed(
+  () => Boolean(props.ticket.gestion.puedeEliminar || props.ticket.gestion.esCreador)
+)
 
 function esValorPendiente(valor?: string | null): boolean {
   const v = (valor ?? '').trim().toLowerCase()
@@ -466,7 +455,7 @@ function rechazarMaqueta() {
 }
 
 async function onEliminar() {
-  if (!props.ticket.gestion.puedeEliminar || eliminando.value) return
+  if (!puedeBorrar.value || eliminando.value) return
   eliminando.value = true
   try {
     const ok = await removeRequest(props.ticket)
