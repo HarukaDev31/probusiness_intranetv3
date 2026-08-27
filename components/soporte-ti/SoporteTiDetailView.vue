@@ -1,14 +1,6 @@
 <template>
   <div class="flex min-h-0 w-full max-w-full flex-1 flex-col">
     <div v-if="esVistaSolicitante" class="flex min-h-0 flex-1 flex-col">
-      <SoporteTiMaquetaPreview
-        v-if="mostrarMaquetaCreador"
-        class="mb-3 shrink-0"
-        :maqueta="ticket.maqueta!"
-        rol="Solicitante"
-        @approve="void onAprobarMaqueta()"
-        @reject="void onRechazarMaqueta()"
-      />
       <SoporteTiDetailChatSection
         modo-solicitante
         panel-class="min-h-[280px] flex-1"
@@ -22,7 +14,13 @@
         :termino-maximo="ticket.gestion.terminoEstimado"
         :mostrar-confirmacion-creador="mostrarConfirmacionCreador"
         :ticket-confirmacion="ticket"
+        :puede-aprobar-maqueta="puedeAprobarMaquetaEnChat"
+        :maqueta-aprobada="Boolean(ticket.maqueta?.aprobada)"
+        :maqueta-nombre="ticket.maqueta?.nombre ?? null"
+        :procesando-maqueta-chat="procesandoMaqueta"
         @cambio-estado="void onCambioEstadoCreador($event)"
+        @aprobar-maqueta="void onAprobarMaqueta()"
+        @rechazar-maqueta="void onRechazarMaqueta()"
       />
     </div>
 
@@ -87,11 +85,9 @@
         </UCard>
 
         <SoporteTiMaquetaPreview
-          v-if="ticket.tipo === 'A' && ticket.maqueta"
+          v-if="ticket.tipo === 'A' && ticket.maqueta && rolActivo !== 'Solicitante'"
           :maqueta="ticket.maqueta"
           :rol="rolActivo"
-          @approve="void onAprobarMaqueta()"
-          @reject="void onRechazarMaqueta()"
         />
 
         <SoporteTiAsignacionCard :ticket="ticket" />
@@ -207,11 +203,14 @@ const mostrarConfirmacionCreador = computed(
   () => Boolean(props.ticket.gestion.esCreador && props.ticket.gestion.puedeEstado)
 )
 
-const mostrarMaquetaCreador = computed(
+/** Creador en En maqueta: aprueba desde el mensaje del chat, no desde un bloque aparte. */
+const puedeAprobarMaquetaEnChat = computed(
   () =>
     props.ticket.tipo === 'A' &&
+    props.ticket.estadoCodigo === CODE.MOCKUP &&
     Boolean(props.ticket.maqueta) &&
-    props.ticket.estadoCodigo === CODE.MOCKUP
+    !props.ticket.maqueta?.aprobada &&
+    Boolean(props.ticket.gestion.esCreador)
 )
 
 const puedeBorrar = computed(

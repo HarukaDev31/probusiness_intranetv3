@@ -21,9 +21,15 @@
     :fase-index="faseIndex"
     :mostrar-confirmacion-creador="mostrarConfirmacionCreador"
     :ticket-confirmacion="ticketConfirmacion"
+    :puede-aprobar-maqueta="puedeAprobarMaqueta"
+    :maqueta-aprobada="maquetaAprobada"
+    :maqueta-nombre="maquetaNombre"
+    :procesando-maqueta-chat="procesandoMaquetaChat"
     @send="(payload) => void sendChat(chatUuid, payload)"
     @load-older="void cargarMensajesAnteriores(chatUuid)"
     @cambio-estado="emit('cambio-estado', $event)"
+    @aprobar-maqueta="emit('aprobar-maqueta')"
+    @rechazar-maqueta="emit('rechazar-maqueta')"
   />
 </template>
 
@@ -52,6 +58,10 @@ const props = withDefaults(
     faseIndex?: number
     mostrarConfirmacionCreador?: boolean
     ticketConfirmacion?: SoporteTiSolicitud | null
+    puedeAprobarMaqueta?: boolean
+    maquetaAprobada?: boolean
+    maquetaNombre?: string | null
+    procesandoMaquetaChat?: boolean
   }>(),
   {
     modoSolicitante: false,
@@ -67,12 +77,18 @@ const props = withDefaults(
     mostrarFasesCabecera: false,
     faseIndex: 0,
     mostrarConfirmacionCreador: false,
-    ticketConfirmacion: null
+    ticketConfirmacion: null,
+    puedeAprobarMaqueta: false,
+    maquetaAprobada: false,
+    maquetaNombre: null,
+    procesandoMaquetaChat: false
   }
 )
 
 const emit = defineEmits<{
   'cambio-estado': [val: unknown]
+  'aprobar-maqueta': []
+  'rechazar-maqueta': []
 }>()
 
 const {

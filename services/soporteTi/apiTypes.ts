@@ -117,6 +117,7 @@ export interface SoporteTiMensajeApi {
   avatar_url?: string | null
   texto: string
   es_sistema: boolean
+  es_maqueta?: boolean
   marca_tiempo: string
   created_at_iso?: string
   es_propio?: boolean
