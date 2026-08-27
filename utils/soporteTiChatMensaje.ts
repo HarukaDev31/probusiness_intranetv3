@@ -1,8 +1,5 @@
-import type {
-  SoporteTiEnviarMensajePayload,
-  SoporteTiMensaje,
-  SoporteTiMensajeApi
-} from '~/types/soporteTi'
+import type { SoporteTiEnviarMensajePayload, SoporteTiMensaje } from '~/types/soporteTi'
+import type { SoporteTiMensajeApi } from '~/services/soporteTi/apiTypes'
 import { formatSoporteTiMarcaTiempo } from '~/utils/formatters'
 
 export type SoporteTiEstadoEnvio = 'pendiente' | 'enviando' | 'entregado' | 'error'

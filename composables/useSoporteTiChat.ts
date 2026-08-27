@@ -1,6 +1,5 @@
 import { SoporteTiService } from '~/services/soporteTiService'
 import type { SoporteTiChatPaginacion, SoporteTiChatsPorUuid, SoporteTiMensaje } from '~/types/soporteTi'
-import { mapMensajeApiToUi } from '~/utils/soporteTiMappers'
 import { encolarLeidosDesdeMensajes } from '~/composables/useSoporteTiChatLeidos'
 import { mergeMensajesAsc } from '~/utils/soporteTiChatPaginate'
 import { SOPORTE_TI_CHAT_PAGE_SIZE } from '~/constants/soporteTi'
@@ -118,12 +117,12 @@ export function useSoporteTiChat() {
         limit: SOPORTE_TI_CHAT_PAGE_SIZE
       })
       if (!res.success) throw new Error(res.message || 'Error al cargar mensajes')
-      const lista = mergeMensajesAsc(res.data.map(mapMensajeApiToUi), existentes)
+      const lista = mergeMensajesAsc(res.data, existentes)
       setMensajesSala(chatUuid, lista)
       encolarLeidosDesdeMensajes(chatUuid, lista)
       patchMeta(chatUuid, {
-        hasMoreOlder: res.pagination.has_more,
-        oldestId: res.pagination.oldest_id,
+        hasMoreOlder: res.pagination.hasMore,
+        oldestId: res.pagination.oldestId,
         initialized: true,
         loading: false,
         loadingOlder: false
@@ -143,14 +142,13 @@ export function useSoporteTiChat() {
     try {
       const res = await SoporteTiService.getMensajes(chatUuid, {
         limit: SOPORTE_TI_CHAT_PAGE_SIZE,
-        before_id: meta.oldestId
+        beforeId: meta.oldestId
       })
       if (!res.success) throw new Error(res.message || 'Error')
-      const nuevos = res.data.map(mapMensajeApiToUi)
-      prependMensajesSala(chatUuid, nuevos)
+      prependMensajesSala(chatUuid, res.data)
       patchMeta(chatUuid, {
-        hasMoreOlder: res.pagination.has_more,
-        oldestId: res.pagination.oldest_id ?? meta.oldestId,
+        hasMoreOlder: res.pagination.hasMore,
+        oldestId: res.pagination.oldestId ?? meta.oldestId,
         loadingOlder: false
       })
     } catch {

@@ -52,7 +52,7 @@ const paramId = computed(() => {
   return Array.isArray(raw) ? raw[0] : raw
 })
 
-const { error, resolverTicketParaRuta, rolActivo, solicitudPorParamRuta } = useSoporteTi()
+const { error, resolveForRoute, rolActivo, solicitudPorParamRuta } = useSoporteTi()
 
 const esSolicitante = computed(() => rolActivo.value === 'Solicitante')
 
@@ -78,7 +78,7 @@ async function resolveTicket() {
     ticket.value = null
     return
   }
-  ticket.value = await resolverTicketParaRuta(id)
+  ticket.value = await resolveForRoute(id)
 }
 
 watch(

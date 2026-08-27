@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { SoporteTiService } from '~/services/soporteTiService'
 import type { SoporteTiComplejidad } from '~/utils/soporteTiComplejidad'
-import type { SoporteTiSlaHorasApi } from '~/types/soporteTi'
+import type { SoporteTiSlaHorasApi } from '~/services/soporteTi/apiTypes'
 
 export interface SoporteTiSlaHorasFila {
   id: number

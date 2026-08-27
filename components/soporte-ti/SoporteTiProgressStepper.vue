@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
+import { CODE } from '~/constants/soporteTiEstados'
 
 const props = defineProps<{
   solicitud: SoporteTiSolicitud
@@ -43,12 +44,12 @@ const ESTADOS_B = [
 function indicePaso(t: SoporteTiSolicitud): number {
   if (t.tipo === 'A') return t.faseIndex || 0
   const map: Record<string, number> = {
-    pendiente: 0,
-    en_progreso: 1,
-    hecho: 2,
-    desplegado: 3,
-    operativo: 4,
-    observado: 1
+    [CODE.PENDING]: 0,
+    [CODE.IN_PROGRESS]: 1,
+    [CODE.DONE]: 2,
+    [CODE.DEPLOYED]: 3,
+    [CODE.OPERATIVE]: 4,
+    [CODE.OBSERVED]: 1
   }
   return map[t.estadoCodigo] ?? 0
 }
@@ -59,7 +60,7 @@ const pasos = computed(() =>
 
 const actual = computed(() => indicePaso(props.solicitud))
 
-const esObservado = computed(() => props.solicitud.estadoCodigo === 'observado')
+const esObservado = computed(() => props.solicitud.estadoCodigo === CODE.OBSERVED)
 
 const tamClase = computed(() =>
   props.tam === 'md' ? 'h-6 w-6 text-[8px]' : 'h-5 w-5 text-[7px]'

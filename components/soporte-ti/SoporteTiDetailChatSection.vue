@@ -25,7 +25,7 @@
     :complejidad-analista="complejidadAnalista"
     :tipo-solicitud="tipoSolicitud"
     :mostrar-meta-staff="mostrarMetaStaff"
-    @send="(payload) => void enviarChat(chatUuid, payload)"
+    @send="(payload) => void sendChat(chatUuid, payload)"
     @load-older="void cargarMensajesAnteriores(chatUuid)"
   />
 </template>
@@ -82,7 +82,7 @@ const props = withDefaults(
 )
 
 const {
-  enviarChat,
+  sendChat,
   mensajesDe,
   metaDe,
   cargarChatInicial,

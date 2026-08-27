@@ -9,24 +9,15 @@ import type {
   SoporteTiListFilters,
   SoporteTiMensaje,
   SoporteTiSolicitud,
-  SoporteTiSolicitudApi,
   SoporteTiMaqueta,
   SoporteTiWsEstadoPayload,
   SoporteTiWsMensajePayload
 } from '~/types/soporteTi'
-import {
-  buildCreateApiBody,
-  buildCreateSolicitudFormData,
-  mapMensajeApiToUi,
-  mapSolicitudApiToUi,
-  mapSolicitudUiToApiPatch,
-  parseSoporteTiListPayload
-} from '~/utils/soporteTiMappers'
 import { useSoporteTiChat } from '~/composables/useSoporteTiChat'
 import { useSoporteTiChatRoom } from '~/composables/useSoporteTiChatRoom'
 import { encolarLeidosDesdeMensajes } from '~/composables/useSoporteTiChatLeidos'
-import { estadoPorId, resolverEstado } from '~/constants/soporteTiEstados'
-import { aplicarCambioEstadoEnSolicitud } from '~/utils/soporteTiEstadoTransition'
+import { CODE, IN_PROGRESS_CODES } from '~/constants/soporteTiEstados'
+import { apply as applyStateChange } from '~/utils/soporteTiEstadoTransition'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import {
   crearClientIdMensaje,
@@ -38,18 +29,18 @@ function clientIdFallback(m: SoporteTiMensaje): string {
   return m.clientId ?? `legacy-${m.id}`
 }
 
-function etiquetaAhora(): string {
+function nowLabel(): string {
   return formatSoporteTiMarcaTiempo(new Date())
 }
 
-function statsDesdeSolicitudes(list: SoporteTiSolicitud[]) {
+function statsFromList(list: SoporteTiSolicitud[]) {
   return {
     total: list.length,
-    pendientes: list.filter((t) => t.estadoCodigo === 'pendiente').length,
+    pendientes: list.filter((t) => t.estadoCodigo === CODE.PENDING).length,
     enProgreso: list.filter((t) =>
-      ['en_progreso', 'en_maqueta', 'hecho'].includes(t.estadoCodigo)
+      (IN_PROGRESS_CODES as readonly string[]).includes(t.estadoCodigo)
     ).length,
-    operativas: list.filter((t) => t.estadoCodigo === 'operativo').length
+    operativas: list.filter((t) => t.estadoCodigo === CODE.OPERATIVE).length
   }
 }
 
@@ -88,7 +79,7 @@ export function useSoporteTi() {
   const solicitudes = useState<SoporteTiSolicitud[]>('soporte-ti-solicitudes', () => [])
   const error = useState<string | null>('soporte-ti-error', () => null)
 
-  const stats = computed(() => statsDesdeSolicitudes(solicitudes.value))
+  const stats = computed(() => statsFromList(solicitudes.value))
 
   function solicitudPorChatUuid(chatUuid: string) {
     return solicitudes.value.find((s) => s.chatUuid === chatUuid) ?? null
@@ -125,7 +116,7 @@ export function useSoporteTi() {
     }
   }
 
-  async function resolverTicketParaRuta(param: string): Promise<SoporteTiSolicitud | null> {
+  async function resolveForRoute(param: string): Promise<SoporteTiSolicitud | null> {
     if (!param) return null
     const raw = decodeURIComponent(param.trim())
     const local = solicitudPorParamRuta(raw)
@@ -135,9 +126,8 @@ export function useSoporteTi() {
       try {
         const res = await SoporteTiService.show(Number(raw))
         if (!res?.success || !res.data) return null
-        const ui = mapSolicitudApiToUi(res.data)
-        upsertSolicitud(ui)
-        return ui
+        upsertSolicitud(res.data)
+        return res.data
       } catch {
         return null
       }
@@ -145,9 +135,8 @@ export function useSoporteTi() {
 
     try {
       const res = await SoporteTiService.list({ q: raw, tipo: 'todos' })
-      if (!res?.success || !res || typeof res !== 'object') return null
-      const { rows } = parseSoporteTiListPayload(res)
-      const mapped = rows.map((row) => mapSolicitudApiToUi(row))
+      if (!res?.success || !res.data?.length) return null
+      const mapped = res.data
       const lower = raw.toLowerCase()
       const byCode = mapped.find((r) => r.codigo.toLowerCase() === lower)
       if (byCode) {
@@ -173,7 +162,7 @@ export function useSoporteTi() {
     return null
   }
 
-  function agregarMensajeSistema(chatUuid: string, _codigo: string, texto: string) {
+  function addSystemMessage(chatUuid: string, _codigo: string, texto: string) {
     const msg: SoporteTiMensaje = {
       id: Date.now(),
       remitente: 'Sistema',
@@ -181,7 +170,7 @@ export function useSoporteTi() {
       color: '#64748b',
       texto,
       esSistema: true,
-      marcaTiempo: etiquetaAhora()
+      marcaTiempo: nowLabel()
     }
     agregarMensaje(chatUuid, msg)
   }
@@ -191,23 +180,16 @@ export function useSoporteTi() {
     return salaActivaUuid.value === chatUuid
   }
 
-  function aplicarMensajeRemoto(
+  function applyRemoteMessage(
     chatUuidEsperado: string,
     payload: SoporteTiWsMensajePayload,
     esActualizacion = false
   ) {
-    if (!payload.chat_uuid || payload.chat_uuid !== chatUuidEsperado) return
+    const adapted = SoporteTiService.adaptWsMensaje(payload)
+    if (!adapted.chatUuid || adapted.chatUuid !== chatUuidEsperado) return
     if (!esSalaChatVisible(chatUuidEsperado)) return
 
-    const ui = mapMensajeApiToUi(payload.mensaje)
-    if (ui.esPropio) {
-      ui.estadoEnvio = ui.adjuntoPendiente
-        ? 'enviando'
-        : payload.mensaje.leido
-          ? 'leido'
-          : 'entregado'
-    }
-
+    const ui = adapted.mensaje
     const lista = mensajesDe(chatUuidEsperado)
 
     let idxOptimista = -1
@@ -229,14 +211,7 @@ export function useSoporteTi() {
         ...ui,
         clientId: undefined,
         imagenes: ui.imagenes?.length ? ui.imagenes : prev.imagenes,
-        texto: ui.texto || prev.texto,
-        estadoEnvio: ui.esPropio
-          ? ui.adjuntoPendiente
-            ? 'enviando'
-            : payload.mensaje.leido
-              ? 'leido'
-              : 'entregado'
-          : undefined
+        texto: ui.texto || prev.texto
       })
       return
     }
@@ -253,12 +228,13 @@ export function useSoporteTi() {
     }
   }
 
-  function aplicarMensajesLeidosRemoto(
+  function applyRemoteReads(
     chatUuid: string,
     payload: import('~/types/soporteTi').SoporteTiWsMensajesLeidosPayload
   ) {
-    if (!payload.mensaje_ids?.length || !esSalaChatVisible(chatUuid)) return
-    aplicarMensajesLeidosWs(chatUuid, payload.mensaje_ids)
+    const adapted = SoporteTiService.adaptWsMensajesLeidos(payload)
+    if (!adapted.mensajeIds.length || !esSalaChatVisible(chatUuid)) return
+    aplicarMensajesLeidosWs(chatUuid, adapted.mensajeIds)
   }
 
   async function refrescarSolicitudPorChatUuid(chatUuid: string) {
@@ -267,14 +243,14 @@ export function useSoporteTi() {
     try {
       const res = await SoporteTiService.show(s.backendId)
       if (res.success && res.data) {
-        fusionarSolicitudApiEnLista(res.data, chatUuid)
+        merge(res.data)
       }
     } catch {
       // listado sigue usable; el detalle se puede recargar al entrar
     }
   }
 
-  function aplicarEstadoRemoto(payload: SoporteTiWsEstadoPayload) {
+  function applyRemoteState(payload: SoporteTiWsEstadoPayload) {
     void refrescarSolicitudPorChatUuid(payload.chat_uuid)
   }
 
@@ -289,19 +265,8 @@ export function useSoporteTi() {
       error.value = null
       try {
         const res = await SoporteTiService.list(filters)
-        if (!res || typeof res !== 'object') throw new Error('Respuesta inválida del servidor')
-        if (!res.success) throw new Error(res.message || 'Error al cargar')
-        const { rows } = parseSoporteTiListPayload(res)
-        solicitudes.value = rows
-          .map((row) => {
-            try {
-              return mapSolicitudApiToUi(row)
-            } catch (e) {
-              console.warn('[SoporteTI] Fila de listado omitida por datos inválidos:', row, e)
-              return null
-            }
-          })
-          .filter((s): s is SoporteTiSolicitud => s != null)
+        if (!res?.success) throw new Error(res.message || 'Error al cargar')
+        solicitudes.value = res.data ?? []
       } catch (e: unknown) {
         error.value = e instanceof Error ? e.message : 'Error al cargar'
         solicitudes.value = []
@@ -326,7 +291,7 @@ export function useSoporteTi() {
     return list.map((s) => s.chatUuid).filter((uuid): uuid is string => Boolean(uuid))
   }
 
-  async function actualizarSolicitud(
+  async function update(
     actualizada: SoporteTiSolicitud
   ): Promise<{ ok: true } | { ok: false; error: string }> {
     const idx = solicitudes.value.findIndex((s) => s.chatUuid === actualizada.chatUuid)
@@ -346,15 +311,12 @@ export function useSoporteTi() {
     }
 
     try {
-      const res = await SoporteTiService.update(
-        actualizada.backendId,
-        mapSolicitudUiToApiPatch(actualizada)
-      )
+      const res = await SoporteTiService.update(actualizada.backendId, actualizada)
       if (!res.success) {
         throw new Error(res.message || 'Error al guardar')
       }
       if (res.data) {
-        fusionarSolicitudApiEnLista(res.data, actualizada.chatUuid)
+        merge(res.data)
       }
       return { ok: true }
     } catch (e: unknown) {
@@ -368,14 +330,29 @@ export function useSoporteTi() {
     }
   }
 
-  function fusionarSolicitudApiEnLista(data: SoporteTiSolicitudApi, chatUuid: string) {
-    const ui = mapSolicitudApiToUi(data)
-    solicitudes.value = solicitudes.value.map((s) =>
-      s.chatUuid === chatUuid ? { ...s, ...ui, chatUuid: s.chatUuid } : s
-    )
+  function merge(ui: SoporteTiSolicitud) {
+    upsertSolicitud(ui)
   }
 
-  async function actualizarPrioridadSolicitud(
+  async function updateAssignment(
+    t: SoporteTiSolicitud,
+    body: { pmUserId?: number | null; analistaUserId?: number | null }
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (t.backendId == null) {
+      return { ok: false, error: 'La solicitud no tiene identificador en el servidor' }
+    }
+    try {
+      const res = await SoporteTiService.updateAsignacion(t.backendId, body)
+      if (!res.success) throw new Error(res.message || 'No se pudo actualizar la asignación')
+      if (res.data) merge(res.data)
+      return { ok: true }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al guardar'
+      return { ok: false, error: msg || 'Error al guardar en el servidor' }
+    }
+  }
+
+  async function updatePriority(
     t: SoporteTiSolicitud,
     prioridad: number
   ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -385,12 +362,12 @@ export function useSoporteTi() {
     const idx = solicitudes.value.findIndex((s) => s.chatUuid === t.chatUuid)
     const antes = idx !== -1 ? solicitudes.value[idx] : null
     solicitudes.value = solicitudes.value.map((s) =>
-      s.chatUuid === t.chatUuid ? { ...s, prioridad, ultimaActualizacion: etiquetaAhora() } : s
+      s.chatUuid === t.chatUuid ? { ...s, prioridad, ultimaActualizacion: nowLabel() } : s
     )
     try {
       const res = await SoporteTiService.updatePrioridad(t.backendId, prioridad)
       if (!res.success) throw new Error(res.message || 'No se pudo actualizar la prioridad')
-      if (res.data) fusionarSolicitudApiEnLista(res.data, t.chatUuid)
+      if (res.data) merge(res.data)
       return { ok: true }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Error al guardar'
@@ -403,7 +380,7 @@ export function useSoporteTi() {
     }
   }
 
-  async function actualizarComplejidadSolicitud(
+  async function updateComplexity(
     t: SoporteTiSolicitud,
     criticidad: string,
     rol?: 'pm' | 'analista' | 'legacy'
@@ -430,7 +407,7 @@ export function useSoporteTi() {
       complejidadAnalista:
         t.tipo === 'A' && rol === 'analista' ? criticidad : t.complejidadAnalista,
       gestion: patchGestion,
-      ultimaActualizacion: etiquetaAhora()
+      ultimaActualizacion: nowLabel()
     }
 
     solicitudes.value = solicitudes.value.map((s) =>
@@ -443,7 +420,7 @@ export function useSoporteTi() {
         throw new Error(res.message || 'No se pudo actualizar la complejidad')
       }
       if (res.data) {
-        fusionarSolicitudApiEnLista(res.data, t.chatUuid)
+        merge(res.data)
       }
       return { ok: true }
     } catch (e: unknown) {
@@ -457,7 +434,7 @@ export function useSoporteTi() {
     }
   }
 
-  async function actualizarEstadoSolicitud(
+  async function updateState(
     t: SoporteTiSolicitud,
     estadoCodigo: string
   ): Promise<{ ok: true; solicitud: SoporteTiSolicitud } | { ok: false; error: string }> {
@@ -468,8 +445,8 @@ export function useSoporteTi() {
     const idx = solicitudes.value.findIndex((s) => s.chatUuid === t.chatUuid)
     const antes = idx !== -1 ? solicitudes.value[idx] : null
     const actualizada = {
-      ...aplicarCambioEstadoEnSolicitud(t, estadoCodigo),
-      ultimaActualizacion: etiquetaAhora()
+      ...applyStateChange(t, estadoCodigo),
+      ultimaActualizacion: nowLabel()
     }
 
     solicitudes.value = solicitudes.value.map((s) =>
@@ -482,7 +459,7 @@ export function useSoporteTi() {
         throw new Error(res.message || 'No se pudo actualizar el estado')
       }
       if (res.data) {
-        fusionarSolicitudApiEnLista(res.data, t.chatUuid)
+        merge(res.data)
         const merged = solicitudes.value.find((s) => s.chatUuid === t.chatUuid)
         return { ok: true, solicitud: merged ?? actualizada }
       }
@@ -498,13 +475,11 @@ export function useSoporteTi() {
     }
   }
 
-  async function crearSolicitud(payload: SoporteTiCreatePayload) {
+  async function create(payload: SoporteTiCreatePayload) {
     const sla = payload.tipo === 'A' ? 72 : 8
-    const res = payload.imagenes?.length
-      ? await SoporteTiService.store(buildCreateSolicitudFormData(payload))
-      : await SoporteTiService.store(buildCreateApiBody(payload) as Record<string, unknown>)
+    const res = await SoporteTiService.store(payload)
     if (!res.success || !res.data) throw new Error(res.message || 'No se pudo crear')
-    const nueva = mapSolicitudApiToUi(res.data)
+    const nueva = res.data
     solicitudes.value = [...solicitudes.value, nueva]
     if (nueva.chatUuid && typeof window !== 'undefined') {
       window.dispatchEvent(
@@ -515,11 +490,11 @@ export function useSoporteTi() {
       payload.tipo === 'A'
         ? `Ticket ${nueva.codigo} creado.`
         : `Ticket ${nueva.codigo} creado. SLA: ${sla}h.`
-    agregarMensajeSistema(nueva.chatUuid, nueva.codigo, msgCreado)
+    addSystemMessage(nueva.chatUuid, nueva.codigo, msgCreado)
     return nueva
   }
 
-  async function subirMaqueta(
+  async function uploadMockup(
     t: SoporteTiSolicitud,
     archivo: File,
     mensaje?: string
@@ -538,7 +513,7 @@ export function useSoporteTi() {
       if (!res.success || !res.data) {
         throw new Error(res.message || 'No se pudo subir la maqueta')
       }
-      fusionarSolicitudApiEnLista(res.data, t.chatUuid)
+      merge(res.data)
       await cargarChatInicial(t.chatUuid)
       return { ok: true }
     } catch (e: unknown) {
@@ -547,7 +522,7 @@ export function useSoporteTi() {
     }
   }
 
-  async function enviarChat(chatUuid: string, payload: SoporteTiEnviarMensajePayload) {
+  async function sendChat(chatUuid: string, payload: SoporteTiEnviarMensajePayload) {
     const ticket = solicitudPorChatUuid(chatUuid)
     if (!ticket?.backendId) {
       throw new Error('No se puede enviar el mensaje: solicitud no disponible en el servidor')
@@ -574,13 +549,7 @@ export function useSoporteTi() {
         throw new Error(res.message || 'No se pudo enviar el mensaje')
       }
 
-      const confirmado = mapMensajeApiToUi(res.data)
-      confirmado.estadoEnvio = confirmado.adjuntoPendiente
-        ? 'enviando'
-        : res.data.leido
-          ? 'leido'
-          : 'entregado'
-
+      const confirmado = res.data
       const fusionado: SoporteTiMensaje = {
         ...confirmado,
         clientId: undefined,
@@ -610,13 +579,13 @@ export function useSoporteTi() {
   function handlersSala(chatUuid: string) {
     return {
       onMensajeCreado: (p: SoporteTiWsMensajePayload) =>
-        aplicarMensajeRemoto(chatUuid, p, false),
+        applyRemoteMessage(chatUuid, p, false),
       onMensajeActualizado: (p: SoporteTiWsMensajePayload) =>
-        aplicarMensajeRemoto(chatUuid, p, true),
-      onMensajesLeidos: (p) => aplicarMensajesLeidosRemoto(chatUuid, p),
+        applyRemoteMessage(chatUuid, p, true),
+      onMensajesLeidos: (p) => applyRemoteReads(chatUuid, p),
       onEstadoActualizado: (p: SoporteTiWsEstadoPayload) => {
         if (p.chat_uuid !== chatUuid) return
-        aplicarEstadoRemoto(p)
+        applyRemoteState(p)
       }
     }
   }
@@ -628,14 +597,15 @@ export function useSoporteTi() {
     error,
     cargar,
     asegurarListadoCargado,
-    actualizarSolicitud,
-    actualizarPrioridadSolicitud,
-    actualizarComplejidadSolicitud,
-    actualizarEstadoSolicitud,
-    crearSolicitud,
-    subirMaqueta,
-    enviarChat,
-    agregarMensajeSistema,
+    update,
+    updatePriority,
+    updateComplexity,
+    updateAssignment,
+    updateState,
+    create,
+    uploadMockup,
+    sendChat,
+    addSystemMessage,
     mensajesDe,
     metaDe,
     cargarChatInicial,
@@ -644,10 +614,10 @@ export function useSoporteTi() {
     solicitudPorChatUuid,
     solicitudPorCodigo,
     solicitudPorParamRuta,
-    resolverTicketParaRuta,
+    resolveForRoute,
     handlersSala,
-    etiquetaAhora,
-    registrarMaquetaLocal(
+    nowLabel,
+    registerLocalMockup(
       chatUuid: string,
       mq: SoporteTiMaqueta,
       mensajePm: string,
@@ -655,10 +625,10 @@ export function useSoporteTi() {
     ) {
       const t = solicitudPorChatUuid(chatUuid)
       if (!t) return
-      void actualizarSolicitud({
+      void update({
         ...t,
         maqueta: mq,
-        ultimaActualizacion: etiquetaAhora()
+        ultimaActualizacion: nowLabel()
       })
       const quien = remitenteChatUi()
       const msg: SoporteTiMensaje = {
@@ -668,7 +638,7 @@ export function useSoporteTi() {
         color: quien.color,
         texto: mensajePm,
         esSistema: false,
-        marcaTiempo: etiquetaAhora(),
+        marcaTiempo: nowLabel(),
         esPropio: rolActivo.value === 'PM',
         archivoNombre: archivoNombre ?? mq.nombre,
         imagenes: mq.dataUrl
@@ -676,7 +646,7 @@ export function useSoporteTi() {
           : undefined
       }
       agregarMensaje(chatUuid, msg)
-      agregarMensajeSistema(
+      addSystemMessage(
         chatUuid,
         t.codigo,
         `Maqueta "${mq.nombre}" subida. Pendiente de aprobación del solicitante.`
