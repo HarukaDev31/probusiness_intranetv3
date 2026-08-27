@@ -105,6 +105,8 @@ const shellViewportLocked = computed(
   () =>
     route.path.startsWith('/calendar')
     || route.path.startsWith('/coordinacion/whatsapp-inbox')
+    // Chat / listado Soporte TI: altura de viewport (config usa scroll normal)
+    || (route.path.startsWith('/soporte-ti') && !route.path.includes('/configuracion'))
 )
 
 const pageTitle = computed(() => {

@@ -1,6 +1,21 @@
 <template>
   <div class="flex min-h-0 w-full max-w-full flex-1 flex-col">
     <div v-if="esVistaSolicitante" class="flex min-h-0 flex-1 flex-col">
+      <div
+        v-if="ticket.gestion.puedeEliminar"
+        class="mb-3 flex shrink-0 justify-end"
+      >
+        <UButton
+          color="error"
+          variant="outline"
+          size="sm"
+          icon="i-heroicons-trash"
+          :loading="eliminando"
+          @click="onEliminar"
+        >
+          Eliminar solicitud
+        </UButton>
+      </div>
       <UCard v-if="mostrarBarraSla" class="mb-3 shrink-0">
         <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
           Avance SLA
@@ -9,7 +24,7 @@
       </UCard>
       <SoporteTiDetailChatSection
         modo-solicitante
-        panel-class="min-h-0 flex-1"
+        panel-class="min-h-[280px] flex-1"
         :chat-uuid="ticket.chatUuid"
         :codigo-ticket="ticket.codigo"
         :estado-codigo="ticket.estadoCodigo"
@@ -29,7 +44,7 @@
     >
       <div class="flex min-h-0 flex-col lg:col-span-2 lg:min-h-0 lg:overflow-hidden">
         <SoporteTiDetailChatSection
-          panel-class="min-h-0 flex-1"
+          panel-class="min-h-[280px] flex-1"
           :chat-uuid="ticket.chatUuid"
           :codigo-ticket="ticket.codigo"
           :estado-codigo="ticket.estadoCodigo"
@@ -157,7 +172,7 @@
           </div>
         </UCard>
 
-        <UCard v-if="acciones.length">
+        <UCard v-if="acciones.length || ticket.gestion.puedeEliminar">
           <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Acciones</p>
           <div class="flex flex-col gap-2">
             <UButton
@@ -170,6 +185,18 @@
               @click="void ejecutarAccion(a.key)"
             >
               {{ a.label }}
+            </UButton>
+            <UButton
+              v-if="ticket.gestion.puedeEliminar"
+              block
+              size="sm"
+              color="error"
+              variant="outline"
+              icon="i-heroicons-trash"
+              :loading="eliminando"
+              @click="onEliminar"
+            >
+              Eliminar solicitud
             </UButton>
           </div>
         </UCard>
@@ -187,6 +214,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { navigateTo } from '#imports'
 import type { SoporteTiRol } from '~/constants/soporteTi'
 import { CODE } from '~/constants/soporteTiEstados'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
@@ -217,13 +245,14 @@ const {
   nowLabel
 } = useSoporteTi()
 
-const { setState, submitMockup } = useSoporteTiAcciones()
+const { setState, submitMockup, removeRequest } = useSoporteTiAcciones()
 const { showError } = useModal()
 const { withSpinner } = useSpinner()
 
 const modalMaquetaAbierto = ref(false)
 const modalMaquetaCambiarEstado = ref(true)
 const enviandoMaqueta = ref(false)
+const eliminando = ref(false)
 
 const esVistaSolicitante = computed(() => rolActivo.value === 'Solicitante')
 
@@ -434,5 +463,16 @@ function rechazarMaqueta() {
     ultimaActualizacion: nowLabel()
   })
   addSystemMessage(t.chatUuid, t.codigo, 'Maqueta rechazada. PM debe subir nueva versión.')
+}
+
+async function onEliminar() {
+  if (!props.ticket.gestion.puedeEliminar || eliminando.value) return
+  eliminando.value = true
+  try {
+    const ok = await removeRequest(props.ticket)
+    if (ok) await navigateTo('/soporte-ti')
+  } finally {
+    eliminando.value = false
+  }
 }
 </script>

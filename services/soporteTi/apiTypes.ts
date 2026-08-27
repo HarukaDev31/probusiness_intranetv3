@@ -12,6 +12,7 @@ export interface SoporteTiGestionApi {
   puede_complejidad_analista?: boolean
   puede_asignacion?: boolean
   puede_estado: boolean
+  puede_eliminar?: boolean
   estados: { id: number; codigo: string; nombre: string }[]
   estado_valor: string | null
   complejidad_valor: string | null

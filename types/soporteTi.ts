@@ -132,6 +132,7 @@ export interface SoporteTiGestion {
   puedeComplejidadAnalista: boolean
   puedeAsignacion: boolean
   puedeEstado: boolean
+  puedeEliminar: boolean
   estados: SoporteTiGestionEstado[]
   estadoValor: string | null
   complejidadValor: SoporteTiComplejidad | null

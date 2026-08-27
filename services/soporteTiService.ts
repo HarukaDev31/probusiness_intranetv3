@@ -136,6 +136,10 @@ export class SoporteTiService extends BaseService {
     }
   }
 
+  static async destroy(id: number): Promise<{ success: boolean; message?: string }> {
+    return this.apiCall(`${BASE}/${id}`, { method: 'DELETE' })
+  }
+
   static async updatePrioridad(id: number, prioridad: number): Promise<SoporteTiSolicitudResult> {
     const raw = await this.apiCall<SoporteTiSingleResponseRaw>(`${BASE}/${id}/prioridad`, {
       method: 'PATCH',
