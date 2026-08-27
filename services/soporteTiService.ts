@@ -1,4 +1,4 @@
-import { BaseService } from '../base/BaseService'
+import { BaseService } from '~/services/base/BaseService'
 import type {
   SoporteTiActualizarEstadoPayload,
   SoporteTiCambiarEstadoPayload,
