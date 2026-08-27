@@ -1,12 +1,6 @@
 <template>
   <div class="flex min-h-0 w-full max-w-full flex-1 flex-col">
     <div v-if="esVistaSolicitante" class="flex min-h-0 flex-1 flex-col">
-      <SoporteTiCreadorConfirmacionEstado
-        v-if="mostrarConfirmacionCreador"
-        class="mb-3 shrink-0"
-        :ticket="ticket"
-        @change="void onCambioEstadoCreador($event)"
-      />
       <SoporteTiDetailChatSection
         modo-solicitante
         panel-class="min-h-[280px] flex-1"
@@ -18,6 +12,9 @@
         :contador-restante-segundos="ticket.gestion.contadorRestanteSegundos"
         :contador-vencido="ticket.gestion.contadorVencido"
         :termino-maximo="ticket.gestion.terminoEstimado"
+        :mostrar-confirmacion-creador="mostrarConfirmacionCreador"
+        :ticket-confirmacion="ticket"
+        @cambio-estado="void onCambioEstadoCreador($event)"
       />
     </div>
 
