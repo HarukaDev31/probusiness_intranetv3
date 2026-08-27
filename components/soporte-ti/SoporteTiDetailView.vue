@@ -7,6 +7,12 @@
         </p>
         <SoporteTiSlaBar :sla="ticket.slaHoras" :transcurridas="ticket.horasTranscurridas" />
       </UCard>
+      <SoporteTiCreadorConfirmacionEstado
+        v-if="mostrarConfirmacionCreador"
+        class="mb-3 shrink-0"
+        :ticket="ticket"
+        @change="void onCambioEstadoCreador($event)"
+      />
       <SoporteTiDetailChatSection
         modo-solicitante
         panel-class="min-h-[280px] flex-1"
@@ -98,34 +104,11 @@
           <SoporteTiAnalistaGestionSelect :ticket="ticket" />
         </UCard>
 
-        <UCard v-if="ticket.gestion.esCreador && ticket.gestion.puedeEstado">
-          <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Confirmación
-          </p>
-          <div class="max-w-xs space-y-2" @click.stop @pointerdown.stop>
-            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-              Estado
-            </span>
-            <USelect
-              :model-value="ticket.gestion.estadoValor ?? undefined"
-              :items="
-                estadosItemsCompletos(ticket.tipo, ticket.gestion.estados, {
-                  editable: true
-                })
-              "
-              value-key="value"
-              label-key="label"
-              size="sm"
-              class="w-full min-w-0"
-              :placeholder="ticket.gestion.estadoPlaceholder"
-              @update:model-value="void onCambioEstadoCreador($event)"
-            />
-            <p class="text-[11px] text-gray-500 dark:text-gray-400">
-              Solo puedes elegir <strong>Operativo</strong> u <strong>Observado</strong>. El cambio
-              se aplica cuando el ticket está <strong>Desplegado</strong>.
-            </p>
-          </div>
-        </UCard>
+        <SoporteTiCreadorConfirmacionEstado
+          v-if="mostrarConfirmacionCreador"
+          :ticket="ticket"
+          @change="void onCambioEstadoCreador($event)"
+        />
 
         <UCard v-if="mostrarBarraSla">
           <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">SLA</p>
@@ -187,7 +170,6 @@ import { useSoporteTi } from '~/composables/useSoporteTi'
 import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { estadosItemsCompletos } from '~/utils/soporteTiGestion'
 import {
   uBadgeColorComplejidad,
   uBadgeColorEstado
@@ -198,6 +180,7 @@ import SoporteTiMaquetaPreview from '~/components/soporte-ti/SoporteTiMaquetaPre
 import SoporteTiDetailChatSection from '~/components/soporte-ti/SoporteTiDetailChatSection.vue'
 import SoporteTiModalMaquetaPm from '~/components/soporte-ti/SoporteTiModalMaquetaPm.vue'
 import SoporteTiAsignacionCard from '~/components/soporte-ti/SoporteTiAsignacionCard.vue'
+import SoporteTiCreadorConfirmacionEstado from '~/components/soporte-ti/SoporteTiCreadorConfirmacionEstado.vue'
 
 type BadgeColor = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'
 
@@ -220,6 +203,10 @@ const enviandoMaqueta = ref(false)
 const eliminando = ref(false)
 
 const esVistaSolicitante = computed(() => rolActivo.value === 'Solicitante')
+
+const mostrarConfirmacionCreador = computed(
+  () => Boolean(props.ticket.gestion.esCreador && props.ticket.gestion.puedeEstado)
+)
 
 const puedeBorrar = computed(
   () => Boolean(props.ticket.gestion.puedeEliminar || props.ticket.gestion.esCreador)
