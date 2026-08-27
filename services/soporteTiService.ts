@@ -22,7 +22,8 @@ import type {
   SoporteTiSlaHorasApi,
   SoporteTiWsEstadoPayload,
   SoporteTiWsMensajePayload,
-  SoporteTiWsMensajesLeidosPayload
+  SoporteTiWsMensajesLeidosPayload,
+  SoporteTiWsSolicitudCreadaPayload
 } from '~/services/soporteTi/apiTypes'
 import {
   adaptEstado,
@@ -82,6 +83,11 @@ export class SoporteTiService extends BaseService {
       lectorUsuarioId: p.lector_usuario_id,
       mensajeIds: p.mensaje_ids
     }
+  }
+
+  static adaptWsSolicitudCreada(p: SoporteTiWsSolicitudCreadaPayload): SoporteTiSolicitud | null {
+    if (!p?.solicitud) return null
+    return adaptSolicitud(p.solicitud)
   }
 
   static async list(filters?: SoporteTiListFilters): Promise<SoporteTiListResult> {

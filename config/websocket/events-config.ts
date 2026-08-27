@@ -50,7 +50,8 @@ export const WS_EVENTS = {
   // Soporte TI — canal privado por sala: soporte-ti.chat.{chat_uuid}
   SOPORTE_TI_MENSAJE_CREADO: 'SoporteTiMensajeCreado',
   SOPORTE_TI_MENSAJE_ACTUALIZADO: 'SoporteTiMensajeActualizado',
-  SOPORTE_TI_ESTADO_ACTUALIZADO: 'SoporteTiEstadoActualizado'
+  SOPORTE_TI_ESTADO_ACTUALIZADO: 'SoporteTiEstadoActualizado',
+  SOPORTE_TI_SOLICITUD_CREADA: 'SoporteTiSolicitudCreada'
 } as const
 
 // ============================================

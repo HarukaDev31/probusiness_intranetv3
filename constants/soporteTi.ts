@@ -42,12 +42,16 @@ export function soporteTiInicialesDesdeNombre(nombre: string): string {
 /** Canal privado Laravel Echo: `private-soporte-ti.chat.{chatUuid}` */
 export const soporteTiChatChannelName = (chatUuid: string) => `soporte-ti.chat.${chatUuid}`
 
+/** Canal staff (PM / Analista): nuevas solicitudes y avisos globales. */
+export const SOPORTE_TI_STAFF_CHANNEL = 'soporte-ti.staff'
+
 /** Eventos broadcast desde Laravel (ShouldBroadcast). */
 export const SOPORTE_TI_WS_EVENTS = {
   MENSAJE_CREADO: 'SoporteTiMensajeCreado',
   MENSAJE_ACTUALIZADO: 'SoporteTiMensajeActualizado',
   ESTADO_ACTUALIZADO: 'SoporteTiEstadoActualizado',
-  MENSAJES_LEIDOS: 'SoporteTiMensajesLeidos'
+  MENSAJES_LEIDOS: 'SoporteTiMensajesLeidos',
+  SOLICITUD_CREADA: 'SoporteTiSolicitudCreada'
 } as const
 
 export const SOPORTE_TI_MAX_IMAGENES_CHAT = 5

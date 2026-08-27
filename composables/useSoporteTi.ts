@@ -592,6 +592,16 @@ export function useSoporteTi() {
     }
   }
 
+  function applyRemoteSolicitudCreada(ui: SoporteTiSolicitud) {
+    if (!ui.chatUuid) return
+    upsertSolicitud(ui)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('soporte-ti-suscribir-sala', { detail: { chatUuid: ui.chatUuid } })
+      )
+    }
+  }
+
   function handlersSala(chatUuid: string) {
     return {
       onMensajeCreado: (p: SoporteTiWsMensajePayload) =>
@@ -633,6 +643,7 @@ export function useSoporteTi() {
     solicitudPorParamRuta,
     resolveForRoute,
     handlersSala,
+    applyRemoteSolicitudCreada,
     nowLabel,
     registerLocalMockup(
       chatUuid: string,

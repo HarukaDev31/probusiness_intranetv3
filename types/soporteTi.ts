@@ -227,5 +227,6 @@ export interface SoporteTiActualizarEstadoPayload {
 export type {
   SoporteTiWsMensajePayload,
   SoporteTiWsMensajesLeidosPayload,
-  SoporteTiWsEstadoPayload
+  SoporteTiWsEstadoPayload,
+  SoporteTiWsSolicitudCreadaPayload
 } from '~/services/soporteTi/apiTypes'
