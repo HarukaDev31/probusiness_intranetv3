@@ -4,6 +4,7 @@ import { CALENDAR_EVENTS, getUserCalendarChannelName } from '../config/websocket
 import { useEcho } from '../composables/websocket/useEcho'
 import { buildEchoClientConfig } from '../utils/websocket-config'
 import { syncRoleChannelsFromAuthUser } from '../composables/websocket/syncRoleChannelsFromAuth'
+import { useNotifications } from '../composables/useNotifications'
 
 interface ApiPlugin {
   call: <T>(endpoint: string, options?: any) => Promise<T>
@@ -203,6 +204,16 @@ class AuthService {
         // No borrar Hijos aquí. El render del sidebar decide si aplanar/mostrar padre.
         this.menu = menu
         this.saveToStorage()
+
+        // Badge campana: conteo por rol desde login (sin poll).
+        if (typeof response.notificaciones_no_leidas === 'number') {
+          try {
+            const { setUnreadCount } = useNotifications()
+            setUnreadCount(response.notificaciones_no_leidas)
+          } catch (e) {
+            console.error('Error aplicando conteo de notificaciones del login:', e)
+          }
+        }
 
         // Inicializar Echo y configurar canales
         await this.initializeEcho()

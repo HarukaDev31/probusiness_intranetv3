@@ -66,6 +66,12 @@ export const WS_NOTIFICATION_TYPES: WsNotificationType[] = [
     'Cotizaciones',
     'Cuando se completa la inspección de la carga.'
   ),
+  modalOnly(
+    WS_NOTIFICATION_KEYS.EXCEL_CONFIRMACION_CLIENTE,
+    'Excel de confirmación del cliente',
+    'Coordinación',
+    'Cuando el cliente actualiza o completa el Excel de confirmación.'
+  ),
 
   // — Contenedor consolidado —
   modalOnly(WS_NOTIFICATION_KEYS.CONTENEDOR_ESTADO, 'Cambio de estado del contenedor', 'Contenedor'),

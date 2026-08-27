@@ -13,6 +13,7 @@ export const WS_NOTIFICATION_KEYS = {
   COTIZACION_CARGA_ROLEADA: 'cotizacion.carga.roleada',
   COTIZACION_CHINA_RECIBIDA: 'cotizacion.china.recibida',
   COTIZACION_CHINA_INSPECCIONADA: 'cotizacion.china.inspeccionada',
+  EXCEL_CONFIRMACION_CLIENTE: 'excel.confirmacion.cliente.actualizado',
 
   // Contenedor consolidado
   CONTENEDOR_ESTADO: 'contenedor.estado.cambiado',

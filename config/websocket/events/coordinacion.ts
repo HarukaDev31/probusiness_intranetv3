@@ -11,11 +11,25 @@ import {
   dispatchWaInboxConversationRead
 } from '~/composables/whatsapp-inbox/waInboxRealtimeBridge'
 import { useUserRole } from '~/composables/auth/useUserRole'
+import { useNotifications } from '~/composables/useNotifications'
 import {
   wsShowSuccess,
   wsShowError,
   WS_NOTIFICATION_KEYS,
 } from '~/composables/notifications/preferences'
+import { handleFacturaComercialBatchFinished } from '~/composables/cargaconsolidada/documentacion/facturaComercialBatchRealtime'
+
+/**
+ * Refresca el badge de no leídas (filtrado por rol en el backend).
+ */
+const refreshUnreadBadge = () => {
+  try {
+    const { fetchUnreadCount } = useNotifications()
+    void fetchUnreadCount()
+  } catch (e) {
+    console.error('Error refrescando conteo de notificaciones:', e)
+  }
+}
 
 /**
  * Configuración de eventos para el rol Coordinación
@@ -37,6 +51,7 @@ export const registerCoordinacionEvents = () => {
       'Contacto con China',
       data.message || 'Se ha contactado con China para la cotización.'
     )
+    refreshUnreadBadge()
   })
 
   registerEventHandler(WS_EVENTS.COTIZACION_CHANGE_CONTAINER, (data) => {
@@ -54,6 +69,7 @@ export const registerCoordinacionEvents = () => {
       'Cotización Recibida',
       data.message || 'Se ha recibido la cotización.'
     )
+    refreshUnreadBadge()
   })
 
   registerEventHandler(WS_EVENTS.COTIZACION_CHINA_INSPECTIONED, (data) => {
@@ -63,6 +79,17 @@ export const registerCoordinacionEvents = () => {
       'Cotización Inspectada',
       data.message || 'Se ha inspeccionado la cotización.'
     )
+    refreshUnreadBadge()
+  })
+
+  registerEventHandler(WS_EVENTS.EXCEL_CONFIRMACION_CLIENTE_ACTUALIZADO, (data) => {
+    const esCompleto = String(data?.tipo_evento || '') === 'completo'
+    wsShowSuccess(
+      WS_NOTIFICATION_KEYS.EXCEL_CONFIRMACION_CLIENTE,
+      data?.titulo || (esCompleto ? 'Excel de confirmación completo' : 'Excel de confirmación actualizado'),
+      data?.mensaje || 'El cliente actualizó el Excel de confirmación.'
+    )
+    refreshUnreadBadge()
   })
 
   registerEventHandler(WA_INBOX_WS_EVENTS.MESSAGE_CREATED, dispatchWaInboxMessageCreated)
@@ -87,6 +114,8 @@ export const registerCoordinacionEvents = () => {
     }
   })
 
+  registerEventHandler(WS_EVENTS.FACTURA_COMERCIAL_BATCH_FINISHED, handleFacturaComercialBatchFinished)
+
   subscribeEventsToRole(
     'Coordinación',
     `${'Coordinacion'}-notifications`,
@@ -97,7 +126,9 @@ export const registerCoordinacionEvents = () => {
       WS_EVENTS.COTIZACION_CHANGE_CONTAINER,
       WS_EVENTS.COTIZACION_CHINA_RECEIVED,
       WS_EVENTS.COTIZACION_CHINA_INSPECTIONED,
-      WS_EVENTS.PLANTILLA_FINAL_BATCH_FINISHED
+      WS_EVENTS.EXCEL_CONFIRMACION_CLIENTE_ACTUALIZADO,
+      WS_EVENTS.PLANTILLA_FINAL_BATCH_FINISHED,
+      WS_EVENTS.FACTURA_COMERCIAL_BATCH_FINISHED
     ],
     'private'
   )
