@@ -19,6 +19,15 @@
           v-if="rolActivo !== 'Solicitante'"
           size="sm"
           variant="outline"
+          icon="i-heroicons-squares-2x2"
+          @click="navigateTo('/soporte-ti/areas')"
+        >
+          Áreas
+        </UButton>
+        <UButton
+          v-if="rolActivo !== 'Solicitante'"
+          size="sm"
+          variant="outline"
           icon="i-heroicons-clock"
           @click="navigateTo('/soporte-ti/configuracion/horas-tipo-b')"
         >

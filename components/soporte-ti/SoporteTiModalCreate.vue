@@ -65,7 +65,10 @@
 
         <USeparator />
 
-        <UFormField label="Área solicitante" hint="Preseleccionada según tu perfil">
+        <UFormField
+          label="Área solicitante"
+          :hint="hintArea"
+        >
           <USelect
             v-model="area"
             :items="itemsArea"
@@ -73,11 +76,12 @@
             label-key="label"
             size="sm"
             class="w-full"
-            :disabled="loading"
+            :disabled="loading || cargandoAreas"
           />
         </UFormField>
 
         <UFormField
+          v-if="tipo === 'B'"
           label="URL"
           required
           hint="Pega la URL de la página donde ocurre el caso"
@@ -119,9 +123,10 @@
           />
         </UFormField>
 
-        <USeparator />
+        <USeparator v-if="tipo === 'B'" />
 
         <UFormField
+          v-if="tipo === 'B'"
           label="Evidencias (pantallazos)"
           required
           :hint="`Al menos 1 imagen. Máx. ${SOPORTE_TI_MAX_IMAGENES_CHAT} (${SOPORTE_TI_MAX_IMAGEN_MB} MB c/u)`"
@@ -153,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import {
   SOPORTE_TI_AREAS,
   SOPORTE_TI_AREA_DEFAULT,
@@ -161,7 +166,9 @@ import {
   SOPORTE_TI_MAX_IMAGEN_MB
 } from '~/constants/soporteTi'
 import FileUploader from '~/components/commons/FileUploader.vue'
-import type { SoporteTiCreatePayload, SoporteTiSubtipoB, SoporteTiTipo } from '~/types/soporteTi'
+import { SoporteTiService } from '~/services/soporteTiService'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import type { SoporteTiAreaCatalogo, SoporteTiCreatePayload, SoporteTiSubtipoB, SoporteTiTipo } from '~/types/soporteTi'
 
 type CampoError = 'seccionRuta' | 'titulo' | 'descripcion' | 'pantallazos'
 
@@ -178,11 +185,15 @@ const emit = defineEmits<{
   saved: [payload: SoporteTiCreatePayload]
 }>()
 
+const { currentRole, fetchCurrentUser } = useUserRole()
+
 const tipo = ref<SoporteTiTipo>('B')
 const subtipoB = ref<SoporteTiSubtipoB>('B1')
-const area = ref<(typeof SOPORTE_TI_AREAS)[number]>(
-  SOPORTE_TI_AREA_DEFAULT as (typeof SOPORTE_TI_AREAS)[number]
-)
+const area = ref(SOPORTE_TI_AREA_DEFAULT)
+const nombresArea = ref<string[]>([...SOPORTE_TI_AREAS])
+const catalogo = ref<SoporteTiAreaCatalogo | null>(null)
+const areaDefault = ref(SOPORTE_TI_AREA_DEFAULT)
+const cargandoAreas = ref(false)
 const seccionRuta = ref('')
 const titulo = ref('')
 const descripcion = ref('')
@@ -196,8 +207,16 @@ const itemsSubtipo = [
 ]
 
 const itemsArea = computed(() =>
-  SOPORTE_TI_AREAS.map((a) => ({ label: a, value: a }))
+  nombresArea.value.map((a) => ({ label: a, value: a }))
 )
+
+const hintArea = computed(() => {
+  const rol = String(currentRole.value || '').trim()
+  if (rol && areaPorRolUsuario(catalogo.value)) {
+    return `Según tu rol: ${rol}`
+  }
+  return 'Preseleccionada según tu perfil'
+})
 
 const loading = computed(() => props.loading)
 
@@ -209,17 +228,83 @@ function claseTipoCard(valor: SoporteTiTipo) {
   return `${base} border-default hover:border-primary/40`
 }
 
+watch(tipo, (valor) => {
+  if (valor === 'A') {
+    seccionRuta.value = ''
+    pantallazos.value = []
+    limpiarError('seccionRuta')
+    limpiarError('pantallazos')
+  }
+})
+
 watch(abierto, (v) => {
   if (v) {
     tipo.value = 'B'
     subtipoB.value = 'B1'
-    area.value = SOPORTE_TI_AREA_DEFAULT
     seccionRuta.value = ''
     titulo.value = ''
     descripcion.value = ''
     pantallazos.value = []
     limpiarErrores()
+    void cargarCatalogoAreas()
   }
+})
+
+function areaPorRolUsuario(data: SoporteTiAreaCatalogo | null): string | null {
+  const rol = String(currentRole.value || '').trim().toLowerCase()
+  if (!rol || !data?.areas?.length) {
+    return null
+  }
+  for (const item of data.areas) {
+    const match = (item.roles || []).some(
+      (r) => String(r.nombre || '').trim().toLowerCase() === rol
+    )
+    if (match) {
+      return item.nombre
+    }
+  }
+  return null
+}
+
+function aplicarAreaDefault(data: SoporteTiAreaCatalogo | null) {
+  const lista = data?.areas?.map((a) => a.nombre).filter(Boolean) ?? []
+  if (lista.length) {
+    nombresArea.value = lista
+  }
+  const elegida =
+    areaPorRolUsuario(data) ||
+    data?.area_default ||
+    lista[0] ||
+    SOPORTE_TI_AREA_DEFAULT
+  areaDefault.value = elegida
+  void nextTick(() => {
+    area.value = elegida
+  })
+}
+
+async function cargarCatalogoAreas() {
+  cargandoAreas.value = true
+  try {
+    fetchCurrentUser()
+    const res = await SoporteTiService.catalogoAreas()
+    if (res.success && res.data) {
+      catalogo.value = res.data
+      aplicarAreaDefault(res.data)
+    } else {
+      aplicarAreaDefault(catalogo.value)
+    }
+  } catch {
+    nombresArea.value = [...SOPORTE_TI_AREAS]
+    areaDefault.value = SOPORTE_TI_AREA_DEFAULT
+    area.value = SOPORTE_TI_AREA_DEFAULT
+  } finally {
+    cargandoAreas.value = false
+  }
+}
+
+onMounted(() => {
+  fetchCurrentUser()
+  void cargarCatalogoAreas()
 })
 
 function limpiarErrores() {
@@ -236,7 +321,7 @@ function validar(): boolean {
   limpiarErrores()
   let ok = true
 
-  if (!seccionRuta.value.trim()) {
+  if (tipo.value === 'B' && !seccionRuta.value.trim()) {
     errors.seccionRuta = 'Indica la URL donde ocurre el caso.'
     ok = false
   }
@@ -260,7 +345,7 @@ function validar(): boolean {
     ok = false
   }
 
-  if (pantallazos.value.length === 0) {
+  if (tipo.value === 'B' && pantallazos.value.length === 0) {
     errors.pantallazos = 'Debes adjuntar al menos una evidencia (pantallazo).'
     ok = false
   }
@@ -302,14 +387,15 @@ function guardar() {
     return
   }
 
+  const esProyecto = tipo.value === 'A'
   const payload: SoporteTiCreatePayload = {
     tipo: tipo.value,
     subtipoB: tipo.value === 'B' ? subtipoB.value : null,
     titulo: titulo.value.trim(),
     area: area.value,
-    seccionRuta: seccionRuta.value.trim(),
+    seccionRuta: esProyecto ? '' : seccionRuta.value.trim(),
     descripcion: descripcion.value.trim(),
-    imagenes: [...pantallazos.value]
+    imagenes: esProyecto ? [] : [...pantallazos.value]
   }
 
   emit('saved', payload)
