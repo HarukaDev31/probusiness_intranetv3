@@ -10,7 +10,10 @@ import type {
   SoporteTiMensajeInfoLectura,
   SoporteTiSolicitud,
   SoporteTiEstado,
-  SoporteTiEstadoHistorial
+  SoporteTiEstadoHistorial,
+  SoporteTiArea,
+  SoporteTiAreaCatalogo,
+  SoporteTiAreaGestion
 } from '~/types/soporteTi'
 import type {
   SoporteTiFaseHorasAMatrizApi,
@@ -407,6 +410,49 @@ export class SoporteTiService extends BaseService {
       success: raw.success,
       data: (raw.data ?? []).map(adaptHistorial)
     }
+  }
+
+  static async catalogoAreas(): Promise<{
+    success: boolean
+    data?: SoporteTiAreaCatalogo
+    message?: string
+  }> {
+    return this.apiCall('/api/soporte-ti/areas/catalogo')
+  }
+
+  static async listarAreasGestion(): Promise<{
+    success: boolean
+    data?: SoporteTiAreaGestion
+    message?: string
+  }> {
+    return this.apiCall('/api/soporte-ti/areas')
+  }
+
+  static async crearArea(payload: {
+    nombre: string
+    orden?: number
+    activo?: boolean
+    grupo_ids: number[]
+  }): Promise<{ success: boolean; data?: SoporteTiArea; message?: string }> {
+    return this.apiCall('/api/soporte-ti/areas', { method: 'POST', body: payload })
+  }
+
+  static async actualizarArea(
+    id: number,
+    payload: {
+      nombre?: string
+      orden?: number
+      activo?: boolean
+      grupo_ids?: number[]
+    }
+  ): Promise<{ success: boolean; data?: SoporteTiArea; message?: string }> {
+    return this.apiCall(`/api/soporte-ti/areas/${id}`, { method: 'PUT', body: payload })
+  }
+
+  static async eliminarArea(
+    id: number
+  ): Promise<{ success: boolean; data?: { desactivada: boolean }; message?: string }> {
+    return this.apiCall(`/api/soporte-ti/areas/${id}`, { method: 'DELETE' })
   }
 }
 

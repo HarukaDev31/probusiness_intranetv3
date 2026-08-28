@@ -361,6 +361,8 @@ const convertIconToHeroicons = (faIcon: string): string => {
     'fa fa-chart-line': 'i-heroicons-chart-bar-square',
     'fa fa-newspaper': 'i-heroicons-newspaper',
     'fa fa-calculator': 'i-heroicons-calculator',
+    'fa fa-book': 'i-heroicons-book-open',
+    'fa fa-sitemap': 'i-heroicons-squares-2x2',
   }
 
   return iconMap[faIcon] || ''

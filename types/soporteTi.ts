@@ -165,6 +165,36 @@ export interface SoporteTiCreatePayload {
   imagenes?: File[]
 }
 
+export interface SoporteTiAreaRol {
+  id: number
+  nombre: string
+}
+
+export interface SoporteTiArea {
+  id: number
+  nombre: string
+  orden: number
+  activo: boolean
+  roles: SoporteTiAreaRol[]
+  grupo_ids: number[]
+}
+
+export interface SoporteTiAreaCatalogoItem {
+  id: number
+  nombre: string
+  roles?: SoporteTiAreaRol[]
+}
+
+export interface SoporteTiAreaCatalogo {
+  areas: SoporteTiAreaCatalogoItem[]
+  area_default: string | null
+}
+
+export interface SoporteTiAreaGestion {
+  areas: SoporteTiArea[]
+  grupos: SoporteTiAreaRol[]
+}
+
 export interface SoporteTiEnviarMensajePayload {
   texto: string
   replyToId?: number | null
