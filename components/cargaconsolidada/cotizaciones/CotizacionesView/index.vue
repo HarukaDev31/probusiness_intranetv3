@@ -32,9 +32,13 @@
                             Excel seguimiento
                         </span>
                         <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
-                            <UButton icon="i-simple-icons-googledrive"
+                            <UButton v-if="driveSeguimientoStatus?.vinculado"
+                                icon="i-simple-icons-googledrive"
                                 label="Abrir en Drive" color="success" variant="outline" size="sm"
                                 @click="openDriveSeguimiento" />
+                            <span v-else class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                                Generando Excel en Drive...
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -420,19 +424,16 @@ const mountedTabs = ref({
     pagos: false
 })
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
-const { currentRole: authCurrentRole, currentId, isCotizador } = useUserRole()
+const { currentRole: authCurrentRole, currentId } = useUserRole()
 const {
     driveSeguimientoStatus,
     syncDriveFromHeaders,
     teardownDriveSeguimiento,
+    isDriveLinkPending,
 } = useSeguimientoDrive()
-const isCotizadorNoJefe = computed(() =>
-    isCotizador.value && Number(currentId.value) !== ID_JEFEVENTAS
-)
 const showDriveSeguimientoLink = computed(() =>
-    isCotizadorNoJefe.value
-    && tab.value === 'prospectos'
-    && Boolean(driveSeguimientoStatus.value?.vinculado)
+    tab.value === 'prospectos'
+    && Boolean(driveSeguimientoStatus.value?.vinculado || isDriveLinkPending.value)
 )
 const openDriveSeguimiento = () => {
     if (driveSeguimientoStatus.value?.drive_link) {
@@ -442,7 +443,7 @@ const openDriveSeguimiento = () => {
 const syncDriveSeguimientoFromHeaders = (
     headersResponse: CotizacionesHeadersResponse | null | undefined
 ) => {
-    if (!isCotizadorNoJefe.value || !headersResponse?.excel_seguimiento_drive) return
+    if (!headersResponse?.excel_seguimiento_drive) return
     syncDriveFromHeaders(Number(id), headersResponse.excel_seguimiento_drive)
 }
 
