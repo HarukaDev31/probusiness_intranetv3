@@ -269,6 +269,14 @@
           v-for="col in kanbanBuckets.cols"
           :key="col.key"
           class="flex w-52 shrink-0 flex-col rounded-xl border border-gray-200 bg-gray-50/90 dark:border-gray-700 dark:bg-gray-900/50"
+          :class="
+            kanbanDraggable && kanbanDragOverKey === col.key
+              ? 'ring-2 ring-primary-400 ring-offset-1 dark:ring-primary-500'
+              : ''
+          "
+          @dragover.prevent="onKanbanColumnDragOver($event, col.key)"
+          @dragleave="onKanbanColumnDragLeave(col.key)"
+          @drop.prevent="onKanbanColumnDrop($event, col.key)"
         >
           <div
             class="flex items-center justify-between border-b border-gray-200 px-2 py-2 dark:border-gray-700"
@@ -283,19 +291,28 @@
             </span>
           </div>
           <div class="flex max-h-[calc(100vh-320px)] flex-1 flex-col gap-2 overflow-y-auto p-2">
-            <button
+            <component
+              :is="kanbanDraggable ? 'div' : 'button'"
               v-for="(row, ridx) in kanbanBuckets.buckets[col.key]"
               :key="kanbanRowKey(row as Record<string, unknown>, ridx)"
-              type="button"
-              class="w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-100 p-2.5 text-left transition hover:border-blue-400 hover:shadow-sm dark:border-gray-600 dark:bg-gray-800"
+              :type="kanbanDraggable ? undefined : 'button'"
+              :draggable="kanbanRowIsDraggable(row as Record<string, unknown>)"
+              class="w-full rounded-lg border border-gray-200 bg-gray-100 p-2.5 text-left transition dark:border-gray-600 dark:bg-gray-800"
+              :class="
+                kanbanRowIsDraggable(row as Record<string, unknown>)
+                  ? 'cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-sm'
+                  : 'cursor-pointer hover:border-blue-400 hover:shadow-sm'
+              "
               @click="onKanbanCardClick(row as Record<string, unknown>)"
+              @dragstart="onKanbanCardDragStart($event, row as Record<string, unknown>, col.key)"
+              @dragend="onKanbanCardDragEnd"
             >
               <slot name="kanban-card" :row="row" :column="col">
                 <p class="text-[11px] font-medium leading-snug text-gray-800 dark:text-gray-100">
                   {{ (row as Record<string, unknown>)?.[kanbanTitleField] ?? '—' }}
                 </p>
               </slot>
-            </button>
+            </component>
           </div>
         </div>
         <div
@@ -468,7 +485,8 @@ const props = withDefaults(defineProps<DataTableProps>(), {
   kanbanGroupField: 'estadoCodigo',
   kanbanColumns: () => [],
   kanbanTitleField: 'titulo',
-  kanbanRowKeyField: 'codigo'
+  kanbanRowKeyField: 'codigo',
+  kanbanDraggable: false
 })
 
 /** Evita ambigüedad con otros `loading` en plantilla; fuerza booleano para UTable */
@@ -486,7 +504,7 @@ const tableScrollStyle = computed(() => {
 })
 
 // Emits
-const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change', 'row-click'] )
+const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change', 'row-click', 'kanban-move'] )
 
 // Computed writable para v-model:page
 const currentPageModel = computed({
@@ -588,7 +606,86 @@ function kanbanRowKey(row: Record<string, unknown>, idx: number) {
   return `kanban-${idx}`
 }
 
+const KANBAN_ROW_MIME = 'application/x-datatable-kanban-row'
+
+const kanbanDragOverKey = ref<string | null>(null)
+const kanbanDraggingRow = ref<Record<string, unknown> | null>(null)
+const kanbanDraggingFromKey = ref<string | null>(null)
+let kanbanDidDrag = false
+
+function kanbanRowIsDraggable(row: Record<string, unknown>): boolean {
+  if (!props.kanbanDraggable) return false
+  if (typeof props.kanbanIsRowDraggable === 'function') {
+    return props.kanbanIsRowDraggable(row)
+  }
+  return true
+}
+
+function kanbanCanDropOnColumn(row: Record<string, unknown>, columnKey: string): boolean {
+  if (typeof props.kanbanCanDrop === 'function') {
+    return props.kanbanCanDrop(row, columnKey)
+  }
+  const field = props.kanbanGroupField ?? 'estadoCodigo'
+  const current = row?.[field]
+  return current == null || String(current) !== columnKey
+}
+
+function onKanbanCardDragStart(
+  event: DragEvent,
+  row: Record<string, unknown>,
+  fromKey: string
+) {
+  if (!kanbanRowIsDraggable(row)) {
+    event.preventDefault()
+    return
+  }
+  kanbanDidDrag = false
+  kanbanDraggingRow.value = row
+  kanbanDraggingFromKey.value = fromKey
+  event.dataTransfer?.setData(KANBAN_ROW_MIME, kanbanRowKey(row, 0))
+  event.dataTransfer!.effectAllowed = 'move'
+}
+
+function onKanbanCardDragEnd() {
+  kanbanDidDrag = true
+  kanbanDraggingRow.value = null
+  kanbanDraggingFromKey.value = null
+  kanbanDragOverKey.value = null
+  window.setTimeout(() => {
+    kanbanDidDrag = false
+  }, 0)
+}
+
+function onKanbanColumnDragOver(event: DragEvent, columnKey: string) {
+  if (!props.kanbanDraggable || !kanbanDraggingRow.value) return
+  if (!kanbanCanDropOnColumn(kanbanDraggingRow.value, columnKey)) {
+    event.dataTransfer!.dropEffect = 'none'
+    kanbanDragOverKey.value = null
+    return
+  }
+  event.dataTransfer!.dropEffect = 'move'
+  kanbanDragOverKey.value = columnKey
+}
+
+function onKanbanColumnDragLeave(columnKey: string) {
+  if (kanbanDragOverKey.value === columnKey) {
+    kanbanDragOverKey.value = null
+  }
+}
+
+function onKanbanColumnDrop(event: DragEvent, columnKey: string) {
+  const row = kanbanDraggingRow.value
+  const fromKey = kanbanDraggingFromKey.value
+  kanbanDragOverKey.value = null
+  kanbanDraggingRow.value = null
+  kanbanDraggingFromKey.value = null
+  if (!row || !fromKey || fromKey === columnKey) return
+  if (!kanbanCanDropOnColumn(row, columnKey)) return
+  emit('kanban-move', { row, fromKey, toKey: columnKey })
+}
+
 function onKanbanCardClick(row: Record<string, unknown>) {
+  if (kanbanDidDrag) return
   emit('row-click', row)
 }
 
