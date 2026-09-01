@@ -1,5 +1,5 @@
 <template>
-  <UModal :model-value="true" @update:model-value="emit('close')" class="sm:max-w-2xl">
+  <UModal :model-value="modalOpen" @update:model-value="onOpenChange" class="sm:max-w-2xl">
     <template #header>
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
         {{ embedded ? 'Detalle Boletín Químico (BQ)' : 'Nuevo Boletín Químico' }}
@@ -114,7 +114,7 @@
     </template>
     <template #footer>
       <div class="flex justify-end gap-2">
-        <UButton color="neutral" variant="ghost" @click="emit('close')">Cancelar</UButton>
+        <UButton color="neutral" variant="ghost" @click="handleClose">Cancelar</UButton>
         <UButton
           color="primary"
           :loading="saving"
@@ -137,8 +137,8 @@ import { ROLES } from '~/constants/roles'
 import { useModal } from '~/composables/commons/useModal'
 
 const props = defineProps<{
-  onSaved?: () => void
-  onClose?: () => void
+  onSaved?: (() => void) | (() => void)[]
+  onClose?: (() => void) | (() => void)[]
   /** Desde cargos extra: oculta consolidado/cliente y sincroniza línea BQ */
   embedded?: boolean
   idContenedor?: number
@@ -148,6 +148,23 @@ const props = defineProps<{
 
 const emit = defineEmits<{ saved: []; close: [] }>()
 const { showError, showSuccess } = useModal()
+
+const modalOpen = ref(true)
+
+function invokeCallback (cb?: (() => void) | (() => void)[]) {
+  const fn = Array.isArray(cb) ? cb[0] : cb
+  if (typeof fn === 'function') fn()
+}
+
+function handleClose () {
+  modalOpen.value = false
+  emit('close')
+  invokeCallback(props.onClose)
+}
+
+function onOpenChange (open: boolean) {
+  if (!open) handleClose()
+}
 
 const embedded = computed(() => Boolean(props.embedded && props.idContenedor && props.idCotizacion))
 const clienteNombre = computed(() => props.clienteNombre || '')
@@ -357,10 +374,9 @@ async function handleSave () {
       return
     }
     showSuccess('Guardado', embedded.value ? 'BQ vinculado a cargos extra' : 'Boletín químico guardado')
-    props.onSaved?.()
+    invokeCallback(props.onSaved)
     emit('saved')
-    emit('close')
-    props.onClose?.()
+    handleClose()
   } catch (e: any) {
     console.error(e)
     showError('Error', e?.message || 'No se pudo guardar')

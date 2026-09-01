@@ -218,7 +218,7 @@ function openBqModal(fromDraft = false) {
       if (fromDraft) draft.value = null
       emit('refresh')
     },
-    onClose: () => {},
+    onClose: () => boletinModal.close(),
   } as any)
 }
 
