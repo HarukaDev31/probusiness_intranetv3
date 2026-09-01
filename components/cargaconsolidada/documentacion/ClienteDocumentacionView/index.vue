@@ -96,12 +96,12 @@
           <template #header>
             <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
               <div class="flex items-center gap-2">
-                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" v-if="currentRole !== ROLES.DOCUMENTACION && currentRole !== ROLES.JEFE_IMPORTACIONES" />
+                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" v-if="currentRole !== ROLES.DOCUMENTACION && !roleEsComoJefeImportacion(currentRole)" />
                 <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
                   {{ peruvianTitle }} - {{ proveedorActivo?.products }}
                 </h3>
                 <img
-                  v-if="currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES"
+                  v-if="currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole)"
                   :src="CUSTOMIZED_ICONS_URL['PERU']"
                   alt="Flag"
                   class="w-5 h-5"
@@ -247,7 +247,7 @@
                 <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
                 <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">{{ chinaTitle }}</h3>
                 <img
-                  v-if="currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES"
+                  v-if="currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole)"
                   :src="CUSTOMIZED_ICONS_URL['CHINA']"
                   alt="Flag"
                   class="w-5 h-5"
@@ -342,7 +342,7 @@ import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useVariacionCliente } from '~/composables/cargaconsolidada/useVariacionCliente'
 import FileUploader from '~/components/commons/FileUploader.vue'
-import { ROLES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
 import { CUSTOMIZED_ICONS_URL } from '~/constants/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import SimpleUploadFile from '~/components/commons/SimpleUploadFile.vue'
@@ -410,7 +410,7 @@ const hasUnsavedChanges = computed(() =>
 
 const canViewChinaInspection = computed(() => {
   if (props.forceShowChinaInspection || props.readOnly) return true
-  return currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES
+  return currentRole.value === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole.value)
 })
 
 const overlay = useOverlay()

@@ -281,7 +281,7 @@ function serviciosConIdFromRow(row: any): { id: number; tipo_servicio: string; i
 }
 
 const canEditDeliveryServiciosMultiples = computed(
-  () => currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES
+  () => currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value)
 )
 
 const showCobroServiciosModal = ref(false)

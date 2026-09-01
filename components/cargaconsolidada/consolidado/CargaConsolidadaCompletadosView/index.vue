@@ -23,7 +23,7 @@
 
    
 
-    <div v-if="isDesktop || role === ROLES.DOCUMENTACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.FINANZAS">
+    <div v-if="isDesktop || role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role) || role === ROLES.FINANZAS">
       <DataTable
         title="Carga Consolidada Completada"
         :show-pagination="true"
@@ -118,7 +118,7 @@ import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
-import { ROLES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -590,6 +590,7 @@ const almacenColumns: TableColumn<any>[] = [
 const getColumns = () => {
   switch (props.role) {
     case ROLES.DOCUMENTACION:
+    case ROLES.COORDINADOR_GENERAL:
     case ROLES.JEFE_IMPORTACIONES:
       return documentacionColumns
     case ROLES.CONTENEDOR_ALMACEN:

@@ -21,7 +21,7 @@
       </UButton>
     </div>
 
-    <div v-if="isDesktop || role === ROLES.DOCUMENTACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.FINANZAS">
+    <div v-if="isDesktop || role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role) || role === ROLES.FINANZAS">
       <DataTable
         title="Carga Consolidada Abierta"
         icon=""
@@ -62,7 +62,7 @@
 
     <!-- Mobile list view: visible only on small screens -->
     <div
-      v-if="role !== ROLES.DOCUMENTACION && role !== ROLES.JEFE_IMPORTACIONES && role !== ROLES.FINANZAS"
+      v-if="role !== ROLES.DOCUMENTACION && !roleEsComoJefeImportacion(role) && role !== ROLES.FINANZAS"
       class="sm:hidden mt-4"
     >
       <div class="flex flex-col gap-3">
@@ -134,7 +134,7 @@ import type { TableColumn, TableRow } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
-import { ROLES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -571,6 +571,7 @@ const getColumns = () => {
   switch (props.role) {
     case ROLES.DOCUMENTACION:
       return documentacionColumns
+    case ROLES.COORDINADOR_GENERAL:
     case ROLES.JEFE_IMPORTACIONES:
       return documentacionColumns
     case ROLES.FINANZAS:

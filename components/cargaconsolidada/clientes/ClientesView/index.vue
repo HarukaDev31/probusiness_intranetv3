@@ -12,7 +12,7 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
@@ -35,7 +35,7 @@
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true" :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados"
@@ -84,7 +84,7 @@
                 :show-secondary-search="false" :show-filters="false" :filters-value="filtersVariacion"
                 :show-export="false" :show-body-top="true" :hide-back-button="false" :show-pagination="false"
                 @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
@@ -142,7 +142,7 @@ import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import type { TableColumn } from '@nuxt/ui'
 import PagoGrid from '~/components/PagoGrid.vue'
@@ -229,7 +229,7 @@ const id = route.params.id
 const initialTabFromRoute = typeof route.query.tab === 'string' ? route.query.tab : ''
 const tab = ref<string>(
     initialTabFromRoute
-        || (isCoordinacion.value || currentRole.value === ROLES.JEFE_IMPORTACIONES || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
+        || (isCoordinacion.value || roleEsComoJefeImportacion(currentRole.value) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
 )
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
@@ -946,7 +946,7 @@ const columnsDocumentacion: TableColumn<any>[] = [
                     }
                 }
             })
-            const permisoBlock = (currentRole.value === ROLES.DOCUMENTACION || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('documentacion')))
+            const permisoBlock = (currentRole.value === ROLES.DOCUMENTACION || (roleEsComoJefeImportacion(currentRole.value) && route.path.includes('documentacion')))
                 ? renderEstadoPermisoPorTipo(row.original.estado_permiso_por_tipo ?? [], row.original.id_tramite)
                 : null
             return h('div', { class: 'flex flex-col' }, [selectNode, permisoBlock].filter(Boolean))
@@ -979,6 +979,7 @@ const getColumnsGeneral = () => {
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
             return columnsDocumentacion
+        case ROLES.COORDINADOR_GENERAL:
         case ROLES.JEFE_IMPORTACIONES:
             return columnsCoordinacion
         case ROLES.COORDINACION:
@@ -995,6 +996,7 @@ const getColumnsEmbarcados = (): TableColumn<any>[] => {
     if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columnsEmbarcadosCoordinacion.value)
     switch (currentRole.value) {
         case ROLES.COORDINACION:
+        case ROLES.COORDINADOR_GENERAL:
         case ROLES.JEFE_IMPORTACIONES:
         case ROLES.ADMINISTRACION:
         case ROLES.CONTABILIDAD:
@@ -1699,7 +1701,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
 const configureTabsForRole = () => {
     if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [{ label: 'Documentacion', value: 'general' }]
-    } else if (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES || currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) {
+    } else if (currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value) || currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) {
         tabs.value = [
             { label: 'Seguimiento', value: 'embarcados' },
             { label: 'Documentacion', value: 'general' },

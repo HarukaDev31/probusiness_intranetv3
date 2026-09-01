@@ -1,9 +1,9 @@
-import { ROLES } from '~/constants/roles'
+import { ROLES, rolesJefeImportacionEquiv } from '~/constants/roles'
 
 /** Roles con acceso al WhatsApp Inbox (ruta y API). */
 export const WA_INBOX_ALLOWED_ROLES: string[] = [
   ROLES.COORDINACION,
   ROLES.CONTABILIDAD,
   ROLES.ADMINISTRACION,
-  ROLES.JEFE_IMPORTACIONES
+  ...rolesJefeImportacionEquiv()
 ]

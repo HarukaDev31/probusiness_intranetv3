@@ -61,7 +61,6 @@ export function useSoporteTi() {
 
   const rolActivo = computed<SoporteTiRol>(() => {
     if (hasRole(ROLES.PM)) return 'PM'
-    if (hasRole(ROLES.SOPORTE)) return 'Analista'
     return 'Solicitante'
   })
 

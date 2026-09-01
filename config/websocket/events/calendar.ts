@@ -1,5 +1,5 @@
 import { registerEventHandler, registerRole, WS_EVENTS } from '~/config/websocket/channels'
-import { ROLES } from '~/constants/roles'
+import { ROLES, rolesJefeImportacionEquiv } from '~/constants/roles'
 import { notifyCalendarUpdateFromSocket } from '~/composables/useCalendarUpdateNotification'
 import { canShowWsNotification, WS_NOTIFICATION_KEYS } from '~/composables/notifications/preferences'
 
@@ -103,5 +103,7 @@ export const registerCalendarEvents = () => {
   registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_CREATED, onCalendarSocketEvent)
   registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_UPDATED, onCalendarSocketEvent)
   registerEventHandler(WS_EVENTS.CALENDAR_ACTIVITY_DELETED, onCalendarSocketEvent)
-  registerRole(ROLES.JEFE_IMPORTACIONES, [])
+  for (const role of rolesJefeImportacionEquiv()) {
+    registerRole(role, [])
+  }
 }

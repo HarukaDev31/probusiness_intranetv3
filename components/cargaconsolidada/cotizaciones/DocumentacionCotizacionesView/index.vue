@@ -10,7 +10,7 @@
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             @export="exportData" :hide-back-button="false"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || currentRole == ROLES.JEFE_IMPORTACIONES) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `${basePath}/pasos/${id}` : `${basePath}`"
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `${basePath}/pasos/${id}` : `${basePath}`"
             :show-body-top="true">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -33,7 +33,7 @@
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || currentRole == ROLES.JEFE_IMPORTACIONES) || currentId == ID_JEFEVENTAS) ? `${basePath}/pasos/${id}` : `${basePath}`"
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS) ? `${basePath}/pasos/${id}` : `${basePath}`"
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -71,7 +71,7 @@
                 </div>
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3 md:flex hidden" />
-                <UButton v-if="(currentRole === ROLES.COORDINACION || currentRole === ROLES.JEFE_IMPORTACIONES)" icon="i-heroicons-arrow-down-tray" color="success"
+                <UButton v-if="(currentRole === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole))" icon="i-heroicons-arrow-down-tray" color="success"
                     label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
             </template>
         </DataTable>
@@ -83,7 +83,7 @@
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || currentRole == ROLES.JEFE_IMPORTACIONES) || currentId == ID_JEFEVENTAS) ? `${basePath}/pasos/${id}` : `${basePath}`">
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS) ? `${basePath}/pasos/${id}` : `${basePath}`">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
@@ -108,7 +108,7 @@ import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
@@ -230,6 +230,7 @@ import StatusOptionsModal from '~/components/cargaconsolidada/cotizaciones/Statu
 const loadTabs = () => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
+        case ROLES.COORDINADOR_GENERAL:
         case ROLES.JEFE_IMPORTACIONES:
             tabs.value = [
                 {
@@ -429,7 +430,7 @@ const filterConfigProspectos = ref([
 
 ])
 const getFilterPerRole = () => {
-    if ((currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES)) {
+    if ((currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value))) {
         return filterConfigProspectosCoordinacion.value
     } else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
         return filterConfigProspectosAlmacen.value
@@ -1241,7 +1242,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     placeholder: 'Seleccionar estado',
                     modelValue: proveedor.estados,
                     class: 'w-full w-30',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)),
                     'onUpdate:modelValue': (value: any) => {
                         console.log(value, row.original)
 
@@ -1311,7 +1312,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 const rawValue = proveedor.arrive_date_china || proveedor.arrive_date || ''
                 const rawDatePart = rawValue && String(rawValue).includes('T') ? String(rawValue).split('T')[0] : (rawValue && String(rawValue).includes(' ') ? String(rawValue).split(' ')[0] : rawValue)
                 const displayedValue = formatDateForInput(rawDatePart)
-                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES))
+                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || (currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value)))
 
                 return h('div', { class: 'flex flex-col gap-1' }, [
                     h(UInput as any, {
@@ -1416,7 +1417,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
                     class: 'w-full w-25',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
                     }
@@ -1436,7 +1437,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full w-30',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -1665,7 +1666,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     placeholder: 'Seleccionar estado',
                     modelValue: proveedor.estados,
                     class: 'w-full w-30',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)),
                     'onUpdate:modelValue': (value: any) => {
                         console.log(value, row.original)
                         proveedor.estados = value
@@ -1732,7 +1733,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 const rawValue = proveedor.arrive_date_china || proveedor.arrive_date || ''
                 const rawDatePart = rawValue && String(rawValue).includes('T') ? String(rawValue).split('T')[0] : (rawValue && String(rawValue).includes(' ') ? String(rawValue).split(' ')[0] : rawValue)
                 const displayedValue = formatDateForInput(rawDatePart)
-                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES))
+                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || (currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value)))
 
                 return h('div', { class: 'flex flex-col gap-1' }, [
                     h(UInput as any, {
@@ -1817,7 +1818,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full w-25',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier = value
                     }
@@ -1837,7 +1838,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
                     class: 'w-full w-25',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
                     }
@@ -1857,7 +1858,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full w-30',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -2192,7 +2193,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.supplier,
                     class: 'w-full',
                     variant: 'none',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: string) => {
                         proveedor.supplier = value
                     }
@@ -2213,7 +2214,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.code_supplier,
                     class: 'w-full',
                     variant: 'none',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
                     }
@@ -2234,7 +2235,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full',
                     variant: 'none',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -2532,6 +2533,7 @@ const handleSendRecordatorioFirma = async (idCotizacion: number) => {
 const getProespectosColumns = () => {
     switch (currentRole.value) {
         case ROLES.COORDINACION:
+        case ROLES.COORDINADOR_GENERAL:
         case ROLES.JEFE_IMPORTACIONES:
             return prospectosCoordinacionColumns.value
         default:
@@ -2543,6 +2545,7 @@ const getEmbarqueColumns = () => {
         case ROLES.CONTENEDOR_ALMACEN:
             return embarqueCotizadorColumnsAlmacen.value
         case ROLES.COORDINACION:
+        case ROLES.COORDINADOR_GENERAL:
         case ROLES.JEFE_IMPORTACIONES:
             return embarqueCoordinacionColumns.value
         default:
@@ -2677,7 +2680,7 @@ const updateProveedorData = async (row: any) => {
             formData.append('supplier_phone', data.supplier_phone)
         }
     }
-    if ((currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES)) {
+    if ((currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value))) {
         data.supplier = row.supplier ?? []
         data.code_supplier = row.code_supplier ?? []
         data.supplier_phone = row.supplier_phone ?? []

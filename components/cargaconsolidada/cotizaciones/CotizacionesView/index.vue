@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <div class="">
         <DataTable v-if="mountedTabs.prospectos" v-show="tab === 'prospectos'" title="" icon="" :data="cotizaciones" :columns="getProespectosColumns()"
             :show-pagination="true" :loading="tabSwitching || loadingCotizaciones" :current-page="currentPageCotizaciones"
@@ -10,7 +10,7 @@
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             @export="exportData" :hide-back-button="false"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || currentRole == ROLES.JEFE_IMPORTACIONES) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
             :show-body-top="true">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -55,7 +55,7 @@
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || currentRole == ROLES.JEFE_IMPORTACIONES) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -99,7 +99,7 @@
                 </div>
                 <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3 md:flex hidden" />
-                <UButton v-if="(currentRole === ROLES.COORDINACION || currentRole === ROLES.JEFE_IMPORTACIONES) || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)" icon="i-heroicons-arrow-down-tray" color="success"
+                <UButton v-if="(currentRole === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)" icon="i-heroicons-arrow-down-tray" color="success"
                     label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
             </template>
         </DataTable>
@@ -111,7 +111,7 @@
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChangePagos" @export="handleExportPagosContabilidad" :show-body-top="true" :hide-back-button="false"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || currentRole == ROLES.JEFE_IMPORTACIONES) || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersPagos"
@@ -152,7 +152,7 @@ import { useCotizacion } from '~/composables/cargaconsolidada/useCotizacion'
 import { formatDate, formatCurrency, formatDateTimeToDmy } from '~/utils/formatters'
 import { formatDateForInput } from '~/utils/data-table'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
 import { USelect, UInput as UInputBase, UButton, UIcon, UBadge, UTooltip } from '#components'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useModal } from '~/composables/commons/useModal'
@@ -184,7 +184,7 @@ const UInput = ((props: any) => {
     }
 
     const rawValue = props?.modelValue ?? props?.value
-    const displayValue = rawValue === null || rawValue === undefined || rawValue === '' ? 'â€”' : String(rawValue)
+    const displayValue = rawValue === null || rawValue === undefined || rawValue === '' ? 'â' : String(rawValue)
 
     return h('span', {
         class: [
@@ -320,14 +320,14 @@ const confirmReminderInicial = async () => {
                 reminderInicialModal.idContainer as number
             )
             if (res && res.success) {
-                showSuccess('Recordatorio en camino', res.message || 'Se está enviando al cliente por WhatsApp.')
+                showSuccess('Recordatorio en camino', res.message || 'Se estï¿½ enviando al cliente por WhatsApp.')
                 reminderInicialModal.open = false
                 await getCotizacionPagos(Number(id))
                 await getHeaders(Number(id))
             } else {
                 showError('Error', res?.message || 'No se pudo enviar el recordatorio')
             }
-        }, 'Enviando recordatorio…')
+        }, 'Enviando recordatorioï¿½')
     } catch (err) {
         console.error('Error send reminder:', err)
         showError('Error', 'Error al enviar recordatorio')
@@ -344,17 +344,17 @@ const route = useRoute()
 const id = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
 const { showConfirmation, showSuccess, showError } = useModal()
 
-// Función para copiar al portapapeles
+// Funciï¿½n para copiar al portapapeles
 const copyToClipboard = async (text: string, successMessage: string = 'Copiado al portapapeles') => {
     try {
         await navigator.clipboard.writeText(text)
-        showSuccess('Éxito', successMessage)
+        showSuccess('ï¿½xito', successMessage)
     } catch (error) {
         showError('Error al copiar', 'No se pudo copiar al portapapeles')
     }
 }
 
-// Función para construir el URL de firma usando el UUID
+// Funciï¿½n para construir el URL de firma usando el UUID
 const getSignUrl = (uuid: string): string => {
     if (!uuid) return ''
     return 'https://clientes.probusiness.pe/firma-acuerdo-servicio/' + uuid
@@ -402,18 +402,18 @@ const deleteReasonModalHandlers: DeleteCotizacionReasonModalHandlers = {
     },
     confirmDeleteCotizacion: async (reasonId: number) => {
         if (!deleteTargetCotizacionId.value) {
-            throw new Error('Cotización no encontrada')
+            throw new Error('Cotizaciï¿½n no encontrada')
         }
         await withSpinner(async () => {
             const response = await deleteCotizacion(deleteTargetCotizacionId.value as number, reasonId)
             if (response?.success) {
-                showSuccess('Cotización eliminada correctamente', 'La cotización se ha eliminado correctamente.')
+                showSuccess('Cotizaciï¿½n eliminada correctamente', 'La cotizaciï¿½n se ha eliminado correctamente.')
                 showDeleteReasonModal.value = false
                 await getCotizaciones(Number(id))
                 return
             }
-            throw new Error('No se pudo eliminar la cotización')
-        }, 'Eliminando cotización...')
+            throw new Error('No se pudo eliminar la cotizaciï¿½n')
+        }, 'Eliminando cotizaciï¿½n...')
     }
 }
 const tabSwitching = ref(false)
@@ -473,6 +473,7 @@ const loadTabs = () => {
             ]
             break
         case ROLES.COORDINACION:
+        case ROLES.COORDINADOR_GENERAL:
         case ROLES.JEFE_IMPORTACIONES:
             tabs.value = [
                 {
@@ -683,13 +684,13 @@ const filterConfigProspectos = ref([
     }
 
 ])
-// Filtros tab Pagos (solo Contabilidad): inspección y estado de pago
+// Filtros tab Pagos (solo Contabilidad): inspecciï¿½n y estado de pago
 const filterConfigPagos = ref([
     {
         key: 'estado_inspeccion',
-        label: 'Inspección',
+        label: 'Inspecciï¿½n',
         type: 'select',
-        placeholder: 'Seleccionar inspección',
+        placeholder: 'Seleccionar inspecciï¿½n',
         options: [
             { label: 'Todos', value: 'todos', inrow: true },
             { label: 'Pendiente', value: 'Pendiente', inrow: true },
@@ -721,7 +722,7 @@ const getFilterPerRole = () => {
             (f: { key?: string }) => f.key !== 'estado_coordinacion' && f.key !== 'estado_cotizador'
         )
     }
-    if ((currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
+    if ((currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value)) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
         return filterConfigProspectosCoordinacion.value
     } else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
         return filterConfigProspectosAlmacen.value
@@ -765,7 +766,7 @@ const downloadPackingList = () => {
 
 const deletePackingList = () => {
     showUploadPanel.value = false
-    showConfirmation('Confirmar eliminación', 'Â¿EstÃ¡ seguro de que desea eliminar este archivo? Esta acción no se puede deshacer.', async () => {
+    showConfirmation('Confirmar eliminaciï¿½n', 'Â¿EstÃ¡ seguro de que desea eliminar este archivo? Esta acciï¿½n no se puede deshacer.', async () => {
         await withSpinner(async () => {
             const result = await ConsolidadoService.deletePackingList(Number(id))
             if (result.success) {
@@ -816,11 +817,11 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
             const cotizacion_contrato_url = String(pick(['cotizacion_contrato_url']) || '')
             const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
             const cod_cotizacion = String(pick(['cod_contract_calculator']) || '')
-            const permisoBlock = ((currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('coordinacion')))
+            const permisoBlock = ((currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value)) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || (roleEsComoJefeImportacion(currentRole.value) && route.path.includes('coordinacion')))
                 ? renderEstadoPermisoPorTipo(row.original.estado_permiso_por_tipo ?? [], row.original.id_tramite)
                 : null
             return h('div', { class: '' }, [
-                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : 'â€”'),
+                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : 'â'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null,
@@ -848,7 +849,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         )
                     )
                 ]) : null ,
-                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotización: ${cod_cotizacion}`) : null,
+                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotizaciï¿½n: ${cod_cotizacion}`) : null,
                 permisoBlock
             ].filter(Boolean))
         }
@@ -947,7 +948,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'primary',
-                    title: 'Subir cotización',
+                    title: 'Subir cotizaciï¿½n',
                     onClick: () => {
                         handleUpdateCotizacion(row.original.id)
                     }
@@ -957,7 +958,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'error',
-                    title: 'Eliminar archivo de cotización',
+                    title: 'Eliminar archivo de cotizaciï¿½n',
                     onClick: () => {
                         handleDeleteFile(row.original.id)
                     }
@@ -996,7 +997,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'info',
-                    title: 'Ver documentación cotizadores',
+                    title: 'Ver documentaciï¿½n cotizadores',
                     onClick: () => {
                         navigateTo(`${basePath.value}/cotizaciones/documentacion/${row.original.id}`)
                     }
@@ -1006,7 +1007,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     activeColor: 'error',
                     size: 'xs',
-                    title: 'Eliminar cotización',
+                    title: 'Eliminar cotizaciï¿½n',
                     onClick: () => {
                         handleDelete(row.original.id)
                     }
@@ -1056,7 +1057,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
             const cotizacion_contrato_autosigned_url = String(pick(['cotizacion_contrato_autosigned_url']) || '')
             const cod_cotizacion = String(pick(['cod_contract_calculator']) || '')
             return h('div', { class: 'py-2' }, [
-                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : 'â€”'),
+                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : 'â'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
@@ -1084,7 +1085,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         )
                     )
                 ]) : null ,
-                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotización: ${cod_cotizacion}`) : null
+                cod_cotizacion ? h('div', { class: 'text-sm text-gray-500' }, `Cotizaciï¿½n: ${cod_cotizacion}`) : null
             ])
         }
         },
@@ -1170,7 +1171,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'primary',
-                    title: 'Subir cotización',
+                    title: 'Subir cotizaciï¿½n',
                     onClick: () => {
                         handleUpdateCotizacion(row.original.id)
                     }
@@ -1180,7 +1181,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'error',
-                    title: 'Eliminar archivo de cotización',
+                    title: 'Eliminar archivo de cotizaciï¿½n',
                     onClick: () => {
                         handleDeleteFile(row.original.id)
                     }
@@ -1237,7 +1238,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                 variant: 'ghost',
                 activeColor: 'error',
                 size: 'xs',
-                title: 'Eliminar cotización',
+                title: 'Eliminar cotizaciï¿½n',
                 onClick: () => {
                     handleDelete(row.original.id)
                 }
@@ -1257,7 +1258,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                     variant: 'ghost',
                     size: 'xs',
                     color: 'primary',
-                    title: 'Documentación',
+                    title: 'Documentaciï¿½n',
                     onClick: () => {
                         navigateTo(`${basePath.value}/cotizaciones/documentacion/${row.original.id}`)
                     }
@@ -1275,7 +1276,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         }
     }
 ])
-// Columnas tab Pagos: NÂ° Contacto T. Cliente Acciones Inspección Estado Concepto Importe Pagado Diferencia Adelantos
+// Columnas tab Pagos: NÂ° Contacto T. Cliente Acciones Inspecciï¿½n Estado Concepto Importe Pagado Diferencia Adelantos
 const getPagosColumns = () => {
     const isContabilidad = (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
     const columns = [
@@ -1323,7 +1324,7 @@ const getPagosColumns = () => {
         },
         ...(isContabilidad ? [{
             accessorKey: 'estado_inspeccion',
-            header: 'Inspección',
+            header: 'Inspecciï¿½n',
             cell: ({ row }: { row: any }) => {
                 const estado = row.original.estado_inspeccion || 'Pendiente'
                 const INSPECCION_CLASSES: Record<string, string> = {
@@ -1422,21 +1423,21 @@ const getPagosColumns = () => {
                     },
                     onDelete: (pagoId: number) => {
                         showConfirmation(
-                            'Confirmar eliminación',
-                            'Â¿EstÃ¡ seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
+                            'Confirmar eliminaciï¿½n',
+                            'Â¿EstÃ¡ seguro de que desea eliminar el pago? Esta acciï¿½n no se puede deshacer.',
                             async () => {
                                 try {
                                     await withSpinner(async () => {
                                         const response = await deletePago(pagoId)
                                         if (response.success) {
                                             await getCotizacionPagos(Number(id))
-                                            showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                                            showSuccess('Eliminaciï¿½n Exitosa', 'El pago se ha eliminado correctamente.')
                                             getHeaders(Number(id))
                                         }
                                     }, 'Eliminando pago...')
                                 } catch (error) {
                                     console.error('Error al eliminar el pago:', error)
-                                    showError('Error de Eliminación', 'Error al eliminar el pago')
+                                    showError('Error de Eliminaciï¿½n', 'Error al eliminar el pago')
                                 }
                             }
                         )
@@ -1572,7 +1573,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                     placeholder: 'Seleccionar estado',
                     modelValue: proveedor.estados,
                     class: 'w-full w-30',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.estados = value
                         handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
@@ -1631,7 +1632,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
                     h('span', {
                         class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
-                    }, String(value || 'â€”'))
+                    }, String(value || 'â'))
                 ])
             }))
             return div
@@ -1647,7 +1648,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 const rawValue = proveedor.arrive_date_china || proveedor.arrive_date || ''
                 const rawDatePart = rawValue && String(rawValue).includes('T') ? String(rawValue).split('T')[0] : (rawValue && String(rawValue).includes(' ') ? String(rawValue).split(' ')[0] : rawValue)
                 const displayedValue = formatDateForInput(rawDatePart)
-                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION))
+                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || (currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value)) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION))
 
                 return h('div', { class: 'flex flex-col gap-1' }, [
                     h(UInput as any, {
@@ -1752,7 +1753,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
                     class: 'w-full w-25',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
                     }
@@ -1772,7 +1773,7 @@ const embarqueCotizadorColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full w-30',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -2028,7 +2029,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                     placeholder: 'Seleccionar estado',
                     modelValue: proveedor.estados,
                     class: 'w-full w-30',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.estados = value
                         handleUpdateProveedorEstado(proveedor.id, value, row.original.id)
@@ -2086,7 +2087,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
                     h('span', {
                         class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
-                    }, String(value || 'â€”'))
+                    }, String(value || 'â'))
                 ])
             }))
             return div
@@ -2102,7 +2103,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 const rawValue = proveedor.arrive_date_china || proveedor.arrive_date || ''
                 const rawDatePart = rawValue && String(rawValue).includes('T') ? String(rawValue).split('T')[0] : (rawValue && String(rawValue).includes(' ') ? String(rawValue).split(' ')[0] : rawValue)
                 const displayedValue = formatDateForInput(rawDatePart)
-                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION))
+                const editable = !isChinaDate && (currentRole.value === ROLES.COTIZADOR || (currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value)) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION))
 
                 return h('div', { class: 'flex flex-col gap-1' }, [
                     h(UInput as any, {
@@ -2187,7 +2188,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier,
                     class: 'w-full w-25',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier = value
                     }
@@ -2207,7 +2208,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.code_supplier,
                     class: 'w-full w-25',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
                     }
@@ -2227,7 +2228,7 @@ const embarqueCoordinacionColumns = ref<TableColumn<any>[]>([
                 return h(UInput as any, {
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full w-30',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -2472,7 +2473,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                 return h('div', { class: 'products-scroll w-44 max-w-44', style: { overflowX: 'auto', overflowY: 'hidden' } }, [
                     h('span', {
                         class: 'inline-block min-w-max whitespace-nowrap px-2 py-1 text-sm text-gray-700 dark:text-gray-200'
-                    }, String(value || 'â€”'))
+                    }, String(value || 'â'))
                 ])
             }))
             return div
@@ -2554,7 +2555,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.supplier,
                     class: 'w-full',
                     variant: 'none',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: string) => {
                         proveedor.supplier = value
                     }
@@ -2575,7 +2576,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.code_supplier,
                     class: 'w-full',
                     variant: 'none',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.code_supplier = value
                     }
@@ -2596,7 +2597,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
                     modelValue: proveedor.supplier_phone,
                     class: 'w-full',
                     variant: 'none',
-                    disabled: (currentRole.value !== ROLES.COORDINACION && currentRole.value !== ROLES.JEFE_IMPORTACIONES) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
+                    disabled: (currentRole.value !== ROLES.COORDINACION && !roleEsComoJefeImportacion(currentRole.value)) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) && !COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number),
                     'onUpdate:modelValue': (value: any) => {
                         proveedor.supplier_phone = value
                     }
@@ -2767,7 +2768,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
 ])
 const handleRefreshRotuladoStatus = async (proveedor: any) => {
     try {
-        showConfirmation('Â¿EstÃ¡s seguro de querer actualizar el estado del proveedor?', 'Esta acción no se puede deshacer.', async () => {
+        showConfirmation('Â¿EstÃ¡s seguro de querer actualizar el estado del proveedor?', 'Esta acciï¿½n no se puede deshacer.', async () => {
             await withSpinner(async () => {
                 await refreshRotuladoStatus(proveedor.id_proveedor)
             }, 'Actualizando estado del proveedor...')
@@ -2826,15 +2827,15 @@ const handleMoveCotizacion = async (idCotizacion: number) => {
 }
 const handleRefresh = async (idCotizacion: number) => {
     try {
-        showConfirmation('Â¿EstÃ¡s seguro de querer actualizar la cotización?', 'Esta acción no se puede deshacer.', async () => {
+        showConfirmation('Â¿EstÃ¡s seguro de querer actualizar la cotizaciï¿½n?', 'Esta acciï¿½n no se puede deshacer.', async () => {
             await withSpinner(async () => {
                 await refreshCotizacionFile(idCotizacion)
-                showSuccess('Cotización actualizada correctamente', 'La cotización se ha actualizado correctamente.')
+                showSuccess('Cotizaciï¿½n actualizada correctamente', 'La cotizaciï¿½n se ha actualizado correctamente.')
                 await getCotizaciones(Number(id))
-            }, 'Actualizando cotización...')
+            }, 'Actualizando cotizaciï¿½n...')
         })
     } catch (error) {
-        showError('Error al actualizar la cotización', error)
+        showError('Error al actualizar la cotizaciï¿½n', error)
     }
 }
 const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string) => {
@@ -2850,11 +2851,11 @@ const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string
                 }
             } catch (error: any) {
 
-                showError('Error al actualizar el estado de la cotización', error)
+                showError('Error al actualizar el estado de la cotizaciï¿½n', error)
             }
-        }, 'Actualizando estado de la cotización...')
+        }, 'Actualizando estado de la cotizaciï¿½n...')
     } catch (error) {
-        showError('Error al actualizar el estado de la cotización', error)
+        showError('Error al actualizar el estado de la cotizaciï¿½n', error)
     }
 }
 
@@ -2907,7 +2908,7 @@ const handleUpdateCotizacion = async (idCotizacion: number) => {
 }
 const handleDeleteFile = async (idCotizacion: number) => {
     try {
-        showConfirmation('Â¿EstÃ¡s seguro de querer eliminar el archivo de esta cotización?', 'Esta acción no se puede deshacer.', async () => {
+        showConfirmation('Â¿EstÃ¡s seguro de querer eliminar el archivo de esta cotizaciï¿½n?', 'Esta acciï¿½n no se puede deshacer.', async () => {
             await withSpinner(async () => {
                 const response = await deleteCotizacionFile(idCotizacion)
                 if (response?.success) {
@@ -2917,7 +2918,7 @@ const handleDeleteFile = async (idCotizacion: number) => {
             }, 'Eliminando archivo...')
         })
     } catch (error) {
-        showError('Error al eliminar el archivo de la cotización', error)
+        showError('Error al eliminar el archivo de la cotizaciï¿½n', error)
     }
 }
 
@@ -2954,7 +2955,7 @@ const origenMarketingColumn = (): TableColumn<any> => ({
     header: 'Origen marketing',
     cell: ({ row }: { row: any }) => {
         const value = row.original.origen_marketing
-        return h('span', { class: 'text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap' }, value || '—')
+        return h('span', { class: 'text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap' }, value || 'ï¿½')
     }
 })
 
@@ -2971,7 +2972,7 @@ const toMarketingProspectosColumns = (columns: TableColumn<any>[]) => {
                     variant: 'ghost',
                     size: 'xs',
                     color: 'primary',
-                    title: 'Documentación',
+                    title: 'Documentaciï¿½n',
                     onClick: () => {
                         navigateTo(`${basePath.value}/cotizaciones/documentacion/${row.original.id}`)
                     }
@@ -2997,6 +2998,7 @@ const getProespectosColumns = () => {
     if (currentRole.value === ROLES.JEFE_MARKETING) return toMarketingProspectosColumns(prospectosCoordinacionColumns.value)
     switch (currentRole.value) {
         case ROLES.COORDINACION:
+        case ROLES.COORDINADOR_GENERAL:
         case ROLES.JEFE_IMPORTACIONES:
         case ROLES.ADMINISTRACION:
         case ROLES.CONTABILIDAD:
@@ -3011,6 +3013,7 @@ const getEmbarqueColumns = () => {
         case ROLES.CONTENEDOR_ALMACEN:
             return embarqueCotizadorColumnsAlmacen.value
         case ROLES.COORDINACION:
+        case ROLES.COORDINADOR_GENERAL:
         case ROLES.JEFE_IMPORTACIONES:
         case ROLES.ADMINISTRACION:
         case ROLES.CONTABILIDAD:
@@ -3019,7 +3022,7 @@ const getEmbarqueColumns = () => {
             return embarqueCotizadorColumns.value
     }
 }
-// Función para obtener el color del estado
+// Funciï¿½n para obtener el color del estado
 const getEstadoColor = (estado: string) => {
     switch (estado) {
         case 'PENDIENTE':
@@ -3178,7 +3181,7 @@ const updateProveedorData = async (row: any) => {
             formData.append('supplier_phone', data.supplier_phone)
         }
     }
-    if ((currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
+    if ((currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value)) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
         data.supplier = row.supplier ?? []
         data.code_supplier = row.code_supplier ?? []
         data.supplier_phone = row.supplier_phone ?? []

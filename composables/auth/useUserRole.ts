@@ -129,10 +129,17 @@ const currentId = computed(() => {
   }
 
   const hasRole = (role: string|string[]): boolean => {
-    if (Array.isArray(role)) {
-      return role.some(r => currentRole.value.toLowerCase() === r.toLowerCase())
-    }
-    return currentRole.value.toLowerCase() === role.toLowerCase()
+    const roles = Array.isArray(role) ? role : [role]
+    const expanded = roles.flatMap((r) => {
+      if (r === ROLES.JEFE_IMPORTACIONES) {
+        return [ROLES.JEFE_IMPORTACIONES, ROLES.COORDINADOR_GENERAL]
+      }
+      if (r === ROLES.PM) {
+        return [ROLES.PM, ROLES.SOPORTE]
+      }
+      return [r]
+    })
+    return expanded.some(r => currentRole.value.toLowerCase() === r.toLowerCase())
   }
 
   const hasAnyRole = (roles: string[]): boolean => {

@@ -15,7 +15,7 @@ import type {
 import { ref, computed, watch } from 'vue'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useUserRole } from '~/composables/auth/useUserRole'
-import { ROLES, getCalendarPermissions } from '~/constants/roles'
+import { ROLES, getCalendarPermissions, roleEsComoJefeImportacion } from '~/constants/roles'
 import { DEFAULT_RESPONSABLE_COLORS } from '~/constants/calendar'
 
 const { withSpinner } = useSpinner()
@@ -51,13 +51,11 @@ export const useCalendarActivities = () => {
   })
 
   // Verificar si es Jefe de Importaciones
-  const isJefeImportaciones = computed(() => {
-    return currentRole.value === ROLES.JEFE_IMPORTACIONES
-  })
+  const isJefeImportaciones = computed(() => roleEsComoJefeImportacion(currentRole.value))
 
   // Verificar si es Coordinación o Documentación
   const isCoordinacionOrDocumentacion = computed(() => {
-    return currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.DOCUMENTACION || currentRole.value === ROLES.JEFE_IMPORTACIONES
+    return currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole.value)
   })
 
   // ============================================

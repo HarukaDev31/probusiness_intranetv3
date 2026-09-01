@@ -2,14 +2,14 @@
   <div class="">
     <div class="flex flex-col md:flex-row justify-between mb-2 p-2 md:mb-6 md:p-6 border-b border-gray-200 dark:border-gray-700">
       <PageHeader :title="''" :subtitle="''" :icon="''" :hide-back-button="false" @back="goBack" />
-      <div class="hidden md:flex items-center gap-3 flex-row flex-wrap w-full md:justify-end" v-if="role === ROLES.COORDINACION || role === ROLES.DOCUMENTACION || role === ROLES.JEFE_IMPORTACIONES">
-        <UButton v-if="role === ROLES.COORDINACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.DOCUMENTACION" label="Factura General" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
+      <div class="hidden md:flex items-center gap-3 flex-row flex-wrap w-full md:justify-end" v-if="role === ROLES.COORDINACION || role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role)">
+        <UButton v-if="role === ROLES.COORDINACION || roleEsComoJefeImportacion(role) || role === ROLES.DOCUMENTACION" label="Factura General" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
           :loading="enqueueing" @click="handleGenerateFactura" class="whitespace-nowrap" />
-        <UButton v-if="role === ROLES.COORDINACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.DOCUMENTACION" label="Ver facturas generales" variant="soft" icon="i-heroicons-queue-list" color="primary" size="sm"
+        <UButton v-if="role === ROLES.COORDINACION || roleEsComoJefeImportacion(role) || role === ROLES.DOCUMENTACION" label="Ver facturas generales" variant="soft" icon="i-heroicons-queue-list" color="primary" size="sm"
           @click="goFacturasGenerales" class="whitespace-nowrap" />
         <UButton v-if="role === ROLES.COORDINACION" label="Descargar plantillas" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
           @click="handleDownloadAll" class="whitespace-nowrap" />
-        <UButton v-if="role === ROLES.DOCUMENTACION || role === ROLES.JEFE_IMPORTACIONES || role === ROLES.COORDINACION" label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning" size="sm"
+        <UButton v-if="role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role) || role === ROLES.COORDINACION" label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning" size="sm"
           @click="handleNuevoDocumento" class="whitespace-nowrap" />
       </div>
       <div class="flex items-center gap-3 flex-wrap" v-if="role === ROLES.ADMINISTRACION || role === ROLES.CONTABILIDAD">
@@ -56,7 +56,7 @@
             </h3>
           </div>
           <FileUploader
-            :disabled="role !== ROLES.DOCUMENTACION && role !== ROLES.JEFE_IMPORTACIONES"
+            :disabled="role !== ROLES.DOCUMENTACION && !roleEsComoJefeImportacion(role)"
             :accepted-types="acceptedFileTypes"
             :custom-message="uploadMessage"
             :immediate="false"
@@ -104,7 +104,7 @@ import { useDocumentacion } from '~/composables/cargaconsolidada/useDocumentacio
 import { useFacturasGenerales } from '~/composables/cargaconsolidada/documentacion/useFacturasGenerales'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import CreateDocumentModal from '~/components/CreateDocumentModal.vue'
-import { ROLES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
 
 const props = withDefaults(
   defineProps<ConsolidadoDocumentacionViewProps>(),
