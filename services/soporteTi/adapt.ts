@@ -171,6 +171,7 @@ export function adaptSolicitud(row: SoporteTiSolicitudApi): SoporteTiSolicitud {
       row.solicitante_user_id !== undefined && row.solicitante_user_id !== null
         ? Number(row.solicitante_user_id)
         : null,
+    solicitanteRol: row.solicitante_rol ?? null,
     pm: row.pm,
     pmUserId:
       row.pm_user_id !== undefined && row.pm_user_id !== null ? Number(row.pm_user_id) : null,

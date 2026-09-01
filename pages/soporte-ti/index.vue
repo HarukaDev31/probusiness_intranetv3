@@ -378,23 +378,19 @@ function botonOjo(options: {
   )
 }
 
-function celdaTituloTabla(titulo: string | undefined | null) {
+function celdaTituloTabla(titulo: string | undefined | null, url?: string | null) {
   const text = (titulo ?? '').trim() || '—'
-  return h(
-    'span',
-    {
-      class:
-        'block w-full min-w-0 truncate text-left text-sm text-gray-900 dark:text-gray-100',
-      title: text !== '—' ? text : undefined
-    },
-    text
-  )
-}
-
-function celdaLinkTabla(url: string | undefined | null) {
   const raw = (url ?? '').trim()
   if (!raw) {
-    return h('span', { class: 'text-xs text-muted' }, '—')
+    return h(
+      'span',
+      {
+        class:
+          'block w-full min-w-0 truncate text-left text-sm text-gray-900 dark:text-gray-100',
+        title: text !== '—' ? text : undefined
+      },
+      text
+    )
   }
   const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
   return h(
@@ -404,27 +400,50 @@ function celdaLinkTabla(url: string | undefined | null) {
       target: '_blank',
       rel: 'noopener noreferrer',
       class:
-        'block max-w-[14rem] truncate text-xs text-primary-600 hover:underline dark:text-primary-400',
-      title: raw,
+        'block w-full min-w-0 truncate text-left text-sm text-primary-600 hover:underline dark:text-primary-400',
+      title: `${text} — ${raw}`,
       onClick: stopRowNav
     },
-    raw
+    text
   )
 }
 
-function columnaLink(): TableColumn<SoporteTiTablaFila> {
-  const cap = 'min-w-0 max-w-[14rem] sm:max-w-[16rem] align-top'
+function columnaCreador(): TableColumn<SoporteTiTablaFila> {
+  const cap = 'min-w-0 max-w-[12rem] sm:max-w-[14rem] align-top'
   return {
-    id: 'link',
-    accessorKey: 'seccionRuta',
-    header: 'Link',
+    id: 'creador',
+    accessorKey: 'solicitante',
+    header: 'Creador',
     meta: {
       class: {
         th: cap,
         td: cap
       }
     },
-    cell: ({ row }) => celdaLinkTabla(row.original.seccionRuta)
+    cell: ({ row }) => {
+      const nombre = (row.original.solicitante ?? '').trim() || '—'
+      const rol = (row.original.solicitanteRol ?? '').trim()
+      return h('div', { class: 'min-w-0 leading-snug' }, [
+        h(
+          'span',
+          {
+            class: 'block truncate text-sm font-medium text-gray-900 dark:text-gray-100',
+            title: nombre !== '—' ? nombre : undefined
+          },
+          nombre
+        ),
+        rol
+          ? h(
+              'span',
+              {
+                class: 'mt-0.5 block truncate text-xs text-muted',
+                title: rol
+              },
+              rol
+            )
+          : null
+      ])
+    }
   }
 }
 
@@ -439,7 +458,7 @@ function columnaTitulo(header: string): TableColumn<SoporteTiTablaFila> {
         td: cap
       }
     },
-    cell: ({ row }) => celdaTituloTabla(row.original.titulo)
+    cell: ({ row }) => celdaTituloTabla(row.original.titulo, row.original.seccionRuta)
   }
 }
 
@@ -473,7 +492,6 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
       { accessorKey: 'codigo', header: 'Código' },
       { accessorKey: 'tipoSolicitud', header: 'Tipo solicitud' },
       columnaTitulo('Nombre'),
-      columnaLink(),
       { accessorKey: 'fechaRegistroCompleta', header: 'Fecha de registro' },
       { accessorKey: 'fechaFinEstimadoFmt', header: 'Término estimado' },
       colEstado,
@@ -643,10 +661,10 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
   }
 
   return [
+    columnaCreador(),
     { accessorKey: 'codigo', header: 'Código' },
     { accessorKey: 'tipoSolicitud', header: 'Tipo' },
     columnaTitulo('Título'),
-    columnaLink(),
     colArea,
     { accessorKey: 'fechaRegistroCompleta', header: 'Fecha de registro' },
     ...(rolActivo.value === 'PM' || rolActivo.value === 'Analista'

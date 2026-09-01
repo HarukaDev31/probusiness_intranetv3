@@ -95,6 +95,7 @@ export interface SoporteTiSolicitud {
   area: string
   solicitante: string
   solicitanteUserId?: number | null
+  solicitanteRol?: string | null
   pm: string | null
   pmUserId?: number | null
   analista: string | null

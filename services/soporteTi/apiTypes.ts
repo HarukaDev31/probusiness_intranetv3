@@ -77,6 +77,7 @@ export interface SoporteTiSolicitudApi {
   area: string
   solicitante: string
   solicitante_user_id?: number | null
+  solicitante_rol?: string | null
   pm: string | null
   pm_user_id?: number | null
   analista: string | null
