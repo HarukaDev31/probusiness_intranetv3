@@ -422,27 +422,40 @@ function columnaCreador(): TableColumn<SoporteTiTablaFila> {
     },
     cell: ({ row }) => {
       const nombre = (row.original.solicitante ?? '').trim() || '—'
-      const rol = (row.original.solicitanteRol ?? '').trim()
-      return h('div', { class: 'min-w-0 leading-snug' }, [
-        h(
-          'span',
-          {
-            class: 'block truncate text-sm font-medium text-gray-900 dark:text-gray-100',
-            title: nombre !== '—' ? nombre : undefined
-          },
-          nombre
-        ),
+      return h(
+        'span',
+        {
+          class: 'block truncate text-sm text-gray-900 dark:text-gray-100',
+          title: nombre !== '—' ? nombre : undefined
+        },
+        nombre
+      )
+    }
+  }
+}
+
+function columnaRol(): TableColumn<SoporteTiTablaFila> {
+  const cap = 'min-w-0 max-w-[10rem] sm:max-w-[12rem] align-top'
+  return {
+    id: 'rol',
+    accessorKey: 'solicitanteRol',
+    header: 'Rol',
+    meta: {
+      class: {
+        th: cap,
+        td: cap
+      }
+    },
+    cell: ({ row }) => {
+      const rol = (row.original.solicitanteRol ?? '').trim() || '—'
+      return h(
+        'span',
+        {
+          class: 'block truncate text-xs text-muted',
+          title: rol !== '—' ? rol : undefined
+        },
         rol
-          ? h(
-              'span',
-              {
-                class: 'mt-0.5 block truncate text-xs text-muted',
-                title: rol
-              },
-              rol
-            )
-          : null
-      ])
+      )
     }
   }
 }
@@ -661,8 +674,9 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
   }
 
   return [
-    columnaCreador(),
     { accessorKey: 'codigo', header: 'Código' },
+    columnaCreador(),
+    columnaRol(),
     { accessorKey: 'tipoSolicitud', header: 'Tipo' },
     columnaTitulo('Título'),
     colArea,
