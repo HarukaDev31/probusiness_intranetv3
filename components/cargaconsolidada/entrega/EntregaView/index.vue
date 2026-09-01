@@ -1,6 +1,6 @@
 <template>
   <div class="md:p-6">
-    <DataTable v-if="activeTab === 'clientes'" title="" :data="clientes" :columns="clientesColumns" :loading="loading"
+    <DataTable v-if="activeTab === 'clientes'" title="" :data="clientes" :columns="clientesColumnsView" :loading="loading"
       icon="" :show-pagination="false" :current-page="currentPage" :total-pages="totalPages"
       :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
       :show-secondary-search="false" :show-filters="true" :filter-config="clientesFilterConfig" :show-export="true"
@@ -11,14 +11,21 @@
     :hide-back-button="false" :show-primary-search="true" :show-body-top="true"
   :previous-page-url="`${backBasePath}/pasos/${id}`">
       <template #actions>
-        <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3 hidden md:flex" icon="i-heroicons-calendar"
-          @click="navigateTo(`${basePath}/entrega/fechas-horarios/${id}`)" />
+        <UButton
+          v-if="!isJefeMarketingReadOnly"
+          label="Fechas y Horarios"
+          color="primary"
+          variant="solid"
+          class="py-3 hidden md:flex"
+          icon="i-heroicons-calendar"
+          @click="navigateTo(`${basePath}/entrega/fechas-horarios/${id}`)"
+        />
       </template>
       <template #body-top>
         <div class="flex flex-col gap-2">
           <div class="flex md:items-center items-start gap-3 ">
             <SectionHeader :title="`Entregas #${carga}`" :headers="headers" :loading="loadingHeaders" />
-            <div class="flex gap-2 items-center">
+            <div v-if="!isJefeMarketingReadOnly" class="flex gap-2 items-center">
               <UButton
                 icon="i-heroicons-paper-airplane"
                 color="primary"
@@ -32,7 +39,7 @@
           </div>
           <UTabs v-model="activeTab" :items="tabs" color="neutral" variant="pill" class="mb-1 w-80 h-15" />
         </div>
-        <div class="flex-col gap-2 hidden md:flex">
+        <div v-if="!isJefeMarketingReadOnly" class="flex-col gap-2 hidden md:flex">
           <div class="flex items-center gap-2">
               <UButton
               size="md"
@@ -47,11 +54,18 @@
         </div>
       </template>
       <template #back-extra>
-        <UButton label="Fechas y Horarios" color="primary" variant="solid" class="py-3 md:hidden flex" icon="i-heroicons-calendar"
-          @click="navigateTo(`${basePath}/entrega/fechas-horarios/${id}`)" />
+        <UButton
+          v-if="!isJefeMarketingReadOnly"
+          label="Fechas y Horarios"
+          color="primary"
+          variant="solid"
+          class="py-3 md:hidden flex"
+          icon="i-heroicons-calendar"
+          @click="navigateTo(`${basePath}/entrega/fechas-horarios/${id}`)"
+        />
       </template>
     </DataTable>
-    <DataTable v-if="activeTab === 'entregas'" title="" :data="entregas" :columns="entregasColumns" :loading="loading"
+    <DataTable v-if="activeTab === 'entregas'" title="" :data="entregas" :columns="entregasColumnsView" :loading="loading"
       icon="" :show-pagination="false" :current-page="currentPage" :total-pages="totalPages"
       :total-records="totalRecords" :items-per-page="itemsPerPage" :search-query-value="search"
       :show-secondary-search="false" :show-filters="true" :filter-config="filterConfig" :show-export="false"
@@ -65,7 +79,7 @@
         <div class="flex flex-col gap-2">
           <div class="flex md:items-center items-start gap-3 flex-col md:flex-row">
             <SectionHeader :title="`Entregas #${carga}`" :headers="headersEntregas" :loading="loadingHeaders" />
-            <div class="flex gap-2 items-center">
+            <div v-if="!isJefeMarketingReadOnly" class="flex gap-2 items-center">
               <UButton
                 icon="i-heroicons-paper-airplane"
                 color="primary"
@@ -81,14 +95,14 @@
         </div>
       </template>
     </DataTable>
-    <DataTable v-if="activeTab === 'delivery'" title="" :data="delivery" :columns="deliveryColumns" :loading="loading"
+    <DataTable v-if="activeTab === 'delivery'" title="" :data="delivery" :columns="deliveryColumnsView" :loading="loading"
       icon="" :show-pagination="false" :hide-back-button="false" :show-primary-search="false" :show-body-top="true"
   :previous-page-url="`${backBasePath}/pasos/${id}`">
       <template #body-top>
         <div class="flex flex-col gap-2">
           <div class="flex md:items-center items-start gap-3 flex-col md:flex-row">
             <SectionHeader :title="`Delivery #${carga}`" :headers="headersDelivery" :loading="loadingHeaders" />
-            <div class="flex gap-2 items-center">
+            <div v-if="!isJefeMarketingReadOnly" class="flex gap-2 items-center">
               <UButton
                 icon="i-heroicons-paper-airplane"
                 color="primary"
@@ -149,7 +163,7 @@ import DeliveryServiciosCell from '../../../../components/cargaconsolidada/entre
 import EnviarFormularioEntregaModal from '../../../../components/cargaconsolidada/entrega/EnviarFormularioEntregaModal/index.vue'
 import { useModal } from '../../../../composables/commons/useModal'
 import { useSpinner } from '../../../../composables/commons/useSpinner'
-import { ROLES } from '../../../../constants/roles'
+import { ROLES, roleEsComoJefeImportacion } from '../../../../constants/roles'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 import type { TableRow } from '@nuxt/ui'
 import {
@@ -169,6 +183,17 @@ const props = withDefaults(defineProps<EntregaViewProps>(), {
 const currentRole = computed(() => props.role || authCurrentRole.value)
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
+
+const READ_ONLY_ENTREGA_COLUMN_KEYS = new Set(['acciones', 'action', 'actions', 'accion', 'adelantos'])
+
+const isJefeMarketingReadOnly = computed(() => currentRole.value === ROLES.JEFE_MARKETING)
+
+function toReadOnlyEntregaColumns(columns: TableColumn<any>[]) {
+  return columns.filter((column: any) => {
+    const key = String(column?.accessorKey ?? column?.id ?? '').toLowerCase()
+    return !READ_ONLY_ENTREGA_COLUMN_KEYS.has(key)
+  })
+}
 const { showConfirmation, showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
 const overlay = useOverlay()
@@ -1070,6 +1095,35 @@ const deliveryColumns = ref<TableColumn<any>[]>([
     }
   }
 ])
+const clientesColumnsView = computed(() =>
+  isJefeMarketingReadOnly.value ? toReadOnlyEntregaColumns(clientesColumns.value) : clientesColumns.value
+)
+
+const entregasColumnsView = computed(() => {
+  if (!isJefeMarketingReadOnly.value) return entregasColumns.value
+  return entregasColumns.value.map((column: any) => {
+    const key = String(column?.accessorKey ?? column?.id ?? '').toLowerCase()
+    if (key !== 'accion') return column
+    return {
+      ...column,
+      cell: ({ row }: { row: any }) =>
+        h(UButton, {
+          size: 'xs',
+          icon: 'i-heroicons-eye',
+          variant: 'ghost',
+          color: 'neutral',
+          'aria-label': 'Ver detalle',
+          title: 'Ver detalle',
+          onClick: async () => goToClienteDetalle(row.original)
+        })
+    }
+  })
+})
+
+const deliveryColumnsView = computed(() =>
+  isJefeMarketingReadOnly.value ? toReadOnlyEntregaColumns(deliveryColumns.value) : deliveryColumns.value
+)
+
 const handleUpdateServicio = (row: any) => {
   try {
     const data = {

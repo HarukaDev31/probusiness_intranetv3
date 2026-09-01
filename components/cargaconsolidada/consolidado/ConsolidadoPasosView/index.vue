@@ -66,6 +66,7 @@ const route = useRoute()
 const id = Number(route.params.id)
 
 const skeletonCount = computed(() => {
+  if (currentRole.value === ROLES.JEFE_MARKETING) return 3
   if (props.role === ROLES.COORDINACION) return 6
   if (props.role === ROLES.DOCUMENTACION) return 3
   if (currentId.value === ID_JEFEVENTAS) return 2
