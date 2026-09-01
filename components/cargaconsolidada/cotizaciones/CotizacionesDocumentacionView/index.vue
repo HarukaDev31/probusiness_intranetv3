@@ -78,15 +78,6 @@
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                 Documentación — {{ proveedorActivo?.code_supplier }}
               </h3>
-              <UButton
-                v-if="!soloVista"
-                label="Nuevo documento"
-                color="warning"
-                variant="solid"
-                icon="i-heroicons-plus"
-                size="sm"
-                @click="handleNuevoDocumento"
-              />
             </div>
           </template>
           <div class="space-y-4">
@@ -99,10 +90,11 @@
             <div v-for="tipo in tiposDocumentoDefault" :key="tipo.key">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {{ tipo.label }}
+                <span v-if="tipo.optional" class="font-normal text-gray-400">(opcional)</span>
               </label>
               <FileUploader
                 :key="'doc-' + (proveedorActivo?.id ?? 0) + '-' + tipo.key + '-' + imagenUploaderKey"
-                :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx']"
+                :accepted-types="acceptedTypesDocumento"
                 :immediate="false"
                 :custom-message="'Selecciona o arrastra tu archivo aquí'"
                 :show-remove-button="!soloVista"
@@ -113,32 +105,64 @@
                 @file-removed="quitarPendienteDocPorTipo(tipo.key)"
               />
             </div>
-            <div v-for="doc in documentosCustomFiltrados" :key="doc.id">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {{ doc.folder_name || doc.tipo_documento }}
-              </label>
-              <FileUploader
-                :key="'doc-custom-' + doc.id + '-' + (proveedorActivo?.id ?? 0) + '-' + imagenUploaderKey"
-                :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx']"
-                :immediate="false"
-                :show-remove-button="!soloVista"
-                :read-only="soloVista"
-                :initial-files="[fileToItem(doc)]"
-                @file-removed="marcarEliminarDoc(doc.id)"
-              />
-            </div>
-            <div v-if="!soloVista && pendingDocCustomCurrent.length > 0">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Documentos nuevos (pendientes de guardar)</label>
-              <FileUploader
-                :key="'doc-pending-' + (proveedorActivo?.id ?? 0) + '-' + imagenUploaderKey"
-                :model-files="pendingDocCustomCurrent.map(p => p.file)"
-                :multiple="true"
-                :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx']"
-                :immediate="false"
-                :show-remove-button="true"
-                :read-only="false"
-                @file-removed="(idx: number) => quitarPendienteDocCustom(idx)"
-              />
+            <div
+              v-if="!soloVista || documentosCustomFiltrados.length || pendingDocCustomCurrent.length"
+              class="rounded-lg border border-dashed border-gray-300 p-4 dark:border-gray-600"
+            >
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p class="text-sm font-medium text-gray-800 dark:text-gray-100">
+                    Documentos adicionales del producto
+                  </p>
+                  <p v-if="!soloVista" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Puedes agregar catálogo, especificaciones u otros archivos sin subir la ficha técnica.
+                  </p>
+                </div>
+                <UButton
+                  v-if="!soloVista"
+                  label="Nuevo documento"
+                  color="warning"
+                  variant="solid"
+                  icon="i-heroicons-plus"
+                  size="sm"
+                  @click="handleNuevoDocumento"
+                />
+              </div>
+              <div v-for="doc in documentosCustomFiltrados" :key="doc.id" class="mb-4 last:mb-0">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {{ doc.folder_name || doc.tipo_documento }}
+                </label>
+                <FileUploader
+                  :key="'doc-custom-' + doc.id + '-' + (proveedorActivo?.id ?? 0) + '-' + imagenUploaderKey"
+                  :accepted-types="acceptedTypesDocumento"
+                  :immediate="false"
+                  :show-remove-button="!soloVista"
+                  :read-only="soloVista"
+                  :initial-files="[fileToItem(doc)]"
+                  @file-removed="marcarEliminarDoc(doc.id)"
+                />
+              </div>
+              <div v-if="!soloVista && pendingDocCustomCurrent.length > 0">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Pendientes de guardar
+                </label>
+                <FileUploader
+                  :key="'doc-pending-' + (proveedorActivo?.id ?? 0) + '-' + imagenUploaderKey"
+                  :model-files="pendingDocCustomCurrent.map(p => p.file)"
+                  :multiple="true"
+                  :accepted-types="acceptedTypesDocumento"
+                  :immediate="false"
+                  :show-remove-button="true"
+                  :read-only="false"
+                  @file-removed="(idx: number) => quitarPendienteDocCustom(idx)"
+                />
+              </div>
+              <p
+                v-if="!soloVista && !documentosCustomFiltrados.length && !pendingDocCustomCurrent.length"
+                class="text-xs text-gray-500 dark:text-gray-400"
+              >
+                Aún no hay documentos adicionales. Usa «Nuevo documento» para agregar uno.
+              </p>
             </div>
           </div>
         </UCard>
@@ -380,7 +404,12 @@ async function handleGuardarTodo() {
     await withSpinner(async () => {
       // IDs de BD a eliminar: documentos marcados para eliminar + los que se reemplazan por tipo (por proveedor)
       const docIdsToDelete = new Set<number>(pendingDocDeletes.value)
-      const idsProvDoc = Object.keys(pendingDocByTipo.value).map(Number).sort((a, b) => a - b)
+      const idsProvDoc = [
+        ...new Set([
+          ...Object.keys(pendingDocByTipo.value).map(Number),
+          ...Object.keys(pendingDocCustom.value).map(Number)
+        ])
+      ].sort((a, b) => a - b)
       for (const idProv of idsProvDoc) {
         const byTipo = pendingDocByTipo.value[idProv] ?? {}
         for (const tipo of Object.keys(byTipo)) {
@@ -453,10 +482,21 @@ async function handleGuardarTodo() {
 }
 
 const tiposDocumentoDefault = [
-  { key: 'proforma_invoice', label: 'Proforma Invoice' },
-  { key: 'packing_list', label: 'Packing List' },
-  { key: 'ficha_tecnica', label: 'Ficha Técnica' }
+  { key: 'proforma_invoice', label: 'Proforma Invoice', optional: false },
+  { key: 'packing_list', label: 'Packing List', optional: false },
+  { key: 'ficha_tecnica', label: 'Ficha Técnica', optional: true }
 ]
+
+const acceptedTypesDocumento = ['.xlsx', '.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx']
+
+const tiposDocumentoReservados = tiposDocumentoDefault.map((t) => t.key)
+
+function slugTipoDocumentoCustom(name: string): string {
+  const slug = name.trim().replace(/\s+/g, '_').toLowerCase()
+  if (!slug) return 'custom'
+  if (tiposDocumentoReservados.includes(slug)) return `custom_${slug}`
+  return slug
+}
 
 const documentosCustom = computed(() => {
   const defKeys = tiposDocumentoDefault.map(t => t.key)
@@ -528,10 +568,20 @@ function handleNuevoDocumento() {
   simpleUploadFile.open({
     title: 'Nuevo documento',
     withNameField: true,
+    acceptedTypes: acceptedTypesDocumento,
     onSave: (data: { file: File; name?: string | null }) => {
-      const tipo = (data.name || 'custom').replace(/\s+/g, '_').toLowerCase()
-      const list = [...(pendingDocCustom.value[idProv] ?? []), { tipo_documento: tipo, folder_name: data.name ?? undefined, file: data.file }]
+      const nombre = (data.name ?? '').trim()
+      if (!nombre) {
+        showError('Nombre requerido', 'Indica un nombre para identificar el documento (ej. Catálogo, Especificaciones).')
+        return
+      }
+      const tipo = slugTipoDocumentoCustom(nombre)
+      const list = [
+        ...(pendingDocCustom.value[idProv] ?? []),
+        { tipo_documento: tipo, folder_name: nombre, file: data.file }
+      ]
       pendingDocCustom.value = { ...pendingDocCustom.value, [idProv]: list }
+      imagenUploaderKey.value += 1
     }
   })
 }
