@@ -823,6 +823,8 @@ const getCargosExtraColumns = (): TableColumn<any>[] => {
       header: 'Servicio / Importe',
       cell: ({ row }: { row: any }) => h(CargosExtraServiciosCell, {
         idCotizacion: row.original.id_cotizacion,
+        idContenedor: row.original.id_contenedor ?? Number(id),
+        clienteNombre: row.original.nombre || '',
         servicios: row.original.delivery_servicios || [],
         editable,
         onRefresh: () => getCargosExtra(Number(id))

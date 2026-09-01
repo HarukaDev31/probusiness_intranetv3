@@ -1,99 +1,115 @@
 <template>
   <UModal :model-value="true" @update:model-value="emit('close')" class="sm:max-w-2xl">
     <template #header>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Nuevo Boletín Químico</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        {{ embedded ? 'Detalle Boletín Químico (BQ)' : 'Nuevo Boletín Químico' }}
+      </h3>
+      <p v-if="embedded && clienteNombre" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Cliente: {{ clienteNombre }}
+      </p>
     </template>
     <template #body>
       <div class="space-y-4">
-        <UFormField label="Consolidado">
-          <USelectMenu
-            v-model="idContenedor"
-            :items="contenedorOptions"
-            value-attribute="value"
-            placeholder="Seleccionar consolidado"
-            size="md"
-            class="w-full"
-            searchable
-            searchable-placeholder="Buscar consolidado..."
-            :loading="loadingConsolidados"
-            @update:model-value="onContenedorChange"
-          />
-        </UFormField>
-
-        <template v-if="idContenedor != null">
-          <UFormField label="Cliente">
+        <template v-if="!embedded">
+          <UFormField label="Consolidado">
             <USelectMenu
-              v-model="selectedClienteId"
-              :items="clienteOptions"
+              v-model="idContenedor"
+              :items="contenedorOptions"
               value-attribute="value"
-              placeholder="Seleccionar cliente"
+              placeholder="Seleccionar consolidado"
               size="md"
               class="w-full"
               searchable
-              searchable-placeholder="Buscar cliente..."
-              :loading="loadingClientes"
-              @update:model-value="onClienteChange"
+              searchable-placeholder="Buscar consolidado..."
+              :loading="loadingConsolidados"
+              @update:model-value="onContenedorChange"
             />
           </UFormField>
 
-          <template v-if="selectedClienteId != null">
-            <UFormField label="Items (de la cotización del cliente)">
+          <template v-if="idContenedor != null">
+            <UFormField label="Cliente">
               <USelectMenu
-                :model-value="selectedItems as Array<SelectOption>"
-                :items="itemOptions"
+                v-model="selectedClienteId"
+                :items="clienteOptions"
                 value-attribute="value"
-                placeholder="Seleccionar uno o más items"
+                placeholder="Seleccionar cliente"
                 size="md"
                 class="w-full"
-                multiple
                 searchable
-                searchable-placeholder="Buscar item..."
-                :loading="loadingItems"
-                @update:model-value="onSelectedItemsChange"
+                searchable-placeholder="Buscar cliente..."
+                :loading="loadingClientes"
+                @update:model-value="onClienteChange"
               />
             </UFormField>
           </template>
-
-          <div v-if="rows.length" class="border rounded-lg overflow-hidden">
-            <table class="w-full text-sm">
-              <thead class="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th class="text-left p-2">Cliente</th>
-                  <th class="text-left p-2">Item</th>
-                  <th class="text-left p-2 w-32">Monto (S/)</th>
-                  <th class="w-10" />
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(r, idx) in rows" :key="idx" class="border-t dark:border-gray-700">
-                  <td class="p-2">{{ r.clienteNombre }}</td>
-                  <td class="p-2">{{ r.itemNombre }}</td>
-                  <td class="p-2">
-                    <div class="flex items-center gap-1">
-                      <span class="text-gray-500 dark:text-gray-400 text-sm">S/</span>
-                      <UInput
-                        v-model.number="r.monto_boletin"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        size="sm"
-                      />
-                    </div>
-                  </td>
-                  <td class="p-2">
-                    <UButton
-                      icon="i-heroicons-trash"
-                      color="error"
-                      variant="ghost"
-                      size="xs"
-                      @click="removeRow(idx)"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </template>
+
+        <template v-if="embedded || selectedClienteId != null">
+          <UFormField :label="embedded ? 'Items de la cotización' : 'Items (de la cotización del cliente)'">
+            <USelectMenu
+              :model-value="selectedItems as Array<SelectOption>"
+              :items="itemOptions"
+              value-attribute="value"
+              placeholder="Seleccionar uno o más items"
+              size="md"
+              class="w-full"
+              multiple
+              searchable
+              searchable-placeholder="Buscar item..."
+              :loading="loadingItems"
+              @update:model-value="onSelectedItemsChange"
+            />
+          </UFormField>
+        </template>
+
+        <div v-if="rows.length" class="border rounded-lg overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th v-if="!embedded" class="text-left p-2">Cliente</th>
+                <th class="text-left p-2">Item</th>
+                <th class="text-left p-2 w-32">Monto (S/)</th>
+                <th class="w-10" />
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(r, idx) in rows" :key="idx" class="border-t dark:border-gray-700">
+                <td v-if="!embedded" class="p-2">{{ r.clienteNombre }}</td>
+                <td class="p-2">{{ r.itemNombre }}</td>
+                <td class="p-2">
+                  <div class="flex items-center gap-1">
+                    <span class="text-gray-500 dark:text-gray-400 text-sm">S/</span>
+                    <UInput
+                      v-model.number="r.monto_boletin"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      size="sm"
+                      :disabled="r.hasPagos"
+                    />
+                  </div>
+                </td>
+                <td class="p-2">
+                  <UButton
+                    v-if="!r.hasPagos"
+                    icon="i-heroicons-trash"
+                    color="error"
+                    variant="ghost"
+                    size="xs"
+                    @click="removeRow(idx)"
+                  />
+                </td>
+              </tr>
+            </tbody>
+            <tfoot v-if="embedded" class="bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700">
+              <tr>
+                <td class="p-2 font-medium">Total BQ (cargos extra)</td>
+                <td class="p-2 font-semibold">S/ {{ totalMonto.toFixed(2) }}</td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
     </template>
     <template #footer>
@@ -118,18 +134,30 @@ import { BoletinQuimicoService } from '~/services/basedatos/boletinQuimicoServic
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import { CotizacionService } from '~/services/cargaconsolidada/cotizacionService'
 import { ROLES } from '~/constants/roles'
+import { useModal } from '~/composables/commons/useModal'
 
-const props = defineProps<{ onSaved?: () => void; onClose?: () => void }>()
+const props = defineProps<{
+  onSaved?: () => void
+  onClose?: () => void
+  /** Desde cargos extra: oculta consolidado/cliente y sincroniza línea BQ */
+  embedded?: boolean
+  idContenedor?: number
+  idCotizacion?: number
+  clienteNombre?: string
+}>()
+
 const emit = defineEmits<{ saved: []; close: [] }>()
+const { showError, showSuccess } = useModal()
 
-/** Valor que USelectMenu asigna con value-attribute="value" (objeto completo de la opción). */
+const embedded = computed(() => Boolean(props.embedded && props.idContenedor && props.idCotizacion))
+const clienteNombre = computed(() => props.clienteNombre || '')
+
 type SelectOption = { label: string; value: number } | null
 const idContenedor = ref<SelectOption>(null)
 const contenedores = ref<Array<{ id: number; carga: string }>>([])
 const clientes = ref<Array<{ id: number; nombre: string }>>([])
 const items = ref<Array<{ id: number; id_cotizacion: number; nombre: string }>>([])
 const selectedClienteId = ref<SelectOption>(null)
-/** Selección múltiple de ítems; al cambiar se sincronizan las filas automáticamente. */
 const selectedItems = ref<Array<SelectOption | number>>([])
 const rows = ref<Array<{
   id_cotizacion: number
@@ -137,13 +165,13 @@ const rows = ref<Array<{
   clienteNombre: string
   itemNombre: string
   monto_boletin: number
+  hasPagos: boolean
 }>>([])
 const saving = ref(false)
 const loadingConsolidados = ref(false)
 const loadingClientes = ref(false)
 const loadingItems = ref(false)
 
-/** Mismo formato que permisos: { label, value } para USelectMenu value-attribute="value" */
 const contenedorOptions = computed(() =>
   contenedores.value.map(c => ({
     label: c.carga ? `#${c.carga}` : `#${c.id}`,
@@ -156,6 +184,9 @@ const clienteOptions = computed(() =>
 const itemOptions = computed(() =>
   items.value.map(i => ({ label: `${i.nombre} (Cot. ${i.id_cotizacion})`, value: Number(i.id) }))
 )
+const totalMonto = computed(() =>
+  rows.value.reduce((acc, r) => acc + (Number(r.monto_boletin) || 0), 0)
+)
 
 function selectValueToNum (v: SelectOption | number | null): number | null {
   if (v == null) return null
@@ -165,7 +196,6 @@ function selectValueToNum (v: SelectOption | number | null): number | null {
 }
 const selectedClienteIdNum = computed(() => selectValueToNum(selectedClienteId.value))
 
-/** Mismo endpoint que basedatos/permisos: ConsolidadoService.getConsolidadoData */
 async function loadContenedores () {
   loadingConsolidados.value = true
   try {
@@ -183,7 +213,6 @@ async function loadContenedores () {
   }
 }
 
-/** Al cambiar consolidado: solo cargar clientes (cotizaciones). Los ítems se cargan al seleccionar cliente. */
 async function onContenedorChange (payload?: SelectOption | unknown) {
   const raw = payload !== undefined && payload !== null ? payload : idContenedor.value
   const id = typeof raw === 'object' && raw !== null && 'value' in raw ? Number((raw as SelectOption)!.value) : Number(raw)
@@ -215,14 +244,7 @@ async function onContenedorChange (payload?: SelectOption | unknown) {
   }
 }
 
-/** Al seleccionar cliente: cargar solo los ítems de su cotización (solo id cotización). */
-async function onClienteChange (payload?: SelectOption | unknown) {
-  const raw = payload !== undefined && payload !== null ? payload : selectedClienteId.value
-  const idCotizacion = typeof raw === 'object' && raw !== null && 'value' in raw ? (raw as SelectOption)!.value : Number(raw)
-  selectedItems.value = []
-  items.value = []
-  rows.value = []
-  if (idCotizacion == null || Number.isNaN(idCotizacion)) return
+async function loadItemsForCotizacion (idCotizacion: number) {
   loadingItems.value = true
   try {
     const res = await BoletinQuimicoService.getItemsByCotizacion(idCotizacion)
@@ -235,20 +257,54 @@ async function onClienteChange (payload?: SelectOption | unknown) {
   }
 }
 
-/** Convierte un elemento del array de selección múltiple a id numérico. */
+async function loadEmbeddedData () {
+  if (!embedded.value || !props.idCotizacion) return
+  await loadItemsForCotizacion(props.idCotizacion)
+  try {
+    const res = await BoletinQuimicoService.getRegistrosByCotizacion(props.idCotizacion)
+    const registros = res?.success ? (res.data ?? []) : []
+    if (registros.length > 0) {
+      selectedItems.value = registros
+        .map(r => r.id_cotizacion_proveedor_item)
+        .filter((id): id is number => id != null)
+      rows.value = registros.map(r => ({
+        id_cotizacion: r.id_cotizacion,
+        id_cotizacion_proveedor_item: r.id_cotizacion_proveedor_item,
+        clienteNombre: props.clienteNombre || '',
+        itemNombre: r.item_nombre,
+        monto_boletin: r.monto_boletin,
+        hasPagos: r.has_pagos,
+      }))
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+async function onClienteChange (payload?: SelectOption | unknown) {
+  const raw = payload !== undefined && payload !== null ? payload : selectedClienteId.value
+  const idCotizacion = typeof raw === 'object' && raw !== null && 'value' in raw ? (raw as SelectOption)!.value : Number(raw)
+  selectedItems.value = []
+  items.value = []
+  rows.value = []
+  if (idCotizacion == null || Number.isNaN(idCotizacion)) return
+  await loadItemsForCotizacion(idCotizacion)
+}
+
 function selectedItemToId (v: SelectOption | number): number | null {
   if (typeof v === 'number') return v
   if (v && typeof v === 'object' && 'value' in v) return v.value
   return null
 }
 
-/** Sincroniza filas con la selección múltiple de ítems: cada ítem seleccionado tiene una fila. */
 function onSelectedItemsChange (payload?: Array<SelectOption | number>) {
   const raw = Array.isArray(payload) ? payload : []
   selectedItems.value = raw
   const ids = raw.map(selectedItemToId).filter((id): id is number => id != null)
-  const idCliente = selectedClienteIdNum.value
-  const c = idCliente != null ? clientes.value.find(x => x.id === idCliente) : null
+  const idCliente = embedded.value ? props.idCotizacion : selectedClienteIdNum.value
+  const c = embedded.value
+    ? { id: props.idCotizacion, nombre: props.clienteNombre || '' }
+    : (idCliente != null ? clientes.value.find(x => x.id === idCliente) : null)
   if (!c) return
   const existingByItemId = new Map(rows.value.map(r => [r.id_cotizacion_proveedor_item, r]))
   const newRows: typeof rows.value = []
@@ -257,11 +313,12 @@ function onSelectedItemsChange (payload?: Array<SelectOption | number>) {
     if (!i) continue
     const existing = existingByItemId.get(i.id)
     newRows.push({
-      id_cotizacion: i.id_cotizacion,
+      id_cotizacion: embedded.value ? (props.idCotizacion as number) : i.id_cotizacion,
       id_cotizacion_proveedor_item: i.id,
-      clienteNombre: c.nombre,
+      clienteNombre: embedded.value ? (props.clienteNombre || '') : (c as { nombre: string }).nombre,
       itemNombre: i.nombre,
-      monto_boletin: existing ? existing.monto_boletin : 0
+      monto_boletin: existing ? existing.monto_boletin : 0,
+      hasPagos: existing?.hasPagos ?? false,
     })
   }
   rows.value = newRows
@@ -269,14 +326,14 @@ function onSelectedItemsChange (payload?: Array<SelectOption | number>) {
 
 function removeRow (idx: number) {
   const row = rows.value[idx]
-  if (!row) return
+  if (!row || row.hasPagos) return
   const idItem = row.id_cotizacion_proveedor_item
   rows.value.splice(idx, 1)
-  // Quitar también de la selección múltiple para que el select y las filas coincidan
   selectedItems.value = selectedItems.value.filter(v => selectedItemToId(v) !== idItem)
 }
 
 function idContenedorNum (): number | null {
+  if (embedded.value && props.idContenedor) return props.idContenedor
   return selectValueToNum(idContenedor.value)
 }
 
@@ -285,26 +342,38 @@ async function handleSave () {
   if (idCont == null || rows.value.length === 0) return
   saving.value = true
   try {
-    await BoletinQuimicoService.store({
+    const res = await BoletinQuimicoService.store({
       id_contenedor: idCont,
       items: rows.value.map(r => ({
         id_cotizacion: r.id_cotizacion,
         id_cotizacion_proveedor_item: r.id_cotizacion_proveedor_item,
-        monto_boletin: Number(r.monto_boletin) || 0
-      }))
+        monto_boletin: Number(r.monto_boletin) || 0,
+      })),
+      replace_cotizacion_items: embedded.value,
+      sync_cargos_extra_bq: embedded.value,
     })
+    if (!res?.success) {
+      showError('Error', (res as any)?.message || 'No se pudo guardar')
+      return
+    }
+    showSuccess('Guardado', embedded.value ? 'BQ vinculado a cargos extra' : 'Boletín químico guardado')
     props.onSaved?.()
     emit('saved')
     emit('close')
     props.onClose?.()
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
+    showError('Error', e?.message || 'No se pudo guardar')
   } finally {
     saving.value = false
   }
 }
 
-onMounted(() => {
-  loadContenedores()
+onMounted(async () => {
+  if (embedded.value) {
+    await loadEmbeddedData()
+    return
+  }
+  await loadContenedores()
 })
 </script>

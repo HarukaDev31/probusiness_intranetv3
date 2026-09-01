@@ -50,6 +50,17 @@ export interface StoreBoletinBody {
     id_cotizacion_proveedor_item: number | null
     monto_boletin: number
   }>
+  replace_cotizacion_items?: boolean
+  sync_cargos_extra_bq?: boolean
+}
+
+export interface BoletinQuimicoRegistro {
+  id: number
+  id_cotizacion: number
+  id_cotizacion_proveedor_item: number | null
+  item_nombre: string
+  monto_boletin: number
+  has_pagos: boolean
 }
 
 export class BoletinQuimicoService extends BaseService {
@@ -78,6 +89,11 @@ export class BoletinQuimicoService extends BaseService {
   /** Items de la cotización (cliente) seleccionada. GET cotizacion/{idCotizacion}/items */
   static async getItemsByCotizacion (idCotizacion: number): Promise<{ success: boolean; data: Array<{ id: number; id_cotizacion: number; nombre: string }> }> {
     return this.apiCall(`${this.baseUrl}/cotizacion/${Number(idCotizacion)}/items`)
+  }
+
+  /** Registros BQ ya guardados para una cotización (cargos extra / edición). */
+  static async getRegistrosByCotizacion (idCotizacion: number): Promise<{ success: boolean; data: BoletinQuimicoRegistro[] }> {
+    return this.apiCall(`${this.baseUrl}/cotizacion/${Number(idCotizacion)}/registros`)
   }
 
   static async store (body: StoreBoletinBody): Promise<{ success: boolean; message: string }> {

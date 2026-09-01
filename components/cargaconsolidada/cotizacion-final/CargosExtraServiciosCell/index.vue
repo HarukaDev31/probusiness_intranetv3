@@ -14,21 +14,29 @@
           @update:model-value="(v: string) => { line.tipo_servicio = normalizeTipo(v) }"
         />
         <UInput
+          v-if="!isBqTipo(line.tipo_servicio)"
           :model-value="String(line.importe)"
           type="number"
           size="xs"
           class="w-[5rem] shrink-0 text-right"
           @update:model-value="(v: string) => { line.importe = Number(v) || 0 }"
         />
+        <span
+          v-else
+          class="w-[5rem] shrink-0 text-right text-xs text-gray-600 dark:text-gray-400 tabular-nums"
+          :title="'Total BQ: ' + formatCurrency(line.importe)"
+        >
+          {{ formatCurrency(line.importe) }}
+        </span>
         <UButton
           size="xs"
           color="primary"
           variant="soft"
           class="shrink-0"
-          icon="material-symbols:save-sharp"
-          title="Guardar"
+          :icon="isBqTipo(line.tipo_servicio) ? 'i-heroicons-beaker' : 'material-symbols:save-sharp'"
+          :title="isBqTipo(line.tipo_servicio) ? 'Detalle BQ' : 'Guardar'"
           :loading="savingId === line.id"
-          @click="saveLine(line)"
+          @click="isBqTipo(line.tipo_servicio) ? openBqModal() : saveLine(line)"
         />
         <UButton
           size="xs"
@@ -53,6 +61,7 @@
           class="w-[8.5rem] shrink-0"
         />
         <UInput
+          v-if="!isBqTipo(draft.tipo_servicio)"
           v-model="draft.importe"
           type="number"
           size="xs"
@@ -63,10 +72,10 @@
           color="primary"
           variant="soft"
           class="shrink-0"
-          icon="material-symbols:save-sharp"
-          title="Guardar"
+          :icon="isBqTipo(draft.tipo_servicio) ? 'i-heroicons-beaker' : 'material-symbols:save-sharp'"
+          :title="isBqTipo(draft.tipo_servicio) ? 'Configurar BQ' : 'Guardar'"
           :loading="creating"
-          @click="createLine"
+          @click="isBqTipo(draft.tipo_servicio) ? openBqModal(true) : createLine()"
         />
         <UButton
           size="xs"
@@ -103,7 +112,9 @@
 <script setup lang="ts">
 import type { CargosExtraServiciosCellProps } from './types'
 import { computed, ref, watch } from 'vue'
+import { useOverlay } from '#imports'
 import { UButton, UInput, USelect } from '#components'
+import BoletinQuimicoModal from '~/components/basedatos/BoletinQuimicoModal.vue'
 import { useEntrega } from '~/composables/cargaconsolidada/entrega/useEntrega'
 import { useModal } from '~/composables/commons/useModal'
 
@@ -118,6 +129,8 @@ const emit = defineEmits<{
 
 const { addDeliveryServicioLine, updateDeliveryServicioLine, deleteDeliveryServicioLine } = useEntrega()
 const { showError, showSuccess, showConfirmation } = useModal()
+const overlay = useOverlay()
+const boletinModal = overlay.create(BoletinQuimicoModal)
 
 const baseOptions = [
   { label: 'Delivery', value: 'DELIVERY' },
@@ -174,6 +187,10 @@ function normalizeTipo(value: string | undefined) {
   return t || 'DELIVERY'
 }
 
+function isBqTipo(tipo: string) {
+  return normalizeTipo(tipo) === 'BQ'
+}
+
 function getItemsForLine(line: ServicioLine) {
   return options.value.map(opt => ({
     ...opt,
@@ -185,6 +202,24 @@ function openDraft() {
   if (!canAddMore.value) return
   const next = availableItemsForDraft.value[0]?.value || 'DELIVERY'
   draft.value = { tipo_servicio: next, importe: '0' }
+}
+
+function openBqModal(fromDraft = false) {
+  if (!props.idContenedor) {
+    showError('Error', 'Falta el consolidado de la fila')
+    return
+  }
+  boletinModal.open({
+    embedded: true,
+    idContenedor: props.idContenedor,
+    idCotizacion: props.idCotizacion,
+    clienteNombre: props.clienteNombre || '',
+    onSaved: () => {
+      if (fromDraft) draft.value = null
+      emit('refresh')
+    },
+    onClose: () => {},
+  } as any)
 }
 
 function labelTipo(tipo: string) {
@@ -201,6 +236,10 @@ function formatCurrency(value: number) {
 async function createLine() {
   if (!draft.value) return
   const concept = normalizeTipo(draft.value.tipo_servicio)
+  if (isBqTipo(concept)) {
+    openBqModal(true)
+    return
+  }
   if (usedTipos.value.has(concept)) {
     showError('Error', 'El concepto ya existe en esta cotización')
     return
@@ -228,6 +267,30 @@ async function createLine() {
 
 async function saveLine(line: ServicioLine) {
   const concept = normalizeTipo(line.tipo_servicio)
+  if (isBqTipo(concept)) {
+    const otherBq = lines.value.some(x => x.id !== line.id && isBqTipo(x.tipo_servicio))
+    if (otherBq) {
+      showError('Error', 'El concepto BQ ya existe en esta cotización')
+      return
+    }
+    savingId.value = line.id
+    try {
+      const res = await updateDeliveryServicioLine(line.id, {
+        tipo_servicio: 'BQ',
+        importe: Number(line.importe) || 0
+      })
+      if (!res?.success) {
+        showError('Error', (res as any)?.message || (res as any)?.error || 'No se pudo preparar BQ')
+        return
+      }
+      openBqModal()
+    } catch (error: any) {
+      showError('Error', error?.message || String(error))
+    } finally {
+      savingId.value = null
+    }
+    return
+  }
   const duplicated = lines.value.some(x => x.id !== line.id && normalizeTipo(x.tipo_servicio) === concept)
   if (duplicated) {
     showError('Error', 'El concepto ya existe en esta cotización')
