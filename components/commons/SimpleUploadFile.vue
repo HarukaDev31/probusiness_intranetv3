@@ -67,7 +67,9 @@ const fileUploaderRef = ref<InstanceType<typeof FileUploader> | null>(null)
 const name = ref<string>('')
 // Validación
 const isValid = computed(() => {
-    return selectedFile.value !== null
+  if (!selectedFile.value) return false
+  if (props.withNameField && !name.value.trim()) return false
+  return true
 })
 
 // Manejadores de eventos
