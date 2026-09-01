@@ -109,9 +109,11 @@ const { updatePriority } = useSoporteTi()
 const {
   rolActivo,
   solicitudes,
+  creadoresFiltro,
   stats,
   error,
   cargar,
+  cargarCreadoresFiltro,
   create,
 } = useSoporteTi()
 
@@ -120,7 +122,7 @@ const loading = ref(false)
 async function cargarLista(filters?: SoporteTiListFilters) {
   loading.value = true
   try {
-    await cargar(filters)
+    await Promise.all([cargar(filters), cargarCreadoresFiltro(filters)])
   } finally {
     loading.value = false
   }
@@ -142,10 +144,12 @@ function onEvidenciaModalOpen(open: boolean) {
 const q = ref('')
 const filtroTipo = ref<'todos' | 'A' | 'B'>('todos')
 const filtroEstado = ref<string>('todos')
+const filtroCreador = ref<string>('todos')
 const filtroSoloMias = ref(false)
 const filtersDraft = computed(() => ({
   tipo: filtroTipo.value,
   estado: filtroEstado.value,
+  creador: filtroCreador.value,
   solo_mias: filtroSoloMias.value ? '1' : '0'
 }))
 
@@ -176,6 +180,18 @@ const filterConfig = computed<FilterConfig[]>(() => {
   ]
   if (rolActivo.value !== 'Solicitante') {
     base.push({
+      key: 'creador',
+      label: 'Creador',
+      placeholder: 'Creador',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        ...creadoresFiltro.value.map((c) => ({
+          label: c.nombre,
+          value: String(c.id)
+        }))
+      ]
+    })
+    base.push({
       key: 'solo_mias',
       label: 'Asignación',
       placeholder: 'Asignación',
@@ -194,6 +210,9 @@ function onFilterChange(key: string, value: string) {
   }
   if (key === 'estado') {
     filtroEstado.value = value || 'todos'
+  }
+  if (key === 'creador') {
+    filtroCreador.value = value || 'todos'
   }
   if (key === 'solo_mias') {
     filtroSoloMias.value = value === '1'
@@ -220,10 +239,13 @@ const filasTabla = computed<SoporteTiTablaFila[]>(() =>
 )
 
 function filtrosLista(): SoporteTiListFilters {
+  const creadorId =
+    filtroCreador.value !== 'todos' ? Number(filtroCreador.value) : undefined
   return {
     q: q.value.trim() || undefined,
     tipo: filtroTipo.value,
     estadoCodigo: filtroEstado.value,
+    creadorUserId: creadorId != null && creadorId > 0 ? creadorId : undefined,
     soloMias: filtroSoloMias.value || undefined
   }
 }
@@ -675,9 +697,9 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
 
   return [
     { accessorKey: 'codigo', header: 'Código' },
+    { accessorKey: 'tipoSolicitud', header: 'Tipo' },
     columnaCreador(),
     columnaRol(),
-    { accessorKey: 'tipoSolicitud', header: 'Tipo' },
     columnaTitulo('Título'),
     colArea,
     { accessorKey: 'fechaRegistroCompleta', header: 'Fecha de registro' },

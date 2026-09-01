@@ -147,6 +147,17 @@ export interface SoporteTiListStatsApi {
   operativas: number
 }
 
+export interface SoporteTiCreadorFiltroApi {
+  id: number
+  nombre: string
+}
+
+export interface SoporteTiCreadoresResponseRaw {
+  success: boolean
+  data: SoporteTiCreadorFiltroApi[]
+  message?: string
+}
+
 export interface SoporteTiListResponseRaw {
   success: boolean
   data: SoporteTiSolicitudApi[]

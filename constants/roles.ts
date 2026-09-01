@@ -215,7 +215,11 @@ export function rolesJefeImportacionEquiv(): readonly string[] {
     return [ROLES.JEFE_IMPORTACIONES, ROLES.COORDINADOR_GENERAL]
 }
 
+export function rolesPmSoporteTiEquiv(): readonly string[] {
+    return [ROLES.PM, ROLES.SOPORTE, ROLES.COORDINADOR_GENERAL]
+}
+
 export function roleEsPmSoporteTi(role: string): boolean {
     const normalized = role.trim().toLowerCase()
-    return normalized === ROLES.PM.toLowerCase() || normalized === ROLES.SOPORTE.toLowerCase()
+    return rolesPmSoporteTiEquiv().some((r) => normalized === r.toLowerCase())
 }

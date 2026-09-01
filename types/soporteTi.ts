@@ -208,6 +208,12 @@ export interface SoporteTiListFilters {
   estadoCodigo?: string | 'todos'
   prioridad?: number | null
   soloMias?: boolean
+  creadorUserId?: number
+}
+
+export interface SoporteTiCreadorFiltro {
+  id: number
+  nombre: string
 }
 
 export interface SoporteTiListStats {

@@ -8,12 +8,14 @@ import type {
   SoporteTiEstadoHistorial,
   SoporteTiEvidenciaItem,
   SoporteTiGestion,
+  SoporteTiCreadorFiltro,
   SoporteTiListStats,
   SoporteTiMensaje,
   SoporteTiMensajeInfoLectura,
   SoporteTiSolicitud
 } from '~/types/soporteTi'
 import type {
+  SoporteTiCreadorFiltroApi,
   SoporteTiEstadoApi,
   SoporteTiEstadoHistorialApi,
   SoporteTiEvidenciaApi,
@@ -284,6 +286,18 @@ export function adaptListStats(s?: SoporteTiListStatsApi): SoporteTiListStats | 
     enProgreso: s.en_progreso ?? 0,
     operativas: s.operativas
   }
+}
+
+export function adaptCreadoresFiltro(
+  rows?: SoporteTiCreadorFiltroApi[] | null
+): SoporteTiCreadorFiltro[] {
+  if (!Array.isArray(rows)) return []
+  return rows
+    .filter((r) => r?.id != null && Number(r.id) > 0)
+    .map((r) => ({
+      id: Number(r.id),
+      nombre: String(r.nombre ?? '').trim() || `Usuario #${r.id}`
+    }))
 }
 
 export function adaptListResponse(res: SoporteTiListResponseRaw): {

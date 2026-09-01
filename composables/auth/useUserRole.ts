@@ -135,7 +135,7 @@ const currentId = computed(() => {
         return [ROLES.JEFE_IMPORTACIONES, ROLES.COORDINADOR_GENERAL]
       }
       if (r === ROLES.PM) {
-        return [ROLES.PM, ROLES.SOPORTE]
+        return [ROLES.PM, ROLES.SOPORTE, ROLES.COORDINADOR_GENERAL]
       }
       return [r]
     })
