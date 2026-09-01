@@ -12,8 +12,10 @@
       primary-search-placeholder="Buscar código o título..." :filter-config="filterConfig" :filters-value="filtersDraft"
       :search-debounce-ms="300" :show-kanban="true" :kanban-columns="SOPORTE_TI_KANBAN_BOARD"
       kanban-group-field="estadoCodigo" kanban-title-field="titulo" kanban-row-key-field="codigo"
+      :kanban-draggable="rolActivo !== 'Solicitante'" :kanban-is-row-draggable="kanbanPuedeArrastrar"
+      :kanban-can-drop="kanbanPuedeSoltarEn"
       empty-state-message="No hay solicitudes que coincidan con los filtros." @update:primary-search="onPrimarySearch"
-      @filter-change="onFilterChange" @row-click="onRowClick">
+      @filter-change="onFilterChange" @row-click="onRowClick" @kanban-move="onKanbanMove">
       <template #actions>
         <UButton
           v-if="rolActivo !== 'Solicitante'"
@@ -286,6 +288,30 @@ async function onCambioEstadoTabla(t: SoporteTiSolicitud, val: unknown) {
   await setState(t, codigo, { rolEtiqueta: t.gestion.esStaff ? 'analista' : undefined })
 }
 
+function kanbanPuedeArrastrar(row: Record<string, unknown>): boolean {
+  if (rolActivo.value === 'Solicitante') return false
+  const t = row as SoporteTiSolicitud
+  const g = t.gestion
+  return g.puedeEstado && g.estadoEditable
+}
+
+function kanbanPuedeSoltarEn(row: Record<string, unknown>, estadoCodigo: string): boolean {
+  const t = row as SoporteTiSolicitud
+  if (estadoCodigo === t.estadoCodigo) return false
+  if (!kanbanPuedeArrastrar(row)) return false
+  return t.gestion.estados.some((e) => e.codigo === estadoCodigo)
+}
+
+async function onKanbanMove(payload: {
+  row: Record<string, unknown>
+  fromKey: string
+  toKey: string
+}) {
+  const t = payload.row as SoporteTiSolicitud
+  if (!kanbanPuedeSoltarEn(t, payload.toKey)) return
+  await setState(t, payload.toKey, { rolEtiqueta: t.gestion.esStaff ? 'analista' : undefined })
+}
+
 function celdaEstadoTicket(t: SoporteTiSolicitud) {
   const g = t.gestion
   const codigo = g.estadoValor ?? t.estadoCodigo
@@ -365,6 +391,43 @@ function celdaTituloTabla(titulo: string | undefined | null) {
   )
 }
 
+function celdaLinkTabla(url: string | undefined | null) {
+  const raw = (url ?? '').trim()
+  if (!raw) {
+    return h('span', { class: 'text-xs text-muted' }, '—')
+  }
+  const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+  return h(
+    'a',
+    {
+      href,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      class:
+        'block max-w-[14rem] truncate text-xs text-primary-600 hover:underline dark:text-primary-400',
+      title: raw,
+      onClick: stopRowNav
+    },
+    raw
+  )
+}
+
+function columnaLink(): TableColumn<SoporteTiTablaFila> {
+  const cap = 'min-w-0 max-w-[14rem] sm:max-w-[16rem] align-top'
+  return {
+    id: 'link',
+    accessorKey: 'seccionRuta',
+    header: 'Link',
+    meta: {
+      class: {
+        th: cap,
+        td: cap
+      }
+    },
+    cell: ({ row }) => celdaLinkTabla(row.original.seccionRuta)
+  }
+}
+
 function columnaTitulo(header: string): TableColumn<SoporteTiTablaFila> {
   const cap = 'min-w-0 max-w-[14rem] sm:max-w-[18rem] lg:max-w-[22rem] align-top'
   return {
@@ -410,6 +473,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
       { accessorKey: 'codigo', header: 'Código' },
       { accessorKey: 'tipoSolicitud', header: 'Tipo solicitud' },
       columnaTitulo('Nombre'),
+      columnaLink(),
       { accessorKey: 'fechaRegistroCompleta', header: 'Fecha de registro' },
       { accessorKey: 'fechaFinEstimadoFmt', header: 'Término estimado' },
       colEstado,
@@ -582,6 +646,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     { accessorKey: 'codigo', header: 'Código' },
     { accessorKey: 'tipoSolicitud', header: 'Tipo' },
     columnaTitulo('Título'),
+    columnaLink(),
     colArea,
     { accessorKey: 'fechaRegistroCompleta', header: 'Fecha de registro' },
     ...(rolActivo.value === 'PM' || rolActivo.value === 'Analista'

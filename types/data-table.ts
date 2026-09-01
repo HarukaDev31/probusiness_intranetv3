@@ -115,6 +115,12 @@ export interface DataTableProps {
   kanbanTitleField?: string
   /** Campo único estable para `:key` en listas */
   kanbanRowKeyField?: string
+  /** Permite arrastrar tarjetas entre columnas del kanban */
+  kanbanDraggable?: boolean
+  /** Si se define, solo las filas que devuelvan true serán arrastrables */
+  kanbanIsRowDraggable?: (row: Record<string, unknown>) => boolean
+  /** Si se define, valida si la fila puede soltarse en la columna destino */
+  kanbanCanDrop?: (row: Record<string, unknown>, columnKey: string) => boolean
 }
 
 export interface DataTableEmits {
@@ -131,6 +137,8 @@ export interface DataTableEmits {
   'retry': []
   /** Fila seleccionada (tabla vía prop `onRowClick` o tarjeta Kanban) */
   'row-click': [row: Record<string, unknown>]
+  /** Tarjeta kanban movida a otra columna (estado / bucket) */
+  'kanban-move': [payload: { row: Record<string, unknown>; fromKey: string; toKey: string }]
 } 
 export interface HeaderResponse {
   data: Header[] | Record<string, Header>
