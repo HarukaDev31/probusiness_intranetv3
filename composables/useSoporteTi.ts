@@ -65,6 +65,13 @@ export function useSoporteTi() {
     return 'Solicitante'
   })
 
+  /** Solicitantes habituales + PM y Coordinador General (staff que también crea tickets). */
+  const puedeCrearSolicitud = computed(() =>
+    rolActivo.value === 'Solicitante'
+    || hasRole(ROLES.PM)
+    || hasRole(ROLES.COORDINADOR_GENERAL)
+  )
+
   function remitenteChatUi() {
     const r = rolActivo.value
     const nombre = userName.value || 'Usuario'
@@ -632,6 +639,7 @@ export function useSoporteTi() {
 
   return {
     rolActivo,
+    puedeCrearSolicitud,
     solicitudes,
     creadoresFiltro,
     stats,

@@ -44,7 +44,7 @@
         >
           Horas tipo A
         </UButton>
-        <UButton v-if="rolActivo === 'Solicitante'" size="sm" icon="i-heroicons-plus" @click="modalCrear = true">
+        <UButton v-if="puedeCrearSolicitud" size="sm" icon="i-heroicons-plus" @click="modalCrear = true">
           Nueva solicitud
         </UButton>
       </template>
@@ -108,6 +108,7 @@ const { updatePriority } = useSoporteTi()
 
 const {
   rolActivo,
+  puedeCrearSolicitud,
   solicitudes,
   creadoresFiltro,
   stats,

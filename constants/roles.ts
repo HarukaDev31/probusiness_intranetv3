@@ -15,6 +15,7 @@ export const ROLES = {
     CONTABILIDAD: 'Contabilidad',
     SOPORTE: 'Soporte',
     PM: 'PM',
+    COORDINADOR_GENERAL: 'Coordinador General',
     FINANZAS: 'Finanzas',
 } as const
 export const ID_JEFEVENTAS = 28791
