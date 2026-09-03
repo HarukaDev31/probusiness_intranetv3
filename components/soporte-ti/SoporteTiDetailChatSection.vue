@@ -37,6 +37,7 @@
 import { computed, onUnmounted, watch } from 'vue'
 import { useSoporteTi } from '~/composables/useSoporteTi'
 import { useSoporteTiChatRoom } from '~/composables/useSoporteTiChatRoom'
+import { liberarSalaDetalle, sincronizarSalasGlobales } from '~/composables/useSoporteTiChatGlobal'
 import SoporteTiChatPanel from '~/components/soporte-ti/SoporteTiChatPanel.vue'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
 
@@ -108,9 +109,11 @@ const chatMeta = computed(() => metaDe(props.chatUuid))
 
 watch(
   chatUuid,
-  (uuid) => {
+  (uuid, prev) => {
+    if (prev && prev !== uuid) liberarSalaDetalle(prev)
     if (!uuid) return
     setSalaActiva(uuid)
+    void sincronizarSalasGlobales([uuid])
     void cargarChatInicial(uuid)
   },
   { immediate: true }
@@ -119,6 +122,9 @@ watch(
 onUnmounted(() => {
   const uuid = props.chatUuid
   setSalaActiva(null)
-  if (uuid) resetSala(uuid)
+  if (uuid) {
+    liberarSalaDetalle(uuid)
+    resetSala(uuid)
+  }
 })
 </script>
