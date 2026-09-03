@@ -73,12 +73,14 @@ export default defineNuxtPlugin({
         }
         syncRoleChannelsFromAuthUser()
         window.dispatchEvent(new CustomEvent('echo-ready'))
-        // Solo sincronizar salas Soporte TI si estamos en esa sección (evita GET /solicitudes en toda la app).
-        if (typeof window !== 'undefined' && window.location.pathname.includes('/soporte-ti')) {
-          const { sincronizarSalasGlobales } = await import(
+        // Notificaciones Soporte TI: 1–2 canales (staff/user), no N salas de chat.
+        try {
+          const { suscribirCanalesNotificacionGlobales } = await import(
             '~/composables/useSoporteTiChatGlobal'
           )
-          void sincronizarSalasGlobales()
+          void suscribirCanalesNotificacionGlobales()
+        } catch {
+          /* noop */
         }
       } catch (error) {
         console.error('❌ Error inicializando WebSocket:', error)

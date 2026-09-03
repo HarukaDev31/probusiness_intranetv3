@@ -504,11 +504,6 @@ export function useSoporteTi() {
     if (!res.success || !res.data) throw new Error(res.message || 'No se pudo crear')
     const nueva = res.data
     solicitudes.value = [...solicitudes.value, nueva]
-    if (nueva.chatUuid && typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('soporte-ti-suscribir-sala', { detail: { chatUuid: nueva.chatUuid } })
-      )
-    }
     addSystemMessage(nueva.chatUuid, nueva.codigo, `Ticket ${nueva.codigo} creado.`)
     return nueva
   }
@@ -616,11 +611,6 @@ export function useSoporteTi() {
   function applyRemoteSolicitudCreada(ui: SoporteTiSolicitud) {
     if (!ui.chatUuid) return
     upsertSolicitud(ui)
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('soporte-ti-suscribir-sala', { detail: { chatUuid: ui.chatUuid } })
-      )
-    }
   }
 
   function handlersSala(chatUuid: string) {

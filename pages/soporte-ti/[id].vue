@@ -54,7 +54,6 @@ const PageHeader = createLazyView(() => import('~/components/PageHeader.vue'))
 import SoporteTiDetailPageSkeleton from '~/components/soporte-ti/SoporteTiDetailPageSkeleton.vue'
 import { useSoporteTi } from '~/composables/useSoporteTi'
 import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
-import { sincronizarSalasGlobales } from '~/composables/useSoporteTiChatGlobal'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
 
 definePageMeta({
@@ -110,14 +109,6 @@ watch(
   },
   (actualizado) => {
     if (actualizado) ticket.value = actualizado
-  }
-)
-
-watch(
-  () => ticket.value?.chatUuid,
-  (uuid) => {
-    if (!uuid) return
-    void sincronizarSalasGlobales([uuid])
   }
 )
 

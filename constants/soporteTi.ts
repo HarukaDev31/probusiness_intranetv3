@@ -42,8 +42,11 @@ export function soporteTiInicialesDesdeNombre(nombre: string): string {
 /** Canal privado Laravel Echo: `private-soporte-ti.chat.{chatUuid}` */
 export const soporteTiChatChannelName = (chatUuid: string) => `soporte-ti.chat.${chatUuid}`
 
-/** Canal staff (PM / Analista): nuevas solicitudes y avisos globales. */
+/** Canal staff (PM / Soporte): nuevas solicitudes + notificaciones de todos los tickets. */
 export const SOPORTE_TI_STAFF_CHANNEL = 'soporte-ti.staff'
+
+/** Canal personal: notificaciones del solicitante (1 auth, sin N salas). */
+export const soporteTiUserChannelName = (userId: number | string) => `soporte-ti.user.${userId}`
 
 /** Eventos broadcast desde Laravel (ShouldBroadcast). */
 export const SOPORTE_TI_WS_EVENTS = {

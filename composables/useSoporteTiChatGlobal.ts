@@ -1,39 +1,33 @@
-import { watch, type WatchStopHandle } from 'vue'
+import { type WatchStopHandle } from 'vue'
 import { useSoporteTiChatRoom } from '~/composables/useSoporteTiChatRoom'
 import { getEchoInstance, useEcho } from '~/composables/websocket/useEcho'
-import type { SoporteTiSolicitud } from '~/types/soporteTi'
 import type { SoporteTiChatRoomHandlers } from '~/composables/useSoporteTiChatRoom'
 import type { SoporteTiWsSolicitudCreadaPayload } from '~/services/soporteTi/apiTypes'
+import type {
+  SoporteTiWsEstadoPayload,
+  SoporteTiWsMensajePayload
+} from '~/types/soporteTi'
 import { SoporteTiService } from '~/services/soporteTiService'
 import {
   SOPORTE_TI_STAFF_CHANNEL,
-  SOPORTE_TI_WS_EVENTS
+  SOPORTE_TI_WS_EVENTS,
+  soporteTiUserChannelName
 } from '~/constants/soporteTi'
 import { ROLES } from '~/constants/roles'
-import { notifySoporteTiChatEvent } from '~/utils/soporteTiChatNotify'
+import {
+  notifySoporteTiChatEvent,
+  tituloNotificacionEstado,
+  tituloNotificacionMensaje
+} from '~/utils/soporteTiChatNotify'
+import { resolveEsPropioMensaje } from '~/utils/soporteTiChatMensaje'
+import { debeIgnorarNotifEstadoWs } from '~/utils/soporteTiWsEstadoSkip'
 
-const salasGlobalesSuscritas = new Set<string>()
-let sincronizando: Promise<void> | null = null
+const salasDetalleSuscritas = new Set<string>()
 let listenersAttached = false
 let stopWatchSolicitudes: WatchStopHandle | null = null
 let staffChannelAttached = false
-
-function extraerChatUuids(list: SoporteTiSolicitud[]): string[] {
-  return list.map((s) => s.chatUuid).filter((uuid): uuid is string => Boolean(uuid))
-}
-
-/** Cualquier ruta bajo /soporte-ti (listado, detalle, config). */
-function enRutaSoporteTi(): boolean {
-  if (typeof window === 'undefined') return false
-  return window.location.pathname.includes('/soporte-ti')
-}
-
-/** En detalle no hace falta el listado completo ni suscribir todas las salas al entrar. */
-function enRutaDetalleSoporteTi(): boolean {
-  if (typeof window === 'undefined') return false
-  const path = window.location.pathname.replace(/\/+$/, '')
-  return /^\/soporte-ti\/[^/]+$/.test(path) && path !== '/soporte-ti'
-}
+let userChannelAttached = false
+let userChannelName: string | null = null
 
 function parsePayload<T>(data: unknown): T | null {
   if (!data) return null
@@ -61,6 +55,81 @@ async function loadSoporteTiDeps() {
   return useSoporteTi()
 }
 
+function currentAuthUserId(): number | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem('auth_user')
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as {
+      id?: number | string
+      raw?: { ID_Usuario?: number; id?: number }
+    }
+    const id = parsed?.id ?? parsed?.raw?.ID_Usuario ?? parsed?.raw?.id
+    const n = Number(id)
+    return Number.isFinite(n) && n > 0 ? n : null
+  } catch {
+    return null
+  }
+}
+
+function salaActivaActual(): string | null {
+  try {
+    return useSoporteTiChatRoom().salaActivaUuid.value
+  } catch {
+    return null
+  }
+}
+
+function esMensajePropio(payload: SoporteTiWsMensajePayload): boolean {
+  if (!payload.mensaje) return false
+  return resolveEsPropioMensaje(payload.mensaje)
+}
+
+/** Handlers de notificación global (staff / user): NO suscribe salas. */
+function handlersNotificacionGlobal() {
+  return [
+    {
+      event: SOPORTE_TI_WS_EVENTS.MENSAJE_CREADO,
+      callback: (raw: unknown) => {
+        const p = parsePayload<SoporteTiWsMensajePayload>(raw)
+        if (!p?.chat_uuid) return
+        const esSistema = Boolean(p.mensaje?.es_sistema)
+        const activa = salaActivaActual()
+        if (esSistema || esMensajePropio(p) || activa === p.chat_uuid) return
+        notifySoporteTiChatEvent(
+          p.chat_uuid,
+          p.codigo,
+          tituloNotificacionMensaje(p),
+          p.mensaje?.texto || 'Nuevo mensaje en el chat',
+          'mensaje'
+        )
+      }
+    },
+    {
+      event: SOPORTE_TI_WS_EVENTS.ESTADO_ACTUALIZADO,
+      callback: async (raw: unknown) => {
+        const p = parsePayload<SoporteTiWsEstadoPayload>(raw)
+        if (!p?.chat_uuid) return
+        try {
+          const { applyRemoteState } = await loadSoporteTiDeps()
+          applyRemoteState(p)
+        } catch {
+          /* store puede no estar montado */
+        }
+        const activa = salaActivaActual()
+        if (activa === p.chat_uuid || debeIgnorarNotifEstadoWs(p.chat_uuid)) return
+        notifySoporteTiChatEvent(
+          p.chat_uuid,
+          p.codigo,
+          tituloNotificacionEstado(p),
+          `Nuevo estado: ${p.estado}`,
+          'estado'
+        )
+      }
+    }
+  ]
+}
+
 function suscribirSalasConHandlers(
   uuids: string[],
   handlersSala: (chatUuid: string) => SoporteTiChatRoomHandlers
@@ -68,79 +137,54 @@ function suscribirSalasConHandlers(
   const { suscribirSala, flushPendingRooms } = useSoporteTiChatRoom()
 
   for (const uuid of uuids) {
-    if (!uuid || salasGlobalesSuscritas.has(uuid)) continue
+    if (!uuid || salasDetalleSuscritas.has(uuid)) continue
     suscribirSala(uuid, handlersSala(uuid))
-    salasGlobalesSuscritas.add(uuid)
+    salasDetalleSuscritas.add(uuid)
   }
   flushPendingRooms()
 }
 
 /**
- * Sincroniza suscripciones WS a salas.
- * No hace GET /api/soporte-ti/solicitudes fuera de rutas /soporte-ti.
+ * Solo suscribe la(s) sala(s) del detalle abierto (chat en vivo).
+ * Las notificaciones globales van por staff/user.
  */
 export async function sincronizarSalasGlobales(extraUuids: string[] = []) {
   if (typeof window === 'undefined') return
   if (!localStorage.getItem('auth_token')) return
-  if (sincronizando) return sincronizando
 
-  sincronizando = (async () => {
-    try {
-      const echoOk = await waitForEchoReady()
-      if (!echoOk) {
-        console.warn('[SoporteTI] Echo no disponible; salas en cola pendiente')
-      }
+  try {
+    await waitForEchoReady()
+    void suscribirCanalesNotificacionGlobales()
 
-      void suscribirCanalStaff()
+    const extras = [...new Set(extraUuids.filter(Boolean))]
+    if (!extras.length) return
 
-      const { handlersSala, asegurarListadoCargado, solicitudes } = await loadSoporteTiDeps()
-      const extras = [...new Set(extraUuids.filter(Boolean))]
-
-      // Fuera de Soporte TI: solo salas explícitas, sin listar solicitudes.
-      if (!enRutaSoporteTi()) {
-        if (extras.length) {
-          suscribirSalasConHandlers(extras, handlersSala)
-        }
-        return
-      }
-
-      if (enRutaDetalleSoporteTi()) {
-        if (extras.length) {
-          suscribirSalasConHandlers(extras, handlersSala)
-        }
-        return
-      }
-
-      const desdeEstado =
-        solicitudes.value.length > 0
-          ? solicitudes.value.map((s) => s.chatUuid).filter(Boolean)
-          : await asegurarListadoCargado()
-      const uuids = [...new Set([...desdeEstado, ...extras])]
-
-      if (process.dev) {
-        console.log('[SoporteTI] Sincronizando salas globales:', uuids.length, uuids)
-      }
-
-      suscribirSalasConHandlers(uuids, handlersSala)
-    } catch (e) {
-      console.warn('[SoporteTI] No se pudieron sincronizar salas globales:', e)
-    }
-  })().finally(() => {
-    sincronizando = null
-  })
-
-  return sincronizando
-}
-
-export function suscribirSalaNuevaGlobal(chatUuid: string) {
-  if (!chatUuid) return
-  void (async () => {
     const { handlersSala } = await loadSoporteTiDeps()
-    suscribirSalasConHandlers([chatUuid], handlersSala)
-  })()
+    suscribirSalasConHandlers(extras, handlersSala)
+  } catch (e) {
+    console.warn('[SoporteTI] No se pudo suscribir sala de detalle:', e)
+  }
 }
 
-/** Canal staff: nueva solicitud → listado + suscripción a sala + aviso. */
+/**
+ * @deprecated Las salas solo se abren en el detalle. Se mantiene por eventos legacy.
+ */
+export function suscribirSalaNuevaGlobal(_chatUuid: string) {
+  // no-op: notificaciones van por staff/user; chat en vivo al abrir detalle
+}
+
+/** Al salir del detalle: liberar auth de esa sala. */
+export function liberarSalaDetalle(chatUuid: string) {
+  if (!chatUuid) return
+  salasDetalleSuscritas.delete(chatUuid)
+  try {
+    useSoporteTiChatRoom().desuscribirSala(chatUuid)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Canal staff: nueva solicitud + notifs de mensajes/estado. */
 export async function suscribirCanalStaff() {
   if (typeof window === 'undefined') return
   if (staffChannelAttached) return
@@ -160,6 +204,7 @@ export async function suscribirCanalStaff() {
     name: SOPORTE_TI_STAFF_CHANNEL,
     type: 'private',
     handlers: [
+      ...handlersNotificacionGlobal(),
       {
         event: SOPORTE_TI_WS_EVENTS.SOLICITUD_CREADA,
         callback: (raw: unknown) => {
@@ -185,14 +230,55 @@ export async function suscribirCanalStaff() {
   }
 }
 
+/** Canal personal del solicitante: notifs sin N salas. Staff ya escucha `soporte-ti.staff`. */
+export async function suscribirCanalUsuario() {
+  if (typeof window === 'undefined') return
+  if (userChannelAttached) return
+  if (!localStorage.getItem('auth_token')) return
+
+  const { useUserRole } = await import('~/composables/auth/useUserRole')
+  const { hasRole } = useUserRole()
+  // PM/Soporte reciben todo por staff; evita doble notif + un auth innecesario.
+  if (hasRole(ROLES.PM) || hasRole(ROLES.SOPORTE)) return
+
+  const userId = currentAuthUserId()
+  if (!userId) return
+
+  const echoOk = await waitForEchoReady()
+  if (!echoOk || !getEchoInstance()) return
+
+  const { subscribeToChannel } = useEcho()
+  const channelName = soporteTiUserChannelName(userId)
+
+  subscribeToChannel({
+    name: channelName,
+    type: 'private',
+    handlers: handlersNotificacionGlobal()
+  })
+  userChannelAttached = true
+  userChannelName = channelName
+  if (process.dev) {
+    console.log('[SoporteTI] Suscrito a canal usuario', channelName)
+  }
+}
+
+/** Al login / echo-ready: 1–2 canales de notif (no N chats). */
+export async function suscribirCanalesNotificacionGlobales() {
+  await Promise.all([suscribirCanalStaff(), suscribirCanalUsuario()])
+}
+
 export function limpiarSuscripcionesGlobales() {
-  salasGlobalesSuscritas.clear()
+  salasDetalleSuscritas.clear()
   staffChannelAttached = false
+  userChannelAttached = false
+  const prevUserChannel = userChannelName
+  userChannelName = null
   const { desuscribirTodas } = useSoporteTiChatRoom()
   desuscribirTodas()
   try {
     const { unsubscribeFromChannel } = useEcho()
     unsubscribeFromChannel(SOPORTE_TI_STAFF_CHANNEL)
+    if (prevUserChannel) unsubscribeFromChannel(prevUserChannel)
   } catch {
     /* ignore */
   }
@@ -202,7 +288,10 @@ export function useSoporteTiChatGlobal() {
   return {
     sincronizarSalasGlobales,
     suscribirSalaNueva: suscribirSalaNuevaGlobal,
+    liberarSalaDetalle,
     suscribirCanalStaff,
+    suscribirCanalUsuario,
+    suscribirCanalesNotificacionGlobales,
     limpiarSuscripcionesGlobales
   }
 }
@@ -213,35 +302,23 @@ export function attachSoporteTiChatGlobalListeners() {
   listenersAttached = true
 
   const boot = () => {
-    void suscribirCanalStaff()
-    if (!enRutaSoporteTi()) return
-    void sincronizarSalasGlobales()
+    void suscribirCanalesNotificacionGlobales()
   }
 
   window.addEventListener('echo-ready', boot)
-  // Sin visibilitychange: no re-pedir /solicitudes al cambiar de pestaña.
   window.addEventListener('soporte-ti-chat-reset', () => limpiarSuscripcionesGlobales())
   window.addEventListener('soporte-ti-suscribir-sala', (ev) => {
     const chatUuid = (ev as CustomEvent<{ chatUuid?: string }>).detail?.chatUuid
     if (chatUuid) suscribirSalaNuevaGlobal(chatUuid)
   })
 
-  // Si Echo ya está listo (plugin websocket montó antes).
   if (getEchoInstance()) boot()
 }
 
-/** Watch del listado en memoria (requiere contexto Vue). */
+/**
+ * Ya no suscribe N salas al listar. Se mantiene por compatibilidad del plugin.
+ */
 export function watchSoporteTiSolicitudesParaSalas() {
   if (stopWatchSolicitudes) return
-
-  void loadSoporteTiDeps().then(({ solicitudes, handlersSala }) => {
-    stopWatchSolicitudes = watch(
-      () => solicitudes.value.map((s) => s.chatUuid).filter(Boolean).join('|'),
-      () => {
-        if (!enRutaSoporteTi()) return
-        if (enRutaDetalleSoporteTi()) return
-        suscribirSalasConHandlers(extraerChatUuids(solicitudes.value), handlersSala)
-      }
-    )
-  })
+  // Intencionalmente vacío: notificaciones van por staff/user.
 }
