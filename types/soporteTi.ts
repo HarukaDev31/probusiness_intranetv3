@@ -205,10 +205,17 @@ export interface SoporteTiEnviarMensajePayload {
 export interface SoporteTiListFilters {
   q?: string
   tipo?: 'todos' | SoporteTiTipo
+  /** @deprecated Preferir estadoCodigos (múltiples) */
   estadoCodigo?: string | 'todos'
+  estadoCodigos?: string[]
+  /** @deprecated Preferir prioridades (múltiples) */
   prioridad?: number | null
+  prioridades?: number[]
+  areas?: string[]
   soloMias?: boolean
   creadorUserId?: number
+  sortBy?: string
+  sortDir?: 'asc' | 'desc'
 }
 
 export interface SoporteTiCreadorFiltro {

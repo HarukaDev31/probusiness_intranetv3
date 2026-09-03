@@ -54,12 +54,27 @@ function appendSoporteTiListFilters(
 ) {
   if (filters?.q) q.set('q', filters.q)
   if (filters?.tipo && filters.tipo !== 'todos') q.set('tipo_solicitud', filters.tipo)
-  if (filters?.estadoCodigo && filters.estadoCodigo !== 'todos') {
-    q.set('estado_codigo', filters.estadoCodigo)
+
+  const estados =
+    filters?.estadoCodigos?.filter((c) => c && c !== 'todos') ??
+    (filters?.estadoCodigo && filters.estadoCodigo !== 'todos'
+      ? [filters.estadoCodigo]
+      : [])
+  for (const codigo of estados) {
+    q.append('estado_codigo[]', codigo)
   }
-  if (filters?.prioridad != null && filters.prioridad > 0) {
-    q.set('prioridad', String(filters.prioridad))
+
+  const prioridades =
+    filters?.prioridades?.filter((p) => p > 0) ??
+    (filters?.prioridad != null && filters.prioridad > 0 ? [filters.prioridad] : [])
+  for (const p of prioridades) {
+    q.append('prioridad[]', String(p))
   }
+
+  for (const area of filters?.areas ?? []) {
+    if (area && area !== 'todos') q.append('area[]', area)
+  }
+
   if (filters?.soloMias) q.set('solo_mias', '1')
   if (
     !opts?.omitCreador &&
@@ -68,6 +83,8 @@ function appendSoporteTiListFilters(
   ) {
     q.set('creador_user_id', String(filters.creadorUserId))
   }
+  if (filters?.sortBy) q.set('sort_by', filters.sortBy)
+  if (filters?.sortDir) q.set('sort_dir', filters.sortDir)
 }
 
 export type SoporteTiListResult = {

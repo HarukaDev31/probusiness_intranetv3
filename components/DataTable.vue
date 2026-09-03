@@ -89,6 +89,21 @@
                         />
                       </template>
                     </UPopover>
+                    <!-- Multi-select -->
+                    <USelect
+                      v-else-if="filter.multiple"
+                      :model-value="Array.isArray(filtersValue?.[filter.key]) ? filtersValue[filter.key] : []"
+                      :items="filter.options"
+                      value-key="value"
+                      label-key="label"
+                      multiple
+                      :placeholder="filter.placeholder"
+                      class="w-full"
+                      @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                      @click.stop
+                      @focus="handleSelectOpen"
+                      @blur="handleSelectClose"
+                    />
                     <!-- Filtro de tipo select: model-value no vacío (fallback primera opción) para cumplir SelectItem -->
                     <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
                         @update:model-value="(value) => handleFilterChange(filter.key, value)"
@@ -151,6 +166,20 @@
                           />
                         </template>
                       </UPopover>
+                      <USelect
+                        v-else-if="filter.multiple"
+                        :model-value="Array.isArray(filtersValue?.[filter.key]) ? filtersValue[filter.key] : []"
+                        :items="filter.options"
+                        value-key="value"
+                        label-key="label"
+                        multiple
+                        :placeholder="filter.placeholder"
+                        class="w-full"
+                        @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                        @click.stop
+                        @focus="handleSelectOpen"
+                        @blur="handleSelectClose"
+                      />
                       <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
                           @update:model-value="(value) => handleFilterChange(filter.key, value)"
                           @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />

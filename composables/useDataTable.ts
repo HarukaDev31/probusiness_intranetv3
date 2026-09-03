@@ -17,7 +17,7 @@ export const useDataTable = (props: DataTableProps, emit: any) => {
   const filteredData = computed(() => props.data)
 
   // Methods
-  const handleFilterChange = (filterType: string, value: string) => {
+  const handleFilterChange = (filterType: string, value: string | string[] | number | null) => {
     // If suppressed (e.g. during a bulk clear), don't emit per-filter events
     if ((suppressFilterEmits as any)?.value) return
     // keep the draft in sync so the UI shows the last chosen values even if the panel is closed

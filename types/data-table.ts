@@ -26,6 +26,8 @@ export interface FilterConfig {
   type?: string
   placeholder: string
   options: FilterOption[]
+  /** Si true, permite seleccionar varias opciones (USelect multiple). */
+  multiple?: boolean
 }
 export interface Header {
   label: string
@@ -137,7 +139,7 @@ export interface DataTableEmits {
   'update:currentPage': [value: number]
   'update:itemsPerPage': [value: number]
   'export': []
-  'filter-change': [filterType: string, value: string]
+  'filter-change': [filterType: string, value: string | string[] | number | null]
   'clear-filters': []
   'page-change': [page: number]
   'items-per-page-change': [limit: number]
