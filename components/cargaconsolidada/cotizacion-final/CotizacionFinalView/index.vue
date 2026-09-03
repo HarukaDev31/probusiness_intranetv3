@@ -125,7 +125,10 @@ const { currentRole: authCurrentRole } = useUserRole()
 const props = withDefaults(defineProps<CotizacionFinalViewProps>(), { backBasePath: undefined })
 const currentRole = computed(() => props.role || authCurrentRole.value)
 const isFinanzas = computed(() => currentRole.value === ROLES.FINANZAS)
-const isFinanzasReadOnly = computed(() => isFinanzas.value)
+const isJefeMarketing = computed(() => currentRole.value === ROLES.JEFE_MARKETING)
+/** Solo lectura en cotización final (Finanzas / Jefe Marketing). */
+const isCotizacionFinalReadOnly = computed(() => isFinanzas.value || isJefeMarketing.value)
+const isFinanzasReadOnly = isCotizacionFinalReadOnly
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const { general, loadingGeneral, updateEstadoCotizacionFinal, sendCobranzaWhatsApp, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, headersPagos, carga, fPuerto, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
@@ -164,6 +167,9 @@ const canViewCargosExtra = computed(() =>
   || isFinanzas.value
 )
 const tabs = computed(() => {
+  if (isJefeMarketing.value) {
+    return [{ value: 'general', label: 'General' }]
+  }
   if ((currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
     return canViewCargosExtra.value
       ? [{ value: 'pagos', label: 'Pagos' }, { value: 'cargos-extra', label: 'Cargos extra' }, { value: 'general', label: 'General' }]
