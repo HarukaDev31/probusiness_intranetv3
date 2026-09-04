@@ -16,7 +16,17 @@
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headersFormatted" :loading="loadingGeneral || loadingHeaders" />
-          <div v-if="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION)" class="flex justify-end">
+          <div v-if="(currentRole === ROLES.CONTABILIDAD || currentRole === ROLES.ADMINISTRACION)" class="flex justify-end gap-2">
+            <UButton
+              icon="i-heroicons-arrow-down-tray"
+              color="neutral"
+              variant="outline"
+              size="sm"
+              :loading="downloadingClientesFacturacion"
+              @click="handleDescargarClientesFacturacion"
+            >
+              Descargar
+            </UButton>
             <UButton
               icon="i-heroicons-paper-airplane"
               color="primary"
@@ -41,6 +51,7 @@ import { USelect, UBadge, UButton, UTooltip } from '#components'
 import SimpleUploadFileModal from '~/components/cargaconsolidada/cotizacion-final/CotizacionFinalSimpleUploadFile/index.vue'
 import SendDocumentModal from '~/components/cargaconsolidada/factura-guia/SendDocumentModal/index.vue'
 import EnviarFormularioModal from '~/components/cargaconsolidada/factura-guia/EnviarFormularioModal/index.vue'
+import { ContabilidadService } from '~/services/cargaconsolidada/factura-guia/contabilidadService'
 import ContabilidadSendModal from '~/components/cargaconsolidada/factura-guia/ContabilidadSendModal/index.vue'
 import type { ContabilidadAction } from '~/components/cargaconsolidada/factura-guia/ContabilidadSendModal/index.vue'
 import { ROLES, ID_JEFEVENTAS } from '~/constants/roles'
@@ -712,6 +723,32 @@ const handleContabilidadSendAction = async (idCotizacion: number, action: Contab
       showError('Error al enviar', error?.message || 'Error inesperado al enviar por WhatsApp')
     }
   }, 'Enviando por WhatsApp...')
+}
+
+const downloadingClientesFacturacion = ref(false)
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+const handleDescargarClientesFacturacion = async () => {
+  downloadingClientesFacturacion.value = true
+  try {
+    const blob = await ContabilidadService.exportClientesFacturacion(id)
+    const fecha = new Date().toISOString().split('T')[0]
+    downloadBlob(blob, `datos-facturacion-carga-${carga.value || id}-${fecha}.xlsx`)
+  } catch (error: any) {
+    showError('Error al descargar', error?.message || 'No se pudo descargar los datos de facturación')
+  } finally {
+    downloadingClientesFacturacion.value = false
+  }
 }
 
 const handleEnviarFormulario = () => {
