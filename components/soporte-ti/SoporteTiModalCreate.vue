@@ -127,9 +127,9 @@
 
         <UFormField
           v-if="tipo === 'B'"
-          label="Evidencias (pantallazos)"
+          label="Evidencias"
           required
-          :hint="`Al menos 1 imagen. Máx. ${SOPORTE_TI_MAX_IMAGENES_CHAT} (${SOPORTE_TI_MAX_IMAGEN_MB} MB c/u)`"
+          :hint="`Al menos 1 archivo (imagen, PDF o Excel). Máx. ${SOPORTE_TI_MAX_IMAGENES_CHAT} (${SOPORTE_TI_MAX_IMAGEN_MB} MB c/u)`"
           :error="errors.pantallazos"
         >
           <div :class="errors.pantallazos ? 'rounded-lg ring-2 ring-error' : ''">
@@ -137,8 +137,8 @@
               :model-files="pantallazos"
               multiple
               :max-file-size="SOPORTE_TI_MAX_IMAGEN_MB * 1024 * 1024"
-              :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp']"
-              custom-message="Arrastra capturas o usa «Subir archivo»"
+              :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.xls', '.xlsx']"
+              custom-message="Arrastra capturas, PDF o Excel, o usa «Subir archivo»"
               @files-selected="onPantallazosAgregados"
               @file-removed="onPantallazoEliminado"
             />
@@ -346,7 +346,7 @@ function validar(): boolean {
   }
 
   if (tipo.value === 'B' && pantallazos.value.length === 0) {
-    errors.pantallazos = 'Debes adjuntar al menos una evidencia (pantallazo).'
+    errors.pantallazos = 'Debes adjuntar al menos una evidencia (imagen, PDF o Excel).'
     ok = false
   }
 
