@@ -422,6 +422,27 @@ export class SoporteTiService extends BaseService {
     })
   }
 
+  static async getHorarioAtencion(): Promise<{
+    success: boolean
+    data?: import('~/services/soporteTi/apiTypes').SoporteTiHorarioAtencionApi[]
+    message?: string
+  }> {
+    return this.apiCall('/api/soporte-ti/horario-atencion')
+  }
+
+  static async updateHorarioAtencion(
+    dias: import('~/services/soporteTi/apiTypes').SoporteTiHorarioAtencionApi[]
+  ): Promise<{
+    success: boolean
+    data?: import('~/services/soporteTi/apiTypes').SoporteTiHorarioAtencionApi[]
+    message?: string
+  }> {
+    return this.apiCall('/api/soporte-ti/horario-atencion', {
+      method: 'PUT',
+      body: { dias }
+    })
+  }
+
   static async listEstados(): Promise<{ success: boolean; data: SoporteTiEstado[] }> {
     const raw = await this.apiCall<{
       success: boolean

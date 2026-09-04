@@ -235,6 +235,16 @@ export interface SoporteTiFaseHorasAMatrizApi {
   celdas: SoporteTiFaseHorasACeldaApi[]
 }
 
+export interface SoporteTiHorarioAtencionApi {
+  id: number
+  dia_semana: number
+  activo: boolean
+  hora_inicio: string
+  hora_fin: string
+  timezone: string
+  updated_at: string | null
+}
+
 /** Payloads WS (wire). Adaptar con SoporteTiService.adaptWs* */
 export interface SoporteTiWsMensajePayload {
   chat_uuid: string

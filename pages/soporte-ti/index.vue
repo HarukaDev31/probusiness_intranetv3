@@ -18,6 +18,15 @@
       @filter-change="onFilterChange" @clear-filters="onClearFilters" @row-click="onRowClick" @kanban-move="onKanbanMove">
       <template #actions>
         <UButton
+          v-if="rolActivo === 'Soporte'"
+          size="sm"
+          variant="outline"
+          icon="i-heroicons-calendar-days"
+          @click="navigateTo('/soporte-ti/configuracion/horario-atencion')"
+        >
+          Horario atención
+        </UButton>
+        <UButton
           v-if="rolActivo !== 'Solicitante'"
           size="sm"
           variant="outline"
