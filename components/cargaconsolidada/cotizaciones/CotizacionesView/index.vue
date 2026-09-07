@@ -1003,7 +1003,7 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
                         navigateTo(`${basePath.value}/cotizaciones/documentacion/${row.original.id}`)
                     }
                 }),
-                (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) ? h(UButton, {
+                (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION && currentRole.value !== ROLES.COORDINACION) ? h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
                     activeColor: 'error',

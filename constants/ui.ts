@@ -6,6 +6,8 @@ export const STATUS_BG_CLASSES = {
     Inspeccionado: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
     Pendiente: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white',
     Incompleto: 'bg-red-500 text-white dark:bg-red-500 dark:text-white',
+    SOLICITADO_SEGUIMIENTO: 'bg-[#FBE8B3] text-[#96690A] dark:bg-[#FBE8B3] dark:text-[#96690A]',
+    ENTREGADO_SEGUIMIENTO: 'bg-[#DCE6FA] text-[#1B4FA0] dark:bg-[#DCE6FA] dark:text-[#1B4FA0]',
     WAITING: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white',
     RECEIVING: 'bg-blue-500 text-white dark:bg-blue-500 dark:text-white',
     FINISH: 'bg-green-500 text-white dark:bg-green-500 dark:text-white',
