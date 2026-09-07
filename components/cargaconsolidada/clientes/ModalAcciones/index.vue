@@ -46,7 +46,9 @@
               @click="setRecordatorioTab('general')"
               :class="[
                 'px-4 py-2 rounded-lg text-sm font-medium transition-colors border',
-                recordatorioActiveTab === 'general' ? 'border-gray-300' : 'border-gray-200'
+                recordatorioActiveTab === 'general'
+                  ? 'bg-primary-500 border-primary-500 text-white'
+                  : 'border-gray-200 text-gray-700 dark:text-gray-300 hover:border-gray-300'
               ]"
             >
               General
@@ -58,7 +60,9 @@
               @click="setRecordatorioTab(prov.id)"
               :class="[
                 'px-4 py-2 rounded-lg text-sm font-medium transition-colors border',
-                recordatorioActiveTab === prov.id ? 'border-gray-300' : 'border-gray-200'
+                recordatorioActiveTab === prov.id
+                  ? 'bg-primary-500 border-primary-500 text-white'
+                  : 'border-gray-200 text-gray-700 dark:text-gray-300 hover:border-gray-300'
               ]"
             >
               <span class="mr-2">{{ prov.code_supplier }}</span>
