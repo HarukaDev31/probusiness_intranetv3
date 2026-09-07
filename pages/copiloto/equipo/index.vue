@@ -24,7 +24,7 @@ const CopilotoJefeVentasView = createLazyView(() => import('~/components/copilot
 const { currentId, fetchCurrentUser, hasRole } = useUserRole()
 
 const canAccess = computed(() => {
-  return Number(currentId.value) === ID_JEFEVENTAS || hasRole(ROLES.ADMIN)
+  return Number(currentId.value) === ID_JEFEVENTAS || hasRole(ROLES.ADMIN) || hasRole(ROLES.RRHH)
 })
 
 onMounted(() => {

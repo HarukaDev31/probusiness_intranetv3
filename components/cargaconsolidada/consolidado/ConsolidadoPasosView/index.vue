@@ -69,7 +69,7 @@ const skeletonCount = computed(() => {
   if (currentRole.value === ROLES.JEFE_MARKETING) return 4
   if (props.role === ROLES.COORDINACION) return 6
   if (props.role === ROLES.DOCUMENTACION) return 3
-  if (currentId.value === ID_JEFEVENTAS) return 2
+  if (currentId.value === ID_JEFEVENTAS || currentRole.value === ROLES.RRHH) return 2
   if (props.role === ROLES.COTIZADOR) return 1
   return 5
 })

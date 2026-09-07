@@ -5,12 +5,12 @@
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
             :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
-            :show-export="(currentId == ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false"
+            :show-export="(currentId == ID_JEFEVENTAS || currentRole == ROLES.RRHH || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false"
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             @export="exportData" :hide-back-button="false"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `${basePath}/pasos/${id}` : `${basePath}`"
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.RRHH) ? `${basePath}/pasos/${id}` : `${basePath}`"
             :show-body-top="true">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -33,7 +33,7 @@
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS) ? `${basePath}/pasos/${id}` : `${basePath}`"
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.RRHH) ? `${basePath}/pasos/${id}` : `${basePath}`"
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -83,7 +83,7 @@
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChange" :show-body-top="true" :hide-back-button="false"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS) ? `${basePath}/pasos/${id}` : `${basePath}`">
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.RRHH) ? `${basePath}/pasos/${id}` : `${basePath}`">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersCotizaciones"
@@ -892,7 +892,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         downloadFile(row.original.cotizacion_file_url)
                     }
                 }) : null,
-                row.original.cotizacion_file_url &&(  (!row.original.from_calculator  || ((currentId.value === ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number))) && row.original.from_calculator )) ? h(UButton, {
+                row.original.cotizacion_file_url &&(  (!row.original.from_calculator  || ((currentId.value === ID_JEFEVENTAS || currentRole.value === ROLES.RRHH || COTIZADORES_WITH_PRIVILEGES.includes(currentId.value as number))) && row.original.from_calculator )) ? h(UButton, {
                     icon: 'i-heroicons-trash',
                     variant: 'ghost',
                     size: 'xs',
@@ -953,7 +953,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         handleRefresh(row.original.id)
                     }
                 }) : null,
-                row.original.estado_cotizador !== 'CONFIRMADO' && currentId.value === ID_JEFEVENTAS ? h(UButton, {
+                row.original.estado_cotizador !== 'CONFIRMADO' && (currentId.value === ID_JEFEVENTAS || currentRole.value === ROLES.RRHH) ? h(UButton, {
                 icon: 'i-heroicons-trash',
                 variant: 'ghost',
                 activeColor: 'error',

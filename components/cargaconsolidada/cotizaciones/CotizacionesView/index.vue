@@ -10,7 +10,7 @@
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
             @items-per-page-change="handleItemsPerPageChangeProspectos" @filter-change="handleFilterChangeProspectos"
             @export="exportData" :hide-back-button="false"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
             :show-body-top="true">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -55,7 +55,7 @@
             empty-state-message="No se encontraron registros de cursos." @update:primary-search="handleSearch"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange" @export="exportData"
             @filter-change="handleFilterChange" :show-body-top="true"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.JEFE_MARKETING || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
             :hide-back-button="false">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
@@ -111,7 +111,7 @@
             empty-state-message="No se encontraron registros de pagos." @update:primary-search="handleSearchPagos"
             @page-change="handlePageChange" @items-per-page-change="handleItemsPerPageChange"
             @filter-change="handleFilterChangePagos" @export="handleExportPagosContabilidad" :show-body-top="true" :hide-back-button="false"
-            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
+            :previous-page-url="((currentRole == ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole)) || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION) || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
             <template #body-top>
                 <div class="flex flex-col gap-2 w-full">
                     <SectionHeader :title="`Contenedor #${carga}`" :headers="headersPagos"
@@ -523,6 +523,7 @@ const loadTabs = () => {
 const showProspectosExport = computed(() =>
     currentRole.value === ROLES.JEFE_MARKETING
     || currentId.value == ID_JEFEVENTAS
+    || currentRole.value === ROLES.RRHH
     || COTIZADORES_WITH_PRIVILEGES.includes(Number(currentId.value))
 )
 const overlay = useOverlay()
@@ -1233,7 +1234,7 @@ const prospectosColumns = ref<TableColumn<any>[]>([
                         handleRefresh(row.original.id)
                     }
                 }) : null,
-                row.original.estado_cotizador !== 'CONFIRMADO' && currentId.value === ID_JEFEVENTAS && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) ? h(UButton, {
+                row.original.estado_cotizador !== 'CONFIRMADO' && (currentId.value === ID_JEFEVENTAS || currentRole.value === ROLES.RRHH) && (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) ? h(UButton, {
                 icon: 'i-heroicons-trash',
                 variant: 'ghost',
                 activeColor: 'error',

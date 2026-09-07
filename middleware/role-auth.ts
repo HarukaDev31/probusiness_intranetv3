@@ -43,11 +43,11 @@ export default defineNuxtRouteMiddleware((to) => {
     '/basedatos/regulaciones': () => hasAnyRole(['Admin', 'Documentacion']),
     '/copiloto/equipo': () => {
       const { currentId, hasRole: checkRole } = useUserRole()
-      return Number(currentId.value) === ID_JEFEVENTAS || checkRole(ROLES.ADMIN)
+      return Number(currentId.value) === ID_JEFEVENTAS || checkRole(ROLES.ADMIN) || checkRole(ROLES.RRHH)
     },
     '/copiloto': () => {
       const { hasRole: checkRole, isCotizador, currentId } = useUserRole()
-      return isCotizador.value || Number(currentId.value) === ID_JEFEVENTAS || checkRole(ROLES.ADMIN)
+      return isCotizador.value || Number(currentId.value) === ID_JEFEVENTAS || checkRole(ROLES.ADMIN) || checkRole(ROLES.RRHH)
     },
     '/coordinacion/whatsapp-inbox': () => hasAnyRole(WA_INBOX_ALLOWED_ROLES)
   }

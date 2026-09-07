@@ -6,13 +6,13 @@
                 :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
                 :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
                 :show-filters="false" :filters-value="filtersGeneral"
-                :show-export="(currentId == ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false"
+                :show-export="(currentId == ID_JEFEVENTAS || currentRole == ROLES.RRHH || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false"
                 :show-body-top="true" :show-pagination="false" @export="exportData"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
@@ -35,7 +35,7 @@
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true" :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados"
@@ -84,7 +84,7 @@
                 :show-secondary-search="false" :show-filters="false" :filters-value="filtersVariacion"
                 :show-export="false" :show-body-top="true" :hide-back-button="false" :show-pagination="false"
                 @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION) || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
@@ -108,7 +108,7 @@
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersPagos" :show-export="false" :hide-back-button="false" :show-body-top="true"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION) || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchPagos" @page-change="handlePagePagosChange"
                 @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos">
@@ -229,7 +229,7 @@ const id = route.params.id
 const initialTabFromRoute = typeof route.query.tab === 'string' ? route.query.tab : ''
 const tab = ref<string>(
     initialTabFromRoute
-        || (isCoordinacion.value || roleEsComoJefeImportacion(currentRole.value) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
+        || (isCoordinacion.value || roleEsComoJefeImportacion(currentRole.value) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS || currentRole.value === ROLES.RRHH ? 'embarcados' : 'general')
 )
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
@@ -1707,7 +1707,7 @@ const configureTabsForRole = () => {
             { label: 'Documentacion', value: 'general' },
             { label: 'Variación', value: 'variacion' },
         ]
-    } else if (isCotizador.value && Number(currentId.value) === ID_JEFEVENTAS) {
+    } else if ((isCotizador.value && Number(currentId.value) === ID_JEFEVENTAS) || currentRole.value === ROLES.RRHH) {
         tabs.value = [
             { label: 'Seguimiento', value: 'embarcados' },
             { label: 'Documentacion', value: 'general' },

@@ -15,8 +15,8 @@ export const ROLES = {
     CONTABILIDAD: 'Contabilidad',
     SOPORTE: 'Soporte',
     PM: 'PM',
-    COORDINADOR_GENERAL: 'Coordinador General',
     FINANZAS: 'Finanzas',
+    RRHH: 'RRHH',
 } as const
 export const ID_JEFEVENTAS = 28791
 export const COTIZADORES_WITH_PRIVILEGES = [28911]
@@ -223,4 +223,13 @@ export function rolesPmSoporteTiEquiv(): readonly string[] {
 export function roleEsPmSoporteTi(role: string): boolean {
     const normalized = role.trim().toLowerCase()
     return rolesPmSoporteTiEquiv().some((r) => normalized === r.toLowerCase())
+}
+
+// Un usuario tiene los mismos accesos que el Jefe de Ventas (Gino) dentro de
+// carga consolidada si es el propio Gino (por ID) o pertenece al rol RRHH.
+export function esJefeVentasOEquivalente(id: number | string | null | undefined, role: string | null | undefined): boolean {
+    if (Number(id) === ID_JEFEVENTAS) {
+        return true
+    }
+    return (role ?? '').trim() === ROLES.RRHH
 }

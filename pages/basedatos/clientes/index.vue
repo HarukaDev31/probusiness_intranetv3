@@ -20,7 +20,7 @@
         variant="outline"
         class="hidden md:flex"
       />
-      <UButton v-if="ID_JEFEVENTAS == currentId" icon="i-heroicons-arrow-down-tray" label="Exportar Excel"
+      <UButton v-if="ID_JEFEVENTAS == currentId || currentRole === ROLES.RRHH" icon="i-heroicons-arrow-down-tray" label="Exportar Excel"
         @click="handleExportExcel" :loading="exporting" color="success" variant="outline" class="hidden md:flex" />
     </template>
 

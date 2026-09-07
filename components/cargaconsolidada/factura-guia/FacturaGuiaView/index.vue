@@ -12,7 +12,7 @@
       @filter-change="handleFilterChangeGeneral" @clear-filters="handleClearFiltersGeneral" :hide-back-button="false" :show-primary-search="true"
       :primary-search-placeholder="'Buscar por nombre o teléfono'" :filters-value="filtersGeneral"
       :show-body-top="true"
-      :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION) ? `${backBasePath}/pasos/${id}` : `${backBasePath}`">
+      :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${backBasePath}`">
       <template #body-top>
         <div class="flex flex-col gap-2 w-full">
           <SectionHeader :title="`Factura y Guía #${carga}`" :headers="headersFormatted" :loading="loadingGeneral || loadingHeaders" />

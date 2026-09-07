@@ -163,6 +163,9 @@ const currentId = computed(() => {
   const isContenedorConsolidado = computed(() => {
     return hasRole(ROLES.CONTENEDOR_CONSOLIDADO)
   })
+  const isRRHH = computed(() => {
+    return hasRole(ROLES.RRHH)
+  })
 
   const getUserData = () => {
     return userData.value
@@ -187,6 +190,7 @@ const currentId = computed(() => {
     isFinanzas,
     isContenedorAlmacen,
     isContenedorConsolidado,
+    isRRHH,
 
     // Métodos
     fetchCurrentUser,

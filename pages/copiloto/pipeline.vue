@@ -25,7 +25,7 @@ const { hasRole, currentId, fetchCurrentUser, isCotizador } = useUserRole()
 
 const canAccess = computed(() => {
   if (isCotizador.value) return true
-  if (Number(currentId.value) === ID_JEFEVENTAS) return true
+  if (Number(currentId.value) === ID_JEFEVENTAS || hasRole(ROLES.RRHH)) return true
   return hasRole(ROLES.ADMIN)
 })
 
