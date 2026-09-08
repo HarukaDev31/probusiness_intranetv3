@@ -507,6 +507,10 @@ const loadTabs = () => {
                 {
                     label: 'Prospectos',
                     value: 'prospectos'
+                },
+                {
+                    label: 'Por Embarcar',
+                    value: 'embarque'
                 }
             ]
             break
