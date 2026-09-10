@@ -294,7 +294,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { showError } = useModal()
+const { showError, showSuccess } = useModal()
 
 const totalSteps = 3
 const currentStep = ref(1)
@@ -533,20 +533,38 @@ function handlePrevStep() {
 // ─── Guardar ────────────────────────────────────────────────────────────────
 const saving = ref(false)
 
-/**
- * TODO: reemplazar por la llamada real de guardado (crear Cotizacion +
- * CotizacionProveedor en modo 'resumen' + CotizacionProveedorResumen) una vez
- * exista el endpoint en el backend.
- */
 async function finalizar() {
-  if (!canFinalizar.value) return
+  if (!canFinalizar.value || !selectedVendedor.value || !selectedContenedor.value) return
   saving.value = true
   try {
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    showError(
-      'Guardado no disponible todavía',
-      'El endpoint para registrar esta cotización aún no existe en el backend. La vista y su validación ya están listas.'
-    )
+    const res = await CotizacionResumenService.crearCotizacion({
+      id_contenedor: selectedContenedor.value,
+      id_usuario: selectedVendedor.value,
+      cliente: {
+        nombre: clienteInfo.nombre.trim(),
+        tipo_documento: clienteInfo.tipoDocumento,
+        documento: clienteInfo.documento || undefined,
+        whatsapp: clienteInfo.whatsapp || undefined,
+        correo: clienteInfo.correo || undefined
+      },
+      proveedores: providers.value.map((p) => ({
+        cbm_total: p.cbmTotal,
+        peso_total: p.pesoTotal || undefined,
+        qty_cajas: p.qtyCajas || undefined,
+        productos: p.productos.trim()
+      })),
+      descuento: descuento.value || undefined,
+      archivo: archivoStaged.value
+    })
+
+    if (res.success) {
+      showSuccess('Cotización registrada', 'La cotización se registró correctamente.')
+      await navigateTo('/cotizaciones/resumen')
+    } else {
+      showError('No se pudo registrar la cotización', res.message || 'Intenta nuevamente.')
+    }
+  } catch (error: any) {
+    showError('Error al registrar la cotización', error?.message || 'Intenta nuevamente.')
   } finally {
     saving.value = false
   }
