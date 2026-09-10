@@ -18,7 +18,7 @@
       :filters-value="filters"
       :show-new-button="true"
       new-button-label="Crear Cotización"
-      :on-new-button-click="() => navigateTo('/cotizaciones/registro-resumen')"
+      :on-new-button-click="() => navigateTo('/cotizaciones/resumen/crear')"
       empty-state-message="No se encontraron cotizaciones."
       @update:primary-search="onSearch"
       @page-change="onPageChange"
