@@ -26,7 +26,7 @@
           <thead>
             <tr class="border-b">
               <th v-if="isRoot" class="text-left py-3 px-4">Empresa</th>
-              <th v-if="isRoot" class="text-left py-3 px-4">Organización</th>
+              <th v-if="isRoot || puedeGestionarOrganizaciones" class="text-left py-3 px-4">Organización</th>
               <th class="text-left py-3 px-4">Privilegio</th>
               <th class="text-left py-3 px-4">Cargo</th>
               <th class="text-left py-3 px-4">Descripción</th>
@@ -37,12 +37,12 @@
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td :colspan="isRoot ? 8 : 6" class="text-center py-8">
+              <td :colspan="numColumnas" class="text-center py-8">
                 <UIcon name="i-heroicons-arrow-path" class="animate-spin" /> Cargando...
               </td>
             </tr>
             <tr v-else-if="grupos.length === 0">
-              <td :colspan="isRoot ? 8 : 6" class="text-center py-8 text-gray-500">No hay registros</td>
+              <td :colspan="numColumnas" class="text-center py-8 text-gray-500">No hay registros</td>
             </tr>
             <tr
               v-for="g in grupos"
@@ -50,7 +50,7 @@
               class="border-b hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               <td v-if="isRoot" class="py-2 px-4 text-gray-500 text-xs">{{ g.empresa || '—' }}</td>
-              <td v-if="isRoot" class="py-2 px-4 text-gray-500 text-xs">{{ g.organizacion || '—' }}</td>
+              <td v-if="isRoot || puedeGestionarOrganizaciones" class="py-2 px-4 text-gray-500 text-xs">{{ g.organizacion || '—' }}</td>
               <td class="py-2 px-4">
                 <UBadge variant="soft" color="primary">{{ g.privilegio_nombre }}</UBadge>
               </td>
@@ -119,8 +119,9 @@
               />
             </UFormField>
 
-            <!-- Organización (solo root) -->
-            <UFormField v-if="isRoot" label="Organización" required>
+            <!-- Organización: root elige entre cualquier empresa/org; el admin
+                 de organizaciones elige entre las de su propia empresa. -->
+            <UFormField v-if="puedeElegirOrganizacion" label="Organización" required>
               <USelect
                 v-model="form.id_org"
                 :items="orgsOptions"
@@ -224,9 +225,18 @@ const isRoot = computed(() => authUser?.name === 'root' || authUser?.raw?.No_Usu
 const empresaId = computed(() => authUser?.raw?.ID_Empresa ?? 1)
 const orgId     = computed(() => authUser?.raw?.ID_Organizacion ?? 1)
 
+// Solo la organizacion admin (ID_Organizacion == 1) puede crear/editar cargos
+// en cualquier organizacion (de su misma empresa); lo indica el backend en
+// login/me. root, además, puede elegir la empresa (cualquiera).
+const puedeGestionarOrganizaciones = computed(() => !!authUser?.raw?.puedeGestionarOrganizaciones)
+const puedeElegirOrganizacion = computed(() => isRoot.value || puedeGestionarOrganizaciones.value)
+
+// Base 6 (Privilegio, Cargo, Descripción, Notificación, Estado, Acciones) + Empresa/Organización según rol.
+const numColumnas = computed(() => 6 + (isRoot.value ? 1 : 0) + ((isRoot.value || puedeGestionarOrganizaciones.value) ? 1 : 0))
+
 const tiposPrivilegio = TIPOS_PRIVILEGIO
 
-// Opciones para selects en modal (solo root)
+// Opciones para selects en modal (root, o admin de organizaciones)
 const empresasOptions = ref<{ label: string; value: number }[]>([])
 const orgsOptions     = ref<{ label: string; value: number }[]>([])
 const loadingOrgs     = ref(false)
@@ -257,7 +267,7 @@ async function loadGrupos() {
   loading.value = true
   const res = await GrupoService.getGrupos({
     empresa_id: isRoot.value ? undefined : empresaId.value,
-    org_id:     isRoot.value ? undefined : orgId.value,
+    org_id:     puedeElegirOrganizacion.value ? undefined : orgId.value,
     search:     search.value || undefined,
   })
   grupos.value = res.data ?? []
@@ -304,6 +314,8 @@ async function openModal(grupo?: Grupo) {
 
     if (isRoot.value) {
       await loadOrgsForEmpresa(grupo.id_empresa)
+    } else if (puedeGestionarOrganizaciones.value) {
+      await loadOrgsForEmpresa(empresaId.value)
     }
   } else {
     editingGrupo.value = null
@@ -316,6 +328,8 @@ async function openModal(grupo?: Grupo) {
 
     if (isRoot.value) {
       await loadOrgsForEmpresa(form.id_empresa)
+    } else if (puedeGestionarOrganizaciones.value) {
+      await loadOrgsForEmpresa(empresaId.value)
     }
   }
 
@@ -327,7 +341,7 @@ async function submitForm() {
     formError.value = 'Debes seleccionar una empresa'
     return
   }
-  if (isRoot.value && !form.id_org) {
+  if (puedeElegirOrganizacion.value && !form.id_org) {
     formError.value = 'Debes seleccionar una organización'
     return
   }
