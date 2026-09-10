@@ -53,7 +53,7 @@
         @filter-change="handleFilterChange"
       >
         <template #actions>
-          <template v-if="role === ROLES.COORDINACION">
+          <template v-if="puedeCrearConsolidado">
             <CreateConsolidadoModal @submit="handleCreateConsolidado" :id="currentConsolidado" />
           </template>
         </template>
@@ -165,6 +165,9 @@ const { showSuccess, showConfirmation, showError } = useModal()
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
 const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
+// Socio tambien puede crear un consolidado, pero queda fijo a su propia
+// organizacion (el backend lo fuerza al crear, ignorando lo que mande el front).
+const puedeCrearConsolidado = computed(() => isCoordinacion.value || props.role === ROLES.SOCIO)
 
 const {
   consolidadoData,

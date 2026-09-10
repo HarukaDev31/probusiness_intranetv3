@@ -151,11 +151,11 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
     const setCompletado = (completado: boolean) => {
         filters.value.completado = completado
     }
-    const getConsolidadoPasos = async (id: number, roleOverride?: string) => {
+    const getConsolidadoPasos = async (id: number, roleOverride?: string, completado?: boolean) => {
         try {
             loading.value = true
             const role = roleOverride ?? (roleRef && 'value' in roleRef ? roleRef.value : undefined)
-            const response = await ConsolidadoService.getConsolidadoPasos(id, role)
+            const response = await ConsolidadoService.getConsolidadoPasos(id, role, completado)
             pasos.value = response.data
             loading.value = false
         } catch (error) {

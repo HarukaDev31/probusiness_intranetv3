@@ -75,8 +75,10 @@ const skeletonCount = computed(() => {
 })
 
 onMounted(async () => {
-  // Pasar explícitamente el rol de la vista para que el backend (Jefe Importación) devuelva pasos de Coordinación o Documentación
-  await getConsolidadoPasos(id, props.role)
+  // Pasar explícitamente el rol de la vista para que el backend (Jefe Importación) devuelva pasos de Coordinación o Documentación.
+  // completado se infiere de la ruta (basePath) para que Socio vea 2 pasos en abiertos y 3 en completados.
+  const completado = (props.basePath ?? '').includes('completados')
+  await getConsolidadoPasos(id, props.role, completado)
 })
 
 const formatNombre = (s: string) => {

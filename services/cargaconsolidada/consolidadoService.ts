@@ -93,10 +93,11 @@ export class ConsolidadoService extends BaseService {
         }
     }
 
-    static async getConsolidadoPasos(id: number, role?: string): Promise<ContenedorPasosResponse> {
+    static async getConsolidadoPasos(id: number, role?: string, completado?: boolean): Promise<ContenedorPasosResponse> {
         try {
             const params: Record<string, string> = {}
             if (role && role.trim()) params.role = role.trim()
+            if (completado) params.completado = '1'
             const qs = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : ''
             const response = await this.apiCall<ContenedorPasosResponse>(`${this.baseUrl}/pasos/${id}${qs}`, {
                 method: 'GET'
