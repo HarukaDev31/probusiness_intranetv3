@@ -286,6 +286,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import FileUploader from '~/components/commons/FileUploader.vue'
 import { CotizacionService } from '~/services/cargaconsolidada/cotizacionService'
+import { CotizacionResumenService } from '~/services/cargaconsolidada/cotizacionResumenService'
+import type { CotizacionResumenArchivo } from '~/services/cargaconsolidada/cotizacionResumenService'
 import { useModal } from '@/composables/commons/useModal'
 
 definePageMeta({
@@ -318,7 +320,7 @@ const READS_CHIPS = ['Datos del cliente', 'RUC / ID', 'Proveedores', 'CBM y peso
 type ScanState = 'idle' | 'scanning' | 'done'
 const scanState = ref<ScanState>('idle')
 const archivo = ref<File | null>(null)
-let scanTimeout: ReturnType<typeof setTimeout> | null = null
+const archivoStaged = ref<CotizacionResumenArchivo | null>(null)
 
 type ClienteKey = 'nombre' | 'documento' | 'whatsapp' | 'correo'
 const CLIENTE_FIELDS: {
@@ -368,29 +370,63 @@ function onArchivoRemovido() {
   archivo.value = null
 }
 
-/**
- * TODO: reemplazar por la llamada real al endpoint de subida + extracción IA
- * (POST cotizacion_proveedor_archivo_ia) una vez exista en el backend. Por
- * ahora simula el escaneo para poder construir y validar el flujo completo.
- */
-function procesarArchivo(file: File) {
+async function procesarArchivo(file: File) {
   scanState.value = 'scanning'
-  if (scanTimeout) clearTimeout(scanTimeout)
-  scanTimeout = setTimeout(() => {
-    clienteInfo.nombre = 'Comercial Andina del Pacífico S.A.'
-    clienteInfo.tipoDocumento = 'RUC'
-    clienteInfo.documento = '1792458630001'
-    clienteInfo.whatsapp = '593 991234567'
-    clienteInfo.correo = ''
-    camposEscaneados.value = { nombre: true, documento: true, whatsapp: true, correo: false }
+  try {
+    const res = await CotizacionResumenService.extraerDocumento(file)
+    if (!res.success) {
+      showError('No se pudo procesar el archivo', res.message || 'Intenta nuevamente o completa los datos a mano.')
+      scanState.value = 'idle'
+      archivo.value = null
+      return
+    }
+
+    archivoStaged.value = res.archivo
+
+    const cliente = res.data?.cliente
+    if (cliente) {
+      clienteInfo.nombre = cliente.nombre ?? ''
+      clienteInfo.tipoDocumento = cliente.tipo_documento === 'RUC' ? 'RUC' : 'ID'
+      clienteInfo.documento = cliente.documento ?? ''
+      clienteInfo.whatsapp = cliente.whatsapp ?? ''
+      clienteInfo.correo = cliente.correo ?? ''
+      camposEscaneados.value = {
+        nombre: cliente.nombre != null,
+        documento: cliente.documento != null,
+        whatsapp: cliente.whatsapp != null,
+        correo: cliente.correo != null
+      }
+    } else {
+      camposEscaneados.value = {}
+    }
+
+    const proveedoresExtraidos = res.data?.proveedores ?? []
+    if (proveedoresExtraidos.length > 0) {
+      providers.value = proveedoresExtraidos.map((p) => ({
+        id: nextProviderId++,
+        cbmTotal: p.cbm_total ?? 0,
+        pesoTotal: p.peso_total ?? 0,
+        qtyCajas: p.qty_cajas ?? 0,
+        productos: p.productos ?? ''
+      }))
+    }
+
+    if (!res.extracted_by_ai) {
+      showError('No se pudo leer el documento automáticamente', res.message || 'Completa los datos a mano.')
+    }
+
     scanState.value = 'done'
     maxStepReached.value = Math.max(maxStepReached.value, 1)
-  }, 1800)
+  } catch (error: any) {
+    showError('Error al subir el archivo', error?.message || 'Intenta nuevamente.')
+    scanState.value = 'idle'
+    archivo.value = null
+  }
 }
 
 function reiniciarArchivo() {
-  if (scanTimeout) clearTimeout(scanTimeout)
   archivo.value = null
+  archivoStaged.value = null
   scanState.value = 'idle'
   clienteInfo.nombre = ''
   clienteInfo.documento = ''
