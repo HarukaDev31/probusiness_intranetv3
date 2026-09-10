@@ -35,6 +35,20 @@
         </template>
 
         <form @submit.prevent="submitForm" class="space-y-4">
+          <!-- Organización: solo el staff de la organización admin puede elegir
+               en qué organización crea/mueve al usuario. El resto siempre
+               gestiona la suya, sin ver este campo. -->
+          <UFormField v-if="puedeGestionarOrganizaciones" label="Organización" required>
+            <USelectMenu
+              v-model="selectedOrganizacion"
+              :items="organizacionesOptions"
+              placeholder="Seleccionar organización"
+              class="w-full"
+              :loading="loadingOrganizaciones"
+              @update:model-value="onModalOrganizacionChange"
+            />
+          </UFormField>
+
           <!-- Cargo -->
           <UFormField label="Cargo / Grupo" required>
             <USelectMenu
@@ -174,6 +188,10 @@ const authUser  = (AuthService.getInstance() as any).currentUser
 const empresaId = computed(() => authUser?.raw?.ID_Empresa ?? 1)
 const orgId     = computed(() => authUser?.raw?.ID_Organizacion ?? 1)
 
+// Solo la organizacion admin (ID_Organizacion == 1) puede crear/editar
+// usuarios en cualquier organizacion; lo indica el backend en login/me.
+const puedeGestionarOrganizaciones = computed(() => !!authUser?.raw?.puedeGestionarOrganizaciones)
+
 // ─── Columnas ─────────────────────────────────────────────────────────────────
 const columns: TableColumn<UsuarioAdmin>[] = [
   {
@@ -265,6 +283,20 @@ const estadoOptions = [
 const selectedGrupo  = ref<{ label: string; value: number } | null>(null)
 const selectedEstado = ref<{ label: string; value: number }>(estadoOptions[0])
 
+// Solo se usan cuando puedeGestionarOrganizaciones === true
+const organizacionesOptions = ref<{ label: string; value: number }[]>([])
+const selectedOrganizacion  = ref<{ label: string; value: number } | null>(null)
+const loadingOrganizaciones = ref(false)
+
+// Organización efectiva para cargar cargos y para el payload: la elegida por
+// el admin, o siempre la propia si no puede elegir.
+const orgIdActual = computed(() => {
+  if (puedeGestionarOrganizaciones.value && selectedOrganizacion.value) {
+    return selectedOrganizacion.value.value
+  }
+  return orgId.value
+})
+
 // ─── Modal ─────────────────────────────────────────────────────────────────────
 const showModal      = ref(false)
 const editingUsuario = ref<UsuarioAdmin | null>(null)
@@ -294,7 +326,10 @@ async function loadUsuarios(params?: { search?: string; page?: number; per_page?
   loading.value = true
   const res = await UsuarioAdminService.getUsuarios({
     empresa_id: empresaId.value,
-    org_id:     orgId.value,
+    // El admin de organizaciones ve usuarios de todas las organizaciones en el
+    // listado (el backend igual lo permite solo a el); el resto siempre queda
+    // filtrado a la suya.
+    org_id:     puedeGestionarOrganizaciones.value ? undefined : orgId.value,
     search:     params?.search || undefined,
     page:       params?.page || pagination.value.current_page,
     per_page:   params?.per_page || pagination.value.per_page,
@@ -353,14 +388,29 @@ function onItemsPerPageChange(perPage: number) {
 }
 
 async function loadGrupos() {
-  const grupos = await OptionsService.getGrupos(empresaId.value, orgId.value)
+  const grupos = await OptionsService.getGrupos(empresaId.value, orgIdActual.value)
   gruposOptions.value = grupos.map(g => ({ label: g.nombre, value: g.id }))
+}
+
+async function loadOrganizaciones() {
+  loadingOrganizaciones.value = true
+  const orgs = await OptionsService.getOrganizaciones(empresaId.value)
+  organizacionesOptions.value = orgs.map(o => ({ label: o.nombre, value: o.id }))
+  loadingOrganizaciones.value = false
+}
+
+async function onModalOrganizacionChange() {
+  selectedGrupo.value = null
+  await loadGrupos()
 }
 
 // ─── Modal open ───────────────────────────────────────────────────────────────
 async function openModal(usuario?: UsuarioAdmin) {
   formError.value = ''
-  await loadGrupos()
+
+  if (puedeGestionarOrganizaciones.value && organizacionesOptions.value.length === 0) {
+    await loadOrganizaciones()
+  }
 
   if (usuario) {
     editingUsuario.value   = usuario
@@ -369,8 +419,10 @@ async function openModal(usuario?: UsuarioAdmin) {
     form.password          = usuario.password_sin_encriptar ?? ''
     originalPassword.value = usuario.password_sin_encriptar ?? ''
     form.celular           = usuario.celular ?? ''
-    selectedGrupo.value    = gruposOptions.value.find(g => g.value === usuario.id_grupo) ?? null
     selectedEstado.value   = estadoOptions.find(e => e.value === usuario.estado) ?? estadoOptions[0]
+    if (puedeGestionarOrganizaciones.value) {
+      selectedOrganizacion.value = organizacionesOptions.value.find(o => o.value === usuario.id_org) ?? null
+    }
   } else {
     editingUsuario.value   = null
     form.usuario           = ''
@@ -378,9 +430,19 @@ async function openModal(usuario?: UsuarioAdmin) {
     form.password          = ''
     originalPassword.value = ''
     form.celular           = ''
-    selectedGrupo.value    = null
     selectedEstado.value   = estadoOptions[0]
+    if (puedeGestionarOrganizaciones.value) {
+      selectedOrganizacion.value = organizacionesOptions.value.find(o => o.value === orgId.value)
+        ?? organizacionesOptions.value[0]
+        ?? null
+    }
   }
+
+  await loadGrupos()
+  selectedGrupo.value = usuario
+    ? gruposOptions.value.find(g => g.value === usuario.id_grupo) ?? null
+    : null
+
   showPasswordInModal.value = false
   showModal.value = true
 }
@@ -397,6 +459,10 @@ async function submitForm() {
     ? selectedEstado.value.value
     : Number(selectedEstado.value)
 
+  if (puedeGestionarOrganizaciones.value && !selectedOrganizacion.value) {
+    formError.value = 'Debes seleccionar una organización'
+    return
+  }
   if (!grupoId) {
     formError.value = 'Debes seleccionar un cargo'
     return
@@ -414,7 +480,7 @@ async function submitForm() {
 
   const payload: any = {
     id_empresa:        empresaId.value,
-    id_org:            orgId.value,
+    id_org:            orgIdActual.value,
     id_grupo:          grupoId,
     usuario:           form.usuario.trim(),
     nombres_apellidos: form.nombres_apellidos || undefined,
