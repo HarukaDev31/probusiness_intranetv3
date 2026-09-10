@@ -11,6 +11,14 @@
         class="w-64"
         @input="loadGrupos"
       />
+      <USelect
+        v-if="puedeElegirOrganizacion"
+        v-model="filtroOrgId"
+        :items="[{ label: 'Todas las organizaciones', value: 0 }, ...filtroOrgOptions]"
+        placeholder="Filtrar por organización"
+        class="w-64"
+        @update:model-value="loadGrupos"
+      />
       <div class="flex-1" />
       <UButton
         icon="i-heroicons-plus"
@@ -241,6 +249,10 @@ const empresasOptions = ref<{ label: string; value: number }[]>([])
 const orgsOptions     = ref<{ label: string; value: number }[]>([])
 const loadingOrgs     = ref(false)
 
+// Filtro por organización en el listado (solo root / admin de organizaciones)
+const filtroOrgId      = ref(0)
+const filtroOrgOptions = ref<{ label: string; value: number }[]>([])
+
 const grupos   = ref<Grupo[]>([])
 const loading  = ref(false)
 const search   = ref('')
@@ -267,11 +279,16 @@ async function loadGrupos() {
   loading.value = true
   const res = await GrupoService.getGrupos({
     empresa_id: isRoot.value ? undefined : empresaId.value,
-    org_id:     puedeElegirOrganizacion.value ? undefined : orgId.value,
+    org_id:     puedeElegirOrganizacion.value ? (filtroOrgId.value || undefined) : orgId.value,
     search:     search.value || undefined,
   })
   grupos.value = res.data ?? []
   loading.value = false
+}
+
+async function loadFiltroOrgOptions() {
+  const orgs = await OptionsService.getOrganizaciones(empresaId.value)
+  filtroOrgOptions.value = orgs.map(o => ({ label: o.nombre, value: o.id }))
 }
 
 async function loadEmpresas() {
@@ -401,5 +418,10 @@ async function toggleNotificacion(grupo: Grupo) {
   }
 }
 
-onMounted(loadGrupos)
+onMounted(async () => {
+  if (puedeElegirOrganizacion.value) {
+    await loadFiltroOrgOptions()
+  }
+  await loadGrupos()
+})
 </script>

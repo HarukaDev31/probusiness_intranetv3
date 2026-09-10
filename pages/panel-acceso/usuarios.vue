@@ -16,9 +16,13 @@
     :on-new-button-click="() => openModal()"
     empty-state-message="No hay usuarios registrados."
     :hide-back-button="true"
+    :show-filters="puedeGestionarOrganizaciones"
+    :filter-config="filterConfig"
+    :filters-value="filtersValue"
     @update:primary-search="onSearch"
     @page-change="onPageChange"
     @items-per-page-change="onItemsPerPageChange"
+    @filter-change="onFilterOrgChange"
   />
 
   <!-- Modal Crear/Editar -->
@@ -175,6 +179,7 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import type { FilterConfig } from '~/types/data-table'
 import { UsuarioAdminService } from '~/services/panelAcceso/usuarioAdminService'
 import { OptionsService }      from '~/services/panelAcceso/optionsService'
 import type { UsuarioAdmin }   from '~/services/panelAcceso/usuarioAdminService'
@@ -191,6 +196,26 @@ const orgId     = computed(() => authUser?.raw?.ID_Organizacion ?? 1)
 // Solo la organizacion admin (ID_Organizacion == 1) puede crear/editar
 // usuarios en cualquier organizacion; lo indica el backend en login/me.
 const puedeGestionarOrganizaciones = computed(() => !!authUser?.raw?.puedeGestionarOrganizaciones)
+
+// ─── Filtro por organización (solo admin de organizaciones) ────────────────
+const filtroOrgId = ref<string>('')
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: 'organizacion',
+    label: 'Organización',
+    placeholder: 'Todas las organizaciones',
+    options: organizacionesOptions.value.map(o => ({ label: o.label, value: String(o.value) })),
+  },
+])
+
+const filtersValue = computed(() => ({ organizacion: filtroOrgId.value }))
+
+function onFilterOrgChange(key: string, value: string) {
+  if (key !== 'organizacion') return
+  filtroOrgId.value = value || ''
+  void loadUsuarios({ search: search.value, page: 1, per_page: pagination.value.per_page })
+}
 
 // ─── Columnas ─────────────────────────────────────────────────────────────────
 const columns: TableColumn<UsuarioAdmin>[] = [
@@ -327,9 +352,9 @@ async function loadUsuarios(params?: { search?: string; page?: number; per_page?
   const res = await UsuarioAdminService.getUsuarios({
     empresa_id: empresaId.value,
     // El admin de organizaciones ve usuarios de todas las organizaciones en el
-    // listado (el backend igual lo permite solo a el); el resto siempre queda
-    // filtrado a la suya.
-    org_id:     puedeGestionarOrganizaciones.value ? undefined : orgId.value,
+    // listado, o filtra por una sola con el filtro de arriba (el backend
+    // igual lo permite solo a el); el resto siempre queda filtrado a la suya.
+    org_id:     puedeGestionarOrganizaciones.value ? (filtroOrgId.value ? Number(filtroOrgId.value) : undefined) : orgId.value,
     search:     params?.search || undefined,
     page:       params?.page || pagination.value.current_page,
     per_page:   params?.per_page || pagination.value.per_page,
@@ -533,5 +558,10 @@ async function deleteUsuario() {
   }
 }
 
-onMounted(loadUsuarios)
+onMounted(async () => {
+  if (puedeGestionarOrganizaciones.value) {
+    await loadOrganizaciones()
+  }
+  await loadUsuarios()
+})
 </script>

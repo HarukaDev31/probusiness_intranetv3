@@ -13,7 +13,11 @@
       :show-pagination="false"
       :show-export="false"
       empty-state-message="No hay menús registrados"
+      :show-filters="puedeGestionarOrganizaciones"
+      :filter-config="filterConfig"
+      :filters-value="filtersValue"
       @update:primary-search="search = $event"
+      @filter-change="onFilterOrgChange"
     >
       <template #actions>
         <UButton icon="i-heroicons-plus" label="Agregar Menú" @click="openModal()" />
@@ -254,6 +258,7 @@
 import { h } from 'vue'
 import { MenuCatalogoService } from '~/services/panelAcceso/menuCatalogoService'
 import type { MenuCatalogo, GrupoConAcceso } from '~/services/panelAcceso/menuCatalogoService'
+import type { FilterConfig } from '~/types/data-table'
 import { OptionsService } from '~/services/panelAcceso/optionsService'
 import AuthService from '~/services/authService'
 
@@ -308,8 +313,30 @@ function buildSortedTree(list: MenuCatalogo[]): MenuWithLevel[] {
   return result
 }
 
+// ─── Filtro por organización (solo admin de organizaciones) ────────────────
+const filtroOrgId = ref<string>('')
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: 'organizacion',
+    label: 'Organización',
+    placeholder: 'Todas las organizaciones',
+    options: organizacionesOptions.value.map(o => ({ label: o.label, value: String(o.value) })),
+  },
+])
+
+const filtersValue = computed(() => ({ organizacion: filtroOrgId.value }))
+
+function onFilterOrgChange(key: string, value: string) {
+  if (key !== 'organizacion') return
+  filtroOrgId.value = value || ''
+}
+
 const sortedMenus = computed(() => {
-  const tree = buildSortedTree(menus.value)
+  const menusFiltrados = filtroOrgId.value
+    ? menus.value.filter(m => String(m.id_org) === filtroOrgId.value)
+    : menus.value
+  const tree = buildSortedTree(menusFiltrados)
   if (!search.value) return tree
   const q = search.value.toLowerCase()
   return tree.filter(m =>
@@ -624,5 +651,10 @@ async function loadMenus() {
   loading.value = false
 }
 
-onMounted(loadMenus)
+onMounted(async () => {
+  if (puedeGestionarOrganizaciones.value) {
+    await loadOrganizaciones()
+  }
+  await loadMenus()
+})
 </script>
