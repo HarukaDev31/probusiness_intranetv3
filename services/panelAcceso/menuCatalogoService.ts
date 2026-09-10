@@ -2,6 +2,8 @@ import { BaseService } from '~/services/base/BaseService'
 
 export interface MenuCatalogo {
   id: number
+  id_org: number
+  organizacion: string | null
   id_padre: number
   padre_nombre: string
   nombre: string
@@ -24,6 +26,7 @@ export interface CreateMenuRequest {
   activo: boolean
   url_video?: string
   show_father?: boolean
+  id_org?: number
 }
 
 export interface GrupoConAcceso {
