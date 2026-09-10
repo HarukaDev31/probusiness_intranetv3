@@ -95,6 +95,7 @@ export interface SoporteTiSolicitud {
   area: string
   solicitante: string
   solicitanteUserId?: number | null
+  solicitanteRol?: string | null
   pm: string | null
   pmUserId?: number | null
   analista: string | null
@@ -204,9 +205,22 @@ export interface SoporteTiEnviarMensajePayload {
 export interface SoporteTiListFilters {
   q?: string
   tipo?: 'todos' | SoporteTiTipo
+  /** @deprecated Preferir estadoCodigos (múltiples) */
   estadoCodigo?: string | 'todos'
+  estadoCodigos?: string[]
+  /** @deprecated Preferir prioridades (múltiples) */
   prioridad?: number | null
+  prioridades?: number[]
+  areas?: string[]
   soloMias?: boolean
+  creadorUserId?: number
+  sortBy?: string
+  sortDir?: 'asc' | 'desc'
+}
+
+export interface SoporteTiCreadorFiltro {
+  id: number
+  nombre: string
 }
 
 export interface SoporteTiListStats {

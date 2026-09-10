@@ -80,6 +80,14 @@ export class ContabilidadService extends BaseService {
         return this.apiCall(`${BASE_URL}/clientes/${idContenedor}`)
     }
 
+    static async exportClientesFacturacion(idContenedor: number): Promise<Blob> {
+        return this.apiCall(`${BASE_URL}/clientes/${idContenedor}/export`, {
+            method: 'GET',
+            responseType: 'blob',
+            headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+        })
+    }
+
     static async getComprobanteForm(idCotizacion: number): Promise<{ success: boolean; data: any }> {
         return this.apiCall(`${BASE_URL}/comprobante-form/${idCotizacion}`)
     }

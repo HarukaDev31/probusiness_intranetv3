@@ -99,7 +99,7 @@ function handleItemsPerPageChange (per: number) {
 
 function openModal () {
   boletinModal.open({
-    onClose: () => {},
+    onClose: () => boletinModal.close(),
     onSaved: () => { load() }
   } as any)
 }

@@ -24,15 +24,17 @@ const CopilotoCotizadorView = createLazyView(() => import('~/components/copiloto
 
 const { hasRole, currentId, fetchCurrentUser, isCotizador } = useUserRole()
 
+const isJefeVentasOEquivalente = computed(() => Number(currentId.value) === ID_JEFEVENTAS || hasRole(ROLES.RRHH))
+
 const canAccess = computed(() => {
   if (isCotizador.value) return true
-  if (Number(currentId.value) === ID_JEFEVENTAS) return true
+  if (isJefeVentasOEquivalente.value) return true
   return hasRole(ROLES.ADMIN)
 })
 
 onMounted(async () => {
   await fetchCurrentUser()
-  if (Number(currentId.value) === ID_JEFEVENTAS) {
+  if (isJefeVentasOEquivalente.value) {
     await navigateTo('/copiloto/equipo', { replace: true })
   }
 })

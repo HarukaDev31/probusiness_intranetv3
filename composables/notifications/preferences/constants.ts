@@ -95,6 +95,12 @@ export const WS_NOTIFICATION_TYPES: WsNotificationType[] = [
     'Cuando termina la generación masiva de plantillas finales.'
   ),
   modalOnly(
+    WS_NOTIFICATION_KEYS.FACTURA_COMERCIAL_LOTE,
+    'Factura general generada',
+    'Documentación',
+    'Cuando termina la generación en segundo plano de la factura general.'
+  ),
+  modalOnly(
     WS_NOTIFICATION_KEYS.SEGUIMIENTO_DRIVE,
     'Excel de seguimiento en Drive',
     'Carga consolidada',
@@ -107,6 +113,18 @@ export const WS_NOTIFICATION_TYPES: WsNotificationType[] = [
     'Importación de datos de facturación',
     'Contabilidad',
     'Cuando termina una importación de datos de facturación.'
+  ),
+  modalOnly(
+    WS_NOTIFICATION_KEYS.REMINDER_PAGO,
+    'Recordatorio de pago',
+    'Contabilidad',
+    'Cuando termina el envío del recordatorio de pago al cliente.'
+  ),
+  modalOnly(
+    WS_NOTIFICATION_KEYS.REMINDER_INICIAL,
+    'Recordatorio de inicial',
+    'Contabilidad',
+    'Cuando termina el envío del recordatorio de cotización inicial al cliente.'
   ),
 
   // — Almacén —

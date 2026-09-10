@@ -55,6 +55,12 @@
             </div>
         </template>
     </UModal>
+    <ReminderInicialModal
+        v-model:open="reminderInicialModal.open"
+        :id-cotizacion="idCotizacion"
+        :loading="reminderInicialModal.loading"
+        @confirm="confirmReminderInicial"
+    />
 </template>
 <script setup lang="ts">
 import type { StatusOptionsModalProps } from './types'
@@ -63,13 +69,20 @@ import { useCotizacionProveedor } from '~/composables/cargaconsolidada/useCotiza
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { useModal } from '~/composables/commons/useModal'
 import { useCommons } from '~/composables/cargaconsolidada/commons/useCommons'
+import { useReminderInicial } from '~/composables/cargaconsolidada/commons/useReminderInicial'
+import ReminderInicialModal from '~/components/cargaconsolidada/cotizaciones/ReminderInicialModal/index.vue'
 const { getContenedoresDisponibles } = useConsolidado()
 const { getProveedoresByCotizacion } = useCotizacionProveedor()
 const proveedores = ref([])
 const selectedProveedor = ref([])
 const { withSpinner } = useSpinner()
 const { showError, showSuccess } = useModal()
-const { forceSendInspection, forceSendRotulado, forceSendCobranza ,forceSendMove, forceSendRecordatorioDatosProveedor} = useCommons()
+const { forceSendInspection, forceSendRotulado, forceSendMove, forceSendRecordatorioDatosProveedor} = useCommons()
+const { sendReminderInicial } = useReminderInicial()
+const reminderInicialModal = reactive({
+    open: false,
+    loading: false,
+})
 const emit = defineEmits<{
     (e: 'success'): void
 }>()
@@ -156,6 +169,10 @@ const handleContinue = async () => {
     }, 'Cargando contenedores...')
 }
 const handleSave = async () => {
+    if (selectedStatus.value === 'COBRANDO') {
+        reminderInicialModal.open = true
+        return
+    }
     await withSpinner(async () => {
         let response = null
         switch(selectedStatus.value){
@@ -171,12 +188,6 @@ const handleSave = async () => {
                     idCotizacion: props.idCotizacion,
                     idContainer: props.idContainer,
                     proveedores: selectedProveedor.value,
-                })
-                break
-            case 'COBRANDO':
-                response = await forceSendCobranza({
-                    idCotizacion: props.idCotizacion,
-                    idContainer: props.idContainer,
                 })
                 break
             case 'MOVER':
@@ -203,5 +214,26 @@ const handleSave = async () => {
             showError('Error al guardar', 'Error al guardar el estado')
         }
     }, 'Guardando...')
+}
+
+const confirmReminderInicial = async () => {
+    reminderInicialModal.loading = true
+    try {
+        await withSpinner(async () => {
+            const response = await sendReminderInicial(props.idCotizacion, props.idContainer)
+            if (response && response.success) {
+                showSuccess('Recordatorio en camino', response.message || 'Se está enviando al cliente por WhatsApp.')
+                reminderInicialModal.open = false
+                emit('success')
+            } else {
+                showError('Error', response?.message || 'No se pudo enviar el recordatorio')
+            }
+        }, 'Enviando recordatorio…')
+    } catch (err) {
+        console.error('Error send reminder:', err)
+        showError('Error', 'Error al enviar recordatorio')
+    } finally {
+        reminderInicialModal.loading = false
+    }
 }
 </script>

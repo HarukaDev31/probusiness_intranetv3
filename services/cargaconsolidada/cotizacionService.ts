@@ -137,6 +137,20 @@ export class CotizacionService extends BaseService {
             throw new Error(error)
         }
     }
+    static async updateOrigenMarketing(id: number, origen_marketing: string | null) {
+        try {
+            return await this.apiCall<{ success: boolean; message?: string; data?: { id: number; origen_marketing: string | null } }>(
+                `${this.baseUrl}/cotizaciones/${id}/origen-marketing`,
+                {
+                    method: 'POST',
+                    body: { origen_marketing }
+                }
+            )
+        } catch (error) {
+            console.error('Error al actualizar origen marketing:', error)
+            throw error
+        }
+    }
     static async getHeaders(id: number): Promise<CotizacionesHeadersResponse> {
         try {
             const response = await this.apiCall<CotizacionesHeadersResponse>(`${this.baseUrl}/cotizaciones/${id}/headers`, {

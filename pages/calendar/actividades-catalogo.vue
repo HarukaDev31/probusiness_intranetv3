@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="flex min-h-0 flex-1 flex-col overflow-y-auto bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
     <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4">
       <div class="max-w-2xl mx-auto flex items-center gap-4">
@@ -132,7 +132,8 @@
                   >
                     <span
                       class="block w-6 h-6 rounded border border-gray-300 dark:border-gray-600"
-                      :style="{ backgroundColor: (editingColorId === item.id ? pendingColorValue : item.color_code) || '#9ca3af' }"
+                      :class="{ 'bg-transparent bg-[linear-gradient(45deg,#d1d5db_25%,transparent_25%,transparent_75%,#d1d5db_75%)] bg-[length:8px_8px]': !(editingColorId === item.id ? pendingColorValue : item.color_code) }"
+                      :style="(editingColorId === item.id ? pendingColorValue : item.color_code) ? { backgroundColor: (editingColorId === item.id ? pendingColorValue : item.color_code) as string } : undefined"
                     />
                   </UButton>
                   <template #content>
@@ -144,7 +145,7 @@
                           :key="c"
                           type="button"
                           class="w-7 h-7 rounded border-2 transition-transform hover:scale-110"
-                          :class="(pendingColorValue || item.color_code) === c ? 'border-gray-900 dark:border-white ring-1 ring-offset-1' : 'border-gray-300 dark:border-gray-600'"
+                          :class="pendingColorValue === c ? 'border-gray-900 dark:border-white ring-1 ring-offset-1' : 'border-gray-300 dark:border-gray-600'"
                           :style="{ backgroundColor: c }"
                           :title="c"
                           @click="setPendingColor(c)"
@@ -153,7 +154,7 @@
                       <div class="flex items-center gap-2">
                         <input
                           type="color"
-                          :value="pendingColorValue || item.color_code || '#9ca3af'"
+                          :value="pendingColorValue || '#9ca3af'"
                           class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer bg-transparent"
                           @input="setPendingColor(($event.target as HTMLInputElement).value)"
                         />
@@ -162,7 +163,8 @@
                       <div class="flex items-center gap-2">
                         <button
                           type="button"
-                          class="w-8 h-8 rounded border-2 border-dashed border-gray-400 dark:border-gray-500 flex items-center justify-center"
+                          class="w-8 h-8 rounded border-2 border-dashed flex items-center justify-center"
+                          :class="pendingColorValue == null ? 'border-gray-900 dark:border-white ring-1 ring-offset-1' : 'border-gray-400 dark:border-gray-500'"
                           title="Sin color (usar predeterminado del calendario)"
                           @click="setPendingColor(null)"
                         >
@@ -172,7 +174,7 @@
                       </div>
                       <div class="flex gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
                         <UButton size="xs" label="Cancelar" variant="ghost" color="neutral" block @click="cancelColorEdit" />
-                        <UButton size="xs" label="Aplicar" color="primary" block :loading="updatingColorId === item.id" :disabled="pendingColorValue === (item.color_code ?? null)" @click="confirmColorChange(item)" />
+                        <UButton size="xs" label="Aplicar" color="primary" block :loading="updatingColorId === item.id" :disabled="(pendingColorValue ?? null) === (item.color_code ?? null)" @click="confirmColorChange(item)" />
                       </div>
                     </div>
                   </template>
@@ -253,7 +255,8 @@ const {
   updateActivityInCatalog,
   reorderActivityCatalog,
   deleteActivityFromCatalog,
-  getCalendarRoute
+  getCalendarRoute,
+  initialize
 } = useCalendarStore()
 
 const { showConfirmation, showSuccess, showError } = useModal()
@@ -468,8 +471,9 @@ async function handleReorder() {
   }
 }
 
-onMounted(() => {
-  loadActivityCatalog(true)
+onMounted(async () => {
+  await initialize()
+  await loadActivityCatalog(true)
 })
 
 definePageMeta({

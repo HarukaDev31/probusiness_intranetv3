@@ -11,10 +11,12 @@ export const ROLES = {
     JEFE_MARKETING: 'Jefe Marketing',
     SUB_ADMINISTRACION: 'SUB_ADMINISTRACION',
     JEFE_IMPORTACIONES: 'Jefe Importacion',
+    COORDINADOR_GENERAL: 'Coordinador General',
     CONTABILIDAD: 'Contabilidad',
     SOPORTE: 'Soporte',
     PM: 'PM',
-    COORDINADOR_GENERAL: 'Coordinador General',
+    FINANZAS: 'Finanzas',
+    RRHH: 'RRHH',
 } as const
 export const ID_JEFEVENTAS = 28791
 export const COTIZADORES_WITH_PRIVILEGES = [28911]
@@ -98,6 +100,13 @@ export const PERMISSIONS = {
         canExport: true,
         canFilter: true
     },
+    [ROLES.COORDINADOR_GENERAL]: {
+        canViewSteps: true,
+        canEdit: true,
+        canDelete: true,
+        canExport: true,
+        canFilter: true
+    },
     default: {
         canViewSteps: false,
         canEdit: false,
@@ -110,6 +119,20 @@ export const PERMISSIONS = {
 // Permisos específicos del calendario por rol
 export const CALENDAR_PERMISSIONS = {
     [ROLES.JEFE_IMPORTACIONES]: {
+        canViewAllActivities: true,
+        canEditPriority: true,
+        canEditAnyStatus: true,
+        canAssignResponsables: true,
+        canViewTeamProgress: true,
+        canViewResponsableProgress: true,
+        canAccessConfig: true,
+        canFilterByResponsable: true,
+        canFilterByContenedor: true,
+        canCreateActivity: true,
+        canDeleteActivity: true,
+        canEditActivity: true
+    },
+    [ROLES.COORDINADOR_GENERAL]: {
         canViewAllActivities: true,
         canEditPriority: true,
         canEditAnyStatus: true,
@@ -181,4 +204,32 @@ export const getRolePermissions = (role: UserRole) => {
 export const hasPermission = (role: UserRole, permission: keyof typeof PERMISSIONS.default) => {
     const permissions = getRolePermissions(role)
     return permissions[permission] || false
+}
+
+export function roleEsComoJefeImportacion(role: string): boolean {
+    const normalized = role.trim().toLowerCase()
+    return normalized === ROLES.JEFE_IMPORTACIONES.toLowerCase()
+        || normalized === ROLES.COORDINADOR_GENERAL.toLowerCase()
+}
+
+export function rolesJefeImportacionEquiv(): readonly string[] {
+    return [ROLES.JEFE_IMPORTACIONES, ROLES.COORDINADOR_GENERAL]
+}
+
+export function rolesPmSoporteTiEquiv(): readonly string[] {
+    return [ROLES.PM, ROLES.SOPORTE, ROLES.COORDINADOR_GENERAL]
+}
+
+export function roleEsPmSoporteTi(role: string): boolean {
+    const normalized = role.trim().toLowerCase()
+    return rolesPmSoporteTiEquiv().some((r) => normalized === r.toLowerCase())
+}
+
+// Un usuario tiene los mismos accesos que el Jefe de Ventas (Gino) dentro de
+// carga consolidada si es el propio Gino (por ID) o pertenece al rol RRHH.
+export function esJefeVentasOEquivalente(id: number | string | null | undefined, role: string | null | undefined): boolean {
+    if (Number(id) === ID_JEFEVENTAS) {
+        return true
+    }
+    return (role ?? '').trim() === ROLES.RRHH
 }

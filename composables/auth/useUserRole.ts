@@ -129,10 +129,17 @@ const currentId = computed(() => {
   }
 
   const hasRole = (role: string|string[]): boolean => {
-    if (Array.isArray(role)) {
-      return role.some(r => currentRole.value.toLowerCase() === r.toLowerCase())
-    }
-    return currentRole.value.toLowerCase() === role.toLowerCase()
+    const roles = Array.isArray(role) ? role : [role]
+    const expanded = roles.flatMap((r) => {
+      if (r === ROLES.JEFE_IMPORTACIONES) {
+        return [ROLES.JEFE_IMPORTACIONES, ROLES.COORDINADOR_GENERAL]
+      }
+      if (r === ROLES.PM) {
+        return [ROLES.PM, ROLES.SOPORTE, ROLES.COORDINADOR_GENERAL]
+      }
+      return [r]
+    })
+    return expanded.some(r => currentRole.value.toLowerCase() === r.toLowerCase())
   }
 
   const hasAnyRole = (roles: string[]): boolean => {
@@ -147,11 +154,17 @@ const currentId = computed(() => {
   const isDocumentacion = computed(() => {
     return hasRole(ROLES.DOCUMENTACION)
   })
+  const isFinanzas = computed(() => {
+    return hasRole(ROLES.FINANZAS)
+  })
   const isContenedorAlmacen = computed(() => {
     return hasRole(ROLES.CONTENEDOR_ALMACEN)
   })
   const isContenedorConsolidado = computed(() => {
     return hasRole(ROLES.CONTENEDOR_CONSOLIDADO)
+  })
+  const isRRHH = computed(() => {
+    return hasRole(ROLES.RRHH)
   })
 
   const getUserData = () => {
@@ -174,8 +187,10 @@ const currentId = computed(() => {
     isCoordinacion,
     isCotizador,
     isDocumentacion,
+    isFinanzas,
     isContenedorAlmacen,
     isContenedorConsolidado,
+    isRRHH,
 
     // Métodos
     fetchCurrentUser,

@@ -208,7 +208,7 @@ definePageMeta({
 const { hasRole, fetchCurrentUser } = useUserRole()
 
 const puedeEditarMatriz = computed(() => hasRole(ROLES.PM))
-const puedeEditarConfig = computed(() => hasRole(ROLES.SOPORTE))
+const puedeEditarConfig = computed(() => hasRole(ROLES.PM))
 const {
   fases,
   complejidades,

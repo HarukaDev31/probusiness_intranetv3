@@ -1,11 +1,11 @@
 <template>
-  <div ref="componentRootRef" class="">
+  <div ref="componentRootRef" class="" data-manual-capture="data-table">
 
     <!-- Sticky Top Section -->
     <div v-if="!showTopSection" class="sticky top-0 z-40 bg-[#f0f4f9] dark:bg-gray-900">
   <slot name="filters" />
   <template v-if="!$slots.filters">
-    <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 ">
+    <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 " data-manual-capture="data-table-toolbar">
       <div class="w-full lg:w-full flex flex-col md:flex-row items-start md:items-center md:justify-between gap-1 md:gap-3 items-center">
         <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
           <template v-if="$slots['back-extra']" #back-extra>
@@ -89,6 +89,21 @@
                         />
                       </template>
                     </UPopover>
+                    <!-- Multi-select -->
+                    <USelect
+                      v-else-if="filter.multiple"
+                      :model-value="Array.isArray(filtersValue?.[filter.key]) ? filtersValue[filter.key] : []"
+                      :items="filter.options"
+                      value-key="value"
+                      label-key="label"
+                      multiple
+                      :placeholder="filter.placeholder"
+                      class="w-full"
+                      @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                      @click.stop
+                      @focus="handleSelectOpen"
+                      @blur="handleSelectClose"
+                    />
                     <!-- Filtro de tipo select: model-value no vacío (fallback primera opción) para cumplir SelectItem -->
                     <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
                         @update:model-value="(value) => handleFilterChange(filter.key, value)"
@@ -151,6 +166,20 @@
                           />
                         </template>
                       </UPopover>
+                      <USelect
+                        v-else-if="filter.multiple"
+                        :model-value="Array.isArray(filtersValue?.[filter.key]) ? filtersValue[filter.key] : []"
+                        :items="filter.options"
+                        value-key="value"
+                        label-key="label"
+                        multiple
+                        :placeholder="filter.placeholder"
+                        class="w-full"
+                        @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                        @click.stop
+                        @focus="handleSelectOpen"
+                        @blur="handleSelectClose"
+                      />
                       <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
                           @update:model-value="(value) => handleFilterChange(filter.key, value)"
                           @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
@@ -253,7 +282,7 @@
       v-if="showKanban && listViewMode === 'kanban'"
       ref="tableWrapperRef"
       class="table-scroll-container relative border-t border-gray-100 dark:border-gray-800"
-      style="height: calc(100vh - 250px); max-height: calc(100vh - 250px); min-height: 280px;"
+      :style="tableScrollStyle"
     >
       <div
         v-if="isTableLoading"
@@ -367,9 +396,10 @@
       ></div>
       
       <div 
+        data-manual-capture="data-table-grid"
         ref="tableContainerRef"
         class="table-scroll-container"
-        style="height: calc(100vh - 250px); max-height: calc(100vh - 250px); min-height: 280px;"
+        :style="tableScrollStyle"
         @mousemove="onTableMouseMove"
         @mouseleave="onTableMouseLeave"
         @scroll="onTableScroll"
@@ -445,7 +475,7 @@
         <div class="flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto" v-if="showPagination">
           <div class="flex items-center gap-2 justify-center lg:justify-start hidden md:flex">
             <label class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.perPage }}</label>
-            <USelect :model-value="itemsPerPage" :items="PAGINATION_OPTIONS" placeholder="10" class="w-20"
+            <USelect :model-value="itemsPerPage" :items="resolvedPaginationOptions" placeholder="10" class="w-20"
               @update:model-value="(value: any) => onItemsPerPageChange(Number(value))" />
             <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ translations.resultados }}</span>
           </div>
@@ -490,6 +520,17 @@ const props = withDefaults(defineProps<DataTableProps>(), {
 
 /** Evita ambigüedad con otros `loading` en plantilla; fuerza booleano para UTable */
 const isTableLoading = computed(() => Boolean(props.loading))
+
+const resolvedPaginationOptions = computed(() =>
+  props.paginationOptions?.length ? props.paginationOptions : PAGINATION_OPTIONS
+)
+
+const tableScrollStyle = computed(() => {
+  if (props.fillViewport === false) {
+    return 'max-height: calc(100vh - 250px); min-height: 0;'
+  }
+  return 'height: calc(100vh - 250px); max-height: calc(100vh - 250px); min-height: 280px;'
+})
 
 // Emits
 const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change', 'row-click', 'kanban-move'] )

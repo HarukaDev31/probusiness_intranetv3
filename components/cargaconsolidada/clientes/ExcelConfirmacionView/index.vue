@@ -211,7 +211,7 @@ const updateExcelConfStatusField = async (
         throw new Error((response as any)?.message || 'No se pudo actualizar el estado')
       }
       if (field === 'excel_conf_status' && next === 'Revisado' && proveedor.excel_conf_status_final !== 'Revisado') {
-        proveedor.excel_conf_status_final = 'Recibido'
+        proveedor.excel_conf_status_final = 'Entregado'
       }
     }, 'Actualizando estado...')
     showSuccess('Actualización exitosa', 'El estado de Excel Conf. se guardó correctamente.')

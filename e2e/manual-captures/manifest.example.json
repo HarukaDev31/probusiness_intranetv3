@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "captures": [
+    {
+      "capture_key": "comercial__inicio__nuevo",
+      "roles": ["comercial"],
+      "screen": "inicio",
+      "modulo": "inicio",
+      "flow": "Crear registro",
+      "step": {
+        "number": 1,
+        "title": "Nuevo registro"
+      },
+      "hint": "Recorta el botón Nuevo.",
+      "url": "/",
+      "output": "comercial__inicio__nuevo.png"
+    }
+  ]
+}

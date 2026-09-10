@@ -268,11 +268,36 @@ const removeSelectedFile = (index: number) => {
     emit('file-removed', index)
 }
 
+const MIME_TO_EXT: Record<string, string[]> = {
+    'image/png': ['.png'],
+    'image/jpeg': ['.jpg', '.jpeg'],
+    'image/jpg': ['.jpg', '.jpeg'],
+    'image/webp': ['.webp'],
+    'image/gif': ['.gif'],
+    'image/heic': ['.heic', '.heif'],
+    'image/heif': ['.heif', '.heic'],
+    'image/dng': ['.dng'],
+    'image/x-adobe-dng': ['.dng'],
+}
+
 const isValidFileType = (file: File): boolean => {
-    const extension = '.' + file.name.split('.').pop()?.toLowerCase()
-    return props.acceptedTypes!.some(type =>
-        type.startsWith('.') ? extension === type : file.type.includes(type)
+    const rawExt = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : ''
+    const extension = rawExt ? `.${rawExt}` : ''
+    const mime = (file.type || '').toLowerCase()
+    const accepted = props.acceptedTypes ?? []
+
+    const byExtension = extension !== '' && accepted.some(type =>
+        type.startsWith('.') ? extension === type.toLowerCase() : false
     )
+    if (byExtension) return true
+
+    const byMimeToken = accepted.some(type =>
+        !type.startsWith('.') && mime.includes(type.toLowerCase())
+    )
+    if (byMimeToken) return true
+
+    const mimeExts = MIME_TO_EXT[mime] ?? []
+    return mimeExts.some(ext => accepted.some(type => type.toLowerCase() === ext))
 }
 
 const getFileKey = (file: File, index: number): string => {

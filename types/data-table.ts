@@ -26,6 +26,8 @@ export interface FilterConfig {
   type?: string
   placeholder: string
   options: FilterOption[]
+  /** Si true, permite seleccionar varias opciones (USelect multiple). */
+  multiple?: boolean
 }
 export interface Header {
   label: string
@@ -48,6 +50,11 @@ export interface DataTableProps {
   showPagination?: boolean
   showBodyTop?: boolean | null
   showBottomSection?: boolean
+  /**
+   * Si true (default), la tabla ocupa altura de viewport y empuja la paginación abajo.
+   * Si false, la altura se ajusta al contenido (máx. viewport) y la paginación queda justo debajo.
+   */
+  fillViewport?: boolean
   // Data props
   data: any[]
   columns: TableColumn<any>[]
@@ -72,6 +79,8 @@ export interface DataTableProps {
   totalPages?: number
   totalRecords?: number
   itemsPerPage?: number
+  /** Opciones del select de filas por página. Por defecto: PAGINATION_OPTIONS. */
+  paginationOptions?: number[]
 
   // Messages
   emptyStateMessage?: string
@@ -130,7 +139,7 @@ export interface DataTableEmits {
   'update:currentPage': [value: number]
   'update:itemsPerPage': [value: number]
   'export': []
-  'filter-change': [filterType: string, value: string]
+  'filter-change': [filterType: string, value: string | string[] | number | null]
   'clear-filters': []
   'page-change': [page: number]
   'items-per-page-change': [limit: number]

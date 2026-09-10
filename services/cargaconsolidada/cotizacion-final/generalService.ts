@@ -1,4 +1,4 @@
-import type { GeneralResponse } from "../../../types/cargaconsolidada/cotizacion-final/general"
+import type { GeneralResponse, ReminderPagoPreviewResponse } from "../../../types/cargaconsolidada/cotizacion-final/general"
 import type { HeaderResponse } from "~/types/data-table"
 import { BaseService } from "~/services/base/BaseService"
 
@@ -119,6 +119,27 @@ export class GeneralService extends BaseService {
             throw error
         }
     }
+    static async previewReminderPago(idCotizacion: number): Promise<ReminderPagoPreviewResponse> {
+        try {
+            return await this.apiCall<ReminderPagoPreviewResponse>(`${this.baseUrl}/${idCotizacion}/preview-reminder-pago`)
+        } catch (error) {
+            console.error('Error al obtener vista previa del recordatorio:', error)
+            throw error
+        }
+    }
+
+    static async sendReminderPago(idCotizacion: number): Promise<GeneralResponse> {
+        try {
+            return await this.apiCall<GeneralResponse>(`${this.baseUrl}/${idCotizacion}/send-reminder-pago`, {
+                method: 'POST',
+                body: {},
+            })
+        } catch (error) {
+            console.error('Error al enviar recordatorio de pago:', error)
+            throw error
+        }
+    }
+
     static async getHeaders(id: number): Promise<HeaderResponse> {
         try {
             const response = await this.apiCall<HeaderResponse>(`${this.baseUrl}/${id}/headers`)

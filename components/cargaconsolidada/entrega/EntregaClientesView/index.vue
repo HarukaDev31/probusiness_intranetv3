@@ -10,7 +10,7 @@
     >
       <template #actions>
         <div class="flex gap-2 items-center">
-          <template v-if="!editable">
+          <template v-if="!editable && !isJefeMarketingReadOnly">
             <UButton size="xl" color="primary" variant="solid" icon="i-heroicons-pencil-square" @click="toggleEdit">Editar</UButton>
             <USelect
               v-if="currentRole===ROLES.ADMINISTRACION || currentRole===ROLES.SUB_ADMINISTRACION"
@@ -259,6 +259,7 @@ const props = withDefaults(defineProps<EntregaClientesViewProps>(), {
 })
 
 const currentRole = computed(() => props.role || authCurrentRole.value)
+const isJefeMarketingReadOnly = computed(() => currentRole.value === ROLES.JEFE_MARKETING)
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const { showSuccess, showError } = useModal()

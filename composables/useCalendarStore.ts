@@ -481,7 +481,15 @@ export const useCalendarStore = () => {
   // ============================================
 
   const loadActivityCatalog = async (force: boolean = false) => {
-    const roleGroupId = state.currentRoleGroupId.value
+    let roleGroupId = state.currentRoleGroupId.value
+    if (roleGroupId == null) {
+      const raw = route.query.role_group_id
+      const parsed = typeof raw === 'string' ? parseInt(raw, 10) : NaN
+      if (!Number.isNaN(parsed)) {
+        roleGroupId = parsed
+        state.currentRoleGroupId.value = parsed
+      }
+    }
     if (roleGroupId == null) {
       state.activityCatalog.value = []
       return []

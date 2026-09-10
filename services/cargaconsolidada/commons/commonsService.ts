@@ -1,4 +1,5 @@
 import { BaseService } from "~/services/base/BaseService"
+import type { ReminderInicialPreviewResponse } from "~/types/cargaconsolidada/cotizaciones"
 
 export interface forceSendRequest {
     idCotizacion: number
@@ -38,9 +39,9 @@ export class CommonsService extends BaseService {
             throw error
         }
     }
-    static async forceSendCobranza(data: forceSendRequest): Promise<{ success: boolean }> {
+    static async forceSendCobranza(data: forceSendRequest): Promise<{ success: boolean; message?: string }> {
         try {
-            const response = await this.apiCall<{ success: boolean }>(`${this.baseUrl}/force-send-cobranza`, {
+            const response = await this.apiCall<{ success: boolean; message?: string }>(`${this.baseUrl}/force-send-cobranza`, {
                 method: 'POST',
                 body: data
             })
@@ -48,6 +49,15 @@ export class CommonsService extends BaseService {
 
         } catch (error) {
             console.error('Error en CommonsService.forceSendCobranza:', error)
+            throw error
+        }
+    }
+
+    static async previewCobranza(idCotizacion: number): Promise<ReminderInicialPreviewResponse> {
+        try {
+            return await this.apiCall<ReminderInicialPreviewResponse>(`${this.baseUrl}/preview-cobranza/${idCotizacion}`)
+        } catch (error) {
+            console.error('Error en CommonsService.previewCobranza:', error)
             throw error
         }
     }

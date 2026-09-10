@@ -4,4 +4,4 @@ export interface ClientesViewProps {
   backBasePath?: string
 }
 
-export type ProveedorManualStatus = 'Pendiente' | 'Recibido' | 'Observado' | 'Revisado'
+export type ProveedorManualStatus = 'Pendiente' | 'Solicitado' | 'Entregado' | 'Observado' | 'Revisado'

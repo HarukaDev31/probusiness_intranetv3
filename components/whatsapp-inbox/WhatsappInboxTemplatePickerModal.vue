@@ -1,54 +1,68 @@
 <template>
   <UModal v-model:open="open" title="Plantillas de WhatsApp" :ui="{ width: 'sm:max-w-lg' }">
     <template #body>
-      <div class="max-h-[60vh] space-y-3 overflow-y-auto">
-        <p v-if="loading" class="py-6 text-center text-sm text-muted">Cargando plantillas…</p>
-        <p v-else-if="!templates.length" class="py-6 text-center text-sm text-muted">
-          No hay plantillas disponibles.
-        </p>
-        <button
-          v-for="tpl in templates"
-          :key="tpl.name"
-          type="button"
-          class="w-full text-left"
-          @click="onPick(tpl)"
-        >
-          <UCard variant="outline" color="neutral" :ui="{ body: 'p-3 sm:p-3' }">
-            <p class="flex flex-wrap items-center gap-2 text-sm font-semibold text-primary">
-              <span>{{ tpl.label || tpl.name }}</span>
-              <UBadge
-                v-if="tpl.header_format"
-                color="warning"
-                variant="subtle"
-                size="xs"
-                :label="`Encabezado ${tpl.header_format}`"
-              />
-            </p>
-            <p class="mt-1 line-clamp-2 text-xs text-muted">{{ tpl.text }}</p>
-            <div v-if="getTemplateParamDefs(tpl).length" class="mt-2 space-y-1.5">
-              <p class="text-[10px] font-semibold uppercase tracking-wide text-muted">
-                Parámetros
+      <div class="space-y-3">
+        <UInput
+          v-model="search"
+          icon="i-heroicons-magnifying-glass"
+          placeholder="Buscar plantilla…"
+          size="sm"
+          class="w-full"
+          :disabled="loading"
+          autofocus
+        />
+        <div class="max-h-[60vh] space-y-3 overflow-y-auto">
+          <p v-if="loading" class="py-6 text-center text-sm text-muted">Cargando plantillas…</p>
+          <p v-else-if="!templates.length" class="py-6 text-center text-sm text-muted">
+            No hay plantillas disponibles.
+          </p>
+          <p v-else-if="!filteredTemplates.length" class="py-6 text-center text-sm text-muted">
+            No hay plantillas que coincidan con “{{ search.trim() }}”.
+          </p>
+          <button
+            v-for="tpl in filteredTemplates"
+            :key="tpl.name"
+            type="button"
+            class="w-full text-left"
+            @click="onPick(tpl)"
+          >
+            <UCard variant="outline" color="neutral" :ui="{ body: 'p-3 sm:p-3' }">
+              <p class="flex flex-wrap items-center gap-2 text-sm font-semibold text-primary">
+                <span>{{ tpl.label || tpl.name }}</span>
+                <UBadge
+                  v-if="tpl.header_format"
+                  color="warning"
+                  variant="subtle"
+                  size="xs"
+                  :label="`Encabezado ${tpl.header_format}`"
+                />
               </p>
-              <ul class="flex flex-wrap gap-1.5">
-                <li
-                  v-for="def in getTemplateParamDefs(tpl)"
-                  :key="def.name"
-                  class="inline-flex max-w-full items-center gap-1 rounded-md border border-default bg-elevated/60 px-1.5 py-0.5"
-                >
-                  <span class="truncate text-[10px] font-medium text-highlighted">
-                    {{ def.label || def.name }}
-                  </span>
-                  <UBadge
-                    :color="paramTypeBadgeColor(def)"
-                    variant="subtle"
-                    size="xs"
-                    :label="paramTypeLabel(def)"
-                  />
-                </li>
-              </ul>
-            </div>
-          </UCard>
-        </button>
+              <p class="mt-1 line-clamp-2 text-xs text-muted">{{ tpl.text }}</p>
+              <div v-if="getTemplateParamDefs(tpl).length" class="mt-2 space-y-1.5">
+                <p class="text-[10px] font-semibold uppercase tracking-wide text-muted">
+                  Parámetros
+                </p>
+                <ul class="flex flex-wrap gap-1.5">
+                  <li
+                    v-for="def in getTemplateParamDefs(tpl)"
+                    :key="def.name"
+                    class="inline-flex max-w-full items-center gap-1 rounded-md border border-default bg-elevated/60 px-1.5 py-0.5"
+                  >
+                    <span class="truncate text-[10px] font-medium text-highlighted">
+                      {{ def.label || def.name }}
+                    </span>
+                    <UBadge
+                      :color="paramTypeBadgeColor(def)"
+                      variant="subtle"
+                      size="xs"
+                      :label="paramTypeLabel(def)"
+                    />
+                  </li>
+                </ul>
+              </div>
+            </UCard>
+          </button>
+        </div>
       </div>
     </template>
     <template #footer>
@@ -67,7 +81,7 @@ import {
 
 const open = defineModel<boolean>('open', { default: false })
 
-defineProps<{
+const props = defineProps<{
   templates: WaInboxTemplate[]
   loading?: boolean
 }>()
@@ -75,6 +89,32 @@ defineProps<{
 const emit = defineEmits<{
   select: [tpl: WaInboxTemplate]
 }>()
+
+const search = ref('')
+
+watch(open, (isOpen) => {
+  if (!isOpen) search.value = ''
+})
+
+const filteredTemplates = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return props.templates
+
+  return props.templates.filter((tpl) => {
+    const haystack = [
+      tpl.name,
+      tpl.label,
+      tpl.text,
+      tpl.language,
+      ...(tpl.params || []),
+      ...getTemplateParamDefs(tpl).flatMap((d) => [d.name, d.label || ''])
+    ]
+      .join(' ')
+      .toLowerCase()
+
+    return haystack.includes(q)
+  })
+})
 
 function onPick(tpl: WaInboxTemplate) {
   open.value = false

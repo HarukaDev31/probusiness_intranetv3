@@ -14,6 +14,12 @@ export const CHINA_STATUS_OPTIONS = [
   { label: 'COMPLETADO', value: 'COMPLETADO' },
 ] as const
 
+export const FINANZAS_STATUS_OPTIONS = [
+  { label: 'Todos', value: 'todos' },
+  { label: 'PENDIENTE', value: 'PENDIENTE' },
+  { label: 'COMPLETADO', value: 'COMPLETADO' },
+] as const
+
 export const ESTADO_LABEL_MAP_ALMACEN: Record<string, string> = {
   PENDIENTE: 'WAITING',
   RECIBIENDO: 'RECEIVING',

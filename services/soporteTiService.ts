@@ -2,6 +2,7 @@ import { BaseService } from '~/services/base/BaseService'
 import type {
   SoporteTiActualizarEstadoPayload,
   SoporteTiCambiarEstadoPayload,
+  SoporteTiCreadorFiltro,
   SoporteTiCreatePayload,
   SoporteTiEnviarMensajePayload,
   SoporteTiListFilters,
@@ -16,6 +17,7 @@ import type {
   SoporteTiAreaGestion
 } from '~/types/soporteTi'
 import type {
+  SoporteTiCreadoresResponseRaw,
   SoporteTiFaseHorasAMatrizApi,
   SoporteTiListResponseRaw,
   SoporteTiMensajeApi,
@@ -29,6 +31,7 @@ import type {
   SoporteTiWsSolicitudCreadaPayload
 } from '~/services/soporteTi/apiTypes'
 import {
+  adaptCreadoresFiltro,
   adaptEstado,
   adaptHistorial,
   adaptListResponse,
@@ -44,10 +47,56 @@ import { SOPORTE_TI_CHAT_PAGE_SIZE } from '~/constants/soporteTi'
 
 const BASE = '/api/soporte-ti/solicitudes'
 
+function appendSoporteTiListFilters(
+  q: URLSearchParams,
+  filters?: SoporteTiListFilters,
+  opts?: { omitCreador?: boolean }
+) {
+  if (filters?.q) q.set('q', filters.q)
+  if (filters?.tipo && filters.tipo !== 'todos') q.set('tipo_solicitud', filters.tipo)
+
+  const estados =
+    filters?.estadoCodigos?.filter((c) => c && c !== 'todos') ??
+    (filters?.estadoCodigo && filters.estadoCodigo !== 'todos'
+      ? [filters.estadoCodigo]
+      : [])
+  for (const codigo of estados) {
+    q.append('estado_codigo[]', codigo)
+  }
+
+  const prioridades =
+    filters?.prioridades?.filter((p) => p > 0) ??
+    (filters?.prioridad != null && filters.prioridad > 0 ? [filters.prioridad] : [])
+  for (const p of prioridades) {
+    q.append('prioridad[]', String(p))
+  }
+
+  for (const area of filters?.areas ?? []) {
+    if (area && area !== 'todos') q.append('area[]', area)
+  }
+
+  if (filters?.soloMias) q.set('solo_mias', '1')
+  if (
+    !opts?.omitCreador &&
+    filters?.creadorUserId != null &&
+    filters.creadorUserId > 0
+  ) {
+    q.set('creador_user_id', String(filters.creadorUserId))
+  }
+  if (filters?.sortBy) q.set('sort_by', filters.sortBy)
+  if (filters?.sortDir) q.set('sort_dir', filters.sortDir)
+}
+
 export type SoporteTiListResult = {
   success: boolean
   data: SoporteTiSolicitud[]
   resumen?: SoporteTiListStats
+  message?: string
+}
+
+export type SoporteTiCreadoresListResult = {
+  success: boolean
+  data: SoporteTiCreadorFiltro[]
   message?: string
 }
 
@@ -95,18 +144,26 @@ export class SoporteTiService extends BaseService {
 
   static async list(filters?: SoporteTiListFilters): Promise<SoporteTiListResult> {
     const q = new URLSearchParams()
-    if (filters?.q) q.set('q', filters.q)
-    if (filters?.tipo && filters.tipo !== 'todos') q.set('tipo_solicitud', filters.tipo)
-    if (filters?.estadoCodigo && filters.estadoCodigo !== 'todos') {
-      q.set('estado_codigo', filters.estadoCodigo)
-    }
-    if (filters?.prioridad != null && filters.prioridad > 0) {
-      q.set('prioridad', String(filters.prioridad))
-    }
-    if (filters?.soloMias) q.set('solo_mias', '1')
+    appendSoporteTiListFilters(q, filters)
     const qs = q.toString()
     const raw = await this.apiCall<SoporteTiListResponseRaw>(qs ? `${BASE}?${qs}` : BASE)
     return adaptListResponse(raw)
+  }
+
+  static async listCreadores(
+    filters?: SoporteTiListFilters
+  ): Promise<SoporteTiCreadoresListResult> {
+    const q = new URLSearchParams()
+    appendSoporteTiListFilters(q, filters, { omitCreador: true })
+    const qs = q.toString()
+    const raw = await this.apiCall<SoporteTiCreadoresResponseRaw>(
+      qs ? `${BASE}/creadores?${qs}` : `${BASE}/creadores`
+    )
+    return {
+      success: raw.success,
+      data: adaptCreadoresFiltro(raw.data),
+      message: raw.message
+    }
   }
 
   static async show(id: number): Promise<SoporteTiSolicitudResult> {
@@ -362,6 +419,27 @@ export class SoporteTiService extends BaseService {
     return this.apiCall('/api/soporte-ti/fase-horas-a', {
       method: 'PUT',
       body: { horas }
+    })
+  }
+
+  static async getHorarioAtencion(): Promise<{
+    success: boolean
+    data?: import('~/services/soporteTi/apiTypes').SoporteTiHorarioAtencionApi[]
+    message?: string
+  }> {
+    return this.apiCall('/api/soporte-ti/horario-atencion')
+  }
+
+  static async updateHorarioAtencion(
+    dias: import('~/services/soporteTi/apiTypes').SoporteTiHorarioAtencionApi[]
+  ): Promise<{
+    success: boolean
+    data?: import('~/services/soporteTi/apiTypes').SoporteTiHorarioAtencionApi[]
+    message?: string
+  }> {
+    return this.apiCall('/api/soporte-ti/horario-atencion', {
+      method: 'PUT',
+      body: { dias }
     })
   }
 

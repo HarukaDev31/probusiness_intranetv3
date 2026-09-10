@@ -66,9 +66,10 @@ const route = useRoute()
 const id = Number(route.params.id)
 
 const skeletonCount = computed(() => {
+  if (currentRole.value === ROLES.JEFE_MARKETING) return 4
   if (props.role === ROLES.COORDINACION) return 6
   if (props.role === ROLES.DOCUMENTACION) return 3
-  if (currentId.value === ID_JEFEVENTAS) return 2
+  if (currentId.value === ID_JEFEVENTAS || currentRole.value === ROLES.RRHH) return 2
   if (props.role === ROLES.COTIZADOR) return 1
   return 5
 })
@@ -88,7 +89,9 @@ const pasosMap = computed(() => ({
   'COTIZACION': (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
     ? `${props.basePath}/cotizaciones/${id}?tab=pagos`
     : `${props.basePath}/cotizaciones/${id}?tab=prospectos`,
-  'CLIENTES': `${props.basePath}/clientes/${id}`,
+  'CLIENTES': currentRole.value === ROLES.FINANZAS
+    ? `${props.basePath}/clientes/${id}?tab=general`
+    : `${props.basePath}/clientes/${id}`,
   'DOCUMENTACION': `${props.basePath}/documentacion/${id}`,
   'COTIZACION FINAL': (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
     ? `${props.basePath}/cotizacion-final/${id}?tab=pagos`

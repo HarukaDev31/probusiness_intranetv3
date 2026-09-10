@@ -87,6 +87,12 @@
       @confirm="confirmCobranzaWhatsapp"
       @skip="skipCobranzaWhatsapp"
     />
+    <ReminderPagoModal
+      v-model:open="reminderPagoModal.open"
+      :id-cotizacion="reminderPagoModal.idCotizacion"
+      :loading="reminderPagoModal.loading"
+      @confirm="confirmReminderPago"
+    />
   </div>
 </template>
 
@@ -110,12 +116,19 @@ import { ROLES } from '~/constants/roles'
 import { UTooltip } from '#components'
 import CargosExtraServiciosCell from '~/components/cargaconsolidada/cotizacion-final/CargosExtraServiciosCell/index.vue'
 import CobranzaWhatsappTemplatesModal from '~/components/cargaconsolidada/cotizacion-final/CobranzaWhatsappTemplatesModal/index.vue'
+import ReminderPagoModal from '~/components/cargaconsolidada/cotizacion-final/ReminderPagoModal/index.vue'
 import type { CobranzaWhatsappTemplate, CobranzaWhatsappPreviewMeta } from '~/types/cargaconsolidada/cotizacion-final/general'
+import { useReminderPago } from '~/composables/cargaconsolidada/cotizacion-final/useReminderPago'
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
 const { currentRole: authCurrentRole } = useUserRole()
 const props = withDefaults(defineProps<CotizacionFinalViewProps>(), { backBasePath: undefined })
 const currentRole = computed(() => props.role || authCurrentRole.value)
+const isFinanzas = computed(() => currentRole.value === ROLES.FINANZAS)
+const isJefeMarketing = computed(() => currentRole.value === ROLES.JEFE_MARKETING)
+/** Solo lectura en cotización final (Finanzas / Jefe Marketing). */
+const isCotizacionFinalReadOnly = computed(() => isFinanzas.value || isJefeMarketing.value)
+const isFinanzasReadOnly = isCotizacionFinalReadOnly
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const { general, loadingGeneral, updateEstadoCotizacionFinal, sendCobranzaWhatsApp, uploadCotizacionFinalFile, getGeneral, currentPageGeneral, totalPagesGeneral, totalRecordsGeneral, itemsPerPageGeneral, searchGeneral, filterConfigGeneral, uploadFacturaComercial, uploadPlantillaFinal, downloadPlantillaGeneral, handleDownloadCotizacionFinalPDF, handleDeleteCotizacionFinal, headers, headersPagos, carga, fPuerto, loadingHeaders, getHeaders, handleSearchGeneral, handlePageChangeGeneral, handleItemsPerPageChangeGeneral, handleFilterChangeGeneral } = useGeneral()
@@ -148,9 +161,15 @@ const handleExportPagosContabilidad = async () => {
 
 // Tab configuration: para CONTABILIDAD primero Pagos luego General
 const canViewCargosExtra = computed(() =>
-  currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
+  currentRole.value === ROLES.COORDINACION
+  || currentRole.value === ROLES.CONTABILIDAD
+  || currentRole.value === ROLES.ADMINISTRACION
+  || isFinanzas.value
 )
 const tabs = computed(() => {
+  if (isJefeMarketing.value) {
+    return [{ value: 'general', label: 'General' }]
+  }
   if ((currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
     return canViewCargosExtra.value
       ? [{ value: 'pagos', label: 'Pagos' }, { value: 'cargos-extra', label: 'Cargos extra' }, { value: 'general', label: 'General' }]
@@ -364,7 +383,9 @@ const generalColumns = ref<TableColumn<any>[]>([
         items: filterConfigGeneral.value.find((filter: any) => filter.key === 'estado_cotizacion_final')?.options || [],
         class: [className],
         modelValue: initialValue,
+        disabled: isFinanzasReadOnly.value,
         'onUpdate:modelValue': async (value: any) => {
+          if (isFinanzasReadOnly.value) return
           if (value && value !== initialValue) {
             await handleUpdateEstadoCotizacionFinal(row.original.id_cotizacion, value)
           }
@@ -383,36 +404,12 @@ const generalColumns = ref<TableColumn<any>[]>([
           class: 'flex flex-row gap-2'
         }, [
           // Send reminder button
-          h(UButton, {
+          !isFinanzasReadOnly.value ? h(UButton, {
             icon: 'material-symbols:send-outline',
             color: 'primary',
             variant: 'ghost',
-            onClick: () => {
-              showConfirmation(
-                'Confirmar envío',
-                '¿Está seguro de enviar un recordatorio de pago a este cliente?',
-                async () => {
-                  try {
-                    await withSpinner(async () => {
-                      const nuxtApp = useNuxtApp()
-                      const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
-                      const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
-                      if (res && (res as any).success) {
-                        showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
-                        await getGeneral(Number(id))
-                        await getHeaders(Number(id))
-                      } else {
-                        showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
-                      }
-                    }, 'Enviando recordatorio...')
-                  } catch (err) {
-                    console.error('Error send reminder:', err)
-                    showError('Error', 'Error al enviar recordatorio')
-                  }
-                }
-              )
-            }
-          }),
+            onClick: () => openReminderPago(row.original.id_cotizacion)
+          }) : null,
           h(UButton, {
             icon: 'vscode-icons:file-type-excel',
             color: 'primary',
@@ -429,7 +426,7 @@ const generalColumns = ref<TableColumn<any>[]>([
               handleDownloadCotizacionFinalPDF(row.original.id_cotizacion)
             }
           }),
-          (currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) ? h(UButton, {
+          (!isFinanzasReadOnly.value && currentRole.value !== ROLES.CONTABILIDAD && currentRole.value !== ROLES.ADMINISTRACION) ? h(UButton, {
             icon: 'i-heroicons-trash',
             color: 'error',
             variant: 'ghost',
@@ -439,6 +436,8 @@ const generalColumns = ref<TableColumn<any>[]>([
           }) : null
         ])
 
+      } else if (isFinanzasReadOnly.value) {
+        return '—'
       } else {
         return h(UButton, {
           icon: 'i-heroicons-arrow-up-tray',
@@ -600,7 +599,7 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
     header: 'Acciones',
     cell: ({ row }: { row: any }) => {
       return h('div', { class: 'flex flex-row gap-2' }, [
-        h(UTooltip, {
+        !isFinanzasReadOnly.value ? h(UTooltip, {
           text: 'Enviar recordatorio de pago',
           placement: 'top'
         }, {
@@ -608,33 +607,9 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
           icon: 'material-symbols:send-outline',
           color: 'primary',
           variant: 'ghost',
-          onClick: () => {
-            showConfirmation(
-              'Confirmar envío',
-              '¿Está seguro de enviar un recordatorio de pago a este cliente?',
-              async () => {
-                try {
-                  await withSpinner(async () => {
-                    const nuxtApp = useNuxtApp()
-                    const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
-                    const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
-                    if (res && (res as any).success) {
-                      showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
-                      await getGeneral(Number(id))
-                      await getHeaders(Number(id))
-                    } else {
-                      showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
-                    }
-                  }, 'Enviando recordatorio...')
-                } catch (err) {
-                  console.error('Error send reminder:', err)
-                  showError('Error', 'Error al enviar recordatorio')
-                }
-              }
-            )
+          onClick: () => openReminderPago(row.original.id_cotizacion)
           }
-          }
-          )}),
+          )}) : null,
         //ADD ICON ARROW WITH TOOLTIP VER EN VERIFICACION QUE REDIRIGA A ver verificacion?idCotizacion=row.original.id_cotizacion
         h(UTooltip, {
           text: 'Ver en Verificación',
@@ -650,12 +625,13 @@ const generalColumnsAdministrador = ref<TableColumn<any>[]>([
             }
           })
         })
-      ])
+      ].filter(Boolean))
     }
   }
 ])
 const getPagosColumns = (): TableColumn<any>[] => {
   const isContabilidad = (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
+  const readOnlyPagos = isFinanzasReadOnly.value
   const base: TableColumn<any>[] = [
     { accessorKey: 'nro', header: 'N°', cell: ({ row }: { row: any }) => row.index + 1 },
     {
@@ -686,31 +662,7 @@ const getPagosColumns = (): TableColumn<any>[] => {
             icon: 'material-symbols:send-outline',
             color: 'primary',
             variant: 'ghost',
-            onClick: () => {
-              showConfirmation(
-                'Confirmar envío',
-                '¿Está seguro de enviar un recordatorio de pago a este cliente?',
-                async () => {
-                  try {
-                    await withSpinner(async () => {
-                      const nuxtApp = useNuxtApp()
-                      const endpoint = `/api/carga-consolidada/contenedor/cotizacion-final/general/${row.original.id_cotizacion}/send-reminder-pago`
-                      const res = await nuxtApp.$api.call(endpoint, { method: 'POST', body: {} })
-                      if (res && (res as any).success) {
-                        showSuccess('Recordatorio enviado', (res as any).message || 'Recordatorio de pago enviado correctamente')
-                        await getPagos(Number(id))
-                        await getHeaders(Number(id))
-                      } else {
-                        showError('Error', (res as any).message || 'No se pudo enviar el recordatorio')
-                      }
-                    }, 'Enviando recordatorio...')
-                  } catch (err) {
-                    console.error('Error send reminder:', err)
-                    showError('Error', 'Error al enviar recordatorio')
-                  }
-                }
-              )
-            }
+            onClick: () => openReminderPago(row.original.id_cotizacion)
           })
         })
       },
@@ -769,7 +721,9 @@ const getPagosColumns = (): TableColumn<any>[] => {
       let MAX_PAYMENTS = 4
       const pagos = JSON.parse(row.original.pagos || '[]')
       const hayDeuda = row.original.total_logistica_impuestos > row.original.total_pagos
-      if (hayDeuda) {
+      if (readOnlyPagos) {
+        MAX_PAYMENTS = pagos.length
+      } else if (hayDeuda) {
         // Con deuda: mostrar un slot vacío más para poder registrar otro pago
         MAX_PAYMENTS = Math.max(MAX_PAYMENTS, pagos.length + 1)
       } else if (pagos.length >= MAX_PAYMENTS) {
@@ -782,8 +736,9 @@ const getPagosColumns = (): TableColumn<any>[] => {
             pagoDetails: pagos,
             clienteNombre: row.original.nombre,
             currency: 'USD',
-            showDelete: true,
+            showDelete: !readOnlyPagos,
             onSave: (data: any) => {
+              if (readOnlyPagos) return
               const formData = new FormData()
               for (const key in data) {
                 if (data[key] !== undefined && data[key] !== null) formData.append(key, data[key])
@@ -803,6 +758,7 @@ const getPagosColumns = (): TableColumn<any>[] => {
               }, 'registrarPagoFinal')
             },
             onDelete: (pagoId: number) => {
+              if (readOnlyPagos) return
               showConfirmation(
                 'Confirmar eliminación',
                 '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
@@ -830,7 +786,11 @@ const getPagosColumns = (): TableColumn<any>[] => {
   return base
 }
 const getCargosExtraColumns = (): TableColumn<any>[] => {
-  const editable = currentRole.value === ROLES.COORDINACION || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)
+  const editable = !isFinanzasReadOnly.value && (
+    currentRole.value === ROLES.COORDINACION
+    || currentRole.value === ROLES.CONTABILIDAD
+    || currentRole.value === ROLES.ADMINISTRACION
+  )
   const toNumber = (value: any, digits = 2) => Number(Number(value ?? 0).toFixed(digits))
   return [
     { accessorKey: 'nro', header: 'N', cell: ({ row }: { row: any }) => row.index + 1 },
@@ -869,6 +829,8 @@ const getCargosExtraColumns = (): TableColumn<any>[] => {
       header: 'Servicio / Importe',
       cell: ({ row }: { row: any }) => h(CargosExtraServiciosCell, {
         idCotizacion: row.original.id_cotizacion,
+        idContenedor: row.original.id_contenedor ?? Number(id),
+        clienteNombre: row.original.nombre || '',
         servicios: row.original.delivery_servicios || [],
         editable,
         onRefresh: () => getCargosExtra(Number(id))
@@ -929,6 +891,44 @@ const cobranzaWhatsappModal = reactive({
   meta: null as CobranzaWhatsappPreviewMeta | null,
   loading: false,
 })
+
+const reminderPagoModal = reactive({
+  open: false,
+  idCotizacion: null as number | null,
+  loading: false,
+})
+const { sendReminderPago } = useReminderPago()
+
+const openReminderPago = (idCotizacion: number) => {
+  reminderPagoModal.idCotizacion = idCotizacion
+  reminderPagoModal.open = true
+}
+
+const confirmReminderPago = async () => {
+  if (!reminderPagoModal.idCotizacion) return
+  reminderPagoModal.loading = true
+  try {
+    await withSpinner(async () => {
+      const res = await sendReminderPago(reminderPagoModal.idCotizacion as number)
+      if (res && res.success) {
+        showSuccess('Recordatorio en camino', res.message || 'Se está enviando al cliente por WhatsApp.')
+        reminderPagoModal.open = false
+        await getGeneral(Number(id))
+        await getHeaders(Number(id))
+        if (typeof getPagos === 'function') {
+          await getPagos(Number(id))
+        }
+      } else {
+        showError('Error', res?.message || 'No se pudo enviar el recordatorio')
+      }
+    }, 'Enviando recordatorio…')
+  } catch (err) {
+    console.error('Error send reminder:', err)
+    showError('Error', 'Error al enviar recordatorio')
+  } finally {
+    reminderPagoModal.loading = false
+  }
+}
 
 const handleUpdateEstadoCotizacionFinal = async (idCotizacion: number, estado: string) => {
   withSpinner(async () => {

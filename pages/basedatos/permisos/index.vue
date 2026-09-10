@@ -48,7 +48,7 @@ import type { TramiteAduana, TramiteAduanaTipoPermisoItem, TramiteEstado, Create
 import { TRAMITE_ESTADOS } from '~/types/basedatos/tramiteAduana'
 import { TramiteAduanaCatalogoService } from '~/services/basedatos/tramiteAduanaCatalogoService'
 import { useUserRole } from '~/composables/auth/useUserRole'
-import { ROLES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
 
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
@@ -96,7 +96,7 @@ const overlay = useOverlay()
 /** Solo Documentación, Coordinación y Jefe Importación pueden crear/editar/eliminar permisos y subir archivos; el resto solo visual */
 const canCreateOrEditPermiso = computed(() => {
   const role = currentRole.value
-  return role === ROLES.DOCUMENTACION || role === ROLES.COORDINACION || role === ROLES.JEFE_IMPORTACIONES
+  return role === ROLES.DOCUMENTACION || role === ROLES.COORDINACION || roleEsComoJefeImportacion(role)
 })
 const permisoModal = overlay.create(PermisoTramiteModal)
 

@@ -21,7 +21,8 @@ const WA_COPILOTO_WS_ROLES = [
   ROLES.COTIZADOR,
   ROLES.ADMINISTRACION,
   'GERENCIA',
-  ROLES.ADMIN
+  ROLES.ADMIN,
+  ROLES.RRHH
 ] as const
 
 function registerWaCopilotoHandlers() {

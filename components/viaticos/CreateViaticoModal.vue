@@ -10,7 +10,7 @@
         </template>
 
         <template #body>
-            <div class="p-6 space-y-6">
+            <div class="p-6 space-y-6" data-manual-capture="viatico-form">
                 <div class="space-y-4">
                     <!-- Asunto -->
                     <div>

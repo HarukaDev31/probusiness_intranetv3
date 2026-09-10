@@ -8,13 +8,23 @@
     Saltar al contenido principal
   </a>
 
-  <!-- Sidebar -->
-  <SidebarMenu v-model="sidebarVisible" :user="user" :menu-categories="sidebarCategories" @collapsed-change="(v) => sidebarCollapsed = v" />
+  <!-- Sidebar principal de la intranet (oculta en lector del manual) -->
+  <SidebarMenu
+    v-if="!hideMainSidebar"
+    v-model="sidebarVisible"
+    :user="user"
+    :menu-categories="sidebarCategories"
+    @collapsed-change="(v) => sidebarCollapsed = v"
+  />
 
     <!-- Main Content -->
-  <div class="flex-1 flex flex-col min-h-0 transition-all duration-300 w-80" :class="sidebarVisible ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-70') : ''">
+  <div
+    class="flex-1 flex flex-col min-h-0 transition-all duration-300 w-80"
+    :class="hideMainSidebar ? '' : (sidebarVisible ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-70') : '')"
+  >
       <!-- Top Header -->
-      <header 
+      <header
+        v-if="!hideMainSidebar"
       class="bg-[#f0f4f9] dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 lg:hidden">
         <div class="px-6 py-4 md:px-4 md:py-3">
 
@@ -32,7 +42,8 @@
         id="main-content"
         ref="mainContentRef"
         :class="[
-          'flex flex-1 min-h-0 flex-col bg-[#f0f4f9] p-3 dark:bg-gray-900',
+          'flex flex-1 min-h-0 flex-col bg-[#f0f4f9] dark:bg-gray-900',
+          hideMainSidebar ? 'p-0' : 'p-3',
           shellViewportLocked ? 'overflow-hidden' : ''
         ]"
         :style="isContentNarrow ? { minWidth: '343px', width: '100%' } : {}"
@@ -107,6 +118,13 @@ const shellViewportLocked = computed(
     || route.path.startsWith('/coordinacion/whatsapp-inbox')
     // Chat / listado Soporte TI: altura de viewport (config usa scroll normal)
     || (route.path.startsWith('/soporte-ti') && !route.path.includes('/configuracion'))
+    // Solo el lector del manual; el mantenedor /admin necesita scroll normal
+    || (route.path.startsWith('/manual-usuario') && !route.path.startsWith('/manual-usuario/admin'))
+)
+
+/** Lector del manual: sin sidebar de la intranet (tiene TOC propio). */
+const hideMainSidebar = computed(
+  () => route.path.startsWith('/manual-usuario') && !route.path.startsWith('/manual-usuario/admin')
 )
 
 const pageTitle = computed(() => {

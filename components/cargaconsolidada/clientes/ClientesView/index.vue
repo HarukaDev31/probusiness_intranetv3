@@ -6,13 +6,13 @@
                 :total-pages="totalPagesGeneral" :total-records="totalRecordsGeneral"
                 :items-per-page="itemsPerPageGeneral" :search-query-value="searchGeneral" :show-secondary-search="false"
                 :show-filters="false" :filters-value="filtersGeneral"
-                :show-export="(currentId == ID_JEFEVENTAS || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false"
+                :show-export="(currentId == ID_JEFEVENTAS || currentRole == ROLES.RRHH || COTIZADORES_WITH_PRIVILEGES.includes(currentId)) ? true : false"
                 :show-body-top="true" :show-pagination="false" @export="exportData"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
@@ -35,7 +35,7 @@
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true" :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados"
@@ -84,7 +84,7 @@
                 :show-secondary-search="false" :show-filters="false" :filters-value="filtersVariacion"
                 :show-export="false" :show-body-top="true" :hide-back-button="false" :show-pagination="false"
                 @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || currentRole === ROLES.JEFE_IMPORTACIONES || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION) || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
@@ -108,7 +108,7 @@
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersPagos" :show-export="false" :hide-back-button="false" :show-body-top="true"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION)) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION) || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchPagos" @page-change="handlePagePagosChange"
                 @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos">
@@ -142,21 +142,25 @@ import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import type { TableColumn } from '@nuxt/ui'
 import PagoGrid from '~/components/PagoGrid.vue'
 import { STATUS_BG_CLASSES, STATUS_BG_PAGOS_CLASSES } from '~/constants/ui'
 import { FILE_ICONS_MAP } from '~/constants/file'
 import SectionHeader from '~/components/commons/SectionHeader.vue'
-import type { ClientesViewProps } from './types'
+import type { ClientesViewProps, ProveedorManualStatus } from './types'
 import {
     BACKEND_FILES_BASE_URL,
     EMPTY_MAX_DOCUMENTACION_DATE,
-    MANUAL_STATUS_TO_STATUS_BG_KEY,
     PROVIDER_MANUAL_STATUSES,
     READ_ONLY_COLUMN_KEYS,
+    DOC_STATUS_COLORS,
+    CANAL_OPTIONS,
+    CANAL_COLORS,
     isCoord2DocsEmail,
+    isCoord3DocsEmail,
+    type CanalSeguimiento,
 } from './constants'
 
 function getPermisoEstadoClass(estado: string): string {
@@ -190,30 +194,105 @@ const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole: authCurrentRole, currentId, isCoordinacion, isCotizador, userEmail, fetchCurrentUser, getUserData } = useUserRole()
 const isCoord2Docs = computed(() => isCoord2DocsEmail(getUserData() || userEmail.value))
+const isCoord3Docs = computed(() => isCoord3DocsEmail(getUserData() || userEmail.value))
 fetchCurrentUser()
+
+const docStatusSelectStyle = (status: string) => {
+    const colors = DOC_STATUS_COLORS[status as ProveedorManualStatus] ?? DOC_STATUS_COLORS.Pendiente
+    return `color: ${colors.text}; background-color: ${colors.bg};`
+}
 
 const renderDocStatusSelects = (row: any, field: string, editable: boolean) => {
     const proveedores = row.original.proveedores || []
     const statuses = PROVIDER_MANUAL_STATUSES
     return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
         if (!p[field]) p[field] = 'Pendiente'
-        const itemsWithClass = statuses.map((s: string) => {
-            const key = MANUAL_STATUS_TO_STATUS_BG_KEY[s as keyof typeof MANUAL_STATUS_TO_STATUS_BG_KEY] ?? s
-            const itemCls = (STATUS_BG_CLASSES as any)[key] ?? ''
-            return { label: s, value: s, class: itemCls }
-        })
-        const mapped = MANUAL_STATUS_TO_STATUS_BG_KEY[p[field] as keyof typeof MANUAL_STATUS_TO_STATUS_BG_KEY] || 'Pendiente'
-        const cls = STATUS_BG_CLASSES[mapped as keyof typeof STATUS_BG_CLASSES] ?? ''
+        const itemsWithClass = statuses.map((s: string) => ({ label: s, value: s }))
         return h(USelect as any, {
             modelValue: p[field],
             items: itemsWithClass,
-            class: `w-full ${cls}`,
+            class: 'w-full',
+            style: docStatusSelectStyle(p[field]),
             variant: 'solid',
             disabled: !editable,
             'onUpdate:modelValue': editable
                 ? async (v: string) => { await saveProveedorField(p, field, v) }
                 : undefined
         })
+    }))
+}
+
+const renderCanalSelect = (row: any, editable: boolean) => {
+    const proveedores = row.original.proveedores || []
+    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
+        const colors = p.canal ? (CANAL_COLORS[p.canal as CanalSeguimiento] ?? null) : null
+        const style = colors ? `color: ${colors.text}; background-color: ${colors.bg};` : ''
+        return h(USelect as any, {
+            modelValue: p.canal || undefined,
+            items: CANAL_OPTIONS.map((c) => ({ label: c, value: c })),
+            placeholder: 'Seleccionar',
+            class: 'w-full',
+            style,
+            variant: 'solid',
+            disabled: !editable,
+            'onUpdate:modelValue': editable
+                ? async (v: string) => { await saveProveedorField(p, 'canal', v) }
+                : undefined
+        })
+    }))
+}
+
+const renderFechaEntrega = (row: any, editable: boolean) => {
+    const proveedores = row.original.proveedores || []
+    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
+        return h('input', {
+            type: 'date',
+            value: p.fecha_entrega || '',
+            class: 'w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1.5 disabled:opacity-60',
+            disabled: !editable,
+            onChange: editable
+                ? (e: Event) => saveProveedorField(p, 'fecha_entrega', (e.target as HTMLInputElement).value)
+                : undefined
+        })
+    }))
+}
+
+const renderInspeccion = (row: any) => {
+    const proveedores = row.original.proveedores || []
+    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
+        return h('input', {
+            type: 'date',
+            value: p.arrive_date_china || '',
+            class: 'w-full text-sm rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-1.5 text-gray-500',
+            disabled: true
+        })
+    }))
+}
+
+const observacionesDraft = ref<Record<number, string>>({})
+
+const renderObservaciones = (row: any, editable: boolean) => {
+    const proveedores = row.original.proveedores || []
+    return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((p: any) => {
+        if (observacionesDraft.value[p.id] === undefined) {
+            observacionesDraft.value[p.id] = p.observaciones_seguimiento || ''
+        }
+        return h('div', { class: 'flex items-center gap-1' }, [
+            h(UInput as any, {
+                modelValue: observacionesDraft.value[p.id],
+                placeholder: 'Sin observaciones',
+                class: 'w-full',
+                disabled: !editable,
+                'onUpdate:modelValue': (v: string) => { observacionesDraft.value[p.id] = v }
+            }),
+            editable ? h(UButton as any, {
+                icon: 'material-symbols:save-outline',
+                variant: 'ghost',
+                color: 'primary',
+                size: 'xs',
+                onClick: () => saveProveedorField(p, 'observaciones_seguimiento', observacionesDraft.value[p.id] || '')
+            }) : null
+        ])
     }))
 }
 
@@ -229,7 +308,7 @@ const id = route.params.id
 const initialTabFromRoute = typeof route.query.tab === 'string' ? route.query.tab : ''
 const tab = ref<string>(
     initialTabFromRoute
-        || (isCoordinacion.value || currentRole.value === ROLES.JEFE_IMPORTACIONES || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS ? 'embarcados' : 'general')
+        || (isCoordinacion.value || roleEsComoJefeImportacion(currentRole.value) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS || currentRole.value === ROLES.RRHH ? 'embarcados' : 'general')
 )
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
@@ -946,7 +1025,7 @@ const columnsDocumentacion: TableColumn<any>[] = [
                     }
                 }
             })
-            const permisoBlock = (currentRole.value === ROLES.DOCUMENTACION || (currentRole.value === ROLES.JEFE_IMPORTACIONES && route.path.includes('documentacion')))
+            const permisoBlock = (currentRole.value === ROLES.DOCUMENTACION || (roleEsComoJefeImportacion(currentRole.value) && route.path.includes('documentacion')))
                 ? renderEstadoPermisoPorTipo(row.original.estado_permiso_por_tipo ?? [], row.original.id_tramite)
                 : null
             return h('div', { class: 'flex flex-col' }, [selectNode, permisoBlock].filter(Boolean))
@@ -979,6 +1058,7 @@ const getColumnsGeneral = () => {
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
             return columnsDocumentacion
+        case ROLES.COORDINADOR_GENERAL:
         case ROLES.JEFE_IMPORTACIONES:
             return columnsCoordinacion
         case ROLES.COORDINACION:
@@ -995,6 +1075,7 @@ const getColumnsEmbarcados = (): TableColumn<any>[] => {
     if (currentRole.value === ROLES.JEFE_MARKETING) return toReadOnlyColumns(columnsEmbarcadosCoordinacion.value)
     switch (currentRole.value) {
         case ROLES.COORDINACION:
+        case ROLES.COORDINADOR_GENERAL:
         case ROLES.JEFE_IMPORTACIONES:
         case ROLES.ADMINISTRACION:
         case ROLES.CONTABILIDAD:
@@ -1414,6 +1495,11 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         }
     },
     {
+        accessorKey: 'arrive_date_china',
+        header: 'Inspección',
+        cell: ({ row }: { row: any }) => renderInspeccion(row)
+    },
+    {
         accessorKey: 'invoice_status',
         header: 'Invoice',
         cell: ({ row }: { row: any }) => renderDocStatusSelects(
@@ -1440,14 +1526,23 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
             true
         )
     },
-
+    {
+        accessorKey: 'canal',
+        header: 'Canal',
+        cell: ({ row }: { row: any }) => renderCanalSelect(row, true)
+    },
+    {
+        accessorKey: 'fecha_entrega',
+        header: 'Fecha de Entrega',
+        cell: ({ row }: { row: any }) => renderFechaEntrega(row, true)
+    },
     {
         accessorKey: 'acciones',
         header: 'Acciones',
         cell: ({ row }: { row: any }) => {
             // Render both actions: menu (modal) and eye (navigate)
             return h('div', { class: 'flex items-center gap-1' }, [
-                
+
                 h(UButton, {
                     icon: 'iconamoon:menu-burger-horizontal',
                     variant: 'ghost',
@@ -1476,6 +1571,11 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
                 })
             ])
         }
+    },
+    {
+        accessorKey: 'observaciones_seguimiento',
+        header: 'Observaciones',
+        cell: ({ row }: { row: any }) => renderObservaciones(row, true)
     }
 ])
 const columnsVariacion = ref<TableColumn<any>[]>([
@@ -1673,7 +1773,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
     try {
         proveedor[field] = value
         if (finalField && value === 'Revisado' && proveedor[finalField] !== 'Revisado') {
-            proveedor[finalField] = 'Recibido'
+            proveedor[finalField] = 'Entregado'
         }
         await withSpinner(async () => {
             const formData = new FormData()
@@ -1699,13 +1799,13 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
 const configureTabsForRole = () => {
     if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [{ label: 'Documentacion', value: 'general' }]
-    } else if (currentRole.value === ROLES.COORDINACION || currentRole.value === ROLES.JEFE_IMPORTACIONES || currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) {
+    } else if (currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value) || currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) {
         tabs.value = [
             { label: 'Seguimiento', value: 'embarcados' },
             { label: 'Documentacion', value: 'general' },
             { label: 'Variación', value: 'variacion' },
         ]
-    } else if (isCotizador.value && Number(currentId.value) === ID_JEFEVENTAS) {
+    } else if ((isCotizador.value && Number(currentId.value) === ID_JEFEVENTAS) || currentRole.value === ROLES.RRHH) {
         tabs.value = [
             { label: 'Seguimiento', value: 'embarcados' },
             { label: 'Documentacion', value: 'general' },

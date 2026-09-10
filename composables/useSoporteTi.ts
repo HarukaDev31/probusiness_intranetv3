@@ -4,6 +4,7 @@ import { SOPORTE_TI_ROL_META, soporteTiInicialesDesdeNombre } from '~/constants/
 import { ROLES } from '~/constants/roles'
 import { SoporteTiService } from '~/services/soporteTiService'
 import type {
+  SoporteTiCreadorFiltro,
   SoporteTiCreatePayload,
   SoporteTiEnviarMensajePayload,
   SoporteTiListFilters,
@@ -61,7 +62,6 @@ export function useSoporteTi() {
 
   const rolActivo = computed<SoporteTiRol>(() => {
     if (hasRole(ROLES.PM)) return 'PM'
-    if (hasRole(ROLES.SOPORTE)) return 'Analista'
     return 'Solicitante'
   })
 
@@ -84,6 +84,7 @@ export function useSoporteTi() {
   }
 
   const solicitudes = useState<SoporteTiSolicitud[]>('soporte-ti-solicitudes', () => [])
+  const creadoresFiltro = useState<SoporteTiCreadorFiltro[]>('soporte-ti-creadores-filtro', () => [])
   const error = useState<string | null>('soporte-ti-error', () => null)
 
   const stats = computed(() => statsFromList(solicitudes.value))
@@ -281,6 +282,21 @@ export function useSoporteTi() {
     })
 
     return cargarEnCurso
+  }
+
+  async function cargarCreadoresFiltro(filters?: SoporteTiListFilters) {
+    if (rolActivo.value === 'Solicitante') {
+      creadoresFiltro.value = []
+      return
+    }
+
+    try {
+      const res = await SoporteTiService.listCreadores(filters)
+      if (!res?.success) throw new Error(res.message || 'Error al cargar creadores')
+      creadoresFiltro.value = res.data ?? []
+    } catch {
+      creadoresFiltro.value = []
+    }
   }
 
   /** Asegura el listado en memoria (una sola petición concurrente). */
@@ -613,9 +629,11 @@ export function useSoporteTi() {
     rolActivo,
     puedeCrearSolicitud,
     solicitudes,
+    creadoresFiltro,
     stats,
     error,
     cargar,
+    cargarCreadoresFiltro,
     asegurarListadoCargado,
     update,
     updatePriority,

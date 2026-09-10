@@ -15,8 +15,26 @@
       :kanban-draggable="rolActivo !== 'Solicitante'" :kanban-is-row-draggable="kanbanPuedeArrastrar"
       :kanban-can-drop="kanbanPuedeSoltarEn"
       empty-state-message="No hay solicitudes que coincidan con los filtros." @update:primary-search="onPrimarySearch"
-      @filter-change="onFilterChange" @row-click="onRowClick" @kanban-move="onKanbanMove">
+      @filter-change="onFilterChange" @clear-filters="onClearFilters" @row-click="onRowClick" @kanban-move="onKanbanMove">
       <template #actions>
+        <UButton
+          v-if="rolActivo === 'Soporte'"
+          size="sm"
+          variant="outline"
+          icon="i-heroicons-calendar-days"
+          @click="navigateTo('/soporte-ti/configuracion/horario-atencion')"
+        >
+          Horario atención
+        </UButton>
+        <UButton
+          v-if="rolActivo !== 'Solicitante'"
+          size="sm"
+          variant="outline"
+          icon="i-heroicons-squares-2x2"
+          @click="navigateTo('/soporte-ti/areas')"
+        >
+          Áreas
+        </UButton>
         <UButton
           v-if="rolActivo !== 'Solicitante'"
           size="sm"
@@ -97,6 +115,7 @@ import {
   etiquetaPrioridad
 } from '~/constants/soporteTiPrioridad'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { SoporteTiService } from '~/services/soporteTiService'
 
 definePageMeta({
   middleware: 'auth'
@@ -110,9 +129,11 @@ const {
   rolActivo,
   puedeCrearSolicitud,
   solicitudes,
+  creadoresFiltro,
   stats,
   error,
   cargar,
+  cargarCreadoresFiltro,
   create,
 } = useSoporteTi()
 
@@ -121,7 +142,7 @@ const loading = ref(false)
 async function cargarLista(filters?: SoporteTiListFilters) {
   loading.value = true
   try {
-    await cargar(filters)
+    await Promise.all([cargar(filters), cargarCreadoresFiltro(filters)])
   } finally {
     loading.value = false
   }
@@ -142,11 +163,19 @@ function onEvidenciaModalOpen(open: boolean) {
 
 const q = ref('')
 const filtroTipo = ref<'todos' | 'A' | 'B'>('todos')
-const filtroEstado = ref<string>('todos')
+const filtroEstados = ref<string[]>([])
+const filtroPrioridades = ref<string[]>([])
+const filtroAreas = ref<string[]>([])
+const filtroCreador = ref<string>('todos')
 const filtroSoloMias = ref(false)
+const areasFiltro = ref<string[]>([])
+
 const filtersDraft = computed(() => ({
   tipo: filtroTipo.value,
-  estado: filtroEstado.value,
+  estado: filtroEstados.value,
+  prioridad: filtroPrioridades.value,
+  area: filtroAreas.value,
+  creador: filtroCreador.value,
   solo_mias: filtroSoloMias.value ? '1' : '0'
 }))
 
@@ -165,17 +194,47 @@ const filterConfig = computed<FilterConfig[]>(() => {
     {
       key: 'estado',
       label: 'Estado',
-      placeholder: 'Estado',
-      options: [
-        { label: 'Todos', value: 'todos' },
-        ...SOPORTE_TI_KANBAN_BOARD.map((c) => ({
-          label: c.label,
-          value: c.key
-        }))
-      ]
+      placeholder: 'Estados',
+      multiple: true,
+      options: SOPORTE_TI_KANBAN_BOARD.map((c) => ({
+        label: c.label,
+        value: c.key
+      }))
+    },
+    {
+      key: 'prioridad',
+      label: 'Prioridad',
+      placeholder: 'Prioridades',
+      multiple: true,
+      options: SOPORTE_TI_PRIORIDADES.map((p) => ({
+        label: p.label,
+        value: String(p.value)
+      }))
+    },
+    {
+      key: 'area',
+      label: 'Área',
+      placeholder: 'Áreas',
+      multiple: true,
+      options: areasFiltro.value.map((nombre) => ({
+        label: nombre,
+        value: nombre
+      }))
     }
   ]
   if (rolActivo.value !== 'Solicitante') {
+    base.push({
+      key: 'creador',
+      label: 'Creador',
+      placeholder: 'Creador',
+      options: [
+        { label: 'Todos', value: 'todos' },
+        ...creadoresFiltro.value.map((c) => ({
+          label: c.nombre,
+          value: String(c.id)
+        }))
+      ]
+    })
     base.push({
       key: 'solo_mias',
       label: 'Asignación',
@@ -189,16 +248,43 @@ const filterConfig = computed<FilterConfig[]>(() => {
   return base
 })
 
-function onFilterChange(key: string, value: string) {
+function asStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((v) => String(v)).filter((v) => v !== '')
+  }
+  if (value == null || value === '' || value === 'todos') return []
+  return [String(value)]
+}
+
+function onFilterChange(key: string, value: string | string[] | number | null) {
   if (key === 'tipo' && (value === 'todos' || value === 'A' || value === 'B')) {
     filtroTipo.value = value
   }
   if (key === 'estado') {
-    filtroEstado.value = value || 'todos'
+    filtroEstados.value = asStringArray(value)
+  }
+  if (key === 'prioridad') {
+    filtroPrioridades.value = asStringArray(value)
+  }
+  if (key === 'area') {
+    filtroAreas.value = asStringArray(value)
+  }
+  if (key === 'creador') {
+    filtroCreador.value = typeof value === 'string' ? value || 'todos' : 'todos'
   }
   if (key === 'solo_mias') {
     filtroSoloMias.value = value === '1'
   }
+  void cargarLista(filtrosLista())
+}
+
+function onClearFilters() {
+  filtroTipo.value = 'todos'
+  filtroEstados.value = []
+  filtroPrioridades.value = []
+  filtroAreas.value = []
+  filtroCreador.value = 'todos'
+  filtroSoloMias.value = false
   void cargarLista(filtrosLista())
 }
 
@@ -221,10 +307,17 @@ const filasTabla = computed<SoporteTiTablaFila[]>(() =>
 )
 
 function filtrosLista(): SoporteTiListFilters {
+  const creadorId =
+    filtroCreador.value !== 'todos' ? Number(filtroCreador.value) : undefined
   return {
     q: q.value.trim() || undefined,
     tipo: filtroTipo.value,
-    estadoCodigo: filtroEstado.value,
+    estadoCodigos: filtroEstados.value.length ? filtroEstados.value : undefined,
+    prioridades: filtroPrioridades.value.length
+      ? filtroPrioridades.value.map((p) => Number(p)).filter((n) => n > 0)
+      : undefined,
+    areas: filtroAreas.value.length ? filtroAreas.value : undefined,
+    creadorUserId: creadorId != null && creadorId > 0 ? creadorId : undefined,
     soloMias: filtroSoloMias.value || undefined
   }
 }
@@ -245,6 +338,32 @@ function onRowClick(row: Record<string, unknown>) {
 
 const UIcon = resolveComponent('UIcon')
 const USelect = resolveComponent('USelect')
+const UButton = resolveComponent('UButton')
+
+function sortableHeader(label: string) {
+  return ({ column }: { column: any }) => {
+    const sorted = column.getIsSorted() as false | 'asc' | 'desc'
+    const icon =
+      sorted === 'asc'
+        ? 'i-heroicons-bars-arrow-up'
+        : sorted === 'desc'
+          ? 'i-heroicons-bars-arrow-down'
+          : 'i-heroicons-arrows-up-down'
+    return h(UButton as any, {
+      color: 'neutral',
+      variant: 'ghost',
+      size: 'xs',
+      class: '-mx-2.5 font-medium',
+      label,
+      icon,
+      trailingIcon: undefined,
+      onClick: (e: MouseEvent) => {
+        e.stopPropagation()
+        column.toggleSorting(sorted === 'asc')
+      }
+    })
+  }
+}
 
 const itemsComplejidadAnalista = SOPORTE_TI_COMPLEJIDADES.map((c) => ({
   label: c,
@@ -379,14 +498,31 @@ function botonOjo(options: {
   )
 }
 
-function celdaTituloTabla(titulo: string | undefined | null) {
+function celdaTituloTabla(titulo: string | undefined | null, url?: string | null) {
   const text = (titulo ?? '').trim() || '—'
+  const raw = (url ?? '').trim()
+  if (!raw) {
+    return h(
+      'span',
+      {
+        class:
+          'block w-full min-w-0 truncate text-left text-sm text-gray-900 dark:text-gray-100',
+        title: text !== '—' ? text : undefined
+      },
+      text
+    )
+  }
+  const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
   return h(
-    'span',
+    'a',
     {
+      href,
+      target: '_blank',
+      rel: 'noopener noreferrer',
       class:
-        'block w-full min-w-0 truncate text-left text-sm text-gray-900 dark:text-gray-100',
-      title: text !== '—' ? text : undefined
+        'block w-full min-w-0 truncate text-left text-sm text-primary-600 hover:underline dark:text-primary-400',
+      title: `${text} — ${raw}`,
+      onClick: stopRowNav
     },
     text
   )
@@ -429,18 +565,70 @@ function columnaLink(): TableColumn<SoporteTiTablaFila> {
   }
 }
 
-function columnaTitulo(header: string): TableColumn<SoporteTiTablaFila> {
-  const cap = 'min-w-0 max-w-[14rem] sm:max-w-[18rem] lg:max-w-[22rem] align-top'
+function columnaCreador(): TableColumn<SoporteTiTablaFila> {
+  const cap = 'min-w-0 max-w-[12rem] sm:max-w-[14rem] align-top'
   return {
-    accessorKey: 'titulo',
-    header,
+    id: 'creador',
+    accessorKey: 'solicitante',
+    header: sortableHeader('Creador'),
     meta: {
       class: {
         th: cap,
         td: cap
       }
     },
-    cell: ({ row }) => celdaTituloTabla(row.original.titulo)
+    cell: ({ row }) => {
+      const nombre = (row.original.solicitante ?? '').trim() || '—'
+      return h(
+        'span',
+        {
+          class: 'block truncate text-sm text-gray-900 dark:text-gray-100',
+          title: nombre !== '—' ? nombre : undefined
+        },
+        nombre
+      )
+    }
+  }
+}
+
+function columnaRol(): TableColumn<SoporteTiTablaFila> {
+  const cap = 'min-w-0 max-w-[10rem] sm:max-w-[12rem] align-top'
+  return {
+    id: 'rol',
+    accessorKey: 'solicitanteRol',
+    header: sortableHeader('Rol'),
+    meta: {
+      class: {
+        th: cap,
+        td: cap
+      }
+    },
+    cell: ({ row }) => {
+      const rol = (row.original.solicitanteRol ?? '').trim() || '—'
+      return h(
+        'span',
+        {
+          class: 'block truncate text-xs text-muted',
+          title: rol !== '—' ? rol : undefined
+        },
+        rol
+      )
+    }
+  }
+}
+
+function columnaTitulo(header: string): TableColumn<SoporteTiTablaFila> {
+  const cap = 'min-w-0 max-w-[14rem] sm:max-w-[18rem] lg:max-w-[22rem] align-top'
+  return {
+    accessorKey: 'titulo',
+    header: sortableHeader(header),
+    meta: {
+      class: {
+        th: cap,
+        td: cap
+      }
+    },
+    cell: ({ row }) => celdaTituloTabla(row.original.titulo, row.original.seccionRuta)
   }
 }
 
@@ -448,7 +636,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
   const colEstado: TableColumn<SoporteTiTablaFila> = {
     id: 'estado',
     accessorKey: 'estadoCodigo',
-    header: 'Estado',
+    header: sortableHeader('Estado'),
     meta: {
       class: {
         th: tdSelectAnalista,
@@ -462,6 +650,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     id: 'acciones',
     accessorKey: 'codigo',
     header: 'Acciones',
+    enableSorting: false,
     cell: ({ row }) =>
       botonOjo({
         titulo: 'Ver detalle',
@@ -471,12 +660,12 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
 
   if (rolActivo.value === 'Solicitante') {
     return [
-      { accessorKey: 'codigo', header: 'Código' },
-      { accessorKey: 'tipoSolicitud', header: 'Tipo solicitud' },
+      { accessorKey: 'codigo', header: sortableHeader('Código') },
+      { accessorKey: 'tipoSolicitud', header: sortableHeader('Tipo solicitud') },
       columnaTitulo('Nombre'),
       columnaLink(),
-      { accessorKey: 'fechaRegistroCompleta', header: 'Fecha de registro' },
-      { accessorKey: 'fechaFinEstimadoFmt', header: 'Término estimado' },
+      { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro') },
+      { accessorKey: 'fechaFinEstimadoFmt', header: sortableHeader('Término estimado') },
       colEstado,
       colAcciones
     ]
@@ -486,6 +675,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     id: 'evidencia',
     accessorKey: 'codigo',
     header: 'Evidencia',
+    enableSorting: false,
     cell: ({ row }) => {
       const t = row.original
       return botonOjo({
@@ -499,7 +689,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
 
   const colArea: TableColumn<SoporteTiTablaFila> = {
     accessorKey: 'area',
-    header: 'Área',
+    header: sortableHeader('Área'),
     cell: ({ row }) =>
       h(
         'span',
@@ -557,7 +747,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
   const colPrioridad: TableColumn<SoporteTiTablaFila> = {
     id: 'prioridad',
     accessorKey: 'prioridad',
-    header: 'Prioridad',
+    header: sortableHeader('Prioridad'),
     meta: { class: { th: tdSelectAnalista, td: tdSelectAnalista } },
     cell: ({ row }) => {
       const t = row.original
@@ -597,7 +787,8 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
   const colComplejidadPm: TableColumn<SoporteTiTablaFila> = {
     id: 'complejidad-pm',
     accessorKey: 'complejidadPm',
-    header: 'Compl. PM',
+    header: sortableHeader('Compl. PM'),
+    enableSorting: false,
     meta: { class: { th: tdSelectAnalista, td: tdSelectAnalista } },
     cell: ({ row }) => {
       const t = row.original
@@ -615,7 +806,8 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
   const colComplejidadAnalista: TableColumn<SoporteTiTablaFila> = {
     id: 'complejidad-analista',
     accessorKey: 'criticidad',
-    header: 'Compl. analista',
+    header: sortableHeader('Compl. analista'),
+    enableSorting: false,
     meta: {
       class: {
         th: tdSelectAnalista,
@@ -644,12 +836,14 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
   }
 
   return [
-    { accessorKey: 'codigo', header: 'Código' },
-    { accessorKey: 'tipoSolicitud', header: 'Tipo' },
+    { accessorKey: 'codigo', header: sortableHeader('Código') },
+    { accessorKey: 'tipoSolicitud', header: sortableHeader('Tipo') },
+    columnaCreador(),
+    columnaRol(),
     columnaTitulo('Título'),
     columnaLink(),
     colArea,
-    { accessorKey: 'fechaRegistroCompleta', header: 'Fecha de registro' },
+    { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro') },
     ...(rolActivo.value === 'PM' || rolActivo.value === 'Analista'
       ? [colPrioridad]
       : []),
@@ -682,7 +876,17 @@ async function onCreada(payload: SoporteTiCreatePayload) {
 
 onMounted(() => {
   fetchCurrentUser()
-  void cargarLista(filtrosLista())
+  void (async () => {
+    try {
+      const res = await SoporteTiService.catalogoAreas()
+      if (res.success && res.data?.areas?.length) {
+        areasFiltro.value = res.data.areas.map((a) => a.nombre).filter(Boolean)
+      }
+    } catch {
+      /* catálogo opcional para filtros */
+    }
+    await cargarLista(filtrosLista())
+  })()
 })
 
 onUnmounted(() => {

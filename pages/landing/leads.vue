@@ -77,12 +77,29 @@ const formatLeadDateTime = (value?: string | null) =>
     })
     : '-'
 
+const formatConsolidadoFormSource = (value?: string | null) => {
+  if (value === 'landing_consolidado_v2') return 'META CONSOLIDADO'
+  if (value === 'probusiness_pe') return 'WEB'
+  return value || '-'
+}
+
+const formatCursoFormSource = (value?: string | null) => {
+  if (value === 'landing_curso_v2') return 'META CURSO'
+  if (value === 'probusiness_pe') return 'WEB'
+  return value || '-'
+}
+
 const consolidadoColumns: TableColumn<LandingConsolidadoLead>[] = [
   { accessorKey: 'id', header: 'ID' },
   { accessorKey: 'nombre', header: 'Nombre' },
   { accessorKey: 'whatsapp', header: 'WhatsApp' },
   { accessorKey: 'proveedor', header: 'Proveedor' },
   { accessorKey: 'codigo_campana', header: 'Campaña' },
+  {
+    accessorKey: 'form_source',
+    header: 'Origen',
+    cell: ({ row }: { row: any }) => h('span', formatConsolidadoFormSource(row.original.form_source))
+  },
   { accessorKey: 'ip_address', header: 'IP' },
   {
     accessorKey: 'created_at',
@@ -97,6 +114,11 @@ const cursoColumns: TableColumn<LandingCursoLead>[] = [
   { accessorKey: 'whatsapp', header: 'WhatsApp' },
   { accessorKey: 'email', header: 'Email' },
   { accessorKey: 'experiencia_importando', header: 'Experiencia' },
+  {
+    accessorKey: 'form_source',
+    header: 'Origen',
+    cell: ({ row }: { row: any }) => h('span', formatCursoFormSource(row.original.form_source))
+  },
   { accessorKey: 'ip_address', header: 'IP' },
   {
     accessorKey: 'created_at',

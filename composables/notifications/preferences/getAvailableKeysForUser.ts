@@ -1,5 +1,5 @@
 import { getRoleEventsConfig } from '~/config/websocket/events-config'
-import { CALENDAR_PERMISSIONS, ROLES } from '~/constants/roles'
+import { CALENDAR_PERMISSIONS, ROLES, rolesJefeImportacionEquiv } from '~/constants/roles'
 import { WA_INBOX_ALLOWED_ROLES } from '~/constants/whatsappInboxAccess'
 import { WS_EVENT_TO_NOTIFICATION_KEY } from './eventKeyMap'
 import { WS_NOTIFICATION_KEYS } from './keys'
@@ -13,7 +13,7 @@ const SEGUIMIENTO_DRIVE_ROLES: string[] = [
   ROLES.COTIZADOR,
   ROLES.COORDINACION,
   ROLES.CONTENEDOR_CONSOLIDADO,
-  ROLES.JEFE_IMPORTACIONES,
+  ...rolesJefeImportacionEquiv(),
   ROLES.DOCUMENTACION,
 ]
 

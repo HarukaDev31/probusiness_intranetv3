@@ -26,9 +26,12 @@ export const WS_NOTIFICATION_KEYS = {
   DOCUMENTO_SOLICITUD: 'documento.solicitud',
   IMPORTACION_EXCEL: 'importacion.excel.completada',
   PLANTILLA_FINAL_LOTE: 'plantilla.final.lote.finalizado',
+  FACTURA_COMERCIAL_LOTE: 'factura.comercial.lote.finalizado',
 
   // Contabilidad
   FACTURACION_IMPORTACION: 'facturacion.importacion.finalizada',
+  REMINDER_PAGO: 'contabilidad.reminder.pago.enviado',
+  REMINDER_INICIAL: 'contabilidad.reminder.inicial.enviado',
 
   // Almacén
   ALMACEN_STOCK: 'almacen.stock.actualizado',

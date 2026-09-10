@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="flex min-h-0 flex-1 flex-col overflow-y-auto bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
     <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4">
       <div class="max-w-7xl mx-auto flex items-center gap-4">
@@ -171,7 +171,7 @@
         </div>
 
         <!-- Tabla -->
-        <div class="overflow-x-auto pt-4">
+        <div class="overflow-x-auto overflow-y-visible pt-4">
           <table class="w-full min-w-[1200px]">
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">

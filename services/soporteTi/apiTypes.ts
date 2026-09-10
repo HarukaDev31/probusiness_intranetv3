@@ -77,6 +77,7 @@ export interface SoporteTiSolicitudApi {
   area: string
   solicitante: string
   solicitante_user_id?: number | null
+  solicitante_rol?: string | null
   pm: string | null
   pm_user_id?: number | null
   analista: string | null
@@ -144,6 +145,17 @@ export interface SoporteTiListStatsApi {
   pendientes: number
   en_progreso?: number
   operativas: number
+}
+
+export interface SoporteTiCreadorFiltroApi {
+  id: number
+  nombre: string
+}
+
+export interface SoporteTiCreadoresResponseRaw {
+  success: boolean
+  data: SoporteTiCreadorFiltroApi[]
+  message?: string
 }
 
 export interface SoporteTiListResponseRaw {
@@ -221,6 +233,16 @@ export interface SoporteTiFaseHorasAMatrizApi {
   fases: { codigo: string; nombre: string }[]
   complejidades: string[]
   celdas: SoporteTiFaseHorasACeldaApi[]
+}
+
+export interface SoporteTiHorarioAtencionApi {
+  id: number
+  dia_semana: number
+  activo: boolean
+  hora_inicio: string
+  hora_fin: string
+  timezone: string
+  updated_at: string | null
 }
 
 /** Payloads WS (wire). Adaptar con SoporteTiService.adaptWs* */

@@ -9,15 +9,27 @@
           :hide-back-button="false"
           @back="$router.back()"
         />
-        <UButton
-          color="primary"
-          variant="solid"
-          size="sm"
-          :loading="savingAll"
-          @click="handleGuardarTodo"
-        >
-          Guardar
-        </UButton>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <UButton
+            v-if="showEnviarDocumentos"
+            icon="iconamoon:menu-burger-horizontal"
+            color="success"
+            variant="outline"
+            size="sm"
+            @click="handleAbrirEnviarDocumentos"
+          >
+            Enviar Documentos
+          </UButton>
+          <UButton
+            color="primary"
+            variant="solid"
+            size="sm"
+            :loading="savingAll"
+            @click="handleGuardarTodo"
+          >
+            Guardar
+          </UButton>
+        </div>
       </div>
 
       <!-- Skeleton de carga -->
@@ -466,7 +478,12 @@ import { useContabilidadDetalle } from '~/composables/cargaconsolidada/factura-g
 import { useComprobanteForm } from '~/composables/cargaconsolidada/useComprobanteForm'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { useWhatsapp } from '~/composables/cargaconsolidada/factura-guia/useWhatsapp'
+import { ROLES } from '~/constants/roles'
 import FileUploader from '~/components/commons/FileUploader.vue'
+import ContabilidadSendModal from '~/components/cargaconsolidada/factura-guia/ContabilidadSendModal/index.vue'
+import type { ContabilidadAction } from '~/components/cargaconsolidada/factura-guia/ContabilidadSendModal/index.vue'
 import type { FileItem } from '~/types/commons/file'
 import { formatCurrency } from '~/utils/formatters'
 
@@ -501,6 +518,15 @@ const { form: comprobanteForm, getFormByCotizacion } = useComprobanteForm()
 
 const { showSuccess, showError, showConfirmation } = useModal()
 const { withSpinner } = useSpinner()
+const { currentRole } = useUserRole()
+const { sendComprobantes, sendGuiasContabilidad, sendDetracciones, sendFormularioContabilidad } = useWhatsapp()
+
+const overlay = useOverlay()
+const contabilidadSendModal = overlay.create(ContabilidadSendModal)
+
+const showEnviarDocumentos = computed(() => (
+  currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION
+))
 
 const savingAll = ref(false)
 const pendingComprobantes = ref<File[][]>([[], [], []])
@@ -756,6 +782,44 @@ const handleDeleteConstancia = (itemId: number) => {
       }, 'Eliminando...')
     }
   )
+}
+
+const handleContabilidadSendAction = async (action: ContabilidadAction) => {
+  await withSpinner(async () => {
+    try {
+      let response
+      const labelMap: Record<ContabilidadAction, string> = {
+        comprobantes: 'comprobantes',
+        guias: 'guías de remisión',
+        detracciones: 'constancias de detracción',
+        formulario: 'formulario'
+      }
+      if (action === 'comprobantes') response = await sendComprobantes(id)
+      else if (action === 'guias') response = await sendGuiasContabilidad(id)
+      else if (action === 'detracciones') response = await sendDetracciones(id)
+      else response = await sendFormularioContabilidad(id)
+
+      if (response.success) {
+        showSuccess('Enviado por WhatsApp', `Los ${labelMap[action]} se enviaron correctamente.`)
+        contabilidadSendModal.close()
+      } else {
+        showError('Error al enviar', response.error || `No se pudo enviar los ${labelMap[action]} por WhatsApp`)
+      }
+    } catch (error: any) {
+      showError('Error al enviar', error?.message || 'Error inesperado al enviar por WhatsApp')
+    }
+  }, 'Enviando por WhatsApp...')
+}
+
+const handleAbrirEnviarDocumentos = () => {
+  contabilidadSendModal.open({
+    idCotizacion: id,
+    clienteNombre: cliente.value?.nombre || 'Cliente',
+    onClose: () => contabilidadSendModal.close(),
+    onSend: async (action: ContabilidadAction) => {
+      await handleContabilidadSendAction(action)
+    }
+  })
 }
 
 onMounted(async () => {
