@@ -12,7 +12,7 @@
                 @update:primary-search="handleSearchGeneral" @page-change="handlePageGeneralChange"
                 @items-per-page-change="handleItemsPerPageChangeGeneral" @filter-change="handleFilterChangeGeneral"
                 :hide-back-button="false"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.RRHH || isOrgNoAdmin) ? `${backBasePath}/pasos/${id}` : `${basePath}`">
                 <template #body-top>
                     <div class="flex items-center justify-between w-full gap-4">
                         <div class="flex flex-col gap-2 w-full">
@@ -35,7 +35,7 @@
                 :search-query-value="searchEmbarcados" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersEmbarcados" :show-export="false" :show-body-top="true" :hide-back-button="false"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || currentRole == ROLES.ADMINISTRACION || currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.RRHH || isOrgNoAdmin) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchEmbarcados" @page-change="handlePageEmbarcadosChange"
                 @items-per-page-change="handleItemsPerPageChangeEmbarcados"
@@ -77,14 +77,14 @@
                     </div>
                 </template>
             </DataTable>
-            <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="columnsVariacion"
+            <DataTable v-if="tab === 'variacion'" title="" icon="" :data="clientesVariacion" :columns="getColumnsVariacion()"
                 :loading="loadingVariacion || loadingHeaders" :current-page="currentPageVariacion"
                 :total-pages="totalPagesVariacion" :total-records="totalRecordsVariacion"
                 :items-per-page="itemsPerPageVariacion" :search-query-value="searchVariacion"
                 :show-secondary-search="false" :show-filters="false" :filters-value="filtersVariacion"
                 :show-export="false" :show-body-top="true" :hide-back-button="false" :show-pagination="false"
                 @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION) || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole) || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION) || currentRole == ROLES.RRHH || isOrgNoAdmin) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchVariacion" @page-change="handlePageVariacionChange"
                 @items-per-page-change="handleItemsPerPageChangeVariacion" @filter-change="handleFilterChangeVariacion">
@@ -108,7 +108,7 @@
                 :search-query-value="searchPagos" :show-secondary-search="false" :show-filters="false"
                 :filters-value="filtersPagos" :show-export="false" :hide-back-button="false" :show-body-top="true"
                 :show-pagination="false" @export="exportData"
-                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION) || currentRole == ROLES.RRHH) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
+                :previous-page-url="(currentRole == ROLES.COORDINACION || currentId == ID_JEFEVENTAS || (currentRole == ROLES.CONTABILIDAD || currentRole == ROLES.ADMINISTRACION) || currentRole == ROLES.RRHH || isOrgNoAdmin) ? `${backBasePath}/pasos/${id}` : `${basePath}`"
                 empty-state-message="No se encontraron registros de clientes."
                 @update:primary-search="handleSearchPagos" @page-change="handlePagePagosChange"
                 @items-per-page-change="handleItemsPerPageChangePagos" @filter-change="handleFilterChangePagos">
@@ -142,7 +142,7 @@ import { usePagos } from '~/composables/cargaconsolidada/clientes/usePagos'
 import { USelect, UInput, UButton, UIcon, UBadge } from '#components'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { ROLES, roleEsComoJefeImportacion, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion, ID_JEFEVENTAS, COTIZADORES_WITH_PRIVILEGES, esRolSocio, esOrganizacionSocio } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import type { TableColumn } from '@nuxt/ui'
 import PagoGrid from '~/components/PagoGrid.vue'
@@ -191,7 +191,7 @@ function renderEstadoPermisoPorTipo(list: Array<{ id_tipo_permiso?: number; nomb
 }
 
 const { withSpinner } = useSpinner()
-const { showConfirmation, showSuccess, showError } = useModal()
+const { showConfirmation, showSuccess, showError, showInfo } = useModal()
 const { currentRole: authCurrentRole, currentId, isCoordinacion, isCotizador, userEmail, fetchCurrentUser, getUserData } = useUserRole()
 const isCoord2Docs = computed(() => isCoord2DocsEmail(getUserData() || userEmail.value))
 const isCoord3Docs = computed(() => isCoord3DocsEmail(getUserData() || userEmail.value))
@@ -301,6 +301,11 @@ const props = withDefaults(defineProps<ClientesViewProps>(), {
 })
 
 const currentRole = computed(() => props.role || authCurrentRole.value)
+const isSocio = computed(() => esRolSocio(currentRole.value))
+const isOrgNoAdmin = computed(() => {
+    const orgId = getUserData()?.raw?.organizacion?.id
+    return isSocio.value || esOrganizacionSocio(orgId)
+})
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const route = useRoute()
@@ -308,7 +313,9 @@ const id = route.params.id
 const initialTabFromRoute = typeof route.query.tab === 'string' ? route.query.tab : ''
 const tab = ref<string>(
     initialTabFromRoute
-        || (isCoordinacion.value || roleEsComoJefeImportacion(currentRole.value) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS || currentRole.value === ROLES.RRHH ? 'embarcados' : 'general')
+        || (isOrgNoAdmin.value
+            ? 'general'
+            : (isCoordinacion.value || roleEsComoJefeImportacion(currentRole.value) || (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) || currentId.value == ID_JEFEVENTAS || currentRole.value === ROLES.RRHH ? 'embarcados' : 'general'))
 )
 const overlay = useOverlay()
 const modalAcciones = overlay.create(ModalAcciones)
@@ -1053,7 +1060,135 @@ const toReadOnlyColumns = (columns: TableColumn<any>[]) => {
     })
 }
 
+const openClienteAcciones = (row: any) => {
+    modalAcciones.open({
+        show: true,
+        clienteId: row.original.id_cotizacion || row.original.id,
+        clienteName: row.original.nombre,
+        onSelected: () => {},
+        validateMaxDate: !isOrgNoAdmin.value,
+    })
+}
+
+const getColumnsDocumentacionSocio = (): TableColumn<any>[] => [
+    {
+        accessorKey: 'index',
+        header: 'N°',
+        cell: ({ row }: { row: any }) => row.index + 1,
+    },
+    {
+        accessorKey: 'contacto',
+        header: 'Contacto',
+        cell: ({ row }: { row: any }) => {
+            const nombre = row.original?.nombre || ''
+            const documento = row.original?.documento || ''
+            const telefono = row.original?.telefono || ''
+            const correo = row.original?.correo || ''
+            return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
+                h('div', { class: 'font-medium' }, String(nombre).toUpperCase()),
+                documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
+                telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
+                h('div', { class: 'text-sm text-gray-500' }, correo || 'Sin correo'),
+            ])
+        },
+    },
+    {
+        accessorKey: 'name',
+        header: 'T. Cliente',
+        cell: ({ row }: { row: any }) => row.getValue('name'),
+    },
+    {
+        accessorKey: 'volumen',
+        header: 'Volumen',
+        cell: ({ row }: { row: any }) => row.getValue('volumen'),
+    },
+    {
+        accessorKey: 'fob',
+        header: 'Fob',
+        cell: ({ row }: { row: any }) => formatCurrency(row.getValue('fob')),
+    },
+    {
+        accessorKey: 'monto',
+        header: 'Logística',
+        cell: ({ row }: { row: any }) => formatCurrency(row.getValue('monto')),
+    },
+    {
+        accessorKey: 'impuestos',
+        header: 'Impuesto',
+        cell: ({ row }: { row: any }) => formatCurrency(row.getValue('impuestos')),
+    },
+    {
+        accessorKey: 'tarifa',
+        header: 'Tarifa',
+        cell: ({ row }: { row: any }) => formatCurrency(row.getValue('tarifa')),
+    },
+    {
+        accessorKey: 'products',
+        header: 'Productos',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores || []
+            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) =>
+                h(UInput as any, {
+                    modelValue: proveedor.products,
+                    class: 'w-full w-40',
+                    disabled: true,
+                })
+            ))
+        },
+    },
+    {
+        accessorKey: 'code_supplier',
+        header: 'Code Supplier',
+        cell: ({ row }: { row: any }) => {
+            const proveedores = row.original.proveedores || []
+            return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any) =>
+                h(UInput as any, {
+                    modelValue: proveedor.code_supplier,
+                    class: 'w-full w-25',
+                    disabled: true,
+                })
+            ))
+        },
+    },
+    {
+        accessorKey: 'invoice_status',
+        header: 'Invoice',
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'invoice_status_final', true),
+    },
+    {
+        accessorKey: 'packing_status',
+        header: 'Packing list',
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'packing_status_final', true),
+    },
+    {
+        accessorKey: 'excel_conf_status',
+        header: 'Excel Conf.',
+        cell: ({ row }: { row: any }) => renderDocStatusSelects(row, 'excel_conf_status_final', true),
+    },
+    {
+        accessorKey: 'acciones',
+        header: 'Acciones',
+        cell: ({ row }: { row: any }) => h('div', { class: 'flex items-center gap-1' }, [
+            h(UButton, {
+                icon: 'iconamoon:menu-burger-horizontal',
+                variant: 'ghost',
+                size: 'xs',
+                onClick: () => openClienteAcciones(row),
+            }),
+            h(UButton, {
+                icon: 'i-heroicons-eye',
+                variant: 'ghost',
+                size: 'xs',
+                onClick: () => {
+                    navigateTo(`${basePath.value}/clientes/documentacion/${row.original.id_cotizacion}`)
+                },
+            }),
+        ]),
+    },
+]
+
 const getColumnsGeneral = () => {
+    if (isOrgNoAdmin.value) return getColumnsDocumentacionSocio()
     if (currentRole.value === ROLES.JEFE_MARKETING) return columnsDocumentacion
     switch (currentRole.value) {
         case ROLES.DOCUMENTACION:
@@ -1687,12 +1822,27 @@ const columnsVariacion = ref<TableColumn<any>[]>([
         accessorKey: 'variacion',
         header: 'Variación',
         cell: ({ row }: { row: any }) => {
-            //if volumen volumen china and volumen doc are different o valor cot and valor doc are different show badge with text SI else NO
-            if (row.getValue('volumen') !== row.getValue('volumen_china') || row.getValue('volumen') !== row.getValue('volumen_doc') || row.getValue('valor_cot') !== row.getValue('valor_doc')) {
-                return h(UBadge, {
+            const volCot = Number(row.getValue('volumen') ?? 0)
+            const volChina = Number(row.getValue('volumen_china') ?? 0)
+            const volDoc = Number(row.getValue('volumen_doc') ?? 0)
+            const valorCot = Number(row.getValue('valor_cot') ?? 0)
+            const valorDoc = Number(row.getValue('valor_doc') ?? 0)
+            const hayVariacion = isOrgNoAdmin.value
+                ? volCot !== volChina
+                : (volCot !== volChina || volCot !== volDoc || valorCot !== valorDoc)
+            if (hayVariacion) {
+                return h(UButton, {
                     label: 'SI',
-                    color: 'primary',
-                    variant: 'soft'
+                    color: 'warning',
+                    variant: 'solid',
+                    size: 'xs',
+                    onClick: () => {
+                        const diff = (volCot - volChina).toFixed(2)
+                        showInfo(
+                            'Variación',
+                            `Solo Vol. Cotizado vs Vol. China.\nVol. Cot: ${volCot} · Vol. China: ${volChina} · Diferencia: ${diff}`
+                        )
+                    },
                 })
             }
             return h(UBadge, {
@@ -1796,7 +1946,27 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
         showError('Error', err?.message || 'No se pudo guardar el estado del proveedor')
     }
 }
+const VARIACION_SOCIO_KEYS = new Set(['index', 'asesor', 'contacto', 'name', 'tarifa', 'volumen', 'volumen_china', 'variacion'])
+
+const getColumnsVariacion = (): TableColumn<any>[] => {
+    if (!isOrgNoAdmin.value) return columnsVariacion.value
+    return columnsVariacion.value.filter((column: any) => {
+        const key = String(column?.accessorKey ?? '')
+        return VARIACION_SOCIO_KEYS.has(key)
+    })
+}
+
 const configureTabsForRole = () => {
+    if (isOrgNoAdmin.value) {
+        tabs.value = [
+            { label: 'Documentación', value: 'general' },
+            { label: 'Variación', value: 'variacion' },
+        ]
+        if (tab.value === 'embarcados' || tab.value === 'pagos') {
+            tab.value = 'general'
+        }
+        return
+    }
     if (currentRole.value === ROLES.DOCUMENTACION) {
         tabs.value = [{ label: 'Documentacion', value: 'general' }]
     } else if (currentRole.value === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole.value) || currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) {
@@ -1821,7 +1991,7 @@ const configureTabsForRole = () => {
     }
 }
 
-watch([currentRole, currentId, isCotizador], () => {
+watch([currentRole, currentId, isCotizador, isOrgNoAdmin], () => {
     configureTabsForRole()
 }, { immediate: true })
 

@@ -4,7 +4,7 @@
             @back="navigateTo(`${backBasePath}/clientes/${cliente?.id_contenedor}`)">
             <template #back-extra>
                 <UButton
-                    v-if="isCoordinacion && sectionTab === 'documentacion'"
+                    v-if="canEditDocumentacion && sectionTab === 'documentacion'"
                     label="Guardar cambios"
                     color="primary"
                     variant="solid"
@@ -36,7 +36,7 @@
             </template>
             <template #actions>
                 <UButton
-                    v-if="isCoordinacion && sectionTab === 'documentacion'"
+                    v-if="canEditDocumentacion && sectionTab === 'documentacion'"
                     label="Guardar cambios"
                     color="primary"
                     variant="solid"
@@ -324,22 +324,21 @@
                             <div class="flex gap-2">
 
                                 <UButton label="Nuevo Documento" color="warning" variant="solid" icon="i-heroicons-plus"
-                                    size="sm" v-if="currentRole === ROLES.COORDINACION"
+                                    size="sm" v-if="canEditDocumentacion"
                                     @click="handleNuevoDocumento" />
                             </div>
                         </div>
                     </template>
 
                     <div class="space-y-4">
-                        <!-- Campos de volumen y valor -->
-                        <div class="grid grid-cols-2 gap-4">
+                        <div v-if="!hideVolumenValorDocumento" class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Volumen documento
                                 </label>
                                 <UInput v-model="proveedorActivo.volumen_doc" type="number" placeholder="0"
                                     class="w-full" @update:model-value="handleVolumenChange"
-                                    :disabled="!isCoordinacion" />
+                                    :disabled="!canEditDocumentacion" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -347,7 +346,7 @@
                                 </label>
                                 <UInput v-model="proveedorActivo.valor_doc" type="number" placeholder="$ 0"
                                     class="w-full" @update:model-value="handleValorChange"
-                                    :disabled="!isCoordinacion" />
+                                    :disabled="!canEditDocumentacion" />
                             </div>
                         </div>
 
@@ -360,9 +359,9 @@
                             :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
                             :max-file-size="MAX_UPLOAD_BYTES"
                             :immediate="false"
-                            :disabled="!isCoordinacion"
+                            :disabled="!canEditDocumentacion"
                             :custom-message="'Selecciona o arrastra tu archivo aquí (máx. 30 MB)'"
-                            :show-remove-button="currentRole === ROLES.COORDINACION"
+                            :show-remove-button="canEditDocumentacion"
                             :initial-files="proveedorActivo.factura_comercial ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Factura Comercial',
@@ -385,8 +384,8 @@
                                 :max-file-size="MAX_UPLOAD_BYTES"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí (máx. 30 MB)'"
                                 :immediate="false"
-                                :disabled="!isCoordinacion"
-                                :show-remove-button="currentRole === ROLES.COORDINACION"
+                                :disabled="!canEditDocumentacion"
+                                :show-remove-button="canEditDocumentacion"
                                 :initial-files="proveedorActivo.packing_list ? [{
                                     id: proveedorActivo.id, // debe ser número
                                     file_name: 'Packing List',
@@ -407,8 +406,8 @@
                                 :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
                                 :max-file-size="MAX_UPLOAD_BYTES"
                                 :immediate="false"
-                                :disabled="!isCoordinacion"
-                                :show-remove-button="currentRole === ROLES.COORDINACION"
+                                :disabled="!canEditDocumentacion"
+                                :show-remove-button="canEditDocumentacion"
                                 :custom-message="'Selecciona o arrastra tu archivo aquí (máx. 30 MB)'"
                                 :initial-files="proveedorActivo.excel_confirmacion ? [{
                                     id: proveedorActivo.id, // debe ser número
@@ -427,7 +426,7 @@
                                 :accepted-types="['.xlsx', '.png', '.jpg', '.jpeg','.pdf','.doc','.docx']"
                                 :max-file-size="MAX_UPLOAD_BYTES"
                                 :immediate="false"
-                                :show-remove-button="currentRole === ROLES.COORDINACION"
+                                :show-remove-button="canEditDocumentacion"
                                 :initial-files="[{
                                     id: file.id,
                                     file_name: file.folder_name||file.file_name,
@@ -441,7 +440,7 @@
                     </div>
                 </UCard>
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
-                    v-if="currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole)">
+                    v-if="showInspeccionChina">
                     <template #header>
                         <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
@@ -449,7 +448,7 @@
                                 <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
                                     Documentación China
                                 </h3>
-                                <img  v-if="currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole)" :src="CUSTOMIZED_ICONS_URL['CHINA']" alt="Flag" class="w-5 h-5" />
+                                <img v-if="showInspeccionChina" :src="CUSTOMIZED_ICONS_URL['CHINA']" alt="Flag" class="w-5 h-5" />
 
                                 <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
                                     Cambios sin guardar
@@ -484,14 +483,15 @@
 
                 </UCard>
                 <UCard class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"
-                    v-if="currentRole === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(currentRole)">
+                    v-if="showInspeccionChina">
                     <template #header>
                         <div class="flex items-center justify-between flex-col md:flex-row gap-2 md:gap-0">
                             <div class="flex items-center gap-2">
-                                <UIcon name="i-heroicons-folder" class="w-5 h-5 text-gray-500" />
+                                <UIcon name="i-heroicons-photo" class="w-5 h-5 text-gray-500" />
                                 <h3 class="md:text-lg text-sm font-semibold text-gray-900 dark:text-white">
-                                    Inspección
+                                    Inspección China
                                 </h3>
+                                <img :src="CUSTOMIZED_ICONS_URL['CHINA']" alt="" class="w-5 h-5" />
                                 <UBadge v-if="hasUnsavedChanges" color="warning" variant="subtle" size="sm">
                                     Cambios sin guardar
                                 </UBadge>
@@ -564,12 +564,13 @@ import { useVariacionCliente } from '~/composables/cargaconsolidada/useVariacion
 import FileUploader from '~/components/commons/FileUploader.vue'
 import type { FileItem } from '~/types/commons/file'
 import type { id } from '@nuxt/ui/runtime/locale/index.js'
-import { ROLES, roleEsComoJefeImportacion, ID_JEFEVENTAS } from '~/constants/roles'
+import { ROLES, roleEsComoJefeImportacion, ID_JEFEVENTAS, esRolSocio, esOrganizacionSocio } from '~/constants/roles'
 import { CUSTOMIZED_ICONS_URL } from '~/constants/ui'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import DocumentacionExpedienteObservacionesPanel from '~/components/cargaconsolidada/clientes/DocumentacionExpedienteObservacionesPanel/index.vue'
 import ExcelConfirmacionView from '~/components/cargaconsolidada/clientes/ExcelConfirmacionView/index.vue'
-const { currentRole: authCurrentRole, currentId } = useUserRole()
+const { currentRole: authCurrentRole, currentId, getUserData, fetchCurrentUser } = useUserRole()
+fetchCurrentUser()
 const props = withDefaults(defineProps<ClientesDocumentacionViewProps>(), {
     role: undefined,
     backBasePath: undefined
@@ -578,6 +579,17 @@ const currentRole = computed(() => props.role || authCurrentRole.value)
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const isCoordinacion = computed(() => currentRole.value === ROLES.COORDINACION)
+const isOrgNoAdmin = computed(() => {
+    const orgId = getUserData()?.raw?.organizacion?.id
+    return esRolSocio(currentRole.value) || esOrganizacionSocio(orgId)
+})
+const canEditDocumentacion = computed(() => isCoordinacion.value || isOrgNoAdmin.value)
+const hideVolumenValorDocumento = computed(() => isOrgNoAdmin.value)
+const showInspeccionChina = computed(() =>
+    currentRole.value === ROLES.DOCUMENTACION
+    || roleEsComoJefeImportacion(currentRole.value)
+    || isOrgNoAdmin.value
+)
 import SimpleUploadFile from '~/components/commons/SimpleUploadFile.vue'
 // Composables
 const { showSuccess, showError, showConfirmation } = useModal()

@@ -37,6 +37,7 @@
         :total-pages="totalPages"
         :total-records="totalRecords"
         :items-per-page="itemsPerPage"
+        :pagination-options="isAlmacen ? [...ALMACEN_PAGINATION_OPTIONS] : undefined"
         :search-query-value="search"
         :show-secondary-search="false"
         :show-filters="true"
@@ -128,6 +129,8 @@ import { USelect } from '#components'
 import { STATUS_BG_CLASSES } from '~/constants/ui'
 import type { CargaConsolidadaCompletadosProps, ConsolidadoFormData } from './types'
 import {
+  ALMACEN_ITEMS_PER_PAGE,
+  ALMACEN_PAGINATION_OPTIONS,
   ALMACEN_STATUS_OPTIONS,
   CHINA_STATUS_OPTIONS,
   DEFAULT_BASE_PATH,
@@ -551,14 +554,14 @@ const documentacionColumns: TableColumn<any>[] = [
 ]
 
 const almacenColumns: TableColumn<any>[] = [
-  { accessorKey: 'carga', header: 'Burden', cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}` },
-  { accessorKey: 'mes', header: 'Month', cell: ({ row }) => row.getValue('mes') },
-  { accessorKey: 'pais', header: 'Country', cell: ({ row }) => row.original.pais?.No_Pais || 'N/A' },
-  { accessorKey: 'f_cierre', header: 'Cut off', cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre')) },
-  { accessorKey: 'empresa', header: 'Company', cell: ({ row }) => row.getValue('empresa') },
+  { accessorKey: 'carga', header: 'Carga', cell: ({ row }) => `CARGA CONSOLIDADA #${row.getValue('carga')}` },
+  { accessorKey: 'mes', header: 'Mes', cell: ({ row }) => row.getValue('mes') },
+  { accessorKey: 'pais', header: 'País', cell: ({ row }) => row.original.pais?.No_Pais || 'N/A' },
+  { accessorKey: 'f_cierre', header: 'F. Cierre', cell: ({ row }) => formatDateTimeToDmy(row.getValue('f_cierre')) },
+  { accessorKey: 'empresa', header: 'Empresa', cell: ({ row }) => row.getValue('empresa') },
   {
     accessorKey: 'estado_china',
-    header: 'Status',
+    header: 'Estado',
     cell: ({ row }) => {
       const estado = row.getValue('estado_china') as string
       const color = getColorByEstado(estado)
@@ -572,7 +575,7 @@ const almacenColumns: TableColumn<any>[] = [
   },
   {
     id: 'actions',
-    header: 'Check',
+    header: 'Acciones',
     cell: ({ row }) => {
       return h('div', { class: 'flex space-x-2' }, [
         h(UButton, {
@@ -664,6 +667,9 @@ const exportClientes = async () => {
 onMounted(async () => {
   try {
     filters.value.completado = true
+    if (isAlmacen.value) {
+      itemsPerPage.value = ALMACEN_ITEMS_PER_PAGE
+    }
     await getConsolidadoData()
   } catch (error) {
     console.error('Error al cargar datos:', error)

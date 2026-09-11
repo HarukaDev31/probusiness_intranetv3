@@ -22,7 +22,7 @@
             </template>
             <template #actions>
 
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" class="py-3 md:flex hidden"
+                <UButton v-if="currentRole === ROLES.COTIZADOR || currentRole === ROLES.SOCIO" icon="i-heroicons-plus" class="py-3 md:flex hidden"
                     label="Crear Prospecto" @click="handleAddProspecto" />
             </template>
         </DataTable>
@@ -69,7 +69,7 @@
 
                     </div>
                 </div>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
+                <UButton v-if="currentRole === ROLES.COTIZADOR || currentRole === ROLES.SOCIO" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3 md:flex hidden" />
                 <UButton v-if="(currentRole === ROLES.COORDINACION || roleEsComoJefeImportacion(currentRole))" icon="i-heroicons-arrow-down-tray" color="success"
                     label="Descargar Embarque" @click="handleDownloadEmbarque" class="py-3 hidden md:flex" />
@@ -93,7 +93,7 @@
                 </div>
             </template>
             <template #actions>
-                <UButton v-if="currentRole === ROLES.COTIZADOR" icon="i-heroicons-plus" label="Crear Prospecto"
+                <UButton v-if="currentRole === ROLES.COTIZADOR || currentRole === ROLES.SOCIO" icon="i-heroicons-plus" label="Crear Prospecto"
                     @click="handleAddProspecto" class="py-3" />
             </template>
         </DataTable>
@@ -249,13 +249,14 @@ const loadTabs = () => {
             ]
             break
         case ROLES.COTIZADOR:
+        case ROLES.SOCIO:
             tabs.value = [
                 {
                     label: 'Prospectos',
                     value: 'prospectos'
                 },
                 {
-                    label: 'Por Embarcar',
+                    label: currentRole.value === ROLES.SOCIO ? 'Embarcados' : 'Por Embarcar',
                     value: 'embarque'
                 }
             ]
@@ -2354,6 +2355,10 @@ const handleRefreshRotuladoStatus = async (proveedor: any) => {
     }
 }
 const handleAddProspecto = async () => {
+    if (currentRole.value === ROLES.SOCIO) {
+        await navigateTo(`/cotizaciones/resumen/crear?contenedor=${id}`)
+        return
+    }
     const modal = overlay.create(CreateProspectoModal)
     modal.open({
         idConsolidado: Number(id),

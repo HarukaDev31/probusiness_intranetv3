@@ -7,7 +7,7 @@
   <template v-if="!$slots.filters">
     <div class="flex flex-col md:flex-row flex-wrap gap-4 p-0 md:p-4 " data-manual-capture="data-table-toolbar">
       <div class="w-full lg:w-full flex flex-col md:flex-row items-start md:items-center md:justify-between gap-1 md:gap-3 items-center">
-        <PageHeader :title="title" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
+        <PageHeader :title="displayedTitle" :subtitle="subtitle" :icon="icon" :hide-back-button="hideBackButton" @back="goBack">
           <template v-if="$slots['back-extra']" #back-extra>
             <slot name="back-extra" />
           </template>
@@ -404,7 +404,7 @@
         @mouseleave="onTableMouseLeave"
         @scroll="onTableScroll"
       >
-        <UTable ref="utableRef" :data="filteredData" sticky :columns="columns" :loading="isTableLoading"
+        <UTable ref="utableRef" :data="filteredData" sticky :columns="displayedColumns" :loading="isTableLoading"
           :class="['', isTableNarrow ? 'utable-narrow' : 'min-w-full']"   :meta="tableMeta"
           :ui="Object.keys(tableMeta).length>0?{
             // Importante: quitar overflow del root interno de UTable.
@@ -428,12 +428,12 @@
             <slot name="skeleton">
               <div class="mb-4">
                 <div class="flex items-center gap-3 mb-2">
-                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`h-${c}`" class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
+                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, displayedColumns.length))" :key="`h-${c}`" class="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
                 </div>
               </div>
               <div class="space-y-3">
-                <div v-for="r in (props.skeletonRows || 6)" :key="`row-${r}`" class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${props.skeletonCols || Math.max(1, columns.length)}, minmax(0, 1fr))` }">
-                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, columns.length))" :key="`c-${r}-${c}`" class="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
+                <div v-for="r in (props.skeletonRows || 6)" :key="`row-${r}`" class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${props.skeletonCols || Math.max(1, displayedColumns.length)}, minmax(0, 1fr))` }">
+                  <USkeleton v-for="c in (props.skeletonCols || Math.max(1, displayedColumns.length))" :key="`c-${r}-${c}`" class="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
                 </div>
               </div>
             </slot>
@@ -494,10 +494,14 @@ import { h, resolveComponent, computed, ref, onMounted, onUnmounted, watch, next
 import type { DataTableProps, DataTableEmits } from '../types/data-table'
 import { useDataTable } from '../composables/useDataTable'
 import { DATA_TABLE_DEFAULTS, PAGINATION_OPTIONS } from '../constants/data-table'
-import { ROLES } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
-const { hasRole, isCoordinacion,currentRole } = useUserRole()
-const isAlmacen = computed(() => hasRole(ROLES.CONTENEDOR_ALMACEN))
+import {
+  applyEnglishTableHeaders,
+  TABLE_HEADERS_EN,
+  translateTableText,
+  usesEnglishTableHeaders,
+} from '~/constants/table-headers-i18n'
+const { currentRole } = useUserRole()
 import { formatDateForInput, formatDateForDisplay } from '../utils/data-table'
 import { parseDate } from '@internationalized/date'
 import type { CalendarDate } from '@internationalized/date'
@@ -517,6 +521,10 @@ const props = withDefaults(defineProps<DataTableProps>(), {
   kanbanRowKeyField: 'codigo',
   kanbanDraggable: false
 })
+
+const useEnglishHeaders = computed(() => usesEnglishTableHeaders(currentRole.value))
+const displayedTitle = computed(() => translateTableText(props.title || '', currentRole.value) || props.title)
+const displayedColumns = computed(() => applyEnglishTableHeaders(props.columns || [], currentRole.value))
 
 /** Evita ambigüedad con otros `loading` en plantilla; fuerza booleano para UTable */
 const isTableLoading = computed(() => Boolean(props.loading))
@@ -1256,9 +1264,9 @@ const goBack = () => {
   }
 }
 
-// Simple translations for 'almacen' role
+// Simple translations for roles listed in TABLE_ENGLISH_ROLES
 const translations = computed(() => {
-  if (isAlmacen.value) {
+  if (useEnglishHeaders.value) {
     return {
       export: 'Export',
       filters: 'Filters',
@@ -1298,26 +1306,15 @@ const translations = computed(() => {
   }
 })
 
-// Translate filter labels/options for almacen role
 const displayedFilterConfig = computed(() => {
-  const dict: Record<string, string> = {
-    'Rubro': 'Category',
-    'Tipo Producto': 'Product Type',
-    'Campaña': 'Campaign',
-    'Todos': 'All',
-    'Seleccionar rubro': 'Select category',
-    'Seleccionar tipo': 'Select type',
-    'Seleccionar campaña': 'Select campaign'
-  }
-
   const raw = props.filterConfig || []
-  if (!isAlmacen.value) return raw
+  if (!useEnglishHeaders.value) return raw
 
-  return raw.map(f => ({
+  return raw.map((f) => ({
     ...f,
-    label: dict[f.label] || f.label,
-    placeholder: dict[f.placeholder] || f.placeholder,
-    options: (f.options || []).map(o => ({ ...o, label: (dict[o.label] || o.label) }))
+    label: TABLE_HEADERS_EN[f.label] || f.label,
+    placeholder: TABLE_HEADERS_EN[f.placeholder] || f.placeholder,
+    options: (f.options || []).map((o) => ({ ...o, label: TABLE_HEADERS_EN[o.label] || o.label })),
   }))
 })
 

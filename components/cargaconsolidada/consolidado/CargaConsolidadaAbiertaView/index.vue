@@ -570,6 +570,12 @@ const documentacionColumns: TableColumn<any>[] = [
   },
 ]
 
+const cbmImoColumn: TableColumn<any> = {
+  accessorKey: 'cbm_total_imo',
+  header: 'CBM IMO',
+  cell: ({ row }) => formatNumber(row.original.cbm_total_imo ?? 0, 2),
+}
+
 const getColumns = () => {
   switch (props.role) {
     case ROLES.DOCUMENTACION:
@@ -579,6 +585,10 @@ const getColumns = () => {
       return documentacionColumns
     case ROLES.FINANZAS:
       return finanzasColumns
+    case ROLES.CONTENEDOR_ALMACEN:
+      return columns.map((col) => (
+        (col as { accessorKey?: string }).accessorKey === 'limite_cbm_imo' ? cbmImoColumn : col
+      ))
     default:
       return columns
   }

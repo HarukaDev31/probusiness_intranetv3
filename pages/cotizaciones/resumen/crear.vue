@@ -1,13 +1,18 @@
 <template>
   <div class="min-h-screen">
-    <div class="max-w-9/10 mx-auto px-">
+    <div v-if="loadingEdit" class="max-w-9/10 mx-auto py-16 text-center text-gray-500">
+      Cargando cotización…
+    </div>
+    <div v-else class="max-w-9/10 mx-auto px-">
       <!-- Header -->
       <div class="text-center mb-8">
         <h1 class="text-4xl font-bold mb-2">
-          Registro de cotización
+          {{ esEdicion ? 'Editar cotización' : 'Registro de cotización' }}
         </h1>
         <p class="text-lg">
-          Complete todos los pasos para registrar la cotización
+          {{ esEdicion
+            ? 'Puedes agregar proveedores o costos. Solo se edita en estado COTIZADO.'
+            : 'Complete todos los pasos para registrar la cotización' }}
         </p>
       </div>
 
@@ -105,10 +110,12 @@
               <UIcon name="i-heroicons-check-circle" class="text-green-600 text-3xl shrink-0" />
               <div class="flex-1 min-w-[220px]">
                 <p class="font-semibold">
-                  {{ archivo?.name }} guardado · {{ camposCompletadosCount }} de {{ CLIENTE_FIELDS.length }} campos completados
+                  {{ archivo?.name || archivoStaged?.nombre_original || 'Documento de la cotización' }}
+                  · {{ camposCompletadosCount }} de {{ CLIENTE_FIELDS.length }} campos completados
                 </p>
                 <p class="text-sm text-gray-500">
-                  {{ archivo ? formatFileSize(archivo.size) : '' }} · revisa los campos marcados y completa a mano lo que falte
+                  {{ archivo ? formatFileSize(archivo.size) : (esEdicion ? 'Archivo ya registrado' : '') }}
+                  · revisa los campos y completa a mano lo que falte
                 </p>
               </div>
               <UButton color="neutral" variant="outline" @click="reiniciarArchivo">
@@ -162,6 +169,22 @@
                   @update:model-value="onClienteCampoEditado(f.key)"
                 />
               </div>
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-2">
+                  <label class="text-sm font-medium">
+                    Qty Proveedores <span class="text-primary">*</span>
+                  </label>
+                </div>
+                <UInput
+                  :model-value="qtyProveedores"
+                  type="number"
+                  min="1"
+                  max="8"
+                  :disabled="scanState !== 'done'"
+                  class="w-full"
+                  @update:model-value="onQtyProveedoresChange"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -172,7 +195,7 @@
             <h2 class="text-xl font-semibold">Información de la Carga</h2>
             <div class="flex gap-6 text-sm text-gray-500">
               <span>Total Cbm: <strong class="text-gray-900 dark:text-gray-100">{{ totalCbm }}</strong></span>
-              <span>Total Proveedores: <strong class="text-gray-900 dark:text-gray-100">{{ providers.length }}</strong></span>
+              <span>Total Items: <strong class="text-gray-900 dark:text-gray-100">{{ providers.length }}</strong></span>
               <span>Total Cajas: <strong class="text-gray-900 dark:text-gray-100">{{ totalCajas }}</strong></span>
             </div>
           </div>
@@ -184,7 +207,12 @@
             :class="idx > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''"
           >
             <div class="flex items-center justify-between gap-4 mb-4">
-              <h3 class="text-base font-semibold">Proveedor #{{ idx + 1 }}</h3>
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-semibold">Proveedor #{{ idx + 1 }}</h3>
+                <UBadge v-if="prov.codeSupplier" color="neutral" variant="soft" size="xs">
+                  {{ prov.codeSupplier }}
+                </UBadge>
+              </div>
               <UButton
                 v-if="providers.length > 1"
                 size="xs"
@@ -199,6 +227,9 @@
               <UFormField label="CBM Total" required class="w-36">
                 <UInput v-model.number="prov.cbmTotal" type="number" min="0" step="0.01" class="w-full" />
               </UFormField>
+              <UFormField label="CBM IMO" class="w-36">
+                <UInput v-model.number="prov.cbmImo" type="number" min="0" step="0.01" class="w-full" />
+              </UFormField>
               <UFormField label="Peso Total" class="w-36">
                 <UInput v-model.number="prov.pesoTotal" type="number" min="0" step="0.01" class="w-full" />
               </UFormField>
@@ -206,8 +237,32 @@
                 <UInput v-model.number="prov.qtyCajas" type="number" min="0" step="1" class="w-full" />
               </UFormField>
               <UFormField label="Productos del proveedor" required class="flex-1 min-w-[220px]">
-                <UInput v-model="prov.productos" placeholder="Ej. Tijeras de poda, guantes de jardín…" class="w-full" />
+                <UInput v-model="prov.productos" placeholder="Productos del proveedor" class="w-full" />
               </UFormField>
+            </div>
+            <p v-if="!cbmImoValido(prov)" class="text-xs text-red-500 mt-2">
+              El CBM IMO no puede ser mayor al CBM total
+            </p>
+            <p v-else-if="Number(prov.cbmImo) > 0" class="text-xs text-gray-500 mt-2">
+              Se guardará CBM normal {{ cbmNormalProveedor(prov).toFixed(2) }} y CBM IMO {{ Number(prov.cbmImo || 0).toFixed(2) }}
+            </p>
+
+            <div class="mt-4 space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">Costos</p>
+                <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-plus" @click="prov.costos.push(crearCosto())">
+                  Agregar costo
+                </UButton>
+              </div>
+              <div v-for="(costo, cIdx) in prov.costos" :key="costo.id" class="flex flex-wrap gap-2 items-end">
+                <UFormField label="Concepto" class="flex-1 min-w-[180px]">
+                  <UInput v-model="costo.concepto" placeholder="Mercadería, flete, impuestos…" class="w-full" />
+                </UFormField>
+                <UFormField label="Valor" class="w-36">
+                  <UInput v-model.number="costo.valor" type="number" min="0" step="0.01" class="w-full" />
+                </UFormField>
+                <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="prov.costos.splice(cIdx, 1)" />
+              </div>
             </div>
           </div>
 
@@ -221,7 +276,7 @@
           <h2 class="text-xl font-semibold mb-6">Terminar</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <UFormField label="Cantidad proveedores" hint="Sincronizado con los proveedores del paso 2">
-              <UInput :model-value="providers.length" disabled class="w-full" />
+              <UInput :model-value="qtyProveedores" type="number" min="1" max="8" class="w-full" @update:model-value="onQtyProveedoresChange" />
             </UFormField>
 
             <UFormField label="Descuento (opcional)">
@@ -233,11 +288,32 @@
             </UFormField>
 
             <UFormField label="Selecciona el vendedor" required>
-              <USelect v-model="selectedVendedor" :items="vendedoresOptions" placeholder="Seleccionar" class="w-full" />
+              <div class="flex gap-2 items-start">
+                <USelect v-model="selectedVendedor" :items="vendedoresOptions" placeholder="Seleccionar" class="w-full" />
+                <UButton
+                  v-if="puedeCrearVendedor"
+                  icon="i-heroicons-plus"
+                  color="neutral"
+                  variant="outline"
+                  size="md"
+                  title="Crear vendedor"
+                  @click="abrirCrearVendedor"
+                />
+              </div>
             </UFormField>
 
-            <UFormField label="Selecciona el consolidado" required>
-              <USelect v-model="selectedContenedor" :items="contenedoresOptions" placeholder="Seleccionar" class="w-full" />
+            <UFormField
+              :label="esEdicion ? 'Selecciona el consolidado' : 'Selecciona el consolidado'"
+              :required="!esEdicion"
+              :hint="esEdicion ? 'Sin consolidado no puedes confirmar la cotización.' : undefined"
+            >
+              <USelect
+                v-model="selectedContenedor"
+                :items="contenedoresOptions"
+                :disabled="!!contenedorDesdeQuery && !esEdicion"
+                placeholder="Seleccionar"
+                class="w-full"
+              />
             </UFormField>
           </div>
         </div>
@@ -275,7 +351,7 @@
           color="primary"
           size="lg"
           icon="i-heroicons-check"
-          label="Finalizar"
+          :label="esEdicion ? 'Guardar cambios' : 'Finalizar'"
         />
       </div>
     </div>
@@ -285,16 +361,65 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import FileUploader from '~/components/commons/FileUploader.vue'
-import { CotizacionService } from '~/services/cargaconsolidada/cotizacionService'
-import { CotizacionResumenService } from '~/services/cargaconsolidada/cotizacionResumenService'
-import type { CotizacionResumenArchivo } from '~/services/cargaconsolidada/cotizacionResumenService'
+import type { CotizacionResumenArchivo, CotizacionResumenCosto } from '~/types/cargaconsolidada/cotizacion-resumen'
+import { useCotizacionResumen } from '~/composables/cargaconsolidada/cotizacion-resumen'
 import { useModal } from '@/composables/commons/useModal'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { esOrganizacionSocio } from '~/constants/roles'
+import CrearVendedorModal from '~/components/cargaconsolidada/cotizaciones/CrearVendedorModal/index.vue'
 
 definePageMeta({
   middleware: 'auth'
 })
 
 const { showError, showSuccess } = useModal()
+const { withSpinner } = useSpinner()
+const { getUserData } = useUserRole()
+const overlay = useOverlay()
+const route = useRoute()
+const {
+  extraerDocumento,
+  crearCotizacion,
+  getCotizacion,
+  actualizarCotizacion,
+  loadVendedores,
+  loadContenedores,
+  vendedoresOptions,
+  contenedoresOptions
+} = useCotizacionResumen()
+
+const editId = computed(() => {
+  const raw = route.query.editar
+  const n = Number(Array.isArray(raw) ? raw[0] : raw)
+  return Number.isFinite(n) && n > 0 ? n : null
+})
+const esEdicion = computed(() => !!editId.value)
+const loadingEdit = ref(false)
+
+// Organización 1 (Probusiness) ve/gestiona vendedores desde el Panel de Acceso;
+// el botón de alta rápida es solo para el resto de organizaciones ("Socios").
+// El backend igual fuerza la organización del usuario al crear, esto es solo
+// para no mostrar el botón donde no aplica.
+const puedeCrearVendedor = computed(() => {
+  const orgId = getUserData()?.raw?.organizacion?.id
+  return esOrganizacionSocio(orgId)
+})
+const contenedorDesdeQuery = computed(() => {
+  const raw = route.query.contenedor
+  const n = Number(Array.isArray(raw) ? raw[0] : raw)
+  return Number.isFinite(n) && n > 0 ? n : null
+})
+
+function abrirCrearVendedor() {
+  const modal = overlay.create(CrearVendedorModal)
+  modal.open({
+    show: true,
+    onCreated: () => {
+      loadVendedores()
+    }
+  })
+}
 
 const totalSteps = 3
 const currentStep = ref(1)
@@ -306,6 +431,7 @@ function getStepLabel(step: number) {
 
 function canGoToStep(step: number) {
   if (step === 1) return true
+  if (esEdicion.value && scanState.value === 'done') return step <= Math.max(maxStepReached.value, 3)
   return scanState.value === 'done' && step <= maxStepReached.value
 }
 
@@ -315,7 +441,7 @@ function handleStepClick(step: number) {
 }
 
 // ─── Paso 1: documento + IA ────────────────────────────────────────────────
-const READS_CHIPS = ['Datos del cliente', 'RUC / ID', 'Proveedores', 'CBM y peso', 'Productos']
+const READS_CHIPS = ['Datos del cliente', 'RUC / ID', 'Proveedores', 'CBM y peso', 'Productos', 'Conceptos de costo']
 
 type ScanState = 'idle' | 'scanning' | 'done'
 const scanState = ref<ScanState>('idle')
@@ -373,7 +499,7 @@ function onArchivoRemovido() {
 async function procesarArchivo(file: File) {
   scanState.value = 'scanning'
   try {
-    const res = await CotizacionResumenService.extraerDocumento(file)
+    const res = await extraerDocumento(file)
     if (!res.success) {
       showError('No se pudo procesar el archivo', res.message || 'Intenta nuevamente o completa los datos a mano.')
       scanState.value = 'idle'
@@ -402,12 +528,19 @@ async function procesarArchivo(file: File) {
 
     const proveedoresExtraidos = res.data?.proveedores ?? []
     if (proveedoresExtraidos.length > 0) {
-      providers.value = proveedoresExtraidos.map((p) => ({
+      const previos = esEdicion.value ? [...providers.value] : []
+      providers.value = proveedoresExtraidos.map((p, idx) => ({
         id: nextProviderId++,
+        idProveedor: previos[idx]?.idProveedor,
+        codeSupplier: previos[idx]?.codeSupplier ?? null,
         cbmTotal: p.cbm_total ?? 0,
+        cbmImo: previos[idx]?.cbmImo ?? 0,
         pesoTotal: p.peso_total ?? 0,
         qtyCajas: p.qty_cajas ?? 0,
-        productos: p.productos ?? ''
+        productos: p.productos ?? '',
+        unidades: p.unidades ?? p.qty_cajas ?? 0,
+        incoterm: p.incoterm || 'Consolidado',
+        costos: mapCostosExtraidos(p.costos)
       }))
     }
 
@@ -428,12 +561,14 @@ function reiniciarArchivo() {
   archivo.value = null
   archivoStaged.value = null
   scanState.value = 'idle'
-  clienteInfo.nombre = ''
-  clienteInfo.documento = ''
-  clienteInfo.whatsapp = ''
-  clienteInfo.correo = ''
-  clienteInfo.tipoDocumento = 'ID'
-  camposEscaneados.value = {}
+  if (!esEdicion.value) {
+    clienteInfo.nombre = ''
+    clienteInfo.documento = ''
+    clienteInfo.whatsapp = ''
+    clienteInfo.correo = ''
+    clienteInfo.tipoDocumento = 'ID'
+    camposEscaneados.value = {}
+  }
 }
 
 function formatFileSize(bytes: number) {
@@ -443,17 +578,65 @@ function formatFileSize(bytes: number) {
 }
 
 // ─── Paso 2: proveedores ────────────────────────────────────────────────────
+interface CostoResumen {
+  id: number
+  concepto: string
+  valor: number
+}
+
 interface ProveedorResumen {
   id: number
+  idProveedor?: number
+  codeSupplier?: string | null
   cbmTotal: number
+  cbmImo: number
   pesoTotal: number
   qtyCajas: number
   productos: string
+  unidades: number
+  incoterm: string
+  costos: CostoResumen[]
 }
 
 let nextProviderId = 1
+let nextCostoId = 1
+
+function crearCosto(concepto = '', valor = 0): CostoResumen {
+  return { id: nextCostoId++, concepto, valor }
+}
+
 function crearProveedor(): ProveedorResumen {
-  return { id: nextProviderId++, cbmTotal: 0, pesoTotal: 0, qtyCajas: 0, productos: '' }
+  return {
+    id: nextProviderId++,
+    cbmTotal: 0,
+    cbmImo: 0,
+    pesoTotal: 0,
+    qtyCajas: 0,
+    productos: '',
+    unidades: 0,
+    incoterm: '',
+    costos: []
+  }
+}
+
+function mapCostosExtraidos(extraidos?: CotizacionResumenCosto[] | null): CostoResumen[] {
+  return (extraidos || [])
+    .filter((c) => (c.concepto || '').trim() !== '')
+    .map((c) => crearCosto(c.concepto.trim(), Number(c.valor) || 0))
+}
+
+const qtyProveedores = computed(() => providers.value.length)
+
+function onQtyProveedoresChange(value: string | number) {
+  const target = Math.min(8, Math.max(1, Number(value) || 1))
+  while (providers.value.length < target) addProvider()
+  while (providers.value.length > target) providers.value.pop()
+}
+
+function cbmNormalProveedor(prov: ProveedorResumen) {
+  const total = Number(prov.cbmTotal) || 0
+  const imo = Number(prov.cbmImo) || 0
+  return Math.max(0, total - imo)
 }
 
 const providers = ref<ProveedorResumen[]>([crearProveedor()])
@@ -474,35 +657,81 @@ const totalCajas = computed(() =>
   providers.value.reduce((acc, p) => acc + (Number(p.qtyCajas) || 0), 0)
 )
 
+function cbmImoValido(prov: ProveedorResumen) {
+  const total = Number(prov.cbmTotal) || 0
+  const imo = Number(prov.cbmImo) || 0
+  return imo >= 0 && imo <= total + 0.0001
+}
+
 // ─── Paso 3: terminar ───────────────────────────────────────────────────────
 const descuento = ref(0)
-const vendedoresOptions = ref<{ label: string; value: number }[]>([])
-const contenedoresOptions = ref<{ label: string; value: number }[]>([])
 const selectedVendedor = ref<number | null>(null)
 const selectedContenedor = ref<number | null>(null)
 
-async function loadVendedores() {
-  try {
-    const response = await CotizacionService.getVendedoresDropdown()
-    vendedoresOptions.value = response.data || response
-  } catch (error) {
-    console.error('Error al obtener vendedores:', error)
+onMounted(async () => {
+  await Promise.all([loadVendedores(), loadContenedores()])
+  if (contenedorDesdeQuery.value && !esEdicion.value) {
+    selectedContenedor.value = contenedorDesdeQuery.value
   }
-}
-
-async function loadContenedores() {
-  try {
-    const response = await CotizacionService.getCargasDisponiblesDropdown()
-    contenedoresOptions.value = response.data || response
-  } catch (error) {
-    console.error('Error al obtener cargas disponibles:', error)
+  if (editId.value) {
+    await cargarEdicion(editId.value)
   }
-}
-
-onMounted(() => {
-  loadVendedores()
-  loadContenedores()
 })
+
+async function cargarEdicion(id: number) {
+  loadingEdit.value = true
+  try {
+    const res = await getCotizacion(id)
+    if (!res.success || !res.data) {
+      showError('No se pudo cargar', res.message || 'Intenta nuevamente.')
+      await navigateTo('/cotizaciones/resumen')
+      return
+    }
+    if (res.data.estado !== 'COTIZADO') {
+      showError('No se puede editar', 'Solo se puede editar una cotización en estado COTIZADO.')
+      await navigateTo('/cotizaciones/resumen')
+      return
+    }
+    const d = res.data
+    clienteInfo.nombre = d.cliente.nombre || ''
+    clienteInfo.tipoDocumento = d.cliente.tipo_documento === 'RUC' ? 'RUC' : 'ID'
+    clienteInfo.documento = d.cliente.documento || ''
+    clienteInfo.whatsapp = d.cliente.whatsapp || ''
+    clienteInfo.correo = d.cliente.correo || ''
+    descuento.value = d.descuento || 0
+    selectedVendedor.value = d.id_usuario
+    selectedContenedor.value = d.id_contenedor
+    if (d.archivo) {
+      archivoStaged.value = {
+        path: d.archivo.path,
+        nombre_original: d.archivo.nombre_original || '',
+        mime_type: '',
+        size: 0
+      }
+    }
+    providers.value = (d.proveedores.length ? d.proveedores : []).map((p) => ({
+      id: nextProviderId++,
+      idProveedor: p.id,
+      codeSupplier: p.code_supplier,
+      cbmTotal: Number(p.cbm_total) || 0,
+      cbmImo: Number(p.cbm_imo) || 0,
+      pesoTotal: Number(p.peso_total) || 0,
+      qtyCajas: Number(p.qty_cajas) || 0,
+      productos: p.productos || '',
+      unidades: Number(p.unidades) || 0,
+      incoterm: p.incoterm || '',
+      costos: mapCostosExtraidos(p.costos)
+    }))
+    if (providers.value.length === 0) providers.value = [crearProveedor()]
+    scanState.value = 'done'
+    maxStepReached.value = 3
+  } catch (e: any) {
+    showError('Error al cargar la cotización', e?.message || 'Intenta nuevamente.')
+    await navigateTo('/cotizaciones/resumen')
+  } finally {
+    loadingEdit.value = false
+  }
+}
 
 // ─── Navegación / validación por paso ──────────────────────────────────────
 const canGoNext = computed(() => {
@@ -510,14 +739,16 @@ const canGoNext = computed(() => {
     return scanState.value === 'done' && !!clienteInfo.nombre.trim() && !!clienteInfo.whatsapp.trim()
   }
   if (currentStep.value === 2) {
-    return providers.value.every((p) => p.cbmTotal > 0 && p.productos.trim() !== '')
+    return providers.value.every((p) => p.cbmTotal > 0 && p.productos.trim() !== '' && cbmImoValido(p))
   }
   return true
 })
 
-const canFinalizar = computed(
-  () => !!selectedVendedor.value && !!selectedContenedor.value && canGoNext.value
-)
+const canFinalizar = computed(() => {
+  if (!selectedVendedor.value || !canGoNext.value) return false
+  if (!esEdicion.value && !selectedContenedor.value) return false
+  return true
+})
 
 function nextStep() {
   if (!canGoNext.value || currentStep.value >= totalSteps) return
@@ -533,38 +764,74 @@ function handlePrevStep() {
 // ─── Guardar ────────────────────────────────────────────────────────────────
 const saving = ref(false)
 
+function payloadWizard() {
+  return {
+    id_contenedor: selectedContenedor.value || null,
+    id_usuario: selectedVendedor.value!,
+    cliente: {
+      nombre: clienteInfo.nombre.trim(),
+      tipo_documento: clienteInfo.tipoDocumento,
+      documento: clienteInfo.documento || undefined,
+      whatsapp: clienteInfo.whatsapp || undefined,
+      correo: clienteInfo.correo || undefined
+    },
+    proveedores: providers.value.map((p) => ({
+      ...(p.idProveedor ? { id: p.idProveedor } : {}),
+      cbm_total: p.cbmTotal,
+      cbm_imo: Number(p.cbmImo) || 0,
+      peso_total: p.pesoTotal || undefined,
+      qty_cajas: p.qtyCajas || undefined,
+      productos: p.productos.trim(),
+      unidades: p.unidades || undefined,
+      incoterm: p.incoterm || undefined,
+      costos: p.costos
+        .filter((c) => c.concepto.trim() !== '' && Number(c.valor) > 0)
+        .map((c) => ({ concepto: c.concepto.trim(), valor: Number(c.valor) }))
+    })),
+    descuento: descuento.value || undefined,
+    archivo: archivoStaged.value
+  }
+}
+
 async function finalizar() {
-  if (!canFinalizar.value || !selectedVendedor.value || !selectedContenedor.value) return
+  if (!canFinalizar.value || !selectedVendedor.value) return
+  if (!esEdicion.value && !selectedContenedor.value) return
+  if (providers.value.some((p) => !cbmImoValido(p))) {
+    showError('CBM IMO inválido', 'El CBM IMO no puede ser mayor al CBM total del proveedor.')
+    return
+  }
   saving.value = true
   try {
-    const res = await CotizacionResumenService.crearCotizacion({
-      id_contenedor: selectedContenedor.value,
-      id_usuario: selectedVendedor.value,
-      cliente: {
-        nombre: clienteInfo.nombre.trim(),
-        tipo_documento: clienteInfo.tipoDocumento,
-        documento: clienteInfo.documento || undefined,
-        whatsapp: clienteInfo.whatsapp || undefined,
-        correo: clienteInfo.correo || undefined
-      },
-      proveedores: providers.value.map((p) => ({
-        cbm_total: p.cbmTotal,
-        peso_total: p.pesoTotal || undefined,
-        qty_cajas: p.qtyCajas || undefined,
-        productos: p.productos.trim()
-      })),
-      descuento: descuento.value || undefined,
-      archivo: archivoStaged.value
-    })
+    const payload = payloadWizard()
+    const res = await withSpinner(
+      () => esEdicion.value && editId.value
+        ? actualizarCotizacion(editId.value, payload)
+        : crearCotizacion({ ...payload, id_contenedor: selectedContenedor.value! }),
+      esEdicion.value ? 'Guardando cambios…' : 'Registrando cotización…'
+    )
 
     if (res.success) {
-      showSuccess('Cotización registrada', 'La cotización se registró correctamente.')
-      await navigateTo('/cotizaciones/resumen')
+      showSuccess(
+        esEdicion.value ? 'Cotización actualizada' : 'Cotización registrada',
+        esEdicion.value ? 'Los cambios se guardaron. Los códigos de proveedor se mantienen.' : 'La cotización se registró correctamente.'
+      )
+      const contenedorId = contenedorDesdeQuery.value || selectedContenedor.value
+      if (contenedorId) {
+        await navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${contenedorId}?tab=prospectos`)
+      } else {
+        await navigateTo('/cotizaciones/resumen')
+      }
     } else {
-      showError('No se pudo registrar la cotización', res.message || 'Intenta nuevamente.')
+      showError(
+        esEdicion.value ? 'No se pudo guardar' : 'No se pudo registrar la cotización',
+        res.message || 'Intenta nuevamente.'
+      )
     }
   } catch (error: any) {
-    showError('Error al registrar la cotización', error?.message || 'Intenta nuevamente.')
+    showError(
+      esEdicion.value ? 'Error al guardar' : 'Error al registrar la cotización',
+      error?.message || 'Intenta nuevamente.'
+    )
   } finally {
     saving.value = false
   }

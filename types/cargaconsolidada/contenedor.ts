@@ -37,6 +37,8 @@ export interface Contenedor {
     multa: string
     observaciones: string
     limite_cbm_imo?: number
+    /** CBM IMO calculado (org 1: calculadora; socios: proveedores resumen). */
+    cbm_total_imo?: number | string
     /** TC Yuan vigente del consolidado (Coordinación). */
     tc_yuan?: number | null
     pais: Pais

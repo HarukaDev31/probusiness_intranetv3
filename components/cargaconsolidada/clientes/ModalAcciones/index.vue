@@ -193,8 +193,8 @@ const emit = defineEmits<{
 }>()
 
 // Estado del modal
-const currentStep = ref(1)
-const selectedAction = ref('')
+const currentStep = ref(props.initialAction ? 2 : 1)
+const selectedAction = ref(props.initialAction || '')
 
 // Opciones del select principal
 const actionOptions = ACTION_OPTIONS
@@ -444,7 +444,7 @@ watch(selectedAction, async (newVal) => {
       }
     }, 'Cargando proveedores pendientes de documentos...')
   }
-})
+}, { immediate: true })
 
 // Actualizar productos al cambiar de pestaña (proveedor seleccionado)
 watch(selectedItem, (newId) => {
