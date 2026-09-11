@@ -1,4 +1,4 @@
-export type HomeStatsCardKey = 'cbm' | 'customers' | 'codes' | 'containers'
+export type HomeStatsCardKey = 'cbm' | 'customers' | 'codes' | 'warehouse' | 'containers'
 
 export interface HomeStatsCountryRow {
   country: string

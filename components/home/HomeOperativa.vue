@@ -80,25 +80,33 @@ const labels: Record<'almacen' | 'socio', Record<HomeStatsCardKey, string>> = {
     cbm: 'Total CBM Loaded',
     customers: 'Total happy customers',
     codes: 'Total suppliers code',
+    warehouse: 'CBM warehouse',
     containers: 'Total containers',
   },
   socio: {
-    cbm: 'CBM embarcado',
-    customers: 'Clientes',
-    codes: 'Códigos de proveedor',
-    containers: 'Total contenedores',
+    cbm: 'CBM despachados',
+    customers: 'Clientes atendidos',
+    codes: 'Proveedores coordinados',
+    warehouse: 'CBM en warehouse',
+    containers: 'Número de consolidado',
   },
 }
 
 const icons: Record<HomeStatsCardKey, string> = {
   cbm: 'fluent:box-32-filled',
   customers: 'flowbite:users-group-solid',
-  codes: 'solar:qr-code-linear',
+  codes: 'heroicons:arrows-up-down',
+  warehouse: 'heroicons:home',
   containers: 'mingcute:ship-line',
 }
 
-const visibleCards = computed(() => props.cards)
-const cardCount = computed(() => Math.max(props.cards.length, 4))
+const visibleCards = computed(() => {
+  if (props.variant === 'almacen') {
+    return props.cards.filter(card => card.key !== 'warehouse')
+  }
+  return props.cards
+})
+const cardCount = computed(() => props.variant === 'socio' ? 5 : 4)
 
 function labelFor(key: HomeStatsCardKey) {
   return labels[props.variant][key]
@@ -122,11 +130,11 @@ function formatCompact(value: number, decimals = 1) {
 }
 
 function formatValue(key: HomeStatsCardKey, value: number) {
-  return formatCompact(value, key === 'cbm' ? 1 : 1)
+  return formatCompact(value, key === 'cbm' || key === 'warehouse' ? 1 : 0)
 }
 
 function formatBreakdown(key: HomeStatsCardKey, value: number) {
-  if (key === 'cbm') {
+  if (key === 'cbm' || key === 'warehouse') {
     return value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 3 })
   }
   return value.toLocaleString('en-US', { maximumFractionDigits: 0 })
