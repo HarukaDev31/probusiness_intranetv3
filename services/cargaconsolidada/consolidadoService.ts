@@ -14,6 +14,8 @@ export interface ConsolidadoParams {
     estado_documentacion?: string
     /** Rol de vista (ej. Coordinación, Documentacion). Si el token es Jefe Importación, el backend usará este rol. */
     role?: string
+    /** Org 1: filtrar por organización. */
+    organizacion_id?: string
 }
 
 export class ConsolidadoService extends BaseService {
@@ -67,6 +69,10 @@ export class ConsolidadoService extends BaseService {
 
             if (params.role && params.role.trim()) {
                 cleanParams.role = params.role.trim()
+            }
+
+            if (params.organizacion_id && params.organizacion_id.trim() && params.organizacion_id !== 'todos') {
+                cleanParams.organizacion_id = params.organizacion_id.trim()
             }
 
             const response = await this.apiCall<ContenedorResponse>(`${this.baseUrl}`, {

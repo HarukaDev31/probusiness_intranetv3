@@ -1,6 +1,6 @@
 import { getRoleEventsConfig } from '~/config/websocket/events-config'
 import { CALENDAR_PERMISSIONS, ROLES, rolesJefeImportacionEquiv } from '~/constants/roles'
-import { WA_INBOX_ALLOWED_ROLES } from '~/constants/whatsappInboxAccess'
+import { hasWhatsappInboxMenuAccess } from '~/constants/whatsappInboxAccess'
 import { WS_EVENT_TO_NOTIFICATION_KEY } from './eventKeyMap'
 import { WS_NOTIFICATION_KEYS } from './keys'
 
@@ -53,8 +53,7 @@ export function getAvailableNotificationKeysForUser(
 ): string[] {
   const keys = keysFromRoleWebsocketConfig(role)
 
-  // WhatsApp Inbox (canal por rol; refuerzo por lista de roles autorizados).
-  if (WA_INBOX_ALLOWED_ROLES.some(r => rolesMatch(r, role))) {
+  if (hasWhatsappInboxMenuAccess(menuRoutes)) {
     keys.add(WS_NOTIFICATION_KEYS.WHATSAPP_INBOX_MENSAJE)
   }
 

@@ -18,6 +18,8 @@ export const ROLES = {
     FINANZAS: 'Finanzas',
     RRHH: 'RRHH',
     SOCIO: 'Socio',
+    GERENCIA: 'GERENCIA',
+    GERENTE_GENERAL: 'GERENTE GENERAL',
 } as const
 export const ID_JEFEVENTAS = 28791
 export const COTIZADORES_WITH_PRIVILEGES = [28911]

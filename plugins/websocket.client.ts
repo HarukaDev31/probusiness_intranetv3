@@ -72,6 +72,14 @@ export default defineNuxtPlugin({
           /* noop */
         }
         syncRoleChannelsFromAuthUser()
+        try {
+          const { subscribeWaInboxEchoChannel } = await import(
+            '~/composables/whatsapp-inbox/ensureWaInboxEchoChannel'
+          )
+          subscribeWaInboxEchoChannel()
+        } catch {
+          /* noop */
+        }
         window.dispatchEvent(new CustomEvent('echo-ready'))
         // Notificaciones Soporte TI: 1–2 canales (staff/user), no N salas de chat.
         try {

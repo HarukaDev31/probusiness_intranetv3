@@ -39,10 +39,21 @@ export interface ExtraerDocumentoResponse {
   archivo: CotizacionResumenArchivo | null
 }
 
+export interface CotizacionResumenClienteOption {
+  id: number
+  nombre: string | null
+  documento: string | null
+  correo: string | null
+  telefono: string
+  label: string
+  value: string
+}
+
 export interface CrearCotizacionResumenRequest {
   id_contenedor?: number | null
   id_usuario: number
   cliente: {
+    id?: number | null
     nombre: string
     tipo_documento?: 'ID' | 'RUC'
     documento?: string
@@ -72,6 +83,7 @@ export interface CotizacionResumenDetalle {
   id_usuario: number | null
   descuento: number
   cliente: {
+    id?: number | null
     nombre: string | null
     tipo_documento: 'ID' | 'RUC'
     documento: string | null

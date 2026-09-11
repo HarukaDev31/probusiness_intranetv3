@@ -1,12 +1,49 @@
 export type WaInboxWindowState = 'open' | 'warn' | 'closed'
 
 export interface WaInboxSession {
-  id: number
+  id: number | null
   phone_number_id: string
   display_number: string
   label: string
   is_active: boolean
   last_webhook_at?: string | null
+  organizacion_id?: number
+  organizacion_nombre?: string
+  configured?: boolean
+  enabled?: boolean
+  can_configure?: boolean
+}
+
+export interface WaInboxOrgConfig {
+  organizacion_id: number
+  organizacion_nombre: string
+  enabled: boolean
+  phone_number_id: string
+  waba_id: string
+  display_number: string
+  graph_api_version: string
+  default_language: string
+  legacy_fallback: boolean
+  preview_from_template: boolean
+  session_when_window_open: boolean
+  access_token_set: boolean
+  app_secret_set: boolean
+  webhook_verify_token_set: boolean
+}
+
+export interface WaInboxOrgConfigPayload {
+  enabled: boolean
+  phone_number_id: string
+  waba_id: string
+  display_number: string
+  graph_api_version: string
+  default_language: string
+  webhook_verify_token: string
+  access_token?: string
+  app_secret?: string
+  legacy_fallback: boolean
+  preview_from_template: boolean
+  session_when_window_open: boolean
 }
 
 export interface WaInboxConversation {

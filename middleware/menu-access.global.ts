@@ -1,4 +1,5 @@
 import type { AuthMenu } from '~/services/authService'
+import { ID_ORGANIZACION_ADMIN, ROLES } from '~/constants/roles'
 import { collectMenuRoutes, getMenuItemRoute, normalizeMenuPath } from '~/utils/menuRoutes'
 
 const getMenuRoute = (item: AuthMenu): string | null => getMenuItemRoute(item)
@@ -54,9 +55,6 @@ export default defineNuxtRouteMiddleware((to) => {
   if (to.path === '/perfil') return
   if (to.path === '/copiloto') return
 
-  if (to.path === '/coordinacion/whatsapp-inbox' || to.path.startsWith('/coordinacion/whatsapp-inbox/')) {
-    return
-  }
   const token = localStorage.getItem('auth_token')
   const user = localStorage.getItem('auth_user')
   if (!token || !user) {
@@ -81,6 +79,7 @@ export default defineNuxtRouteMiddleware((to) => {
   if (canAccessRoute(currentPath, allowedRoutes)) return
   if (canAccessNumericDetailUnderAllowedParent(currentPath, allowedRoutes)) return
   if (canAccessEntregaFirmaCarga(currentPath, allowedRoutes)) return
+  if (currentPath === '/admin/whatsapp' && canAccessWhatsappConfig(user)) return
 
   const fallbackRoute = allowedRoutes.find((route) => route && route !== '#')
   if (fallbackRoute && fallbackRoute !== currentPath) {
@@ -89,3 +88,23 @@ export default defineNuxtRouteMiddleware((to) => {
 
   return navigateTo('/login')
 })
+
+function canAccessWhatsappConfig(rawUser: string): boolean {
+  try {
+    const user = JSON.parse(rawUser) as {
+      raw?: { grupo?: { nombre?: string }; organizacion?: { id?: number }; nombre?: string }
+      grupo?: { nombre?: string }
+      organizacion?: { id?: number }
+      nombre?: string
+    }
+    const role = String(user.raw?.grupo?.nombre || user.grupo?.nombre || '').trim()
+    const orgId = Number(user.raw?.organizacion?.id || user.organizacion?.id || 0)
+    const username = String(user.raw?.nombre || user.nombre || '').trim().toLowerCase()
+    if (orgId === ID_ORGANIZACION_ADMIN) {
+      return username === 'root' || role === ROLES.GERENCIA || role === ROLES.GERENTE_GENERAL
+    }
+    return role === ROLES.SOCIO
+  } catch {
+    return false
+  }
+}

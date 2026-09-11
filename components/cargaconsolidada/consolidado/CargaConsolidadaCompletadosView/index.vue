@@ -74,6 +74,7 @@
             <div class="flex-1">
               <div class="text-xs text-gray-500">{{ row.mes }}</div>
               <div class="font-semibold text-sm">Consolidado #{{ row.carga }}</div>
+              <div v-if="isOrgAdmin && row.organizacion?.nombre" class="text-xs text-gray-400">{{ row.organizacion.nombre }}</div>
               <div class="text-xs text-gray-400 mt-1">{{ row.empresa }}</div>
               <div class="mt-1 text-xs text-gray-400 flex flex-col items-center gap-1">
                 <span v-if="row.f_cierre">Cierre: {{ formatDateTimeToDmy(row.f_cierre) }}</span>
@@ -119,7 +120,7 @@ import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/types/data-table'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
-import { ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
+import { ID_ORGANIZACION_ADMIN, ROLES, roleEsComoJefeImportacion } from '~/constants/roles'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -146,12 +147,16 @@ const props = withDefaults(
 )
 
 const { withSpinner } = useSpinner()
-const { hasRole, currentId } = useUserRole()
+const { hasRole, currentId, getUserData } = useUserRole()
 const { showSuccess, showConfirmation, showError } = useModal()
 
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
 const isAlmacen = computed(() => props.role === ROLES.CONTENEDOR_ALMACEN)
 const isFinanzas = computed(() => props.role === ROLES.FINANZAS)
+const isOrgAdmin = computed(() => {
+  const user = getUserData()
+  return Number(user?.raw?.organizacion?.id || user?.organizacion?.id || 0) === ID_ORGANIZACION_ADMIN
+})
 
 const {
   consolidadoData,
@@ -163,6 +168,7 @@ const {
   currentPage,
   filters,
   anioOptions,
+  organizacionOptions,
   getConsolidadoData,
   handleSearch,
   handlePageChange,
@@ -243,6 +249,15 @@ const filterConfig = computed<FilterConfig[]>(() => {
       placeholder: 'Selecciona un año',
     },
   ]
+  if (isOrgAdmin.value && organizacionOptions.value.length > 1) {
+    baseConfig.push({
+      label: 'Organización',
+      key: 'organizacion_id',
+      type: 'select',
+      options: organizacionOptions.value,
+      placeholder: 'Selecciona una organización',
+    })
+  }
   if (isAlmacen.value) {
     baseConfig.push({
       label: 'Estado',
@@ -590,18 +605,31 @@ const almacenColumns: TableColumn<any>[] = [
   },
 ]
 
+const organizacionColumn: TableColumn<any> = {
+  accessorKey: 'organizacion',
+  header: 'Organización',
+  cell: ({ row }) => row.original.organizacion?.nombre || '—',
+}
+
+const withOrgColumn = (cols: TableColumn<any>[]) => {
+  if (!isOrgAdmin.value) return cols
+  const idx = cols.findIndex((col) => (col as { accessorKey?: string }).accessorKey === 'carga')
+  const insertAt = idx >= 0 ? idx + 1 : 1
+  return [...cols.slice(0, insertAt), organizacionColumn, ...cols.slice(insertAt)]
+}
+
 const getColumns = () => {
   switch (props.role) {
     case ROLES.DOCUMENTACION:
     case ROLES.COORDINADOR_GENERAL:
     case ROLES.JEFE_IMPORTACIONES:
-      return documentacionColumns
+      return withOrgColumn(documentacionColumns)
     case ROLES.CONTENEDOR_ALMACEN:
-      return almacenColumns
+      return withOrgColumn(almacenColumns)
     case ROLES.FINANZAS:
-      return finanzasColumns
+      return withOrgColumn(finanzasColumns)
     default:
-      return columns
+      return withOrgColumn(columns)
   }
 }
 

@@ -2,14 +2,14 @@
   <div class="">
     <div class="flex flex-col md:flex-row justify-between mb-2 p-2 md:mb-6 md:p-6 border-b border-gray-200 dark:border-gray-700">
       <PageHeader :title="''" :subtitle="''" :icon="''" :hide-back-button="false" @back="goBack" />
-      <div class="hidden md:flex items-center gap-3 flex-row flex-wrap w-full md:justify-end" v-if="role === ROLES.COORDINACION || role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role)">
-        <UButton v-if="role === ROLES.COORDINACION || roleEsComoJefeImportacion(role) || role === ROLES.DOCUMENTACION" label="Factura General" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
+      <div class="hidden md:flex items-center gap-3 flex-row flex-wrap w-full md:justify-end" v-if="showToolbar">
+        <UButton v-if="showOrg1DocActions" label="Factura General" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
           :loading="enqueueing" @click="handleGenerateFactura" class="whitespace-nowrap" />
-        <UButton v-if="role === ROLES.COORDINACION || roleEsComoJefeImportacion(role) || role === ROLES.DOCUMENTACION" label="Ver facturas generales" variant="soft" icon="i-heroicons-queue-list" color="primary" size="sm"
+        <UButton v-if="showOrg1DocActions" label="Ver facturas generales" variant="soft" icon="i-heroicons-queue-list" color="primary" size="sm"
           @click="goFacturasGenerales" class="whitespace-nowrap" />
-        <UButton v-if="role === ROLES.COORDINACION" label="Descargar plantillas" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
+        <UButton v-if="showOrg1DocActions && role === ROLES.COORDINACION" label="Descargar plantillas" variant="solid" icon="i-heroicons-arrow-down-tray" color="primary" size="sm"
           @click="handleDownloadAll" class="whitespace-nowrap" />
-        <UButton v-if="role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(role) || role === ROLES.COORDINACION" label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning" size="sm"
+        <UButton v-if="showNuevoDocumento" label="Nuevo documento" variant="solid" icon="i-heroicons-plus" color="warning" size="sm"
           @click="handleNuevoDocumento" class="whitespace-nowrap" />
       </div>
       <div class="flex items-center gap-3 flex-wrap" v-if="role === ROLES.ADMINISTRACION || role === ROLES.CONTABILIDAD">
@@ -56,12 +56,13 @@
             </h3>
           </div>
           <FileUploader
-            :disabled="role !== ROLES.DOCUMENTACION && !roleEsComoJefeImportacion(role)"
+            :disabled="!canUploadFolder(folder)"
+            :read-only="isReadOnlySocio"
             :accepted-types="acceptedFileTypes"
-            :custom-message="uploadMessage"
+            :custom-message="folder.es_packing_list_china ? 'Se carga automáticamente desde China' : uploadMessage"
             :immediate="false"
-            :show-remove-button="folder.id != 1 && role == ROLES.DOCUMENTACION"
-            :showSaveButton="true"
+            :show-remove-button="canRemoveFolder(folder)"
+            :showSaveButton="canUploadFolder(folder)"
             :initial-files="folder.file_url ? [{
               id: typeof folder.id === 'number' ? folder.id : 0,
               file_name: folder.folder_name,
@@ -97,7 +98,7 @@
 
 <script setup lang="ts">
 import type { ConsolidadoDocumentacionViewProps } from './types'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useDocumentacion } from '~/composables/cargaconsolidada/useDocumentacion'
@@ -118,6 +119,8 @@ const {
   error,
   hasData,
   foldersByCategoria,
+  esContenedorSocio,
+  puedeEditar,
   getFolders,
   isFolderLoading,
   uploadFileDocumentation,
@@ -135,6 +138,33 @@ const pasosUrl = computed(() => `${props.basePath}/pasos/${contenedorId}`)
 
 const acceptedFileTypes = ['.pdf', '.docx', '.xlsx', '.xls', '.doc', '.xlsm', '.csv', '.xlsb', '.xltx', '.xlt']
 const uploadMessage = 'Selecciona o arrastra tu archivo aquí'
+
+const isStaffDocRole = computed(() =>
+  props.role === ROLES.COORDINACION
+  || props.role === ROLES.DOCUMENTACION
+  || roleEsComoJefeImportacion(props.role)
+)
+
+const showOrg1DocActions = computed(() => !loading.value && !esContenedorSocio.value && isStaffDocRole.value)
+const showNuevoDocumento = computed(() => {
+  if (esContenedorSocio.value) return puedeEditar.value
+  return isStaffDocRole.value
+})
+const showToolbar = computed(() => showOrg1DocActions.value || showNuevoDocumento.value)
+
+const canUploadFolder = (folder: { es_packing_list_china?: boolean }) => {
+  if (folder.es_packing_list_china) return false
+  if (esContenedorSocio.value) return puedeEditar.value
+  return props.role === ROLES.DOCUMENTACION || roleEsComoJefeImportacion(props.role)
+}
+
+const canRemoveFolder = (folder: { id?: string | number; es_packing_list_china?: boolean }) => {
+  if (folder.es_packing_list_china || folder.id == 1) return false
+  if (esContenedorSocio.value) return puedeEditar.value
+  return props.role === ROLES.DOCUMENTACION
+}
+
+const isReadOnlySocio = computed(() => esContenedorSocio.value && !puedeEditar.value)
 
 const handleSaveFile = async (file: File, folderId: string) => {
   await withSpinner(async () => {

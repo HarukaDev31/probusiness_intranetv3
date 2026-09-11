@@ -4,6 +4,23 @@ import type { CustomerRow, CustomersFilters, CustomersPaisOption } from '~/types
 import type { FilterConfig, Header, PaginationInfo } from '~/types/data-table'
 import { CUSTOMERS_ITEMS_PER_PAGE, CUSTOMERS_STATUS_OPTIONS } from './constants'
 
+const FILTER_ALL_VALUES = ['todos', 'todas', 'all', 'todo']
+
+const unwrapFilterValue = (value: unknown): string => {
+  if (value && typeof value === 'object' && 'value' in value) {
+    return unwrapFilterValue((value as { value: unknown }).value)
+  }
+  return String(value ?? '').trim()
+}
+
+const normalizeCustomersFilter = (value: unknown): string => {
+  const raw = unwrapFilterValue(value)
+  if (!raw || FILTER_ALL_VALUES.includes(raw.toLowerCase())) {
+    return 'todos'
+  }
+  return raw
+}
+
 export const useCustomers = () => {
   const customers = ref<CustomerRow[]>([])
   const loading = ref(false)
@@ -96,10 +113,19 @@ export const useCustomers = () => {
     await getCustomers()
   }
 
-  const handleFilterChange = async (key: string, value: string) => {
+  const handleFilterChange = async (key: string, value: unknown) => {
     filters.value = {
       ...filters.value,
-      [key]: value,
+      [key]: normalizeCustomersFilter(value),
+    }
+    pagination.value.current_page = 1
+    await getCustomers()
+  }
+
+  const clearFilters = async () => {
+    filters.value = {
+      id_pais: 'todos',
+      estado_china: 'todos',
     }
     pagination.value.current_page = 1
     await getCustomers()
@@ -133,6 +159,7 @@ export const useCustomers = () => {
     handlePageChange,
     handleItemsPerPageChange,
     handleFilterChange,
+    clearFilters,
     filterByNc,
   }
 }

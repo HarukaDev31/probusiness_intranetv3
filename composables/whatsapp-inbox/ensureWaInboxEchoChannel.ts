@@ -1,4 +1,4 @@
-import { WA_INBOX_WS_CHANNEL, WA_INBOX_WS_EVENTS } from '~/constants/whatsappInboxWs'
+import { resolveWaInboxWsChannel, WA_INBOX_WS_EVENTS } from '~/constants/whatsappInboxWs'
 import { getEchoInstance, rebindChannelHandlers, useEcho } from '~/composables/websocket/useEcho'
 import {
   dispatchWaInboxMessageCreated,
@@ -27,12 +27,13 @@ export function subscribeWaInboxEchoChannel(): boolean {
 
   try {
     const { subscribeToChannel } = useEcho()
+    const channel = resolveWaInboxWsChannel()
     subscribeToChannel({
-      name: WA_INBOX_WS_CHANNEL,
+      name: channel,
       type: 'private',
       handlers: [...INBOX_HANDLERS]
     })
-    waInboxTrace('channel.subscribe.ok', { channel: WA_INBOX_WS_CHANNEL })
+    waInboxTrace('channel.subscribe.ok', { channel })
     return true
   } catch (err) {
     waInboxLog('channel.subscribe.fail', { err: String(err) })
@@ -48,14 +49,15 @@ export function ensureWaInboxEchoChannel() {
     return
   }
 
-  const rebound = rebindChannelHandlers(WA_INBOX_WS_CHANNEL, [...INBOX_HANDLERS])
+  const channel = resolveWaInboxWsChannel()
+  const rebound = rebindChannelHandlers(channel, [...INBOX_HANDLERS])
   if (!rebound) {
     subscribeWaInboxEchoChannel()
     return
   }
 
   waInboxTrace('channel.ensure.ok', {
-    channel: WA_INBOX_WS_CHANNEL,
+    channel,
     rebound
   })
 }

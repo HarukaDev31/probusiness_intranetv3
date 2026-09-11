@@ -156,11 +156,37 @@
                     {{ f.label(clienteInfo.tipoDocumento) }}
                     <span v-if="f.required" class="text-primary">*</span>
                   </label>
-                  <UBadge v-if="necesitaRevision(f.key)" color="warning" variant="soft" size="xs">
+                  <UBadge v-if="f.key === 'whatsapp' && clienteBdId" color="success" variant="soft" size="xs">
+                    cliente de la org
+                  </UBadge>
+                  <UBadge v-else-if="necesitaRevision(f.key)" color="warning" variant="soft" size="xs">
                     completar a mano
                   </UBadge>
                 </div>
+                <UInputMenu
+                  v-if="f.key === 'whatsapp'"
+                  v-model="whatsappMenu"
+                  :items="clientesOptions"
+                  :loading="buscandoClientes"
+                  :disabled="scanState !== 'done'"
+                  :placeholder="whatsappPlaceholder"
+                  :color="camposEscaneados.whatsapp ? 'success' : necesitaRevision('whatsapp') ? 'warning' : 'neutral'"
+                  create-item
+                  ignore-filter
+                  class="w-full"
+                  @update:search-term="onWhatsappSearch"
+                  @update:model-value="onWhatsappMenuChange"
+                  @create="onWhatsappCreate"
+                >
+                  <template #item-label="{ item }">
+                    <div class="flex flex-col min-w-0">
+                      <span class="truncate">{{ item.telefono || item.label }}</span>
+                      <span v-if="item.nombre" class="text-xs text-gray-500 truncate">{{ item.nombre }}</span>
+                    </div>
+                  </template>
+                </UInputMenu>
                 <UInput
+                  v-else
                   v-model="clienteInfo[f.key]"
                   :placeholder="f.placeholder"
                   :disabled="scanState !== 'done'"
@@ -168,6 +194,9 @@
                   class="w-full"
                   @update:model-value="onClienteCampoEditado(f.key)"
                 />
+                <p v-if="f.key === 'whatsapp'" class="text-xs text-gray-500">
+                  Escribe un número nuevo o elige uno de tus clientes. Sin código de país se usa el del consolidado.
+                </p>
               </div>
               <div class="flex flex-col gap-1.5">
                 <div class="flex items-center gap-2">
@@ -361,7 +390,11 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import FileUploader from '~/components/commons/FileUploader.vue'
-import type { CotizacionResumenArchivo, CotizacionResumenCosto } from '~/types/cargaconsolidada/cotizacion-resumen'
+import type {
+  CotizacionResumenArchivo,
+  CotizacionResumenClienteOption,
+  CotizacionResumenCosto
+} from '~/types/cargaconsolidada/cotizacion-resumen'
 import { useCotizacionResumen } from '~/composables/cargaconsolidada/cotizacion-resumen'
 import { useModal } from '@/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
@@ -385,8 +418,11 @@ const {
   actualizarCotizacion,
   loadVendedores,
   loadContenedores,
+  searchClientes,
   vendedoresOptions,
-  contenedoresOptions
+  contenedoresOptions,
+  clientesOptions,
+  buscandoClientes
 } = useCotizacionResumen()
 
 const editId = computed(() => {
@@ -457,7 +493,7 @@ const CLIENTE_FIELDS: {
 }[] = [
   { key: 'nombre', label: () => 'Nombre completo', required: true, placeholder: '' },
   { key: 'documento', label: (tipo) => (tipo === 'RUC' ? 'RUC' : 'ID'), required: false, placeholder: '' },
-  { key: 'whatsapp', label: () => 'WhatsApp', required: true, placeholder: '593 991234567' },
+  { key: 'whatsapp', label: () => 'WhatsApp', required: true, placeholder: '' },
   { key: 'correo', label: () => 'Correo', required: false, placeholder: '' }
 ]
 
@@ -468,6 +504,69 @@ const clienteInfo = reactive<{ tipoDocumento: 'ID' | 'RUC' } & Record<ClienteKey
   whatsapp: '',
   correo: ''
 })
+const clienteBdId = ref<number | null>(null)
+const whatsappMenu = ref<any>('')
+let whatsappSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+function telefonoDeOpcion(item: string | CotizacionResumenClienteOption | null | undefined) {
+  if (!item) return ''
+  if (typeof item === 'string') return item.trim()
+  return String(item.telefono || item.value || item.label || '').trim()
+}
+
+function aplicarClienteExistente(cliente: CotizacionResumenClienteOption) {
+  clienteBdId.value = cliente.id
+  clienteInfo.whatsapp = telefonoDeOpcion(cliente)
+  if (cliente.nombre) clienteInfo.nombre = cliente.nombre
+  if (cliente.documento) {
+    clienteInfo.documento = cliente.documento
+    clienteInfo.tipoDocumento = cliente.documento.replace(/\D/g, '').length >= 11 ? 'RUC' : 'ID'
+  }
+  if (cliente.correo) clienteInfo.correo = cliente.correo
+  onClienteCampoEditado('whatsapp')
+  onClienteCampoEditado('nombre')
+  onClienteCampoEditado('documento')
+  onClienteCampoEditado('correo')
+}
+
+function onWhatsappSearch(term: string) {
+  clienteInfo.whatsapp = term
+  if (whatsappSearchTimer) clearTimeout(whatsappSearchTimer)
+  whatsappSearchTimer = setTimeout(() => {
+    searchClientes(term)
+  }, 250)
+}
+
+function onWhatsappMenuChange(value: string | CotizacionResumenClienteOption | null) {
+  if (!value) {
+    clienteInfo.whatsapp = ''
+    clienteBdId.value = null
+    return
+  }
+  if (typeof value === 'string') {
+    clienteInfo.whatsapp = value.trim()
+    clienteBdId.value = null
+    onClienteCampoEditado('whatsapp')
+    return
+  }
+  aplicarClienteExistente(value)
+}
+
+function onWhatsappCreate(item: string) {
+  const numero = (item || '').trim()
+  clienteInfo.whatsapp = numero
+  clienteBdId.value = null
+  whatsappMenu.value = numero
+  onClienteCampoEditado('whatsapp')
+}
+
+function sincronizarWhatsappMenu(telefono: string, idCliente?: number | null) {
+  const tel = (telefono || '').trim()
+  clienteInfo.whatsapp = tel
+  clienteBdId.value = idCliente && idCliente > 0 ? idCliente : null
+  const match = clientesOptions.value.find((c) => c.id === clienteBdId.value || telefonoDeOpcion(c) === tel)
+  whatsappMenu.value = match || tel
+}
 
 /** true = la IA lo llenó y el usuario no lo tocó después, false = la IA no pudo leerlo. */
 const camposEscaneados = ref<Partial<Record<ClienteKey, boolean>>>({})
@@ -516,6 +615,8 @@ async function procesarArchivo(file: File) {
       clienteInfo.documento = cliente.documento ?? ''
       clienteInfo.whatsapp = cliente.whatsapp ?? ''
       clienteInfo.correo = cliente.correo ?? ''
+      sincronizarWhatsappMenu(clienteInfo.whatsapp)
+      if (clienteInfo.whatsapp) searchClientes(clienteInfo.whatsapp)
       camposEscaneados.value = {
         nombre: cliente.nombre != null,
         documento: cliente.documento != null,
@@ -567,6 +668,8 @@ function reiniciarArchivo() {
     clienteInfo.whatsapp = ''
     clienteInfo.correo = ''
     clienteInfo.tipoDocumento = 'ID'
+    clienteBdId.value = null
+    whatsappMenu.value = ''
     camposEscaneados.value = {}
   }
 }
@@ -667,9 +770,14 @@ function cbmImoValido(prov: ProveedorResumen) {
 const descuento = ref(0)
 const selectedVendedor = ref<number | null>(null)
 const selectedContenedor = ref<number | null>(null)
+const whatsappPlaceholder = computed(() => {
+  const opt = contenedoresOptions.value.find((o) => o.value === selectedContenedor.value)
+  const code = opt && 'phone_code' in opt ? String((opt as { phone_code?: string }).phone_code || '') : ''
+  return code ? `${code} …` : 'Número de WhatsApp'
+})
 
 onMounted(async () => {
-  await Promise.all([loadVendedores(), loadContenedores()])
+  await Promise.all([loadVendedores(), loadContenedores(), searchClientes('')])
   if (contenedorDesdeQuery.value && !esEdicion.value) {
     selectedContenedor.value = contenedorDesdeQuery.value
   }
@@ -698,6 +806,8 @@ async function cargarEdicion(id: number) {
     clienteInfo.documento = d.cliente.documento || ''
     clienteInfo.whatsapp = d.cliente.whatsapp || ''
     clienteInfo.correo = d.cliente.correo || ''
+    await searchClientes(clienteInfo.whatsapp)
+    sincronizarWhatsappMenu(clienteInfo.whatsapp, d.cliente.id)
     descuento.value = d.descuento || 0
     selectedVendedor.value = d.id_usuario
     selectedContenedor.value = d.id_contenedor
@@ -736,7 +846,8 @@ async function cargarEdicion(id: number) {
 // ─── Navegación / validación por paso ──────────────────────────────────────
 const canGoNext = computed(() => {
   if (currentStep.value === 1) {
-    return scanState.value === 'done' && !!clienteInfo.nombre.trim() && !!clienteInfo.whatsapp.trim()
+    const whatsapp = telefonoDeOpcion(whatsappMenu.value) || clienteInfo.whatsapp
+    return scanState.value === 'done' && !!clienteInfo.nombre.trim() && !!whatsapp.trim()
   }
   if (currentStep.value === 2) {
     return providers.value.every((p) => p.cbmTotal > 0 && p.productos.trim() !== '' && cbmImoValido(p))
@@ -769,10 +880,11 @@ function payloadWizard() {
     id_contenedor: selectedContenedor.value || null,
     id_usuario: selectedVendedor.value!,
     cliente: {
+      id: clienteBdId.value || undefined,
       nombre: clienteInfo.nombre.trim(),
       tipo_documento: clienteInfo.tipoDocumento,
       documento: clienteInfo.documento || undefined,
-      whatsapp: clienteInfo.whatsapp || undefined,
+      whatsapp: telefonoDeOpcion(whatsappMenu.value) || clienteInfo.whatsapp || undefined,
       correo: clienteInfo.correo || undefined
     },
     proveedores: providers.value.map((p) => ({

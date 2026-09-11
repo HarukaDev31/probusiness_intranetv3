@@ -24,10 +24,14 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         estado_china: 'todos',
         anio: 'todos',
         estado_finanzas: 'todos',
+        organizacion_id: 'todos',
         completado: false
     })
     const anioOptions = ref<{ label: string; value: string }[]>([
         { label: 'Todos', value: 'todos' },
+    ])
+    const organizacionOptions = ref<{ label: string; value: string }[]>([
+        { label: 'Todas', value: 'todos' },
     ])
     const pasos=ref<ContenedorPasos[]>([])
     const validContainers=ref<any[]>([])
@@ -60,6 +64,9 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             if (filters.value.completado) {
                 params.completado = filters.value.completado
             }
+            if (filters.value.organizacion_id && filters.value.organizacion_id !== 'todos') {
+                params.organizacion_id = filters.value.organizacion_id
+            }
 
             const response = await ConsolidadoService.getConsolidadoData(params)
             consolidadoData.value = response.data
@@ -71,6 +78,14 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
                 ...anios.map((year) => ({
                     label: String(year),
                     value: String(year),
+                })),
+            ]
+            const organizaciones = response.filters?.organizaciones ?? []
+            organizacionOptions.value = [
+                { label: 'Todas', value: 'todos' },
+                ...organizaciones.map((org) => ({
+                    label: org.nombre,
+                    value: String(org.id),
                 })),
             ]
         } catch (err: any) {
@@ -103,7 +118,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         
         
         if (value === 'todos') {
-            if (filterKey === 'estado_china' || filterKey === 'anio' || filterKey === 'estado_finanzas') {
+            if (filterKey === 'estado_china' || filterKey === 'anio' || filterKey === 'estado_finanzas' || filterKey === 'organizacion_id') {
                 filters.value[filterKey] = 'todos'
             } else {
                 delete filters.value[filterKey]
@@ -122,7 +137,8 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         filters.value = {
             estado_china: 'todos',
             anio: 'todos',
-            estado_finanzas: 'todos'
+            estado_finanzas: 'todos',
+            organizacion_id: 'todos'
         }
         pagination.value.current_page = 1
         getConsolidadoData()
@@ -134,7 +150,8 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             filters.value = {
                 estado_china: 'todos',
                 anio: 'todos',
-                estado_finanzas: 'todos'
+                estado_finanzas: 'todos',
+                organizacion_id: 'todos'
             }
             pagination.value.current_page = 1
             getConsolidadoData()
@@ -237,6 +254,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         currentPage,
         filters,
         anioOptions,
+        organizacionOptions,
         getConsolidadoData,
         handleSearch,
         handlePageChange,

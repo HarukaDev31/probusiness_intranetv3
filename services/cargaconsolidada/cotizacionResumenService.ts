@@ -1,6 +1,7 @@
 import { BaseService } from '~/services/base/BaseService'
 import type {
   CotizacionResumenArchivo,
+  CotizacionResumenClienteOption,
   CotizacionResumenDetalle,
   CotizacionResumenFilters,
   CotizacionResumenListResponse,
@@ -12,6 +13,7 @@ import type {
 export type {
   CotizacionResumenArchivo,
   CotizacionResumenClienteExtraido,
+  CotizacionResumenClienteOption,
   CotizacionResumenDetalle,
   CotizacionResumenCosto,
   CotizacionResumenFilters,
@@ -26,6 +28,15 @@ export type {
 
 export class CotizacionResumenService extends BaseService {
   private static baseUrl = 'api/carga-consolidada/cotizacion-resumen'
+
+  static async searchClientes(q = ''): Promise<{ success: boolean; data: CotizacionResumenClienteOption[]; message?: string }> {
+    try {
+      const qs = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''
+      return await this.apiCall(`${this.baseUrl}/clientes${qs}`)
+    } catch (e: any) {
+      return { success: false, data: [], message: e?.message }
+    }
+  }
 
   static async extraerDocumento(file: File): Promise<ExtraerDocumentoResponse> {
     const fd = new FormData()

@@ -78,6 +78,9 @@ export const useUserRole = () => {
 const currentId = computed(() => {
   return userData.value?.raw?.id || ''
 })
+  const currentOrganizacionId = computed(() => {
+    return Number(userData.value?.raw?.organizacion?.id || userData.value?.organizacion?.id || 0)
+  })
   const userName = computed(() => {
     return userData.value?.raw?.nombres_apellidos || userData.value?.raw?.nombre || ''
   })
@@ -178,6 +181,7 @@ const currentId = computed(() => {
     error: readonly(error),
 
     currentId,
+    currentOrganizacionId,
     currentRole,
     userName,
     userEmail,

@@ -42,6 +42,11 @@ export interface Contenedor {
     /** TC Yuan vigente del consolidado (Coordinación). */
     tc_yuan?: number | null
     pais: Pais
+    organizacion_id?: number
+    organizacion?: {
+        id: number
+        nombre: string
+    } | null
     /** Estado del permiso por tipo (backend puede enviar cuando role=Coordinación/Documentación). */
     estado_permiso_por_tipo?: Array<{ id_tipo_permiso?: number; nombre_permiso: string; estado: string }>
 }
@@ -51,6 +56,7 @@ export interface ContenedorResponse {
     pagination: PaginationInfo
     filters?: {
         anios?: number[]
+        organizaciones?: Array<{ id: number; nombre: string }>
     }
 }
 
@@ -72,6 +78,8 @@ export interface ContenedorFilters {
    anio?: string
    /** Estado finanzas (`todos` = sin filtro). */
    estado_finanzas?: string
+   /** Org 1: filtrar consolidados por organización (`todos` = sin filtro). */
+   organizacion_id?: string
    search?: string
    completado?: boolean|false
 }

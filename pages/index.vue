@@ -1,5 +1,11 @@
 <template>
-  <section class="content-header px-4 xl:px-4 sm:px-2" style="height: 93vh;">
+  <HomeOperativa
+    v-if="isOperativa"
+    :cards="statsOperativa"
+    :loading="loadingOperativa"
+    :variant="varianteOperativa"
+  />
+  <section v-else class="content-header px-4 xl:px-4 sm:px-2" style="height: 93vh;">
     <!-- Hero Section -->
     <div ref="heroRef" class="hero-section relative h-100 bg-cover bg-center bg-no-repeat mb-4 rounded-xl overflow-hidden opacity-0 translate-y-4 transition-all duration-700"
          :class="{ 'opacity-100 translate-y-0': heroVisible }"
@@ -47,9 +53,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { esOrganizacionSocio, esRolSocio } from '~/constants/roles'
+import { useHomeStats } from '~/composables/cargaconsolidada/home-stats'
+import { useUserRole } from '~/composables/auth/useUserRole'
 
 definePageMeta({ middleware: 'auth' })
+
+const { fetchCurrentUser, currentRole, userData, isContenedorAlmacen } = useUserRole()
+const { stats: homeStats, loading: loadingOperativa, loadStats } = useHomeStats()
+if (import.meta.client) {
+  fetchCurrentUser()
+}
+
+const orgId = computed(() => Number(userData.value?.organizacion?.id || userData.value?.raw?.organizacion?.id || 0))
+const isSocioHome = computed(() => esRolSocio(currentRole.value) || esOrganizacionSocio(orgId.value))
+const isOperativa = computed(() => isContenedorAlmacen.value || isSocioHome.value)
+const varianteOperativa = computed(() => isContenedorAlmacen.value ? 'almacen' : 'socio')
+const statsOperativa = computed(() => homeStats.value?.cards || [])
 
 interface StatDef { id: string; value: number; label: string; suffix?: string; icon: string; color: string; delay?: number; current?: number; visible?: boolean }
 
@@ -77,7 +98,11 @@ const formatNumber = (n: number) => {
 // Hero animation visibility
 const heroRef = ref<HTMLElement | null>(null)
 const heroVisible = ref(false)
-onMounted(() => {
+onMounted(async () => {
+  if (isOperativa.value) {
+    await loadStats()
+    return
+  }
   if (!heroRef.value) return
   const obs = new IntersectionObserver(entries => {
     entries.forEach(e => { if (e.isIntersecting) heroVisible.value = true })

@@ -286,11 +286,8 @@ const historialColumns: TableColumn<any>[] = [
     header: 'Servicio',
     cell: ({ row }: { row: any }) => {
       const servicio = row.original.servicio
-      const detalle = row.original.detalle
-      if (servicio === 'Consolidado') {
-        return `${servicio} ${detalle}`
-      }
-      return `${servicio} ${detalle}`
+      const detalle = row.original.detalle || row.original.carga
+      return detalle ? `${servicio} ${detalle}` : servicio
     }
   },
   {
@@ -333,7 +330,8 @@ const loadCliente = async () => {
         numero: index + 1,
         fecha: servicio.fecha,
         is_imported: servicio.is_imported,
-        detalle: servicio.detalle,
+        detalle: servicio.detalle || servicio.carga || '',
+        carga: servicio.carga,
         servicio: servicio.servicio,
         monto: servicio.servicio === 'Curso' ? `S/${servicio.monto??0.0}` : `$${servicio.monto??0.0}`,
       }))

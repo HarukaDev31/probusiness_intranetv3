@@ -47,7 +47,7 @@ import {
   waInboxWarn
 } from '~/composables/whatsapp-inbox/waInboxWsLog'
 import { getEchoInstance } from '~/composables/websocket/useEcho'
-import { WA_INBOX_WS_CHANNEL } from '~/constants/whatsappInboxWs'
+import { resolveWaInboxWsChannel } from '~/constants/whatsappInboxWs'
 import { conversationPatchFromWaInboxMessage } from '~/utils/whatsappInboxSidebarPreview'
 import { fetchWaInboxMessagesHistory } from '~/composables/whatsapp-inbox/fetchWaInboxMessagesHistory'
 import { dispatchWaInboxComposerSends } from '~/utils/whatsappInboxComposerSend'
@@ -1431,7 +1431,7 @@ export function useWhatsappInbox() {
       messagesConversationId: messagesConversationId.value,
       viewing: getWaInboxViewingConversationId(),
       echo: Boolean(getEchoInstance()),
-      channel: WA_INBOX_WS_CHANNEL,
+      channel: resolveWaInboxWsChannel(),
       uiHandlers: Boolean(getWaInboxUiHandlers()),
       liveHandlers: Boolean(getWaInboxLiveHandlers()),
       conversations: allConversations.value.length,

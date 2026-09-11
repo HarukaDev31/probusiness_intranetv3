@@ -25,6 +25,7 @@
       @page-change="handlePageChange"
       @items-per-page-change="handleItemsPerPageChange"
       @filter-change="handleFilterChange"
+      @clear-filters="clearFilters"
     >
       <template #body-top>
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full mb-2">
@@ -82,6 +83,7 @@ const {
   handlePageChange,
   handleItemsPerPageChange,
   handleFilterChange,
+  clearFilters,
   filterByNc,
 } = useCustomers()
 
