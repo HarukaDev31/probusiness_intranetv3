@@ -210,7 +210,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h } from 'vue'
+import { ref, computed, onMounted, h } from 'vue'
 import { createLazyView } from '~/utils/lazyView'
 
 const DataTable = createLazyView(() => import('~/components/DataTable.vue'))
@@ -221,6 +221,7 @@ import { ClienteService } from '~/services/clienteService'
 import { useClientes } from '~/composables/useClientes'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
+import { useOrganizacionPortal } from '~/composables/organizacion/useOrganizacionPortal'
 // Props
 const route = useRoute()
 const clienteId = parseInt(route.params.id as string)
@@ -243,6 +244,7 @@ const formContrasena = ref({
 const { enviarInstruccionesRecuperacionContrasena, actualizarContrasenaCliente } = useClientes()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
+const { load: loadPortal, urlRecuperarContrasena } = useOrganizacionPortal()
 
 // Historial de compras (datos de ejemplo basados en la imagen)
 const historialCompras = ref<any[]>([])
@@ -323,6 +325,7 @@ const loadCliente = async () => {
   try {
     const clienteData = await ClienteService.getClienteById(clienteId)
     cliente.value = clienteData
+    await loadPortal(clienteData.organizacion_id || undefined)
     if (clienteData.servicios) {
       historialComprasOriginal.value = clienteData.servicios.map((servicio: any, index: number) => ({
         id: index + 1,
@@ -387,11 +390,11 @@ const handleEnviarInstruccionesRecuperacionContrasena = async () => {
   }
 }
 
-const mensajeRecuperacionContrasena = ref(`Mensaje: 
+const mensajeRecuperacionContrasena = computed(() => `Mensaje: 
 Hola @nombrecliente! 👋
 
 Para recuperar tu contraseña, puedes hacerlo a través del siguiente enlace:
-https://clientes.probusiness.pe/recuperar-contrasena
+${urlRecuperarContrasena()}
 
 Si tienes algún problema, no dudes en contactarnos.
 

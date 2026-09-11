@@ -2,6 +2,8 @@
   <div class="p-6">
     <PageHeader title="Gestión de Organizaciones" icon="i-heroicons-building-office-2" />
 
+    <UTabs v-model="tab" :items="tabs" variant="pill" class="mb-4 w-80" />
+
     <!-- Filtros -->
     <div class="mb-4 flex flex-wrap gap-3">
       <USelect
@@ -13,14 +15,15 @@
       />
       <div class="flex-1" />
       <UButton
+        v-if="tab === 'organizaciones'"
         icon="i-heroicons-plus"
         label="Agregar Organización"
         @click="openModal()"
       />
     </div>
 
-    <!-- Tabla -->
-    <UCard>
+    <!-- Organizaciones -->
+    <UCard v-if="tab === 'organizaciones'">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -78,7 +81,71 @@
       </div>
     </UCard>
 
-    <!-- Modal Crear/Editar -->
+    <!-- Portales -->
+    <UCard v-else>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b">
+              <th class="text-left py-3 px-4">Organización</th>
+              <th class="text-left py-3 px-4">Portal clientes</th>
+              <th class="text-left py-3 px-4">Excel</th>
+              <th class="text-left py-3 px-4">Datos proveedor</th>
+              <th class="text-left py-3 px-4">Nombre público</th>
+              <th class="text-center py-3 px-4">Estado</th>
+              <th class="text-center py-3 px-4">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="loading">
+              <td colspan="7" class="text-center py-8">
+                <UIcon name="i-heroicons-arrow-path" class="animate-spin" /> Cargando...
+              </td>
+            </tr>
+            <tr v-else-if="organizaciones.length === 0">
+              <td colspan="7" class="text-center py-8 text-gray-500">No hay organizaciones</td>
+            </tr>
+            <tr
+              v-for="o in organizaciones"
+              :key="`portal-${o.id}`"
+              class="border-b hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <td class="py-2 px-4">
+                <p class="font-medium">{{ o.no_organizacion }}</p>
+                <p class="text-xs text-gray-500">{{ o.empresa || '—' }}</p>
+              </td>
+              <td class="py-2 px-4 text-xs text-gray-600 max-w-[12rem] truncate" :title="o.url_clientes || ''">
+                {{ o.url_clientes || '—' }}
+              </td>
+              <td class="py-2 px-4 text-xs text-gray-600 max-w-[10rem] truncate" :title="o.url_excel_confirmacion || ''">
+                {{ o.url_excel_confirmacion || '—' }}
+              </td>
+              <td class="py-2 px-4 text-xs text-gray-600 max-w-[10rem] truncate" :title="o.url_datos_proveedor || ''">
+                {{ o.url_datos_proveedor || '—' }}
+              </td>
+              <td class="py-2 px-4 text-gray-600">{{ o.nombre_publico || '—' }}</td>
+              <td class="py-2 px-4 text-center">
+                <UBadge :color="portalConfigurado(o) ? 'success' : 'warning'">
+                  {{ portalConfigurado(o) ? 'Configurado' : 'Pendiente' }}
+                </UBadge>
+              </td>
+              <td class="py-2 px-4 text-center">
+                <UButton
+                  size="xs"
+                  icon="i-heroicons-globe-alt"
+                  color="primary"
+                  variant="ghost"
+                  :label="portalConfigurado(o) ? 'Editar' : 'Configurar'"
+                  @click="openPortalModal(o)"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </UCard>
+
+    <!-- Modal Organización -->
     <UModal v-model:open="showModal">
       <template #content>
         <UCard>
@@ -144,6 +211,102 @@
       </template>
     </UModal>
 
+    <!-- Modal Portal -->
+    <UModal v-model:open="showPortalModal" :ui="{ width: 'max-w-2xl' }">
+      <template #content>
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-semibold">Portal de {{ editingPortal?.no_organizacion }}</h3>
+                <p class="text-xs text-gray-500">Links públicos de firma, formularios y reset</p>
+              </div>
+              <UButton icon="i-heroicons-x-mark" variant="ghost" @click="showPortalModal = false" />
+            </div>
+          </template>
+
+          <form @submit.prevent="submitPortal" class="space-y-4">
+            <UFormField label="URL portal clientes">
+              <UInput
+                v-model="portalForm.url_clientes"
+                placeholder="https://clientes.elsocio.com"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="URL Excel confirmación">
+              <UInput
+                v-model="portalForm.url_excel_confirmacion"
+                placeholder="Vacío = misma URL del portal"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="URL datos proveedor">
+              <UInput
+                v-model="portalForm.url_datos_proveedor"
+                placeholder="https://proveedor.elsocio.com"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="Nombre público">
+              <UInput
+                v-model="portalForm.nombre_publico"
+                placeholder="Nombre que ve el cliente"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="Carpeta Drive">
+              <UInput
+                v-model="portalForm.drive_folder_id"
+                placeholder="ID de carpeta (opcional)"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="Logo">
+              <UInput
+                v-model="portalForm.logo_url"
+                placeholder="https://…"
+                class="w-full"
+              />
+            </UFormField>
+
+            <div v-if="editingPortal?.public_key" class="rounded-md border border-gray-200 p-3 dark:border-gray-700">
+              <p class="mb-1 text-xs font-medium text-gray-600 dark:text-gray-300">Key del front (X-Org-Key)</p>
+              <div class="flex items-center gap-2">
+                <code class="min-w-0 flex-1 truncate text-xs">{{ editingPortal.public_key }}</code>
+                <UButton
+                  size="xs"
+                  variant="ghost"
+                  icon="i-heroicons-clipboard"
+                  @click="copiarKey(editingPortal.public_key)"
+                />
+                <UButton
+                  size="xs"
+                  variant="ghost"
+                  icon="i-heroicons-arrow-path"
+                  label="Nueva"
+                  @click="regenerarKey"
+                />
+              </div>
+            </div>
+
+            <p v-if="portalError" class="text-red-500 text-sm">{{ portalError }}</p>
+          </form>
+
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton variant="outline" label="Cancelar" @click="showPortalModal = false" />
+              <UButton
+                label="Guardar portal"
+                icon="i-heroicons-check"
+                :loading="savingPortal"
+                @click="submitPortal"
+              />
+            </div>
+          </template>
+        </UCard>
+      </template>
+    </UModal>
+
     <!-- Modal Confirmar Eliminación -->
     <UModal v-model:open="showDeleteModal">
       <template #content>
@@ -175,24 +338,39 @@
 </template>
 
 <script setup lang="ts">
-import { OrganizacionService } from '~/services/panelAcceso/organizacionService'
 import type { Organizacion, CreateOrganizacionRequest } from '~/services/panelAcceso/organizacionService'
-import { OptionsService } from '~/services/panelAcceso/optionsService'
+import { useOrganizaciones } from '~/composables/panel-acceso/useOrganizaciones'
+import { useSpinner } from '~/composables/commons/useSpinner'
+import { useModal } from '~/composables/commons/useModal'
+
+const tab = ref<'organizaciones' | 'portales'>('organizaciones')
+const tabs = [
+  { label: 'Organizaciones', value: 'organizaciones' },
+  { label: 'Portales', value: 'portales' },
+]
 
 const empresasOptions = ref<{ label: string; value: number }[]>([])
-
 const organizaciones = ref<Organizacion[]>([])
-const loading  = ref(false)
+const loading = ref(false)
 const filtroEmpresaId = ref(0)
 
 const showModal = ref(false)
 const editingOrganizacion = ref<Organizacion | null>(null)
-const saving    = ref(false)
+const saving = ref(false)
 const formError = ref('')
+
+const showPortalModal = ref(false)
+const editingPortal = ref<Organizacion | null>(null)
+const savingPortal = ref(false)
+const portalError = ref('')
 
 const showDeleteModal = ref(false)
 const deletingOrganizacion = ref<Organizacion | null>(null)
 const deleting = ref(false)
+
+const { listar, listarEmpresas, crear, actualizar, guardarPortal, desactivar } = useOrganizaciones()
+const { withSpinner } = useSpinner()
+const { showSuccess, showError } = useModal()
 
 const form = reactive<CreateOrganizacionRequest>({
   id_empresa: 0,
@@ -201,14 +379,26 @@ const form = reactive<CreateOrganizacionRequest>({
   estado: 1,
 })
 
+const portalForm = reactive({
+  url_clientes: '',
+  url_excel_confirmacion: '',
+  url_datos_proveedor: '',
+  nombre_publico: '',
+  drive_folder_id: '',
+  logo_url: '',
+})
+
+function portalConfigurado(o: Organizacion) {
+  return Boolean(o.url_clientes || o.public_key)
+}
+
 async function loadEmpresas() {
-  const empresas = await OptionsService.getEmpresas()
-  empresasOptions.value = empresas.map(e => ({ label: e.nombre, value: e.id }))
+  empresasOptions.value = await listarEmpresas()
 }
 
 async function loadOrganizaciones() {
   loading.value = true
-  const res = await OrganizacionService.getOrganizaciones({
+  const res = await listar({
     empresa_id: filtroEmpresaId.value || undefined,
   })
   organizaciones.value = res.data ?? []
@@ -239,6 +429,18 @@ async function openModal(organizacion?: Organizacion) {
   showModal.value = true
 }
 
+function openPortalModal(organizacion: Organizacion) {
+  portalError.value = ''
+  editingPortal.value = organizacion
+  portalForm.url_clientes = organizacion.url_clientes ?? ''
+  portalForm.url_excel_confirmacion = organizacion.url_excel_confirmacion ?? ''
+  portalForm.url_datos_proveedor = organizacion.url_datos_proveedor ?? ''
+  portalForm.nombre_publico = organizacion.nombre_publico ?? ''
+  portalForm.drive_folder_id = organizacion.drive_folder_id ?? ''
+  portalForm.logo_url = organizacion.logo_url ?? ''
+  showPortalModal.value = true
+}
+
 async function submitForm() {
   if (!form.id_empresa) {
     formError.value = 'Debes seleccionar una empresa'
@@ -258,17 +460,86 @@ async function submitForm() {
     estado: Number(form.estado),
   }
 
-  const res = editingOrganizacion.value
-    ? await OrganizacionService.updateOrganizacion(editingOrganizacion.value.id, payload)
-    : await OrganizacionService.createOrganizacion(payload)
+  try {
+    const res = await withSpinner(async () => {
+      const result = editingOrganizacion.value
+        ? await actualizar(editingOrganizacion.value.id, payload)
+        : await crear(payload)
+      if (!result.success) {
+        throw new Error(typeof result.message === 'string' ? result.message : 'No se pudo guardar')
+      }
+      return result
+    }, 'Guardando…')
 
-  saving.value = false
-
-  if (res.success) {
     showModal.value = false
+    showSuccess('Guardado', 'La organización quedó actualizada.')
     await loadOrganizaciones()
-  } else {
-    formError.value = typeof (res as any).message === 'string' ? (res as any).message : 'Error al guardar'
+    return res
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error al guardar'
+    formError.value = msg
+    showError('No se pudo guardar', msg)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function submitPortal() {
+  if (!editingPortal.value) return
+  portalError.value = ''
+  savingPortal.value = true
+
+  try {
+    await withSpinner(async () => {
+      const result = await guardarPortal(editingPortal.value!, { ...portalForm })
+      if (!result.success) {
+        throw new Error(typeof result.message === 'string' ? result.message : 'No se pudo guardar el portal')
+      }
+      if ('data' in result && result.data) {
+        editingPortal.value = result.data
+      }
+    }, 'Guardando portal…')
+
+    showPortalModal.value = false
+    showSuccess('Portal guardado', 'Los links públicos de esta organización ya aplican.')
+    await loadOrganizaciones()
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error al guardar el portal'
+    portalError.value = msg
+    showError('No se pudo guardar', msg)
+  } finally {
+    savingPortal.value = false
+  }
+}
+
+async function regenerarKey() {
+  if (!editingPortal.value) return
+  try {
+    await withSpinner(async () => {
+      const result = await guardarPortal(editingPortal.value!, {
+        ...portalForm,
+        regenerar_public_key: true,
+      })
+      if (!result.success) {
+        throw new Error(typeof result.message === 'string' ? result.message : 'No se pudo generar la key')
+      }
+      if ('data' in result && result.data) {
+        editingPortal.value = result.data
+      }
+    }, 'Generando key…')
+    showSuccess('Key nueva', 'Copia la key y actualízala en el front del socio.')
+    await loadOrganizaciones()
+  } catch (e) {
+    showError('No se pudo generar', e instanceof Error ? e.message : 'Inténtalo de nuevo.')
+  }
+}
+
+async function copiarKey(key: string) {
+  try {
+    await navigator.clipboard.writeText(key)
+    showSuccess('Copiado', 'Key lista para el front del socio.')
+  } catch {
+    showError('No se copió', 'Copia la key a mano.')
   }
 }
 
@@ -280,13 +551,20 @@ function confirmDelete(organizacion: Organizacion) {
 async function deleteOrganizacion() {
   if (!deletingOrganizacion.value) return
   deleting.value = true
-  const res = await OrganizacionService.deleteOrganizacion(deletingOrganizacion.value.id)
-  deleting.value = false
-  showDeleteModal.value = false
-  if (res.success) {
+  try {
+    await withSpinner(async () => {
+      const res = await desactivar(deletingOrganizacion.value!.id)
+      if (!res.success) {
+        throw new Error(res.message ?? 'No se pudo desactivar la organización')
+      }
+    }, 'Desactivando…')
+    showDeleteModal.value = false
+    showSuccess('Desactivada', 'La organización ya no aparece para usuarios nuevos.')
     await loadOrganizaciones()
-  } else {
-    alert(res.message ?? 'No se pudo desactivar la organización')
+  } catch (e) {
+    showError('No se pudo desactivar', e instanceof Error ? e.message : 'Inténtalo de nuevo.')
+  } finally {
+    deleting.value = false
   }
 }
 

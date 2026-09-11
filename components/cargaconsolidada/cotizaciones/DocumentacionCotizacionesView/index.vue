@@ -125,6 +125,7 @@ import SelectTipoCargaModal from '~/components/cargaconsolidada/cotizaciones/Sel
 import PagoGrid from '~/components/PagoGrid.vue'
 import { ConsolidadoService } from '~/services/cargaconsolidada/consolidadoService'
 import ModalAcciones from '~/components/cargaconsolidada/clientes/ModalAcciones/index.vue'
+import { useOrganizacionPortal } from '~/composables/organizacion/useOrganizacionPortal'
 
 const { getCotizacionProveedor,
     updateProveedorEstado,
@@ -171,6 +172,7 @@ const { cotizaciones,
     resetFiltersCotizacion,
     packingList,
     exportData: exportProspectosData,
+    urlClientes,
 } = useCotizacion()
 const {
     cotizacionPagos,
@@ -210,9 +212,9 @@ const copyToClipboard = async (text: string, successMessage: string = 'Copiado a
 }
 
 // Función para construir el URL de firma usando el UUID
+const { urlFirmaAcuerdo } = useOrganizacionPortal()
 const getSignUrl = (uuid: string): string => {
-    if (!uuid) return ''
-    return 'https://clientes.probusiness.pe/firma-acuerdo-servicio/' + uuid
+    return urlFirmaAcuerdo(uuid, urlClientes.value)
 }
 
 const tab = ref('')

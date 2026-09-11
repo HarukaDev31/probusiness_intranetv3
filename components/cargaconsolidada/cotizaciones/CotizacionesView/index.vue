@@ -177,6 +177,7 @@ import DeleteCotizacionReasonModal from '~/components/cargaconsolidada/cotizacio
 import type { DeleteCotizacionReasonModalHandlers } from '~/components/cargaconsolidada/cotizaciones/DeleteCotizacionReasonModal/types'
 import { useSeguimientoDrive } from '~/composables/cargaconsolidada/seguimiento-drive'
 import type { CotizacionesHeadersResponse } from '~/types/cargaconsolidada/cotizaciones'
+import { useOrganizacionPortal } from '~/composables/organizacion/useOrganizacionPortal'
 
 const UInput = ((props: any) => {
     const isDisabled = Boolean(props?.disabled)
@@ -277,6 +278,7 @@ const { cotizaciones,
     packingList,
     exportData: exportProspectosData,
     fCierre,
+    urlClientes,
 } = useCotizacion()
 const { updateEstado: updateEstadoResumen } = useCotizacionResumen()
 const { forceSendInspection } = useCommons()
@@ -359,9 +361,9 @@ const copyToClipboard = async (text: string, successMessage: string = 'Copiado a
 }
 
 // Funciï¿½n para construir el URL de firma usando el UUID
+const { urlFirmaAcuerdo } = useOrganizacionPortal()
 const getSignUrl = (uuid: string): string => {
-    if (!uuid) return ''
-    return 'https://clientes.probusiness.pe/firma-acuerdo-servicio/' + uuid
+    return urlFirmaAcuerdo(uuid, urlClientes.value)
 }
 
 const tab = ref('')

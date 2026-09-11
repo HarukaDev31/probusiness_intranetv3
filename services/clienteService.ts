@@ -33,6 +33,7 @@ export interface Cliente {
   capacidad_comercial?: string
   rubro?: string
   red_social?: string
+  organizacion_id?: number | null
 }
 
 export interface PaginationInfo {

@@ -7,6 +7,13 @@ export interface Organizacion {
   no_organizacion: string
   txt_organizacion: string | null
   estado: number
+  url_clientes?: string | null
+  url_excel_confirmacion?: string | null
+  url_datos_proveedor?: string | null
+  nombre_publico?: string | null
+  drive_folder_id?: string | null
+  logo_url?: string | null
+  public_key?: string | null
 }
 
 export interface CreateOrganizacionRequest {
@@ -14,6 +21,13 @@ export interface CreateOrganizacionRequest {
   no_organizacion: string
   txt_organizacion?: string
   estado: number
+  url_clientes?: string
+  url_excel_confirmacion?: string
+  url_datos_proveedor?: string
+  nombre_publico?: string
+  drive_folder_id?: string
+  logo_url?: string
+  regenerar_public_key?: boolean
 }
 
 export interface UpdateOrganizacionRequest extends CreateOrganizacionRequest {

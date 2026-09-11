@@ -1,10 +1,13 @@
 <template>
   <div class="mx-auto flex max-w-2xl flex-col gap-6 p-4 md:p-6">
     <div>
-      <h1 class="text-xl font-bold text-highlighted md:text-2xl">WhatsApp</h1>
-      <p class="mt-1 max-w-xl text-sm text-muted">
-        Configura el número de tu organización. Cada empresa gestiona el suyo.
-      </p>
+      <PageHeader
+        title="WhatsApp"
+        subtitle="Configura el número de tu organización. Cada empresa gestiona el suyo."
+        icon="i-heroicons-chat-bubble-left-right"
+        :hide-back-button="false"
+        @back="navigateTo('/coordinacion/whatsapp-inbox')"
+      />
       <p v-if="config?.organizacion_nombre" class="mt-1 text-xs text-muted">
         {{ config.organizacion_nombre }}
       </p>
