@@ -184,14 +184,14 @@ import { UsuarioAdminService } from '~/services/panelAcceso/usuarioAdminService'
 import { OptionsService }      from '~/services/panelAcceso/optionsService'
 import type { UsuarioAdmin }   from '~/services/panelAcceso/usuarioAdminService'
 import AuthService from '~/services/authService'
+import { resolveAuthOrgEmpresa } from '~/composables/auth/useUserRole'
 
 // Render components
 const UButton = resolveComponent('UButton')
 const UBadge  = resolveComponent('UBadge')
 
 const authUser  = (AuthService.getInstance() as any).currentUser
-const empresaId = computed(() => authUser?.raw?.ID_Empresa ?? 1)
-const orgId     = computed(() => authUser?.raw?.ID_Organizacion ?? 1)
+const { empresaId, orgId } = resolveAuthOrgEmpresa(authUser)
 
 // Solo la organizacion admin (ID_Organizacion == 1) puede crear/editar
 // usuarios en cualquier organizacion; lo indica el backend en login/me.
@@ -319,7 +319,7 @@ const orgIdActual = computed(() => {
   if (puedeGestionarOrganizaciones.value && selectedOrganizacion.value) {
     return selectedOrganizacion.value.value
   }
-  return orgId.value
+  return orgId
 })
 
 // ─── Modal ─────────────────────────────────────────────────────────────────────
@@ -350,11 +350,9 @@ function togglePasswordVisibility(id: number) {
 async function loadUsuarios(params?: { search?: string; page?: number; per_page?: number }) {
   loading.value = true
   const res = await UsuarioAdminService.getUsuarios({
-    empresa_id: empresaId.value,
-    // El admin de organizaciones ve usuarios de todas las organizaciones en el
-    // listado, o filtra por una sola con el filtro de arriba (el backend
-    // igual lo permite solo a el); el resto siempre queda filtrado a la suya.
-    org_id:     puedeGestionarOrganizaciones.value ? (filtroOrgId.value ? Number(filtroOrgId.value) : undefined) : orgId.value,
+    // Org ≠ 1: el back fuerza la org del token. Org 1 puede filtrar.
+    empresa_id: puedeGestionarOrganizaciones.value ? (empresaId || undefined) : undefined,
+    org_id:     puedeGestionarOrganizaciones.value ? (filtroOrgId.value ? Number(filtroOrgId.value) : undefined) : undefined,
     search:     params?.search || undefined,
     page:       params?.page || pagination.value.current_page,
     per_page:   params?.per_page || pagination.value.per_page,
@@ -413,13 +411,13 @@ function onItemsPerPageChange(perPage: number) {
 }
 
 async function loadGrupos() {
-  const grupos = await OptionsService.getGrupos(empresaId.value, orgIdActual.value)
+  const grupos = await OptionsService.getGrupos(empresaId, orgIdActual.value)
   gruposOptions.value = grupos.map(g => ({ label: g.nombre, value: g.id }))
 }
 
 async function loadOrganizaciones() {
   loadingOrganizaciones.value = true
-  const orgs = await OptionsService.getOrganizaciones(empresaId.value)
+  const orgs = await OptionsService.getOrganizaciones(empresaId)
   organizacionesOptions.value = orgs.map(o => ({ label: o.nombre, value: o.id }))
   loadingOrganizaciones.value = false
 }
@@ -457,7 +455,7 @@ async function openModal(usuario?: UsuarioAdmin) {
     form.celular           = ''
     selectedEstado.value   = estadoOptions[0]
     if (puedeGestionarOrganizaciones.value) {
-      selectedOrganizacion.value = organizacionesOptions.value.find(o => o.value === orgId.value)
+      selectedOrganizacion.value = organizacionesOptions.value.find(o => o.value === orgId)
         ?? organizacionesOptions.value[0]
         ?? null
     }
@@ -504,7 +502,7 @@ async function submitForm() {
   saving.value = true
 
   const payload: any = {
-    id_empresa:        empresaId.value,
+    id_empresa:        empresaId,
     id_org:            orgIdActual.value,
     id_grupo:          grupoId,
     usuario:           form.usuario.trim(),

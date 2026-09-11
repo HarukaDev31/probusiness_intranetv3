@@ -261,10 +261,12 @@ import type { MenuCatalogo, GrupoConAcceso } from '~/services/panelAcceso/menuCa
 import type { FilterConfig } from '~/types/data-table'
 import { OptionsService } from '~/services/panelAcceso/optionsService'
 import AuthService from '~/services/authService'
+import { resolveAuthOrgEmpresa } from '~/composables/auth/useUserRole'
 
 const authUser  = AuthService.getInstance().currentUser as any
-const empresaId = computed(() => authUser?.raw?.ID_Empresa ?? 1)
-const orgId     = computed(() => authUser?.raw?.ID_Organizacion ?? 1)
+const authOrgEmpresa = resolveAuthOrgEmpresa(authUser)
+const empresaId = computed(() => authOrgEmpresa.empresaId)
+const orgId     = computed(() => authOrgEmpresa.orgId)
 
 // Solo la organizacion admin (ID_Organizacion == 1) puede crear/editar menus
 // en cualquier organizacion; el resto siempre crea en la suya.

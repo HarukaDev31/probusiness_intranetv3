@@ -20,6 +20,16 @@ interface UserOrganization {
   nombre: string
 }
 
+/** Org/empresa reales del login (`raw.organizacion.id` / `raw.empresa.id`). */
+export function resolveAuthOrgEmpresa(authUser: unknown): { orgId: number; empresaId: number } {
+  const u = (authUser ?? {}) as Record<string, any>
+  const raw = (u.raw ?? u) as Record<string, any>
+  return {
+    orgId: Number(raw?.organizacion?.id ?? u.organizacion?.id ?? raw?.ID_Organizacion ?? raw?.id_org ?? 0),
+    empresaId: Number(raw?.empresa?.id ?? u.empresa?.id ?? raw?.ID_Empresa ?? raw?.id_empresa ?? 0),
+  }
+}
+
 interface UserRaw {
   id: number
   nombre: string
@@ -79,7 +89,10 @@ const currentId = computed(() => {
   return userData.value?.raw?.id || ''
 })
   const currentOrganizacionId = computed(() => {
-    return Number(userData.value?.raw?.organizacion?.id || userData.value?.organizacion?.id || 0)
+    return resolveAuthOrgEmpresa(userData.value).orgId
+  })
+  const currentEmpresaId = computed(() => {
+    return resolveAuthOrgEmpresa(userData.value).empresaId
   })
   const userName = computed(() => {
     return userData.value?.raw?.nombres_apellidos || userData.value?.raw?.nombre || ''
@@ -182,6 +195,7 @@ const currentId = computed(() => {
 
     currentId,
     currentOrganizacionId,
+    currentEmpresaId,
     currentRole,
     userName,
     userEmail,

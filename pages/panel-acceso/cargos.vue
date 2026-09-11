@@ -226,12 +226,14 @@ import { GrupoService, TIPOS_PRIVILEGIO } from '~/services/panelAcceso/grupoServ
 import type { Grupo, CreateGrupoRequest } from '~/services/panelAcceso/grupoService'
 import { OptionsService } from '~/services/panelAcceso/optionsService'
 import AuthService from '~/services/authService'
+import { resolveAuthOrgEmpresa } from '~/composables/auth/useUserRole'
 
 const authUser = AuthService.getInstance().currentUser as any
 const isRoot = computed(() => authUser?.name === 'root' || authUser?.raw?.No_Usuario === 'root')
 
-const empresaId = computed(() => authUser?.raw?.ID_Empresa ?? 1)
-const orgId     = computed(() => authUser?.raw?.ID_Organizacion ?? 1)
+const authOrgEmpresa = resolveAuthOrgEmpresa(authUser)
+const empresaId = computed(() => authOrgEmpresa.empresaId)
+const orgId     = computed(() => authOrgEmpresa.orgId)
 
 // Solo la organizacion admin (ID_Organizacion == 1) puede crear/editar cargos
 // en cualquier organizacion (de su misma empresa); lo indica el backend en

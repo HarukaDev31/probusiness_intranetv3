@@ -156,6 +156,7 @@ import { MenuAccesoService } from '~/services/panelAcceso/menuAccesoService'
 import { OptionsService }    from '~/services/panelAcceso/optionsService'
 import type { MenuConPermiso } from '~/services/panelAcceso/menuAccesoService'
 import AuthService from '~/services/authService'
+import { resolveAuthOrgEmpresa } from '~/composables/auth/useUserRole'
 
 const authUser = await AuthService.getInstance().getCurrentUser() as any
 const isRoot    = computed(() => authUser?.name === 'root' || authUser?.raw?.No_Usuario === 'root')
@@ -166,12 +167,11 @@ const isRoot    = computed(() => authUser?.name === 'root' || authUser?.raw?.No_
 const puedeGestionarOrganizaciones = computed(() => !!authUser?.raw?.puedeGestionarOrganizaciones)
 const puedeElegirOrganizacion = computed(() => isRoot.value || puedeGestionarOrganizaciones.value)
 
-const defaultEmpresaId = computed(() => authUser?.raw?.ID_Empresa ?? 1)
-const defaultOrgId     = computed(() => authUser?.raw?.ID_Organizacion ?? 1)
+const { empresaId: defaultEmpresaId, orgId: defaultOrgId } = resolveAuthOrgEmpresa(authUser)
 
 // Selectores
-const selectedEmpresaId = ref<number>(defaultEmpresaId.value)
-const selectedOrgId     = ref<number>(defaultOrgId.value)
+const selectedEmpresaId = ref<number>(defaultEmpresaId)
+const selectedOrgId     = ref<number>(defaultOrgId)
 const selectedGrupoId   = ref<number>(0)
 
 const empresasOptions = ref<{ label: string; value: number }[]>([])
@@ -235,7 +235,7 @@ async function loadOrgs() {
   const orgs = await OptionsService.getOrganizaciones(selectedEmpresaId.value)
   orgsOptions.value = orgs.map(o => ({ label: o.nombre, value: o.id }))
   if (!puedeElegirOrganizacion.value) {
-    selectedOrgId.value = defaultOrgId.value
+    selectedOrgId.value = defaultOrgId
   }
 }
 
