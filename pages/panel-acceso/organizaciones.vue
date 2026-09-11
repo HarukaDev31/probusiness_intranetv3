@@ -30,6 +30,8 @@
             <tr class="border-b">
               <th class="text-left py-3 px-4">Empresa</th>
               <th class="text-left py-3 px-4">Organización</th>
+              <th class="text-left py-3 px-4">País</th>
+              <th class="text-left py-3 px-4">Prefijo tel.</th>
               <th class="text-left py-3 px-4">Descripción</th>
               <th class="text-center py-3 px-4">Estado</th>
               <th class="text-center py-3 px-4">Acciones</th>
@@ -37,12 +39,12 @@
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="5" class="text-center py-8">
+              <td colspan="7" class="text-center py-8">
                 <UIcon name="i-heroicons-arrow-path" class="animate-spin" /> Cargando...
               </td>
             </tr>
             <tr v-else-if="organizaciones.length === 0">
-              <td colspan="5" class="text-center py-8 text-gray-500">No hay registros</td>
+              <td colspan="7" class="text-center py-8 text-gray-500">No hay registros</td>
             </tr>
             <tr
               v-for="o in organizaciones"
@@ -51,6 +53,8 @@
             >
               <td class="py-2 px-4 text-gray-500 text-xs">{{ o.empresa || '—' }}</td>
               <td class="py-2 px-4 font-medium">{{ o.no_organizacion }}</td>
+              <td class="py-2 px-4">{{ o.pais || '—' }}</td>
+              <td class="py-2 px-4 font-mono text-xs">{{ o.prefijo ? `+${o.prefijo}` : '—' }}</td>
               <td class="py-2 px-4 text-gray-500">{{ o.txt_organizacion || '—' }}</td>
               <td class="py-2 px-4 text-center">
                 <UBadge :color="o.estado === 1 ? 'success' : 'neutral'">
@@ -176,6 +180,21 @@
                 class="w-full"
               />
             </UFormField>
+
+            <UFormField
+              label="País"
+              hint="Si el WhatsApp se guarda sin código de país, se antepone este prefijo."
+            >
+              <USelect
+                v-model="form.id_pais"
+                :items="[{ label: 'Sin país', value: 0 }, ...paisesOptions]"
+                placeholder="Seleccionar país"
+                class="w-full"
+              />
+            </UFormField>
+            <p v-if="prefijoPreview" class="text-xs text-gray-500">
+              Prefijo telefónico: <span class="font-mono font-medium">+{{ prefijoPreview }}</span>
+            </p>
 
             <UFormField label="Descripción">
               <UInput
@@ -338,7 +357,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Organizacion, CreateOrganizacionRequest } from '~/services/panelAcceso/organizacionService'
+import type { Organizacion, CreateOrganizacionRequest, PaisOption } from '~/services/panelAcceso/organizacionService'
 import { useOrganizaciones } from '~/composables/panel-acceso/useOrganizaciones'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -350,6 +369,7 @@ const tabs = [
 ]
 
 const empresasOptions = ref<{ label: string; value: number }[]>([])
+const paisesOptions = ref<PaisOption[]>([])
 const organizaciones = ref<Organizacion[]>([])
 const loading = ref(false)
 const filtroEmpresaId = ref(0)
@@ -368,7 +388,7 @@ const showDeleteModal = ref(false)
 const deletingOrganizacion = ref<Organizacion | null>(null)
 const deleting = ref(false)
 
-const { listar, listarEmpresas, crear, actualizar, guardarPortal, desactivar } = useOrganizaciones()
+const { listar, listarEmpresas, listarPaises, crear, actualizar, guardarPortal, desactivar } = useOrganizaciones()
 const { withSpinner } = useSpinner()
 const { showSuccess, showError } = useModal()
 
@@ -376,7 +396,13 @@ const form = reactive<CreateOrganizacionRequest>({
   id_empresa: 0,
   no_organizacion: '',
   txt_organizacion: '',
+  id_pais: 0,
   estado: 1,
+})
+
+const prefijoPreview = computed(() => {
+  const pais = paisesOptions.value.find(p => p.value === form.id_pais)
+  return pais?.phone_code || ''
 })
 
 const portalForm = reactive({
@@ -396,6 +422,11 @@ async function loadEmpresas() {
   empresasOptions.value = await listarEmpresas()
 }
 
+async function loadPaises() {
+  if (paisesOptions.value.length > 0) return
+  paisesOptions.value = await listarPaises()
+}
+
 async function loadOrganizaciones() {
   loading.value = true
   const res = await listar({
@@ -411,18 +442,21 @@ async function openModal(organizacion?: Organizacion) {
   if (empresasOptions.value.length === 0) {
     await loadEmpresas()
   }
+  await loadPaises()
 
   if (organizacion) {
     editingOrganizacion.value = organizacion
     form.id_empresa = organizacion.id_empresa
     form.no_organizacion = organizacion.no_organizacion
     form.txt_organizacion = organizacion.txt_organizacion ?? ''
+    form.id_pais = organizacion.id_pais ?? 0
     form.estado = organizacion.estado
   } else {
     editingOrganizacion.value = null
     form.id_empresa = empresasOptions.value[0]?.value ?? 0
     form.no_organizacion = ''
     form.txt_organizacion = ''
+    form.id_pais = 0
     form.estado = 1
   }
 
@@ -457,6 +491,7 @@ async function submitForm() {
     id_empresa: form.id_empresa,
     no_organizacion: form.no_organizacion.trim(),
     txt_organizacion: form.txt_organizacion || undefined,
+    id_pais: form.id_pais || null,
     estado: Number(form.estado),
   }
 
@@ -569,7 +604,6 @@ async function deleteOrganizacion() {
 }
 
 onMounted(async () => {
-  await loadEmpresas()
-  await loadOrganizaciones()
+  await Promise.all([loadEmpresas(), loadPaises(), loadOrganizaciones()])
 })
 </script>

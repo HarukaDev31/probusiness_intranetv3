@@ -6,6 +6,9 @@ export interface Organizacion {
   empresa: string | null
   no_organizacion: string
   txt_organizacion: string | null
+  id_pais?: number | null
+  pais?: string | null
+  prefijo?: string | null
   estado: number
   url_clientes?: string | null
   url_excel_confirmacion?: string | null
@@ -20,6 +23,7 @@ export interface CreateOrganizacionRequest {
   id_empresa: number
   no_organizacion: string
   txt_organizacion?: string
+  id_pais?: number | null
   estado: number
   url_clientes?: string
   url_excel_confirmacion?: string
@@ -56,7 +60,22 @@ export interface SimpleResponse {
  * organizacion admin (ID_Organizacion == 1) -- el backend responde 403
  * para cualquier otro usuario, independiente de lo que haga el front.
  */
+export interface PaisOption {
+  value: number
+  label: string
+  iso2: string | null
+  phone_code: string | null
+}
+
 export class OrganizacionService extends BaseService {
+
+  static async getPaises(): Promise<{ success: boolean; data: PaisOption[] }> {
+    try {
+      return await this.apiCall<{ success: boolean; data: PaisOption[] }>('/api/panel-acceso/paises')
+    } catch {
+      return { success: false, data: [] }
+    }
+  }
 
   static async getOrganizaciones(params: { empresa_id?: number } = {}): Promise<OrganizacionListResponse> {
     try {

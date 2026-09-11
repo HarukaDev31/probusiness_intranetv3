@@ -43,7 +43,7 @@ Pages/components **no** llaman services: `useCotizacionResumen` → `cotizacionR
 - **Duplicar**: copia igual, estado **COTIZADO**, **sin contenedor**, **sin `code_supplier`**.
 - **No se puede confirmar** si `id_contenedor` es null. Hay que editarla (COTIZADO) y asignarle un consolidado.
 - Al asignar/cambiar contenedor en edición, se replica `id_contenedor` a proveedores, resumen y archivo IA.
-- WhatsApp: si el número no trae código de país, el back antepone el `phone_code` del país del contenedor (`pais_flags`). La comparación en BD clientes usa dígitos internacionales + nacionales (no solo +51).
+- WhatsApp: si el número no trae código de país, el back antepone el `phone_code` del país de la organización (`organizacion.id_pais` → `pais_flags`). Si la org no tiene país, usa el del contenedor. La comparación en BD clientes usa dígitos internacionales + nacionales (no solo +51).
 
 ## Editar
 

@@ -27,6 +27,11 @@ export function useOrganizaciones() {
     return empresas.map(e => ({ label: e.nombre, value: e.id }))
   }
 
+  async function listarPaises() {
+    const res = await OrganizacionService.getPaises()
+    return res.data ?? []
+  }
+
   async function crear(data: CreateOrganizacionRequest) {
     return await OrganizacionService.createOrganizacion(data)
   }
@@ -55,5 +60,5 @@ export function useOrganizaciones() {
     return await OrganizacionService.deleteOrganizacion(id)
   }
 
-  return { listar, listarEmpresas, crear, actualizar, guardarPortal, desactivar }
+  return { listar, listarEmpresas, listarPaises, crear, actualizar, guardarPortal, desactivar }
 }

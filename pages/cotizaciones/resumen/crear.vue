@@ -11,7 +11,7 @@
         </h1>
         <p class="text-lg">
           {{ esEdicion
-            ? 'Puedes agregar proveedores o costos. Solo se edita en estado COTIZADO.'
+            ? 'Puedes agregar proveedores. Solo se edita en estado COTIZADO.'
             : 'Complete todos los pasos para registrar la cotización' }}
         </p>
       </div>
@@ -195,7 +195,7 @@
                   @update:model-value="onClienteCampoEditado(f.key)"
                 />
                 <p v-if="f.key === 'whatsapp'" class="text-xs text-gray-500">
-                  Escribe un número nuevo o elige uno de tus clientes. Sin código de país se usa el del consolidado.
+                  Escribe un número nuevo o elige uno de tus clientes. Sin código de país se usa el de tu organización.
                 </p>
               </div>
               <div class="flex flex-col gap-1.5">
@@ -275,24 +275,6 @@
             <p v-else-if="Number(prov.cbmImo) > 0" class="text-xs text-gray-500 mt-2">
               Se guardará CBM normal {{ cbmNormalProveedor(prov).toFixed(2) }} y CBM IMO {{ Number(prov.cbmImo || 0).toFixed(2) }}
             </p>
-
-            <div class="mt-4 space-y-2">
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium">Costos</p>
-                <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-plus" @click="prov.costos.push(crearCosto())">
-                  Agregar costo
-                </UButton>
-              </div>
-              <div v-for="(costo, cIdx) in prov.costos" :key="costo.id" class="flex flex-wrap gap-2 items-end">
-                <UFormField label="Concepto" class="flex-1 min-w-[180px]">
-                  <UInput v-model="costo.concepto" placeholder="Mercadería, flete, impuestos…" class="w-full" />
-                </UFormField>
-                <UFormField label="Valor" class="w-36">
-                  <UInput v-model.number="costo.valor" type="number" min="0" step="0.01" class="w-full" />
-                </UFormField>
-                <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="prov.costos.splice(cIdx, 1)" />
-              </div>
-            </div>
           </div>
 
           <UButton class="mt-4" color="success" size="sm" icon="i-heroicons-plus" @click="addProvider">
@@ -408,7 +390,8 @@ definePageMeta({
 
 const { showError, showSuccess } = useModal()
 const { withSpinner } = useSpinner()
-const { getUserData } = useUserRole()
+const { getUserData, fetchCurrentUser } = useUserRole()
+fetchCurrentUser()
 const overlay = useOverlay()
 const route = useRoute()
 const {
@@ -477,7 +460,7 @@ function handleStepClick(step: number) {
 }
 
 // ─── Paso 1: documento + IA ────────────────────────────────────────────────
-const READS_CHIPS = ['Datos del cliente', 'RUC / ID', 'Proveedores', 'CBM y peso', 'Productos', 'Conceptos de costo']
+const READS_CHIPS = ['Datos del cliente', 'RUC / ID', 'Proveedores', 'CBM y peso', 'Productos']
 
 type ScanState = 'idle' | 'scanning' | 'done'
 const scanState = ref<ScanState>('idle')
@@ -641,7 +624,7 @@ async function procesarArchivo(file: File) {
         productos: p.productos ?? '',
         unidades: p.unidades ?? p.qty_cajas ?? 0,
         incoterm: p.incoterm || 'Consolidado',
-        costos: mapCostosExtraidos(p.costos)
+        costos: []
       }))
     }
 
@@ -771,9 +754,11 @@ const descuento = ref(0)
 const selectedVendedor = ref<number | null>(null)
 const selectedContenedor = ref<number | null>(null)
 const whatsappPlaceholder = computed(() => {
+  const orgCode = String(getUserData()?.raw?.organizacion?.phone_code || '').replace(/\D/g, '')
   const opt = contenedoresOptions.value.find((o) => o.value === selectedContenedor.value)
-  const code = opt && 'phone_code' in opt ? String((opt as { phone_code?: string }).phone_code || '') : ''
-  return code ? `${code} …` : 'Número de WhatsApp'
+  const contenedorCode = opt && 'phone_code' in opt ? String((opt as { phone_code?: string }).phone_code || '').replace(/\D/g, '') : ''
+  const code = orgCode || contenedorCode
+  return code ? `+${code} …` : 'Número de WhatsApp'
 })
 
 onMounted(async () => {
