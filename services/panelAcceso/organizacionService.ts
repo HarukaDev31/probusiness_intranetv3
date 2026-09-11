@@ -74,7 +74,7 @@ export class OrganizacionService extends BaseService {
     try {
       return await this.apiCall<OrganizacionResponse>('/api/panel-acceso/organizaciones', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: data,
       })
     } catch (e: any) {
       return { success: false, message: e.message }
@@ -84,8 +84,8 @@ export class OrganizacionService extends BaseService {
   static async updateOrganizacion(id: number, data: UpdateOrganizacionRequest): Promise<OrganizacionResponse | SimpleResponse> {
     try {
       return await this.apiCall<OrganizacionResponse>(`/api/panel-acceso/organizaciones/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
+        method: 'POST',
+        body: data,
       })
     } catch (e: any) {
       return { success: false, message: e.message }
