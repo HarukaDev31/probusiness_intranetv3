@@ -16,7 +16,7 @@
     <template #body>
       <div class="space-y-4" :class="loading ? 'pointer-events-none opacity-60' : ''">
         <p class="text-sm text-muted">
-          Adjunta la maqueta (imagen o PDF). El equipo verá un mensaje en el chat con el archivo.
+          Adjunta la maqueta (imagen, PDF, HTML o RAR/ZIP). El equipo verá un mensaje en el chat con el archivo.
         </p>
 
         <UFormField
@@ -30,7 +30,7 @@
               :model-files="archivos"
               multiple
               :max-file-size="MAQUETA_MAX_MB * 1024 * 1024"
-              :accepted-types="['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf']"
+              :accepted-types="MAQUETA_TIPOS_ACEPTADOS"
               custom-message="Arrastra archivos o usa «Subir archivo»"
               @files-selected="onArchivosAgregados"
               @file-removed="onArchivoEliminado"
@@ -68,6 +68,19 @@ import { SOPORTE_TI_MAX_IMAGENES_CHAT } from '~/constants/soporteTi'
 import FileUploader from '~/components/commons/FileUploader.vue'
 
 const MAQUETA_MAX_MB = 20
+const MAQUETA_TIPOS_ACEPTADOS = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.gif',
+  '.webp',
+  '.pdf',
+  '.html',
+  '.htm',
+  '.rar',
+  '.zip',
+  '.7z'
+]
 
 const abierto = defineModel<boolean>('open', { default: false })
 
