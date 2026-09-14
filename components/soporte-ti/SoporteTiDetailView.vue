@@ -41,7 +41,7 @@
           :termino-maximo="ticket.gestion.terminoEstimado"
           :ver-sla="ticket.gestion.verSla"
           :mostrar-fases-cabecera="ticket.tipo === 'A'"
-          :fase-index="ticket.faseIndex ?? 0"
+          :fase-index="faseIndexEfectivo(ticket)"
         />
       </div>
 
@@ -161,6 +161,7 @@ import { navigateTo } from '#imports'
 import type { SoporteTiRol } from '~/constants/soporteTi'
 import { CODE } from '~/constants/soporteTiEstados'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
+import { faseIndexEfectivo } from '~/utils/soporteTiEstadoTransition'
 import { useSoporteTi } from '~/composables/useSoporteTi'
 import { useSoporteTiAcciones } from '~/composables/useSoporteTiAcciones'
 import { useModal } from '~/composables/commons/useModal'
@@ -374,23 +375,10 @@ async function ejecutarAccion(key: AccionKey) {
   }
 
   const t = props.ticket
-  const codigo = key
-  let faseIndex = t.faseIndex || 0
-  if (t.tipo === 'A' && key === CODE.IN_PROGRESS && faseIndex < 2) {
-    faseIndex = 2
-  }
   try {
     await withSpinner(async () => {
-      const ok = await setState(t, codigo, { rolEtiqueta: rolActivo.value })
+      const ok = await setState(t, key, { rolEtiqueta: rolActivo.value })
       if (!ok) throw new Error('No se pudo actualizar el estado')
-      if (faseIndex !== t.faseIndex) {
-        const resProg = await update({
-          ...t,
-          faseIndex,
-          ultimaActualizacion: nowLabel()
-        })
-        if (resProg.ok === false) throw new Error(resProg.error)
-      }
     }, 'Actualizando estado…')
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'No se pudo actualizar el estado.'
