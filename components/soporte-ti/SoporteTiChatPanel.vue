@@ -844,7 +844,16 @@ watch(
 
     primerIdAnterior.value = lista[0]?.id ?? null
 
-    if (cercaDelFinal.value || lista.length <= (prev?.length ?? 0) + 1) {
+    if (!prev?.length) {
+      el.scrollTop = el.scrollHeight
+      return
+    }
+
+    const ultimo = lista[lista.length - 1]
+    const hayMensajeNuevoAlFinal = ultimo != null && ultimo.id !== prev[prev.length - 1]?.id
+    if (!hayMensajeNuevoAlFinal) return
+
+    if (cercaDelFinal.value || ultimo.esPropio) {
       el.scrollTop = el.scrollHeight
     }
   },
