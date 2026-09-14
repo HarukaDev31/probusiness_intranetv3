@@ -161,6 +161,17 @@ export class ConsolidadoService extends BaseService {
         return response
     }
 
+    static async getPaisesHabilitados(): Promise<{ success: boolean; data: { value: number; label: string }[] }> {
+        try {
+            return await this.apiCall<{ success: boolean; data: { value: number; label: string }[] }>(`${this.baseUrl}/paises`, {
+                method: 'GET'
+            })
+        } catch (error) {
+            console.error('Error en ConsolidadoService.getPaisesHabilitados:', error)
+            throw error
+        }
+    }
+
     static async getContenedoresDisponibles(params?: { id_pais?: number; id_contenedor_origen?: number }): Promise<any> {
         try {
             const query: Record<string, string> = {}

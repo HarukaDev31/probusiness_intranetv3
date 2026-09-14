@@ -8,6 +8,8 @@ export interface Organizacion {
   txt_organizacion: string | null
   id_pais?: number | null
   pais?: string | null
+  paises_habilitados?: number[]
+  paises_habilitados_nombres?: string[]
   prefijo?: string | null
   estado: number
   url_clientes?: string | null
@@ -24,6 +26,7 @@ export interface CreateOrganizacionRequest {
   no_organizacion: string
   txt_organizacion?: string
   id_pais?: number | null
+  paises_habilitados?: number[]
   estado: number
   url_clientes?: string
   url_excel_confirmacion?: string

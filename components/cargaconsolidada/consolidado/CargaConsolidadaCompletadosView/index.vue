@@ -312,7 +312,7 @@ const handleCreateConsolidado = async (data: ConsolidadoFormData) => {
     showSuccess('Carga consolidada creada correctamente', 'La carga consolidada se ha creado correctamente y ya está disponible en el sistema.')
     await getConsolidadoData()
   } catch (error) {
-    showError(error as string)
+    showError('Error al crear carga consolidada', error instanceof Error ? error.message : 'No se pudo guardar el consolidado.')
   }
 }
 

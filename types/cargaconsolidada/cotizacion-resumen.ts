@@ -1,3 +1,5 @@
+import type { Header } from '~/types/data-table'
+
 export interface CotizacionResumenCosto {
   concepto: string
   valor: number | null
@@ -82,6 +84,11 @@ export interface CotizacionResumenDetalle {
   id_contenedor: number | null
   id_usuario: number | null
   descuento: number
+  tarifa: number
+  fob: number
+  isd: number
+  logistica: number
+  impuesto: number
   cliente: {
     id?: number | null
     nombre: string | null
@@ -147,6 +154,7 @@ export interface CotizacionResumenRow {
   total_cajas: number
   total_inversion: number
   fob: number
+  isd: number
   logistica: number
   impuesto: number
   tarifa: number
@@ -164,6 +172,7 @@ export interface CotizacionResumenListResponse {
   success: boolean
   data: CotizacionResumenRow[]
   message?: string
+  headers?: Record<string, Header>
   pagination?: {
     current_page: number
     last_page: number

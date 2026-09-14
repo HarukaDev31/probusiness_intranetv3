@@ -169,6 +169,9 @@ interface Props {
   show: boolean
   cotizacionId?: number
   usarTipoGuardado?: boolean
+  /** Socios (org ≠ 1): solo Pendiente y Rotulado, este último se muestra como General. */
+  soloPendienteGeneral?: boolean
+  prefillProveedorId?: number
   onSelected?: (categorizacion: any, extras?: any) => void
 }
 
@@ -182,6 +185,7 @@ const emit = defineEmits<{
 const { getProveedoresByCotizacion } = useCotizacionProveedor()
 const { withSpinner } = useSpinner()
 const usarTipoGuardado = computed(() => Boolean(props.usarTipoGuardado))
+const soloPendienteGeneral = computed(() => Boolean(props.soloPendienteGeneral))
 
 const esTipoPendiente = (tipo?: string) => {
   return !tipo || String(tipo).trim().toLowerCase() === 'pendiente'
@@ -271,6 +275,12 @@ const tiposCargaBase = [
 ]
 
 const tiposCarga = computed(() => {
+  if (soloPendienteGeneral.value) {
+    return [
+      { value: 'pendiente', label: 'Pendiente', icon: 'i-heroicons-clock' },
+      { value: 'rotulado', label: 'General', icon: 'i-heroicons-tag' },
+    ]
+  }
   if (!usarTipoGuardado.value) {
     return tiposCargaBase
   }
@@ -309,6 +319,13 @@ const loadItems = async () => {
           selectedItems.value = availableItems.value
             .filter((item: any) => !esTipoPendiente(item.tipo_rotulado))
             .map((item: any) => item.id.toString())
+        }
+        const prefillId = props.prefillProveedorId ? String(props.prefillProveedorId) : ''
+        if (prefillId && itemTipoCarga.value[prefillId] !== undefined) {
+          itemTipoCarga.value[prefillId] = 'rotulado'
+          if (!selectedItems.value.includes(prefillId)) {
+            selectedItems.value = [...selectedItems.value, prefillId]
+          }
         }
       }
     }, 'Cargando items...')

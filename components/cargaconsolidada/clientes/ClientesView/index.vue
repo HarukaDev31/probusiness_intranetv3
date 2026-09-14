@@ -1108,6 +1108,11 @@ const getColumnsDocumentacionSocio = (): TableColumn<any>[] => [
         cell: ({ row }: { row: any }) => formatCurrency(row.getValue('fob')),
     },
     {
+        accessorKey: 'isd',
+        header: 'ISD',
+        cell: ({ row }: { row: any }) => formatCurrency(row.getValue('isd') || 0),
+    },
+    {
         accessorKey: 'monto',
         header: 'Logística',
         cell: ({ row }: { row: any }) => formatCurrency(row.getValue('monto')),

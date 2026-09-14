@@ -19,12 +19,17 @@
       :show-new-button="true"
       new-button-label="Crear Cotización"
       :on-new-button-click="() => navigateTo('/cotizaciones/resumen/crear')"
+      :show-body-top="true"
       empty-state-message="No se encontraron cotizaciones."
       @update:primary-search="onSearch"
       @page-change="onPageChange"
       @items-per-page-change="onItemsPerPageChange"
       @filter-change="onFilterChange"
-    />
+    >
+      <template #body-top>
+        <CustomersKpiCards :headers="headers" @filter-nc="filterByNc" />
+      </template>
+    </DataTable>
   </div>
 </template>
 
@@ -34,7 +39,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { UButton } from '#components'
 import { useCotizacionResumen } from '~/composables/cargaconsolidada/cotizacion-resumen'
 import type { CotizacionResumenRow, CotizacionResumenProveedorRow } from '~/types/cargaconsolidada/cotizacion-resumen'
-import type { FilterConfig } from '~/types/data-table'
+import type { FilterConfig, Header } from '~/types/data-table'
 import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
@@ -89,6 +94,7 @@ const CHINA_OPTIONS = [
 ]
 
 const cotizaciones = ref<CotizacionResumenRow[]>([])
+const headers = ref<Record<string, Header>>({})
 const loading = ref(false)
 const search = ref('')
 const pagination = ref({ current_page: 1, last_page: 1, per_page: 10, total: 0 })
@@ -155,6 +161,7 @@ async function loadCotizaciones(page = pagination.value.current_page) {
   })
   if (res.success) {
     cotizaciones.value = res.data
+    headers.value = res.headers ?? {}
     if (res.pagination) {
       pagination.value = {
         current_page: res.pagination.current_page,
@@ -185,6 +192,11 @@ function onItemsPerPageChange(perPage: number) {
 
 function onFilterChange(key: string, value: string) {
   filters[key] = value === 'todos' || value === 'todas' ? '' : value
+  loadCotizaciones(1)
+}
+
+function filterByNc() {
+  filters.estado_china = 'NC'
   loadCotizaciones(1)
 }
 
@@ -329,6 +341,11 @@ const columns: TableColumn<CotizacionResumenRow>[] = [
     accessorKey: 'fob',
     header: 'Fob',
     cell: ({ row }) => formatCurrency(row.original.fob || 0)
+  },
+  {
+    accessorKey: 'isd',
+    header: 'ISD',
+    cell: ({ row }) => formatCurrency(row.original.isd || 0)
   },
   {
     accessorKey: 'logistica',

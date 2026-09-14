@@ -964,10 +964,9 @@ const prospectosCoordinacionColumns = ref<TableColumn<any>[]>([
         accessorKey: 'descuento',
         header: 'Descuento',
         cell: ({ row }: { row: any }) => {
-            if (!row.original.from_calculator) return 'N/A'
-            const v = row.original.tarifa_descuento
-            if (v === undefined || v === null || v === '') return formatCurrency(0, 'USD')
-            return formatCurrency(parseFloat(v), 'USD')
+            const v = row.original.tarifa_descuento ?? row.original.descuento
+            const n = parseFloat(v)
+            return formatCurrency(Number.isFinite(n) ? n : 0, 'USD')
         }
     },
     {
@@ -1200,7 +1199,9 @@ const prospectosColumns = ref<TableColumn<any>[]>([
         accessorKey: 'descuento',
         header: 'Descuento',
         cell: ({ row }: { row: any }) => {
-            return row.original.tarifa_descuento?formatCurrency(parseFloat(row.original.tarifa_descuento), 'USD'):'N/A'
+            const v = row.original.tarifa_descuento ?? row.original.descuento
+            const n = parseFloat(v)
+            return formatCurrency(Number.isFinite(n) ? n : 0, 'USD')
         }
     },
     {
@@ -3093,6 +3094,7 @@ const PROSPECTOS_SOCIO_HEADERS: Record<string, string> = {
     estado_cliente: 'T.Cliente',
     volumen: 'Volumen',
     fob: 'Fob',
+    isd: 'ISD',
     logistica: 'Logística',
     impuestos: 'Impuestos',
     tarifa: 'Tarifa',
@@ -3104,7 +3106,7 @@ const PROSPECTOS_SOCIO_HEADERS: Record<string, string> = {
 
 const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
     const allowed = new Set(Object.keys(PROSPECTOS_SOCIO_HEADERS))
-    return columns
+    const mapped = columns
         .filter((column: any) => allowed.has(String(column?.accessorKey ?? '')))
         .map((column: any) => {
             if (column.accessorKey === 'action') {
@@ -3181,6 +3183,19 @@ const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
                 header: PROSPECTOS_SOCIO_HEADERS[column.accessorKey] ?? column.header,
             }
         })
+
+    const isdColumn: TableColumn<any> = {
+        accessorKey: 'isd',
+        header: PROSPECTOS_SOCIO_HEADERS.isd,
+        cell: ({ row }: { row: any }) => formatCurrency(parseFloat(row.original.isd) || 0, 'USD'),
+    }
+    const fobIndex = mapped.findIndex((column: any) => column.accessorKey === 'fob')
+    if (fobIndex === -1) {
+        mapped.push(isdColumn)
+    } else {
+        mapped.splice(fobIndex + 1, 0, isdColumn)
+    }
+    return mapped
 }
 
 const getProespectosColumns = () => {
@@ -3209,12 +3224,14 @@ const socioRotuladoValue = (proveedor: any) => {
     return 'PENDIENTE'
 }
 
-const openSocioEnviarRotulado = (idCotizacion: number) => {
+const openSocioEnviarRotulado = (idCotizacion: number, proveedorId?: number) => {
     const modal = overlay.create(SelectTipoCargaModal)
     modal.open({
         show: true,
         cotizacionId: idCotizacion,
         usarTipoGuardado: true,
+        soloPendienteGeneral: true,
+        prefillProveedorId: proveedorId,
         onSelected: async (data: any) => {
             try {
                 await withSpinner(async () => {
@@ -3233,10 +3250,14 @@ const openSocioEnviarRotulado = (idCotizacion: number) => {
     })
 }
 
-const handleSocioTipoRotulado = async (_idCotizacion: number, proveedor: any, value: string) => {
+const handleSocioTipoRotulado = async (idCotizacion: number, proveedor: any, value: string) => {
     const proveedorId = Number(proveedor?.id || proveedor?.id_proveedor)
     if (!proveedorId) return
-    const tipo = value === 'GENERAL' ? 'rotulado' : 'pendiente'
+    if (value === 'GENERAL') {
+        openSocioEnviarRotulado(idCotizacion, proveedorId)
+        return
+    }
+    const tipo = 'pendiente'
     proveedor.tipo_rotulado = tipo
     try {
         await withSpinner(async () => {
@@ -3244,10 +3265,8 @@ const handleSocioTipoRotulado = async (_idCotizacion: number, proveedor: any, va
             formData.append('id', String(proveedorId))
             formData.append('tipo_rotulado', tipo)
             await updateProveedor(formData)
-            if (tipo === 'pendiente') {
-                await updateProveedorEstado({ id: proveedorId, estado: 'PENDIENTE' })
-            }
-            showSuccess('Rotulado actualizado', tipo === 'pendiente' ? 'El proveedor quedó en PENDIENTE.' : 'Quedó en GENERAL. Envíalo desde Acciones.')
+            await updateProveedorEstado({ id: proveedorId, estado: 'PENDIENTE' })
+            showSuccess('Rotulado actualizado', 'El proveedor quedó en PENDIENTE.')
             await getCotizacionProveedor(Number(id))
         }, 'Guardando rotulado…')
     } catch (error) {

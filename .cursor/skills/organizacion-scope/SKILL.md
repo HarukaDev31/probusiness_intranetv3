@@ -40,6 +40,7 @@ La organización de un registro **nunca** se toma del cliente (`query`, `body`, 
 - No enviar `id_org` / `organizacion_id` en servicios de negocio (cotizaciones, consolidados, archivos).
 - Excepción: pantallas de **panel-acceso** usadas por org 1 para administrar otras orgs.
 - Dropdowns (vendedores, cargas) deben salir de endpoints que ya filtran por la org del token.
+- Org ≠ 1 al crear/editar consolidado: `id_pais` solo de `organizacion_paises_habilitados` (lo configura org 1 en el mantenedor). El select de países sale de `GET contenedor/paises`; el store rechaza cualquier otro id. Org 1 no tiene esa restricción.
 
 ## Equivalencia org 1 vs socio
 

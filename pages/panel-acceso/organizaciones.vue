@@ -31,6 +31,7 @@
               <th class="text-left py-3 px-4">Empresa</th>
               <th class="text-left py-3 px-4">Organización</th>
               <th class="text-left py-3 px-4">País</th>
+              <th class="text-left py-3 px-4">Países consolidado</th>
               <th class="text-left py-3 px-4">Prefijo tel.</th>
               <th class="text-left py-3 px-4">Descripción</th>
               <th class="text-center py-3 px-4">Estado</th>
@@ -39,12 +40,12 @@
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="7" class="text-center py-8">
+              <td colspan="8" class="text-center py-8">
                 <UIcon name="i-heroicons-arrow-path" class="animate-spin" /> Cargando...
               </td>
             </tr>
             <tr v-else-if="organizaciones.length === 0">
-              <td colspan="7" class="text-center py-8 text-gray-500">No hay registros</td>
+              <td colspan="8" class="text-center py-8 text-gray-500">No hay registros</td>
             </tr>
             <tr
               v-for="o in organizaciones"
@@ -54,6 +55,7 @@
               <td class="py-2 px-4 text-gray-500 text-xs">{{ o.empresa || '—' }}</td>
               <td class="py-2 px-4 font-medium">{{ o.no_organizacion }}</td>
               <td class="py-2 px-4">{{ o.pais || '—' }}</td>
+              <td class="py-2 px-4 text-xs text-gray-600">{{ labelPaisesConsolidado(o) }}</td>
               <td class="py-2 px-4 font-mono text-xs">{{ o.prefijo ? `+${o.prefijo}` : '—' }}</td>
               <td class="py-2 px-4 text-gray-500">{{ o.txt_organizacion || '—' }}</td>
               <td class="py-2 px-4 text-center">
@@ -195,6 +197,22 @@
             <p v-if="prefijoPreview" class="text-xs text-gray-500">
               Prefijo telefónico: <span class="font-mono font-medium">+{{ prefijoPreview }}</span>
             </p>
+
+            <UFormField
+              v-if="!esOrgAdminEditada"
+              label="Países para consolidado"
+              hint="Solo estos países aparecerán al crear un consolidado en esta organización."
+            >
+              <USelectMenu
+                v-model="form.paises_habilitados"
+                :items="paisesOptions"
+                value-key="value"
+                multiple
+                placeholder="Seleccionar países"
+                class="w-full"
+                :search-input="{ placeholder: 'Buscar país...' }"
+              />
+            </UFormField>
 
             <UFormField label="Descripción">
               <UInput
@@ -397,8 +415,29 @@ const form = reactive<CreateOrganizacionRequest>({
   no_organizacion: '',
   txt_organizacion: '',
   id_pais: 0,
+  paises_habilitados: [],
   estado: 1,
 })
+
+const esOrgAdminEditada = computed(() => editingOrganizacion.value?.id === 1)
+
+function normalizePaisesHabilitados(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return []
+  const ids = raw.map((item) => {
+    if (item && typeof item === 'object' && 'value' in item) {
+      return Number((item as { value: number }).value)
+    }
+    return Number(item)
+  })
+  return [...new Set(ids.filter((n) => Number.isFinite(n) && n > 0))]
+}
+
+function labelPaisesConsolidado(o: Organizacion) {
+  if (o.id === 1) return 'Todos'
+  const nombres = o.paises_habilitados_nombres?.filter(Boolean) ?? []
+  if (nombres.length === 0) return 'Ninguno'
+  return nombres.join(', ')
+}
 
 const prefijoPreview = computed(() => {
   const pais = paisesOptions.value.find(p => p.value === form.id_pais)
@@ -450,6 +489,7 @@ async function openModal(organizacion?: Organizacion) {
     form.no_organizacion = organizacion.no_organizacion
     form.txt_organizacion = organizacion.txt_organizacion ?? ''
     form.id_pais = organizacion.id_pais ?? 0
+    form.paises_habilitados = [...(organizacion.paises_habilitados ?? [])]
     form.estado = organizacion.estado
   } else {
     editingOrganizacion.value = null
@@ -457,6 +497,7 @@ async function openModal(organizacion?: Organizacion) {
     form.no_organizacion = ''
     form.txt_organizacion = ''
     form.id_pais = 0
+    form.paises_habilitados = []
     form.estado = 1
   }
 
@@ -492,6 +533,7 @@ async function submitForm() {
     no_organizacion: form.no_organizacion.trim(),
     txt_organizacion: form.txt_organizacion || undefined,
     id_pais: form.id_pais || null,
+    paises_habilitados: esOrgAdminEditada.value ? undefined : normalizePaisesHabilitados(form.paises_habilitados),
     estado: Number(form.estado),
   }
 

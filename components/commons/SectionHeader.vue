@@ -30,7 +30,7 @@
                         <div v-else>
                             <UIcon :name="header.icon" class="w-5 h-4" />
                         </div>
-                        <span class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
+                        <span v-if="header.label" class="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
                             {{ header.label }}:
                         </span>
                         <template v-if="header.por_usuario">

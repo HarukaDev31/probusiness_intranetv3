@@ -49,6 +49,9 @@
                 <UFormField label="País" required :error="errors.pais">
                     <USelect class="w-full" v-model="pais" :items="paises" @update:model-value="setEmpresa"
                         placeholder="Seleccione un país" />
+                    <p v-if="!isOrgAdmin && paises.length === 0" class="mt-1 text-xs text-gray-500">
+                        No hay países habilitados para crear consolidado.
+                    </p>
                 </UFormField>
                 <UFormField label="Fecha Entrega" required :error="errors.fechaEntrega">
                     <UPopover>
@@ -119,7 +122,6 @@ import { ref, computed, defineEmits, defineProps } from 'vue'
 import { CalendarDate } from '@internationalized/date'
 import { getLocalTimeZone, DateFormatter, } from '@internationalized/date'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
-import { useOptions } from '~/composables/commons/useOptions'
 import { useUserRole } from '~/composables/auth/useUserRole'
 //const modelValue = shallowRef(new CalendarDate(2022, 1, 10))
 const id = ref<number | null>(null)
@@ -136,9 +138,9 @@ const hoy = new Date();
 const fechaCierre = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
 const fechaArribo = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
 const fechaEntrega = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
-const { getValidContainers, validContainers, getConsolidadoById, getEmpresasCreadas, empresasCreadas } = useConsolidado()
-const { paises, getPaises } = useOptions()
+const { getValidContainers, validContainers, getConsolidadoById, getEmpresasCreadas, empresasCreadas, getPaisesHabilitados, paisesHabilitados } = useConsolidado()
 const { currentOrganizacionId, fetchCurrentUser } = useUserRole()
+const paises = computed(() => paisesHabilitados.value)
 const isOrgAdmin = computed(() => currentOrganizacionId.value === 1)
 const df = new DateFormatter('en-US', {
     dateStyle: 'medium'
@@ -257,6 +259,8 @@ const validateForm = () => {
     }
     if (!pais.value) {
         errors.value.pais = 'El país es requerido'
+    } else if (!paises.value.some((p: { value: number }) => Number(p.value) === Number(pais.value))) {
+        errors.value.pais = 'El país no está habilitado para tu organización'
     }
     if (!empresa.value?.trim()) {
         errors.value.empresa = 'La empresa es requerida'
@@ -328,7 +332,7 @@ const handleSubmit = async () => {
 }
 onMounted(async () => {
     fetchCurrentUser()
-    await getPaises()
+    await getPaisesHabilitados()
     await Promise.all([getValidContainers(), getEmpresasCreadas()])
     if (!props.id && !isOrgAdmin.value) {
         tcYuan.value = TC_YUAN_DEFAULT_NO_ADMIN
@@ -344,6 +348,11 @@ onMounted(async () => {
             mes.value = response.mes?.toString()
             // Asegurarse de que el país sea un string
             pais.value = response.id_pais
+            const idPaisActual = Number(response.id_pais)
+            if (idPaisActual && !paisesHabilitados.value.some((p) => Number(p.value) === idPaisActual)) {
+                const nombrePais = (response as { pais?: { No_Pais?: string } }).pais?.No_Pais || `País #${idPaisActual}`
+                paisesHabilitados.value = [...paisesHabilitados.value, { value: idPaisActual, label: nombrePais }]
+            }
             aplicarEmpresa(response.empresa || '')
             fechaCierre.value = new CalendarDate(getDateParts(response.f_cierre).year, getDateParts(response.f_cierre).month, getDateParts(response.f_cierre).day)
             fechaArribo.value = new CalendarDate(getDateParts(response.f_puerto).year, getDateParts(response.f_puerto).month, getDateParts(response.f_puerto).day)
@@ -355,6 +364,9 @@ onMounted(async () => {
                 ? Number(response.tc_yuan)
                 : (!isOrgAdmin.value ? TC_YUAN_DEFAULT_NO_ADMIN : null)
         }
+    } else if (paisesHabilitados.value.length === 1) {
+        pais.value = paisesHabilitados.value[0].value
+        setEmpresa(pais.value)
     }
 
 })

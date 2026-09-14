@@ -36,6 +36,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
     const pasos=ref<ContenedorPasos[]>([])
     const validContainers=ref<any[]>([])
     const empresasCreadas = ref<{ label: string; value: string }[]>([])
+    const paisesHabilitados = ref<{ label: string; value: number }[]>([])
     const getConsolidadoData = async (roleOverride?: string) => {
         try {
             loading.value = true
@@ -189,6 +190,16 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             console.error('Error en getValidContainers:', error)
         }
     }
+    const getPaisesHabilitados = async () => {
+        try {
+            const response = await ConsolidadoService.getPaisesHabilitados()
+            paisesHabilitados.value = Array.isArray(response?.data) ? response.data : []
+            return response
+        } catch (error) {
+            console.error('Error en getPaisesHabilitados:', error)
+            paisesHabilitados.value = []
+        }
+    }
     const getEmpresasCreadas = async () => {
         try {
             const response = await ConsolidadoService.getEmpresasCreadas()
@@ -211,12 +222,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         return ConsolidadoService.moveCotizacion(payload)
     }
     const createConsolidado = async (payload: any) => {
-        try {
-            const response = await ConsolidadoService.createConsolidado(payload)
-            
-        } catch (error) {
-            console.error('Error en createConsolidado:', error)
-        }
+        return await ConsolidadoService.createConsolidado(payload)
     }
     const getConsolidadoById = async (id: number) => {
         try {
@@ -283,6 +289,8 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         validContainers,
         getEmpresasCreadas,
         empresasCreadas,
+        getPaisesHabilitados,
+        paisesHabilitados,
         createConsolidado,
         getConsolidadoById,
         deleteConsolidado,
