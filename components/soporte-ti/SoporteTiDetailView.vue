@@ -285,6 +285,14 @@ const acciones = computed((): AccionDef[] => {
       variant: 'outline'
     })
   }
+  if (rol === 'PM' && t.tipo === 'A' && t.estadoCodigo === CODE.MOCKUP) {
+    a.push({
+      key: CODE.MOCKUP,
+      label: t.maqueta ? 'Actualizar maqueta' : 'Subir maqueta',
+      color: 'neutral',
+      variant: 'outline'
+    })
+  }
   if (rol === 'Analista') {
     if (t.tipo === 'B') {
       if (t.estadoCodigo === CODE.PENDING && t.gestion.puedeEnProgreso) {
@@ -369,12 +377,11 @@ function abrirModalMaqueta(cambiarEstado: boolean) {
 }
 
 async function ejecutarAccion(key: AccionKey) {
+  const t = props.ticket
   if (key === CODE.MOCKUP) {
-    abrirModalMaqueta(true)
+    abrirModalMaqueta(t.estadoCodigo === CODE.PENDING)
     return
   }
-
-  const t = props.ticket
   try {
     await withSpinner(async () => {
       const ok = await setState(t, key, { rolEtiqueta: rolActivo.value })
