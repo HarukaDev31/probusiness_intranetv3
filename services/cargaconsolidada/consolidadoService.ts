@@ -115,6 +115,14 @@ export class ConsolidadoService extends BaseService {
         }
     }
 
+    static async getEmpresasCreadas(): Promise<{ success: boolean; data: { label: string; value: string }[] }> {
+        const response = await this.apiCall<{ success: boolean; data: { label: string; value: string }[] }>(
+            `${this.baseUrl}/empresas`,
+            { method: 'GET' }
+        )
+        return response
+    }
+
     static async getValidContainers(): Promise<any> {
         try {
             const response = await this.apiCall<any>(`${this.baseUrl}/valid-containers`, {

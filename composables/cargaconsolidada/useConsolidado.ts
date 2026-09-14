@@ -35,6 +35,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
     ])
     const pasos=ref<ContenedorPasos[]>([])
     const validContainers=ref<any[]>([])
+    const empresasCreadas = ref<{ label: string; value: string }[]>([])
     const getConsolidadoData = async (roleOverride?: string) => {
         try {
             loading.value = true
@@ -188,6 +189,16 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             console.error('Error en getValidContainers:', error)
         }
     }
+    const getEmpresasCreadas = async () => {
+        try {
+            const response = await ConsolidadoService.getEmpresasCreadas()
+            empresasCreadas.value = Array.isArray(response?.data) ? response.data : []
+            return response
+        } catch (error) {
+            console.error('Error en getEmpresasCreadas:', error)
+            empresasCreadas.value = []
+        }
+    }
     const getContenedoresDisponibles = async () => {
         try {
             const response = await ConsolidadoService.getContenedoresDisponibles()
@@ -267,6 +278,8 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         pasos,
         getValidContainers,
         validContainers,
+        getEmpresasCreadas,
+        empresasCreadas,
         createConsolidado,
         getConsolidadoById,
         deleteConsolidado,
