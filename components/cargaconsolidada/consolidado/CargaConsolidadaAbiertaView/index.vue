@@ -159,7 +159,7 @@ const props = withDefaults(
 )
 
 const { withSpinner } = useSpinner()
-const { hasRole, currentId } = useUserRole()
+const { hasRole, currentId, getUserData } = useUserRole()
 const { showSuccess, showConfirmation, showError } = useModal()
 
 const isCoordinacion = computed(() => props.role === ROLES.COORDINACION)
@@ -383,8 +383,11 @@ const columns: TableColumn<any>[] = [
     header: 'Acciones',
     cell: ({ row }) => {
       const original = row.original as { id: number; estado_china?: string; parte?: string | null }
-      const canDelete = String(original.estado_china || '').toUpperCase() === 'PENDIENTE'
-      const puedePartir = canDelete && !original.parte
+      const estadoChina = String(original.estado_china || '').toUpperCase()
+      const canDelete = estadoChina === 'PENDIENTE'
+      const estaRecibiendo = estadoChina === 'RECIBIENDO' || estadoChina === 'RECEIVING'
+      const esOrg1 = Number(getUserData()?.raw?.organizacion?.id || getUserData()?.organizacion?.id || 0) === 1
+      const puedePartir = !original.parte && (canDelete || (esOrg1 && estaRecibiendo))
       const actions = [
         h(UButton, {
           size: 'xs',
