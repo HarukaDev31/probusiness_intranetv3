@@ -147,6 +147,7 @@ export default defineNuxtConfig({
       pusherWsHost: process.env.NUXT_WEBSOCKETS_URL,
       whatsappApiUrl: process.env.NUXT_WHATSAPPV3_URL,
       whatsappApiKey: process.env.NUXT_WHATSAPPV3_API_KEY,
+      objectStorageCdnUrl: process.env.NUXT_PUBLIC_OBJECT_STORAGE_CDN_URL || process.env.OBJECT_STORAGE_CDN_URL || '',
     }
   },
 
