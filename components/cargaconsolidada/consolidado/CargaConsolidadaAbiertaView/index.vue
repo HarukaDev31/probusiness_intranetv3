@@ -401,8 +401,10 @@ const columns: TableColumn<any>[] = [
     header: 'Acciones',
     cell: ({ row }) => {
       const original = row.original as { id: number; estado_china?: string; parte?: string | null }
-      const canDelete = String(original.estado_china || '').toUpperCase() === 'PENDIENTE'
-      const puedePartir = canDelete && !original.parte
+      const estadoChina = String(original.estado_china || '').toUpperCase()
+      const canDelete = estadoChina === 'PENDIENTE'
+      const estaRecibiendo = estadoChina === 'RECIBIENDO' || estadoChina === 'RECEIVING'
+      const puedePartir = !original.parte && (canDelete || (isOrgAdmin.value && estaRecibiendo))
       const actions = [
         h(UButton, {
           size: 'xs',
