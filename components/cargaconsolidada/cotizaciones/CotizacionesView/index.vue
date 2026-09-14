@@ -3113,14 +3113,54 @@ const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
                     header: PROSPECTOS_SOCIO_HEADERS.action,
                     cell: ({ row }: { row: any }) => {
                         const puedeBorrar = estadoResumenFila(row.original) === 'COTIZADO'
-                        return h('div', { class: 'flex gap-2' }, [
-                            h(UButton, {
+                        const tieneContrato = Boolean(
+                            row.original.uuid
+                            || row.original.cotizacion_contrato_url
+                            || row.original.cotizacion_contrato_autosigned_url
+                            || row.original.cotizacion_contrato_firmado_url
+                        )
+                        return h('div', { class: 'flex flex-row gap-2' }, [
+                            row.original.cotizacion_file_url ? h(UButton, {
+                                icon: 'i-heroicons-arrow-path',
+                                variant: 'ghost',
+                                size: 'xs',
+                                color: 'secondary',
+                                title: 'Actualizar cotización',
+                                onClick: () => handleRefresh(row.original.id)
+                            }) : null,
+                            tieneContrato ? h(UButton, {
                                 icon: 'i-heroicons-document-duplicate',
                                 variant: 'ghost',
                                 size: 'xs',
                                 color: 'info',
                                 title: 'Copiar link de contrato',
                                 onClick: () => copyContractLink(row.original)
+                            }) : null,
+                            h(UButton, {
+                                icon: 'i-heroicons-document-text',
+                                variant: 'ghost',
+                                size: 'xs',
+                                color: 'primary',
+                                title: 'Enviar recordatorio de firma',
+                                onClick: () => handleSendRecordatorioFirma(row.original.id)
+                            }),
+                            h(UButton, {
+                                icon: 'i-heroicons-eye',
+                                variant: 'ghost',
+                                size: 'xs',
+                                color: 'primary',
+                                title: 'Documentación',
+                                onClick: () => {
+                                    navigateTo(`${basePath.value}/cotizaciones/documentacion/${row.original.id}`)
+                                }
+                            }),
+                            h(UButton, {
+                                icon: 'i-heroicons-arrow-right',
+                                variant: 'ghost',
+                                size: 'xs',
+                                color: 'info',
+                                title: 'Mover cotización',
+                                onClick: () => handleMoveCotizacion(row.original.id)
                             }),
                             puedeBorrar
                                 ? h(UButton, {
