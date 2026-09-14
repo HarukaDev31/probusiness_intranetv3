@@ -19,6 +19,7 @@
     :ver-sla="verSla"
     :mostrar-fases-cabecera="mostrarFasesCabecera"
     :fase-index="faseIndex"
+    :puede-avanzar-fase="puedeAvanzarFase"
     :mostrar-confirmacion-creador="mostrarConfirmacionCreador"
     :ticket-confirmacion="ticketConfirmacion"
     :puede-aprobar-maqueta="puedeAprobarMaqueta"
@@ -30,6 +31,7 @@
     @cambio-estado="emit('cambio-estado', $event)"
     @aprobar-maqueta="emit('aprobar-maqueta')"
     @rechazar-maqueta="emit('rechazar-maqueta')"
+    @avanzar-fase="emit('avanzar-fase', $event)"
   />
 </template>
 
@@ -57,6 +59,7 @@ const props = withDefaults(
     verSla?: boolean
     mostrarFasesCabecera?: boolean
     faseIndex?: number
+    puedeAvanzarFase?: boolean
     mostrarConfirmacionCreador?: boolean
     ticketConfirmacion?: SoporteTiSolicitud | null
     puedeAprobarMaqueta?: boolean
@@ -77,6 +80,7 @@ const props = withDefaults(
     verSla: false,
     mostrarFasesCabecera: false,
     faseIndex: 0,
+    puedeAvanzarFase: false,
     mostrarConfirmacionCreador: false,
     ticketConfirmacion: null,
     puedeAprobarMaqueta: false,
@@ -90,6 +94,7 @@ const emit = defineEmits<{
   'cambio-estado': [val: unknown]
   'aprobar-maqueta': []
   'rechazar-maqueta': []
+  'avanzar-fase': [faseIndex: number]
 }>()
 
 const {

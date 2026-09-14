@@ -640,6 +640,14 @@ export function useSoporteTi() {
     }
   }
 
+  async function catalogoAreas() {
+    return SoporteTiService.catalogoAreas()
+  }
+
+  async function listStaff() {
+    return SoporteTiService.listStaff()
+  }
+
   return {
     rolActivo,
     puedeCrearSolicitud,
@@ -650,6 +658,8 @@ export function useSoporteTi() {
     cargar,
     cargarCreadoresFiltro,
     asegurarListadoCargado,
+    catalogoAreas,
+    listStaff,
     update,
     updatePriority,
     updateComplexity,

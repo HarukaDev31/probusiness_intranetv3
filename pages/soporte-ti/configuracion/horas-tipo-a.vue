@@ -6,8 +6,8 @@
           Horas SLA — Tipo A (proyectos)
         </h1>
         <p class="mt-1 max-w-2xl text-sm text-muted">
-          Matriz por fase y complejidad: el PM asigna su complejidad al ticket y se suman las
-          horas de cada fase (sin configuración). El analista define solo la fase configuración.
+          El contador del ticket usa solo las horas de la etapa actual, no la suma de todas.
+          El PM define levantamiento, maqueta, pruebas y capacitación; el analista, configuración.
         </p>
       </div>
       <UButton
@@ -28,7 +28,8 @@
       <div>
         <h2 class="text-base font-semibold text-highlighted">Fases PM — matriz fase × complejidad</h2>
         <p class="text-sm text-muted">
-          Horas por celda según la complejidad que el PM asigne. La fila «Total» es referencial.
+          Horas por celda según la complejidad del PM. El contador toma la celda de la etapa
+          en curso (pruebas o capacitación).
         </p>
         <p v-if="!puedeEditarMatriz" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
           Solo lectura: únicamente el PM puede modificar esta matriz.
@@ -119,7 +120,8 @@
       <div>
         <h2 class="text-base font-semibold text-highlighted">Configuración (por complejidad del analista)</h2>
         <p class="text-sm text-muted">
-          Horas de la fase configuración según la complejidad que asigne el analista.
+          Horas de configuración según la complejidad del analista. El contador usa este valor
+          mientras el ticket está en esa etapa.
         </p>
         <p v-if="!puedeEditarConfig" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
           Solo lectura: únicamente el analista puede modificar estas horas.
