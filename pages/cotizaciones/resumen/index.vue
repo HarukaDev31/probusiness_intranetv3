@@ -39,6 +39,7 @@ import { useModal } from '~/composables/commons/useModal'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
 import { formatCurrency, formatDateTimeToDmy } from '~/utils/formatters'
+import { normalizePublicFileUrl } from '~/utils/storageFileUrl'
 
 definePageMeta({
   middleware: 'auth'
@@ -224,8 +225,14 @@ function irAlConsolidado(row: CotizacionResumenRow) {
 }
 
 function abrirArchivo(url: string | null | undefined) {
-  if (!url) return
-  window.open(url, '_blank')
+  const href = normalizePublicFileUrl(url)
+  if (!href) return
+  window.open(href, '_blank', 'noopener,noreferrer')
+}
+
+function esPdfCotizacion(nombre?: string | null, url?: string | null) {
+  const hay = `${nombre || ''} ${url || ''}`.toLowerCase()
+  return hay.includes('.pdf')
 }
 
 function handleDocumentos(row: CotizacionResumenRow) {
@@ -354,24 +361,30 @@ const columns: TableColumn<CotizacionResumenRow>[] = [
     header: 'Cotizacion',
     cell: ({ row }) => {
       const r = row.original
-      const excel = r.cotizacion_file_url || r.archivo_url
-      return h('div', { class: 'flex items-center gap-2' }, [
-        excel
-          ? h('div', {
-              innerHTML: CUSTOMIZED_ICONS.EXCEL,
-              class: 'cursor-pointer',
-              title: r.archivo_nombre || 'Excel',
-              onClick: () => abrirArchivo(excel)
-            })
-          : null,
-        r.url_cotizacion_pdf
-          ? h('div', {
-              innerHTML: CUSTOMIZED_ICONS.PDF,
-              class: 'cursor-pointer',
-              onClick: () => abrirArchivo(r.url_cotizacion_pdf)
-            })
-          : null
-      ])
+      const principal = r.cotizacion_file_url || r.archivo_url
+      const esPdf = esPdfCotizacion(r.archivo_nombre, principal)
+      const nodos = []
+      if (principal) {
+        nodos.push(
+          h('div', {
+            innerHTML: esPdf ? CUSTOMIZED_ICONS.PDF : CUSTOMIZED_ICONS.EXCEL,
+            class: 'cursor-pointer',
+            title: r.archivo_nombre || (esPdf ? 'PDF' : 'Excel'),
+            onClick: () => abrirArchivo(principal)
+          })
+        )
+      }
+      if (r.url_cotizacion_pdf && r.url_cotizacion_pdf !== principal) {
+        nodos.push(
+          h('div', {
+            innerHTML: CUSTOMIZED_ICONS.PDF,
+            class: 'cursor-pointer',
+            title: 'PDF',
+            onClick: () => abrirArchivo(r.url_cotizacion_pdf)
+          })
+        )
+      }
+      return h('div', { class: 'flex items-center gap-2' }, nodos)
     }
   },
   {
