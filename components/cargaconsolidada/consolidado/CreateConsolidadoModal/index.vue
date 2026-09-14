@@ -121,7 +121,6 @@ import { getLocalTimeZone, DateFormatter, } from '@internationalized/date'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { useOptions } from '~/composables/commons/useOptions'
 import { useUserRole } from '~/composables/auth/useUserRole'
-import { ID_ORGANIZACION_ADMIN } from '~/constants/roles'
 //const modelValue = shallowRef(new CalendarDate(2022, 1, 10))
 const id = ref<number | null>(null)
 const carga = ref<number>()
@@ -140,7 +139,7 @@ const fechaEntrega = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth
 const { getValidContainers, validContainers, getConsolidadoById, getEmpresasCreadas, empresasCreadas } = useConsolidado()
 const { paises, getPaises } = useOptions()
 const { currentOrganizacionId, fetchCurrentUser } = useUserRole()
-const isOrgAdmin = computed(() => currentOrganizacionId.value === ID_ORGANIZACION_ADMIN)
+const isOrgAdmin = computed(() => currentOrganizacionId.value === 1)
 const df = new DateFormatter('en-US', {
     dateStyle: 'medium'
 })
