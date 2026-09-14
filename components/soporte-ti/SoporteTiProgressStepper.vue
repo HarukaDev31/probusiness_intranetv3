@@ -19,6 +19,7 @@
 import { computed } from 'vue'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
 import { CODE } from '~/constants/soporteTiEstados'
+import { faseIndexEfectivo } from '~/utils/soporteTiEstadoTransition'
 
 const props = defineProps<{
   solicitud: SoporteTiSolicitud
@@ -42,7 +43,7 @@ const ESTADOS_B = [
 ]
 
 function indicePaso(t: SoporteTiSolicitud): number {
-  if (t.tipo === 'A') return t.faseIndex || 0
+  if (t.tipo === 'A') return faseIndexEfectivo(t)
   const map: Record<string, number> = {
     [CODE.PENDING]: 0,
     [CODE.IN_PROGRESS]: 1,
