@@ -4,7 +4,7 @@
             :show-pagination="true" :loading="tabSwitching || loadingCotizaciones" :current-page="currentPageCotizaciones"
             :total-pages="totalPagesCotizaciones" :total-records="totalRecordsCotizaciones"
             :items-per-page="itemsPerPageCotizaciones" :search-query-value="searchCotizaciones"
-            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterPerRole()"
+            :show-secondary-search="false" :show-filters="true" :filter-config="getFilterProspectosPerRole()"
             :show-export="showProspectosExport"
             empty-state-message="No se encontraron registros de prospectos."
             @update:primary-search="handleSearchProspectos" @page-change="handlePageChangeProspectos"
@@ -723,6 +723,16 @@ const filterConfigProspectosSocio = [
         options: []
     }
 ]
+const filterConfigProspectosSocioConEstado = [
+    ...filterConfigProspectosSocio,
+    {
+        key: 'estado_cotizador',
+        label: 'Estado',
+        type: 'select',
+        placeholder: 'Seleccionar estado',
+        options: ESTADO_SOCIO_OPTIONS
+    }
+]
 // Filtros tab Pagos (solo Contabilidad): inspecciï¿½n y estado de pago
 const filterConfigPagos = ref([
     {
@@ -756,6 +766,9 @@ const getFilterConfigPagos = () => {
     return []
 }
 const getFilterPerRole = () => {
+    if (isOrgNoAdmin.value) {
+        return filterConfigProspectosSocio
+    }
     if (currentRole.value === ROLES.JEFE_MARKETING) {
         return filterConfigProspectosCoordinacion.value.filter(
             (f: { key?: string }) => f.key !== 'estado_coordinacion' && f.key !== 'estado_cotizador'
@@ -765,14 +778,19 @@ const getFilterPerRole = () => {
         return filterConfigProspectosCoordinacion.value
     } else if (currentRole.value === ROLES.CONTENEDOR_ALMACEN) {
         return filterConfigProspectosAlmacen.value
-    } else if (isSocio.value) {
-        return filterConfigProspectosSocio
     } else if (currentRole.value === ROLES.COTIZADOR) {
         return filterConfigProspectos.value
     }
     else {
         return filterConfigProspectos.value
     }
+}
+
+const getFilterProspectosPerRole = () => {
+    if (isOrgNoAdmin.value) {
+        return filterConfigProspectosSocioConEstado
+    }
+    return getFilterPerRole()
 }
 
 const uploadPackingList = () => {
@@ -1236,12 +1254,12 @@ const prospectosColumns = ref<TableColumn<any>[]>([
 
         cell: ({ row }: { row: any }) => {
             const estadoCotizador = row.getValue('estado_cotizador')
-            const estado = isSocio.value
+            const estado = isOrgNoAdmin.value
                 ? (row.original.estado_resumen || (estadoCotizador === 'CONFIRMADO' ? 'CONFIRMADO' : 'COTIZADO'))
                 : estadoCotizador
             const color = getEstadoColor(estado)
 
-            const estadoItems = isSocio.value
+            const estadoItems = isOrgNoAdmin.value
                 ? ESTADO_SOCIO_OPTIONS.filter((option) => option.inrow)
                 : filterConfigProspectos.value
                     .find((filter: any) => filter.key === 'estado_cotizador')?.options
@@ -2894,13 +2912,13 @@ const handleUpdateEstadoCotizacion = async (idCotizacion: number, estado: string
     try {
         await withSpinner(async () => {
             try {
-                const response = isSocio.value
+                const response = isOrgNoAdmin.value
                     ? await updateEstadoResumen(idCotizacion, estado as 'COTIZADO' | 'CONFIRMADO')
                     : await updateEstadoCotizacionCotizador(idCotizacion, { estado })
                 if (response?.success) {
                     showSuccess('Estado actualizado correctamente', 'El estado se ha actualizado correctamente.')
                     await getCotizaciones(Number(id))
-                } else if (isSocio.value) {
+                } else if (isOrgNoAdmin.value) {
                     showError('Error al actualizar el estado de la cotización', (response as any)?.message || 'Intenta nuevamente.')
                 }
             } catch (error: any) {
@@ -2976,7 +2994,27 @@ const handleDeleteFile = async (idCotizacion: number) => {
     }
 }
 
+const estadoResumenFila = (row: any) => {
+    const estadoCotizador = String(row?.estado_cotizador || '')
+    return String(row?.estado_resumen || (estadoCotizador === 'CONFIRMADO' ? 'CONFIRMADO' : 'COTIZADO'))
+}
+
+const copyContractLink = (row: any) => {
+    if (!row?.uuid) {
+        showError('No hay link de contrato', 'Esta cotización aún no tiene enlace de contrato.')
+        return
+    }
+    copyToClipboard(getSignUrl(row.uuid), 'Link de contrato copiado')
+}
+
 const handleDelete = async (idCotizacion: number) => {
+    if (isOrgNoAdmin.value) {
+        const row = (cotizaciones.value || []).find((c: any) => Number(c.id) === Number(idCotizacion))
+        if (row && estadoResumenFila(row) !== 'COTIZADO') {
+            showError('No se puede eliminar', 'Solo se puede eliminar una cotización en estado COTIZADO.')
+            return
+        }
+    }
     await openDeleteReasonModal(idCotizacion)
 }
 
@@ -3068,10 +3106,41 @@ const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
     const allowed = new Set(Object.keys(PROSPECTOS_SOCIO_HEADERS))
     return columns
         .filter((column: any) => allowed.has(String(column?.accessorKey ?? '')))
-        .map((column: any) => ({
-            ...column,
-            header: PROSPECTOS_SOCIO_HEADERS[column.accessorKey] ?? column.header,
-        }))
+        .map((column: any) => {
+            if (column.accessorKey === 'action') {
+                return {
+                    ...column,
+                    header: PROSPECTOS_SOCIO_HEADERS.action,
+                    cell: ({ row }: { row: any }) => {
+                        const puedeBorrar = estadoResumenFila(row.original) === 'COTIZADO'
+                        return h('div', { class: 'flex gap-2' }, [
+                            h(UButton, {
+                                icon: 'i-heroicons-document-duplicate',
+                                variant: 'ghost',
+                                size: 'xs',
+                                color: 'info',
+                                title: 'Copiar link de contrato',
+                                onClick: () => copyContractLink(row.original)
+                            }),
+                            puedeBorrar
+                                ? h(UButton, {
+                                    icon: 'i-heroicons-trash',
+                                    variant: 'ghost',
+                                    size: 'xs',
+                                    color: 'error',
+                                    title: 'Eliminar cotización',
+                                    onClick: () => handleDelete(row.original.id)
+                                })
+                                : null
+                        ])
+                    }
+                }
+            }
+            return {
+                ...column,
+                header: PROSPECTOS_SOCIO_HEADERS[column.accessorKey] ?? column.header,
+            }
+        })
 }
 
 const getProespectosColumns = () => {

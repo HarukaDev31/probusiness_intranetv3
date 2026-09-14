@@ -271,6 +271,10 @@ function handleDuplicar(row: CotizacionResumenRow) {
 }
 
 function handleDelete(row: CotizacionResumenRow) {
+  if (row.estado !== 'COTIZADO') {
+    showError('No se puede eliminar', 'Solo se puede eliminar una cotización en estado COTIZADO.')
+    return
+  }
   showConfirmation(
     'Eliminar cotización',
     `¿Eliminar la cotización de ${row.nombre || 'este contacto'}?`,
@@ -451,14 +455,16 @@ const columns: TableColumn<CotizacionResumenRow>[] = [
         title: 'Duplicar',
         onClick: () => handleDuplicar(row.original)
       }),
-      h(UButton, {
-        color: 'error',
-        size: 'sm',
-        variant: 'ghost',
-        icon: 'i-heroicons-trash',
-        title: 'Eliminar',
-        onClick: () => handleDelete(row.original)
-      }),
+      row.original.estado === 'COTIZADO'
+        ? h(UButton, {
+            color: 'error',
+            size: 'sm',
+            variant: 'ghost',
+            icon: 'i-heroicons-trash',
+            title: 'Eliminar',
+            onClick: () => handleDelete(row.original)
+          })
+        : null,
       row.original.estado === 'CONFIRMADO'
         ? h(UButton, {
             color: 'neutral',
