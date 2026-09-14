@@ -224,6 +224,7 @@ export function adaptMensaje(m: SoporteTiMensajeApi): SoporteTiMensaje {
     texto: m.texto,
     esSistema: m.es_sistema,
     esMaqueta: m.es_maqueta === true,
+    revisado: m.revisado === true,
     marcaTiempo: m.created_at_iso
       ? formatSoporteTiMarcaTiempo(m.created_at_iso)
       : m.marca_tiempo,

@@ -119,6 +119,7 @@ export interface SoporteTiMensajeApi {
   texto: string
   es_sistema: boolean
   es_maqueta?: boolean
+  revisado?: boolean
   marca_tiempo: string
   created_at_iso?: string
   es_propio?: boolean

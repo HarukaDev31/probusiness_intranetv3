@@ -306,6 +306,26 @@ export class SoporteTiService extends BaseService {
     }
   }
 
+  static async marcarMensajeRevisado(
+    chatUuid: string,
+    mensajeId: number,
+    revisado: boolean
+  ): Promise<{ success: boolean; data?: SoporteTiMensaje; message?: string }> {
+    const raw = await this.apiCall<{
+      success: boolean
+      data?: SoporteTiMensajeApi
+      message?: string
+    }>(`/api/soporte-ti/chats/${chatUuid}/mensajes/${mensajeId}/revisado`, {
+      method: 'PATCH',
+      body: { revisado }
+    })
+    return {
+      success: raw.success,
+      data: raw.data ? adaptMensaje(raw.data) : undefined,
+      message: raw.message
+    }
+  }
+
   static async marcarLeidos(
     chatUuid: string,
     mensajeIds: number[]

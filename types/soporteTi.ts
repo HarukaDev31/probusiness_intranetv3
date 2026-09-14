@@ -72,6 +72,8 @@ export interface SoporteTiMensaje {
   esSistema: boolean
   /** Mensaje de entrega de maqueta (tipo A): permite aprobar/rechazar en el chat. */
   esMaqueta?: boolean
+  /** Marcado como revisado en el chat (burbuja verde). */
+  revisado?: boolean
   marcaTiempo: string
   esPropio?: boolean
   archivoNombre?: string | null
