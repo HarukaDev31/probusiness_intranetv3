@@ -17,42 +17,14 @@
       empty-state-message="No hay solicitudes que coincidan con los filtros." @update:primary-search="onPrimarySearch"
       @filter-change="onFilterChange" @clear-filters="onClearFilters" @row-click="onRowClick" @kanban-move="onKanbanMove">
       <template #actions>
-        <UButton
-          v-if="rolActivo === 'Analista'"
-          size="sm"
-          variant="outline"
-          icon="i-heroicons-calendar-days"
-          @click="navigateTo('/soporte-ti/configuracion/horario-atencion')"
-        >
-          Horario atención
-        </UButton>
-        <UButton
-          v-if="rolActivo !== 'Solicitante'"
-          size="sm"
-          variant="outline"
-          icon="i-heroicons-squares-2x2"
-          @click="navigateTo('/soporte-ti/areas')"
-        >
-          Áreas
-        </UButton>
-        <UButton
-          v-if="rolActivo !== 'Solicitante'"
-          size="sm"
-          variant="outline"
-          icon="i-heroicons-clock"
-          @click="navigateTo('/soporte-ti/configuracion/horas-tipo-b')"
-        >
-          Horas tipo B
-        </UButton>
-        <UButton
-          v-if="rolActivo !== 'Solicitante'"
-          size="sm"
-          variant="outline"
-          icon="i-heroicons-cog-6-tooth"
-          @click="navigateTo('/soporte-ti/configuracion/horas-tipo-a')"
-        >
-          Horas tipo A
-        </UButton>
+        <UDropdownMenu v-if="rolActivo !== 'Solicitante'" :items="itemsConfig">
+          <UButton
+            size="sm"
+            variant="outline"
+            icon="i-heroicons-cog-6-tooth"
+            label="Configuración"
+          />
+        </UDropdownMenu>
         <UButton v-if="puedeCrearSolicitud" size="sm" icon="i-heroicons-plus" @click="modalCrear = true">
           Nueva solicitud
         </UButton>
@@ -106,7 +78,6 @@ import {
   etiquetaPrioridad
 } from '~/constants/soporteTiPrioridad'
 import { useSpinner } from '~/composables/commons/useSpinner'
-import { SoporteTiService } from '~/services/soporteTiService'
 
 definePageMeta({
   middleware: 'auth'
@@ -126,6 +97,7 @@ const {
   cargar,
   cargarCreadoresFiltro,
   create,
+  catalogoAreas,
 } = useSoporteTi()
 
 const loading = ref(false)
@@ -143,6 +115,35 @@ const { showSuccess, showError } = useModal()
 const { withSpinner } = useSpinner()
 
 const { setSalaActiva } = useSoporteTiChatRoom()
+
+const itemsConfig = computed(() => {
+  const items: Array<{ label: string; icon: string; onSelect: () => void }> = []
+  if (rolActivo.value === 'Analista') {
+    items.push({
+      label: 'Horario de atención',
+      icon: 'i-heroicons-calendar-days',
+      onSelect: () => void navigateTo('/soporte-ti/configuracion/horario-atencion')
+    })
+  }
+  items.push(
+    {
+      label: 'Áreas',
+      icon: 'i-heroicons-squares-2x2',
+      onSelect: () => void navigateTo('/soporte-ti/areas')
+    },
+    {
+      label: 'Horas tipo A',
+      icon: 'i-heroicons-cog-6-tooth',
+      onSelect: () => void navigateTo('/soporte-ti/configuracion/horas-tipo-a')
+    },
+    {
+      label: 'Horas tipo B',
+      icon: 'i-heroicons-clock',
+      onSelect: () => void navigateTo('/soporte-ti/configuracion/horas-tipo-b')
+    }
+  )
+  return items
+})
 
 const modalCrear = ref(false)
 const creandoSolicitud = ref(false)
@@ -604,18 +605,6 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     cell: ({ row }) => celdaEstadoTicket(row.original)
   }
 
-  const colAcciones: TableColumn<SoporteTiTablaFila> = {
-    id: 'acciones',
-    accessorKey: 'codigo',
-    header: 'Acciones',
-    enableSorting: false,
-    cell: ({ row }) =>
-      botonOjo({
-        titulo: 'Ver detalle',
-        onClick: () => void navigateTo(rutaDetalle(row.original))
-      })
-  }
-
   if (rolActivo.value === 'Solicitante') {
     return [
       { accessorKey: 'codigo', header: sortableHeader('Código') },
@@ -623,8 +612,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
       columnaTitulo('Nombre'),
       { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro') },
       { accessorKey: 'fechaFinEstimadoFmt', header: sortableHeader('Término estimado') },
-      colEstado,
-      colAcciones
+      colEstado
     ]
   }
 
@@ -806,8 +794,7 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     ...(rolActivo.value === 'PM' ? [colComplejidadPm] : []),
     ...(rolActivo.value === 'Analista' ? [colComplejidadAnalista] : []),
     colEstado,
-    colEvidencia,
-    colAcciones
+    colEvidencia
   ]
 })
 
@@ -834,7 +821,7 @@ onMounted(() => {
   fetchCurrentUser()
   void (async () => {
     try {
-      const res = await SoporteTiService.catalogoAreas()
+      const res = await catalogoAreas()
       if (res.success && res.data?.areas?.length) {
         areasFiltro.value = res.data.areas.map((a) => a.nombre).filter(Boolean)
       }

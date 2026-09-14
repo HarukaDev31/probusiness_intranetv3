@@ -8,25 +8,16 @@
       <div
         v-if="mostrarCabeceraSla"
         class="grid gap-2 border-b border-default px-3 py-3 sm:gap-3 sm:px-4"
-        :class="mostrarConfirmacionCreador ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'"
+        :class="mostrarConfirmacionCreador ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'"
       >
         <UCard variant="subtle" :ui="{ body: 'p-2.5 sm:p-2.5' }">
           <div class="flex items-start gap-2">
-            <UIcon name="i-heroicons-hashtag" class="mt-0.5 size-4 shrink-0 text-muted" />
-            <div class="min-w-0">
-              <p class="text-[10px] font-medium uppercase tracking-wide text-muted">Código</p>
-              <p class="truncate font-mono text-sm font-semibold text-highlighted">{{ codigoTicket }}</p>
-            </div>
-          </div>
-        </UCard>
-        <UCard variant="subtle" :ui="{ body: 'p-2.5 sm:p-2.5' }">
-          <div class="flex items-start gap-2 sm:justify-center">
             <UIcon
               name="i-heroicons-clock"
               class="mt-0.5 size-4 shrink-0"
               :class="contadorVencidoUi ? 'text-error' : 'text-muted'"
             />
-            <div class="min-w-0 text-left sm:text-center">
+            <div class="min-w-0">
               <p class="text-[10px] font-medium uppercase tracking-wide text-muted">Tiempo restante</p>
               <p
                 class="mt-0.5 font-mono text-xl font-semibold tabular-nums tracking-tight"
@@ -38,7 +29,7 @@
                 <span v-else class="text-sm font-normal text-muted">—</span>
               </p>
               <p v-if="contadorActivo && contadorPausado" class="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                Pausado (Desplegado)
+                Pausado
               </p>
               <p v-else-if="contadorActivo && contadorVencidoUi" class="text-[10px] font-medium text-error">
                 Plazo vencido
@@ -93,7 +84,9 @@
         <SoporteTiFasesProyectoBar
           v-if="mostrarFasesCabecera"
           :fase-index="faseIndex"
+          :puede-avanzar-fase="puedeAvanzarFase"
           compacto
+          @avanzar-fase="emit('avanzar-fase', $event)"
         />
       </div>
     </template>
@@ -640,6 +633,7 @@ const props = withDefaults(
     modoSolicitante?: boolean
     mostrarFasesCabecera?: boolean
     faseIndex?: number
+    puedeAvanzarFase?: boolean
     fullHeight?: boolean
     contadorActivo?: boolean
     contadorPausado?: boolean
@@ -665,6 +659,7 @@ const props = withDefaults(
     modoSolicitante: false,
     mostrarFasesCabecera: false,
     faseIndex: 0,
+    puedeAvanzarFase: false,
     fullHeight: false,
     contadorActivo: false,
     contadorPausado: false,
@@ -688,6 +683,7 @@ const emit = defineEmits<{
   'cambio-estado': [val: unknown]
   'aprobar-maqueta': []
   'rechazar-maqueta': []
+  'avanzar-fase': [faseIndex: number]
 }>()
 
 const cardUi = {

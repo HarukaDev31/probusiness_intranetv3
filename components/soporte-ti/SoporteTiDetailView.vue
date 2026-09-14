@@ -42,6 +42,8 @@
           :ver-sla="ticket.gestion.verSla"
           :mostrar-fases-cabecera="ticket.tipo === 'A'"
           :fase-index="faseIndexEfectivo(ticket)"
+          :puede-avanzar-fase="puedeAvanzarFase"
+          @avanzar-fase="void cambiarFase($event)"
         />
       </div>
 
@@ -72,14 +74,8 @@
               <dd class="text-xs font-medium text-highlighted">{{ ticket.solicitante }}</dd>
             </div>
             <div v-if="mostrarTiempoEstimado">
-              <dt class="mb-0.5 text-[10px] text-muted">
-                {{ ticket.gestion.tiempoEstimadoRango ? 'Tiempo estimado (aprox.)' : 'SLA' }}
-              </dt>
+              <dt class="mb-0.5 text-[10px] text-muted">Horas de la etapa</dt>
               <dd class="text-xs font-medium text-highlighted">{{ ticket.gestion.slaEtiqueta }}</dd>
-            </div>
-            <div v-if="mostrarTermino">
-              <dt class="mb-0.5 text-[10px] text-muted">Término estimado</dt>
-              <dd class="text-xs font-medium text-highlighted">{{ ticket.gestion.terminoEstimado }}</dd>
             </div>
           </dl>
         </UCard>
@@ -99,23 +95,7 @@
           <SoporteTiAnalistaGestionSelect :ticket="ticket" />
         </UCard>
 
-        <SoporteTiCreadorConfirmacionEstado
-          v-if="mostrarConfirmacionCreador"
-          :ticket="ticket"
-          @change="void onCambioEstadoCreador($event)"
-        />
-
-        <UCard v-if="mostrarBarraSla">
-          <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">SLA</p>
-          <SoporteTiSlaBar :sla="ticket.slaHoras" :transcurridas="ticket.horasTranscurridas" />
-          <div class="mt-2 flex flex-wrap gap-3 text-[10px] text-gray-500 dark:text-gray-400">
-            <span class="text-green-600 dark:text-green-400">&lt; 75%</span>
-            <span class="text-amber-600 dark:text-amber-400">75–100%</span>
-            <span class="text-red-600 dark:text-red-400">&gt; 100%</span>
-          </div>
-        </UCard>
-
-        <UCard v-if="acciones.length || puedeBorrar">
+        <UCard v-if="acciones.length">
           <p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Acciones</p>
           <div class="flex flex-col gap-2">
             <UButton
@@ -129,18 +109,9 @@
             >
               {{ a.label }}
             </UButton>
-            <UButton
-              v-if="puedeBorrar"
-              block
-              size="sm"
-              color="error"
-              variant="outline"
-              icon="i-heroicons-trash"
-              :loading="eliminando"
-              @click="onEliminar"
-            >
-              Eliminar solicitud
-            </UButton>
+            <p v-if="mostrarHintPausaCapacitacion" class="mt-1 text-[11px] text-muted">
+              En Capacitación puedes pasar a Pendiente para pausar el contador.
+            </p>
           </div>
         </UCard>
       </div>
@@ -157,7 +128,6 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { navigateTo } from '#imports'
 import type { SoporteTiRol } from '~/constants/soporteTi'
 import { CODE } from '~/constants/soporteTiEstados'
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
@@ -171,12 +141,10 @@ import {
   uBadgeColorEstado
 } from '~/constants/soporteTiColores'
 import SoporteTiAnalistaGestionSelect from '~/components/soporte-ti/SoporteTiAnalistaGestionSelect.vue'
-import SoporteTiSlaBar from '~/components/soporte-ti/SoporteTiSlaBar.vue'
 import SoporteTiMaquetaPreview from '~/components/soporte-ti/SoporteTiMaquetaPreview.vue'
 import SoporteTiDetailChatSection from '~/components/soporte-ti/SoporteTiDetailChatSection.vue'
 import SoporteTiModalMaquetaPm from '~/components/soporte-ti/SoporteTiModalMaquetaPm.vue'
 import SoporteTiAsignacionCard from '~/components/soporte-ti/SoporteTiAsignacionCard.vue'
-import SoporteTiCreadorConfirmacionEstado from '~/components/soporte-ti/SoporteTiCreadorConfirmacionEstado.vue'
 
 type BadgeColor = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'
 
@@ -188,14 +156,13 @@ const {
   nowLabel
 } = useSoporteTi()
 
-const { setState, submitMockup, removeRequest } = useSoporteTiAcciones()
+const { setState, submitMockup } = useSoporteTiAcciones()
 const { showError, showSuccess } = useModal()
 const { withSpinner } = useSpinner()
 
 const modalMaquetaAbierto = ref(false)
 const modalMaquetaCambiarEstado = ref(true)
 const enviandoMaqueta = ref(false)
-const eliminando = ref(false)
 const procesandoMaqueta = ref(false)
 
 const esVistaSolicitante = computed(() => rolActivo.value === 'Solicitante')
@@ -214,10 +181,6 @@ const puedeAprobarMaquetaEnChat = computed(
     Boolean(props.ticket.gestion.esCreador)
 )
 
-const puedeBorrar = computed(
-  () => Boolean(props.ticket.gestion.puedeEliminar || props.ticket.gestion.esCreador)
-)
-
 function esValorPendiente(valor?: string | null): boolean {
   const v = (valor ?? '').trim().toLowerCase()
   return !v || v === 'por definir' || v === 'por asignar'
@@ -225,26 +188,34 @@ function esValorPendiente(valor?: string | null): boolean {
 
 const mostrarComplejidad = computed(() => !esValorPendiente(props.ticket.criticidad))
 
-const mostrarTermino = computed(() => !esValorPendiente(props.ticket.gestion.terminoEstimado))
-
 const mostrarTiempoEstimado = computed(() => {
   const g = props.ticket.gestion
   if (!g.slaEtiqueta) return false
-  // Solo staff ve horas SLA; el creador/solicitante solo ve el contador en el chat.
   return Boolean(g.esStaff && g.verSla)
 })
-
-const mostrarBarraSla = computed(
-  () =>
-    Boolean(props.ticket.gestion.esStaff) &&
-    props.ticket.slaHoras > 0 &&
-    (props.ticket.gestion.verSla || props.ticket.gestion.contadorActivo)
-)
 
 const tituloGestionStaff = computed(() => {
   if (rolActivo.value === 'PM') return 'Gestión del PM'
   if (rolActivo.value === 'Analista') return 'Gestión del analista'
   return 'Gestión'
+})
+
+const puedeAvanzarFase = computed(() => {
+  const t = props.ticket
+  const rol = rolActivo.value
+  if (t.tipo !== 'A') return false
+  if (rol !== 'Analista' && rol !== 'PM') return false
+  if (t.estadoCodigo !== CODE.IN_PROGRESS) return false
+  const fi = faseIndexEfectivo(t)
+  return fi === 2 || fi === 3
+})
+
+const mostrarHintPausaCapacitacion = computed(() => {
+  const t = props.ticket
+  const rol = rolActivo.value
+  if (t.tipo !== 'A') return false
+  if (rol !== 'Analista' && rol !== 'PM') return false
+  return faseIndexEfectivo(t) >= 4 && (t.estadoCodigo === CODE.IN_PROGRESS || t.estadoCodigo === CODE.PENDING)
 })
 
 type AccionKey =
@@ -254,6 +225,8 @@ type AccionKey =
   | typeof CODE.DEPLOYED
   | typeof CODE.OPERATIVE
   | typeof CODE.OBSERVED
+  | 'fase_pruebas'
+  | 'fase_capacitacion'
 
 type AccionDef = {
   key: AccionKey
@@ -277,7 +250,7 @@ const acciones = computed((): AccionDef[] => {
     return []
   }
   const a: AccionDef[] = []
-  if (rol === 'PM' && t.tipo === 'A' && t.estadoCodigo === CODE.PENDING) {
+  if (rol === 'PM' && t.tipo === 'A' && t.estadoCodigo === CODE.PENDING && faseIndexEfectivo(t) < 2) {
     a.push({
       key: CODE.MOCKUP,
       label: 'Pasar a En maqueta',
@@ -330,9 +303,10 @@ const acciones = computed((): AccionDef[] => {
     }
     if (t.tipo === 'A') {
       if (t.estadoCodigo === CODE.PENDING && t.gestion.puedeEnProgreso) {
+        const fi = faseIndexEfectivo(t)
         a.push({
           key: CODE.IN_PROGRESS,
-          label: 'Tomar — En progreso',
+          label: fi >= 2 ? 'Reanudar En progreso' : 'Tomar — En progreso',
           color: 'primary',
           variant: 'solid'
         })
@@ -345,14 +319,7 @@ const acciones = computed((): AccionDef[] => {
           variant: 'solid'
         })
       }
-      if (t.estadoCodigo === CODE.IN_PROGRESS) {
-        a.push({
-          key: CODE.DEPLOYED,
-          label: 'Marcar Desplegado',
-          color: 'warning',
-          variant: 'outline'
-        })
-      }
+      pushAccionesFaseTipoA(a, t)
       if (t.estadoCodigo === CODE.OBSERVED && t.gestion.puedeEnProgreso) {
         a.push({
           key: CODE.IN_PROGRESS,
@@ -363,8 +330,50 @@ const acciones = computed((): AccionDef[] => {
       }
     }
   }
+  if (rol === 'PM' && t.tipo === 'A') {
+    if (t.estadoCodigo === CODE.PENDING && t.gestion.puedeEnProgreso && faseIndexEfectivo(t) >= 2) {
+      a.push({
+        key: CODE.IN_PROGRESS,
+        label: 'Reanudar En progreso',
+        color: 'primary',
+        variant: 'solid'
+      })
+    }
+    pushAccionesFaseTipoA(a, t)
+  }
   return a
 })
+
+function pushAccionesFaseTipoA(a: AccionDef[], t: SoporteTiSolicitud) {
+  if (t.tipo !== 'A' || t.estadoCodigo !== CODE.IN_PROGRESS) return
+  const fi = faseIndexEfectivo(t)
+  if (fi === 2) {
+    a.push({
+      key: 'fase_pruebas',
+      label: 'Pasar a Pruebas',
+      color: 'primary',
+      variant: 'solid'
+    })
+    return
+  }
+  if (fi === 3) {
+    a.push({
+      key: 'fase_capacitacion',
+      label: 'Pasar a Capacitación',
+      color: 'primary',
+      variant: 'solid'
+    })
+    return
+  }
+  if (fi >= 4) {
+    a.push({
+      key: CODE.DEPLOYED,
+      label: 'Marcar Desplegado',
+      color: 'warning',
+      variant: 'outline'
+    })
+  }
+}
 
 async function onCambioEstadoCreador(val: unknown) {
   const codigo = typeof val === 'string' ? val : String(val ?? '')
@@ -382,6 +391,14 @@ async function ejecutarAccion(key: AccionKey) {
     abrirModalMaqueta(t.estadoCodigo === CODE.PENDING)
     return
   }
+  if (key === 'fase_pruebas') {
+    await cambiarFase(3)
+    return
+  }
+  if (key === 'fase_capacitacion') {
+    await cambiarFase(4)
+    return
+  }
   try {
     await withSpinner(async () => {
       const ok = await setState(t, key, { rolEtiqueta: rolActivo.value })
@@ -390,6 +407,26 @@ async function ejecutarAccion(key: AccionKey) {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'No se pudo actualizar el estado.'
     showError('Error al actualizar estado', msg)
+  }
+}
+
+async function cambiarFase(faseIndex: number) {
+  const t = props.ticket
+  const nombres = ['Levantamiento', 'Maqueta', 'Configuración', 'Pruebas', 'Capacitación']
+  const nombre = nombres[faseIndex] ?? 'la siguiente etapa'
+  try {
+    await withSpinner(async () => {
+      const res = await update({
+        ...t,
+        faseIndex,
+        ultimaActualizacion: nowLabel()
+      })
+      if (res.ok === false) throw new Error(res.error ?? 'No se pudo actualizar la fase')
+    }, 'Actualizando fase…')
+    showSuccess('Fase actualizada', `El contador ahora usa las horas de ${nombre}.`)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'No se pudo actualizar la fase.'
+    showError('Error al actualizar fase', msg)
   }
 }
 
@@ -447,17 +484,6 @@ async function onRechazarMaqueta() {
     showError('Error al rechazar maqueta', msg)
   } finally {
     procesandoMaqueta.value = false
-  }
-}
-
-async function onEliminar() {
-  if (!puedeBorrar.value || eliminando.value) return
-  eliminando.value = true
-  try {
-    const ok = await removeRequest(props.ticket)
-    if (ok) await navigateTo('/soporte-ti')
-  } finally {
-    eliminando.value = false
   }
 }
 </script>

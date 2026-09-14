@@ -166,7 +166,7 @@ import {
   SOPORTE_TI_MAX_IMAGEN_MB
 } from '~/constants/soporteTi'
 import FileUploader from '~/components/commons/FileUploader.vue'
-import { SoporteTiService } from '~/services/soporteTiService'
+import { useSoporteTi } from '~/composables/useSoporteTi'
 import { useUserRole } from '~/composables/auth/useUserRole'
 import type { SoporteTiAreaCatalogo, SoporteTiCreatePayload, SoporteTiSubtipoB, SoporteTiTipo } from '~/types/soporteTi'
 
@@ -186,6 +186,7 @@ const emit = defineEmits<{
 }>()
 
 const { currentRole, fetchCurrentUser } = useUserRole()
+const { catalogoAreas } = useSoporteTi()
 
 const tipo = ref<SoporteTiTipo>('B')
 const subtipoB = ref<SoporteTiSubtipoB>('B1')
@@ -286,7 +287,7 @@ async function cargarCatalogoAreas() {
   cargandoAreas.value = true
   try {
     fetchCurrentUser()
-    const res = await SoporteTiService.catalogoAreas()
+    const res = await catalogoAreas()
     if (res.success && res.data) {
       catalogo.value = res.data
       aplicarAreaDefault(res.data)

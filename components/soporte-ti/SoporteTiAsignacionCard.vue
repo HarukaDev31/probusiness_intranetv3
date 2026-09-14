@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { SoporteTiSolicitud } from '~/types/soporteTi'
-import { SoporteTiService } from '~/services/soporteTiService'
+import { useSoporteTi } from '~/composables/useSoporteTi'
 
 const props = defineProps<{ ticket: SoporteTiSolicitud }>()
 
-const { updateAssignment } = useSoporteTi()
+const { updateAssignment, listStaff } = useSoporteTi()
 const { showError, showSuccess } = useModal()
 const { withSpinner } = useSpinner()
 
@@ -40,7 +40,7 @@ onMounted(async () => {
   if (!props.ticket.gestion.puedeAsignacion) return
   cargandoStaff.value = true
   try {
-    const res = await SoporteTiService.listStaff()
+    const res = await listStaff()
     staff.value = Array.isArray(res.data) ? res.data : []
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'No se pudo cargar el staff'
