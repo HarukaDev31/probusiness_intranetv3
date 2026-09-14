@@ -75,7 +75,7 @@
                         @create="onEmpresaCreate"
                     />
                 </UFormField>
-                <UFormField label="Límite CBM IMO (opcional)" :error="errors.limiteCbmImo">
+                <UFormField v-if="isOrgAdmin" label="Límite CBM IMO (opcional)" :error="errors.limiteCbmImo">
                     <UInput
                         v-model="limiteCbmImo"
                         type="number"
@@ -261,7 +261,7 @@ const validateForm = () => {
     if (!empresa.value?.trim()) {
         errors.value.empresa = 'La empresa es requerida'
     }
-    if (limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)) {
+    if (isOrgAdmin.value && limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)) {
         const numeric = Number(limiteCbmImo.value)
         if (Number.isNaN(numeric) || numeric < 0) {
             errors.value.limiteCbmImo = 'El límite CBM IMO debe ser un número mayor o igual a 0'
@@ -314,7 +314,7 @@ const handleSubmit = async () => {
             fechaCierre: fechaCierre.value,
             fechaArribo: fechaArribo.value,
             fechaEntrega: fechaEntrega.value,
-            limiteCbmImo: limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)
+            limiteCbmImo: isOrgAdmin.value && limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)
                 ? Number(limiteCbmImo.value)
                 : null,
             tcYuan: resolverTcYuanSubmit(),
