@@ -161,9 +161,13 @@ export class ConsolidadoService extends BaseService {
         return response
     }
 
-    static async getContenedoresDisponibles(): Promise<any> {
+    static async getContenedoresDisponibles(params?: { id_pais?: number; id_contenedor_origen?: number }): Promise<any> {
         try {
-            const response = await this.apiCall<any>(`${this.baseUrl}/cargas-disponibles`, {
+            const query: Record<string, string> = {}
+            if (params?.id_pais) query.id_pais = String(params.id_pais)
+            if (params?.id_contenedor_origen) query.id_contenedor_origen = String(params.id_contenedor_origen)
+            const qs = Object.keys(query).length ? '?' + new URLSearchParams(query).toString() : ''
+            const response = await this.apiCall<any>(`${this.baseUrl}/cargas-disponibles${qs}`, {
                 method: 'GET'
             })
             return response

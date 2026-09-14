@@ -199,13 +199,16 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
             empresasCreadas.value = []
         }
     }
-    const getContenedoresDisponibles = async () => {
+    const getContenedoresDisponibles = async (params?: { id_pais?: number; id_contenedor_origen?: number }) => {
         try {
-            const response = await ConsolidadoService.getContenedoresDisponibles()
+            const response = await ConsolidadoService.getContenedoresDisponibles(params)
             return response
         } catch (error) {
             console.error('Error en getContenedoresDisponibles:', error)
         }
+    }
+    const moveCotizacion = async (payload: any) => {
+        return ConsolidadoService.moveCotizacion(payload)
     }
     const createConsolidado = async (payload: any) => {
         try {
@@ -286,6 +289,7 @@ export const useConsolidado = (roleRef?: Ref<string> | ComputedRef<string>) => {
         partirConsolidado,
         updateEstadoDocumentacion,
         updateEstadoFinanzas,
-        getContenedoresDisponibles
+        getContenedoresDisponibles,
+        moveCotizacion
     }
 }
