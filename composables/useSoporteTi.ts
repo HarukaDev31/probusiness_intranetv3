@@ -46,7 +46,7 @@ function statsFromList(list: SoporteTiSolicitud[]) {
 }
 
 export function useSoporteTi() {
-  const { hasRole, userName, userPhotoUrl } = useUserRole()
+  const { hasRole, currentRole, userName, userPhotoUrl } = useUserRole()
   const {
     mensajesDe,
     metaDe,
@@ -61,7 +61,14 @@ export function useSoporteTi() {
   } = useSoporteTiChat()
 
   const rolActivo = computed<SoporteTiRol>(() => {
-    if (hasRole(ROLES.PM)) return 'PM'
+    const rol = (currentRole.value || '').trim().toLowerCase()
+    if (rol === ROLES.SOPORTE.toLowerCase()) return 'Analista'
+    if (
+      rol === ROLES.PM.toLowerCase()
+      || rol === ROLES.COORDINADOR_GENERAL.toLowerCase()
+    ) {
+      return 'PM'
+    }
     return 'Solicitante'
   })
 
@@ -420,8 +427,16 @@ export function useSoporteTi() {
     } else if (t.tipo === 'A' && rol === 'analista') {
       patchGestion.complejidadAnalistaValor =
         criticidad as SoporteTiSolicitud['gestion']['complejidadAnalistaValor']
+      patchGestion.estadoEditable = true
+      if (t.estadoCodigo === CODE.PENDING || t.estadoCodigo === CODE.OBSERVED) {
+        patchGestion.puedeEnProgreso = true
+      }
     } else if (t.tipo !== 'A') {
       patchGestion.complejidadValor = criticidad as SoporteTiSolicitud['gestion']['complejidadValor']
+      patchGestion.estadoEditable = true
+      if (t.estadoCodigo === CODE.PENDING || t.estadoCodigo === CODE.OBSERVED) {
+        patchGestion.puedeEnProgreso = true
+      }
     }
     const actualizada: SoporteTiSolicitud = {
       ...t,
@@ -438,7 +453,7 @@ export function useSoporteTi() {
     )
 
     try {
-      const res = await SoporteTiService.updateComplejidad(t.backendId, criticidad)
+      const res = await SoporteTiService.updateComplejidad(t.backendId, criticidad, rol)
       if (!res.success) {
         throw new Error(res.message || 'No se pudo actualizar la complejidad')
       }

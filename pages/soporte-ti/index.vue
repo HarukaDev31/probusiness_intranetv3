@@ -18,7 +18,7 @@
       @filter-change="onFilterChange" @clear-filters="onClearFilters" @row-click="onRowClick" @kanban-move="onKanbanMove">
       <template #actions>
         <UButton
-          v-if="rolActivo === 'Soporte'"
+          v-if="rolActivo === 'Analista'"
           size="sm"
           variant="outline"
           icon="i-heroicons-calendar-days"
@@ -89,7 +89,7 @@ import SoporteTiStatsCards from '~/components/soporte-ti/SoporteTiStatsCards.vue
 import SoporteTiKanbanCard from '~/components/soporte-ti/SoporteTiKanbanCard.vue'
 import SoporteTiModalCreate from '~/components/soporte-ti/SoporteTiModalCreate.vue'
 import SoporteTiEvidenciaModal from '~/components/soporte-ti/SoporteTiEvidenciaModal.vue'
-import { SOPORTE_TI_KANBAN_BOARD } from '~/constants/soporteTiEstados'
+import { CODE, SOPORTE_TI_KANBAN_BOARD } from '~/constants/soporteTiEstados'
 import { SOPORTE_TI_COMPLEJIDADES, complejidadOk } from '~/utils/soporteTiComplejidad'
 import { estadosItemsCompletos } from '~/utils/soporteTiGestion'
 import {
@@ -410,6 +410,7 @@ function kanbanPuedeSoltarEn(row: Record<string, unknown>, estadoCodigo: string)
   const t = row as SoporteTiSolicitud
   if (estadoCodigo === t.estadoCodigo) return false
   if (!kanbanPuedeArrastrar(row)) return false
+  if (estadoCodigo === CODE.IN_PROGRESS && !t.gestion.puedeEnProgreso) return false
   return t.gestion.estados.some((e) => e.codigo === estadoCodigo)
 }
 
@@ -446,7 +447,10 @@ function celdaEstadoTicket(t: SoporteTiSolicitud) {
     [
       h(USelect as any, {
         modelValue: codigo || undefined,
-        items: estadosItemsCompletos(t.tipo, g.estados, { editable: g.estadoEditable }),
+        items: estadosItemsCompletos(t.tipo, g.estados, {
+          editable: g.estadoEditable,
+          puedeEnProgreso: g.puedeEnProgreso
+        }),
         disabled: !g.estadoEditable,
         valueKey: 'value',
         labelKey: 'label',

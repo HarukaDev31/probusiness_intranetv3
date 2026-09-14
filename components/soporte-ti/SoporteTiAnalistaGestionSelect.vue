@@ -13,7 +13,8 @@ const { setComplexity, setState } = useSoporteTiAcciones()
 const g = computed(() => props.ticket.gestion)
 const itemsEstado = computed(() =>
   estadosItemsCompletos(props.ticket.tipo, g.value.estados, {
-    editable: g.value.estadoEditable
+    editable: g.value.estadoEditable,
+    puedeEnProgreso: g.value.puedeEnProgreso
   })
 )
 const claseSelectEstado = computed(() =>

@@ -220,11 +220,12 @@ export class SoporteTiService extends BaseService {
 
   static async updateComplejidad(
     id: number,
-    criticidad: string
+    criticidad: string,
+    rol?: 'pm' | 'analista' | 'legacy'
   ): Promise<SoporteTiSolicitudResult> {
     const raw = await this.apiCall<SoporteTiSingleResponseRaw>(`${BASE}/${id}/complejidad`, {
       method: 'PATCH',
-      body: { criticidad }
+      body: { criticidad, rol: rol && rol !== 'legacy' ? rol : undefined }
     })
     return {
       success: raw.success,
