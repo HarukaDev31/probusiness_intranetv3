@@ -605,6 +605,18 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     cell: ({ row }) => celdaEstadoTicket(row.original)
   }
 
+  const colVer: TableColumn<SoporteTiTablaFila> = {
+    id: 'ver',
+    accessorKey: 'codigo',
+    header: 'Ver',
+    enableSorting: false,
+    cell: ({ row }) =>
+      botonOjo({
+        titulo: 'Ver detalle',
+        onClick: () => void navigateTo(rutaDetalle(row.original))
+      })
+  }
+
   if (rolActivo.value === 'Solicitante') {
     return [
       { accessorKey: 'codigo', header: sortableHeader('Código') },
@@ -612,7 +624,8 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
       columnaTitulo('Nombre'),
       { accessorKey: 'fechaRegistroCompleta', header: sortableHeader('Fecha de registro') },
       { accessorKey: 'fechaFinEstimadoFmt', header: sortableHeader('Término estimado') },
-      colEstado
+      colEstado,
+      colVer
     ]
   }
 
@@ -794,7 +807,8 @@ const columns = computed<TableColumn<SoporteTiTablaFila>[]>(() => {
     ...(rolActivo.value === 'PM' ? [colComplejidadPm] : []),
     ...(rolActivo.value === 'Analista' ? [colComplejidadAnalista] : []),
     colEstado,
-    colEvidencia
+    colEvidencia,
+    colVer
   ]
 })
 
