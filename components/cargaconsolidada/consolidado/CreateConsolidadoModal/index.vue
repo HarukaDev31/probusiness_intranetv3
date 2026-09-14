@@ -62,7 +62,18 @@
                 </UFormField>
                 <!-- Empresa -->
                 <UFormField label="Empresa" required :error="errors.empresa">
-                    <UInput v-model="empresa" placeholder="Ingresa el nombre de la empresa" class="w-full" />
+                    <UInputMenu
+                        v-model="empresaMenu"
+                        :items="empresasOptions"
+                        create-item
+                        class="w-full"
+                        placeholder="Busca o escribe una empresa"
+                        @update:search-term="onEmpresaSearch"
+                        @update:model-value="onEmpresaMenuChange"
+                        @update:open="onEmpresaOpen"
+                        @blur="commitEmpresaPendiente"
+                        @create="onEmpresaCreate"
+                    />
                 </UFormField>
                 <UFormField label="Límite CBM IMO (opcional)" :error="errors.limiteCbmImo">
                     <UInput
@@ -74,7 +85,7 @@
                         class="w-full"
                     />
                 </UFormField>
-                <UFormField label="TC Yuan (opcional)" :error="errors.tcYuan">
+                <UFormField v-if="isOrgAdmin" label="TC Yuan (opcional)" :error="errors.tcYuan">
                     <UInput
                         v-model="tcYuan"
                         type="number"
@@ -103,25 +114,33 @@
 
 <script setup lang="ts">
 import type { CreateConsolidadoModalProps } from './types'
-import { ref, defineEmits, defineProps } from 'vue'
+import { TC_YUAN_DEFAULT_NO_ADMIN } from './constants'
+import { ref, computed, defineEmits, defineProps } from 'vue'
 import { CalendarDate } from '@internationalized/date'
 import { getLocalTimeZone, DateFormatter, } from '@internationalized/date'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import { useOptions } from '~/composables/commons/useOptions'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ID_ORGANIZACION_ADMIN } from '~/constants/roles'
 //const modelValue = shallowRef(new CalendarDate(2022, 1, 10))
 const id = ref<number | null>(null)
 const carga = ref<number>()
 const mes = ref<string>()
 const pais = ref<number>()
-const empresa = ref<string>()
+const empresa = ref<string>('')
+const empresaMenu = ref<string | { label: string; value: string } | null>('')
+const empresaSearchTerm = ref('')
+let empresaUltimoFueEscritura = false
 const limiteCbmImo = ref<number | null>(null)
 const tcYuan = ref<number | string | null>(null)
 const hoy = new Date();
 const fechaCierre = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
 const fechaArribo = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
 const fechaEntrega = shallowRef(new CalendarDate(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate()))
-const { getValidContainers, validContainers, getConsolidadoById } = useConsolidado()
+const { getValidContainers, validContainers, getConsolidadoById, getEmpresasCreadas, empresasCreadas } = useConsolidado()
 const { paises, getPaises } = useOptions()
+const { currentOrganizacionId, fetchCurrentUser } = useUserRole()
+const isOrgAdmin = computed(() => currentOrganizacionId.value === ID_ORGANIZACION_ADMIN)
 const df = new DateFormatter('en-US', {
     dateStyle: 'medium'
 })
@@ -149,10 +168,80 @@ const emit = defineEmits<{
 
 const setEmpresa = (idPais: number) => {
     if (idPais == 1) {
-        empresa.value = 'PRO MUNDO COMEX SAC.'
+        aplicarEmpresa('PRO MUNDO COMEX SAC.')
     } else {
+        aplicarEmpresa('')
+    }
+}
+
+const empresasOptions = computed(() => {
+    const names = empresasCreadas.value
+        .map((e) => String(e.value || e.label || '').trim())
+        .filter(Boolean)
+    if (empresa.value && !names.some((n) => n.toLowerCase() === empresa.value.toLowerCase())) {
+        names.unshift(empresa.value)
+    }
+    return names
+})
+
+function nombreDeEmpresa(item: string | { label?: string; value?: string } | null | undefined) {
+    if (!item) return ''
+    if (typeof item === 'string') return item.trim()
+    return String(item.value || item.label || '').trim()
+}
+
+function aplicarEmpresa(nombre: string) {
+    const trimmed = (nombre || '').trim()
+    empresa.value = trimmed
+    empresaMenu.value = trimmed
+    empresaSearchTerm.value = ''
+    empresaUltimoFueEscritura = false
+    if (trimmed && !empresasCreadas.value.some((e) => String(e.value || e.label).toLowerCase() === trimmed.toLowerCase())) {
+        empresasCreadas.value = [{ label: trimmed, value: trimmed }, ...empresasCreadas.value]
+    }
+}
+
+function onEmpresaSearch(term: string) {
+    empresaSearchTerm.value = term
+    if (term !== '') {
+        empresaUltimoFueEscritura = true
+        empresa.value = term
+    } else if (empresaUltimoFueEscritura) {
         empresa.value = ''
     }
+}
+
+function onEmpresaMenuChange(value: string | { label?: string; value?: string } | null) {
+    if (!value) {
+        if (empresaUltimoFueEscritura) {
+            commitEmpresaPendiente()
+        } else if (empresa.value.trim()) {
+            const actual = nombreDeEmpresa(empresaMenu.value)
+            if (!actual) empresaMenu.value = empresa.value.trim()
+        }
+        return
+    }
+    aplicarEmpresa(nombreDeEmpresa(value))
+}
+
+function onEmpresaCreate(item: string | { label?: string; value?: string }) {
+    aplicarEmpresa(nombreDeEmpresa(item))
+}
+
+function commitEmpresaPendiente() {
+    if (!empresaUltimoFueEscritura) return
+    empresaUltimoFueEscritura = false
+    const term = (empresaSearchTerm.value || empresa.value || '').trim()
+    if (!term) {
+        aplicarEmpresa('')
+        return
+    }
+    const match = empresasOptions.value.find((n) => n.toLowerCase() === term.toLowerCase())
+    aplicarEmpresa(match || term)
+}
+
+function onEmpresaOpen(open: boolean) {
+    if (!open) commitEmpresaPendiente()
 }
 
 
@@ -170,7 +259,7 @@ const validateForm = () => {
     if (!pais.value) {
         errors.value.pais = 'El país es requerido'
     }
-    if (!empresa.value) {
+    if (!empresa.value?.trim()) {
         errors.value.empresa = 'La empresa es requerida'
     }
     if (limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)) {
@@ -179,7 +268,7 @@ const validateForm = () => {
             errors.value.limiteCbmImo = 'El límite CBM IMO debe ser un número mayor o igual a 0'
         }
     }
-    if (tcYuan.value !== null && tcYuan.value !== ('' as any)) {
+    if (isOrgAdmin.value && tcYuan.value !== null && tcYuan.value !== ('' as any)) {
         const numeric = Number(tcYuan.value)
         if (Number.isNaN(numeric) || numeric < 0) {
             errors.value.tcYuan = 'El TC Yuan debe ser un número mayor o igual a 0'
@@ -198,8 +287,20 @@ const validateForm = () => {
     return Object.keys(errors.value).length === 0
 }
 
+function resolverTcYuanSubmit(): number | null {
+    if (!isOrgAdmin.value) {
+        const numeric = Number(tcYuan.value)
+        return Number.isNaN(numeric) ? TC_YUAN_DEFAULT_NO_ADMIN : numeric
+    }
+    if (tcYuan.value !== null && tcYuan.value !== ('' as any)) {
+        return Number(tcYuan.value)
+    }
+    return null
+}
+
 const handleSubmit = async () => {
     try {
+        commitEmpresaPendiente()
         if (!validateForm()) {
             return
         }
@@ -210,16 +311,14 @@ const handleSubmit = async () => {
             carga: carga.value,
             mes: mes.value,
             pais: pais.value,
-            empresa: empresa.value,
+            empresa: empresa.value.trim(),
             fechaCierre: fechaCierre.value,
             fechaArribo: fechaArribo.value,
             fechaEntrega: fechaEntrega.value,
             limiteCbmImo: limiteCbmImo.value !== null && limiteCbmImo.value !== ('' as any)
                 ? Number(limiteCbmImo.value)
                 : null,
-            tcYuan: tcYuan.value !== null && tcYuan.value !== ('' as any)
-                ? Number(tcYuan.value)
-                : null,
+            tcYuan: resolverTcYuanSubmit(),
         })
 
     } catch (error) {
@@ -229,8 +328,12 @@ const handleSubmit = async () => {
     }
 }
 onMounted(async () => {
+    fetchCurrentUser()
     await getPaises()
-    await getValidContainers()
+    await Promise.all([getValidContainers(), getEmpresasCreadas()])
+    if (!props.id && !isOrgAdmin.value) {
+        tcYuan.value = TC_YUAN_DEFAULT_NO_ADMIN
+    }
     if (props.id) {
 
         const response = await getConsolidadoById(props.id)
@@ -242,14 +345,16 @@ onMounted(async () => {
             mes.value = response.mes?.toString()
             // Asegurarse de que el país sea un string
             pais.value = response.id_pais
-            empresa.value = response.empresa
+            aplicarEmpresa(response.empresa || '')
             fechaCierre.value = new CalendarDate(getDateParts(response.f_cierre).year, getDateParts(response.f_cierre).month, getDateParts(response.f_cierre).day)
             fechaArribo.value = new CalendarDate(getDateParts(response.f_puerto).year, getDateParts(response.f_puerto).month, getDateParts(response.f_puerto).day)
             fechaEntrega.value = new CalendarDate(getDateParts(response.f_entrega).year, getDateParts(response.f_entrega).month, getDateParts(response.f_entrega).day)
             limiteCbmImo.value = typeof response.limite_cbm_imo === 'number' || typeof response.limite_cbm_imo === 'string'
                 ? Number(response.limite_cbm_imo)
                 : null
-            tcYuan.value = response.tc_yuan != null ? Number(response.tc_yuan) : null
+            tcYuan.value = response.tc_yuan != null
+                ? Number(response.tc_yuan)
+                : (!isOrgAdmin.value ? TC_YUAN_DEFAULT_NO_ADMIN : null)
         }
     }
 
