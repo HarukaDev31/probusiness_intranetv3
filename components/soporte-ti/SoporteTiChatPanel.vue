@@ -280,6 +280,13 @@
                     :aria-label="m.revisado ? 'Quitar revisado' : 'Marcar como revisado'"
                     @click="toggleRevisado(m)"
                   />
+                  <UIcon
+                    v-else-if="m.revisado"
+                    name="i-heroicons-check-circle-solid"
+                    class="size-4 text-success"
+                    title="Revisado"
+                    aria-label="Revisado"
+                  />
                 </div>
 
                 <div :class="m.esPropio ? 'flex items-end gap-0.5 flex-row' : ''">
