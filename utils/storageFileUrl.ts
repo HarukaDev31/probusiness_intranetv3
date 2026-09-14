@@ -1,14 +1,28 @@
-const CDN_BASE_URL = 'https://cdn.probusiness.pe'
-
 function collapseSlashes(path: string): string {
   return path.replace(/\/{2,}/g, '/')
+}
+
+function objectStorageCdnBase(): string {
+  try {
+    const config = useRuntimeConfig()
+    return String(config.public.objectStorageCdnUrl || '').replace(/\/$/, '')
+  } catch {
+    return ''
+  }
+}
+
+function toCdnUrl(relativePath: string, search = ''): string | null {
+  const base = objectStorageCdnBase()
+  if (!base) return null
+  return `${base}/${relativePath}${search}`
 }
 
 /**
  * Normaliza URLs de archivos devueltas por la API:
  * - quita barras escapadas (\/)
  * - colapsa dobles slash en la ruta
- * - convierte rutas relativas legacy (assets/..., cargaconsolidada/...) a CDN
+ * - rutas relativas assets/... o cargaconsolidada/... usan OBJECT_STORAGE_CDN_URL
+ * - URLs http(s) se respetan (el back ya resolvió CDN o URL firmada)
  */
 export function normalizePublicFileUrl(url: string | null | undefined): string | null {
   if (url == null || String(url).trim() === '') {
@@ -28,10 +42,6 @@ export function normalizePublicFileUrl(url: string | null | undefined): string |
     try {
       const parsed = new URL(cleaned)
       parsed.pathname = collapseSlashes(parsed.pathname)
-      const relative = collapseSlashes(parsed.pathname.replace(/^\/+/, '')).replace(/^storage\//, '')
-      if (relative.startsWith('assets/') || relative.startsWith('cargaconsolidada/')) {
-        return `${CDN_BASE_URL}/${relative}${parsed.search || ''}`
-      }
       return parsed.toString()
     } catch {
       return cleaned.replace(/([^:]\/)\/+/g, '$1')
@@ -44,7 +54,7 @@ export function normalizePublicFileUrl(url: string | null | undefined): string |
   }
 
   if (path.startsWith('assets/') || path.startsWith('cargaconsolidada/')) {
-    return `${CDN_BASE_URL}/${path}`
+    return toCdnUrl(path) || resolveStorageFileUrl(path) || null
   }
 
   const resolved = resolveStorageFileUrl(path)
