@@ -238,8 +238,12 @@
 
             <div
               v-else
+              :data-soporte-msg-id="m.id"
               class="group flex gap-2.5"
-              :class="m.esPropio ? 'flex-row-reverse' : 'flex-row'"
+              :class="[
+                m.esPropio ? 'flex-row-reverse' : 'flex-row',
+                highlightedMensajeId === m.id ? 'rounded-xl ring-2 ring-primary/50' : ''
+              ]"
             >
               <SoporteTiChatAvatar
                 :src="m.avatarUrl"
@@ -265,7 +269,7 @@
                     @click="iniciarRespuesta(m)"
                   />
                   <UButton
-                    v-if="m.id > 0"
+                    v-if="puedeMarcarRevisado && m.id > 0"
                     type="button"
                     :color="m.revisado ? 'success' : 'neutral'"
                     variant="ghost"
@@ -301,7 +305,8 @@
                 >
                   <div
                     v-if="m.replyTo"
-                    class="border-b border-default px-2 py-2"
+                    class="cursor-pointer border-b border-default px-2 py-2"
+                    @click.stop="irAlMensaje(m.replyTo.id)"
                   >
                     <SoporteTiChatReplyPreview
                       :remitente="m.replyTo.remitente"
@@ -460,11 +465,18 @@
         >
           <div class="min-w-0 flex-1">
             <p class="mb-1.5 text-[10px] font-medium text-muted">Respondiendo</p>
-            <SoporteTiChatReplyPreview
-              :remitente="replyTarget.remitente"
-              :texto="replyTarget.texto"
-              :imagen-url="replyPreviewImagenUrl"
-            />
+            <button
+              type="button"
+              class="min-w-0 flex-1 cursor-pointer text-left"
+              title="Ir al mensaje"
+              @click="irAlMensaje(replyTarget.id)"
+            >
+              <SoporteTiChatReplyPreview
+                :remitente="replyTarget.remitente"
+                :texto="replyTarget.texto"
+                :imagen-url="replyPreviewImagenUrl"
+              />
+            </button>
           </div>
           <UButton
             type="button"
@@ -611,6 +623,8 @@ import type { FileItem } from '~/types/commons/file'
 import { SOPORTE_TI_MAX_IMAGENES_CHAT, SOPORTE_TI_MAX_IMAGEN_MB } from '~/constants/soporteTi'
 import { useSoporteTiContador } from '~/composables/useSoporteTiContador'
 import { useSoporteTi } from '~/composables/useSoporteTi'
+import { useUserRole } from '~/composables/auth/useUserRole'
+import { ROLES } from '~/constants/roles'
 import { useModal } from '~/composables/commons/useModal'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import SoporteTiChatReplyPreview from '~/components/soporte-ti/SoporteTiChatReplyPreview.vue'
@@ -632,6 +646,8 @@ import type { SoporteTiSolicitud } from '~/types/soporteTi'
 const overlay = useOverlay()
 const modalPreview = overlay.create(ModalPreview)
 const { marcarMensajeRevisado } = useSoporteTi()
+const { hasRole } = useUserRole()
+const puedeMarcarRevisado = computed(() => hasRole(ROLES.SOPORTE))
 const { showError } = useModal()
 const revisandoIds = new Set<number>()
 
@@ -805,6 +821,9 @@ const puedeEnviar = computed(
 const cercaDelFinal = ref(true)
 const scrollHeightAntes = ref(0)
 const primerIdAnterior = ref<number | null>(null)
+const highlightedMensajeId = ref<number | null>(null)
+const pendingScrollToId = ref<number | null>(null)
+let highlightTimer: ReturnType<typeof setTimeout> | null = null
 
 const mostrarBajar = computed(() => !cercaDelFinal.value)
 
@@ -821,44 +840,108 @@ function bajarAlFinal() {
   cercaDelFinal.value = true
 }
 
+function firmaScrollMensajes(lista: SoporteTiMensaje[]) {
+  const ultimo = lista[lista.length - 1]
+  return {
+    len: lista.length,
+    firstId: lista[0]?.id ?? 0,
+    lastId: ultimo?.id ?? 0,
+    lastEsPropio: Boolean(ultimo?.esPropio)
+  }
+}
+
 watch(
-  () => props.mensajes,
-  async (lista, prev) => {
+  () => firmaScrollMensajes(props.mensajes),
+  async (sig, prev) => {
     await nextTick()
     const el = getScrollEl()
     if (!el) return
 
     const prepended =
       prev &&
-      lista.length > prev.length &&
-      lista[0]?.id !== prev[0]?.id &&
+      sig.len > prev.len &&
+      sig.firstId !== prev.firstId &&
       primerIdAnterior.value != null &&
-      lista[0]?.id !== primerIdAnterior.value
+      sig.firstId !== primerIdAnterior.value
 
     if (prepended && scrollHeightAntes.value > 0) {
       el.scrollTop += el.scrollHeight - scrollHeightAntes.value
       scrollHeightAntes.value = 0
-      primerIdAnterior.value = lista[0]?.id ?? null
+      primerIdAnterior.value = sig.firstId || null
+      if (pendingScrollToId.value != null) {
+        await irAlMensaje(pendingScrollToId.value)
+      }
       return
     }
 
-    primerIdAnterior.value = lista[0]?.id ?? null
+    primerIdAnterior.value = sig.firstId || null
 
-    if (!prev?.length) {
+    if (pendingScrollToId.value != null) {
+      await irAlMensaje(pendingScrollToId.value)
+      return
+    }
+
+    if (!prev?.len) {
       el.scrollTop = el.scrollHeight
       return
     }
 
-    const ultimo = lista[lista.length - 1]
-    const hayMensajeNuevoAlFinal = ultimo != null && ultimo.id !== prev[prev.length - 1]?.id
+    const hayMensajeNuevoAlFinal = sig.lastId !== prev.lastId
     if (!hayMensajeNuevoAlFinal) return
 
-    if (cercaDelFinal.value || ultimo.esPropio) {
+    if (cercaDelFinal.value || sig.lastEsPropio) {
       el.scrollTop = el.scrollHeight
     }
-  },
-  { deep: true }
+  }
 )
+
+async function irAlMensaje(id: number | null | undefined) {
+  if (id == null || id <= 0) return
+  await nextTick()
+  const el = getScrollEl()
+  if (!el) return
+
+  const target = el.querySelector<HTMLElement>(`[data-soporte-msg-id="${id}"]`)
+  if (target) {
+    pendingScrollToId.value = null
+    const targetRect = target.getBoundingClientRect()
+    const scrollRect = el.getBoundingClientRect()
+    const top =
+      targetRect.top - scrollRect.top + el.scrollTop - el.clientHeight / 2 + targetRect.height / 2
+    el.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+    highlightedMensajeId.value = id
+    if (highlightTimer) clearTimeout(highlightTimer)
+    highlightTimer = setTimeout(() => {
+      highlightedMensajeId.value = null
+      highlightTimer = null
+    }, 1600)
+    return
+  }
+
+  if (props.hasMoreOlder && !props.loadingOlder) {
+    pendingScrollToId.value = id
+    solicitarAnteriores()
+  } else {
+    pendingScrollToId.value = null
+  }
+}
+
+async function toggleRevisado(m: SoporteTiMensaje) {
+  if (!puedeMarcarRevisado.value || m.id <= 0 || m.esSistema || revisandoIds.has(m.id)) return
+  revisandoIds.add(m.id)
+  const el = getScrollEl()
+  const scrollTopAntes = el?.scrollTop ?? 0
+  try {
+    const res = await marcarMensajeRevisado(props.salaUuid, m.id, !m.revisado)
+    if (!res.ok) {
+      showError('No se pudo marcar', res.error)
+    }
+    await nextTick()
+    if (el) el.scrollTop = scrollTopAntes
+  } finally {
+    revisandoIds.delete(m.id)
+  }
+}
 
 function solicitarAnteriores() {
   if (!props.hasMoreOlder || props.loadingOlder) return
@@ -882,19 +965,6 @@ function claseBurbuja(m: SoporteTiMensaje) {
     return `${forma} ring-1 ring-emerald-600/30 dark:ring-emerald-400/35`
   }
   return m.esPropio ? `${forma} ring-1 ring-primary/25` : forma
-}
-
-async function toggleRevisado(m: SoporteTiMensaje) {
-  if (m.id <= 0 || m.esSistema || revisandoIds.has(m.id)) return
-  revisandoIds.add(m.id)
-  try {
-    const res = await marcarMensajeRevisado(props.salaUuid, m.id, !m.revisado)
-    if (!res.ok) {
-      showError('No se pudo marcar', res.error)
-    }
-  } finally {
-    revisandoIds.delete(m.id)
-  }
 }
 
 function cancelarRespuesta() {
@@ -1073,6 +1143,7 @@ function abrirPreview(url: string, nombre?: string) {
 }
 
 onUnmounted(() => {
+  if (highlightTimer) clearTimeout(highlightTimer)
   descartarAdjuntos()
 })
 </script>
