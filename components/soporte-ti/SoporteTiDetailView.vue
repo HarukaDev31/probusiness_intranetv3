@@ -320,6 +320,14 @@ const acciones = computed((): AccionDef[] => {
       }
     }
     if (t.tipo === 'A') {
+      if (t.estadoCodigo === CODE.PENDING && t.gestion.puedeEnProgreso) {
+        a.push({
+          key: CODE.IN_PROGRESS,
+          label: 'Tomar — En progreso',
+          color: 'primary',
+          variant: 'solid'
+        })
+      }
       if (t.estadoCodigo === CODE.MOCKUP && t.gestion.puedeEnProgreso) {
         a.push({
           key: CODE.IN_PROGRESS,

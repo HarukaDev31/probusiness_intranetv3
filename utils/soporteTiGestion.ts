@@ -18,14 +18,18 @@ export function estadosItems(estados: SoporteTiGestionEstado[]): SoporteTiSelect
 export function estadosItemsCompletos(
   tipo: SoporteTiTipo,
   permitidos: SoporteTiGestionEstado[],
-  opts?: { editable?: boolean }
+  opts?: { editable?: boolean; puedeEnProgreso?: boolean }
 ): SoporteTiSelectItem[] {
   const editable = opts?.editable !== false
   const permitidosSet = new Set(permitidos.map((e) => e.codigo))
   return estadosCatalogoPorTipo(tipo).map((e) => ({
     label: e.nombre,
     value: e.codigo,
-    disabled: !editable || !permitidosSet.has(e.codigo)
+    disabled:
+      !editable
+      || !permitidosSet.has(e.codigo)
+      || (e.codigo === 'en_progreso' && opts?.puedeEnProgreso === false)
   }))
 }
-
+
+
