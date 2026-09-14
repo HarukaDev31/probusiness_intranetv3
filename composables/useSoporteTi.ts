@@ -231,9 +231,14 @@ export function useSoporteTi() {
       return
     }
 
-    const existe = lista.some((m) => m.id === ui.id && m.id > 0)
-    if (esActualizacion || existe) {
-      actualizarMensajeEnSala(chatUuidEsperado, ui)
+    const existente = lista.find((m) => m.id === ui.id && m.id > 0)
+    if (esActualizacion || existente) {
+      actualizarMensajeEnSala(chatUuidEsperado, {
+        ...(existente ?? ui),
+        ...ui,
+        estadoEnvio: existente?.estadoEnvio ?? ui.estadoEnvio,
+        imagenes: ui.imagenes?.length ? ui.imagenes : existente?.imagenes
+      })
     } else {
       agregarMensaje(chatUuidEsperado, ui)
     }
@@ -623,6 +628,35 @@ export function useSoporteTi() {
     }
   }
 
+  async function marcarMensajeRevisado(
+    chatUuid: string,
+    mensajeId: number,
+    revisado: boolean
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    const prev = mensajesDe(chatUuid).find((m) => m.id === mensajeId)
+    if (!prev || prev.id <= 0 || prev.esSistema) {
+      return { ok: false, error: 'Mensaje no encontrado' }
+    }
+
+    actualizarMensajeEnSala(chatUuid, { ...prev, revisado })
+    try {
+      const res = await SoporteTiService.marcarMensajeRevisado(chatUuid, mensajeId, revisado)
+      if (!res.success || !res.data) {
+        throw new Error(res.message || 'No se pudo actualizar el mensaje')
+      }
+      const actual = mensajesDe(chatUuid).find((m) => m.id === mensajeId) ?? prev
+      actualizarMensajeEnSala(chatUuid, {
+        ...actual,
+        revisado: res.data.revisado === true
+      })
+      return { ok: true }
+    } catch (e: unknown) {
+      actualizarMensajeEnSala(chatUuid, prev)
+      const msg = e instanceof Error ? e.message : 'No se pudo actualizar el mensaje'
+      return { ok: false, error: msg }
+    }
+  }
+
   function applyRemoteSolicitudCreada(ui: SoporteTiSolicitud) {
     if (!ui.chatUuid) return
     upsertSolicitud(ui)
@@ -671,6 +705,7 @@ export function useSoporteTi() {
     remove,
     uploadMockup,
     sendChat,
+    marcarMensajeRevisado,
     addSystemMessage,
     mensajesDe,
     metaDe,

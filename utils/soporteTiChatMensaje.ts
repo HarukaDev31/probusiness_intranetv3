@@ -64,6 +64,7 @@ export function mensajeOptimistaDesdeEnvio(
     avatarUrl: remitente.avatarUrl ?? null,
     texto: payload.texto?.trim() ?? '',
     esSistema: false,
+    revisado: false,
     marcaTiempo: etiquetaAhora(),
     esPropio: true,
     replyToId: payload.replyToId ?? null,

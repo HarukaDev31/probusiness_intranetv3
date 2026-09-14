@@ -264,6 +264,18 @@
                     title="Responder"
                     @click="iniciarRespuesta(m)"
                   />
+                  <UButton
+                    v-if="m.id > 0"
+                    type="button"
+                    :color="m.revisado ? 'success' : 'neutral'"
+                    variant="ghost"
+                    size="xs"
+                    :icon="m.revisado ? 'i-heroicons-check-circle-solid' : 'i-heroicons-check'"
+                    :class="m.revisado ? '' : 'opacity-0 transition group-hover:opacity-100'"
+                    :title="m.revisado ? 'Quitar revisado' : 'Marcar como revisado'"
+                    :aria-label="m.revisado ? 'Quitar revisado' : 'Marcar como revisado'"
+                    @click="toggleRevisado(m)"
+                  />
                 </div>
 
                 <div :class="m.esPropio ? 'flex items-end gap-0.5 flex-row' : ''">
@@ -281,14 +293,10 @@
                   />
 
                   <UCard
-                  :color="m.esPropio ? 'primary' : 'neutral'"
+                  :color="colorBurbuja(m)"
                   variant="subtle"
                   class="min-w-0 flex-1 overflow-hidden shadow-sm"
-                  :class="
-                    m.esPropio
-                      ? 'rounded-2xl rounded-tr-md ring-1 ring-primary/25'
-                      : 'rounded-2xl rounded-tl-md'
-                  "
+                  :class="claseBurbuja(m)"
                   :ui="{ body: 'p-0 sm:p-0' }"
                 >
                   <div
@@ -602,6 +610,8 @@ import type { SoporteTiMensaje, SoporteTiEnviarMensajePayload } from '~/types/so
 import type { FileItem } from '~/types/commons/file'
 import { SOPORTE_TI_MAX_IMAGENES_CHAT, SOPORTE_TI_MAX_IMAGEN_MB } from '~/constants/soporteTi'
 import { useSoporteTiContador } from '~/composables/useSoporteTiContador'
+import { useSoporteTi } from '~/composables/useSoporteTi'
+import { useModal } from '~/composables/commons/useModal'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import SoporteTiChatReplyPreview from '~/components/soporte-ti/SoporteTiChatReplyPreview.vue'
 import SoporteTiChatImagenEditor from '~/components/soporte-ti/SoporteTiChatImagenEditor.vue'
@@ -621,6 +631,9 @@ import type { SoporteTiSolicitud } from '~/types/soporteTi'
 
 const overlay = useOverlay()
 const modalPreview = overlay.create(ModalPreview)
+const { marcarMensajeRevisado } = useSoporteTi()
+const { showError } = useModal()
+const revisandoIds = new Set<number>()
 
 const props = withDefaults(
   defineProps<{
@@ -847,6 +860,32 @@ function solicitarAnteriores() {
 
 function iniciarRespuesta(m: SoporteTiMensaje) {
   replyTarget.value = m
+}
+
+function colorBurbuja(m: SoporteTiMensaje): 'success' | 'primary' | 'neutral' {
+  if (m.revisado) return 'success'
+  return m.esPropio ? 'primary' : 'neutral'
+}
+
+function claseBurbuja(m: SoporteTiMensaje) {
+  const forma = m.esPropio ? 'rounded-2xl rounded-tr-md' : 'rounded-2xl rounded-tl-md'
+  if (m.revisado) {
+    return `${forma} ring-1 ring-emerald-600/30 dark:ring-emerald-400/35`
+  }
+  return m.esPropio ? `${forma} ring-1 ring-primary/25` : forma
+}
+
+async function toggleRevisado(m: SoporteTiMensaje) {
+  if (m.id <= 0 || m.esSistema || revisandoIds.has(m.id)) return
+  revisandoIds.add(m.id)
+  try {
+    const res = await marcarMensajeRevisado(props.salaUuid, m.id, !m.revisado)
+    if (!res.ok) {
+      showError('No se pudo marcar', res.error)
+    }
+  } finally {
+    revisandoIds.delete(m.id)
+  }
 }
 
 function cancelarRespuesta() {
