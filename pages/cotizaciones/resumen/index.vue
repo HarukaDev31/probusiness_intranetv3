@@ -221,7 +221,7 @@ async function onEstadoChange(row: CotizacionResumenRow, value: string) {
 
 function irAlConsolidado(row: CotizacionResumenRow) {
   if (!row.id_contenedor) return
-  navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${row.id_contenedor}?idCotizacion=${row.id}&tab=prospectos`)
+  navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${row.id_contenedor}?idCotizacion=${row.id}&tab=embarque`)
 }
 
 function abrirArchivo(url: string | null | undefined) {
