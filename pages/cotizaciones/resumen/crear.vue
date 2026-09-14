@@ -912,12 +912,7 @@ async function finalizar() {
         esEdicion.value ? 'Cotización actualizada' : 'Cotización registrada',
         esEdicion.value ? 'Los cambios se guardaron. Los códigos de proveedor se mantienen.' : 'La cotización se registró correctamente.'
       )
-      const contenedorId = contenedorDesdeQuery.value || selectedContenedor.value
-      if (contenedorId) {
-        await navigateTo(`/cargaconsolidada/abiertos/cotizaciones/${contenedorId}?tab=prospectos`)
-      } else {
-        await navigateTo('/cotizaciones/resumen')
-      }
+      await navigateTo('/cotizaciones/resumen')
     } else {
       showError(
         esEdicion.value ? 'No se pudo guardar' : 'No se pudo registrar la cotización',
