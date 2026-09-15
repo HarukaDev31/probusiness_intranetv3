@@ -776,6 +776,28 @@ function aplicarExtraidosAProveedores() {
   while (providers.value.length < extraidos.length) {
     providers.value.push(proveedorDesdeExtraido(extraidos[providers.value.length]))
   }
+  quitarCostosDocumentoDuplicados()
+}
+
+function firmaCosto(costo: CostoResumen) {
+  return `${costo.concepto.trim().toLowerCase()}|${Number(costo.valor) || 0}`
+}
+
+function quitarCostosDocumentoDuplicados() {
+  if (providers.value.length < 2) return
+  const sets = providers.value.map(
+    (p) => new Set(p.costos.map((c) => firmaCosto(c)))
+  )
+  const repetidos = [...sets[0]].filter((k) => sets.every((s) => s.has(k)))
+  if (!repetidos.length) return
+  const repetidoSet = new Set(repetidos)
+  providers.value = providers.value.map((p, idx) => {
+    if (idx === 0) return p
+    return {
+      ...p,
+      costos: p.costos.filter((c) => !repetidoSet.has(firmaCosto(c)))
+    }
+  })
 }
 
 const qtyProveedores = ref(0)

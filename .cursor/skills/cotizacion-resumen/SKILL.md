@@ -2,9 +2,9 @@
 name: cotizacion-resumen
 description: >-
   Reglas de negocio del flujo Cotización Resumen (socios / orgs ≠ 1): editar solo
-  COTIZADO, confirmar con contenedor, code_supplier con prefijo de 3 letras de la
-  org, duplicar sin contenedor, archivos en la misma vista del cotizador y
-  alcance por organización. Usar al tocar pages/cotizaciones/resumen,
+  COTIZADO, confirmar con contenedor, code_supplier con prefijo de país del
+  consolidado + (org − 1), duplicar sin contenedor, archivos en la misma vista
+  del cotizador y alcance por organización. Usar al tocar pages/cotizaciones/resumen,
   CotizacionResumenController, code_supplier de resumen, o al documentar el
   módulo (manual / Drive JS).
 ---
@@ -62,17 +62,20 @@ Pages/components **no** llaman services: `useCotizacionResumen` → `cotizacionR
 
 ## `code_supplier` (resumen)
 
-Igual que el cotizador (`{iniciales cliente}{carga}-{N}`) **más prefijo de 3 letras de la organización**.
+Igual que el cotizador (`{iniciales cliente}{carga}-{N}`) **más país del consolidado y número de empresa (org − 1)**.
 
 ```
-{ORG3}{INICIALES}{CARGA}-{N}
-Andes Import + Juan Perez + B5 → ANDJUPE5-1
+{PAIS3}{orgId-1}-{INICIALES}{CARGA}-{N}
+Ecuador + org 2 + Juan Perez + B5 → ECU1-JUPE5-1
+Argentina + org 3 + Juan Perez + B5 → ARG2-JUPE5-1
 ```
 
-- Prefijo: `CodeSupplierHelper::orgPrefix` (ASCII, solo letras, 3 chars).
-- Sufijo: `maxSuffixForBase(baseConOrg) + 1` para los nuevos.
+- País: 3 letras del país del **contenedor** (`id_pais`), no del nombre de la org.
+- Empresa: `organizacion_id - 1` (la 2.ª org es `1`, la 3.ª es `2`).
+- Sufijo: `maxSuffixForBase(base) + 1` para los nuevos.
 - Recorrer proveedores `orderBy('id')` (orden de alta). No reordenar al reconfirmar.
 - Org 1 (calculadora) **no** usa este prefijo; solo resumen/socios.
+- Helper: `CodeSupplierHelper::generateWithPaisPrefix`
 
 ## Archivos
 
@@ -109,7 +112,7 @@ Copia cliente, proveedores, resumen, costos y archivo IA. Limpia:
   - `GET /` listado · `POST /` alta · `GET /{id}` detalle
   - `PUT /{id}` editar · `POST /{id}/duplicar`
   - `PUT /{id}/estado` · `DELETE /{id}`
-- Helper: `CodeSupplierHelper::generateWithOrgPrefix`
+- Helper: `CodeSupplierHelper::generateWithPaisPrefix`
 
 `DB::table()` no tiene `OrganizacionScope`: filtrar `organizacion_id` a mano.
 
@@ -139,7 +142,7 @@ Esta skill es la fuente de reglas para documentar el front. Cuando se arme el ma
 
 - [ ] Org del usuario o del padre en DB; nunca del body (salvo org 1)
 - [ ] Editar solo COTIZADO; confirmar solo con contenedor; con contenedor aparece en Prospectos/Embarcados en COTIZADO y CONFIRMADO
-- [ ] `code_supplier` por `id`; prefijo 3 letras org; no reordenar al reconfirmar
+- [ ] `code_supplier` por `id`; prefijo `{PAIS3}{org-1}-`; no reordenar al reconfirmar
 - [ ] Duplicar = COTIZADO sin contenedor ni códigos
 - [ ] Archivos solo en CONFIRMADO; misma vista del cotizador; path por org
 - [ ] Page → composable → service; spinner + modal en async
