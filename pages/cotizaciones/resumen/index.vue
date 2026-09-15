@@ -318,13 +318,13 @@ const columns: TableColumn<CotizacionResumenRow>[] = [
     header: 'Contacto',
     cell: ({ row }) => {
       const r = row.original
-      return h('div', { class: 'flex flex-col gap-0.5 max-w-[190px] py-2' }, [
-        h('span', { class: 'font-medium text-sm' }, r.nombre || '—'),
-        r.documento ? h('span', { class: 'text-xs text-gray-500' }, r.documento) : null,
-        r.telefono ? h('span', { class: 'text-xs text-gray-500' }, r.telefono) : null,
-        r.cod_cotizacion ? h('span', { class: 'text-xs text-gray-500' }, r.cod_cotizacion) : null,
+      return h('div', { class: 'flex flex-col gap-0.5 w-[11rem] max-w-[11rem] min-w-0 overflow-hidden py-2 whitespace-normal break-words' }, [
+        h('span', { class: 'font-medium text-sm break-words' }, r.nombre || '—'),
+        r.documento ? h('span', { class: 'text-xs text-gray-500 break-all' }, r.documento) : null,
+        r.telefono ? h('span', { class: 'text-xs text-gray-500 break-all' }, r.telefono) : null,
+        r.cod_cotizacion ? h('span', { class: 'text-xs text-gray-500 break-all' }, r.cod_cotizacion) : null,
         r.estado === 'CONFIRMADO' && r.cod_contract
-          ? h('span', { class: 'text-xs text-gray-500' }, r.cod_contract)
+          ? h('span', { class: 'text-xs text-gray-500 break-all' }, r.cod_contract)
           : null
       ])
     }
@@ -332,7 +332,7 @@ const columns: TableColumn<CotizacionResumenRow>[] = [
   {
     accessorKey: 'total_cbm',
     header: 'Vol',
-    cell: ({ row }) => Number(row.original.total_cbm || 0).toFixed(2)
+    cell: ({ row }) => h('div', { class: 'py-2 w-10 whitespace-nowrap' }, Number(row.original.total_cbm || 0).toFixed(2))
   },
   {
     accessorKey: 'fob',

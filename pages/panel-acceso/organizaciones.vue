@@ -34,18 +34,19 @@
               <th class="text-left py-3 px-4">Países consolidado</th>
               <th class="text-left py-3 px-4">Prefijo tel.</th>
               <th class="text-left py-3 px-4">Descripción</th>
+              <th class="text-center py-3 px-4">Mensajes</th>
               <th class="text-center py-3 px-4">Estado</th>
               <th class="text-center py-3 px-4">Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="8" class="text-center py-8">
+              <td colspan="9" class="text-center py-8">
                 <UIcon name="i-heroicons-arrow-path" class="animate-spin" /> Cargando...
               </td>
             </tr>
             <tr v-else-if="organizaciones.length === 0">
-              <td colspan="8" class="text-center py-8 text-gray-500">No hay registros</td>
+              <td colspan="9" class="text-center py-8 text-gray-500">No hay registros</td>
             </tr>
             <tr
               v-for="o in organizaciones"
@@ -58,6 +59,16 @@
               <td class="py-2 px-4 text-xs text-gray-600">{{ labelPaisesConsolidado(o) }}</td>
               <td class="py-2 px-4 font-mono text-xs">{{ o.prefijo ? `+${o.prefijo}` : '—' }}</td>
               <td class="py-2 px-4 text-gray-500">{{ o.txt_organizacion || '—' }}</td>
+              <td class="py-2 px-4 text-center">
+                <div class="flex justify-center gap-1">
+                  <UBadge :color="(o.flujos_activos ?? 0) > 0 ? 'success' : 'neutral'" variant="subtle">
+                    {{ o.flujos_activos ?? 0 }}/{{ o.flujos_total ?? 0 }} flujos
+                  </UBadge>
+                  <UBadge :color="o.rotulado_habilitado ? 'success' : 'neutral'" variant="subtle">
+                    {{ o.rotulado_habilitado ? 'Rotulado' : 'Sin rotulado' }}
+                  </UBadge>
+                </div>
+              </td>
               <td class="py-2 px-4 text-center">
                 <UBadge :color="o.estado === 1 ? 'success' : 'neutral'">
                   {{ o.estado === 1 ? 'Activo' : 'Inactivo' }}
@@ -152,7 +163,7 @@
     </UCard>
 
     <!-- Modal Organización -->
-    <UModal v-model:open="showModal">
+    <UModal v-model:open="showModal" :ui="{ width: 'max-w-3xl' }">
       <template #content>
         <UCard>
           <template #header>
@@ -164,7 +175,7 @@
             </div>
           </template>
 
-          <form @submit.prevent="submitForm" class="space-y-4">
+          <form @submit.prevent="submitForm" class="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
             <UFormField label="Empresa" required>
               <USelect
                 v-model="form.id_empresa"
@@ -229,6 +240,58 @@
                 class="w-full"
               />
             </UFormField>
+
+            <div class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+              <p class="text-sm font-medium">Envíos WhatsApp por API</p>
+              <p class="text-xs text-gray-500">
+                Solo jobs que mandan mensaje por la API. El chat de inbox no aparece.
+              </p>
+              <div v-for="grupo in flujosAgrupados" :key="grupo.nombre" class="space-y-2">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ grupo.nombre }}</p>
+                <USwitch
+                  v-for="item in grupo.items"
+                  :key="item.key"
+                  :model-value="Boolean(form.flujos?.[item.key])"
+                  :label="item.label"
+                  @update:model-value="(on: boolean) => setFlujo(item.key, on)"
+                />
+              </div>
+            </div>
+
+            <div v-if="editingOrganizacion" class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+              <p class="text-sm font-medium">Imágenes de rotulado</p>
+              <p class="text-xs text-gray-500">
+                Los pasos 1 y 2 van como foto. El paso 3 es la etiqueta del consolidado (PDF). La dirección del almacén también se puede cambiar.
+              </p>
+              <div class="grid gap-3 sm:grid-cols-3">
+                <div v-for="slot in rotuladoSlots" :key="slot.key" class="space-y-2">
+                  <p class="text-xs font-medium text-gray-600">{{ slot.label }}</p>
+                  <img
+                    v-if="imagenUrl(slot.key)"
+                    :src="imagenUrl(slot.key)!"
+                    :alt="slot.label"
+                    class="h-24 w-full rounded border object-cover"
+                  />
+                  <div v-else class="flex h-24 items-center justify-center rounded border border-dashed text-xs text-gray-400">
+                    Sin imagen
+                  </div>
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    :label="imagenUrl(slot.key) ? 'Cambiar' : 'Subir'"
+                    :loading="uploadingSlot === slot.key"
+                    @click="triggerImagen(slot.key)"
+                  />
+                </div>
+              </div>
+              <input
+                ref="imagenInput"
+                type="file"
+                class="hidden"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                @change="onImagenSeleccionada"
+              />
+            </div>
 
             <p v-if="formError" class="text-red-500 text-sm">{{ formError }}</p>
           </form>
@@ -376,6 +439,7 @@
 
 <script setup lang="ts">
 import type { Organizacion, CreateOrganizacionRequest, PaisOption } from '~/services/panelAcceso/organizacionService'
+import { FLUJOS_CATALOGO_FALLBACK } from '~/services/panelAcceso/organizacionService'
 import { useOrganizaciones } from '~/composables/panel-acceso/useOrganizaciones'
 import { useSpinner } from '~/composables/commons/useSpinner'
 import { useModal } from '~/composables/commons/useModal'
@@ -406,7 +470,7 @@ const showDeleteModal = ref(false)
 const deletingOrganizacion = ref<Organizacion | null>(null)
 const deleting = ref(false)
 
-const { listar, listarEmpresas, listarPaises, crear, actualizar, guardarPortal, desactivar } = useOrganizaciones()
+const { listar, listarEmpresas, listarPaises, crear, actualizar, subirImagenRotulado, guardarPortal, desactivar } = useOrganizaciones()
 const { withSpinner } = useSpinner()
 const { showSuccess, showError } = useModal()
 
@@ -417,9 +481,42 @@ const form = reactive<CreateOrganizacionRequest>({
   id_pais: 0,
   paises_habilitados: [],
   estado: 1,
+  flujos: {},
 })
 
+const flujosCatalogo = computed(() => {
+  const fromApi = organizaciones.value.find(o => (o.flujos_catalogo?.length ?? 0) > 0)?.flujos_catalogo
+  return fromApi?.length ? fromApi : FLUJOS_CATALOGO_FALLBACK
+})
+
+const flujosAgrupados = computed(() => {
+  const grupos: { nombre: string; items: typeof FLUJOS_CATALOGO_FALLBACK }[] = []
+  for (const item of flujosCatalogo.value) {
+    const actual = grupos.find(g => g.nombre === item.grupo)
+    if (actual) actual.items.push(item)
+    else grupos.push({ nombre: item.grupo, items: [item] })
+  }
+  return grupos
+})
+
+function flujosVacios(on = false): Record<string, boolean> {
+  return Object.fromEntries(flujosCatalogo.value.map(item => [item.key, on]))
+}
+
+function setFlujo(key: string, on: boolean) {
+  form.flujos = { ...(form.flujos ?? {}), [key]: on }
+}
+
 const esOrgAdminEditada = computed(() => editingOrganizacion.value?.id === 1)
+
+const rotuladoSlots = [
+  { key: 'paso1' as const, label: 'Paso 1 (foto)' },
+  { key: 'paso2' as const, label: 'Paso 2 (foto)' },
+  { key: 'direccion' as const, label: 'Dirección almacén' },
+]
+const imagenInput = ref<HTMLInputElement | null>(null)
+const uploadingSlot = ref<'paso1' | 'paso2' | 'direccion' | null>(null)
+const pendingImagenSlot = ref<'paso1' | 'paso2' | 'direccion' | null>(null)
 
 function normalizePaisesHabilitados(raw: unknown): number[] {
   if (!Array.isArray(raw)) return []
@@ -491,6 +588,7 @@ async function openModal(organizacion?: Organizacion) {
     form.id_pais = organizacion.id_pais ?? 0
     form.paises_habilitados = [...(organizacion.paises_habilitados ?? [])]
     form.estado = organizacion.estado
+    form.flujos = { ...flujosVacios(false), ...(organizacion.flujos ?? {}) }
   } else {
     editingOrganizacion.value = null
     form.id_empresa = empresasOptions.value[0]?.value ?? 0
@@ -499,6 +597,7 @@ async function openModal(organizacion?: Organizacion) {
     form.id_pais = 0
     form.paises_habilitados = []
     form.estado = 1
+    form.flujos = flujosVacios(false)
   }
 
   showModal.value = true
@@ -535,6 +634,7 @@ async function submitForm() {
     id_pais: form.id_pais || null,
     paises_habilitados: esOrgAdminEditada.value ? undefined : normalizePaisesHabilitados(form.paises_habilitados),
     estado: Number(form.estado),
+    flujos: { ...flujosVacios(false), ...(form.flujos ?? {}) },
   }
 
   try {
@@ -623,6 +723,48 @@ async function copiarKey(key: string) {
 function confirmDelete(organizacion: Organizacion) {
   deletingOrganizacion.value = organizacion
   showDeleteModal.value = true
+}
+
+function imagenUrl(slot: 'paso1' | 'paso2' | 'direccion') {
+  const org = editingOrganizacion.value
+  if (!org) return null
+  if (slot === 'paso1') return org.img_rotulado_paso1_url ?? null
+  if (slot === 'paso2') return org.img_rotulado_paso2_url ?? null
+  return org.img_rotulado_direccion_url ?? null
+}
+
+function triggerImagen(slot: 'paso1' | 'paso2' | 'direccion') {
+  pendingImagenSlot.value = slot
+  imagenInput.value?.click()
+}
+
+async function onImagenSeleccionada(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  const slot = pendingImagenSlot.value
+  input.value = ''
+  pendingImagenSlot.value = null
+  if (!file || !slot || !editingOrganizacion.value) return
+
+  uploadingSlot.value = slot
+  try {
+    const res = await withSpinner(async () => {
+      const result = await subirImagenRotulado(editingOrganizacion.value!.id, slot, file)
+      if (!result.success) {
+        throw new Error(typeof result.message === 'string' ? result.message : 'No se pudo subir')
+      }
+      return result
+    }, 'Subiendo imagen…')
+    if ('data' in res && res.data) {
+      editingOrganizacion.value = res.data
+    }
+    showSuccess('Imagen lista', 'Se usará en el próximo envío de rotulado.')
+    await loadOrganizaciones()
+  } catch (e) {
+    showError('No se pudo subir', e instanceof Error ? e.message : 'Inténtalo de nuevo.')
+  } finally {
+    uploadingSlot.value = null
+  }
 }
 
 async function deleteOrganizacion() {

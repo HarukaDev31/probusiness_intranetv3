@@ -51,7 +51,7 @@ Pages/components **no** llaman services: `useCotizacionResumen` → `cotizacionR
 - Se pueden **agregar** proveedores y cambiar cliente / vendedor / consolidado. Los conceptos de costo del documento **no se muestran** en el wizard; se guardan igual y el back los clasifica (FOB, ISD, logística, impuesto).
 - Si alguna vez estuvo confirmada y volvió a COTIZADO: **mantener el `code_supplier` de cada proveedor** (emparejar por `id`, nunca por orden de array).
 - Proveedores nuevos (sin `id`) nacen sin código; lo reciben en la **siguiente** confirmación, con el siguiente sufijo.
-- Si se re-escanea el PDF, conservar `id` + `code_supplier` del proveedor en la **misma posición**.
+- Si se **reemplaza el archivo** en COTIZADO: se borran proveedores e ítems **sin** `code_supplier` y se cargan los del documento nuevo. Los que ya tienen `code_supplier` se conservan (`id` + código).
 
 ## Confirmar
 

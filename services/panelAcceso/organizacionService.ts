@@ -19,7 +19,40 @@ export interface Organizacion {
   drive_folder_id?: string | null
   logo_url?: string | null
   public_key?: string | null
+  envios_habilitados?: boolean
+  rotulado_habilitado?: boolean
+  flujos?: Record<string, boolean>
+  flujos_catalogo?: FlujoCatalogoItem[]
+  flujos_activos?: number
+  flujos_total?: number
+  img_rotulado_paso1_url?: string | null
+  img_rotulado_paso2_url?: string | null
+  img_rotulado_direccion_url?: string | null
 }
+
+export interface FlujoCatalogoItem {
+  key: string
+  grupo: string
+  label: string
+}
+
+export const FLUJOS_CATALOGO_FALLBACK: FlujoCatalogoItem[] = [
+  { key: 'rotulado', grupo: 'Coordinación', label: 'Rotulado' },
+  { key: 'documentos', grupo: 'Coordinación', label: 'Documentos de aduana' },
+  { key: 'datos_proveedor', grupo: 'Coordinación', label: 'Datos de proveedor' },
+  { key: 'cbm_alerta', grupo: 'Coordinación', label: 'Alerta diferencia CBM' },
+  { key: 'arrive_date', grupo: 'Coordinación', label: 'Aviso de arrive date' },
+  { key: 'cambio_consolidado', grupo: 'Coordinación', label: 'Cambio de consolidado' },
+  { key: 'inspeccion', grupo: 'Almacén', label: 'Inspección' },
+  { key: 'entrega', grupo: 'Entrega', label: 'Formulario y cargo de entrega' },
+  { key: 'cobranza', grupo: 'Finanzas', label: 'Cotización final / cobrando' },
+  { key: 'reminder_pago', grupo: 'Finanzas', label: 'Recordatorio de pago' },
+  { key: 'factura_guia', grupo: 'Finanzas', label: 'Factura y guía' },
+  { key: 'contabilidad', grupo: 'Finanzas', label: 'Comprobantes y detracción' },
+  { key: 'comprobante_form', grupo: 'Finanzas', label: 'Formulario de comprobante' },
+  { key: 'calculadora', grupo: 'Comercial', label: 'Cotización calculadora' },
+  { key: 'cotizacion_pdf', grupo: 'Comercial', label: 'PDF / contrato (ventas)' },
+]
 
 export interface CreateOrganizacionRequest {
   id_empresa: number
@@ -28,6 +61,9 @@ export interface CreateOrganizacionRequest {
   id_pais?: number | null
   paises_habilitados?: number[]
   estado: number
+  envios_habilitados?: boolean
+  rotulado_habilitado?: boolean
+  flujos?: Record<string, boolean>
   url_clientes?: string
   url_excel_confirmacion?: string
   url_datos_proveedor?: string
@@ -118,6 +154,24 @@ export class OrganizacionService extends BaseService {
     try {
       return await this.apiCall<SimpleResponse>(`/api/panel-acceso/organizaciones/${id}`, {
         method: 'DELETE',
+      })
+    } catch (e: any) {
+      return { success: false, message: e.message }
+    }
+  }
+
+  static async uploadRotuladoImagen(
+    id: number,
+    slot: 'paso1' | 'paso2' | 'direccion',
+    file: File,
+  ): Promise<OrganizacionResponse | SimpleResponse> {
+    try {
+      const formData = new FormData()
+      formData.append('slot', slot)
+      formData.append('file', file)
+      return await this.apiCall<OrganizacionResponse>(`/api/panel-acceso/organizaciones/${id}/rotulado-imagen`, {
+        method: 'POST',
+        body: formData,
       })
     } catch (e: any) {
       return { success: false, message: e.message }

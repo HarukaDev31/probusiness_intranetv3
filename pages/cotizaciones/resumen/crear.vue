@@ -766,16 +766,21 @@ function proveedorDesdeExtraido(extraido?: CotizacionResumenProveedorExtraido | 
   return mergeProveedorConExtraido(base, extraido)
 }
 
+function tieneCodeSupplier(prov: ProveedorResumen) {
+  return !!(prov.codeSupplier && String(prov.codeSupplier).trim())
+}
+
 function aplicarExtraidosAProveedores() {
   const extraidos = proveedoresExtraidos.value
-  if (extraidos.length === 0) return
-  providers.value = providers.value.map((prov, idx) => {
-    const extraido = extraidos[idx]
-    return extraido ? mergeProveedorConExtraido(prov, extraido) : prov
-  })
-  while (providers.value.length < extraidos.length) {
-    providers.value.push(proveedorDesdeExtraido(extraidos[providers.value.length]))
+  const conservados = esEdicion.value
+    ? providers.value.filter((p) => tieneCodeSupplier(p))
+    : []
+  const nuevos = extraidos.map((e) => proveedorDesdeExtraido(e))
+  if (nuevos.length === 0 && conservados.length === 0) {
+    providers.value = [crearProveedor()]
+    return
   }
+  providers.value = [...conservados, ...nuevos]
   quitarCostosDocumentoDuplicados()
 }
 
