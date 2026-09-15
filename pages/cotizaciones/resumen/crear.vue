@@ -207,13 +207,11 @@
                   </label>
                 </div>
                 <UInput
-                  :model-value="qtyProveedores"
+                  v-model.number="qtyProveedores"
                   type="number"
-                  min="1"
-                  max="8"
+                  min="0"
                   :disabled="scanState === 'scanning'"
                   class="w-full"
-                  @update:model-value="onQtyProveedoresChange"
                 />
               </div>
             </div>
@@ -288,8 +286,8 @@
         <div v-if="currentStep === 3">
           <h2 class="text-xl font-semibold mb-6">Terminar</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <UFormField label="Cantidad proveedores" hint="Sincronizado con los proveedores del paso 2">
-              <UInput :model-value="qtyProveedores" type="number" min="1" max="8" class="w-full" @update:model-value="onQtyProveedoresChange" />
+            <UFormField label="Cantidad proveedores" required hint="No cambia los campos del paso 2">
+              <UInput v-model.number="qtyProveedores" type="number" min="0" class="w-full" />
             </UFormField>
 
             <UFormField label="Descuento (opcional)">
@@ -656,7 +654,7 @@ async function procesarArchivo(file: File) {
     }
 
     proveedoresExtraidos.value = res.data?.proveedores ?? []
-    aplicarExtraidosAProveedoresActuales()
+    aplicarExtraidosAProveedores()
 
     if (!res.extracted_by_ai) {
       showError('No se pudo leer el documento automáticamente', res.message || 'Completa los datos a mano.')
@@ -685,6 +683,7 @@ function reiniciarArchivo() {
     whatsappMenu.value = ''
     camposEscaneados.value = {}
     proveedoresExtraidos.value = []
+    qtyProveedores.value = 0
   }
 }
 
@@ -766,25 +765,19 @@ function proveedorDesdeExtraido(extraido?: CotizacionResumenProveedorExtraido | 
   return mergeProveedorConExtraido(base, extraido)
 }
 
-function aplicarExtraidosAProveedoresActuales() {
+function aplicarExtraidosAProveedores() {
   const extraidos = proveedoresExtraidos.value
   if (extraidos.length === 0) return
   providers.value = providers.value.map((prov, idx) => {
     const extraido = extraidos[idx]
     return extraido ? mergeProveedorConExtraido(prov, extraido) : prov
   })
-}
-
-const qtyProveedores = computed(() => providers.value.length)
-
-function onQtyProveedoresChange(value: string | number) {
-  const target = Math.min(8, Math.max(1, Number(value) || 1))
-  while (providers.value.length < target) {
-    const extraido = proveedoresExtraidos.value[providers.value.length]
-    providers.value.push(proveedorDesdeExtraido(extraido))
+  while (providers.value.length < extraidos.length) {
+    providers.value.push(proveedorDesdeExtraido(extraidos[providers.value.length]))
   }
-  while (providers.value.length > target) providers.value.pop()
 }
+
+const qtyProveedores = ref(0)
 
 function cbmNormalProveedor(prov: ProveedorResumen) {
   const total = Number(prov.cbmTotal) || 0
@@ -899,7 +892,12 @@ async function cargarEdicion(id: number) {
 const canGoNext = computed(() => {
   if (currentStep.value === 1) {
     const whatsapp = telefonoDeOpcion(whatsappMenu.value) || clienteInfo.whatsapp
-    return scanState.value === 'done' && !!clienteInfo.nombre.trim() && !!whatsapp.trim()
+    return (
+      scanState.value === 'done'
+      && !!clienteInfo.nombre.trim()
+      && !!whatsapp.trim()
+      && Number(qtyProveedores.value) >= 1
+    )
   }
   if (currentStep.value === 2) {
     return providers.value.every((p) => p.cbmTotal > 0 && p.productos.trim() !== '' && cbmImoValido(p))
@@ -909,6 +907,7 @@ const canGoNext = computed(() => {
 
 const canFinalizar = computed(() => {
   if (!selectedVendedor.value || !canGoNext.value) return false
+  if (Number(qtyProveedores.value) < 1) return false
   if (!esEdicion.value && !selectedContenedor.value) return false
   return true
 })
