@@ -211,7 +211,7 @@
                   type="number"
                   min="1"
                   max="8"
-                  :disabled="scanState !== 'done'"
+                  :disabled="scanState === 'scanning'"
                   class="w-full"
                   @update:model-value="onQtyProveedoresChange"
                 />
@@ -377,7 +377,8 @@ import FileUploader from '~/components/commons/FileUploader.vue'
 import type {
   CotizacionResumenArchivo,
   CotizacionResumenClienteOption,
-  CotizacionResumenCosto
+  CotizacionResumenCosto,
+  CotizacionResumenProveedorExtraido
 } from '~/types/cargaconsolidada/cotizacion-resumen'
 import { useCotizacionResumen } from '~/composables/cargaconsolidada/cotizacion-resumen'
 import { useModal } from '@/composables/commons/useModal'
@@ -654,23 +655,8 @@ async function procesarArchivo(file: File) {
       camposEscaneados.value = {}
     }
 
-    const proveedoresExtraidos = res.data?.proveedores ?? []
-    if (proveedoresExtraidos.length > 0) {
-      const previos = esEdicion.value ? [...providers.value] : []
-      providers.value = proveedoresExtraidos.map((p, idx) => ({
-        id: nextProviderId++,
-        idProveedor: previos[idx]?.idProveedor,
-        codeSupplier: previos[idx]?.codeSupplier ?? null,
-        cbmTotal: p.cbm_total ?? 0,
-        cbmImo: previos[idx]?.cbmImo ?? 0,
-        pesoTotal: p.peso_total ?? 0,
-        qtyCajas: p.qty_cajas ?? 0,
-        productos: p.productos ?? '',
-        unidades: p.unidades ?? p.qty_cajas ?? 0,
-        incoterm: p.incoterm || 'Consolidado',
-        costos: mapCostosExtraidos(p.costos)
-      }))
-    }
+    proveedoresExtraidos.value = res.data?.proveedores ?? []
+    aplicarExtraidosAProveedoresActuales()
 
     if (!res.extracted_by_ai) {
       showError('No se pudo leer el documento automáticamente', res.message || 'Completa los datos a mano.')
@@ -698,6 +684,7 @@ function reiniciarArchivo() {
     clienteBdId.value = null
     whatsappMenu.value = ''
     camposEscaneados.value = {}
+    proveedoresExtraidos.value = []
   }
 }
 
@@ -755,11 +742,47 @@ function mapCostosExtraidos(extraidos?: CotizacionResumenCosto[] | null): CostoR
     .map((c) => crearCosto(c.concepto.trim(), Number(c.valor) || 0))
 }
 
+const proveedoresExtraidos = ref<CotizacionResumenProveedorExtraido[]>([])
+
+function mergeProveedorConExtraido(
+  actual: ProveedorResumen,
+  extraido: CotizacionResumenProveedorExtraido
+): ProveedorResumen {
+  return {
+    ...actual,
+    cbmTotal: extraido.cbm_total ?? actual.cbmTotal,
+    pesoTotal: extraido.peso_total ?? actual.pesoTotal,
+    qtyCajas: extraido.qty_cajas ?? actual.qtyCajas,
+    productos: extraido.productos ?? actual.productos,
+    unidades: extraido.unidades ?? extraido.qty_cajas ?? actual.unidades,
+    incoterm: extraido.incoterm || actual.incoterm || 'Consolidado',
+    costos: mapCostosExtraidos(extraido.costos)
+  }
+}
+
+function proveedorDesdeExtraido(extraido?: CotizacionResumenProveedorExtraido | null): ProveedorResumen {
+  const base = crearProveedor()
+  if (!extraido) return base
+  return mergeProveedorConExtraido(base, extraido)
+}
+
+function aplicarExtraidosAProveedoresActuales() {
+  const extraidos = proveedoresExtraidos.value
+  if (extraidos.length === 0) return
+  providers.value = providers.value.map((prov, idx) => {
+    const extraido = extraidos[idx]
+    return extraido ? mergeProveedorConExtraido(prov, extraido) : prov
+  })
+}
+
 const qtyProveedores = computed(() => providers.value.length)
 
 function onQtyProveedoresChange(value: string | number) {
   const target = Math.min(8, Math.max(1, Number(value) || 1))
-  while (providers.value.length < target) addProvider()
+  while (providers.value.length < target) {
+    const extraido = proveedoresExtraidos.value[providers.value.length]
+    providers.value.push(proveedorDesdeExtraido(extraido))
+  }
   while (providers.value.length > target) providers.value.pop()
 }
 
@@ -772,7 +795,7 @@ function cbmNormalProveedor(prov: ProveedorResumen) {
 const providers = ref<ProveedorResumen[]>([crearProveedor()])
 
 function addProvider() {
-  providers.value.push(crearProveedor())
+  providers.value.push(proveedorDesdeExtraido(proveedoresExtraidos.value[providers.value.length]))
 }
 
 function removeProvider(idx: number) {

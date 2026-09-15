@@ -1516,7 +1516,7 @@ const getPagosColumns = () => {
     return columns
 }
 
-const buildEmbarqueContactoColumn = (cellClass = 'w-70'): TableColumn<any> => ({
+const buildEmbarqueContactoColumn = (cellClass = 'w-70 whitespace-normal'): TableColumn<any> => ({
     accessorKey: 'contacto',
     header: () => {
         const isActive = embarqueSortBy.value === 'nombre'
@@ -1535,7 +1535,7 @@ const buildEmbarqueContactoColumn = (cellClass = 'w-70'): TableColumn<any> => ({
     cell: ({ row }: { row: any }) => {
         const nombre = row.original?.nombre || row.original?.cliente?.nombre || ''
         const telefono = row.original?.telefono || row.original?.cliente?.telefono || ''
-        return h('div', { class: `${cellClass} whitespace-normal` }, [
+        return h('div', { class: cellClass }, [
             h('div', { class: 'font-medium' }, nombre ? (typeof nombre === 'string' ? nombre.toUpperCase() : nombre) : ''),
             telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null
         ])
@@ -2515,7 +2515,7 @@ const embarqueCotizadorColumnsAlmacen = ref<TableColumn<any>[]>([
             return row.index + 1
         }
     },
-    buildEmbarqueContactoColumn('w-40'),
+    buildEmbarqueContactoColumn('w-40 whitespace-normal'),
     {
         accessorKey: 'productos',
         header: 'Productos',
@@ -3115,6 +3115,7 @@ const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
                     header: PROSPECTOS_SOCIO_HEADERS.action,
                     cell: ({ row }: { row: any }) => {
                         const puedeBorrar = estadoResumenFila(row.original) === 'COTIZADO'
+                        const confirmada = estadoResumenFila(row.original) === 'CONFIRMADO'
                         const tieneContrato = Boolean(
                             row.original.uuid
                             || row.original.cotizacion_contrato_url
@@ -3146,7 +3147,7 @@ const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
                                 title: 'Enviar recordatorio de firma',
                                 onClick: () => handleSendRecordatorioFirma(row.original.id)
                             }),
-                            h(UButton, {
+                            confirmada ? h(UButton, {
                                 icon: 'i-heroicons-eye',
                                 variant: 'ghost',
                                 size: 'xs',
@@ -3155,7 +3156,7 @@ const toProspectosSocioColumns = (columns: TableColumn<any>[]) => {
                                 onClick: () => {
                                     navigateTo(`${basePath.value}/cotizaciones/documentacion/${row.original.id}`)
                                 }
-                            }),
+                            }) : null,
                             h(UButton, {
                                 icon: 'i-heroicons-arrow-right',
                                 variant: 'ghost',
@@ -3322,8 +3323,71 @@ const socioProveedorInput = (proveedor: any, field: string, extra: Record<string
     },
 })
 
+const socioChinaSpan = (value: unknown) => {
+    const text = value === null || value === undefined || String(value).trim() === '' ? '—' : String(value)
+    return h('span', { class: 'block py-1 text-sm text-gray-800 dark:text-gray-100' }, text)
+}
+
+const socioChinaDateSpan = (value: unknown) => {
+    if (!value) return socioChinaSpan('—')
+    const formatted = formatDateTimeToDmy(String(value))
+    return socioChinaSpan(formatted || value)
+}
+
+const getEmbarqueSocioChinaGroup = (): TableColumn<any> => ({
+    id: 'china_supplier_group_socio',
+    header: () => h('div', { class: 'flex items-center justify-center gap-2 px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 text-red-700 dark:text-red-200' }, [
+        h(UIcon as any, { name: 'flagpack:cn', class: 'w-5 h-4' }),
+        h('span', 'Supplier'),
+    ]),
+    columns: [
+        {
+            accessorKey: 'qty_box_supplier',
+            header: 'QTY Box',
+            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
+                socioChinaSpan(proveedor.qty_box_china ?? 0)
+            )),
+        },
+        {
+            accessorKey: 'qty_pallet_supplier',
+            header: 'QTY Pallet',
+            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
+                socioChinaSpan(proveedor.qty_pallet_china ?? 0)
+            )),
+        },
+        {
+            accessorKey: 'qty_total_supplier',
+            header: 'QTY Total',
+            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) => {
+                const qtyTotal = Number(proveedor.qty_box_china ?? 0) + Number(proveedor.qty_pallet_china ?? 0)
+                return socioChinaSpan(qtyTotal)
+            })),
+        },
+        {
+            accessorKey: 'cbm_total_supplier',
+            header: 'CBM Total',
+            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
+                socioChinaSpan(proveedor.cbm_total_china ?? 0)
+            )),
+        },
+        {
+            accessorKey: 'peso_china_supplier',
+            header: 'Total Weight',
+            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
+                socioChinaSpan(proveedor.peso_china ?? 0)
+            )),
+        },
+        {
+            accessorKey: 'arrive_date',
+            header: 'Arrive Date',
+            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
+                socioChinaDateSpan(proveedor.arrive_date_china)
+            )),
+        },
+    ],
+})
+
 const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
-    const chinaGroup = embarqueCotizadorColumns.value.find((column: any) => column.id === 'china_supplier_group_default')
     return [
         {
             accessorKey: 'asesor',
@@ -3334,18 +3398,12 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
             accessorKey: 'status',
             header: 'Status China',
             cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) => {
-                const optionsWithClasses = filterConfig.value
-                    .find((filter: any) => filter.key === 'estado_china')?.options
-                    .map((option: any) => ({
-                        ...option,
-                        class: option.value !== 'todos' ? STATUS_BG_CLASSES[option.value as keyof typeof STATUS_BG_CLASSES] : '',
-                    }))
-                return h(USelect as any, {
-                    items: optionsWithClasses,
-                    placeholder: 'Seleccionar estado',
-                    modelValue: proveedor.estados_proveedor,
-                    class: STATUS_BG_CLASSES[proveedor.estados_proveedor as keyof typeof STATUS_BG_CLASSES],
-                    disabled: true,
+                const estado = proveedor.estados_proveedor || '—'
+                return h(UBadge as any, {
+                    label: estado,
+                    color: 'neutral',
+                    variant: 'soft',
+                    class: STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES] || '',
                 })
             })),
         },
@@ -3354,7 +3412,7 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
             header: 'N',
             cell: ({ row }: { row: any }) => row.index + 1,
         },
-        buildEmbarqueContactoColumn(),
+        buildEmbarqueContactoColumn('w-max min-w-48 whitespace-nowrap'),
         {
             accessorKey: 'tipo_rotulado_socio',
             header: 'T.Rotulado',
@@ -3386,18 +3444,18 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
                 const rawDatePart = rawValue && String(rawValue).includes('T')
                     ? String(rawValue).split('T')[0]
                     : (rawValue && String(rawValue).includes(' ') ? String(rawValue).split(' ')[0] : rawValue)
+                if (isChinaDate) return socioChinaDateSpan(rawDatePart)
                 return h(UInput as any, {
                     type: 'date',
                     modelValue: formatDateForInput(rawDatePart),
                     class: 'min-w-36',
-                    disabled: isChinaDate,
-                    'onUpdate:modelValue': (value: string) => handleUpdateProveedorFechaLlegada(proveedor.id_proveedor, isChinaDate ? 'arrive_date_china' : 'arrive_date', value),
+                    'onUpdate:modelValue': (value: string) => handleUpdateProveedorFechaLlegada(proveedor.id_proveedor, 'arrive_date', value),
                 })
             })),
         },
         {
             accessorKey: 'qty_box',
-            header: 'Qty item',
+            header: 'Qty box',
             cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2' }, (row.original.proveedores || []).map((proveedor: any) =>
                 socioProveedorInput(proveedor, 'qty_box', { class: 'w-full w-16' })
             )),
@@ -3437,7 +3495,7 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
                 socioProveedorInput(proveedor, 'supplier_phone', { class: 'w-full w-30' })
             )),
         },
-        ...(chinaGroup ? [chinaGroup] : []),
+        getEmbarqueSocioChinaGroup(),
         {
             accessorKey: 'actions',
             header: 'Acciones',
@@ -3485,7 +3543,7 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
                     ]],
                 }, {
                     default: () => h(UButton, {
-                        icon: 'i-heroicons-ellipsis-vertical',
+                        icon: 'i-heroicons-bars-3',
                         variant: 'ghost',
                         color: 'success',
                         size: 'md',

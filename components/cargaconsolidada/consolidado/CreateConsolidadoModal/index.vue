@@ -129,7 +129,7 @@ const carga = ref<number>()
 const mes = ref<string>()
 const pais = ref<number>()
 const empresa = ref<string>('')
-const empresaMenu = ref<string | { label: string; value: string } | null>('')
+const empresaMenu = ref<string | { label: string; value: string } | null>(null)
 const empresaSearchTerm = ref('')
 let empresaUltimoFueEscritura = false
 const limiteCbmImo = ref<number | null>(null)
@@ -207,37 +207,42 @@ function onEmpresaSearch(term: string) {
     if (term !== '') {
         empresaUltimoFueEscritura = true
         empresa.value = term
-    } else if (empresaUltimoFueEscritura) {
-        empresa.value = ''
     }
 }
 
 function onEmpresaMenuChange(value: string | { label?: string; value?: string } | null) {
-    if (!value) {
-        if (empresaUltimoFueEscritura) {
-            commitEmpresaPendiente()
-        } else if (empresa.value.trim()) {
-            const actual = nombreDeEmpresa(empresaMenu.value)
-            if (!actual) empresaMenu.value = empresa.value.trim()
-        }
+    const nombre = nombreDeEmpresa(value)
+    if (nombre) {
+        aplicarEmpresa(nombre)
         return
     }
-    aplicarEmpresa(nombreDeEmpresa(value))
+    restaurarEmpresaEnMenu()
 }
 
 function onEmpresaCreate(item: string | { label?: string; value?: string }) {
     aplicarEmpresa(nombreDeEmpresa(item))
 }
 
+function restaurarEmpresaEnMenu() {
+    if (empresa.value.trim() && !nombreDeEmpresa(empresaMenu.value)) {
+        empresaMenu.value = empresa.value.trim()
+    }
+}
+
 function commitEmpresaPendiente() {
-    if (!empresaUltimoFueEscritura) return
-    empresaUltimoFueEscritura = false
-    const term = (empresaSearchTerm.value || empresa.value || '').trim()
-    if (!term) {
-        aplicarEmpresa('')
+    const seleccionado = nombreDeEmpresa(empresaMenu.value)
+    if (seleccionado) {
+        aplicarEmpresa(seleccionado)
         return
     }
-    const match = empresasOptions.value.find((n) => n.toLowerCase() === term.toLowerCase())
+    const term = (empresaSearchTerm.value || empresa.value || '').trim()
+    if (!term) {
+        restaurarEmpresaEnMenu()
+        return
+    }
+    const lower = term.toLowerCase()
+    const match = empresasOptions.value.find((n) => n.toLowerCase() === lower)
+        || empresasOptions.value.find((n) => n.toLowerCase().startsWith(lower))
     aplicarEmpresa(match || term)
 }
 
