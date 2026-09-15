@@ -235,22 +235,15 @@
             class="py-5"
             :class="idx > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''"
           >
-            <div class="flex items-center justify-between gap-4 mb-4">
-              <div class="flex items-center gap-2">
-                <h3 class="text-base font-semibold">Proveedor #{{ idx + 1 }}</h3>
-                <UBadge v-if="prov.codeSupplier" color="neutral" variant="soft" size="xs">
-                  {{ prov.codeSupplier }}
-                </UBadge>
-              </div>
-              <UButton
-                v-if="providers.length > 1"
-                size="xs"
-                color="error"
-                variant="soft"
-                icon="i-heroicons-trash"
-                @click="removeProvider(idx)"
-              />
-            </div>
+            <UBadge
+              v-if="prov.codeSupplier"
+              color="neutral"
+              variant="soft"
+              size="xs"
+              class="mb-3"
+            >
+              {{ prov.codeSupplier }}
+            </UBadge>
 
             <div class="flex flex-wrap gap-5 items-end">
               <UFormField label="CBM Total" required class="w-36">
@@ -268,6 +261,14 @@
               <UFormField label="Productos del proveedor" required class="flex-1 min-w-[220px]">
                 <UInput v-model="prov.productos" placeholder="Productos del proveedor" class="w-full" />
               </UFormField>
+              <UButton
+                v-if="providers.length > 1"
+                size="xs"
+                color="error"
+                variant="soft"
+                icon="i-heroicons-trash"
+                @click="removeProvider(idx)"
+              />
             </div>
             <p v-if="!cbmImoValido(prov)" class="text-xs text-red-500 mt-2">
               El CBM IMO no puede ser mayor al CBM total
