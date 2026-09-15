@@ -1,5 +1,6 @@
 <template>
   <div class="md:p-6">
+    <CustomersKpiCards class="mb-4" :headers="headers" @filter-nc="filterByNc" />
     <DataTable
       title="Cotizaciones"
       icon="i-heroicons-document-text"
@@ -19,17 +20,12 @@
       :show-new-button="true"
       new-button-label="Crear Cotización"
       :on-new-button-click="() => navigateTo('/cotizaciones/resumen/crear')"
-      :show-body-top="true"
       empty-state-message="No se encontraron cotizaciones."
       @update:primary-search="onSearch"
       @page-change="onPageChange"
       @items-per-page-change="onItemsPerPageChange"
       @filter-change="onFilterChange"
-    >
-      <template #body-top>
-        <CustomersKpiCards :headers="headers" @filter-nc="filterByNc" />
-      </template>
-    </DataTable>
+    />
   </div>
 </template>
 
@@ -45,6 +41,7 @@ import { useSpinner } from '~/composables/commons/useSpinner'
 import { STATUS_BG_CLASSES, CUSTOMIZED_ICONS } from '~/constants/ui'
 import { formatCurrency, formatDateTimeToDmy } from '~/utils/formatters'
 import { normalizePublicFileUrl } from '~/utils/storageFileUrl'
+import CustomersKpiCards from '~/components/cargaconsolidada/customers/CustomersKpiCards.vue'
 
 definePageMeta({
   middleware: 'auth'

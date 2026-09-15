@@ -28,7 +28,7 @@
       @clear-filters="clearFilters"
     >
       <template #body-top>
-        <CustomersKpiCards :headers="headers" @filter-nc="filterByNc" />
+        <CustomersKpiCards class="w-full min-w-0" :headers="headers" @filter-nc="filterByNc" />
       </template>
     </DataTable>
   </div>

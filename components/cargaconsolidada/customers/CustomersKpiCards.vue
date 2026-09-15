@@ -1,23 +1,27 @@
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full mb-2">
-    <div
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[18px] w-full min-w-0">
+    <article
       v-for="card in kpiCards"
       :key="card.key"
-      class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 border-t-2 border-t-orange-500"
+      class="relative flex items-center gap-4 min-h-[108px] px-5 py-[22px] rounded-xl bg-white dark:bg-gray-800 shadow-[0_6px_20px_rgba(23,35,58,0.1)]"
       :class="card.clickable ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/60' : ''"
       @click="card.clickable ? emit('filter-nc') : undefined"
     >
-      <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        <UIcon :name="card.icon" class="w-4 h-4 text-orange-500" />
-        <span>{{ card.label }}</span>
+      <div class="w-[46px] h-[46px] shrink-0 grid place-items-center text-[#f26522]" aria-hidden="true">
+        <UIcon :name="card.icon" class="w-9 h-9" />
       </div>
-      <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
-        {{ card.value }}
+      <div class="min-w-0">
+        <p class="m-0 text-[11px] tracking-[0.8px] uppercase text-[#8494b0]">
+          {{ card.label }}
+        </p>
+        <p class="mt-1 mb-0 text-[2rem] font-bold leading-none text-[#17233a] dark:text-white">
+          {{ card.value }}
+        </p>
+        <p v-if="card.hint" class="mt-1 text-[11px] text-gray-400">
+          {{ card.hint }}
+        </p>
       </div>
-      <p v-if="card.hint" class="mt-1 text-[11px] text-gray-400">
-        {{ card.hint }}
-      </p>
-    </div>
+    </article>
   </div>
 </template>
 
@@ -43,28 +47,28 @@ const kpiCards = computed(() => {
       key: 'cbm_warehouse',
       label: cbm?.label || 'CBM warehouse',
       value: cbm?.value ?? '0',
-      icon: cbm?.icon || 'i-heroicons-cube',
+      icon: 'fluent:box-32-filled',
       clickable: false,
     },
     {
       key: 'total_customers',
       label: customersHeader?.label || 'Total customers',
       value: customersHeader?.value ?? 0,
-      icon: customersHeader?.icon || 'i-heroicons-users',
+      icon: 'flowbite:users-group-solid',
       clickable: false,
     },
     {
       key: 'total_suppliers_code',
       label: suppliers?.label || 'Total suppliers code',
       value: suppliers?.value ?? 0,
-      icon: suppliers?.icon || 'i-heroicons-tag',
+      icon: 'heroicons:arrows-up-down',
       clickable: false,
     },
     {
       key: 'total_nc',
       label: nc?.label || 'Total NC',
       value: nc?.value ?? 0,
-      icon: nc?.icon || 'i-heroicons-exclamation-triangle',
+      icon: 'heroicons:exclamation-triangle',
       hint: 'Click to filter NC',
       clickable: true,
     },
