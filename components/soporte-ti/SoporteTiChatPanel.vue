@@ -1001,7 +1001,13 @@ function limpiarImagenesPendientes() {
 const maxBytesAdjunto = SOPORTE_TI_MAX_IMAGEN_MB * 1048576
 
 function adjuntarDocumentoPendiente(file: File) {
-  if (file.size > maxBytesAdjunto) return
+  if (file.size > maxBytesAdjunto) {
+    void showError({
+      title: 'Archivo demasiado grande',
+      message: `El máximo es ${SOPORTE_TI_MAX_IMAGEN_MB} MB.`
+    })
+    return
+  }
   if (esImagenAdjunto(file)) {
     limpiarImagenesPendientes()
     documentoPendiente.value = null
