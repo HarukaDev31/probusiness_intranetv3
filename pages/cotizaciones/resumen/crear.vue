@@ -277,36 +277,6 @@
             <p v-else-if="Number(prov.cbmImo) > 0" class="text-xs text-gray-500 mt-2">
               Se guardará CBM normal {{ cbmNormalProveedor(prov).toFixed(2) }} y CBM IMO {{ Number(prov.cbmImo || 0).toFixed(2) }}
             </p>
-
-            <div class="mt-4 space-y-2">
-              <p class="text-sm font-medium">Costos</p>
-              <div
-                v-for="(costo, cIdx) in prov.costos"
-                :key="costo.id"
-                class="flex flex-wrap gap-3 items-end"
-              >
-                <UFormField label="Concepto" class="flex-1 min-w-[180px]">
-                  <UInput v-model="costo.concepto" placeholder="Logística, FOB, Impuestos…" class="w-full" />
-                </UFormField>
-                <UFormField label="Valor" class="w-36">
-                  <UInput v-model.number="costo.valor" type="number" min="0" step="0.01" class="w-full">
-                    <template #leading>
-                      <span class="text-gray-400">$</span>
-                    </template>
-                  </UInput>
-                </UFormField>
-                <UButton
-                  size="xs"
-                  color="error"
-                  variant="soft"
-                  icon="i-heroicons-trash"
-                  @click="removeCosto(idx, cIdx)"
-                />
-              </div>
-              <UButton size="xs" color="neutral" variant="soft" icon="i-heroicons-plus" @click="addCosto(idx)">
-                Agregar costo
-              </UButton>
-            </div>
           </div>
 
           <UButton class="mt-4" color="success" size="sm" icon="i-heroicons-plus" @click="addProvider">
@@ -808,18 +778,6 @@ function addProvider() {
 function removeProvider(idx: number) {
   if (providers.value.length <= 1) return
   providers.value.splice(idx, 1)
-}
-
-function addCosto(providerIdx: number) {
-  const prov = providers.value[providerIdx]
-  if (!prov) return
-  prov.costos.push(crearCosto('Logística', 0))
-}
-
-function removeCosto(providerIdx: number, costoIdx: number) {
-  const prov = providers.value[providerIdx]
-  if (!prov) return
-  prov.costos.splice(costoIdx, 1)
 }
 
 const totalCbm = computed(() =>
