@@ -12,7 +12,7 @@ export const TABLE_ENGLISH_ROLES: string[] = [
 /** Títulos de página / DataTable. */
 export const TABLE_TITLES_EN: Record<string, string> = {
   'Carga Consolidada Abierta': 'Open Consolidated Cargo',
-  'Carga Consolidada Completada': 'Completed Consolidated Cargo',
+  'Carga Consolidada Completada': 'Finished Consolidated Cargo',
   Clientes: 'Customers',
   'Manual de usuario': 'User Manual',
   'Manual de Usuario': 'User Manual',

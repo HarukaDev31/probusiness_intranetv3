@@ -3414,13 +3414,13 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
         {
             accessorKey: 'status',
             header: 'Status China',
-            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2 min-w-36 w-36' }, (row.original.proveedores || []).map((proveedor: any) => {
+            cell: ({ row }: { row: any }) => h('div', { class: 'flex flex-col gap-2 min-w-32 w-32' }, (row.original.proveedores || []).map((proveedor: any) => {
                 const estado = proveedor.estados_proveedor || '—'
                 return h(UBadge as any, {
                     label: estado,
                     color: 'neutral',
                     variant: 'soft',
-                    class: `${STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES] || ''} min-w-36 w-36 justify-center`,
+                    class: `${STATUS_BG_CLASSES[estado as keyof typeof STATUS_BG_CLASSES] || ''} min-w-32 w-32 justify-center`,
                 })
             })),
         },
