@@ -1,4 +1,4 @@
-    <!--3 tabs:general,variacion,pagos and 3 tables-->
+﻿    <!--3 tabs:general,variacion,pagos and 3 tables-->
     <template>
         <div class="p-0 md:p-6">
             <DataTable v-if="tab === 'general'" title="" icon="" :data="clientes" :columns="getColumnsGeneral()"
@@ -158,8 +158,7 @@ import {
     DOC_STATUS_COLORS,
     CANAL_OPTIONS,
     CANAL_COLORS,
-    isCoord2DocsEmail,
-    isCoord3DocsEmail,
+    usaEstadosCoord2,
     type CanalSeguimiento,
 } from './constants'
 
@@ -193,8 +192,6 @@ function renderEstadoPermisoPorTipo(list: Array<{ id_tipo_permiso?: number; nomb
 const { withSpinner } = useSpinner()
 const { showConfirmation, showSuccess, showError } = useModal()
 const { currentRole: authCurrentRole, currentId, isCoordinacion, isCotizador, userEmail, fetchCurrentUser, getUserData } = useUserRole()
-const isCoord2Docs = computed(() => isCoord2DocsEmail(getUserData() || userEmail.value))
-const isCoord3Docs = computed(() => isCoord3DocsEmail(getUserData() || userEmail.value))
 fetchCurrentUser()
 
 const docStatusSelectStyle = (status: string) => {
@@ -301,6 +298,11 @@ const props = withDefaults(defineProps<ClientesViewProps>(), {
 })
 
 const currentRole = computed(() => props.role || authCurrentRole.value)
+const usaEstadosCoord2Docs = computed(() =>
+    usaEstadosCoord2(getUserData() || userEmail.value, currentRole.value)
+)
+const docStatusField = (base: 'invoice_status' | 'packing_status' | 'excel_conf_status') =>
+    usaEstadosCoord2Docs.value ? base : `${base}_final`
 const basePath = computed(() => props.basePath)
 const backBasePath = computed(() => props.backBasePath || props.basePath)
 const route = useRoute()
@@ -316,7 +318,7 @@ const modalAcciones = overlay.create(ModalAcciones)
 const openExcelConfirmacionPage = (cliente: any) => {
     const cotizacionId = cliente?.id_cotizacion ?? cliente?.id
     if (!cotizacionId) {
-        showError('Sin enlace', 'No se encontró la cotización del cliente.')
+        showError('Sin enlace', 'No se encontrÃ³ la cotizaciÃ³n del cliente.')
         return
     }
     navigateTo({
@@ -334,10 +336,10 @@ const openExcelConfirmacionPage = (cliente: any) => {
 const fMaxDocumentacion = ref<string | null>(null)
 const fMaxDocumentacionDisplay = computed(() => fMaxDocumentacion.value ?? EMPTY_MAX_DOCUMENTACION_DATE)
 
-// Función para completar URLs incompletas
+// FunciÃ³n para completar URLs incompletas
 const completeUrl = (url: string): string => {
     if (!url) return ''
-    // Si ya tiene http:// o https://, devolver como está
+    // Si ya tiene http:// o https://, devolver como estÃ¡
     if (url.startsWith('http://') || url.startsWith('https://')) {
         return url
     }
@@ -347,7 +349,7 @@ const completeUrl = (url: string): string => {
 
 const handleSaveFMaxDocumentacion = async () => {
     if (!fMaxDocumentacion.value) {
-        showError('Fecha requerida', 'Por favor selecciona una fecha válida')
+        showError('Fecha requerida', 'Por favor selecciona una fecha vÃ¡lida')
         return
     }
     try {
@@ -381,7 +383,7 @@ const handleSaveFMaxDocumentacion = async () => {
         }, 'Actualizando fecha...')
     } catch (error) {
         console.error('handleSaveFMaxDocumentacion', error)
-        showError('Error', 'Error al actualizar la fecha de documentación')
+        showError('Error', 'Error al actualizar la fecha de documentaciÃ³n')
     }
 }
 const { getClientes,
@@ -494,7 +496,7 @@ const exportData = async () => {
 const columnsPagos = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
-        header: 'N°',
+        header: 'NÂ°',
         cell: ({ row }: { row: any }) => {
             return row.index + 1
         }
@@ -519,7 +521,7 @@ const columnsPagos = ref<TableColumn<any>[]>([
             const correo = String(pick(['correo', 'email', 'mail']) || '')
 
             return h('div', { class: 'py-2' }, [
-                h('div', { class: 'font-medium' }, nombre || '—'),
+                h('div', { class: 'font-medium' }, nombre || 'â€”'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : null
@@ -605,21 +607,21 @@ const columnsPagos = ref<TableColumn<any>[]>([
                 },
                 onDelete: (pagoId: number) => {
                     showConfirmation(
-                        'Confirmar eliminación',
-                        '¿Está seguro de que desea eliminar el pago? Esta acción no se puede deshacer.',
+                        'Confirmar eliminaciÃ³n',
+                        'Â¿EstÃ¡ seguro de que desea eliminar el pago? Esta acciÃ³n no se puede deshacer.',
                         async () => {
                             try {
                                 await withSpinner(async () => {
                                     const response = await deletePago(pagoId)
                                     if (response.success) {
                                         await getClientesPagos(Number(id))
-                                        showSuccess('Eliminación Exitosa', 'El pago se ha eliminado correctamente.')
+                                        showSuccess('EliminaciÃ³n Exitosa', 'El pago se ha eliminado correctamente.')
                                         await getHeaders(Number(id))
                                     }
                                 }, 'Eliminando pago...')
                             } catch (error) {
                                 console.error('Error al eliminar el pago:', error)
-                                showError('Error de Eliminación', 'Error al eliminar el pago')
+                                showError('Error de EliminaciÃ³n', 'Error al eliminar el pago')
                             }
                         }
                     )
@@ -629,11 +631,11 @@ const columnsPagos = ref<TableColumn<any>[]>([
         }
     }
 ])
-//N° Fecha	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Volumen	Qty Item	Fob	Logistica	Impuesto	Tarifa	Estados	Status	Acciones
+//NÂ° Fecha	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Volumen	Qty Item	Fob	Logistica	Impuesto	Tarifa	Estados	Status	Acciones
 const columns: TableColumn<any>[] = [
     {
         accessorKey: 'index',
-        header: 'N°',
+        header: 'NÂ°',
         cell: ({ row }: { row: any }) => {
             return row.index + 1
         }
@@ -669,7 +671,7 @@ const columns: TableColumn<any>[] = [
             const cotizacion_contrato_url = completeUrl(String(pick(['cotizacion_contrato_url']) || ''))
             const cotizacion_contrato_autosigned_url = completeUrl(String(pick(['cotizacion_contrato_autosigned_url']) || ''))
             return h('div', { class: 'max-w-30 whitespace-normal break-words' }, [
-                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : '—'),
+                h('div', { class: 'font-medium' }, nombre ? (nombre.toUpperCase ? nombre.toUpperCase() : nombre) : 'â€”'),
                 documento ? h('div', { class: 'text-sm text-gray-500' }, documento) : null,
                 telefono ? h('div', { class: 'text-sm text-gray-500' }, telefono) : null,
                 correo ? h('div', { class: 'text-sm text-gray-500' }, correo) : h('div', { class: 'text-sm text-gray-500' }, 'Sin correo'),
@@ -773,7 +775,7 @@ const columns: TableColumn<any>[] = [
 const columnsCoordinacion: TableColumn<any>[] = [
     {
         accessorKey: 'index',
-        header: 'N°',
+        header: 'NÂ°',
         cell: ({ row }: { row: any }) => {
             return row.index + 1
         }
@@ -894,7 +896,7 @@ const columnsCoordinacion: TableColumn<any>[] = [
                 items: [
                     { label: 'Reservado', value: 'RESERVADO' },
                     { label: 'No Reservado', value: 'NO RESERVADO' },
-                    { label: 'Documentación', value: 'DOCUMENTACION' },
+                    { label: 'DocumentaciÃ³n', value: 'DOCUMENTACION' },
 
                 ],
                 placeholder: 'Seleccionar estado',
@@ -938,11 +940,11 @@ const columnsCoordinacion: TableColumn<any>[] = [
         }
     }
 ]
-//N°	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Status	Accio
+//NÂ°	Nombre	DNI/RUC	Correo	Whatsapp	T. Cliente	Status	Accio
 const columnsDocumentacion: TableColumn<any>[] = [
     {
         accessorKey: 'index',
-        header: 'N°',
+        header: 'NÂ°',
         cell: ({ row }: { row: any }) => {
             return row.index + 1
         }
@@ -1019,9 +1021,9 @@ const columnsDocumentacion: TableColumn<any>[] = [
                             const response = await handleUpdateStatusClienteDoc(data)
                             if (response.success) {
                                 await getClientes(Number(id))
-                                showSuccess('Actualización Exitosa', 'El estado de la documentación del cliente se ha actualizado correctamente.')
+                                showSuccess('ActualizaciÃ³n Exitosa', 'El estado de la documentaciÃ³n del cliente se ha actualizado correctamente.')
                             }
-                        }, 'Actualizando estado de la documentación del cliente...')
+                        }, 'Actualizando estado de la documentaciÃ³n del cliente...')
                     }
                 }
             })
@@ -1102,7 +1104,7 @@ const getColorStatusDocumentacion = (status: string) => {
     return 'neutral'
 }
 
-// Helper: elegir icono según la extensión en la URL/filename
+// Helper: elegir icono segÃºn la extensiÃ³n en la URL/filename
 const getFileIcon = (url?: string) => {
     try {
         if (!url) return 'i-heroicons-document'
@@ -1123,7 +1125,7 @@ const getFileIcon = (url?: string) => {
 const columnsEmbarcados = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
-        header: 'N°',
+        header: 'NÂ°',
         cell: ({ row }: { row: any }) => {
             return row.index + 1
         }
@@ -1216,7 +1218,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
     },
     {
         accessorKey: 'volumen_peru',
-        header: 'Vol. Perú',
+        header: 'Vol. PerÃº',
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores
             const div = h('div', {
@@ -1343,7 +1345,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
     },
     {
         accessorKey: 'excel_confirmacion',
-        header: 'Excel Confirmación',
+        header: 'Excel ConfirmaciÃ³n',
         cell: ({ row }: { row: any }) => {
             const proveedores = row.original.proveedores ?? []
             return h('div', { class: 'flex flex-col gap-2' }, proveedores.map((proveedor: any, idx: number) => {
@@ -1357,7 +1359,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                             icon,
                             color: 'primary',
                             variant: 'ghost',
-                            'aria-label': 'Ver excel de confirmación',
+                            'aria-label': 'Ver excel de confirmaciÃ³n',
                             onClick: () => {
                                 window.open(url, '_blank')
                             }
@@ -1366,7 +1368,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
                             icon: 'i-heroicons-trash',
                             color: 'error',
                             variant: 'ghost',
-                            'aria-label': 'Eliminar excel de confirmación',
+                            'aria-label': 'Eliminar excel de confirmaciÃ³n',
                             onClick: () => {
                                 deleteExcelConfirmacion(proveedor.id)
                             }
@@ -1420,7 +1422,7 @@ const columnsEmbarcados = ref<TableColumn<any>[]>([
 const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
-        header: 'N°',
+        header: 'NÂ°',
         cell: ({ row }: { row: any }) => {
             return row.index + 1
         }
@@ -1496,7 +1498,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
     },
     {
         accessorKey: 'arrive_date_china',
-        header: 'Inspección',
+        header: 'InspecciÃ³n',
         cell: ({ row }: { row: any }) => renderInspeccion(row)
     },
     {
@@ -1504,7 +1506,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         header: 'Invoice',
         cell: ({ row }: { row: any }) => renderDocStatusSelects(
             row,
-            isCoord2Docs.value ? 'invoice_status' : 'invoice_status_final',
+            docStatusField('invoice_status'),
             true
         )
     },
@@ -1513,7 +1515,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         header: 'Packing list',
         cell: ({ row }: { row: any }) => renderDocStatusSelects(
             row,
-            isCoord2Docs.value ? 'packing_status' : 'packing_status_final',
+            docStatusField('packing_status'),
             true
         )
     },
@@ -1522,7 +1524,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
         header: 'Excel Conf.',
         cell: ({ row }: { row: any }) => renderDocStatusSelects(
             row,
-            isCoord2Docs.value ? 'excel_conf_status' : 'excel_conf_status_final',
+            docStatusField('excel_conf_status'),
             true
         )
     },
@@ -1554,7 +1556,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
                             clienteId: row.original.id,
                             clienteName: row.original.nombre,
                             onSelected: (data: any) => {
-                                // callback cuando se selecciona una acción
+                                // callback cuando se selecciona una acciÃ³n
                                 console.log(data)
                             },
                             validateMaxDate: true
@@ -1581,7 +1583,7 @@ const columnsEmbarcadosCoordinacion = ref<TableColumn<any>[]>([
 const columnsVariacion = ref<TableColumn<any>[]>([
     {
         accessorKey: 'index',
-        header: 'N°',
+        header: 'NÂ°',
         cell: ({ row }: { row: any }) => {
             return row.index + 1
         }
@@ -1685,7 +1687,7 @@ const columnsVariacion = ref<TableColumn<any>[]>([
     },
     {
         accessorKey: 'variacion',
-        header: 'Variación',
+        header: 'VariaciÃ³n',
         cell: ({ row }: { row: any }) => {
             //if volumen volumen china and volumen doc are different o valor cot and valor doc are different show badge with text SI else NO
             if (row.getValue('volumen') !== row.getValue('volumen_china') || row.getValue('volumen') !== row.getValue('volumen_doc') || row.getValue('valor_cot') !== row.getValue('valor_doc')) {
@@ -1706,7 +1708,7 @@ const columnsVariacion = ref<TableColumn<any>[]>([
 
 const handleSendRecordatorioFirma = async (idCotizacion: number) => {
     try {
-        showConfirmation('¿Deseas enviar el recordatorio de firma de contrato?', 'Se enviará un mensaje de WhatsApp al cliente.', async () => {
+        showConfirmation('Â¿Deseas enviar el recordatorio de firma de contrato?', 'Se enviarÃ¡ un mensaje de WhatsApp al cliente.', async () => {
             await withSpinner(async () => {
                 const response = await sendRecordatorioFirmaContrato(idCotizacion)
                 if (response?.success) {
@@ -1728,7 +1730,7 @@ const handleUpdateEstadoCliente = async (data: any) => {
             const response = await updateEstadoCliente(data)
             if (response.success) {
                 await getClientes(Number(id))
-                showSuccess('Actualización Exitosa', 'El estado del cliente se ha actualizado correctamente.')
+                showSuccess('ActualizaciÃ³n Exitosa', 'El estado del cliente se ha actualizado correctamente.')
             }
         }, 'Actualizando estado del cliente...')
     } catch (err) {
@@ -1738,20 +1740,20 @@ const handleUpdateEstadoCliente = async (data: any) => {
 const updateVolSelected = async (data: any) => {
     try {
         showConfirmation(
-            'Confirmar actualización',
-            '¿Está seguro de que desea actualizar el volumen seleccionado? Esta acción no se puede deshacer.',
+            'Confirmar actualizaciÃ³n',
+            'Â¿EstÃ¡ seguro de que desea actualizar el volumen seleccionado? Esta acciÃ³n no se puede deshacer.',
             async () => {
                 try {
                     await withSpinner(async () => {
                         const response = await updateVolumenSelected(data)
                         if (response.success) {
                             await getClientesVariacion(Number(id))
-                            showSuccess('Actualización Exitosa', 'El volumen seleccionado se ha actualizado correctamente.')
+                            showSuccess('ActualizaciÃ³n Exitosa', 'El volumen seleccionado se ha actualizado correctamente.')
                         }
                     }, 'Actualizando volumen seleccionado...')
                 } catch (error) {
                     console.error('Error al actualizar el volumen seleccionado:', error)
-                    showError('Error de Actualización', 'Error al actualizar el volumen seleccionado')
+                    showError('Error de ActualizaciÃ³n', 'Error al actualizar el volumen seleccionado')
                 }
             }
         )
@@ -1781,7 +1783,7 @@ const saveProveedorField = async (proveedor: any, field: string, value: string) 
             formData.append(field, value)
             const response = await updateProveedor(formData)
             if (response && response.success) {
-                showSuccess('Actualización Exitosa', 'El estado se ha guardado correctamente.')
+                showSuccess('ActualizaciÃ³n Exitosa', 'El estado se ha guardado correctamente.')
                 await getEmbarcados(Number(id))
             } else {
                 throw new Error((response && (response as any).message) || 'No se pudo actualizar el proveedor')
@@ -1803,20 +1805,20 @@ const configureTabsForRole = () => {
         tabs.value = [
             { label: 'Seguimiento', value: 'embarcados' },
             { label: 'Documentacion', value: 'general' },
-            { label: 'Variación', value: 'variacion' },
+            { label: 'VariaciÃ³n', value: 'variacion' },
         ]
     } else if ((isCotizador.value && Number(currentId.value) === ID_JEFEVENTAS) || currentRole.value === ROLES.RRHH) {
         tabs.value = [
             { label: 'Seguimiento', value: 'embarcados' },
             { label: 'Documentacion', value: 'general' },
-            { label: 'Variación', value: 'variacion' },
+            { label: 'VariaciÃ³n', value: 'variacion' },
         ]
     } else if (currentRole.value === ROLES.JEFE_MARKETING) {
         tabs.value = [{ label: 'Documentacion', value: 'general' }]
     } else {
         tabs.value = [
             { label: 'Documentacion', value: 'general' },
-            { label: 'Variación', value: 'variacion' },
+            { label: 'VariaciÃ³n', value: 'variacion' },
         ]
     }
 }
