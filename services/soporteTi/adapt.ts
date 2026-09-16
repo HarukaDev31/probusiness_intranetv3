@@ -320,11 +320,13 @@ export function adaptWsMensaje(p: SoporteTiWsMensajePayload): {
   chatUuid: string
   codigo: string
   mensaje: SoporteTiMensaje
+  revisadosCount?: number
 } {
   return {
     chatUuid: p.chat_uuid,
     codigo: p.codigo,
-    mensaje: adaptMensaje(p.mensaje)
+    mensaje: adaptMensaje(p.mensaje),
+    revisadosCount: typeof p.revisados_count === 'number' ? p.revisados_count : undefined
   }
 }
 
