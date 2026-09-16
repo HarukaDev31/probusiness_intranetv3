@@ -104,6 +104,14 @@ const filters = reactive<Record<string, string>>({
   estado_china: ''
 })
 
+function etiquetaConsolidadoCampania(label: string) {
+  const cargaAnio = String(label || '')
+    .replace(/^(Contenedor|Consolidado)\s*#?\s*/i, '')
+    .replace(/^#/, '')
+    .trim()
+  return cargaAnio ? `Consolidado #${cargaAnio}` : 'Consolidado'
+}
+
 const filterConfig = computed<FilterConfig[]>(() => [
   { key: 'fecha_inicio', label: 'Fecha Inicio', type: 'date', placeholder: 'DD/MM/YYYY', options: [] },
   { key: 'fecha_fin', label: 'Fecha Fin', type: 'date', placeholder: 'DD/MM/YYYY', options: [] },
@@ -114,7 +122,10 @@ const filterConfig = computed<FilterConfig[]>(() => [
     placeholder: 'Seleccionar campaña',
     options: [
       { label: 'Todas', value: 'todos' },
-      ...contenedoresOptions.value.map((o) => ({ label: `#${o.label}`, value: String(o.value) }))
+      ...contenedoresOptions.value.map((o) => ({
+        label: etiquetaConsolidadoCampania(o.label),
+        value: String(o.value)
+      }))
     ]
   },
   {
@@ -367,7 +378,13 @@ const columns: TableColumn<CotizacionResumenRow>[] = [
   {
     accessorKey: 'campania',
     header: 'Campaña',
-    cell: ({ row }) => row.original.campania || (row.original.contenedor ? `#${row.original.contenedor}` : '—')
+    cell: ({ row }) => {
+      const opt = contenedoresOptions.value.find((o) => o.value === row.original.id_contenedor)
+      if (opt?.label) return etiquetaConsolidadoCampania(opt.label)
+      if (row.original.campania) return etiquetaConsolidadoCampania(row.original.campania)
+      if (row.original.contenedor) return etiquetaConsolidadoCampania(String(row.original.contenedor))
+      return '—'
+    }
   },
   {
     accessorKey: 'vendedor',
