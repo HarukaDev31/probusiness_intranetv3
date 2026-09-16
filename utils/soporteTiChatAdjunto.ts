@@ -14,13 +14,31 @@ export function extensionAdjunto(nombre: string): string {
 /** Extensiones que se muestran como imagen inline en la burbuja (no webp). */
 const EXT_IMAGEN_INLINE = new Set(['jpg', 'jpeg', 'png', 'gif'])
 
-export function esImagenInlineAdjunto(nombre: string): boolean {
+const EXT_AUDIO = new Set(['mp3', 'm4a', 'aac', 'ogg', 'opus', 'wav', 'webm', '3gp', 'oga', 'caf'])
+
+export function esImagenInlineAdjunto(nombre: string, mime?: string | null): boolean {
+  if (mime && mime.toLowerCase().startsWith('image/')) {
+    const ext = extensionAdjunto(nombre).toLowerCase()
+    if (ext === 'webp') return false
+    return true
+  }
   const ext = extensionAdjunto(nombre).toLowerCase()
   return EXT_IMAGEN_INLINE.has(ext)
 }
 
 export function esImagenAdjunto(file: File): boolean {
   return file.type.startsWith('image/')
+}
+
+export function esAudioAdjuntoNombre(nombre: string, mime?: string | null): boolean {
+  if (mime && mime.toLowerCase().startsWith('audio/')) return true
+  const ext = extensionAdjunto(nombre).toLowerCase()
+  return EXT_AUDIO.has(ext)
+}
+
+export function esAudioAdjuntoFile(file: File): boolean {
+  if (file.type.toLowerCase().startsWith('audio/')) return true
+  return esAudioAdjuntoNombre(file.name, file.type)
 }
 
 /** Archivos del portapapeles (capturas, copiar imagen, etc.). */
