@@ -261,9 +261,9 @@
             <div v-if="editingOrganizacion" class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
               <p class="text-sm font-medium">Imágenes de rotulado</p>
               <p class="text-xs text-gray-500">
-                Los pasos 1 y 2 van como foto. El paso 3 es la etiqueta del consolidado (PDF). La dirección del almacén también se puede cambiar.
+                Pasos 1 y 2 van en la misma foto. El paso 3 es la etiqueta del consolidado (PDF).
               </p>
-              <div class="grid gap-3 sm:grid-cols-3">
+              <div class="grid gap-3 sm:grid-cols-2">
                 <div v-for="slot in rotuladoSlots" :key="slot.key" class="space-y-2">
                   <p class="text-xs font-medium text-gray-600">{{ slot.label }}</p>
                   <img
@@ -510,8 +510,7 @@ function setFlujo(key: string, on: boolean) {
 const esOrgAdminEditada = computed(() => editingOrganizacion.value?.id === 1)
 
 const rotuladoSlots = [
-  { key: 'paso1' as const, label: 'Paso 1 (foto)' },
-  { key: 'paso2' as const, label: 'Paso 2 (foto)' },
+  { key: 'paso1' as const, label: 'Pasos 1 y 2 (foto)' },
   { key: 'direccion' as const, label: 'Dirección almacén' },
 ]
 const imagenInput = ref<HTMLInputElement | null>(null)
