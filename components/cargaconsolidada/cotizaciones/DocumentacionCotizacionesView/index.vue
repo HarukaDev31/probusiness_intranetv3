@@ -258,7 +258,7 @@ const loadTabs = () => {
                     value: 'prospectos'
                 },
                 {
-                    label: currentRole.value === ROLES.SOCIO ? 'Embarcados' : 'Por Embarcar',
+                    label: 'Por Embarcar',
                     value: 'embarque'
                 }
             ]
@@ -2646,19 +2646,20 @@ watch(() => tab.value, async (newVal) => {
     if (newVal && newVal !== '') {
         try {
             resetFilters()
-            // Preservar idCotizacion de la query string si existe
-            const idCotizacionQuery = route.query.idCotizacion ? `&idCotizacion=${route.query.idCotizacion}` : ''
+            const currentTab = typeof route.query.tab === 'string' ? route.query.tab : ''
+            const keepId = !currentTab || currentTab === newVal
+            const idCotizacionQuery = keepId && route.query.idCotizacion ? `&idCotizacion=${route.query.idCotizacion}` : ''
             if (newVal === 'prospectos') {
-                navigateTo(`${basePath}/cotizaciones/${id}?tab=prospectos${idCotizacionQuery}`)
+                await navigateTo(`${basePath}/cotizaciones/${id}?tab=prospectos${idCotizacionQuery}`)
                 // reset search to avoid sending stale query param to backend
                 try { searchCotizaciones.value = '' } catch (e) { /* ignore */ }
                 await getCotizaciones(Number(id))
             } else if (newVal === 'embarque') {
-                navigateTo(`${basePath}/cotizaciones/${id}?tab=embarque${idCotizacionQuery}`)
+                await navigateTo(`${basePath}/cotizaciones/${id}?tab=embarque${idCotizacionQuery}`)
                 try { search.value = '' } catch (e) { /* ignore */ }
                 await getCotizacionProveedor(Number(id))
             } else if (newVal === 'pagos') {
-                navigateTo(`${basePath}/cotizaciones/${id}?tab=pagos${idCotizacionQuery}`)
+                await navigateTo(`${basePath}/cotizaciones/${id}?tab=pagos${idCotizacionQuery}`)
                 try { searchPagos.value = '' } catch (e) { /* ignore */ }
                 await getCotizacionPagos(Number(id))
             }

@@ -510,7 +510,7 @@ const loadTabs = () => {
                     value: 'prospectos'
                 },
                 {
-                    label: isSocio.value ? 'Embarcados' : 'Por Embarcar',
+                    label: 'Por Embarcar',
                     value: 'embarque'
                 }
             ]
@@ -3655,12 +3655,17 @@ const handleFilterChangeProspectos = async (filterType: string, value: string) =
     await getCotizaciones(Number(id))
 }
 
-const syncTabRoute = (targetTab: 'prospectos' | 'embarque' | 'pagos') => {
+const syncTabRoute = async (targetTab: 'prospectos' | 'embarque' | 'pagos') => {
     const currentTab = typeof route.query.tab === 'string' ? route.query.tab : ''
-    if (currentTab === targetTab) return
-
     const query = { ...route.query, tab: targetTab }
-    navigateTo({ path: route.path, query }, { replace: true })
+    if (currentTab && currentTab !== targetTab) {
+        delete query.idCotizacion
+    }
+    const sameTab = currentTab === targetTab
+    const sameId = String(route.query.idCotizacion ?? '') === String(query.idCotizacion ?? '')
+    if (sameTab && sameId) return
+
+    await navigateTo({ path: route.path, query }, { replace: true })
 }
 
 
@@ -3677,7 +3682,7 @@ watch(() => tab.value, async (newVal) => {
         try {
             resetFilters()
             if (newVal === 'prospectos') {
-                syncTabRoute('prospectos')
+                await syncTabRoute('prospectos')
                 // reset search to avoid sending stale query param to backend
                 try { searchCotizaciones.value = '' } catch (e) { /* ignore */ }
                 const headersRes = await getHeaders(Number(id))
@@ -3687,14 +3692,14 @@ watch(() => tab.value, async (newVal) => {
                 teardownDriveSeguimiento()
             }
             if (newVal === 'embarque') {
-                syncTabRoute('embarque')
+                await syncTabRoute('embarque')
                 try { search.value = '' } catch (e) { /* ignore */ }
                 await Promise.all([
                     getCotizacionProveedor(Number(id)),
                     getHeaders(Number(id))
                 ])
             } else if (newVal === 'pagos') {
-                syncTabRoute('pagos')
+                await syncTabRoute('pagos')
                 try { searchPagos.value = '' } catch (e) { /* ignore */ }
                 await Promise.all([
                     getCotizacionPagos(Number(id)),

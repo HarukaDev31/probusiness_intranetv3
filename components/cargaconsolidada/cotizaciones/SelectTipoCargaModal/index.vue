@@ -69,9 +69,10 @@
                       class="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-md p-2"
                     >
                       <UCheckbox
-                        v-model="itemForceSend[itemId]"
+                        :model-value="Boolean(itemForceSend[itemId])"
                         :id="`force-send-${itemId}`"
                         size="sm"
+                        @update:model-value="(value: boolean) => { itemForceSend[itemId] = Boolean(value) }"
                       />
                       <label 
                         :for="`force-send-${itemId}`" 
@@ -248,9 +249,13 @@ const itemListoParaEnviar = (itemId: string) => {
   return true
 }
 
+const idsListosParaEnviar = computed(() => {
+  return selectedListos.value.filter(itemListoParaEnviar)
+})
+
 const canSave = computed(() => {
   if (usarTipoGuardado.value) {
-    return selectedListos.value.length > 0 && selectedListos.value.every(itemListoParaEnviar)
+    return idsListosParaEnviar.value.length > 0
   }
   if (selectedItems.value.length === 0) {
     return false
@@ -479,7 +484,7 @@ const closeModal = () => {
 }
 
 const handleSelect = () => {
-  const idsParaEnviar = usarTipoGuardado.value ? selectedListos.value : selectedItems.value
+  const idsParaEnviar = usarTipoGuardado.value ? idsListosParaEnviar.value : selectedItems.value
   if (idsParaEnviar.length === 0) return
 
   loading.value = true
