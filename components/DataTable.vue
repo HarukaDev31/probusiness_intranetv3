@@ -63,10 +63,10 @@
               <!-- Desktop: keep inline absolute panel to preserve original behavior on large screens -->
               <div v-if="showFiltersPanel && showFilters && typeof isMobile !== 'undefined' && !isMobile"
                 ref="filtersPanelRef"
-                class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-96 max-w-[90vw] lg:max-w-none bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[80vh] overflow-y-auto"
+                class="filters-panel absolute top-full right-0 mt-2 w-full lg:w-[38rem] max-w-[90vw] lg:max-w-none bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4 max-h-[90vh] overflow-visible"
                 @click.stop>
                 <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
-                  <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-[8rem_minmax(14rem,1fr)] gap-x-4 gap-y-1 items-center">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {{ filter.label }}
                     </label>
@@ -99,15 +99,27 @@
                       multiple
                       :placeholder="filter.placeholder"
                       class="w-full"
+                      :ui="filterSelectUi"
                       @update:model-value="(value) => handleFilterChange(filter.key, value)"
                       @click.stop
                       @focus="handleSelectOpen"
                       @blur="handleSelectClose"
                     />
                     <!-- Filtro de tipo select: model-value no vacío (fallback primera opción) para cumplir SelectItem -->
-                    <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
-                        @update:model-value="(value) => handleFilterChange(filter.key, value)"
-                        @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                    <USelect
+                      v-else
+                      :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''"
+                      :items="filter.options"
+                      value-key="value"
+                      label-key="label"
+                      :placeholder="filter.placeholder"
+                      class="w-full min-w-0"
+                      :ui="filterSelectUi"
+                      @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                      @click.stop
+                      @focus="handleSelectOpen"
+                      @blur="handleSelectClose"
+                    />
                   </div>
                 </div>
 
@@ -144,7 +156,7 @@
                   </div>
 
                   <div class="grid grid-cols-1 lg:grid-cols-1 gap-4 p-2">
-                    <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div v-for="filter in displayedFilterConfig" :key="filter.key" class="field grid grid-cols-1 lg:grid-cols-[8rem_minmax(14rem,1fr)] gap-x-4 gap-y-1 items-center">
                       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ filter.label }}
                       </label>
@@ -175,14 +187,26 @@
                         multiple
                         :placeholder="filter.placeholder"
                         class="w-full"
+                        :ui="filterSelectUi"
                         @update:model-value="(value) => handleFilterChange(filter.key, value)"
                         @click.stop
                         @focus="handleSelectOpen"
                         @blur="handleSelectClose"
                       />
-                      <USelect v-else :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''" :items="filter.options" value-attribute="value" :placeholder="filter.placeholder" class="w-full"
-                          @update:model-value="(value) => handleFilterChange(filter.key, value)"
-                          @click.stop @focus="handleSelectOpen" @blur="handleSelectClose" />
+                      <USelect
+                        v-else
+                        :model-value="(filtersValue && filtersValue[filter.key]) ?? (filter.options?.[0]?.value) ?? ''"
+                        :items="filter.options"
+                        value-key="value"
+                        label-key="label"
+                        :placeholder="filter.placeholder"
+                        class="w-full min-w-0"
+                        :ui="filterSelectUi"
+                        @update:model-value="(value) => handleFilterChange(filter.key, value)"
+                        @click.stop
+                        @focus="handleSelectOpen"
+                        @blur="handleSelectClose"
+                      />
                     </div>
                   </div>
 
@@ -542,6 +566,16 @@ const tableScrollStyle = computed(() => {
 
 // Emits
 const emit = defineEmits(['update:primarySearch', 'filter-change', 'update:filters', 'clear-filters', 'items-per-page-change', 'page-change', 'row-click', 'kanban-move'] )
+
+const filterSelectUi = {
+  base: 'w-full text-left',
+  value: 'text-left',
+  placeholder: 'text-left',
+  content: 'min-w-[var(--reka-select-trigger-width)] w-max max-w-[min(92vw,40rem)]',
+  viewport: 'max-h-80',
+  item: 'whitespace-nowrap',
+  itemLabel: 'whitespace-nowrap'
+}
 
 // Computed writable para v-model:page
 const currentPageModel = computed({
@@ -1449,8 +1483,8 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 90vw;
-    max-width: 400px;
-    max-height: 80vh;
+    max-width: 38rem;
+    max-height: 90vh;
     overflow-y: auto;
   }
 }
@@ -1510,7 +1544,7 @@ tr.absolute.z-\[1\].left-0.w-full.h-px.bg-\(--ui-border-accented\) {
 @media (max-width: 640px) {
   .filters-panel {
     padding: 0.5rem !important;
-    max-height: 70vh !important;
+    max-height: 90vh !important;
     border-radius: 0.5rem !important;
     width: calc(100% - 1rem) !important;
     right: 0.5rem !important;
