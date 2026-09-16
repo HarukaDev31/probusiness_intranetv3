@@ -25,7 +25,8 @@ export class CotizacionProveedorService extends BaseService {
         currentPage: number,
         sortBy?: string,
         sortOrder?: 'asc' | 'desc',
-        signal?: AbortSignal
+        signal?: AbortSignal,
+        idCotizacion?: string
     ): Promise<ProveedoresResponse> {
         try {
             const response = await this.apiCall<ProveedoresResponse>(
@@ -40,6 +41,7 @@ export class CotizacionProveedorService extends BaseService {
                         currentPage,
                         sort_by: sortBy ?? 'id',
                         sort_order: sortOrder ?? 'asc',
+                        ...(idCotizacion ? { idCotizacion } : {}),
                     }
                 }
             )
@@ -254,11 +256,21 @@ export class CotizacionProveedorService extends BaseService {
             throw new Error('No se pudieron obtener los proveedores por cotización')
         }
     }
-    static async downloadEmbarque(id: number, filters: CotizacionProveedorFilters): Promise<any> {
+    static async downloadEmbarque(
+        id: number,
+        filters: CotizacionProveedorFilters,
+        idCotizacion?: string
+    ): Promise<any> {
         try {
             const response = await this.apiCall<any>(
                 `${this.baseUrl}/proveedor/download-embarque/${id}`,
-                { method: 'GET', params: filters }
+                {
+                    method: 'GET',
+                    params: {
+                        ...filters,
+                        ...(idCotizacion ? { idCotizacion } : {}),
+                    }
+                }
             )
             return response
         }

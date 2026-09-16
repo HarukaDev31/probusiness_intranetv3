@@ -367,7 +367,13 @@ const getSignUrl = (uuid: string): string => {
     return urlFirmaAcuerdo(uuid, urlClientes.value)
 }
 
-const tab = ref('')
+const tabFromQuery = () => {
+    const t = route.query.tab
+    if (typeof t === 'string') return t
+    if (Array.isArray(t) && typeof t[0] === 'string') return t[0]
+    return ''
+}
+const tab = ref(tabFromQuery())
 const showPagosExport = computed(() =>
     (currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION) && tab.value === 'pagos'
 )
@@ -3732,6 +3738,22 @@ watch(() => tab.value, async (newVal) => {
     }
 }, { immediate: true })
 
+watch(
+    () => String(route.query.idCotizacion ?? ''),
+    async (idCotizacion, prev) => {
+        if (idCotizacion === prev) return
+        const containerId = Number(id)
+        if (!containerId) return
+        if (tab.value === 'embarque') {
+            await getCotizacionProveedor(containerId)
+        } else if (tab.value === 'prospectos') {
+            await getCotizaciones(containerId)
+        } else if (tab.value === 'pagos') {
+            await getCotizacionPagos(containerId)
+        }
+    }
+)
+
 
 
 const updateProveedorData = async (row: any) => {
@@ -3802,10 +3824,10 @@ const resetFilters = () => {
 onMounted(() => {
     loadTabs();
 
-    const tabQuery = route.query.tab
+    const tabQuery = tabFromQuery()
 
     if (tabQuery) {
-        tab.value = tabQuery as string
+        tab.value = tabQuery
     } else if ((currentRole.value === ROLES.CONTABILIDAD || currentRole.value === ROLES.ADMINISTRACION)) {
         tab.value = 'pagos'
     } else {

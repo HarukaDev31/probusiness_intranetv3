@@ -90,6 +90,14 @@ export const    useCotizacionProveedor = () => {
     let currentAbortController: AbortController | null = null
     const latestRequestId = ref(0)
 
+    function routeIdCotizacion(): string | undefined {
+        const q = route.query.idCotizacion
+        if (q == null || q === '') return undefined
+        const raw = Array.isArray(q) ? q[0] : q
+        const value = raw != null ? String(raw).trim() : ''
+        return value || undefined
+    }
+
     /**
      * Obtiene las cotizaciones de proveedores
      */
@@ -135,7 +143,8 @@ export const    useCotizacionProveedor = () => {
                 currentPage.value,
                 sortBy.value,
                 sortOrder.value,
-                signal
+                signal,
+                routeIdCotizacion()
             )
 
             if (requestId === latestRequestId.value) {
@@ -435,7 +444,11 @@ export const    useCotizacionProveedor = () => {
     const exportData = async () => {
         loading.value = true
         try {
-            const blob = await CotizacionProveedorService.downloadEmbarque(Number(route.params.id), filters.value)
+            const blob = await CotizacionProveedorService.downloadEmbarque(
+                Number(route.params.id),
+                filters.value,
+                routeIdCotizacion()
+            )
             const url = window.URL.createObjectURL(new Blob([blob]))
             const link = document.createElement('a')
             link.href = url
@@ -496,7 +509,7 @@ export const    useCotizacionProveedor = () => {
         loading.value = true
         error.value = null
         try {
-            const response = await CotizacionProveedorService.downloadEmbarque(id, filters.value)
+            const response = await CotizacionProveedorService.downloadEmbarque(id, filters.value, routeIdCotizacion())
             return response
         }
         catch (error) {

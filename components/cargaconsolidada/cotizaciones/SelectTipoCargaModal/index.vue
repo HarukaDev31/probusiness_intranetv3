@@ -55,8 +55,8 @@
                       <USelect
                         v-model="itemTipoCarga[itemId]"
                         :items="tiposCarga"
-                        item-value="value"
-                        item-title="label"
+                        value-key="value"
+                        label-key="label"
                         placeholder="Seleccionar tipo"
                         size="sm"
                         class="min-w-40"
@@ -83,7 +83,7 @@
                     </div>
                   </div>
                   <div
-                    v-if="itemTipoCarga[itemId] === 'movilidad_personal' && getMovilidadItems(itemId).length"
+                    v-if="normalizeTipoRotulado(itemTipoCarga[itemId]) === 'movilidad_personal' && getMovilidadItems(itemId).length"
                     class="mt-3 space-y-2 rounded-lg border border-dashed border-gray-200  p-3 text-sm "
                   >
                     <div class="font-medium ">
@@ -187,12 +187,22 @@ const { withSpinner } = useSpinner()
 const usarTipoGuardado = computed(() => Boolean(props.usarTipoGuardado))
 const soloPendienteGeneral = computed(() => Boolean(props.soloPendienteGeneral))
 
-const esTipoPendiente = (tipo?: string) => {
-  return !tipo || String(tipo).trim().toLowerCase() === 'pendiente'
+const normalizeTipoRotulado = (tipo?: unknown): string => {
+  if (tipo && typeof tipo === 'object' && 'value' in (tipo as Record<string, unknown>)) {
+    return String((tipo as { value: unknown }).value || '').trim().toLowerCase()
+  }
+  const raw = String(tipo || '').trim().toLowerCase().replace(/\s+/g, '_')
+  if (raw === 'general') return 'rotulado'
+  return raw
 }
 
-const labelTipoGuardado = (tipo?: string) => {
-  const t = String(tipo || '').trim().toLowerCase()
+const esTipoPendiente = (tipo?: unknown) => {
+  const normalized = normalizeTipoRotulado(tipo)
+  return normalized === 'pendiente' || normalized === ''
+}
+
+const labelTipoGuardado = (tipo?: unknown) => {
+  const t = normalizeTipoRotulado(tipo)
   if (t === 'rotulado') return 'GENERAL'
   return t.replace(/_/g, ' ') || '—'
 }
@@ -201,7 +211,7 @@ const loading = ref(false)
 const loadingItems = ref(false)
 const availableItems = ref<any[]>([])
 const selectedItems = ref<string[]>([])
-const itemTipoCarga = ref<Record<string, string>>({})
+const itemTipoCarga = ref<Record<string, any>>({})
 const movilidadItemsSeleccionados = ref<Record<string, string[]>>({})
 const itemForceSend = ref<Record<string, boolean>>({})
 
@@ -214,11 +224,11 @@ const filasRotulado = computed(() => {
 
 const selectedListos = computed(() => {
   return filasRotulado.value.filter((itemId) => {
-    const tipo = itemTipoCarga.value[itemId]
+    const tipo = normalizeTipoRotulado(itemTipoCarga.value[itemId])
     if (soloPendienteGeneral.value) {
-      return String(tipo || '').trim().toLowerCase() === 'rotulado'
+      return tipo === 'rotulado'
     }
-    return !esTipoPendiente(tipo)
+    return tipo !== '' && tipo !== 'pendiente'
   })
 })
 
@@ -236,8 +246,8 @@ const checkboxItems = computed(() => {
 })
 
 const itemListoParaEnviar = (itemId: string) => {
-  const tipo = itemTipoCarga.value[itemId]?.trim()
-  if (!tipo || esTipoPendiente(tipo)) {
+  const tipo = normalizeTipoRotulado(itemTipoCarga.value[itemId])
+  if (!tipo || tipo === 'pendiente') {
     return false
   }
   if (usarTipoGuardado.value && getItemSendStatus(itemId) === 'SENDED' && !itemForceSend.value[itemId]) {
@@ -261,7 +271,7 @@ const canSave = computed(() => {
     return false
   }
   return selectedItems.value.every((itemId) => {
-    const tipo = itemTipoCarga.value[itemId]?.trim()
+    const tipo = normalizeTipoRotulado(itemTipoCarga.value[itemId])
     if (!tipo) {
       return false
     }
@@ -370,7 +380,7 @@ watch(selectedItems, (newValue, oldValue) => {
 
 watch(itemTipoCarga, newValue => {
   Object.entries(newValue).forEach(([itemId, tipo]) => {
-    if (tipo !== 'movilidad_personal') {
+    if (normalizeTipoRotulado(tipo) !== 'movilidad_personal') {
       movilidadItemsSeleccionados.value[itemId] = []
     }
   })
@@ -459,8 +469,7 @@ const getSelectedMovilidadQtySum = (itemId: string) => {
 
 const totalMovilidadPersonalSeleccionada = computed(() => {
   return filasRotulado.value.reduce((total, itemId) => {
-    const tipo = itemTipoCarga.value[itemId]
-    if (tipo === 'movilidad_personal') {
+    if (normalizeTipoRotulado(itemTipoCarga.value[itemId]) === 'movilidad_personal') {
       return total + getSelectedMovilidadQtySum(itemId)
     }
     return total
@@ -483,14 +492,14 @@ const closeModal = () => {
   emit('close')
 }
 
-const handleSelect = () => {
+const handleSelect = async () => {
   const idsParaEnviar = usarTipoGuardado.value ? idsListosParaEnviar.value : selectedItems.value
   if (idsParaEnviar.length === 0) return
 
   loading.value = true
   try {
     const proveedores = idsParaEnviar.map(itemId => {
-      const tipoRotulado = itemTipoCarga.value[itemId]
+      const tipoRotulado = normalizeTipoRotulado(itemTipoCarga.value[itemId])
       const totalMovilidadQty = tipoRotulado === 'movilidad_personal'
         ? getSelectedMovilidadQtySum(itemId)
         : 0
@@ -511,9 +520,8 @@ const handleSelect = () => {
       proveedores
     }
     
-    // Llamar al callback si está disponible (el overlay maneja los eventos)
     if (props.onSelected) {
-      props.onSelected(result, { total_movilidad_personal: totalMovilidadPersonal })
+      await props.onSelected(result, { total_movilidad_personal: totalMovilidadPersonal })
     }
     closeModal()
   } catch (error) {
