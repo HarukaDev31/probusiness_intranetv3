@@ -301,7 +301,14 @@
 
             <UFormField label="Selecciona el vendedor" required>
               <div class="flex gap-2 items-start">
-                <USelect v-model="selectedVendedor" :items="vendedoresOptions" placeholder="Seleccionar" class="w-full" />
+                <USelect
+                  v-model="selectedVendedor"
+                  :items="vendedoresOptions"
+                  value-key="value"
+                  label-key="label"
+                  placeholder="Seleccionar"
+                  class="w-full"
+                />
                 <UButton
                   v-if="puedeCrearVendedor"
                   icon="i-heroicons-plus"
@@ -501,6 +508,19 @@ function telefonoDeOpcion(item: string | CotizacionResumenClienteOption | null |
   return String(item.telefono || item.value || item.label || '').trim()
 }
 
+const RUCS_EMISOR = ['20612452432', '206124524321']
+
+function documentoIdentidadCliente(raw: string | null | undefined) {
+  const texto = String(raw || '').trim()
+  if (!texto) return ''
+  if (/cotiz|boleta|factura|proforma|n[uú]mero\s*de\s*doc/i.test(texto)) return ''
+  const digitos = texto.replace(/\D+/g, '')
+  if (!digitos) return ''
+  if (RUCS_EMISOR.includes(digitos)) return ''
+  if (digitos.length < 6 || digitos.length > 13) return ''
+  return digitos
+}
+
 function aplicarClienteExistente(cliente: CotizacionResumenClienteOption) {
   clienteBdId.value = cliente.id
   clienteInfo.whatsapp = telefonoDeOpcion(cliente)
@@ -637,16 +657,18 @@ async function procesarArchivo(file: File) {
 
     const cliente = res.data?.cliente
     if (cliente) {
+      const documento = documentoIdentidadCliente(cliente.documento)
+      clienteBdId.value = null
       clienteInfo.nombre = cliente.nombre ?? ''
-      clienteInfo.tipoDocumento = cliente.tipo_documento === 'RUC' ? 'RUC' : 'ID'
-      clienteInfo.documento = cliente.documento ?? ''
+      clienteInfo.documento = documento
+      clienteInfo.tipoDocumento = documento.replace(/\D/g, '').length >= 11 ? 'RUC' : 'ID'
       clienteInfo.whatsapp = cliente.whatsapp ?? ''
       clienteInfo.correo = cliente.correo ?? ''
       sincronizarWhatsappMenu(clienteInfo.whatsapp)
       if (clienteInfo.whatsapp) searchClientes(clienteInfo.whatsapp)
       camposEscaneados.value = {
         nombre: cliente.nombre != null,
-        documento: cliente.documento != null,
+        documento: documento !== '',
         whatsapp: cliente.whatsapp != null,
         correo: cliente.correo != null
       }
