@@ -160,6 +160,7 @@ import { useModal } from '~/composables/commons/useModal'
 import CreateProspectoModal from '~/components/cargaconsolidada/cotizaciones/CreateProspectoModal/index.vue'
 import { useConsolidado } from '~/composables/cargaconsolidada/useConsolidado'
 import MoveCotizacionModal from '~/components/shared/MoveCotizacionModal/index.vue'
+import PartirCotizacionResumenModal from '~/components/cargaconsolidada/cotizaciones/PartirCotizacionResumenModal/index.vue'
 import CreatePagoModal from '~/components/commons/CreatePagoModal.vue'
 import ModalPreview from '~/components/commons/ModalPreview.vue'
 import AdelantoPreviewModal from '~/components/commons/AdelantoPreviewModal.vue'
@@ -3286,6 +3287,15 @@ const openSocioModalAcciones = (row: any, action: 'pedir_documentos' | 'recordat
     })
 }
 
+const openSocioPartirCotizacion = (row: any) => {
+    const modal = overlay.create(PartirCotizacionResumenModal)
+    modal.open({
+        idCotizacion: row.id,
+        idContenedor: row.id_contenedor,
+        onSuccess: () => getCotizacionProveedor(Number(id)),
+    })
+}
+
 const handleSocioEnviarInspeccion = async (row: any, proveedor: any) => {
     const proveedorId = Number(proveedor?.id || proveedor?.id_proveedor)
     showConfirmation(
@@ -3525,6 +3535,11 @@ const getEmbarqueSocioColumns = (): TableColumn<any>[] => {
                             icon: 'i-heroicons-paper-airplane',
                             onSelect: () => openSocioEnviarRotulado(row.original.id),
                         },
+                        ...((row.original.proveedores || []).length >= 2 ? [{
+                            label: 'Partir cotización',
+                            icon: 'i-heroicons-arrows-right-left',
+                            onSelect: () => openSocioPartirCotizacion(row.original),
+                        }] : []),
                         {
                             label: 'Pedir documentos',
                             icon: 'i-heroicons-document-plus',

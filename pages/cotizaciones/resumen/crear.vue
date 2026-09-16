@@ -678,6 +678,9 @@ async function procesarArchivo(file: File) {
 
     proveedoresExtraidos.value = res.data?.proveedores ?? []
     aplicarExtraidosAProveedores()
+    if (Number(qtyProveedores.value) < 1 && proveedoresExtraidos.value.length > 0) {
+      qtyProveedores.value = proveedoresExtraidos.value.length
+    }
 
     if (!res.extracted_by_ai) {
       showError('No se pudo leer el documento automáticamente', res.message || 'Completa los datos a mano.')
@@ -928,6 +931,9 @@ async function cargarEdicion(id: number) {
       costos: mapCostosExtraidos(p.costos)
     }))
     if (providers.value.length === 0) providers.value = [crearProveedor()]
+    qtyProveedores.value = Number(d.qty_proveedores) > 0
+      ? Number(d.qty_proveedores)
+      : providers.value.length
     scanState.value = 'done'
     maxStepReached.value = 3
   } catch (e: any) {
@@ -1002,6 +1008,9 @@ function payloadWizard() {
         .map((c) => ({ concepto: c.concepto.trim(), valor: Number(c.valor) }))
     })),
     descuento: descuento.value || undefined,
+    qty_proveedores: Number(qtyProveedores.value) >= 1
+      ? Number(qtyProveedores.value)
+      : providers.value.length,
     archivo: archivoStaged.value
   }
 }

@@ -44,6 +44,10 @@ export function useCotizacionResumen() {
     return CotizacionResumenService.duplicarCotizacion(id)
   }
 
+  async function partirCotizacion(id: number, payload: { id_contenedor: number; proveedores: number[] }) {
+    return CotizacionResumenService.partirCotizacion(id, payload)
+  }
+
   async function getCotizaciones(filters: CotizacionResumenFilters = {}) {
     return CotizacionResumenService.getCotizaciones(filters)
   }
@@ -87,6 +91,7 @@ export function useCotizacionResumen() {
     getCotizacion,
     actualizarCotizacion,
     duplicarCotizacion,
+    partirCotizacion,
     getCotizaciones,
     updateEstado,
     deleteCotizacion,

@@ -74,6 +74,7 @@ export interface CrearCotizacionResumenRequest {
     moneda?: string
     costos?: { concepto: string; valor: number }[]
   }[]
+  qty_proveedores?: number
   descuento?: number
   archivo?: CotizacionResumenArchivo | null
 }
@@ -84,6 +85,7 @@ export interface CotizacionResumenDetalle {
   id_contenedor: number | null
   id_usuario: number | null
   descuento: number
+  qty_proveedores?: number
   tarifa: number
   fob: number
   isd: number
@@ -185,6 +187,11 @@ export interface CotizacionResumenSimpleResponse {
   success: boolean
   message?: string
   data?: any
+}
+
+export interface PartirCotizacionResumenRequest {
+  id_contenedor: number
+  proveedores: number[]
 }
 
 export interface CotizacionResumenFilters {

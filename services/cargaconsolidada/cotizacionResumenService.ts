@@ -100,6 +100,17 @@ export class CotizacionResumenService extends BaseService {
     }
   }
 
+  static async partirCotizacion(id: number, payload: { id_contenedor: number; proveedores: number[] }): Promise<CotizacionResumenSimpleResponse> {
+    try {
+      return await this.apiCall<CotizacionResumenSimpleResponse>(`${this.baseUrl}/${id}/partir`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
+    } catch (e: any) {
+      return { success: false, message: e.message }
+    }
+  }
+
   static async updateEstado(id: number, estado: 'COTIZADO' | 'CONFIRMADO'): Promise<CotizacionResumenSimpleResponse> {
     try {
       return await this.apiCall<CotizacionResumenSimpleResponse>(`${this.baseUrl}/${id}/estado`, {
